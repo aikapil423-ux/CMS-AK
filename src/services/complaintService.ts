@@ -188,7 +188,13 @@ export const ComplaintService = {
 
   async getComplaintById(id: string): Promise<ComplaintItem | undefined> {
     complaintsStore = loadComplaintsFromStorage();
-    return complaintsStore.find((c) => c.id === id || c.complaintNumber === id);
+    const cleanId = id ? decodeURIComponent(id).trim() : "";
+    return complaintsStore.find(
+      (c) =>
+        c.id === id ||
+        c.complaintNumber === id ||
+        (cleanId && (c.id === cleanId || c.complaintNumber === cleanId))
+    );
   },
 
   async getStatusCounts(assignedEoFilter?: string): Promise<{

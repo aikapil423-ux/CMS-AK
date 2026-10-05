@@ -829,27 +829,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     }, 900);
   };
 
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
-        <LoadingSkeleton count={3} />
-      </div>
-    );
-  }
-
-  if (!complaint) {
-    return (
-      <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
-        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
-        <h2 className="text-xl font-bold text-slate-900">Complaint Record Not Found</h2>
-        <p className="text-sm text-slate-500">The requested complaint identifier does not exist in the police registry.</p>
-        <Link href="/complaints">
-          <Button variant="primary">Return to Complaints Register</Button>
-        </Link>
-      </div>
-    );
-  }
-
   // Build combined history timeline matching official format (Latest on Top ➔ Initial on Bottom)
   const combinedHistory = useMemo(() => {
     if (!complaint) return [];
@@ -882,9 +861,9 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     addUnique({
       id: "hist_registered",
       title: "REGISTERED",
-      timestamp: complaint.createdAt,
+      timestamp: complaint.createdAt || new Date().toISOString(),
       officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
-      details: complaint.complaintNumber,
+      details: complaint.complaintNumber || "CMP-REF",
       stageWeight: 1,
     });
 
@@ -898,9 +877,9 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       addUnique({
         id: "hist_eo_assigned",
         title: "EO ASSIGNED",
-        timestamp: complaint.assignedAt || complaint.createdAt,
+        timestamp: complaint.assignedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
-        details: `${eoId} · ${eoRoster.startsWith("Roster") ? eoRoster : `Roster duty (${eoRoster})`}`,
+        details: `${eoId} · ${eoRoster?.startsWith?.("Roster") ? eoRoster : `Roster duty (${eoRoster})`}`,
         stageWeight: 2,
       });
     }
@@ -912,7 +891,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         addUnique({
           id: n.id || `hist_note_${idx}`,
           title: "ENQUIRY NOTE",
-          timestamp: n.createdAt || complaint.createdAt,
+          timestamp: n.createdAt || complaint.createdAt || new Date().toISOString(),
           officerName: n.officerName || complaint.assignedEoName || "SI Pooja Rani",
           details: n.content ? `${noteType} · ${n.content}` : noteType,
           stageWeight: 3 + idx * 0.05,
@@ -920,13 +899,13 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       });
     } else if (
       complaint.status === "REPORT_SUBMITTED" ||
-      complaint.status.startsWith("DISPOSED") ||
+      complaint.status?.startsWith?.("DISPOSED") ||
       complaint.status === "RECOMMENDED_FOR_FIR"
     ) {
       addUnique({
         id: "hist_note_default",
         title: "ENQUIRY NOTE",
-        timestamp: complaint.assignedAt || complaint.createdAt,
+        timestamp: complaint.assignedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.assignedEoName || "SI Pooja Rani",
         details: "VISIT",
         stageWeight: 3,
@@ -936,13 +915,13 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     // 4. REPORT SUBMITTED
     if (
       complaint.status === "REPORT_SUBMITTED" ||
-      complaint.status.startsWith("DISPOSED") ||
+      complaint.status?.startsWith?.("DISPOSED") ||
       complaint.status === "RECOMMENDED_FOR_FIR"
     ) {
       addUnique({
         id: "hist_report_submitted",
         title: "REPORT SUBMITTED",
-        timestamp: complaint.updatedAt || complaint.createdAt,
+        timestamp: complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.assignedEoName || "SI Pooja Rani",
         details: "NON_COGNIZABLE",
         stageWeight: 4,
@@ -953,12 +932,12 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     if (
       complaint.ncrNumber ||
       complaint.dispositionType === "NCR_FILED" ||
-      (complaint.status.startsWith("DISPOSED") && !complaint.firNumber)
+      (complaint.status?.startsWith?.("DISPOSED") && !complaint.firNumber)
     ) {
       addUnique({
         id: "hist_ncr_issued",
         title: "NCR ISSUED",
-        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
         details: complaint.ncrNumber || "NCR-2025-9001",
         stageWeight: 5,
@@ -970,7 +949,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       addUnique({
         id: "hist_fir_registered",
         title: "FIR REGISTERED",
-        timestamp: complaint.firDate || complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        timestamp: complaint.firDate || complaint.disposedAt || complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
         details: complaint.firNumber || "FIR-2026-0042",
         stageWeight: 5,
@@ -979,14 +958,14 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
     // 6. DISPOSED
     if (
-      complaint.status.startsWith("DISPOSED") ||
+      complaint.status?.startsWith?.("DISPOSED") ||
       complaint.dispositionCategory ||
       complaint.dispositionRemarks
     ) {
       addUnique({
         id: "hist_disposed",
         title: "DISPOSED",
-        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
         details: `${complaint.dispositionCategory || "NON_COGNIZABLE"} · ${
           complaint.dispositionRemarks || "Verified; civil matter referred with NCR."
@@ -1000,7 +979,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       addUnique({
         id: "hist_link_added",
         title: "LINK ADDED",
-        timestamp: complaint.updatedAt || complaint.createdAt,
+        timestamp: complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
         officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
         details: `REPEAT · ${complaint.linkedComplaintReason || "Same land dispute, renewed threats"}`,
         stageWeight: 7,
@@ -1009,7 +988,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         addUnique({
           id: "hist_linked_ref",
           title: "LINKED COMPLAINT REFERENCE",
-          timestamp: complaint.updatedAt || complaint.createdAt,
+          timestamp: complaint.updatedAt || complaint.createdAt || new Date().toISOString(),
           officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
           details: complaint.linkedComplaintNumber,
           stageWeight: 7.5,
@@ -1021,7 +1000,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     if (complaint.timeline && complaint.timeline.length > 0) {
       complaint.timeline.forEach((tl) => {
         let weight = 3.5;
-        const upper = tl.title.toUpperCase();
+        const upper = (tl.title || "").toUpperCase();
         if (upper.includes("REGISTER")) weight = 1;
         else if (upper.includes("ASSIGN")) weight = 2;
         else if (upper.includes("NOTE")) weight = 3;
@@ -1033,9 +1012,9 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         addUnique({
           id: tl.id,
           title: upper,
-          timestamp: tl.timestamp,
+          timestamp: tl.timestamp || new Date().toISOString(),
           officerName: tl.officerName || complaint.registeredBy || "Insp. Ravinder Kumar",
-          details: tl.description,
+          details: tl.description || "",
           stageWeight: weight,
         });
       });
@@ -1051,6 +1030,27 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
   }, [complaint]);
 
   const combinedTimeline = combinedHistory;
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
+        <LoadingSkeleton count={3} />
+      </div>
+    );
+  }
+
+  if (!complaint) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
+        <h2 className="text-xl font-bold text-slate-900">Complaint Record Not Found</h2>
+        <p className="text-sm text-slate-500">The requested complaint identifier does not exist in the police registry.</p>
+        <Link href="/complaints">
+          <Button variant="primary">Return to Complaints Register</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
