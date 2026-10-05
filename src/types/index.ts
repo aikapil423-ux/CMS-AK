@@ -277,21 +277,32 @@ export type GDEntryType =
   | 'CLOSING_OF_DIARY'
   | 'MISCELLANEOUS_EVENT';
 
+export * from "./generalDiary";
+
 export interface GeneralDiaryItem {
   id: string;
   gdNumber: string;
   sequencePerDay: number;
-  entryTime: string;
-  entryDate: string;
-  entryType: GDEntryType;
-  entryTypeDisplay: string;
+  entryTime?: string;
+  entryDate?: string;
+  entryType?: any;
+  entryTypeDisplay?: string;
   subject: string;
   narrative: string;
   policeStation: string;
-  loggedByOfficer: string;
-  loggedByPno: string;
+  loggedByOfficer?: string;
+  loggedByPno?: string;
   relatedComplaintNumber?: string;
   isLocked: boolean;
+  activityDateTime?: string;
+  officialCreationTimestamp?: string;
+  verificationTimestamp?: string;
+  status?: import("./generalDiary").GDStatus;
+  source?: import("./generalDiary").GDSource;
+  entryForOfficer?: import("./generalDiary").GDOfficerParticulars;
+  actualAuthor?: import("./generalDiary").GDOfficerParticulars;
+  auditTrail?: import("./generalDiary").GDAuditLog[];
+  relatedRecords?: import("./generalDiary").GDRelatedRecords;
 }
 
 export interface HistoricalFirItem {
