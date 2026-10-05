@@ -3619,81 +3619,185 @@ export default function RegisterComplaintPage() {
             </div>
 
             {/* Content Body */}
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[78vh] flex flex-col items-center justify-center bg-slate-100">
-              {previewModalFile.category === "image" && previewModalFile.dataUrl && (
-                <div className="w-full flex items-center justify-center">
+            <div className="p-3 sm:p-5 overflow-y-auto max-h-[80vh] flex flex-col items-center justify-center bg-slate-100 min-h-[420px]">
+              {/* 1. Missing or Empty dataUrl Fallback */}
+              {!previewModalFile.dataUrl ? (
+                <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-md border border-slate-200 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                    <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-base text-slate-900">{previewModalFile.name}</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      This document is sealed in the station evidence docket. Direct inline data stream is preserved in complaint attachments.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-lg text-[11px] text-slate-600 border border-slate-200">
+                    Category: <span className="font-bold uppercase text-slate-800">{previewModalFile.category}</span>
+                  </div>
+                </div>
+              ) : previewModalFile.category === "image" ||
+                previewModalFile.name.toLowerCase().match(/\.(jpe?g|png|webp|gif|bmp|svg)$/) ||
+                previewModalFile.dataUrl.startsWith("data:image/") ? (
+                /* 2. Image Evidence Preview */
+                <div className="w-full flex flex-col items-center justify-center gap-3">
                   <img
                     src={previewModalFile.dataUrl}
                     alt={previewModalFile.name}
-                    className="max-h-[70vh] w-auto max-w-full rounded-xl object-contain shadow-md bg-white border border-slate-200"
+                    className="max-h-[72vh] w-auto max-w-full rounded-xl object-contain shadow-md bg-white border border-slate-200"
                   />
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={previewModalFile.dataUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Open Full Size</span>
+                    </a>
+                  </div>
                 </div>
-              )}
-
-              {previewModalFile.category === "video" && previewModalFile.dataUrl && (
+              ) : previewModalFile.category === "video" ||
+                previewModalFile.name.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|3gp)$/) ||
+                previewModalFile.dataUrl.startsWith("data:video/") ? (
+                /* 3. Video Evidence Preview */
                 <div className="w-full flex items-center justify-center">
                   <video
                     controls
                     autoPlay
                     src={previewModalFile.dataUrl}
-                    className="max-h-[70vh] w-full rounded-xl bg-black shadow-md"
+                    className="max-h-[72vh] w-full rounded-xl bg-black shadow-md"
                   />
                 </div>
-              )}
-
-              {previewModalFile.category === "audio" && previewModalFile.dataUrl && (
+              ) : previewModalFile.category === "audio" ||
+                previewModalFile.name.toLowerCase().match(/\.(mp3|wav|m4a|ogg|aac|flac|wma)$/) ||
+                previewModalFile.dataUrl.startsWith("data:audio/") ? (
+                /* 4. Audio Evidence Preview */
                 <div className="w-full max-w-lg p-6 bg-white rounded-2xl shadow-md border border-slate-200 text-center space-y-4">
                   <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
                     <Music className="w-8 h-8" />
                   </div>
                   <div>
                     <h4 className="font-bold text-sm text-slate-900">{previewModalFile.name}</h4>
-                    <p className="text-xs text-slate-500">Audio Recording Evidence</p>
+                    <p className="text-xs text-slate-500">Audio Statement / Call Recording</p>
                   </div>
                   <audio controls autoPlay src={previewModalFile.dataUrl} className="w-full pt-2" />
                 </div>
-              )}
-
-              {(previewModalFile.category === "document" || previewModalFile.category === "other") && previewModalFile.dataUrl && (
-                <div className="w-full h-[70vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
-                  {previewModalFile.name.toLowerCase().endsWith(".pdf") || previewModalFile.dataUrl.startsWith("data:application/pdf") ? (
-                    <iframe
-                      src={previewModalFile.dataUrl}
-                      title={previewModalFile.name}
+              ) : previewModalFile.name.toLowerCase().endsWith(".pdf") ||
+                previewModalFile.dataUrl.startsWith("data:application/pdf") ? (
+                /* 5. PDF Document Preview (Object + Embed + Direct Action Fallback) */
+                <div className="w-full h-[74vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+                  <div className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                    <span className="font-semibold truncate">PDF Document Viewer • {previewModalFile.name}</span>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={previewModalFile.dataUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 underline text-[11px]"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Open in New Tab</span>
+                      </a>
+                    </div>
+                  </div>
+                  <div className="w-full h-full relative bg-slate-200">
+                    <object
+                      data={previewModalFile.dataUrl}
+                      type="application/pdf"
                       className="w-full h-full border-0"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-slate-50">
-                      <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center">
-                        <FileText className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-base text-slate-900">{previewModalFile.name}</h4>
-                        <p className="text-xs text-slate-500 mt-1 max-w-md">
-                          Document file attached to complaint docket. Click below to view in browser tab or download copy.
+                    >
+                      <embed
+                        src={previewModalFile.dataUrl}
+                        type="application/pdf"
+                        className="w-full h-full border-0"
+                      />
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-white">
+                        <FileText className="w-12 h-12 text-blue-600" />
+                        <h4 className="font-bold text-sm text-slate-900">{previewModalFile.name}</h4>
+                        <p className="text-xs text-slate-500 max-w-sm">
+                          Browser inline PDF plugin is restricted. Click below to view the PDF directly.
                         </p>
-                      </div>
-                      <div className="flex items-center gap-2 pt-2">
                         <a
                           href={previewModalFile.dataUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
                         >
-                          <Eye className="w-4 h-4" />
-                          <span>Open in New Tab</span>
-                        </a>
-                        <a
-                          href={previewModalFile.dataUrl}
-                          download={previewModalFile.name}
-                          className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        >
-                          <Download className="w-4 h-4" />
-                          <span>Download File</span>
+                          View PDF in Tab
                         </a>
                       </div>
+                    </object>
+                  </div>
+                </div>
+              ) : previewModalFile.dataUrl.startsWith("data:text/") ? (
+                /* 6. Text Document Preview */
+                <div className="w-full h-[74vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+                  <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-700 truncate">Text Document Content</span>
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
+                      Plain Text
+                    </span>
+                  </div>
+                  <div className="p-4 overflow-y-auto flex-1 font-mono text-xs whitespace-pre-wrap text-slate-800 bg-white">
+                    {(() => {
+                      try {
+                        const base64Index = previewModalFile.dataUrl.indexOf(";base64,");
+                        if (base64Index !== -1) {
+                          const base64 = previewModalFile.dataUrl.slice(base64Index + 8);
+                          return decodeURIComponent(escape(atob(base64)));
+                        }
+                        return previewModalFile.dataUrl;
+                      } catch {
+                        return "Unable to decode text stream directly.";
+                      }
+                    })()}
+                  </div>
+                </div>
+              ) : (
+                /* 7. Office / Word / Excel / Generic Document Preview Dossier Card */
+                <div className="w-full max-w-lg p-6 sm:p-8 bg-white rounded-2xl shadow-md border border-slate-200 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto shadow-xs">
+                    <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-base text-slate-900">{previewModalFile.name}</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      Official document uploaded and sealed into the complaint evidence dossier.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl text-left text-xs space-y-1.5 border border-slate-200">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">File Type:</span>
+                      <span className="font-bold uppercase text-slate-800">
+                        {previewModalFile.name.split(".").pop() || "Document"}
+                      </span>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Evidence Status:</span>
+                      <span className="font-bold text-emerald-700">Sealed in Station Docket</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2.5 pt-2">
+                    <a
+                      href={previewModalFile.dataUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>Open in Browser</span>
+                    </a>
+                    <a
+                      href={previewModalFile.dataUrl}
+                      download={previewModalFile.name}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download File</span>
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
