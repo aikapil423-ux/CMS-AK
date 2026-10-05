@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -7,11 +7,55 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum UnitType {
+  HQ
+  RANGE
+  COMMISSIONERATE
+  DISTRICT
+  SUB_DIVISION
+  POLICE_STATION
+  POLICE_POST
+}
+
+enum PoliceRank {
+  CONSTABLE
+  HEAD_CONSTABLE
+  ASSISTANT_SUB_INSPECTOR
+  SUB_INSPECTOR
+  INSPECTOR
+  DEPUTY_SP
+  ADDITIONAL_SP
+  SUPERINTENDENT_OF_POLICE
+  INSPECTOR_GENERAL
+  ADGP
+  DGP
+}
+
+enum SystemRole {
+  SUPER_ADMIN
+  SP_DISTRICT
+  DSP_SUBDIV
+  SHO
+  MHC_GD_INCHARGE
+  DUTY_OFFICER
+  ENQUIRY_OFFICER
+  READER_TO_SHO
+  VIEWER_AUDITOR
+}
+
+enum UserStatus {
+  ACTIVE
+  TRANSFERRED
+  SUSPENDED
+  LEAVE
+  RETIRED
+}
+
 model PoliceUnit {
   id           String              @id @default(cuid())
   code         String              @unique
   name         String
-  type         String
+  type         UnitType
   district     String
   range        String
   contactPhone String?
@@ -35,9 +79,9 @@ model User {
   pno                String              @unique
   beltNumber         String?
   fullName           String
-  rank               String
-  role               String
-  status             String          @default("ACTIVE")
+  rank               PoliceRank
+  role               SystemRole
+  status             UserStatus          @default(ACTIVE)
   mobileNumber       String              @unique
   email              String?             @unique
   passwordHash       String
@@ -59,18 +103,67 @@ model User {
   @@index([role])
 }
 
+enum ComplaintSource {
+  WALK_IN_STATION
+  CM_WINDOW_HARYANA
+  CITIZEN_PORTAL_HARPATH
+  EMERGENCY_112
+  SP_OFFICE_REFERENCE
+  POSTAL_APPLICATION
+  WOMEN_HELPLINE
+  SENIOR_CITIZEN_DESK
+}
+
+enum ComplaintCategory {
+  CYBER_CRIME
+  PROPERTY_THEFT_BURGLARY
+  FINANCIAL_FRAUD_CHEATING
+  LAND_PROPERTY_DISPUTE
+  PHYSICAL_ASSAULT_AFFRAY
+  DOMESTIC_VIOLENCE_DOWRY
+  PUBLIC_NUISANCE
+  MISSING_PERSON
+  NARCOTICS_DRUGS_INFO
+  HARASSMENT_STALKING
+  MOTOR_VEHICLE_DISPUTE
+  CORRUPTION_VIGILANCE
+  OTHER_GENERAL
+}
+
+enum ComplaintPriority {
+  ROUTINE
+  URGENT
+  CRITICAL_SENSITIVE
+  CM_WINDOW_VIP
+}
+
+enum ComplaintStatus {
+  REGISTERED
+  ASSIGNED_TO_EO
+  ENQUIRY_IN_PROGRESS
+  INTERIM_REPORT_SUBMITTED
+  REPORT_SUBMITTED
+  PENDING_SHO_REVIEW
+  PENDING_DSP_REVIEW
+  RECOMMENDED_FOR_FIR
+  DISPOSED_MUTUAL_ACCORD
+  DISPOSED_CIVIL_NATURE
+  DISPOSED_UNSUBSTANTIATED
+  TRANSFERRED_OTHER_PS
+}
+
 model Complaint {
   id                   String                       @id @default(cuid())
   complaintNumber      String                       @unique
-  source               String              @default("WALK_IN_STATION")
-  category             String
+  source               ComplaintSource              @default(WALK_IN_STATION)
+  category             ComplaintCategory
   subCategory          String?
-  priority             String            @default("ROUTINE")
-  status               String              @default("REGISTERED")
+  priority             ComplaintPriority            @default(ROUTINE)
+  status               ComplaintStatus              @default(REGISTERED)
   incidentDate         DateTime?
   incidentPlace        String
   incidentLandmark     String?
-  incidentDetails      String
+  incidentDetails      String                       @db.Text
   complainantName      String
   complainantFatherSpouse String?
   complainantGender    String
@@ -82,7 +175,7 @@ model Complaint {
   complainantCity      String
   complainantDistrict  String
   complainantState     String                       @default("Haryana")
-  accusedDetails       String?
+  accusedDetails       Json?
   policeStationId      String
   policeStation        PoliceUnit                   @relation(fields: [policeStationId], references: [id])
   registeredById       String
@@ -124,23 +217,46 @@ model ComplaintAssignmentHistory {
   @@index([complaintId])
 }
 
+enum EnquiryActionType {
+  SPOT_INSPECTION
+  WITNESS_EXAMINATION
+  COMPLAINANT_STATEMENT
+  ACCUSED_EXAMINATION
+  NOTICE_ISSUED_BNSS
+  DOCUMENT_VERIFICATION
+  CCTV_RETRIEVAL
+  INTERIM_BRIEF
+}
+
 model EnquiryActionLog {
   id              String            @id @default(cuid())
   complaintId     String
   complaint       Complaint         @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   officerId       String
   officer         User              @relation(fields: [officerId], references: [id])
-  actionType      String
+  actionType      EnquiryActionType
   actionDate      DateTime          @default(now())
   locationVisited String?
   personsExamined String?
-  summaryOfAction String
+  summaryOfAction String            @db.Text
   nextActionPlan  String?
-  attachments     String?
+  attachments     Json?
   createdAt       DateTime          @default(now())
 
   @@index([complaintId])
   @@index([officerId])
+}
+
+enum EvidenceType {
+  COMPLAINT_COPY_SIGNED
+  SPOT_PHOTOGRAPH
+  CCTV_FOOTAGE_CLIP
+  AUDIO_RECORDING
+  BANK_FINANCIAL_STATEMENT
+  MEDICAL_MLR_REPORT
+  WRITTEN_STATEMENT
+  NOTICE_COPY
+  OTHER_DOCUMENT
 }
 
 model ComplaintEvidence {
@@ -148,7 +264,7 @@ model ComplaintEvidence {
   complaintId    String
   complaint      Complaint    @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   title          String
-  evidenceType   String
+  evidenceType   EvidenceType
   fileUrl        String
   fileName       String
   fileSize       Int
@@ -156,13 +272,22 @@ model ComplaintEvidence {
   sha256Hash     String
   collectedAt    DateTime     @default(now())
   collectedPlace String?
-  description    String?
-  chainOfCustody String?
+  description    String?      @db.Text
+  chainOfCustody String?      @db.Text
   uploadedById   String
   uploadedAt     DateTime     @default(now())
 
   @@index([complaintId])
   @@index([sha256Hash])
+}
+
+enum FinalRecommendation {
+  REGISTER_FIR_COGNIZABLE
+  DISPOSE_CIVIL_DISPUTE
+  DISPOSE_MUTUAL_SETTLEMENT
+  DISPOSE_FALSE_MALICIOUS
+  TRANSFER_OTHER_JURISDICTION
+  FURTHER_INVESTIGATION_NEEDED
 }
 
 model EnquiryReport {
@@ -171,18 +296,25 @@ model EnquiryReport {
   complaint             Complaint           @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   submittedById         String
   submittedBy           User                @relation(fields: [submittedById], references: [id])
-  briefFacts            String
-  enquiryConductSummary String
-  keyFindings           String
-  recommendation        String
+  briefFacts            String              @db.Text
+  enquiryConductSummary String              @db.Text
+  keyFindings           String              @db.Text
+  recommendation        FinalRecommendation
   proposedLegalSections String?
-  detailedRemarks       String?
+  detailedRemarks       String?             @db.Text
   isDraft               Boolean             @default(true)
   isApproved            Boolean             @default(false)
   submittedAt           DateTime            @default(now())
   approvals             ApprovalHistory[]
 
   @@index([complaintId])
+}
+
+enum ApprovalDecision {
+  APPROVED
+  RETURNED_WITH_QUERIES
+  REJECTED
+  ESCALATED_TO_SUPERVISOR
 }
 
 model ApprovalHistory {
@@ -193,13 +325,29 @@ model ApprovalHistory {
   complaint       Complaint        @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   approverId      String
   approver        User             @relation(fields: [approverId], references: [id])
-  approverRole    String
-  decision        String
-  officialRemarks String
+  approverRole    SystemRole
+  decision        ApprovalDecision
+  officialRemarks String           @db.Text
   decisionDate    DateTime         @default(now())
 
   @@index([complaintId])
   @@index([reportId])
+}
+
+enum GDEntryType {
+  OPENING_OF_DIARY
+  SHIFT_RELIEF_TURNOVER
+  OFFICER_DEPARTURE
+  OFFICER_ARRIVAL
+  PATROL_DEPARTURE_RETURN
+  COMPLAINT_RECEIPT
+  FIR_REGISTERED_ENTRY
+  ARREST_INTIMATION
+  SEIZURE_MUDDMAL
+  SUPERVISORY_INSPECTION
+  GOVERNMENT_PROPERTY_LOG
+  CLOSING_OF_DIARY
+  MISCELLANEOUS_EVENT
 }
 
 model GeneralDiaryEntry {
@@ -208,9 +356,9 @@ model GeneralDiaryEntry {
   sequencePerDay     Int
   gdDate             DateTime
   entryTime          DateTime            @default(now())
-  entryType          String
+  entryType          GDEntryType
   subject            String
-  narrative          String
+  narrative          String              @db.Text
   policeStationId    String
   policeStation      PoliceUnit          @relation(fields: [policeStationId], references: [id])
   loggedById         String
@@ -229,19 +377,34 @@ model GeneralDiaryEntry {
   @@index([entryType])
 }
 
+enum AuditAction {
+  USER_LOGIN
+  USER_LOGOUT
+  RECORD_CREATE
+  RECORD_UPDATE
+  RECORD_VIEW_SENSITIVE
+  EO_ASSIGNMENT
+  EO_REASSIGNMENT
+  ENQUIRY_REPORT_SUBMIT
+  REPORT_APPROVED
+  RECORD_TRANSFER
+  DOCUMENT_DOWNLOAD
+  GD_ENTRY_LOGGED
+}
+
 model AuditLog {
   id         String      @id @default(cuid())
   timestamp  DateTime    @default(now())
   userId     String?
   user       User?       @relation(fields: [userId], references: [id])
   userPno    String?
-  userRole   String?
-  action     String
+  userRole   SystemRole?
+  action     AuditAction
   entityName String
   entityId   String
   ipAddress  String?
   userAgent  String?
-  details    String?
+  details    Json?
 
   @@index([entityName, entityId])
   @@index([userId])
