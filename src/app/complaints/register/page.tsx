@@ -2268,73 +2268,77 @@ export default function RegisterComplaintPage() {
                 </div>
               </div>
 
-              {/* (c) Date / Time of Incident if known then Yes otherwise No */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800">
-                    (c) Date / Time of Incident Known?
-                  </label>
-                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setIsDateTimeKnown(true)}
-                      className={`px-3 py-0.5 rounded font-bold transition-all ${
-                        isDateTimeKnown ? "bg-[#0b192c] text-white" : "text-slate-600"
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsDateTimeKnown(false)}
-                      className={`px-3 py-0.5 rounded font-bold transition-all ${
-                        !isDateTimeKnown ? "bg-[#0b192c] text-white" : "text-slate-600"
-                      }`}
-                    >
-                      No
-                    </button>
-                  </div>
-                </div>
-
-                {isDateTimeKnown ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Date of Incident *
-                      </label>
-                      <input
-                        type="date"
-                        value={incidentDate}
-                        onChange={(e) => setIncidentDate(e.target.value)}
-                        className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Time of Incident
-                      </label>
-                      <input
-                        type="time"
-                        value={incidentTime}
-                        onChange={(e) => setIncidentTime(e.target.value)}
-                        className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Approximate Period / Duration (e.g. over past 2 months)
+              {/* (c) Date / Time of Incident if known then Yes otherwise No in one single line */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                  {/* Label + Yes/No toggle */}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <label className="text-xs font-bold text-slate-800 whitespace-nowrap">
+                      (c) Date / Time of Incident Known?
                     </label>
-                    <input
-                      type="text"
-                      value={incidentApproxPeriod}
-                      onChange={(e) => setIncidentApproxPeriod(e.target.value)}
-                      placeholder="e.g. Occurring continuously over past 15 days or exact date not recalled"
-                      className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                    />
+                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setIsDateTimeKnown(true)}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsDateTimeKnown(false)}
+                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                          !isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        No
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  {/* Date & Time (if Yes) or Approximate Period (if No) in same row */}
+                  {isDateTimeKnown ? (
+                    <div className="flex flex-1 flex-col sm:flex-row items-center gap-2.5 min-w-0">
+                      <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
+                        <label className="text-xs font-semibold text-slate-600 shrink-0">
+                          Date *
+                        </label>
+                        <input
+                          type="date"
+                          value={incidentDate}
+                          onChange={(e) => setIncidentDate(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                        />
+                      </div>
+                      <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
+                        <label className="text-xs font-semibold text-slate-600 shrink-0">
+                          Time
+                        </label>
+                        <input
+                          type="time"
+                          value={incidentTime}
+                          onChange={(e) => setIncidentTime(e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-1 items-center gap-2 min-w-0">
+                      <label className="text-xs font-semibold text-slate-600 shrink-0">
+                        Approx Period
+                      </label>
+                      <input
+                        type="text"
+                        value={incidentApproxPeriod}
+                        onChange={(e) => setIncidentApproxPeriod(e.target.value)}
+                        placeholder="e.g. Occurring over past 15 days or exact date not recalled"
+                        className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* (d) Facts of Details / Detailed Allegations (Optional) */}
