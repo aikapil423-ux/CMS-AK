@@ -290,6 +290,43 @@ export default function RegisterComplaintPage() {
     dataUrl?: string;
     size?: number | string;
   } | null>(null);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+
+  // Convert base64 dataUrl into Blob Object URL for reliable native PDF rendering
+  useEffect(() => {
+    if (!previewModalFile?.dataUrl) {
+      setPreviewBlobUrl(null);
+      return;
+    }
+
+    const isPdf =
+      previewModalFile.name.toLowerCase().endsWith(".pdf") ||
+      previewModalFile.dataUrl.startsWith("data:application/pdf");
+
+    if (isPdf && previewModalFile.dataUrl.startsWith("data:")) {
+      try {
+        const parts = previewModalFile.dataUrl.split(",");
+        const byteCharacters = atob(parts[1] || "");
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+        setPreviewBlobUrl(blobUrl);
+
+        return () => {
+          URL.revokeObjectURL(blobUrl);
+        };
+      } catch (e) {
+        console.warn("Could not create Blob URL for PDF:", e);
+        setPreviewBlobUrl(previewModalFile.dataUrl);
+      }
+    } else {
+      setPreviewBlobUrl(previewModalFile.dataUrl);
+    }
+  }, [previewModalFile]);
 
   // FORM DRAFT STORAGE KEY: Prevents losing filled data on page refresh
   const FORM_DRAFT_KEY = "haryana_police_cms_register_form_draft_v1";
@@ -2748,14 +2785,6 @@ export default function RegisterComplaintPage() {
                             />
                           </div>
                         )}
-
-                        <input
-                          type="text"
-                          value={file.description || ""}
-                          onChange={(e) => handleAttachmentDescriptionChange(file.id, e.target.value)}
-                          placeholder="Note or description (e.g. CCTV clip of spot, audio recording of threat...)"
-                          className="w-full px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-md focus:ring-1 focus:ring-blue-500"
-                        />
                       </div>
                     ))}
                   </div>
@@ -3780,49 +3809,28 @@ export default function RegisterComplaintPage() {
                 </div>
               ) : previewModalFile.name.toLowerCase().endsWith(".pdf") ||
                 previewModalFile.dataUrl.startsWith("data:application/pdf") ? (
-                /* 5. PDF Document Preview (Object + Embed + Direct Action Fallback) */
-                <div className="w-full h-[74vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
-                  <div className="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
-                    <span className="font-semibold truncate">PDF Document Viewer • {previewModalFile.name}</span>
+                /* 5. PDF Document Preview (Native Blob URL Object + Embed + Direct Tab Action) */
+                <div className="w-full h-[76vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+                  <div className="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs text-slate-700">
+                    <span className="font-bold truncate">PDF Document Viewer • {previewModalFile.name}</span>
                     <div className="flex items-center gap-2">
                       <a
-                        href={previewModalFile.dataUrl}
+                        href={previewBlobUrl || previewModalFile.dataUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 underline text-[11px]"
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold flex items-center gap-1 transition-colors shadow-2xs"
                       >
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                         <span>Open in New Tab</span>
                       </a>
                     </div>
                   </div>
-                  <div className="w-full h-full relative bg-slate-200">
-                    <object
-                      data={previewModalFile.dataUrl}
-                      type="application/pdf"
-                      className="w-full h-full border-0"
-                    >
-                      <embed
-                        src={previewModalFile.dataUrl}
-                        type="application/pdf"
-                        className="w-full h-full border-0"
-                      />
-                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center space-y-3 bg-white">
-                        <FileText className="w-12 h-12 text-blue-600" />
-                        <h4 className="font-bold text-sm text-slate-900">{previewModalFile.name}</h4>
-                        <p className="text-xs text-slate-500 max-w-sm">
-                          Browser inline PDF plugin is restricted. Click below to view the PDF directly.
-                        </p>
-                        <a
-                          href={previewModalFile.dataUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
-                        >
-                          View PDF in Tab
-                        </a>
-                      </div>
-                    </object>
+                  <div className="w-full h-full relative bg-slate-100 flex items-center justify-center">
+                    <iframe
+                      src={previewBlobUrl || previewModalFile.dataUrl}
+                      title={previewModalFile.name}
+                      className="w-full h-full border-0 rounded-b-xl"
+                    />
                   </div>
                 </div>
               ) : previewModalFile.dataUrl.startsWith("data:text/") ? (
