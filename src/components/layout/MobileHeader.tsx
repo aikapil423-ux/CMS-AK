@@ -164,25 +164,11 @@ export function MobileHeader() {
                     Complaints Register
                   </Link>
                   <Link
-                    href="/complaints/register"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Register New Complaint
-                  </Link>
-                  <Link
                     href="/enquiry-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
                   >
                     Field Enquiry Workspace
-                  </Link>
-                  <Link
-                    href="/complaints?status=DISPOSED_CIVIL_NATURE"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Disposed Complaints
                   </Link>
                 </>
               ) : (
@@ -219,13 +205,6 @@ export function MobileHeader() {
                         className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
                       >
                         Complaints Register
-                      </Link>
-                      <Link
-                        href="/complaints/register"
-                        onClick={() => setDrawerOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                      >
-                        Register New Complaint
                       </Link>
                       <Link
                         href="/enquiry-workspace"

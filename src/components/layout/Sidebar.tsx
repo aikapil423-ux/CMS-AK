@@ -92,12 +92,10 @@ export function Sidebar() {
     { name: "Station Diary Opening", href: "/general-diary?type=OPENING_OF_DIARY", icon: Clock },
   ];
 
-  // COMPLAINTS NAVIGATION ITEMS (Cleaned: Hidden Draft reports/NCR, Notice templates, CM Window, Under approval queue)
+  // COMPLAINTS NAVIGATION ITEMS (Cleaned: Hidden Register New Complaint, Disposed Complaints, Draft reports/NCR, Notice templates, CM Window, Under approval queue)
   const complaintNavItems: NavItem[] = [
     { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "6 Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "Register New Complaint", href: "/complaints/register", icon: PlusCircle },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
-    { name: "Disposed Complaints", href: "/complaints?status=DISPOSED_CIVIL_NATURE", icon: Clock },
   ];
 
   return (
