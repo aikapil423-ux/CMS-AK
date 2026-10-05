@@ -1525,51 +1525,6 @@ export default function RegisterComplaintPage() {
       <Card className="border-slate-200 shadow-xs">
         <CardContent className="p-5 sm:p-7">
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Quick Section Navigator Ribbon */}
-            <div className="bg-slate-100/90 p-2 rounded-xl flex items-center gap-1.5 overflow-x-auto text-xs border border-slate-200">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mr-1 shrink-0 px-1">
-                Sections:
-              </span>
-              <a
-                href="#sec-complainant"
-                className="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-800 rounded-lg font-semibold shrink-0 border border-slate-200 transition-colors shadow-2xs"
-              >
-                1. Complainant Details
-              </a>
-              <a
-                href="#sec-accused"
-                className="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-800 rounded-lg font-semibold shrink-0 border border-slate-200 transition-colors shadow-2xs"
-              >
-                2. Accused Details
-              </a>
-              <a
-                href="#sec-incident"
-                className="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-800 rounded-lg font-semibold shrink-0 border border-slate-200 transition-colors shadow-2xs"
-              >
-                3. Incident Details
-              </a>
-              <a
-                href="#sec-complaint-details"
-                className="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-800 rounded-lg font-semibold shrink-0 border border-slate-200 transition-colors shadow-2xs"
-              >
-                4. Complaint Details
-              </a>
-              <a
-                href="#sec-intel"
-                className="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-800 rounded-lg font-semibold shrink-0 border border-slate-200 transition-colors shadow-2xs"
-              >
-                5. Database Intelligence
-              </a>
-              {isSho && (
-                <a
-                  href="#sec-assign-eo"
-                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shrink-0 transition-colors shadow-2xs flex items-center gap-1"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>6. Assign EO</span>
-                </a>
-              )}
-            </div>
 
             {/* =========================================================================
                 1. COMPLAINANT DETAILS
