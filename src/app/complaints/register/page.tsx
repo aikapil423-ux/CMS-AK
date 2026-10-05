@@ -433,6 +433,88 @@ export default function RegisterComplaintPage() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // Function to completely clear all fields in Register Complaint form & purge saved draft
+  const handleClearForm = () => {
+    // 1. Reset Complainants
+    setComplainants([
+      {
+        id: "comp_1",
+        name: "",
+        relationType: "S/O",
+        relativeName: "",
+        gender: "MALE",
+        age: "",
+        nationalityChoice: "Indian",
+        otherNationality: "",
+        nationality: "Indian",
+        countryCode: "+91",
+        presentAddress: "",
+        presentCity: "Kurukshetra",
+        presentDistrict: currentUser.district || "Kurukshetra",
+        presentState: "Haryana",
+        presentCountry: "India",
+        isPermanentSameAsPresent: true,
+        permanentAddress: "",
+        permanentCity: "Kurukshetra",
+        permanentDistrict: currentUser.district || "Kurukshetra",
+        permanentState: "Haryana",
+        permanentCountry: "India",
+        mobile: "",
+      },
+    ]);
+
+    // 2. Reset Accused
+    setIsAccusedKnown(false);
+    setAccusedList([
+      {
+        id: "acc_1",
+        name: "",
+        address: "",
+        phone: "",
+        alias: "",
+        relationWithComplainant: "",
+      },
+    ]);
+
+    // 3. Reset Incident
+    setIncidentPlace("");
+    setIncidentLandmark("");
+    setIsDateTimeKnown(true);
+    setIncidentDate(new Date().toISOString().split("T")[0]);
+    setIncidentTime("11:30");
+    setIncidentApproxPeriod("");
+    setIncidentCategory("FINANCIAL_FRAUD_CHEATING");
+    setIncidentDetails("");
+    setAttachments([]);
+
+    // 4. Reset Complaint Details
+    setIntakeMode("WALK_IN_STATION");
+    setComplaintSubject("");
+    setComplaintDescription("");
+    setIsFirRegistered(false);
+    setFirNumber("");
+    setFirDate("");
+    setComplaintAgeType("FRESH");
+    setComplaintClassification("COGNIZABLE_OFFENCE");
+    setComplaintPurpose("PRELIMINARY_ENQUIRY_BNSS_173");
+
+    // 5. Reset Intel & Validation states
+    setValidationErrors({});
+    setAutofillSuccessNotice(null);
+    setLinkedComplaintNo("");
+    setIsCrossCaseTagged(false);
+    setPreviewModalFile(null);
+
+    // 6. Purge saved draft from localStorage
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(FORM_DRAFT_KEY);
+      }
+    } catch (e) {
+      console.warn("Could not clear form draft from localStorage:", e);
+    }
+  };
+
   // Complainant Handlers
   const handleAddComplainant = () => {
     setComplainants((prev) => [
@@ -1582,8 +1664,17 @@ export default function RegisterComplaintPage() {
           </div>
         </div>
 
-        {/* Top Channel, Priority & Cancel Buttons */}
+        {/* Top Channel, Priority, Clear & Cancel Buttons */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleClearForm}
+            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-900 border border-rose-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+            title="Reset and clear all form fields to blank"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+            <span>Clear Form</span>
+          </button>
           <Link href="/complaints">
             <Button variant="outline" size="sm" className="text-xs">
               Cancel
