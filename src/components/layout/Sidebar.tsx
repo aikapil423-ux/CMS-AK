@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -50,8 +50,37 @@ export function Sidebar() {
   const [complaintsOpen, setComplaintsOpen] = useState(true);
 
   // Detect active module
-  const isRoznamcha = pathname.startsWith("/general-diary");
-  const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+  const isRoznamchaPath = pathname.startsWith("/general-diary");
+  const isComplaintsPath = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+
+  // Keep track of the last active module so when user is on /station-profile or /users,
+  // ONLY the module that was currently open remains visible.
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS">("COMPLAINTS");
+
+  useEffect(() => {
+    if (isRoznamchaPath) {
+      setActiveModule("ROZNAMCHA");
+      try {
+        window.localStorage.setItem("cms_active_module", "ROZNAMCHA");
+      } catch {}
+    } else if (isComplaintsPath) {
+      setActiveModule("COMPLAINTS");
+      try {
+        window.localStorage.setItem("cms_active_module", "COMPLAINTS");
+      } catch {}
+    } else {
+      try {
+        const saved = window.localStorage.getItem("cms_active_module");
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS") {
+          setActiveModule(saved);
+        }
+      } catch {}
+    }
+  }, [pathname, isRoznamchaPath, isComplaintsPath]);
+
+  // Determine which module to display in the toggle slide bar
+  const showRoznamcha = isRoznamchaPath || (!isComplaintsPath && activeModule === "ROZNAMCHA");
+  const showComplaints = isComplaintsPath || (!isRoznamchaPath && activeModule === "COMPLAINTS");
 
   // ROZNAMCHA GD NAVIGATION ITEMS
   const roznamchaNavItems: NavItem[] = [
@@ -162,8 +191,8 @@ export function Sidebar() {
 
       {/* Navigation Links: Module specific isolation */}
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
-        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR (Visible in Roznamcha module OR in general/station-profile pages) */}
-        {(isRoznamcha || (!isComplaints && !isRoznamcha)) && (
+        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR (Only visible if Roznamcha is open/active) */}
+        {showRoznamcha && (
           <div className="space-y-1">
             <button
               type="button"
@@ -171,7 +200,7 @@ export function Sidebar() {
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
                 isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
-                isRoznamcha ? "bg-blue-50/70" : ""
+                isRoznamchaPath ? "bg-blue-50/70" : ""
               )}
               title="Toggle Roznamcha GD Menu"
             >
@@ -241,16 +270,16 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Visible in Complaints module OR in general/station-profile pages) */}
-        {(isComplaints || (!isComplaints && !isRoznamcha)) && (
-          <div className={cn("space-y-1", !isComplaints && "pt-1 border-t border-slate-100")}>
+        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Only visible if Complaints is open/active) */}
+        {showComplaints && (
+          <div className="space-y-1">
             <button
               type="button"
               onClick={() => setComplaintsOpen(!complaintsOpen)}
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
                 isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
-                isComplaints ? "bg-blue-50/70" : ""
+                isComplaintsPath ? "bg-blue-50/70" : ""
               )}
               title="Toggle Complaints Menu"
             >

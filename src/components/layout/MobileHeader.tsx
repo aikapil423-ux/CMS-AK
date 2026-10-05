@@ -186,50 +186,56 @@ export function MobileHeader() {
                   </Link>
                 </>
               ) : (
-                /* STATION INFO / GENERAL LINKS IN DRAWER */
+                /* STATION INFO / GENERAL PAGES IN DRAWER - Show only the active module */
                 <>
-                  <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-amber-400">
-                    Roznamcha GD
-                  </div>
-                  <Link
-                    href="/general-diary"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Daily Roznamcha Aam
-                  </Link>
-                  <Link
-                    href="/general-diary/new"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    New Roznamcha Entry
-                  </Link>
-
-                  <div className="pt-2 pb-1 text-[10px] uppercase font-bold text-red-400">
-                    Complaints
-                  </div>
-                  <Link
-                    href="/complaints"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Complaints Register
-                  </Link>
-                  <Link
-                    href="/complaints/register"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Register New Complaint
-                  </Link>
-                  <Link
-                    href="/enquiry-workspace"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Field Enquiry Workspace
-                  </Link>
+                  {typeof window !== "undefined" && window.localStorage.getItem("cms_active_module") === "ROZNAMCHA" ? (
+                    <>
+                      <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-amber-400">
+                        Roznamcha GD
+                      </div>
+                      <Link
+                        href="/general-diary"
+                        onClick={() => setDrawerOpen(false)}
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                      >
+                        Daily Roznamcha Aam
+                      </Link>
+                      <Link
+                        href="/general-diary/new"
+                        onClick={() => setDrawerOpen(false)}
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                      >
+                        New Roznamcha Entry
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-red-400">
+                        Complaints
+                      </div>
+                      <Link
+                        href="/complaints"
+                        onClick={() => setDrawerOpen(false)}
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                      >
+                        Complaints Register
+                      </Link>
+                      <Link
+                        href="/complaints/register"
+                        onClick={() => setDrawerOpen(false)}
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                      >
+                        Register New Complaint
+                      </Link>
+                      <Link
+                        href="/enquiry-workspace"
+                        onClick={() => setDrawerOpen(false)}
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                      >
+                        Field Enquiry Workspace
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
 
