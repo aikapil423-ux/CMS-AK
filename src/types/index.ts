@@ -177,8 +177,14 @@ export interface ComplaintItem {
   registeredBy: string;
   assignedEoId?: string;
   assignedEoName?: string;
-  assignedEoPno?: string;
   assignedEoRank?: string;
+  assignedEoPno?: string;
+  assignedEoBeltNumber?: string;
+  assignedEoPhone?: string;
+  mhcName?: string;
+  mhcRank?: string;
+  mhcBeltNumber?: string;
+  mhcPhone?: string;
   assignedAt?: string;
   assignedDirections?: string;
   assignedRosterDuty?: string;

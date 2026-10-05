@@ -13,6 +13,7 @@ import {
   Users,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Clock,
   Car,
   Package,
@@ -44,11 +45,15 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Detect which module is currently active based on pathname
+  // Toggle slide bar states for Roznamcha and Complaints (always keep accessible, never hide)
+  const [roznamchaOpen, setRoznamchaOpen] = useState(true);
+  const [complaintsOpen, setComplaintsOpen] = useState(true);
+
+  // Detect active module
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
 
-  // STRICTLY ROZNAMCHA GD ONLY NAVIGATION ITEMS
+  // ROZNAMCHA GD NAVIGATION ITEMS
   const roznamchaNavItems: NavItem[] = [
     { name: "Daily Roznamcha Aam", href: "/general-diary", icon: BookOpen, badge: "4 Today", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "New Roznamcha Entry", href: "/general-diary/new", icon: PlusCircle },
@@ -58,14 +63,11 @@ export function Sidebar() {
     { name: "Station Diary Opening", href: "/general-diary?type=OPENING_OF_DIARY", icon: Clock },
   ];
 
-  // STRICTLY COMPLAINTS ONLY NAVIGATION ITEMS
+  // COMPLAINTS NAVIGATION ITEMS (Cleaned: Hidden Draft reports/NCR, Notice templates, CM Window, Under approval queue)
   const complaintNavItems: NavItem[] = [
     { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "6 Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Register New Complaint", href: "/complaints/register", icon: PlusCircle },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
-    { name: "Draft Reports & NCR", href: "/enquiry-workspace/drafts", icon: FileCheck2 },
-    { name: "Notice Templates", href: "/enquiry-workspace/templates", icon: ScrollText, badge: "BNSS", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "CM Window (VIP Queue)", href: "/complaints?priority=CM_WINDOW_VIP", icon: Flame, badge: "Priority", badgeColor: "bg-amber-50 text-amber-800 border-amber-200" },
-    { name: "Under Approval Queue", href: "/complaints?status=REPORT_SUBMITTED", icon: CheckCircle2 },
     { name: "Disposed Complaints", href: "/complaints?status=DISPOSED_CIVIL_NATURE", icon: Clock },
   ];
 
@@ -112,48 +114,23 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* PORTAL SWITCHER & MODULE STRIP - ONLY SHOWN WHEN INSIDE A MODULE */}
-      {(isRoznamcha || isComplaints) && (
-        <>
-          <div className="p-2.5 bg-slate-50 border-b border-slate-200 overflow-hidden">
-            <Link
-              href="/"
-              title="Main Module Selector"
-              className={cn(
-                "flex items-center rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 transition-colors shadow-2xs",
-                isExpanded ? "justify-between px-3 py-2 text-xs font-semibold" : "justify-center p-2.5"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-blue-600 shrink-0" />
-                {isExpanded && <span className="truncate">Main Module Selector</span>}
-              </div>
-              {isExpanded && <span className="text-[10px] text-slate-400 shrink-0">&larr; Switch</span>}
-            </Link>
+      {/* PORTAL SWITCHER - ALWAYS VISIBLE */}
+      <div className="p-2.5 bg-slate-50 border-b border-slate-200 overflow-hidden">
+        <Link
+          href="/"
+          title="Main Module Selector"
+          className={cn(
+            "flex items-center rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 transition-colors shadow-2xs",
+            isExpanded ? "justify-between px-3 py-2 text-xs font-semibold" : "justify-center p-2.5"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4 text-blue-600 shrink-0" />
+            {isExpanded && <span className="truncate">Main Module Selector</span>}
           </div>
-
-          <div
-            className={cn(
-              "px-3 py-2 border-b border-slate-100 text-xs flex items-center overflow-hidden transition-colors bg-blue-50/70 text-blue-900 font-semibold",
-              isExpanded ? "justify-between" : "justify-center"
-            )}
-            title={isRoznamcha ? "Roznamcha GD Module" : "Complaints Module"}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {isRoznamcha ? (
-                <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
-              ) : (
-                <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-              )}
-              {isExpanded && (
-                <span className="font-bold uppercase tracking-wider text-[11px] truncate">
-                  {isRoznamcha ? "Roznamcha GD" : "Complaints"}
-                </span>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+          {isExpanded && <span className="text-[10px] text-slate-400 shrink-0">&larr; Switch</span>}
+        </Link>
+      </div>
 
       {/* Officer Profile Strip */}
       <div
@@ -183,16 +160,41 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Navigation Links STRICTLY FILTERED BY MODULE */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
-        {isRoznamcha ? (
-          <div>
-            {isExpanded && (
-              <div className="px-2 mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 animate-in fade-in duration-200">
-                <span>Roznamcha Operations</span>
-              </div>
+      {/* Navigation Links with BOTH ROZNAMCHA GD & COMPLAINTS TOGGLE SLIDE BARS (Never hidden on Station Info) */}
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
+        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR */}
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setRoznamchaOpen(!roznamchaOpen)}
+            className={cn(
+              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+              isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+              isRoznamcha ? "bg-blue-50/70" : ""
             )}
-            <nav className="space-y-1">
+            title="Toggle Roznamcha GD Menu"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+              {isExpanded && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                  Roznamcha GD
+                </span>
+              )}
+            </div>
+            {isExpanded && (
+              <span className="text-slate-400">
+                {roznamchaOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+          </button>
+
+          {roznamchaOpen && (
+            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
               {roznamchaNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -204,7 +206,7 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center rounded-lg text-xs font-medium transition-all group",
                       isExpanded
-                        ? "justify-between px-3 py-2.5"
+                        ? "justify-between px-3 py-2"
                         : "justify-center p-2.5",
                       isActive
                         ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
@@ -234,15 +236,42 @@ export function Sidebar() {
                 );
               })}
             </nav>
-          </div>
-        ) : isComplaints ? (
-          <div>
-            {isExpanded && (
-              <div className="px-2 mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 animate-in fade-in duration-200">
-                <span>Complaint Operations</span>
-              </div>
+          )}
+        </div>
+
+        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Draft reports, Notice templates, CM window, Under approval hidden) */}
+        <div className="space-y-1 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => setComplaintsOpen(!complaintsOpen)}
+            className={cn(
+              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+              isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+              isComplaints ? "bg-blue-50/70" : ""
             )}
-            <nav className="space-y-1">
+            title="Toggle Complaints Menu"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+              {isExpanded && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                  Complaints
+                </span>
+              )}
+            </div>
+            {isExpanded && (
+              <span className="text-slate-400">
+                {complaintsOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+          </button>
+
+          {complaintsOpen && (
+            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
               {complaintNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
@@ -254,7 +283,7 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center rounded-lg text-xs font-medium transition-all group",
                       isExpanded
-                        ? "justify-between px-3 py-2.5"
+                        ? "justify-between px-3 py-2"
                         : "justify-center p-2.5",
                       isActive
                         ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
@@ -284,10 +313,10 @@ export function Sidebar() {
                 );
               })}
             </nav>
-          </div>
-        ) : null}
+          )}
+        </div>
 
-        {/* Administration Links */}
+        {/* 3. Station Info Links (Station Profile & Officer Roster) */}
         <div className="pt-2 border-t border-slate-200">
           {isExpanded && (
             <div className="px-2 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 animate-in fade-in duration-200">
@@ -302,12 +331,12 @@ export function Sidebar() {
                 "flex items-center rounded-lg text-xs font-medium transition-all group",
                 isExpanded ? "justify-between px-3 py-2" : "justify-center p-2.5",
                 pathname === "/station-profile"
-                  ? "bg-blue-50 text-blue-800 font-semibold"
+                  ? "bg-blue-50 text-blue-800 font-bold border-l-3 border-blue-600"
                   : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
               )}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Building2 className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-600" />
+                <Building2 className={cn("w-4 h-4 shrink-0", pathname === "/station-profile" ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600")} />
                 {isExpanded && <span className="truncate">Station Profile</span>}
               </div>
             </Link>
@@ -318,19 +347,18 @@ export function Sidebar() {
                 "flex items-center rounded-lg text-xs font-medium transition-all group",
                 isExpanded ? "justify-between px-3 py-2" : "justify-center p-2.5",
                 pathname === "/users"
-                  ? "bg-blue-50 text-blue-800 font-semibold"
+                  ? "bg-blue-50 text-blue-800 font-bold border-l-3 border-blue-600"
                   : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
               )}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Users className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-600" />
+                <Users className={cn("w-4 h-4 shrink-0", pathname === "/users" ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600")} />
                 {isExpanded && <span className="truncate">Officer Roster</span>}
               </div>
             </Link>
           </nav>
         </div>
       </div>
-
       {/* Footer / Logout */}
       <div className="p-3 border-t border-slate-200 bg-slate-50/70 overflow-hidden">
         <div

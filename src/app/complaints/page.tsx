@@ -39,6 +39,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
 type ComplaintSortField =
   | "complaintNumber"
@@ -151,6 +152,10 @@ function ComplaintListContent() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignSuccess, setAssignSuccess] = useState(false);
 
+  // Official Receipt of Registered Complaints modal state
+  const [receiptComplaint, setReceiptComplaint] = useState<ComplaintItem | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+
   const selectedEo = useMemo(() => {
     return MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId) || MOCK_ENQUIRY_OFFICERS[0];
   }, [selectedEoId]);
@@ -222,11 +227,15 @@ function ComplaintListContent() {
       setAssignSuccess(true);
       fetchComplaints();
 
+      // Immediately open Receipt of Registered Complaints modal!
+      setReceiptComplaint(result.complaint);
+      setShowReceiptModal(true);
+
       setTimeout(() => {
         setAssignSuccess(false);
         setAssigningComplaint(null);
         setLastAssignedNotification(null);
-      }, 3200);
+      }, 500);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1555,6 +1564,13 @@ function ComplaintListContent() {
           </div>
         </div>
       )}
+
+      {/* Official Receipt of Registered Complaints Modal */}
+      <ComplaintReceiptModal
+        complaint={receiptComplaint}
+        isOpen={showReceiptModal}
+        onClose={() => setShowReceiptModal(false)}
+      />
     </div>
   );
 }

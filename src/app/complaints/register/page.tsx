@@ -57,6 +57,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -214,6 +215,7 @@ export default function RegisterComplaintPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintItem | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
@@ -1502,7 +1504,7 @@ export default function RegisterComplaintPage() {
       if (!comp.gender) {
         errors[`comp_${idx}_gender`] = `Complainant ${idx + 1}: Gender is required`;
       }
-      if (!comp.age || isNaN(Number(comp.age)) || Number(comp.age) < 1 || Number(comp.age) > 120) {
+      if (comp.age && String(comp.age).trim() && (isNaN(Number(comp.age)) || Number(comp.age) < 1 || Number(comp.age) > 120)) {
         errors[`comp_${idx}_age`] = `Complainant ${idx + 1}: Valid age (1-120 years) is required`;
       }
       if (comp.nationalityChoice === "Other" && !comp.otherNationality.trim()) {
@@ -1703,8 +1705,10 @@ export default function RegisterComplaintPage() {
           targetDays || 14
         );
         setCreatedComplaint(assignRes.complaint);
+        setShowReceiptModal(true);
       } else {
         setCreatedComplaint(complaint);
+        // If unassigned, it goes to SHO desk to assign EO
       }
 
       // Clear the saved draft from localStorage upon successful registration
@@ -1807,6 +1811,24 @@ export default function RegisterComplaintPage() {
               </div>
             )}
 
+            {/* Unassigned EO SHO Desk Alert Card */}
+            {!createdComplaint.assignedEoName && (
+              <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-left text-xs space-y-1.5 animate-in fade-in-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-amber-950 font-bold">
+                    <Shield className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>Enquiry Officer Not Assigned (Pending SHO Queue)</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                    Awaiting SHO Allocation
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  यह शिकायत SHO की ID / Roster में भेज दी गई है। SHO Desk पर &ldquo;Assign EO&rdquo; बटन दबाते ही तुरंत अधिकृत पावती रसीद (Receipt of registered complaints) जनरेट हो जाएगी।
+                </p>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
               <Link href={`/complaints/${createdComplaint.id}`}>
@@ -1815,14 +1837,16 @@ export default function RegisterComplaintPage() {
                   View Complaint Profile
                 </Button>
               </Link>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              >
-                <Printer className="w-4 h-4 text-slate-600" />
-                Print Acknowledgement Slip
-              </button>
+              {createdComplaint.assignedEoName && (
+                <button
+                  type="button"
+                  onClick={() => setShowReceiptModal(true)}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  View &amp; Print Complaint Receipt
+                </button>
+              )}
               <Link href="/complaints">
                 <Button variant="outline" size="md" className="text-xs">
                   Return to Complaints Register
@@ -1831,6 +1855,13 @@ export default function RegisterComplaintPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Complaint Receipt Modal */}
+        <ComplaintReceiptModal
+          complaint={createdComplaint}
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+        />
       </div>
     );
   }
@@ -2163,8 +2194,8 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-1">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Age (Years)">
-                        Age *
+                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Age (Years, Optional)">
+                        Age
                       </label>
                       <input
                         type="number"

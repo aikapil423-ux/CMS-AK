@@ -164,25 +164,18 @@ export function MobileHeader() {
                     Complaints Register
                   </Link>
                   <Link
+                    href="/complaints/register"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                  >
+                    Register New Complaint
+                  </Link>
+                  <Link
                     href="/enquiry-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
                   >
                     Field Enquiry Workspace
-                  </Link>
-                  <Link
-                    href="/complaints?priority=CM_WINDOW_VIP"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    CM Window (VIP Queue)
-                  </Link>
-                  <Link
-                    href="/complaints?status=REPORT_SUBMITTED"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                  >
-                    Approval Queue
                   </Link>
                   <Link
                     href="/complaints?status=DISPOSED_CIVIL_NATURE"
@@ -193,24 +186,49 @@ export function MobileHeader() {
                   </Link>
                 </>
               ) : (
-                /* PORTAL SELECTION LINKS IN DRAWER */
+                /* STATION INFO / GENERAL LINKS IN DRAWER */
                 <>
-                  <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-slate-400">
-                    Select Module
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-amber-400">
+                    Roznamcha GD
                   </div>
                   <Link
                     href="/general-diary"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-xs font-bold text-amber-300 bg-[#122844] border border-amber-400/30"
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
                   >
-                    Roznamcha GD Module
+                    Daily Roznamcha Aam
                   </Link>
+                  <Link
+                    href="/general-diary/new"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                  >
+                    New Roznamcha Entry
+                  </Link>
+
+                  <div className="pt-2 pb-1 text-[10px] uppercase font-bold text-red-400">
+                    Complaints
+                  </div>
                   <Link
                     href="/complaints"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-xs font-bold text-red-200 bg-[#290d13] border border-red-500/30 mt-1"
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
                   >
-                    Complaint Management Module
+                    Complaints Register
+                  </Link>
+                  <Link
+                    href="/complaints/register"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                  >
+                    Register New Complaint
+                  </Link>
+                  <Link
+                    href="/enquiry-workspace"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                  >
+                    Field Enquiry Workspace
                   </Link>
                 </>
               )}
