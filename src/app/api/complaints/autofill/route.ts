@@ -26,9 +26,11 @@ TASK 1: CLASSIFY & RENAME DOCUMENT (CRITICAL)
 - Provide a clean, official, and standardized sanitized filename: \`classifiedDocumentName\`.
 - Provide a one-sentence verification note: \`verifiedDocumentTitle\`.
 
-TASK 2: WORD-TO-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (HIGH PRIORITY)
-- In the "complaint.description" field, you MUST extract the verbatim, word-to-word text from the uploaded document exactly as written (in Hindi, English, Hinglish, or original language). Do NOT summarize, compress, or paraphrase. The user requires: "jesa hai vese ka vese word to word description in complaint details me fill ho jana chye".
-- If the document has a written application, petition body, or narration, copy the entire narrative verbatim into "complaint.description" and "incident.details".
+TASK 2: 100% EXACT WORD-BY-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (ABSOLUTE MANDATORY REQUIREMENT)
+- In the "complaint.description" field, you MUST transcribe the ENTIRE document text WORD-BY-WORD (शब्द-ब-शब्द / हू-ब-हू) exactly as written in the uploaded document/image/petition.
+- STRICT RULE: Do NOT summarize. Do NOT shorten. Do NOT skip any words, sentences, dates, greetings, or sign-offs. The entire verbatim body of the complaint as written by the citizen (whether in Hindi, English, or mixed) must be placed in full inside "complaint.description".
+- The user's exact instruction: "sthe me complaint details me descripation me jo bhi document upload hua hai vo word by word likha jaaye usme kam na ho baaki filled shi fill hui thi".
+- Also mirror this exact full narrative in "incident.details".
 
 TASK 3: EXTRACT ALL COMPLAINT REGISTER FIELDS
 Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. If any specific detail is not explicitly mentioned in the document, provide a realistic police intake placeholder or reasonable inference based on the text:
@@ -54,11 +56,11 @@ Read and extract all particulars from this document to populate the Police Stati
    - Time of Incident (HH:MM if known)
    - isDateTimeKnown (boolean)
    - Class of Incident (must strictly match one of: "FINANCIAL_FRAUD_CHEATING", "CYBER_CRIME", "LAND_PROPERTY_DISPUTE", "PHYSICAL_ASSAULT_AFFRAY", "PROPERTY_THEFT_BURGLARY", "DOMESTIC_VIOLENCE_DOWRY", "PUBLIC_NUISANCE", "MISSING_PERSON", "NARCOTICS_DRUGS_INFO", "HARASSMENT_STALKING", "OTHER_GENERAL")
-   - Facts of Details / Detailed Allegations: Verbatim complete narrative of events, weapons, amounts, witnesses, etc. as described in document.
+   - Facts of Details / Detailed Allegations: Complete word-to-word verbatim incident narrative.
 4. Complaint Details:
    - Mode of Intake (one of: "WALK_IN_STATION", "CM_WINDOW_HARYANA", "CITIZEN_PORTAL_HARPATH", "EMERGENCY_112", "SP_OFFICE_REFERENCE", "POSTAL_APPLICATION", "WOMEN_HELPDESK")
    - Subject (Precise legal subject line for the complaint)
-   - Description (CRITICAL: Verbatim word-to-word full text transcript of the application / complaint body from the document)
+   - Description (MANDATORY: 100% complete exact word-by-word verbatim transcript of the entire application/document without any reduction or omission)
    - Type of Complaint ("FRESH" or "OLD")
    - Is FIR Registered (boolean: false unless expressly mentions FIR already registered)
    - FIR Number (if registered, else empty)
@@ -104,7 +106,20 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
 }`;
 
     if (file) {
-      const mimeType = file.type || "application/octet-stream";
+      let mimeType = file.type || "";
+      const lowerName = file.name.toLowerCase();
+      if (!mimeType || mimeType === "application/octet-stream") {
+        if (lowerName.endsWith(".pdf")) mimeType = "application/pdf";
+        else if (lowerName.endsWith(".png")) mimeType = "image/png";
+        else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) mimeType = "image/jpeg";
+        else if (lowerName.endsWith(".webp")) mimeType = "image/webp";
+        else if (lowerName.endsWith(".mp3")) mimeType = "audio/mp3";
+        else if (lowerName.endsWith(".wav")) mimeType = "audio/wav";
+        else if (lowerName.endsWith(".m4a")) mimeType = "audio/m4a";
+        else if (lowerName.endsWith(".txt")) mimeType = "text/plain";
+        else mimeType = "application/pdf";
+      }
+
       const buffer = Buffer.from(await file.arrayBuffer());
       const base64Data = buffer.toString("base64");
 

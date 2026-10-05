@@ -2846,7 +2846,7 @@ export default function RegisterComplaintPage() {
                     />
                   </div>
                   <textarea
-                    rows={3}
+                    rows={5}
                     value={complaintDescription}
                     onChange={(e) => {
                       setComplaintDescription(e.target.value);
