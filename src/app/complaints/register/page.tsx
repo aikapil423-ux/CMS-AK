@@ -2580,11 +2580,12 @@ export default function RegisterComplaintPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                {/* (a) Mode of Intake in Dropdown */}
-                <div className="sm:col-span-6">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (a) Mode of Intake *
+              {/* Single row with Mode of Intake, Subject, Type of Complaint (Fresh/Old), and Is FIR Registered */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                {/* Mode of Intake */}
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Mode of Intake">
+                    Mode of Intake *
                   </label>
                   <select
                     value={intakeMode}
@@ -2592,53 +2593,22 @@ export default function RegisterComplaintPage() {
                       setIntakeMode(e.target.value);
                       setSourceChannel(e.target.value as any);
                     }}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
+                    className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
                   >
-                    <option value="WALK_IN_STATION">Walk-in Station Counter</option>
-                    <option value="CM_WINDOW_HARYANA">CM Window Haryana (VIP)</option>
+                    <option value="WALK_IN_STATION">Walk-in Counter</option>
+                    <option value="CM_WINDOW_HARYANA">CM Window (VIP)</option>
                     <option value="CITIZEN_PORTAL_HARPATH">Citizen Portal (HarPath)</option>
-                    <option value="EMERGENCY_112">Emergency 112 Call Reference</option>
-                    <option value="SP_OFFICE_REFERENCE">SP Office Reference / Endorsement</option>
-                    <option value="POSTAL_APPLICATION">Written Postal Application / Registered Post</option>
-                    <option value="WOMEN_HELPDESK">Women Safety Helpdesk / Senior Citizen Cell</option>
+                    <option value="EMERGENCY_112">Emergency 112 Call</option>
+                    <option value="SP_OFFICE_REFERENCE">SP Office Reference</option>
+                    <option value="POSTAL_APPLICATION">Postal Application</option>
+                    <option value="WOMEN_HELPDESK">Women Helpdesk</option>
                   </select>
                 </div>
 
-                {/* (d) Type of Complaint (Fresh / Old) */}
-                <div className="sm:col-span-6">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (d) Type of Complaint (Fresh / Old) *
-                  </label>
-                  <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setComplaintAgeType("FRESH")}
-                      className={`flex-1 py-1.5 rounded-md font-bold transition-all ${
-                        complaintAgeType === "FRESH"
-                          ? "bg-[#0b192c] text-white shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Fresh Complaint
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setComplaintAgeType("OLD")}
-                      className={`flex-1 py-1.5 rounded-md font-bold transition-all ${
-                        complaintAgeType === "OLD"
-                          ? "bg-amber-600 text-white shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Old / Prior Complaint
-                    </button>
-                  </div>
-                </div>
-
-                {/* (b) Subject Column */}
-                <div className="sm:col-span-12">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (b) Subject *
+                {/* Subject */}
+                <div className="sm:col-span-4">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Subject">
+                    Subject *
                   </label>
                   <input
                     type="text"
@@ -2653,8 +2623,8 @@ export default function RegisterComplaintPage() {
                         });
                       }
                     }}
-                    placeholder="e.g. Complaint regarding cheating and financial fraud by fake dealer"
-                    className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                    placeholder="e.g. Complaint regarding cheating / fraud"
+                    className={`w-full px-2.5 py-2 text-xs bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                       validationErrors.complaintSubject ? "border-red-500 bg-red-50" : "border-slate-300"
                     }`}
                   />
@@ -2663,11 +2633,105 @@ export default function RegisterComplaintPage() {
                   )}
                 </div>
 
-                {/* (c) Description (Mandatory with voice dictation) */}
-                <div className="sm:col-span-12">
+                {/* Type of Complaint (Fresh / Old) */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Type of Complaint">
+                    Type of Complaint *
+                  </label>
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setComplaintAgeType("FRESH")}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        complaintAgeType === "FRESH"
+                          ? "bg-[#0b192c] text-white shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Fresh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComplaintAgeType("OLD")}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        complaintAgeType === "OLD"
+                          ? "bg-amber-600 text-white shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Old
+                    </button>
+                  </div>
+                </div>
+
+                {/* Is FIR Registered */}
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Is FIR Registered?">
+                    Is FIR Registered? *
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs w-full">
+                      <button
+                        type="button"
+                        onClick={() => setIsFirRegistered(false)}
+                        className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                          !isFirRegistered ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        No
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsFirRegistered(true)}
+                        className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                          isFirRegistered ? "bg-red-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        Yes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* If FIR Registered is Yes, show inputs inline/expandable */}
+                {isFirRegistered && (
+                  <div className="sm:col-span-12 p-3 bg-red-50/60 border border-red-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in-50">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        FIR Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={firNumber}
+                        onChange={(e) => setFirNumber(e.target.value)}
+                        placeholder="e.g. FIR No. 104/2026"
+                        className={`w-full px-2.5 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          validationErrors.firNumber ? "border-red-500 bg-red-50" : "border-slate-300"
+                        }`}
+                      />
+                      {validationErrors.firNumber && (
+                        <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.firNumber}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        FIR Registration Date
+                      </label>
+                      <input
+                        type="date"
+                        value={firDate}
+                        onChange={(e) => setFirDate(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Description / Detailed Allegations (Full Width) */}
+                <div className="sm:col-span-12 pt-1">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-slate-700">
-                      (c) Description / Detailed Allegations *
+                      Description / Detailed Allegations *
                     </label>
                     <VoiceInputButton
                       preferredLang={voiceLang}
@@ -2699,74 +2763,6 @@ export default function RegisterComplaintPage() {
                   )}
                 </div>
 
-                {/* (c) Is FIR Registered (Yes / No) */}
-                <div className="sm:col-span-12 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-slate-800">
-                        (c) Is FIR Registered? *
-                      </span>
-                      <p className="text-[11px] text-slate-500">
-                        Indicate if a First Information Report has already been registered for this matter
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setIsFirRegistered(false)}
-                        className={`px-3 py-1 rounded font-bold transition-all ${
-                          !isFirRegistered ? "bg-[#0b192c] text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        No
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsFirRegistered(true)}
-                        className={`px-3 py-1 rounded font-bold transition-all ${
-                          isFirRegistered ? "bg-red-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        Yes
-                      </button>
-                    </div>
-                  </div>
-
-                  {isFirRegistered && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 animate-in fade-in-50">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          FIR Number *
-                        </label>
-                        <input
-                          type="text"
-                          value={firNumber}
-                          onChange={(e) => setFirNumber(e.target.value)}
-                          placeholder="e.g. FIR No. 104/2026"
-                          className={`w-full px-3 py-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                            validationErrors.firNumber ? "border-red-500 bg-red-50" : "border-slate-300"
-                          }`}
-                        />
-                        {validationErrors.firNumber && (
-                          <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.firNumber}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          FIR Registration Date
-                        </label>
-                        <input
-                          type="date"
-                          value={firDate}
-                          onChange={(e) => setFirDate(e.target.value)}
-                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
 
                 {/* (e) Type of Complaint in Dropdown */}
                 <div className="sm:col-span-6">
