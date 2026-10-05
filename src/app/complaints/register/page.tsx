@@ -2215,39 +2215,64 @@ export default function RegisterComplaintPage() {
                 </p>
               </div>
 
-              {/* (a) Place of Incident (Prominent landmark removed per instructions) */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  (a) Place of Incident *
-                </label>
-                <input
-                  type="text"
-                  value={incidentPlace}
-                  onChange={(e) => {
-                    setIncidentPlace(e.target.value);
-                    if (validationErrors.incidentPlace) {
-                      setValidationErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.incidentPlace;
-                        return next;
-                      });
-                    }
-                  }}
-                  placeholder="e.g. Near New Bus Stand Chowk, Thanesar"
-                  className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                    validationErrors.incidentPlace ? "border-red-500 bg-red-50" : "border-slate-300"
-                  }`}
-                />
-                {validationErrors.incidentPlace && (
-                  <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.incidentPlace}</p>
-                )}
+              {/* (a) Place of Incident & (b) Class of Incident (Crime Category) side-by-side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    (a) Place of Incident *
+                  </label>
+                  <input
+                    type="text"
+                    value={incidentPlace}
+                    onChange={(e) => {
+                      setIncidentPlace(e.target.value);
+                      if (validationErrors.incidentPlace) {
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.incidentPlace;
+                          return next;
+                        });
+                      }
+                    }}
+                    placeholder="e.g. Near New Bus Stand Chowk, Thanesar"
+                    className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                      validationErrors.incidentPlace ? "border-red-500 bg-red-50" : "border-slate-300"
+                    }`}
+                  />
+                  {validationErrors.incidentPlace && (
+                    <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.incidentPlace}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    (b) Class of Incident (Crime Category) *
+                  </label>
+                  <select
+                    value={incidentCategory}
+                    onChange={(e: any) => setIncidentCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
+                  >
+                    <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
+                    <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
+                    <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
+                    <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
+                    <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
+                    <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
+                    <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
+                    <option value="MISSING_PERSON">Missing Person</option>
+                    <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
+                    <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
+                    <option value="OTHER_GENERAL">Other General Matter</option>
+                  </select>
+                </div>
               </div>
 
-              {/* (b) Date / Time of Incident if known then Yes otherwise No */}
+              {/* (c) Date / Time of Incident if known then Yes otherwise No */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800">
-                    (b) Date / Time of Incident Known?
+                    (c) Date / Time of Incident Known?
                   </label>
                   <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-slate-200 text-xs">
                     <button
@@ -2310,30 +2335,6 @@ export default function RegisterComplaintPage() {
                     />
                   </div>
                 )}
-              </div>
-
-              {/* (c) Class of Incident */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  (c) Class of Incident (Crime Category) *
-                </label>
-                <select
-                  value={incidentCategory}
-                  onChange={(e: any) => setIncidentCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
-                >
-                  <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
-                  <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
-                  <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
-                  <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
-                  <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
-                  <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
-                  <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
-                  <option value="MISSING_PERSON">Missing Person</option>
-                  <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
-                  <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
-                  <option value="OTHER_GENERAL">Other General Matter</option>
-                </select>
               </div>
 
               {/* (d) Facts of Details / Detailed Allegations (Optional) */}
