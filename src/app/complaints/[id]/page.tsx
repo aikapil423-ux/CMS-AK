@@ -850,19 +850,207 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     );
   }
 
-  // Build combined history timeline (oldest action at top, latest at bottom)
-  const combinedTimeline: ComplaintTimelineEvent[] = [
-    ...(complaint.timeline || []),
-    {
-      id: "tl_init",
-      complaintId: complaint.id,
-      title: "Complaint Formally Registered",
-      description: `Intake recorded via ${complaint.source.replace(/_/g, " ")}. Central General Diary updated (PPR 22.48).`,
-      category: "REGISTRATION" as const,
-      officerName: complaint.registeredBy,
+  // Build combined history timeline matching official format (Latest on Top ➔ Initial on Bottom)
+  const combinedHistory = useMemo(() => {
+    if (!complaint) return [];
+    const entries: {
+      id: string;
+      title: string;
+      timestamp: string;
+      officerName: string;
+      details: string;
+      stageWeight: number;
+    }[] = [];
+    const seen = new Set<string>();
+
+    const addUnique = (item: {
+      id: string;
+      title: string;
+      timestamp: string;
+      officerName: string;
+      details: string;
+      stageWeight: number;
+    }) => {
+      const key = `${item.title}__${item.details}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        entries.push(item);
+      }
+    };
+
+    // 1. Initial REGISTERED event (Base)
+    addUnique({
+      id: "hist_registered",
+      title: "REGISTERED",
       timestamp: complaint.createdAt,
-    },
-  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+      details: complaint.complaintNumber,
+      stageWeight: 1,
+    });
+
+    // 2. EO ASSIGNED
+    if (complaint.assignedEoName || complaint.status !== "REGISTERED") {
+      const eoOfficer = MOCK_ENQUIRY_OFFICERS.find(
+        (o) => o.name === complaint.assignedEoName || o.pno === complaint.assignedEoPno
+      );
+      const eoRoster = eoOfficer?.rosterDuty || complaint.assignedRosterDuty || "Roster duty (E2E)";
+      const eoId = eoOfficer?.id?.replace("eo_", "") || complaint.assignedEoId?.replace("eo_", "") || "4";
+      addUnique({
+        id: "hist_eo_assigned",
+        title: "EO ASSIGNED",
+        timestamp: complaint.assignedAt || complaint.createdAt,
+        officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+        details: `${eoId} · ${eoRoster.startsWith("Roster") ? eoRoster : `Roster duty (${eoRoster})`}`,
+        stageWeight: 2,
+      });
+    }
+
+    // 3. ENQUIRY NOTE(s)
+    if (complaint.enquiryNotes && complaint.enquiryNotes.length > 0) {
+      complaint.enquiryNotes.forEach((n, idx) => {
+        const noteType = n.noteType ? n.noteType.replace(/_/g, " ").toUpperCase() : "VISIT";
+        addUnique({
+          id: n.id || `hist_note_${idx}`,
+          title: "ENQUIRY NOTE",
+          timestamp: n.createdAt || complaint.createdAt,
+          officerName: n.officerName || complaint.assignedEoName || "SI Pooja Rani",
+          details: n.content ? `${noteType} · ${n.content}` : noteType,
+          stageWeight: 3 + idx * 0.05,
+        });
+      });
+    } else if (
+      complaint.status === "REPORT_SUBMITTED" ||
+      complaint.status.startsWith("DISPOSED") ||
+      complaint.status === "RECOMMENDED_FOR_FIR"
+    ) {
+      addUnique({
+        id: "hist_note_default",
+        title: "ENQUIRY NOTE",
+        timestamp: complaint.assignedAt || complaint.createdAt,
+        officerName: complaint.assignedEoName || "SI Pooja Rani",
+        details: "VISIT",
+        stageWeight: 3,
+      });
+    }
+
+    // 4. REPORT SUBMITTED
+    if (
+      complaint.status === "REPORT_SUBMITTED" ||
+      complaint.status.startsWith("DISPOSED") ||
+      complaint.status === "RECOMMENDED_FOR_FIR"
+    ) {
+      addUnique({
+        id: "hist_report_submitted",
+        title: "REPORT SUBMITTED",
+        timestamp: complaint.updatedAt || complaint.createdAt,
+        officerName: complaint.assignedEoName || "SI Pooja Rani",
+        details: "NON_COGNIZABLE",
+        stageWeight: 4,
+      });
+    }
+
+    // 5. NCR ISSUED
+    if (
+      complaint.ncrNumber ||
+      complaint.dispositionType === "NCR_FILED" ||
+      (complaint.status.startsWith("DISPOSED") && !complaint.firNumber)
+    ) {
+      addUnique({
+        id: "hist_ncr_issued",
+        title: "NCR ISSUED",
+        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+        details: complaint.ncrNumber || "NCR-2025-9001",
+        stageWeight: 5,
+      });
+    }
+
+    // 5b. FIR REGISTERED
+    if (complaint.isFirRegistered || complaint.firNumber || complaint.dispositionType === "FIR_REGISTERED") {
+      addUnique({
+        id: "hist_fir_registered",
+        title: "FIR REGISTERED",
+        timestamp: complaint.firDate || complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+        details: complaint.firNumber || "FIR-2026-0042",
+        stageWeight: 5,
+      });
+    }
+
+    // 6. DISPOSED
+    if (
+      complaint.status.startsWith("DISPOSED") ||
+      complaint.dispositionCategory ||
+      complaint.dispositionRemarks
+    ) {
+      addUnique({
+        id: "hist_disposed",
+        title: "DISPOSED",
+        timestamp: complaint.disposedAt || complaint.updatedAt || complaint.createdAt,
+        officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+        details: `${complaint.dispositionCategory || "NON_COGNIZABLE"} · ${
+          complaint.dispositionRemarks || "Verified; civil matter referred with NCR."
+        }`,
+        stageWeight: 6,
+      });
+    }
+
+    // 7. LINK ADDED
+    if (complaint.linkedComplaintNumber || complaint.isCrossComplaint) {
+      addUnique({
+        id: "hist_link_added",
+        title: "LINK ADDED",
+        timestamp: complaint.updatedAt || complaint.createdAt,
+        officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+        details: `REPEAT · ${complaint.linkedComplaintReason || "Same land dispute, renewed threats"}`,
+        stageWeight: 7,
+      });
+      if (complaint.linkedComplaintNumber) {
+        addUnique({
+          id: "hist_linked_ref",
+          title: "LINKED COMPLAINT REFERENCE",
+          timestamp: complaint.updatedAt || complaint.createdAt,
+          officerName: complaint.registeredBy || "Insp. Ravinder Kumar",
+          details: complaint.linkedComplaintNumber,
+          stageWeight: 7.5,
+        });
+      }
+    }
+
+    // 8. Custom timeline events from complaint.timeline
+    if (complaint.timeline && complaint.timeline.length > 0) {
+      complaint.timeline.forEach((tl) => {
+        let weight = 3.5;
+        const upper = tl.title.toUpperCase();
+        if (upper.includes("REGISTER")) weight = 1;
+        else if (upper.includes("ASSIGN")) weight = 2;
+        else if (upper.includes("NOTE")) weight = 3;
+        else if (upper.includes("REPORT")) weight = 4;
+        else if (upper.includes("NCR") || upper.includes("FIR")) weight = 5;
+        else if (upper.includes("DISPOSE")) weight = 6;
+        else if (upper.includes("LINK")) weight = 7;
+
+        addUnique({
+          id: tl.id,
+          title: upper,
+          timestamp: tl.timestamp,
+          officerName: tl.officerName || complaint.registeredBy || "Insp. Ravinder Kumar",
+          details: tl.description,
+          stageWeight: weight,
+        });
+      });
+    }
+
+    // Sort: Newest timestamp first. If timestamps are identical, sort by stageWeight descending
+    return entries.sort((a, b) => {
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.stageWeight || 0) - (a.stageWeight || 0);
+    });
+  }, [complaint]);
+
+  const combinedTimeline = combinedHistory;
 
   return (
     <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
@@ -1339,7 +1527,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             { key: "enquiry_notes", label: "Enquiry Notes", icon: FileText, count: complaint.enquiryNotes?.length || 0 },
             { key: "documents", label: "Documents", icon: UploadCloud, count: complaint.documents?.length || 0 },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
-            { key: "history", label: "History", icon: HistoryIcon, count: combinedTimeline.length },
+            { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -2128,86 +2316,33 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
           </div>
         )}
 
-        {/* TAB 6: HISTORY (Chronological Timeline: First Action at Top ➔ Latest at Bottom) */}
+        {/* TAB 6: HISTORY (Official Case History Timeline matching PPR / CMS) */}
         {activeTab === "history" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                  Case Activity & Audit Timeline
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Chronological progression from initial complaint registration to current inquiry actions.
-                </p>
-              </div>
-              <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full self-start sm:self-auto">
-                First Action at Top ➔ Latest Action at Bottom
-              </span>
-            </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-2xs">
+            <div className="relative pl-7 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-blue-300">
+              {combinedHistory.map((item) => (
+                <div key={item.id} className="relative group">
+                  {/* Timeline Blue Dot */}
+                  <div className="absolute -left-[22px] top-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white shadow-2xs" />
 
-            <div className="relative pl-7 space-y-5 before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
-              {combinedTimeline.map((item, index) => {
-                const isFirst = index === 0;
-                const isLatest = index === combinedTimeline.length - 1;
-                return (
-                  <div key={item.id} className="relative group">
-                    {/* Timeline Node Dot */}
-                    <div
-                      className={`absolute -left-[31px] top-2 w-5 h-5 rounded-full border-2 border-white shadow-xs flex items-center justify-center text-[9px] font-bold text-white ${
-                        isLatest
-                          ? "bg-emerald-600 ring-2 ring-emerald-400/40"
-                          : isFirst
-                          ? "bg-blue-600"
-                          : "bg-slate-500"
-                      }`}
-                    >
-                      {index + 1}
+                  <div className="space-y-0.5">
+                    {/* Event Title (Uppercase Blue) */}
+                    <div className="text-xs sm:text-sm font-bold text-blue-600 tracking-wider uppercase">
+                      {item.title}
                     </div>
 
-                    <Card className={`border shadow-xs ${isLatest ? "border-emerald-200 bg-emerald-50/20" : "border-slate-200"}`}>
-                      <CardContent className="p-3.5 sm:p-4 space-y-1.5 text-xs">
-                        <div className="flex flex-wrap items-center justify-between gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                              Step {index + 1}
-                            </span>
-                            <strong className="text-slate-900 text-sm">{item.title}</strong>
-                            {isFirst && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                                Initial Record
-                              </span>
-                            )}
-                            {isLatest && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Latest Action
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            {formatDateTime(item.timestamp)}
-                          </span>
-                        </div>
+                    {/* Date Time & Officer Subline */}
+                    <div className="text-xs text-slate-500 font-sans">
+                      {formatDateTime(item.timestamp)} · {item.officerName}
+                    </div>
 
-                        <p className="text-slate-700 leading-relaxed font-sans">{item.description}</p>
-
-                        <div className="pt-2 flex flex-wrap items-center justify-between text-[11px] text-slate-500 border-t border-slate-100">
-                          <span>
-                            Action By: <strong>{item.officerName}</strong> {item.officerRank ? `(${item.officerRank})` : ""}
-                          </span>
-                          {item.documentName && (
-                            <span className="font-mono text-blue-600 flex items-center gap-1">
-                              <Paperclip className="w-3 h-3" />
-                              {item.documentName}
-                            </span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    {/* Description / Details Line */}
+                    <div className="text-xs sm:text-sm text-slate-800 font-medium font-sans leading-relaxed">
+                      {item.details}
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         )}

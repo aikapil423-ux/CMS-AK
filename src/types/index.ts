@@ -193,6 +193,14 @@ export interface ComplaintItem {
   linkedComplaintNumber?: string;
   crossComplaintNumber?: string;
   isCrossComplaint?: boolean;
+  linkedComplaintReason?: string;
+  ncrNumber?: string;
+  dispositionType?: string;
+  dispositionCategory?: string;
+  dispositionRemarks?: string;
+  disposedAt?: string;
+  disposedBy?: string;
+  recommendedAction?: string;
   
   // Evidence Attachments (Documents, Audio, Video, Photos)
   attachments?: ComplaintEvidenceAttachment[];
