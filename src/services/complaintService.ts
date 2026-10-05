@@ -265,23 +265,7 @@ export const ComplaintService = {
 
     complaintsStore.unshift(newComplaint);
 
-    // AUTO-RECORD IN CENTRAL STATION GENERAL DIARY (ROZNAMCHA AAM) - PPR 22.48 & BNSS 173(3)
-    const nowTime = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    const fullAllegation = input.incidentDetails || "Written citizen application received and attached to docket.";
-    const briefAllegation = fullAllegation.length > 220
-      ? fullAllegation.slice(0, 220) + "..."
-      : fullAllegation;
-
-    await GeneralDiaryService.addEntry(
-      `Receipt of Citizen Complaint: ${generatedComplaintNumber} (${input.category.replace(/_/g, " ")})`,
-      `At ${nowTime} hours, a citizen complaint was formally registered at ${station} under Section 173(3) BNSS. Complainant: ${input.complainantName}${input.complainantFatherSpouse ? ` s/o / w/o ${input.complainantFatherSpouse}` : ""}, r/o ${input.complainantAddress}, ${input.complainantCity} (Mob: ${input.complainantMobile}). Occurrence Place: ${input.incidentPlace}. Incident Details: "${briefAllegation}". Digitally sealed and logged into the Central Station Ledger. Preliminary enquiry initiated under station jurisdiction.`,
-      "COMPLAINT_RECEIPT",
-      officerName,
-      officerPno,
-      station,
-      generatedComplaintNumber
-    );
-
+    // Complaint registered directly without auto-entry in Roznamcha
     return newComplaint;
   },
 
