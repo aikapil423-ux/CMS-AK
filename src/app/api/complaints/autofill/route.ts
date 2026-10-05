@@ -154,34 +154,59 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
       ];
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const candidateModels = [
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-flash-lite",
+    ];
 
-    const geminiRes = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.1,
-          responseMimeType: "application/json",
-        },
-      }),
-    });
+    let geminiData: any = null;
+    let modelUsed = "";
+    let lastError = "";
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("Gemini API Error:", geminiRes.status, errText);
+    for (const model of candidateModels) {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      try {
+        const geminiRes = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+            },
+          }),
+        });
+
+        if (geminiRes.ok) {
+          geminiData = await geminiRes.json();
+          modelUsed = model;
+          break;
+        } else {
+          const errText = await geminiRes.text();
+          console.warn(`Model ${model} returned (${geminiRes.status}):`, errText.slice(0, 200));
+          lastError = errText;
+          // If 503 or 429, try next model candidate immediately
+          continue;
+        }
+      } catch (err: any) {
+        console.warn(`Error calling model ${model}:`, err?.message);
+        lastError = err?.message;
+      }
+    }
+
+    if (!geminiData) {
       return NextResponse.json(
         {
-          error: `Gemini API returned error (${geminiRes.status}): ${errText}`,
+          error: `Gemini API service temporarily unavailable: ${lastError}`,
         },
         { status: 502 }
       );
     }
 
-    const geminiData = await geminiRes.json();
     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!rawText) {
@@ -198,7 +223,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
     return NextResponse.json({
       success: true,
       data: parsedData,
-      modelUsed: GEMINI_MODEL,
+      modelUsed,
     });
   } catch (error: any) {
     console.error("Autofill processing error:", error);

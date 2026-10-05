@@ -730,15 +730,10 @@ export default function RegisterComplaintPage() {
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     } catch (err: any) {
-      console.warn("Gemini Flash API fallback triggered:", err);
-      // Fallback to local heuristic extractor if network or model fails
-      setAutofillProgress(95);
-      setAutofillStepText("Applying local police pattern extractor...");
-      setTimeout(() => {
-        applyExtractedComplaintData(file.name, category, dataUrl, typeLabel, textContent);
-        setIsAutofilling(false);
-        if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
-      }, 500);
+      console.error("Gemini AI API Error:", err);
+      setIsAutofilling(false);
+      if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
+      alert(`Gemini AI Processing Error: ${err?.message || "Failed to parse document with Gemini AI"}. Please retry uploading the document.`);
     }
   };
 
