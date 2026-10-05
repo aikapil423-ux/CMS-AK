@@ -26,7 +26,11 @@ TASK 1: CLASSIFY & RENAME DOCUMENT (CRITICAL)
 - Provide a clean, official, and standardized sanitized filename: \`classifiedDocumentName\`.
 - Provide a one-sentence verification note: \`verifiedDocumentTitle\`.
 
-TASK 2: EXTRACT ALL COMPLAINT REGISTER FIELDS
+TASK 2: WORD-TO-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (HIGH PRIORITY)
+- In the "complaint.description" field, you MUST extract the verbatim, word-to-word text from the uploaded document exactly as written (in Hindi, English, Hinglish, or original language). Do NOT summarize, compress, or paraphrase. The user requires: "jesa hai vese ka vese word to word description in complaint details me fill ho jana chye".
+- If the document has a written application, petition body, or narration, copy the entire narrative verbatim into "complaint.description" and "incident.details".
+
+TASK 3: EXTRACT ALL COMPLAINT REGISTER FIELDS
 Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. If any specific detail is not explicitly mentioned in the document, provide a realistic police intake placeholder or reasonable inference based on the text:
 1. Complainant Details:
    - Full Name
@@ -50,11 +54,11 @@ Read and extract all particulars from this document to populate the Police Stati
    - Time of Incident (HH:MM if known)
    - isDateTimeKnown (boolean)
    - Class of Incident (must strictly match one of: "FINANCIAL_FRAUD_CHEATING", "CYBER_CRIME", "LAND_PROPERTY_DISPUTE", "PHYSICAL_ASSAULT_AFFRAY", "PROPERTY_THEFT_BURGLARY", "DOMESTIC_VIOLENCE_DOWRY", "PUBLIC_NUISANCE", "MISSING_PERSON", "NARCOTICS_DRUGS_INFO", "HARASSMENT_STALKING", "OTHER_GENERAL")
-   - Facts of Details / Detailed Allegations (Detailed narrative of sequence of events, weapon used, money defrauded, witnesses, etc.)
+   - Facts of Details / Detailed Allegations: Verbatim complete narrative of events, weapons, amounts, witnesses, etc. as described in document.
 4. Complaint Details:
    - Mode of Intake (one of: "WALK_IN_STATION", "CM_WINDOW_HARYANA", "CITIZEN_PORTAL_HARPATH", "EMERGENCY_112", "SP_OFFICE_REFERENCE", "POSTAL_APPLICATION", "WOMEN_HELPDESK")
    - Subject (Precise legal subject line for the complaint)
-   - Description (Brief 2-3 line summary of allegations)
+   - Description (CRITICAL: Verbatim word-to-word full text transcript of the application / complaint body from the document)
    - Type of Complaint ("FRESH" or "OLD")
    - Is FIR Registered (boolean: false unless expressly mentions FIR already registered)
    - FIR Number (if registered, else empty)
@@ -87,12 +91,12 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
     "time": "14:30",
     "isDateTimeKnown": true,
     "category": "FINANCIAL_FRAUD_CHEATING",
-    "details": "Full narrative of allegations..."
+    "details": "Verbatim word-to-word text of the incident narration from document..."
   },
   "complaint": {
     "mode": "WALK_IN_STATION",
     "subject": "Complaint regarding...",
-    "description": "Brief synopsis...",
+    "description": "Verbatim word-to-word exact text of the application / complaint from document...",
     "type": "FRESH",
     "isFirRegistered": false,
     "firNumber": ""
