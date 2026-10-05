@@ -1590,7 +1590,7 @@ export default function RegisterComplaintPage() {
 
                   {/* (a) Name, Relation, Relative Name, Age, Gender (All Mandatory) */}
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-4">
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Complainant Full Name *
                       </label>
@@ -1608,14 +1608,14 @@ export default function RegisterComplaintPage() {
                       )}
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <div className="sm:col-span-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Relation">
                         Relation *
                       </label>
                       <select
                         value={comp.relationType}
                         onChange={(e) => handleComplainantChange(idx, "relationType", e.target.value)}
-                        className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold"
+                        className="w-full px-2 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center"
                       >
                         <option value="S/O">S/o</option>
                         <option value="D/O">D/o</option>
@@ -1624,7 +1624,7 @@ export default function RegisterComplaintPage() {
                       </select>
                     </div>
 
-                    <div className="sm:col-span-3">
+                    <div className="sm:col-span-4">
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
                         Relative Name ({comp.relationType}) *
                       </label>
@@ -1646,9 +1646,9 @@ export default function RegisterComplaintPage() {
                       )}
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Age (Years) *
+                    <div className="sm:col-span-1">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Age (Years)">
+                        Age *
                       </label>
                       <input
                         type="number"
@@ -1656,8 +1656,8 @@ export default function RegisterComplaintPage() {
                         max="120"
                         value={comp.age || ""}
                         onChange={(e) => handleComplainantChange(idx, "age", e.target.value)}
-                        placeholder="e.g. 35"
-                        className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                        placeholder="35"
+                        className={`w-full px-2 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center ${
                           validationErrors[`comp_${idx}_age`] ? "border-red-500 bg-red-50" : "border-slate-300"
                         }`}
                       />
