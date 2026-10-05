@@ -19,9 +19,63 @@ import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
 
-// In-memory store for prototype reactivity
-let complaintsStore: ComplaintItem[] = [...MOCK_COMPLAINTS];
-let officerNotificationsStore: OfficerNotification[] = [];
+// In-memory store initialized with localStorage if available, or fallback to MOCK_COMPLAINTS
+const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
+const NOTIFICATIONS_STORAGE_KEY = "haryana_police_cms_notifications_v1";
+
+function loadComplaintsFromStorage(): ComplaintItem[] {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(COMPLAINTS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load complaints from localStorage", e);
+    }
+  }
+  return [...MOCK_COMPLAINTS];
+}
+
+function saveComplaintsToStorage(items: ComplaintItem[]) {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.warn("Could not save complaints to localStorage", e);
+    }
+  }
+}
+
+function loadNotificationsFromStorage(): OfficerNotification[] {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("Could not load notifications from localStorage", e);
+    }
+  }
+  return [];
+}
+
+function saveNotificationsToStorage(items: OfficerNotification[]) {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.warn("Could not save notifications to localStorage", e);
+    }
+  }
+}
+
+let complaintsStore: ComplaintItem[] = loadComplaintsFromStorage();
+let officerNotificationsStore: OfficerNotification[] = loadNotificationsFromStorage();
 
 export const ComplaintService = {
   async getComplaints(filter?: {
@@ -32,6 +86,7 @@ export const ComplaintService = {
     category?: string;
     assignedEo?: string;
   }): Promise<ComplaintItem[]> {
+    complaintsStore = loadComplaintsFromStorage();
     let list = [...complaintsStore];
 
     if (filter?.statuses && filter.statuses.length > 0 && !filter.statuses.includes("ALL")) {
@@ -120,6 +175,7 @@ export const ComplaintService = {
   },
 
   async getComplaintById(id: string): Promise<ComplaintItem | undefined> {
+    complaintsStore = loadComplaintsFromStorage();
     return complaintsStore.find((c) => c.id === id || c.complaintNumber === id);
   },
 
@@ -130,6 +186,7 @@ export const ComplaintService = {
     underReview: number;
     disposed: number;
   }> {
+    complaintsStore = loadComplaintsFromStorage();
     let baseList = [...complaintsStore];
     if (assignedEoFilter) {
       const eo = assignedEoFilter.toLowerCase();
@@ -264,6 +321,7 @@ export const ComplaintService = {
     };
 
     complaintsStore.unshift(newComplaint);
+    saveComplaintsToStorage(complaintsStore);
 
     // Complaint registered directly without auto-entry in Roznamcha
     return newComplaint;
@@ -301,6 +359,7 @@ export const ComplaintService = {
     };
 
     complaintsStore[index] = updated;
+    saveComplaintsToStorage(complaintsStore);
 
     // Create & dispatch notification to the respected Enquiry Officer
     const notification: OfficerNotification = {
@@ -318,6 +377,7 @@ export const ComplaintService = {
     };
 
     officerNotificationsStore.unshift(notification);
+    saveNotificationsToStorage(officerNotificationsStore);
 
     // AUTO-RECORD IN GENERAL DIARY (ROZNAMCHA AAM) - PPR 22.48
     const nowTime = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -717,6 +777,7 @@ export const ComplaintService = {
       complaintsStore[index].timeline = [];
     }
     complaintsStore[index].timeline!.unshift(newEvent);
+    saveComplaintsToStorage(complaintsStore);
 
     return newEvent;
   },

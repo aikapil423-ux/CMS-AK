@@ -291,6 +291,100 @@ export default function RegisterComplaintPage() {
     size?: number | string;
   } | null>(null);
 
+  // FORM DRAFT STORAGE KEY: Prevents losing filled data on page refresh
+  const FORM_DRAFT_KEY = "haryana_police_cms_register_form_draft_v1";
+
+  // 1. Restore saved form draft on page mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(FORM_DRAFT_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (!draft || typeof draft !== "object") return;
+
+      if (Array.isArray(draft.complainants) && draft.complainants.length > 0) setComplainants(draft.complainants);
+      if (typeof draft.isAccusedKnown === "boolean") setIsAccusedKnown(draft.isAccusedKnown);
+      if (Array.isArray(draft.accusedList)) setAccusedList(draft.accusedList);
+      if (draft.incidentPlace) setIncidentPlace(draft.incidentPlace);
+      if (draft.incidentLandmark) setIncidentLandmark(draft.incidentLandmark);
+      if (typeof draft.isDateTimeKnown === "boolean") setIsDateTimeKnown(draft.isDateTimeKnown);
+      if (draft.incidentDate) setIncidentDate(draft.incidentDate);
+      if (draft.incidentTime) setIncidentTime(draft.incidentTime);
+      if (draft.incidentApproxPeriod) setIncidentApproxPeriod(draft.incidentApproxPeriod);
+      if (draft.incidentCategory) setIncidentCategory(draft.incidentCategory);
+      if (draft.incidentDetails) setIncidentDetails(draft.incidentDetails);
+      if (Array.isArray(draft.attachments)) setAttachments(draft.attachments);
+      if (draft.intakeMode) setIntakeMode(draft.intakeMode);
+      if (draft.complaintSubject) setComplaintSubject(draft.complaintSubject);
+      if (draft.complaintDescription) setComplaintDescription(draft.complaintDescription);
+      if (typeof draft.isFirRegistered === "boolean") setIsFirRegistered(draft.isFirRegistered);
+      if (draft.firNumber) setFirNumber(draft.firNumber);
+      if (draft.firDate) setFirDate(draft.firDate);
+      if (draft.complaintAgeType) setComplaintAgeType(draft.complaintAgeType);
+      if (draft.complaintClassification) setComplaintClassification(draft.complaintClassification);
+      if (draft.complaintPurpose) setComplaintPurpose(draft.complaintPurpose);
+    } catch (e) {
+      console.warn("Could not restore form draft from localStorage:", e);
+    }
+  }, []);
+
+  // 2. Automatically save filled form values to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined" || createdComplaint) return;
+    try {
+      const draft = {
+        complainants,
+        isAccusedKnown,
+        accusedList,
+        incidentPlace,
+        incidentLandmark,
+        isDateTimeKnown,
+        incidentDate,
+        incidentTime,
+        incidentApproxPeriod,
+        incidentCategory,
+        incidentDetails,
+        attachments,
+        intakeMode,
+        complaintSubject,
+        complaintDescription,
+        isFirRegistered,
+        firNumber,
+        firDate,
+        complaintAgeType,
+        complaintClassification,
+        complaintPurpose,
+      };
+      window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+      console.warn("Could not auto-save form draft:", e);
+    }
+  }, [
+    complainants,
+    isAccusedKnown,
+    accusedList,
+    incidentPlace,
+    incidentLandmark,
+    isDateTimeKnown,
+    incidentDate,
+    incidentTime,
+    incidentApproxPeriod,
+    incidentCategory,
+    incidentDetails,
+    attachments,
+    intakeMode,
+    complaintSubject,
+    complaintDescription,
+    isFirRegistered,
+    firNumber,
+    firDate,
+    complaintAgeType,
+    complaintClassification,
+    complaintPurpose,
+    createdComplaint,
+  ]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -1304,6 +1398,11 @@ export default function RegisterComplaintPage() {
       } else {
         setCreatedComplaint(complaint);
       }
+
+      // Clear the saved draft from localStorage upon successful registration
+      try {
+        window.localStorage.removeItem(FORM_DRAFT_KEY);
+      } catch {}
     } catch (err: any) {
       setValidationErrors({ submit: err.message || "Failed to register complaint." });
     } finally {

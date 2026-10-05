@@ -1,10 +1,40 @@
 import { GeneralDiaryItem } from "@/types";
 import { MOCK_GD_ENTRIES } from "@/lib/mockData";
 
-let gdEntriesStore: GeneralDiaryItem[] = [...MOCK_GD_ENTRIES];
+const GD_STORAGE_KEY = "haryana_police_cms_gd_entries_v1";
+
+function loadGdFromStorage(): GeneralDiaryItem[] {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(GD_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load GD entries from localStorage", e);
+    }
+  }
+  return [...MOCK_GD_ENTRIES];
+}
+
+function saveGdToStorage(items: GeneralDiaryItem[]) {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.setItem(GD_STORAGE_KEY, JSON.stringify(items));
+    } catch (e) {
+      console.warn("Could not save GD entries to localStorage", e);
+    }
+  }
+}
+
+let gdEntriesStore: GeneralDiaryItem[] = loadGdFromStorage();
 
 export const GeneralDiaryService = {
   async getEntries(filter?: { date?: string; search?: string; entryType?: string }): Promise<GeneralDiaryItem[]> {
+    gdEntriesStore = loadGdFromStorage();
     let list = [...gdEntriesStore];
 
     if (filter?.date) {
@@ -75,10 +105,12 @@ export const GeneralDiaryService = {
     };
 
     gdEntriesStore.unshift(newEntry);
+    saveGdToStorage(gdEntriesStore);
     return newEntry;
   },
 
   async getTodayCount(): Promise<number> {
+    gdEntriesStore = loadGdFromStorage();
     const today = new Date().toISOString().split("T")[0];
     return gdEntriesStore.filter((e) => e.entryDate === today).length;
   },
