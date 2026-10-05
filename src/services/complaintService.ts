@@ -161,14 +161,26 @@ export const ComplaintService = {
     }
 
     if (filter?.assignedEo) {
-      const eo = filter.assignedEo.toLowerCase();
-      list = list.filter(
-        (c) =>
-          c.assignedEoId?.toLowerCase() === eo ||
-          c.assignedEoPno?.toLowerCase() === eo ||
-          (c.assignedEoName && c.assignedEoName.toLowerCase().includes(eo)) ||
-          (c.assignedEoName && eo.includes(c.assignedEoName.toLowerCase()))
-      );
+      const eo = filter.assignedEo.toLowerCase().trim();
+      const eoTokens = eo
+        .split(" ")
+        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
+      list = list.filter((c) => {
+        const eoId = (c.assignedEoId || "").toLowerCase();
+        const eoPno = (c.assignedEoPno || "").toLowerCase();
+        const eoName = (c.assignedEoName || "").toLowerCase();
+
+        if (eoId === eo || eoPno === eo) return true;
+        if (
+          eoId.replace("usr_", "").replace("eo_", "") &&
+          eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "")
+        ) {
+          return true;
+        }
+        if (eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
+        if (eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
+        return false;
+      });
     }
 
     return list;
@@ -189,14 +201,26 @@ export const ComplaintService = {
     complaintsStore = loadComplaintsFromStorage();
     let baseList = [...complaintsStore];
     if (assignedEoFilter) {
-      const eo = assignedEoFilter.toLowerCase();
-      baseList = baseList.filter(
-        (c) =>
-          c.assignedEoId?.toLowerCase() === eo ||
-          c.assignedEoPno?.toLowerCase() === eo ||
-          (c.assignedEoName && c.assignedEoName.toLowerCase().includes(eo)) ||
-          (c.assignedEoName && eo.includes(c.assignedEoName.toLowerCase()))
-      );
+      const eo = assignedEoFilter.toLowerCase().trim();
+      const eoTokens = eo
+        .split(" ")
+        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
+      baseList = baseList.filter((c) => {
+        const eoId = (c.assignedEoId || "").toLowerCase();
+        const eoPno = (c.assignedEoPno || "").toLowerCase();
+        const eoName = (c.assignedEoName || "").toLowerCase();
+
+        if (eoId === eo || eoPno === eo) return true;
+        if (
+          eoId.replace("usr_", "").replace("eo_", "") &&
+          eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "")
+        ) {
+          return true;
+        }
+        if (eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
+        if (eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
+        return false;
+      });
     }
 
     const all = baseList.length;

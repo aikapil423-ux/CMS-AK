@@ -58,6 +58,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
 type ActiveTab = "overview" | "evidence" | "enquiry_notes" | "documents" | "links" | "history";
 
@@ -232,6 +233,7 @@ export default function ComplaintProfilePage() {
   const [targetDays, setTargetDays] = useState<number>(14);
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
   const [assignSuccess, setAssignSuccess] = useState<boolean>(false);
+  const [showReceiptModal, setShowReceiptModal] = useState<boolean>(false);
   const [lastAssignedNotification, setLastAssignedNotification] = useState<OfficerNotification | null>(null);
 
   // Modals for More Actions
@@ -449,12 +451,13 @@ export default function ComplaintProfilePage() {
       setLastAssignedNotification(result.notification);
       setAssignSuccess(true);
       await loadComplaint();
+      setShowReceiptModal(true);
 
       setTimeout(() => {
         setAssignSuccess(false);
         setAssignModalOpen(false);
         setLastAssignedNotification(null);
-      }, 3000);
+      }, 500);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1147,17 +1150,31 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 </div>
               )}
 
-              {/* Quick Print Button for Everyone */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.print()}
-                className="gap-1.5 text-xs font-semibold"
-                title="Print Citizen Acknowledgement Receipt"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Print Receipt</span>
-              </Button>
+              {/* Receipt of registered complaints Button or Assign EO */}
+              {complaint.assignedEoName ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReceiptModal(true)}
+                  className="gap-1.5 text-xs font-semibold text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                  title="Official Receipt of registered complaints (PPR 22.48 & BNSS 173(3))"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-700" />
+                  <span className="hidden sm:inline">Print Receipt</span>
+                </Button>
+              ) : (
+                (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setAssignModalOpen(true)}
+                    className="gap-1.5 text-xs font-bold bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+                  >
+                    <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Assign EO</span>
+                  </Button>
+                )
+              )}
             </div>
           </div>
 
@@ -3410,6 +3427,13 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
           </div>
         </div>
       )}
+
+      {/* Official Receipt of Registered Complaints Modal */}
+      <ComplaintReceiptModal
+        complaint={complaint}
+        isOpen={showReceiptModal}
+        onClose={() => setShowReceiptModal(false)}
+      />
     </div>
   );
 }

@@ -1715,8 +1715,15 @@ export default function RegisterComplaintPage() {
         setCreatedComplaint(assignRes.complaint);
         setShowReceiptModal(true);
       } else {
-        setCreatedComplaint(complaint);
-        // If unassigned, it goes to SHO desk to assign EO
+        // Clear the saved draft from localStorage
+        try {
+          window.localStorage.removeItem(FORM_DRAFT_KEY);
+        } catch {}
+
+        // User rule: If EO is not assigned, do NOT show receipt modal,
+        // navigate directly to SHO ID complaints queue (/complaints) where Assign EO option is available
+        router.push(`/complaints?unassigned=${complaint.complaintNumber}`);
+        return;
       }
 
       // Clear the saved draft from localStorage upon successful registration

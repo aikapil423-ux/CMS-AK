@@ -29,6 +29,8 @@ import {
   Image as ImageIcon,
   Bell,
   Send,
+  Printer,
+  AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -108,6 +110,7 @@ function ComplaintListContent() {
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const initialPriority = searchParams.get("priority") || "ALL";
+  const unassignedComplaintNo = searchParams.get("unassigned");
 
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -421,6 +424,23 @@ function ComplaintListContent() {
           <span className="font-mono text-xs font-bold bg-white text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-md">
             {complaints.length} Total Complaints
           </span>
+        </div>
+      )}
+
+      {/* Unassigned Complaint Alert Banner (Directly routed to SHO) */}
+      {unassignedComplaintNo && (
+        <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-950 animate-in fade-in-50 shadow-xs">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-sm text-amber-950">
+                Complaint #{unassignedComplaintNo} Registered — Awaiting EO Assignment
+              </p>
+              <p className="text-amber-800 leading-relaxed">
+                यह शिकायत केंद्रीय रजिस्टर में दर्ज होकर सीधे SHO ID में प्राप्त हुई है। कृपया नीचे दिए गए <strong>&ldquo;Assign EO&rdquo;</strong> विकल्प पर क्लिक करके जांच अधिकारी (EO) नियुक्त करें। नियुक्त होते ही <strong>Receipt of registered complaints</strong> रसीद तुरंत जनरेट हो जाएगी।
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -824,12 +844,13 @@ function ComplaintListContent() {
                           <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
                             Unassigned
                           </span>
-                          {(currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV") && (
+                          {(currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
                             <button
                               onClick={() => handleOpenAssignModal(c)}
-                              className="text-[11px] font-semibold text-[#0b192c] hover:underline block"
+                              className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
                             >
-                              + Assign EO
+                              <UserCheck className="w-3 h-3 text-blue-700" />
+                              Assign EO
                             </button>
                           )}
                         </div>
@@ -850,6 +871,33 @@ function ComplaintListContent() {
 
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {c.assignedEoName ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setReceiptComplaint(c);
+                              setShowReceiptModal(true);
+                            }}
+                            className="text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                            title="Official Receipt of registered complaints"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>Receipt</span>
+                          </Button>
+                        ) : (
+                          (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={() => handleOpenAssignModal(c)}
+                              className="text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Assign EO</span>
+                            </Button>
+                          )
+                        )}
                         <Link href={`/complaints/${c.id}`}>
                           <Button
                             size="sm"
@@ -935,32 +983,42 @@ function ComplaintListContent() {
                     </span>
                   </div>
 
-                  <div className="pt-2 grid grid-cols-2 gap-2 border-t border-slate-100">
-                    <Link href={`/complaints/${c.id}`} className="block">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="w-full text-xs font-semibold gap-1"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> View Profile
-                      </Button>
-                    </Link>
-                    {!c.assignedEoName ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenAssignModal(c)}
-                        className="text-xs font-semibold"
-                      >
-                        Assign EO
-                      </Button>
-                    ) : (
-                      <a href={`tel:${c.complainantMobile}`} className="block">
-                        <Button variant="secondary" size="sm" className="w-full text-xs font-semibold gap-1">
-                          <Phone className="w-3.5 h-3.5" /> Call Complainant
+                  <div className="pt-2 flex flex-col gap-2 border-t border-slate-100">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link href={`/complaints/${c.id}`} className="block">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="w-full text-xs font-semibold gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> View Profile
                         </Button>
-                      </a>
-                    )}
+                      </Link>
+                      {c.assignedEoName ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setReceiptComplaint(c);
+                            setShowReceiptModal(true);
+                          }}
+                          className="w-full text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-emerald-700" /> Receipt
+                        </Button>
+                      ) : (
+                        (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleOpenAssignModal(c)}
+                            className="w-full text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800"
+                          >
+                            <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign EO
+                          </Button>
+                        )
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1223,18 +1281,32 @@ function ComplaintListContent() {
                     <Eye className="w-3.5 h-3.5" /> Open Full Profile
                   </Button>
                 </Link>
-                {!selectedComplaint.assignedEoName && (
+                {selectedComplaint.assignedEoName ? (
                   <Button
                     size="sm"
-                    variant="primary"
+                    variant="outline"
                     onClick={() => {
-                      handleOpenAssignModal(selectedComplaint);
-                      setSelectedComplaint(null);
+                      setReceiptComplaint(selectedComplaint);
+                      setShowReceiptModal(true);
                     }}
-                    className="text-xs"
+                    className="text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer"
                   >
-                    Assign Enquiry Officer
+                    <Printer className="w-3.5 h-3.5 text-emerald-700" /> Print Receipt
                   </Button>
+                ) : (
+                  (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        handleOpenAssignModal(selectedComplaint);
+                        setSelectedComplaint(null);
+                      }}
+                      className="text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer"
+                    >
+                      <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign Enquiry Officer
+                    </Button>
+                  )
                 )}
                 <Button size="sm" variant="outline" onClick={() => setSelectedComplaint(null)} className="text-xs">
                   Close
