@@ -160,161 +160,165 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Navigation Links with BOTH ROZNAMCHA GD & COMPLAINTS TOGGLE SLIDE BARS (Never hidden on Station Info) */}
+      {/* Navigation Links: Module specific isolation */}
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
-        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR */}
-        <div className="space-y-1">
-          <button
-            type="button"
-            onClick={() => setRoznamchaOpen(!roznamchaOpen)}
-            className={cn(
-              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
-              isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
-              isRoznamcha ? "bg-blue-50/70" : ""
-            )}
-            title="Toggle Roznamcha GD Menu"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR (Visible in Roznamcha module OR in general/station-profile pages) */}
+        {(isRoznamcha || (!isComplaints && !isRoznamcha)) && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setRoznamchaOpen(!roznamchaOpen)}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+                isRoznamcha ? "bg-blue-50/70" : ""
+              )}
+              title="Toggle Roznamcha GD Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                    Roznamcha GD
+                  </span>
+                )}
+              </div>
               {isExpanded && (
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
-                  Roznamcha GD
+                <span className="text-slate-400">
+                  {roznamchaOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
                 </span>
               )}
-            </div>
-            {isExpanded && (
-              <span className="text-slate-400">
-                {roznamchaOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+
+            {roznamchaOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {roznamchaNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-lg text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-3 py-2"
+                          : "justify-center p-2.5",
+                        isActive
+                          ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-4 h-4 shrink-0",
+                            isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Visible in Complaints module OR in general/station-profile pages) */}
+        {(isComplaints || (!isComplaints && !isRoznamcha)) && (
+          <div className={cn("space-y-1", !isComplaints && "pt-1 border-t border-slate-100")}>
+            <button
+              type="button"
+              onClick={() => setComplaintsOpen(!complaintsOpen)}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+                isComplaints ? "bg-blue-50/70" : ""
+              )}
+              title="Toggle Complaints Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                    Complaints
+                  </span>
                 )}
-              </span>
-            )}
-          </button>
-
-          {roznamchaOpen && (
-            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-              {roznamchaNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    title={!isExpanded ? item.name : undefined}
-                    className={cn(
-                      "flex items-center rounded-lg text-xs font-medium transition-all group",
-                      isExpanded
-                        ? "justify-between px-3 py-2"
-                        : "justify-center p-2.5",
-                      isActive
-                        ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon
-                        className={cn(
-                          "w-4 h-4 shrink-0",
-                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600"
-                        )}
-                      />
-                      {isExpanded && <span className="truncate">{item.name}</span>}
-                    </div>
-                    {isExpanded && item.badge && (
-                      <span
-                        className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                          item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
-                        )}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-        </div>
-
-        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Draft reports, Notice templates, CM window, Under approval hidden) */}
-        <div className="space-y-1 pt-1 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={() => setComplaintsOpen(!complaintsOpen)}
-            className={cn(
-              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
-              isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
-              isComplaints ? "bg-blue-50/70" : ""
-            )}
-            title="Toggle Complaints Menu"
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+              </div>
               {isExpanded && (
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
-                  Complaints
+                <span className="text-slate-400">
+                  {complaintsOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
                 </span>
               )}
-            </div>
-            {isExpanded && (
-              <span className="text-slate-400">
-                {complaintsOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                )}
-              </span>
-            )}
-          </button>
+            </button>
 
-          {complaintsOpen && (
-            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-              {complaintNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    title={!isExpanded ? item.name : undefined}
-                    className={cn(
-                      "flex items-center rounded-lg text-xs font-medium transition-all group",
-                      isExpanded
-                        ? "justify-between px-3 py-2"
-                        : "justify-center p-2.5",
-                      isActive
-                        ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon
-                        className={cn(
-                          "w-4 h-4 shrink-0",
-                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600"
-                        )}
-                      />
-                      {isExpanded && <span className="truncate">{item.name}</span>}
-                    </div>
-                    {isExpanded && item.badge && (
-                      <span
-                        className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                          item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
-                        )}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
-        </div>
+            {complaintsOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {complaintNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-lg text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-3 py-2"
+                          : "justify-center p-2.5",
+                        isActive
+                          ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-4 h-4 shrink-0",
+                            isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
 
         {/* 3. Station Info Links (Station Profile & Officer Roster) */}
         <div className="pt-2 border-t border-slate-200">
