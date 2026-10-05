@@ -136,12 +136,14 @@ export interface GDSearchFilter {
   startDate?: string;
   endDate?: string;
   officerQuery?: string;
+  officerName?: string;
   personName?: string;
   firNumber?: string;
   complaintNumber?: string;
   vehicleNumber?: string;
   typeCode?: string;
   status?: GDStatus | "ALL";
+  isLocked?: boolean;
   keyword?: string;
   page?: number;
   pageSize?: number;

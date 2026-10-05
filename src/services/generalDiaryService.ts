@@ -3,6 +3,7 @@ import {
   GDSearchFilter,
   GDPaginatedResponse,
   GDEntryTypeConfig,
+  GDEntryCategory,
   GDTemplate,
   GDOfficerParticulars,
   GDRelatedRecords,
@@ -11,9 +12,9 @@ import {
 } from "@/types/generalDiary";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 
-const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v2";
-const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v2";
-const GD_TEMPLATES_STORAGE_KEY = "haryana_police_cms_gd_templates_v2";
+const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
+const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v3";
+const GD_TEMPLATES_STORAGE_KEY = "haryana_police_cms_gd_templates_v3";
 
 // Generate cryptographic-style verification audit hash
 function generateAuditId(prefix: string = "AUD"): string {
@@ -38,10 +39,10 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       policeStation: "PS City Thanesar",
       district: "Kurukshetra",
       entryForOfficer: {
-        name: "HC Devinder Kumar",
-        rank: "Head Constable (MHC)",
-        beltNumber: "889/KKR",
-        pno: "05192834",
+        name: "SI Malkeet",
+        rank: "Sub-Inspector",
+        beltNumber: "512/KKR",
+        pno: "08192841",
       },
       actualAuthor: {
         name: "HC Devinder Kumar",
@@ -51,14 +52,14 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       },
       typeCode: "AAGAZ_ROZNAMCHA",
       category: "ROUTINE_ADMINISTRATION",
-      typeDisplay: "Opening / Aagaz Roznamcha",
-      typeDisplayHi: "आगाज़ रोजनामचा (दैनिक शुरुआत 08:00 AM)",
-      subject: "बवक्त 08:00 AM आगाज़ रोजनामचा आम बाबत खैर-ओ-आफियत थाना",
+      typeDisplay: "Opening",
+      typeDisplayHi: "Opening",
+      subject: "Aagaz",
       narrative:
-        "बवक्त 08:00 बजे सुबह, रोजनामचा आम का नया पन्ना/जिल्द विधिवत शुरू किया गया। रात की पाली शांत व खैरियत से गुजरी। मुआयना हवालात किया गया, हवालात में कुल 1 बंदी मौजूद है, जिसकी शारीरिक स्थिति ठीक पाई गई। सरकारी शस्त्रागार (Kot) में कुल असलहा व कारतूस बामुताबिक रजिस्टर पूरे पाए गए। सरकारी खजाना व रोकड़ बहिरू चेक की गई। स्टेशन डायरी का प्रभार MHC HC Devinder Kumar (बेल्ट नं: 889/KKR) द्वारा संभाला गया।",
-      activityDateTime: `${today} 08:00`,
-      officialCreationTimestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
-      verificationTimestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
+        "At 12:00 AM, it is entered that the General Diary was formally opened in accordance with Punjab Police Rule 22.48. Sentry guard inspection and lockup status verified. Current lockup strength: 0 detainees. Station armory, weapon registers, and cash chest verified. Sentry guard and MHC charge assumed. All station affairs reported in order.",
+      activityDateTime: `${today} 12:00 AM`,
+      officialCreationTimestamp: new Date(now.getTime() - 12 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 12 * 3600000).toISOString(),
       status: "LOCKED",
       source: "MANUAL_ENTRY",
       isLocked: true,
@@ -76,27 +77,18 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
           performedBy: "HC Devinder Kumar",
           performedByPno: "05192834",
           performedByRank: "Head Constable (MHC)",
-          timestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
+          timestamp: new Date(now.getTime() - 12 * 3600000).toISOString(),
           auditId: "AUD-2026-001A",
           remarks: "Official station diary opening initiated",
-        },
-        {
-          action: "VERIFIED",
-          performedBy: "Inspector Rajesh Kumar",
-          performedByPno: "04291882",
-          performedByRank: "Inspector / SHO",
-          timestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
-          auditId: "AUD-2026-001B",
-          remarks: "Verified & locked permanently under PPR 22.48",
         },
         {
           action: "LOCKED",
           performedBy: "Inspector Rajesh Kumar",
           performedByPno: "04291882",
           performedByRank: "Inspector / SHO",
-          timestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
+          timestamp: new Date(now.getTime() - 12 * 3600000).toISOString(),
           auditId: "V-AUD-2026-X8F9A2",
-          remarks: "Immutable atomic GD lock applied",
+          remarks: "Immutable atomic GD lock applied under PPR 22.48",
         },
       ],
     },
@@ -107,10 +99,10 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       policeStation: "PS City Thanesar",
       district: "Kurukshetra",
       entryForOfficer: {
-        name: "HC Devinder Kumar",
-        rank: "Head Constable (MHC)",
-        beltNumber: "889/KKR",
-        pno: "05192834",
+        name: "SI Malkeet",
+        rank: "Sub-Inspector",
+        beltNumber: "512/KKR",
+        pno: "08192841",
       },
       actualAuthor: {
         name: "HC Devinder Kumar",
@@ -118,16 +110,16 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "STAFF_GINTI",
+      typeCode: "SAFAI_THANA",
       category: "ROUTINE_ADMINISTRATION",
-      typeDisplay: "Staff Ginti / Roll Call",
-      typeDisplayHi: "हाज़िरी व गिनती मुलाज़मान (Roll Call)",
-      subject: "बवक्त सुबह 08:30 AM गिनती मुलाज़मान व तक्सीम ड्यूटी थाना",
+      typeDisplay: "Cleanliness",
+      typeDisplayHi: "Cleanliness",
+      subject: "Safai Thana",
       narrative:
-        "थाना परिसर में दैनिक गिनती मुलाज़मान ली गई। कुल स्वीकृत नफरी में से 19 मुलाज़मान हाज़िर मिले। 2 मुलाज़िम छुट्टी (Casual Leave) पर व 1 मुलाज़िम कोर्ट पेशी ड्यूटी पर पाया गया। हाज़िर मुलाज़मान का टर्नआउट, वर्दी व हथियार दुरुस्त पाए गए। सभी कर्मचारियों को उच्चाधिकारियों के निर्देशों की पालना, आम जनता से शिष्ट व्यवहार एवं मुस्तैदी से गश्त करने के सख्त निर्देश दिए गए।",
-      activityDateTime: `${today} 08:30`,
-      officialCreationTimestamp: new Date(now.getTime() - 7.5 * 3600000).toISOString(),
-      verificationTimestamp: new Date(now.getTime() - 7.5 * 3600000).toISOString(),
+        "At 06:30 AM, comprehensive cleaning and sanitary inspection of police station premises, lockup, mal-khana, barracks, and public reception was conducted. Sanitation and drinking water verified in order.",
+      activityDateTime: `${today} 06:30 AM`,
+      officialCreationTimestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
       status: "LOCKED",
       source: "MANUAL_ENTRY",
       isLocked: true,
@@ -145,7 +137,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
           performedBy: "HC Devinder Kumar",
           performedByPno: "05192834",
           performedByRank: "Head Constable (MHC)",
-          timestamp: new Date(now.getTime() - 7.5 * 3600000).toISOString(),
+          timestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
           auditId: "AUD-2026-002A",
         },
         {
@@ -153,7 +145,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
           performedBy: "Inspector Rajesh Kumar",
           performedByPno: "04291882",
           performedByRank: "Inspector / SHO",
-          timestamp: new Date(now.getTime() - 7.5 * 3600000).toISOString(),
+          timestamp: new Date(now.getTime() - 8 * 3600000).toISOString(),
           auditId: "V-AUD-2026-K9M2P1",
         },
       ],
@@ -162,69 +154,6 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_003",
       gdNumber: `GD-${today}-003`,
       sequencePerDay: 3,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
-      entryForOfficer: {
-        name: "SI Vikram Singh",
-        rank: "Sub-Inspector",
-        beltNumber: "742/KKR",
-        pno: "07182930",
-        phone: "9812034567",
-      },
-      actualAuthor: {
-        name: "ASI Surender Pal",
-        rank: "ASI (Duty Officer)",
-        beltNumber: "419/KKR",
-        pno: "09384712",
-      },
-      typeCode: "RAVANGI_OFFICER",
-      category: "DUTY_MOVEMENT",
-      typeDisplay: "Ravangi / Departure (Investigation/Raid)",
-      typeDisplayHi: "रवानगी मुलाज़मान (तफ्तीश / गश्त / रेड)",
-      subject: "रवानगी SI Vikram Singh बराए तफ्तीश CMP-2026-00482 बामुकाम Sector 7, Urban Estate",
-      narrative:
-        "बवक्त 09:15 AM, Sub-Inspector Vikram Singh (बेल्ट नं: 742/KKR) हमराह मुलाज़मान HC Sandeep No. 412 बराए तफ्तीश/जांच दरख्वास्त नंबर HAR-KKR-2026-CMP-00482 बामुकाम Sector 7 Urban Estate रवाना हुए। रवानगी बा-सवारी सरकारी जिप्सी HR-07-G-1102 अमल में लाई गई। हथियार असलहा 9mm Pistol मय 10 राउंड साथ लिया गया। डायरी रवानगी दर्ज रजिस्टर की गई।",
-      activityDateTime: `${today} 09:15`,
-      officialCreationTimestamp: new Date(now.getTime() - 6.8 * 3600000).toISOString(),
-      verificationTimestamp: new Date(now.getTime() - 6.8 * 3600000).toISOString(),
-      status: "LOCKED",
-      source: "MANUAL_ENTRY",
-      isLocked: true,
-      verificationAuditId: "V-AUD-2026-R4W7C8",
-      verifiedBy: {
-        name: "Inspector Rajesh Kumar",
-        rank: "Inspector / SHO",
-        beltNumber: "04291882",
-        pno: "04291882",
-      },
-      relatedRecords: {
-        complaintNumber: "HAR-KKR-2026-CMP-00482",
-        vehicleNumber: "HR-07-G-1102",
-        destinationLocation: "Sector 7, Urban Estate",
-      },
-      auditTrail: [
-        {
-          action: "CREATED",
-          performedBy: "ASI Surender Pal",
-          performedByPno: "09384712",
-          performedByRank: "ASI (Duty Officer)",
-          timestamp: new Date(now.getTime() - 6.8 * 3600000).toISOString(),
-          auditId: "AUD-2026-003A",
-        },
-        {
-          action: "LOCKED",
-          performedBy: "Inspector Rajesh Kumar",
-          performedByPno: "04291882",
-          performedByRank: "Inspector / SHO",
-          timestamp: new Date(now.getTime() - 6.8 * 3600000).toISOString(),
-          auditId: "V-AUD-2026-R4W7C8",
-        },
-      ],
-    },
-    {
-      id: "gd_seed_004",
-      gdNumber: `GD-${today}-004`,
-      sequencePerDay: 4,
       policeStation: "PS City Thanesar",
       district: "Kurukshetra",
       entryForOfficer: {
@@ -239,18 +168,76 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "FIR_REGISTRATION",
-      category: "INVESTIGATION_PROCESS",
-      typeDisplay: "FIR Registration Intimation",
-      typeDisplayHi: "इत्तिला दर्ज एफ.आई.आर. (FIR Intimation)",
-      subject: "दर्ज मुकदमा नंबर FIR No. 142/2026 धारा Section 303(2), 317(2) BNS थाना PS City Thanesar",
+      typeCode: "STAFF_GINTI",
+      category: "ROUTINE_ADMINISTRATION",
+      typeDisplay: "Roll Call",
+      typeDisplayHi: "Roll Call",
+      subject: "Ginti Staff",
       narrative:
-        "बवक्त 11:30 AM, मुसम्मी Rameshwar Dayal की लिखित शिकायत पर अभियोग संख्या 142/2026 धारा 303(2), 317(2) BNS, 2023 के अंतर्गत थाना हाज़ा में दर्ज रजिस्टर किया गया। मूल तहरीर व नकल एफआईआर तफ्तीश हेतु जांच अधिकारी ASI Ramesh Chander (बेल्ट: 614/KKR) के हवाले की गई। विशेष रिपोर्ट इलाका मजिस्ट्रेट व उच्चाधिकारियों को डाक द्वारा भिजवाई गई।",
-      activityDateTime: `${today} 11:30`,
-      officialCreationTimestamp: new Date(now.getTime() - 4.5 * 3600000).toISOString(),
-      verificationTimestamp: new Date(now.getTime() - 4.5 * 3600000).toISOString(),
+        "At 08:00 AM, morning roll call and staff count conducted. 18 personnel present on parade, 2 on sanctioned leave, 1 on court duty. Personnel briefed on supervisory directives, law & order vigilance, and duty assignments.",
+      activityDateTime: `${today} 08:00 AM`,
+      officialCreationTimestamp: new Date(now.getTime() - 6.5 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 6.5 * 3600000).toISOString(),
       status: "LOCKED",
-      source: "FIR_INTEGRATION",
+      source: "MANUAL_ENTRY",
+      isLocked: true,
+      verificationAuditId: "V-AUD-2026-R4W7C8",
+      verifiedBy: {
+        name: "Inspector Rajesh Kumar",
+        rank: "Inspector / SHO",
+        beltNumber: "04291882",
+        pno: "04291882",
+      },
+      relatedRecords: {},
+      auditTrail: [
+        {
+          action: "CREATED",
+          performedBy: "HC Devinder Kumar",
+          performedByPno: "05192834",
+          performedByRank: "Head Constable (MHC)",
+          timestamp: new Date(now.getTime() - 6.5 * 3600000).toISOString(),
+          auditId: "AUD-2026-003A",
+        },
+        {
+          action: "LOCKED",
+          performedBy: "Inspector Rajesh Kumar",
+          performedByPno: "04291882",
+          performedByRank: "Inspector / SHO",
+          timestamp: new Date(now.getTime() - 6.5 * 3600000).toISOString(),
+          auditId: "V-AUD-2026-R4W7C8",
+        },
+      ],
+    },
+    {
+      id: "gd_seed_004",
+      gdNumber: `GD-${today}-004`,
+      sequencePerDay: 4,
+      policeStation: "PS City Thanesar",
+      district: "Kurukshetra",
+      entryForOfficer: {
+        name: "SI Malkeet",
+        rank: "Sub-Inspector",
+        beltNumber: "512/KKR",
+        pno: "08192841",
+      },
+      actualAuthor: {
+        name: "ASI Surender Pal",
+        rank: "ASI (Duty Officer)",
+        beltNumber: "419/KKR",
+        pno: "09384712",
+      },
+      typeCode: "RAVANGI_OFFICER",
+      category: "DUTY_MOVEMENT",
+      typeDisplay: "Departure",
+      typeDisplayHi: "Departure",
+      subject: "Ravangi for Investigation",
+      narrative:
+        "At 09:30 AM, SI Malkeet departed from the Police Station along with staff in government vehicle for official duty and field investigation in case enquiry. Arms and logbook verified. Entered in General Diary.",
+      activityDateTime: `${today} 09:30 AM`,
+      officialCreationTimestamp: new Date(now.getTime() - 5 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 5 * 3600000).toISOString(),
+      status: "LOCKED",
+      source: "MANUAL_ENTRY",
       isLocked: true,
       verificationAuditId: "V-AUD-2026-F1R992",
       verifiedBy: {
@@ -260,16 +247,16 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         pno: "04291882",
       },
       relatedRecords: {
-        firNumber: "142/2026",
-        personName: "Rameshwar Dayal",
+        vehicleNumber: "HR-07-G-1102",
+        destinationLocation: "Sector 7, Kurukshetra",
       },
       auditTrail: [
         {
           action: "CREATED",
-          performedBy: "HC Devinder Kumar",
-          performedByPno: "05192834",
-          performedByRank: "Head Constable (MHC)",
-          timestamp: new Date(now.getTime() - 4.5 * 3600000).toISOString(),
+          performedBy: "ASI Surender Pal",
+          performedByPno: "09384712",
+          performedByRank: "ASI (Duty Officer)",
+          timestamp: new Date(now.getTime() - 5 * 3600000).toISOString(),
           auditId: "AUD-2026-004A",
         },
         {
@@ -277,8 +264,128 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
           performedBy: "Inspector Rajesh Kumar",
           performedByPno: "04291882",
           performedByRank: "Inspector / SHO",
-          timestamp: new Date(now.getTime() - 4.5 * 3600000).toISOString(),
+          timestamp: new Date(now.getTime() - 5 * 3600000).toISOString(),
           auditId: "V-AUD-2026-F1R992",
+        },
+      ],
+    },
+    {
+      id: "gd_seed_005",
+      gdNumber: `GD-${today}-005`,
+      sequencePerDay: 5,
+      policeStation: "PS City Thanesar",
+      district: "Kurukshetra",
+      entryForOfficer: {
+        name: "SI Malkeet",
+        rank: "Sub-Inspector",
+        beltNumber: "512/KKR",
+        pno: "08192841",
+      },
+      actualAuthor: {
+        name: "ASI Surender Pal",
+        rank: "ASI (Duty Officer)",
+        beltNumber: "419/KKR",
+        pno: "09384712",
+      },
+      typeCode: "WAPSI_OFFICER",
+      category: "DUTY_MOVEMENT",
+      typeDisplay: "Arrival",
+      typeDisplayHi: "Arrival",
+      subject: "Wapsi from Duty",
+      narrative:
+        "At 01:15 PM, SI Malkeet returned to the Police Station along with staff after successfully concluding field investigation and spot verification. Arms deposited in order. Entered in General Diary.",
+      activityDateTime: `${today} 01:15 PM`,
+      officialCreationTimestamp: new Date(now.getTime() - 3.5 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 3.5 * 3600000).toISOString(),
+      status: "LOCKED",
+      source: "MANUAL_ENTRY",
+      isLocked: true,
+      verificationAuditId: "V-AUD-2026-W3T9A1",
+      verifiedBy: {
+        name: "Inspector Rajesh Kumar",
+        rank: "Inspector / SHO",
+        beltNumber: "04291882",
+        pno: "04291882",
+      },
+      relatedRecords: {
+        destinationLocation: "Sector 7, Kurukshetra",
+      },
+      auditTrail: [
+        {
+          action: "CREATED",
+          performedBy: "ASI Surender Pal",
+          performedByPno: "09384712",
+          performedByRank: "ASI (Duty Officer)",
+          timestamp: new Date(now.getTime() - 3.5 * 3600000).toISOString(),
+          auditId: "AUD-2026-005A",
+        },
+        {
+          action: "LOCKED",
+          performedBy: "Inspector Rajesh Kumar",
+          performedByPno: "04291882",
+          performedByRank: "Inspector / SHO",
+          timestamp: new Date(now.getTime() - 3.5 * 3600000).toISOString(),
+          auditId: "V-AUD-2026-W3T9A1",
+        },
+      ],
+    },
+    {
+      id: "gd_seed_006",
+      gdNumber: `GD-${today}-006`,
+      sequencePerDay: 6,
+      policeStation: "PS City Thanesar",
+      district: "Kurukshetra",
+      entryForOfficer: {
+        name: "HC Devinder Kumar",
+        rank: "Head Constable (MHC)",
+        beltNumber: "889/KKR",
+        pno: "05192834",
+      },
+      actualAuthor: {
+        name: "HC Devinder Kumar",
+        rank: "Head Constable (MHC)",
+        beltNumber: "889/KKR",
+        pno: "05192834",
+      },
+      typeCode: "COMPLAINT_RECEIVED",
+      category: "INVESTIGATION_PROCESS",
+      typeDisplay: "Complaint Intake",
+      typeDisplayHi: "Complaint Intake",
+      subject: "Complaint Received - Online Banking Fraud",
+      narrative:
+        "At 02:40 PM, citizen written complaint received regarding online banking fraud. Docket CMP-2026-00486 generated in CMS and marked to SHO for enquiry officer assignment.",
+      activityDateTime: `${today} 02:40 PM`,
+      officialCreationTimestamp: new Date(now.getTime() - 2 * 3600000).toISOString(),
+      verificationTimestamp: new Date(now.getTime() - 2 * 3600000).toISOString(),
+      status: "LOCKED",
+      source: "COMPLAINT_INTEGRATION",
+      isLocked: true,
+      verificationAuditId: "V-AUD-2026-C8M4P7",
+      verifiedBy: {
+        name: "Inspector Rajesh Kumar",
+        rank: "Inspector / SHO",
+        beltNumber: "04291882",
+        pno: "04291882",
+      },
+      relatedRecords: {
+        complaintNumber: "HAR-KKR-2026-CMP-00486",
+      },
+      auditTrail: [
+        {
+          action: "CREATED",
+          performedBy: "HC Devinder Kumar",
+          performedByPno: "05192834",
+          performedByRank: "Head Constable (MHC)",
+          timestamp: new Date(now.getTime() - 2 * 3600000).toISOString(),
+          auditId: "AUD-2026-006A",
+        },
+        {
+          action: "LOCKED",
+          performedBy: "Inspector Rajesh Kumar",
+          performedByPno: "04291882",
+          performedByRank: "Inspector / SHO",
+          timestamp: new Date(now.getTime() - 2 * 3600000).toISOString(),
+          auditId: "V-AUD-2026-C8M4P7",
         },
       ],
     },
@@ -432,10 +539,25 @@ let memoryRecordsStore: GeneralDiaryRecord[] = loadRecordsFromStorage();
 let memoryTypesStore: GDEntryTypeConfig[] = loadTypesFromStorage();
 
 export const GeneralDiaryService = {
+  // Synchronous helpers for UI components
+  getTypes(): GDEntryTypeConfig[] {
+    memoryTypesStore = loadTypesFromStorage();
+    return memoryTypesStore;
+  },
+
+  getDraftById(id: string): GeneralDiaryRecord | undefined {
+    memoryRecordsStore = loadRecordsFromStorage();
+    return memoryRecordsStore.find((r) => r.id === id);
+  },
+
   // -------------------------------------------------------------
   // 1. Core Server-side Paginated Search & Multi-criteria Filter
   // -------------------------------------------------------------
-  async getPaginatedEntries(filter: GDSearchFilter = {}): Promise<GDPaginatedResponse> {
+  async getPaginatedEntries(
+    filter: GDSearchFilter = {},
+    overridePage?: number,
+    overridePageSize?: number
+  ): Promise<GDPaginatedResponse> {
     memoryRecordsStore = loadRecordsFromStorage();
     let list = [...memoryRecordsStore];
 
@@ -463,8 +585,9 @@ export const GeneralDiaryService = {
     }
 
     // Filter by Officer (Entry-For or Author)
-    if (filter.officerQuery) {
-      const q = filter.officerQuery.toLowerCase().trim();
+    const officerQuery = filter.officerQuery || filter.officerName;
+    if (officerQuery) {
+      const q = officerQuery.toLowerCase().trim();
       list = list.filter(
         (r) =>
           r.entryForOfficer.name.toLowerCase().includes(q) ||
@@ -473,6 +596,11 @@ export const GeneralDiaryService = {
           r.actualAuthor.name.toLowerCase().includes(q) ||
           r.actualAuthor.pno.toLowerCase().includes(q)
       );
+    }
+
+    // Filter by locked status
+    if (filter.isLocked !== undefined) {
+      list = list.filter((r) => r.isLocked === filter.isLocked);
     }
 
     // Filter by Person / Accused
@@ -541,8 +669,8 @@ export const GeneralDiaryService = {
     });
 
     const total = list.length;
-    const page = Math.max(1, filter.page || 1);
-    const pageSize = Math.max(1, filter.pageSize || 15);
+    const page = Math.max(1, overridePage || filter.page || 1);
+    const pageSize = Math.max(1, overridePageSize || filter.pageSize || 15);
     const totalPages = Math.ceil(total / pageSize) || 1;
     const startIndex = (page - 1) * pageSize;
     const records = list.slice(startIndex, startIndex + pageSize);
@@ -591,19 +719,41 @@ export const GeneralDiaryService = {
   async saveDraft(entry: {
     id?: string;
     typeCode: string;
+    category?: GDEntryCategory;
+    typeDisplay?: string;
+    typeDisplayHi?: string;
     subject: string;
-    narrative: string;
-    activityDateTime: string;
-    entryForOfficer: GDOfficerParticulars;
-    actualAuthor: GDOfficerParticulars;
-    policeStation: string;
-    district: string;
+    narrative?: string;
+    activityDateTime?: string;
+    entryForOfficer?: GDOfficerParticulars;
+    actualAuthor?: GDOfficerParticulars;
+    policeStation?: string;
+    district?: string;
     relatedRecords?: GDRelatedRecords;
   }): Promise<GeneralDiaryRecord> {
     memoryRecordsStore = loadRecordsFromStorage();
     const typeDef = memoryTypesStore.find((t) => t.code === entry.typeCode) || memoryTypesStore[0];
 
     const nowIso = new Date().toISOString();
+    const defaultAuthor: GDOfficerParticulars = {
+      name: "HC Devinder Kumar",
+      rank: "Head Constable (MHC)",
+      beltNumber: "889/KKR",
+      pno: "05192834",
+    };
+    const defaultOfficer: GDOfficerParticulars = {
+      name: "SI Malkeet",
+      rank: "Sub-Inspector",
+      beltNumber: "512/KKR",
+      pno: "08192841",
+    };
+
+    const actualAuthor = entry.actualAuthor || defaultAuthor;
+    const entryForOfficer = entry.entryForOfficer || defaultOfficer;
+    const activityDateTime = entry.activityDateTime || nowIso;
+    const policeStation = entry.policeStation || "PS City Thanesar";
+    const district = entry.district || "Kurukshetra";
+    const narrative = entry.narrative || "";
 
     if (entry.id) {
       const idx = memoryRecordsStore.findIndex((r) => r.id === entry.id);
@@ -614,21 +764,21 @@ export const GeneralDiaryService = {
         memoryRecordsStore[idx] = {
           ...memoryRecordsStore[idx],
           typeCode: entry.typeCode,
-          typeDisplay: typeDef.nameEn,
-          typeDisplayHi: typeDef.nameHi,
+          typeDisplay: entry.typeDisplay || typeDef.nameEn,
+          typeDisplayHi: entry.typeDisplayHi || typeDef.nameHi,
           subject: entry.subject,
-          narrative: entry.narrative,
-          activityDateTime: entry.activityDateTime,
-          entryForOfficer: entry.entryForOfficer,
-          actualAuthor: entry.actualAuthor,
+          narrative,
+          activityDateTime,
+          entryForOfficer,
+          actualAuthor,
           relatedRecords: entry.relatedRecords,
           auditTrail: [
             ...memoryRecordsStore[idx].auditTrail,
             {
               action: "EDITED",
-              performedBy: entry.actualAuthor.name,
-              performedByPno: entry.actualAuthor.pno,
-              performedByRank: entry.actualAuthor.rank,
+              performedBy: actualAuthor.name,
+              performedByPno: actualAuthor.pno,
+              performedByRank: actualAuthor.rank,
               timestamp: nowIso,
               auditId: generateAuditId("EDIT"),
               remarks: "Draft updated by officer",
@@ -644,17 +794,17 @@ export const GeneralDiaryService = {
       id: `gd_draft_${Date.now()}`,
       gdNumber: "GD-DRAFT",
       sequencePerDay: 0,
-      policeStation: entry.policeStation,
-      district: entry.district,
-      entryForOfficer: entry.entryForOfficer,
-      actualAuthor: entry.actualAuthor,
+      policeStation,
+      district,
+      entryForOfficer,
+      actualAuthor,
       typeCode: entry.typeCode,
-      category: typeDef.category,
-      typeDisplay: typeDef.nameEn,
-      typeDisplayHi: typeDef.nameHi,
+      category: entry.category || typeDef.category,
+      typeDisplay: entry.typeDisplay || typeDef.nameEn,
+      typeDisplayHi: entry.typeDisplayHi || typeDef.nameHi,
       subject: entry.subject,
-      narrative: entry.narrative,
-      activityDateTime: entry.activityDateTime,
+      narrative,
+      activityDateTime,
       officialCreationTimestamp: nowIso,
       status: "DRAFT",
       source: "MANUAL_ENTRY",
@@ -663,9 +813,9 @@ export const GeneralDiaryService = {
       auditTrail: [
         {
           action: "CREATED",
-          performedBy: entry.actualAuthor.name,
-          performedByPno: entry.actualAuthor.pno,
-          performedByRank: entry.actualAuthor.rank,
+          performedBy: actualAuthor.name,
+          performedByPno: actualAuthor.pno,
+          performedByRank: actualAuthor.rank,
           timestamp: nowIso,
           auditId: generateAuditId("DRAFT"),
           remarks: "Saved as unofficial draft",
@@ -992,33 +1142,79 @@ export const GeneralDiaryService = {
   },
 
   async addEntry(
-    subject: string,
-    narrative: string,
-    entryType: any,
-    officerName: string,
-    officerPno: string,
-    station: string,
+    entryOrSubject:
+      | {
+          typeCode: string;
+          category?: GDEntryCategory;
+          typeDisplay?: string;
+          typeDisplayHi?: string;
+          subject: string;
+          narrative: string;
+          activityDateTime?: string;
+          entryForOfficer?: GDOfficerParticulars;
+          actualAuthor?: GDOfficerParticulars;
+          policeStation?: string;
+          district?: string;
+          source?: any;
+          relatedRecords?: GDRelatedRecords;
+        }
+      | string,
+    narrative?: string,
+    entryType?: any,
+    officerName?: string,
+    officerPno?: string,
+    station?: string,
     relatedComplaintNumber?: string
   ): Promise<GeneralDiaryRecord> {
-    const author: GDOfficerParticulars = {
-      name: officerName,
-      rank: "Police Officer",
-      pno: officerPno,
-      beltNumber: officerPno ? `${officerPno.slice(-3)}/KKR` : "889/KKR",
-    };
-    return this.verifyAndLockEntry(
-      {
-        subject,
-        narrative,
-        typeCode: typeof entryType === "string" ? entryType : "OTHER_MISCELLANEOUS",
-        policeStation: station,
-        relatedRecords: {
-          complaintNumber: relatedComplaintNumber,
+    if (typeof entryOrSubject === "object") {
+      const payload = entryOrSubject;
+      const typeDef = memoryTypesStore.find((t) => t.code === payload.typeCode) || memoryTypesStore[0];
+      const author: GDOfficerParticulars = payload.actualAuthor || {
+        name: "HC Devinder Kumar",
+        rank: "Head Constable (MHC)",
+        pno: "05192834",
+        beltNumber: "889/KKR",
+      };
+      return this.verifyAndLockEntry(
+        {
+          subject: payload.subject,
+          narrative: payload.narrative,
+          typeCode: payload.typeCode,
+          category: payload.category || typeDef.category,
+          typeDisplay: payload.typeDisplay || typeDef.nameEn,
+          typeDisplayHi: payload.typeDisplayHi || typeDef.nameHi,
+          activityDateTime: payload.activityDateTime || new Date().toISOString(),
+          entryForOfficer: payload.entryForOfficer || author,
+          actualAuthor: author,
+          policeStation: payload.policeStation || "PS City Thanesar",
+          district: payload.district || "Kurukshetra",
+          source: payload.source || "MANUAL_ENTRY",
+          relatedRecords: payload.relatedRecords || {},
         },
-      },
-      author,
-      "Verified entry created"
-    );
+        author,
+        "Direct verified entry"
+      );
+    } else {
+      const author: GDOfficerParticulars = {
+        name: officerName || "Police Officer",
+        rank: "Police Officer",
+        pno: officerPno || "05192834",
+        beltNumber: officerPno ? `${officerPno.slice(-3)}/KKR` : "889/KKR",
+      };
+      return this.verifyAndLockEntry(
+        {
+          subject: entryOrSubject,
+          narrative: narrative || "",
+          typeCode: typeof entryType === "string" ? entryType : "OTHER_MISCELLANEOUS",
+          policeStation: station || "PS City Thanesar",
+          relatedRecords: {
+            complaintNumber: relatedComplaintNumber,
+          },
+        },
+        author,
+        "Verified entry created"
+      );
+    }
   },
 
   async getTodayCount(): Promise<number> {

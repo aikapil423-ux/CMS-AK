@@ -83,14 +83,14 @@ export function Sidebar() {
   const showRoznamcha = isRoznamchaPath || (!isComplaintsPath && activeModule === "ROZNAMCHA");
   const showComplaints = isComplaintsPath || (!isRoznamchaPath && activeModule === "COMPLAINTS");
 
-  // ROZNAMCHA GD NAVIGATION ITEMS
+  // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
-    { name: "Daily Roznamcha Aam", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "New Roznamcha Entry", href: "/general-diary/new", icon: PlusCircle },
-    { name: "Pending Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "Departure & Return (रवानगी)", href: "/general-diary?type=RAVANGI_OFFICER", icon: Clock },
-    { name: "Patrol & Night Domination", href: "/general-diary?type=BEAT_PATROLLING", icon: Car },
-    { name: "Malkhana & Property", href: "/general-diary?type=CASE_PROPERTY_DEPOSIT", icon: Package },
+    { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Add New GD Entry", href: "/general-diary/new", icon: PlusCircle },
+    { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+    { name: "Departure & Return", href: "/general-diary?type=RAVANGI_OFFICER", icon: Clock },
+    { name: "Patrol & Night Vigilance", href: "/general-diary?type=BEAT_PATROLLING", icon: Car },
+    { name: "Malkhana & Property", href: "/general-diary?type=PROPERTY_DEPOSIT", icon: Package },
     { name: "Station Diary Opening", href: "/general-diary?type=AAGAZ_ROZNAMCHA", icon: Clock },
   ];
 
