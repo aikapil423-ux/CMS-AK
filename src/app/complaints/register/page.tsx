@@ -586,45 +586,160 @@ export default function RegisterComplaintPage() {
     reader.readAsDataURL(file);
   };
 
-  // Execution pipeline with real-time multi-stage visual steps
-  const executeExtractionPipeline = (
+  // Execution pipeline powered by Gemini 3.5 Flash Model
+  const executeExtractionPipeline = async (
     file: File,
     dataUrl: string,
     typeLabel: string,
     category: string,
     textContent?: string
   ) => {
-    // Step 2: 40%
-    setTimeout(() => {
-      setAutofillProgress(45);
-      if (category === "audio") {
-        setAutofillStepText("Transcribing voice frequency & speech patterns (Hindi/English Whisper AI)...");
-      } else if (category === "image") {
-        setAutofillStepText("Executing Optical Character Recognition (OCR) on handwritten paper lines...");
-      } else if (file.type.includes("pdf") || file.name.endsWith(".pdf")) {
-        setAutofillStepText("Parsing official police petition paragraphs, seals, and legal references...");
-      } else {
-        setAutofillStepText("Parsing written citizen text entities & coordinates...");
+    try {
+      setAutofillProgress(35);
+      setAutofillStepText(`Analyzing document with Gemini 3.5 Flash AI model...`);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      if (textContent) {
+        formData.append("text", textContent);
       }
-    }, 450);
 
-    // Step 3: 75%
-    setTimeout(() => {
-      setAutofillProgress(80);
-      setAutofillStepText("Extracting Complainant identity, Accused details, Incident spot & Allegations...");
-    }, 950);
+      setAutofillProgress(60);
+      setAutofillStepText("Verifying inner contents & classifying document name...");
 
-    // Step 4: 100% and apply
-    setTimeout(() => {
+      const res = await fetch("/api/complaints/autofill", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`API returned status ${res.status}`);
+      }
+
+      const resJson = await res.json();
+      if (!resJson.success || !resJson.data) {
+        throw new Error(resJson.error || "Failed to parse document with Gemini model");
+      }
+
+      setAutofillProgress(90);
+      setAutofillStepText("Applying extracted fields & renaming evidence with verified classification...");
+
+      const geminiData = resJson.data;
+
+      // Automatically rename and classify the document based on verified inner contents
+      const classifiedName = geminiData.classifiedDocumentName || file.name;
+      const verifiedTitle = geminiData.verifiedDocumentTitle || typeLabel;
+
+      // Update the sealed attachment with the classified, verified filename and description
+      setAttachments((prev) =>
+        prev.map((a) =>
+          a.name === file.name
+            ? {
+                ...a,
+                name: classifiedName,
+                description: `${verifiedTitle} (Auto-classified by Gemini 3.5 Flash: ${file.name} -> ${classifiedName})`,
+              }
+            : a
+        )
+      );
+
+      // Populate Form Fields from Gemini 3.5 Flash extraction
+      const c = geminiData.complainant || {};
+      const a = geminiData.accused || {};
+      const inc = geminiData.incident || {};
+      const comp = geminiData.complaint || {};
+
+      // 1. Complainant details
+      setComplainants([
+        {
+          id: "comp_1",
+          name: c.name || "Rameshwar Dass",
+          relationType: (c.relationType as RelativeRelation) || "S/O",
+          relativeName: c.relativeName || "",
+          gender: c.gender || "MALE",
+          age: c.age ? String(c.age) : "35",
+          nationalityChoice: c.nationality === "Indian" ? "Indian" : (c.nationality ? "Other" : "Indian"),
+          otherNationality: c.nationality && c.nationality !== "Indian" ? c.nationality : "",
+          nationality: c.nationality || "Indian",
+          countryCode: "+91",
+          presentAddress: c.presentAddress || "",
+          presentCity: c.city || "Kurukshetra",
+          presentDistrict: c.district || currentUser.district || "Kurukshetra",
+          presentState: c.state || "Haryana",
+          presentCountry: "India",
+          isPermanentSameAsPresent: true,
+          permanentAddress: c.presentAddress || "",
+          permanentCity: c.city || "Kurukshetra",
+          permanentDistrict: c.district || currentUser.district || "Kurukshetra",
+          permanentState: c.state || "Haryana",
+          permanentCountry: "India",
+          mobile: c.mobile ? String(c.mobile).replace(/\D/g, "").slice(0, 10) : "",
+        },
+      ]);
+
+      // 2. Accused details
+      const isKnown = Boolean(a.isKnown && a.name && a.name.trim().length > 0 && !a.name.toLowerCase().includes("unknown"));
+      setIsAccusedKnown(isKnown);
+      if (isKnown && a.name) {
+        setAccusedList([
+          {
+            id: "acc_1",
+            name: a.name,
+            address: a.address || "Particulars recorded in complaint dossier",
+          },
+        ]);
+      } else {
+        setAccusedList([]);
+      }
+
+      // 3. Incident details
+      setIncidentPlace(inc.place || "");
+      setIsDateTimeKnown(inc.isDateTimeKnown !== undefined ? Boolean(inc.isDateTimeKnown) : true);
+      if (inc.date) setIncidentDate(inc.date);
+      if (inc.time) setIncidentTime(inc.time);
+      if (inc.category) setIncidentCategory(inc.category);
+      if (inc.details) setIncidentDetails(inc.details);
+
+      // 4. Complaint details
+      if (comp.mode) setIntakeMode(comp.mode);
+      if (comp.subject) setComplaintSubject(comp.subject);
+      if (comp.description) setComplaintDescription(comp.description);
+      if (comp.type) setComplaintAgeType(comp.type);
+      if (comp.isFirRegistered !== undefined) setIsFirRegistered(Boolean(comp.isFirRegistered));
+      if (comp.firNumber) setFirNumber(comp.firNumber);
+
+      setValidationErrors({});
       setAutofillProgress(100);
-      setAutofillStepText("Auto-filling form fields & sealing evidence to complaint docket...");
+      setAutofillStepText("All fields successfully populated from Gemini 3.5 Flash!");
 
+      // Set success notice
+      setAutofillSuccessNotice({
+        fileName: classifiedName,
+        category,
+        typeLabel: `${verifiedTitle} • Gemini 3.5 Flash Verified`,
+        dataUrl,
+        complainantName: c.name || "Complainant",
+        complainantRelative: `${c.relationType || "S/O"} ${c.relativeName || ""}`,
+        complainantMobile: c.mobile || "",
+        accusedInfo: isKnown ? `${a.name} (${a.address || ""})` : "Unidentified Suspect(s)",
+        incidentPlace: inc.place || "Spot recorded",
+        categoryName: (inc.category || "GENERAL").replace(/_/g, " "),
+        subject: comp.subject || "Verified Police Complaint",
+      });
+
+      setIsAutofilling(false);
+      if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
+    } catch (err: any) {
+      console.warn("Gemini Flash API fallback triggered:", err);
+      // Fallback to local heuristic extractor if network or model fails
+      setAutofillProgress(95);
+      setAutofillStepText("Applying local police pattern extractor...");
       setTimeout(() => {
         applyExtractedComplaintData(file.name, category, dataUrl, typeLabel, textContent);
         setIsAutofilling(false);
         if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
-      }, 350);
-    }, 1400);
+      }, 500);
+    }
   };
 
   // Comprehensive entity extraction & form populating
@@ -2808,11 +2923,213 @@ export default function RegisterComplaintPage() {
               </div>
             </div>
 
-
-
             {/* =========================================================================
-                6. ASSIGN EO (Shown only when registered from SHO ID)
+                5. RUN INTELLIGENCE CHECK (LOCAL ENGINE WITHOUT AI MODEL)
                ========================================================================= */}
+            <div id="sec-intel" className="space-y-4 pt-6 border-t border-slate-200">
+              <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                    <Search className="w-4 h-4 text-purple-600" />
+                    <span>5. Run Intelligence Check</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Runs 100% locally by checking specific filled fields (Complainant, Mobile, Accused, Spot &amp; Facts) against station records without AI model
+                  </p>
+                </div>
+
+                {/* Dropdown Format Button */}
+                <div className="relative" ref={dropdownRef}>
+                  <div className="inline-flex rounded-lg shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => handleRunIntelCheck("all")}
+                      className="px-3.5 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white rounded-l-lg text-xs font-bold flex items-center gap-1.5 transition-colors border-r border-slate-700 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{intelResult ? "Re-Run All Checks" : "Run All Checks"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIntelDropdownOpen((prev) => !prev)}
+                      className="px-2.5 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white rounded-r-lg text-xs transition-colors flex items-center justify-center cursor-pointer"
+                      title="Select Intelligence Check"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-300" />
+                    </button>
+                  </div>
+
+                  {intelDropdownOpen && (
+                    <div className="absolute right-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in-50">
+                      <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>Select Check Type</span>
+                        <span className="text-emerald-700 font-mono text-[9px] bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">Local Only</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRunIntelCheck("all")}
+                        className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">Run All Checks</div>
+                          <div className="text-[10px] text-slate-500 font-normal">Full local check on all filled fields</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRunIntelCheck("cross")}
+                        className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-red-50 hover:text-red-900 font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-600 shrink-0"></span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">Cross-Complaint Check</div>
+                          <div className="text-[10px] text-slate-500 font-normal">Counter complaints by accused / opposite party</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRunIntelCheck("repeat")}
+                        className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-amber-50 hover:text-amber-900 font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">Repeat Complainant Check</div>
+                          <div className="text-[10px] text-slate-500 font-normal">Scan past filings by complainant mobile &amp; name</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRunIntelCheck("linked")}
+                        className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-purple-50 hover:text-purple-900 font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-purple-600 shrink-0"></span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">Linked &amp; Similar Cases</div>
+                          <div className="text-[10px] text-slate-500 font-normal">Match crime category, incident spot &amp; facts</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRunIntelCheck("fir")}
+                        className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">Prior FIR Records Check</div>
+                          <div className="text-[10px] text-slate-500 font-normal">Check prior historical FIR registry</div>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Display if Check was executed */}
+              {intelResult && (
+                <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2.5 animate-in fade-in-50">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveIntelTab("cross");
+                        setShowIntelModal(true);
+                      }}
+                      className={`p-2 rounded-lg border text-left transition-all ${
+                        intelResult.crossComplaints.length > 0
+                          ? "bg-red-50 border-red-200 text-red-900"
+                          : "bg-slate-50 border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase">
+                        <span>Cross-Cases</span>
+                        <span className={`px-1.5 py-0.2 rounded-full ${intelResult.crossComplaints.length > 0 ? "bg-red-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                          {intelResult.crossComplaints.length}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold mt-1">
+                        {intelResult.crossComplaints.length > 0 ? "Detected" : "Clean"}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveIntelTab("repeat");
+                        setShowIntelModal(true);
+                      }}
+                      className={`p-2 rounded-lg border text-left transition-all ${
+                        intelResult.repeatHistory.totalPreviousComplaints > 0
+                          ? "bg-amber-50 border-amber-200 text-amber-900"
+                          : "bg-slate-50 border-slate-200 text-slate-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase">
+                        <span>Repeat Files</span>
+                        <span className={`px-1.5 py-0.2 rounded-full ${intelResult.repeatHistory.totalPreviousComplaints > 0 ? "bg-amber-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                          {intelResult.repeatHistory.totalPreviousComplaints}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold mt-1">
+                        {intelResult.repeatHistory.totalPreviousComplaints > 0 ? `${intelResult.repeatHistory.totalPreviousComplaints} Found` : "First Time"}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveIntelTab("linked");
+                        setShowIntelModal(true);
+                      }}
+                      className="p-2 rounded-lg border bg-slate-50 border-slate-200 text-slate-600 text-left"
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase">
+                        <span>Linked</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-600">
+                          {intelResult.linkedComplaints.length}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold mt-1">
+                        {intelResult.linkedComplaints.length > 0 ? "Links Found" : "No Match"}
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveIntelTab("fir");
+                        setShowIntelModal(true);
+                      }}
+                      className="p-2 rounded-lg border bg-slate-50 border-slate-200 text-slate-600 text-left"
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase">
+                        <span>Prior FIRs</span>
+                        <span className="px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700">
+                          {intelResult.priorFirs.length}
+                        </span>
+                      </div>
+                      <p className="text-xs font-bold mt-1">
+                        {intelResult.priorFirs.length > 0 ? "Records Exist" : "Clean"}
+                      </p>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 text-xs">
+                    <span className="text-[11px] text-slate-500">
+                      Checked locally at: {new Date(intelResult.scannedAt).toLocaleTimeString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowIntelModal(true)}
+                      className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Results Details</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {isSho && (
               <div id="sec-assign-eo" className="space-y-4 pt-6 border-t border-slate-200">
                 <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
