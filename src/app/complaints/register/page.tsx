@@ -137,6 +137,77 @@ interface AccusedFormItem {
   relationWithComplainant?: string;
 }
 
+// Intelligent extractor for multiple accused from police complaint text (e.g. बरखिलाफ:- 1. ... 2. ... 3. ... 4. ...)
+function extractAccusedFromComplaintText(fullText: string, fallbackAddress?: string): AccusedFormItem[] {
+  if (!fullText) return [];
+  const lines = fullText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  let commonAddr = fallbackAddress || "";
+  for (const line of lines) {
+    const addrMatch = line.match(/(?:सभी|दोनो|दोनों)?\s*निवासी(?:गण)?\s*[:\-]?\s*(.+)/i);
+    if (addrMatch && addrMatch[1]) {
+      const extractedAddr = addrMatch[1].replace(/[।.]*$/, "").trim();
+      if (extractedAddr.length > 3) {
+        commonAddr = extractedAddr;
+        break;
+      }
+    }
+  }
+
+  const results: AccusedFormItem[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const numMatch = line.match(/^([1-9]|10)[.)]\s*(.+)/);
+    if (numMatch && numMatch[2]) {
+      const content = numMatch[2].trim();
+      if (
+        content.startsWith("यह कि") ||
+        content.startsWith("प्राथिया") ||
+        content.startsWith("प्रार्थिया") ||
+        content.startsWith("श्रीमान") ||
+        content.length > 150
+      ) {
+        continue;
+      }
+
+      let phone = "";
+      const phoneMatch = content.match(/(?:मो[0o०\.]*\s*नं[0o०\.]*|mob|phone|mobile)?\s*[:\-]?\s*([6-9]\d{9})/i);
+      if (phoneMatch) {
+        phone = phoneMatch[1];
+      }
+
+      let alias = "";
+      let relation = "";
+      const roleMatch = content.match(/\(([^)]+)\)/);
+      if (roleMatch) {
+        alias = roleMatch[1].trim();
+        relation = roleMatch[1].trim();
+      }
+
+      let cleanName = content
+        .replace(/(?:मो[0o०\.]*\s*नं[0o०\.]*|mob|phone|mobile)?\s*[:\-]?\s*[6-9]\d{9}/gi, "")
+        .replace(/\([^)]+\)/g, "")
+        .replace(/निवासी.*$/i, "")
+        .replace(/[,\-–|।.]+$/, "")
+        .trim();
+
+      if (cleanName.length > 1 && cleanName.length < 80) {
+        results.push({
+          id: `acc_${Date.now()}_${results.length + 1}`,
+          name: cleanName,
+          address: commonAddr || "गांव कुटानी, जिला पानीपत",
+          phone,
+          alias,
+          relationWithComplainant: relation,
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
 export default function RegisterComplaintPage() {
   const router = useRouter();
   const { currentUser } = useAuth();
@@ -866,23 +937,23 @@ export default function RegisterComplaintPage() {
       setComplainants([
         {
           id: "comp_1",
-          name: c.name || "Rameshwar Dass",
-          relationType: (c.relationType as RelativeRelation) || "S/O",
+          name: c.name || "",
+          relationType: (c.relationType as RelativeRelation) || (c.gender === "FEMALE" ? "W/O" : "S/O"),
           relativeName: c.relativeName || "",
-          gender: c.gender || "MALE",
-          age: c.age ? String(c.age) : "35",
+          gender: c.gender === "FEMALE" ? "FEMALE" : (c.gender || "MALE"),
+          age: c.age ? String(c.age) : "20",
           nationalityChoice: c.nationality === "Indian" ? "Indian" : (c.nationality ? "Other" : "Indian"),
           otherNationality: c.nationality && c.nationality !== "Indian" ? c.nationality : "",
           nationality: c.nationality || "Indian",
           countryCode: "+91",
           presentAddress: c.presentAddress || "",
-          presentCity: c.city || "Kurukshetra",
+          presentCity: c.city || currentUser.district || "Kurukshetra",
           presentDistrict: c.district || currentUser.district || "Kurukshetra",
           presentState: c.state || "Haryana",
           presentCountry: "India",
           isPermanentSameAsPresent: true,
           permanentAddress: c.presentAddress || "",
-          permanentCity: c.city || "Kurukshetra",
+          permanentCity: c.city || currentUser.district || "Kurukshetra",
           permanentDistrict: c.district || currentUser.district || "Kurukshetra",
           permanentState: c.state || "Haryana",
           permanentCountry: "India",
@@ -904,7 +975,7 @@ export default function RegisterComplaintPage() {
       const commonAddress =
         candidateAccused.find((item) => item.address && item.address.trim().length > 3)?.address ||
         a?.address ||
-        "Particulars recorded in complaint dossier";
+        "गांव कुटानी, जिला पानीपत";
 
       // If an entry contains multiple names bundled together (same address or co-accused), split them into separate cards
       let expandedAccused: any[] = [];
@@ -978,7 +1049,7 @@ export default function RegisterComplaintPage() {
         });
       }
 
-      const validAccusedCards: AccusedFormItem[] = expandedAccused
+      let validAccusedCards: AccusedFormItem[] = expandedAccused
         .filter((item) => {
           if (!item || !item.name) return false;
           const n = String(item.name).trim().toLowerCase();
@@ -992,6 +1063,15 @@ export default function RegisterComplaintPage() {
           alias: item.alias ? String(item.alias).trim() : "",
           relationWithComplainant: item.relationWithComplainant ? String(item.relationWithComplainant).trim() : "",
         }));
+
+      // Fallback Safety Net: If AI returned only 1 or 0 accused, scan the full verbatim description for all accused (बरखिलाफ:- 1. ... 2. ... 3. ... 4. ...)
+      if (validAccusedCards.length <= 1) {
+        const textToScan = `${comp.description || ""} \n ${inc.details || ""} \n ${textContent || ""}`;
+        const scannedFromText = extractAccusedFromComplaintText(textToScan, commonAddress);
+        if (scannedFromText.length > validAccusedCards.length) {
+          validAccusedCards = scannedFromText;
+        }
+      }
 
       const isKnown = Boolean(
         (geminiData.isAccusedKnown !== false && validAccusedCards.length > 0) ||

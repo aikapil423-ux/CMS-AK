@@ -19,12 +19,18 @@ export async function POST(req: NextRequest) {
     let contents: any[] = [];
     const prompt = `You are an elite Law Enforcement Document Analyzer & Evidence Classifier for Indian Police (CMS Haryana / BNSS 2023 / IPC).
 
+TASK 0: LANGUAGE FIDELITY (जैसी शिकायत है हू-ब-हू उसी भाषा में रखें)
+- STRICT USER REQUIREMENT: "jese hai complaint vese language me rhe".
+- If the uploaded document is in Hindi (देवनागरी लिपि), ALL extracted textual fields (Complainant Name, Relative Name, Address, Accused Names, Subject, Description, Incident Details) MUST REMAIN 100% IN HINDI.
+- ABSOLUTELY DO NOT TRANSLATE Hindi text into English! (e.g., keep "काजल", NOT "Kajal"; keep "दरखास्त बराये...", NOT English translation; keep "गांव कुटानी, जिला पानीपत", NOT "Village Kutani...").
+- Keep the original wording, phrasing, and Devanagari script intact.
+
 TASK 1: CLASSIFY & RENAME DOCUMENT (CRITICAL)
 - The uploaded file's original name may be wrong, ambiguous, or misleading (e.g. "IMG_1234.jpg", "document.pdf", "complaint.docx", "WhatsApp_Audio.mp3", or even named something false like "bill.pdf" while the actual content inside is an extortion complaint).
 - Analyze the ACTUAL LEGAL CONTENT inside this document/image/audio.
-- Classify the document type and contents precisely (e.g., "Handwritten_Shikayat_Cheating_Fraud_5Lakhs.jpg", "Scanned_Legal_Complaint_Land_Encroachment_Khasra.pdf", "Evidence_Audio_Threat_Call_Recording.mp3", "MLR_Medical_Injury_Report_Assault.pdf", "CCTV_Snapshot_Theft_Suspect.jpg", "Bank_Account_Statement_UPI_Fraud.pdf").
-- Provide a clean, official, and standardized sanitized filename: \`classifiedDocumentName\`.
-- Provide a one-sentence verification note: \`verifiedDocumentTitle\`.
+- Classify the document type and contents precisely (e.g., "Shikayat_Dahej_Utpidan_Kajal_v_Romi.pdf", "Handwritten_Shikayat_Cheating_Fraud_5Lakhs.jpg", "Scanned_Legal_Complaint_Land_Encroachment_Khasra.pdf", "MLR_Medical_Injury_Report_Assault.pdf").
+- Provide a clean, official, and standardized sanitized filename: "classifiedDocumentName".
+- Provide a one-sentence verification note: "verifiedDocumentTitle".
 
 TASK 2: 100% EXACT WORD-BY-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (ABSOLUTE MANDATORY REQUIREMENT)
 - In the "complaint.description" field, you MUST transcribe the ENTIRE document text WORD-BY-WORD (शब्द-ब-शब्द / हू-ब-हू) exactly as written in the uploaded document/image/petition.
@@ -33,31 +39,36 @@ TASK 2: 100% EXACT WORD-BY-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (ABSOLUTE
 - Also mirror this exact full narrative in "incident.details".
 
 TASK 3: EXTRACT ALL COMPLAINT REGISTER FIELDS
-Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. If any specific detail is not explicitly mentioned in the document, provide a realistic police intake placeholder or reasonable inference based on the text:
+Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. Keep fields in the original language of the document (Hindi in Hindi):
 1. Complainant Details:
-   - Full Name
+   - Full Name (in original language, e.g. "काजल")
    - Relation (must be one of: "S/O", "D/O", "W/O", "C/O")
-   - Relative Name (father / husband name)
+   - Relative Name (father / husband name in original language, e.g. "रोमी उर्फ सत्यम" or "दिलबाग सिंह")
    - Gender ("MALE", "FEMALE", or "TRANSGENDER")
-   - Age (number as string, e.g. "38")
-   - Mobile Number (10 digits)
-   - Present Address (House / Street / Locality)
-   - City / Village
-   - District (e.g. "Kurukshetra")
-   - State (e.g. "Haryana")
+   - Age (number as string, e.g. "20" from DOB 29/08/2005 on Aadhaar card)
+   - Mobile Number (10 digits, e.g. "8168270722" or "9050258485")
+   - Present Address (House / Street / Locality in original language, e.g. "गांव महावटी, तहसील समालखा, जिला पानीपत")
+   - City / Village (e.g. "महावटी")
+   - District (e.g. "पानीपत" / "Panipat")
+   - State (e.g. "हरियाणा" / "Haryana")
    - Nationality ("Indian" or other)
-2. Accused / Suspect Details (CRITICAL - SEPARATE CARDS FOR EACH ACCUSED EVEN WITH SAME ADDRESS):
-   - Strict Mandate: In Indian police complaints, multiple accused often share the same parentage or same address (e.g., "1. Ram Lal, 2. Shyam Lal, both sons of Sohan Lal, both residents of XYZ", or "A aur B dono niwasi XYZ").
-   - You MUST create a SEPARATE object for EACH individual accused person in the "accusedList" array.
-   - NEVER combine multiple accused into one name or one card! Even if they have the exact same address, create separate cards for each person!
-   - Copy the shared address to each individual accused card so every card has the complete address.
+2. Accused / Suspect Details (CRITICAL - EXTRACT EVERY ACCUSED PERSON INTO A SEPARATE CARD):
+   - In Indian police complaints under "विषय: ... बरखिलाफ:-", "विरुद्ध:-", "आरोपीगण:-", or numbered list (1., 2., 3., 4., etc.), inspect all named accused.
+   - For example:
+     1. रोमी उर्फ सत्यम पुत्र सुरेन्द्र सिंह (पति) मो0 नं0 9485636036
+     2. सुरेन्द्र सिंह पुत्र श्री हुकम चन्द (ससुर) मो0 नं0 8397816075
+     3. नीलम पत्नी सुरेन्द्र (सास) मो0 नं0 9499408983
+     4. सोनिया पुत्री सुरेन्द्र (ननंद)
+     सभी निवासीगण गांव कुटानी, जिला पानीपत
+   - YOU MUST CREATE 4 SEPARATE OBJECTS in "accusedList" for the 4 individuals above!
+   - NEVER combine multiple accused into 1 card! NEVER return only 1 accused when multiple are listed!
+   - If a shared address is mentioned ("सभी निवासीगण गांव कुटानी, जिला पानीपत"), copy that full address to EVERY accused card.
    - For EACH accused person:
-     * name: Full name of THIS individual accused only (e.g., "Ram Lal s/o Sohan Lal")
-     * address: Full address of this individual (copy shared address here)
-     * phone: Phone number if mentioned, else ""
-     * alias: Nickname, alias (urf), or role/relation if mentioned
-     * relationWithComplainant: Relationship with complainant if mentioned
-   - If there are 3 accused mentioned, "accusedList" MUST have 3 separate objects.
+     * name: Individual's name only (e.g. "रोमी उर्फ सत्यम" or "सुरेन्द्र सिंह" or "नीलम" or "सोनिया")
+     * address: Address of this individual (e.g. "गांव कुटानी, जिला पानीपत")
+     * phone: Mobile number if mentioned (e.g. "9485636036", "8397816075", "9499408983")
+     * alias: Role / Alias / Parentage (e.g. "पति", "ससुर", "सास", "ननंद")
+     * relationWithComplainant: Relation with complainant (e.g. "पति", "ससुर", "सास", "ननंद")
    - isAccusedKnown: true if one or more accused are identified/named, false if unidentified/unknown.
 3. Incident Details:
    - Place of Incident (specific location or landmark)
