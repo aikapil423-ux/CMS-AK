@@ -890,19 +890,128 @@ export default function RegisterComplaintPage() {
         },
       ]);
 
-      // 2. Accused details
-      const isKnown = Boolean(a.isKnown && a.name && a.name.trim().length > 0 && !a.name.toLowerCase().includes("unknown"));
+      // 2. Accused details (extract and populate EVERY accused into their OWN separate card)
+      let candidateAccused: any[] = [];
+      if (Array.isArray(geminiData.accusedList) && geminiData.accusedList.length > 0) {
+        candidateAccused = geminiData.accusedList;
+      } else if (Array.isArray(geminiData.accused) && geminiData.accused.length > 0) {
+        candidateAccused = geminiData.accused;
+      } else if (a && a.name) {
+        candidateAccused = [a];
+      }
+
+      // Find any common fallback address from the inputs
+      const commonAddress =
+        candidateAccused.find((item) => item.address && item.address.trim().length > 3)?.address ||
+        a?.address ||
+        "Particulars recorded in complaint dossier";
+
+      // If an entry contains multiple names bundled together (same address or co-accused), split them into separate cards
+      let expandedAccused: any[] = [];
+      for (const item of candidateAccused) {
+        const rawName = String(item?.name || "").trim();
+        const itemAddress = item?.address && item.address.trim().length > 0 ? item.address.trim() : commonAddress;
+
+        // Check for numbered lists: "1. Ram, 2. Shyam", "(1) Ram (2) Shyam", etc.
+        const hasNumberedList = /(?:^|\n|\s+)(?:[1-9]\.|\([1-9]\)|[1-9]\))\s+/.test(rawName);
+        if (hasNumberedList) {
+          const splitParts = rawName
+            .split(/(?:^|\n|\s+)(?:[1-9]\.|\([1-9]\)|[1-9]\))\s+/)
+            .map((p: string) => p.trim())
+            .filter((p: string) => p.length > 0);
+          if (splitParts.length > 1) {
+            for (const part of splitParts) {
+              const addrMatch = part.split(/\s*(?:r\/o|w\/o|s\/o|निवासी|पता|address:)\s*/i);
+              expandedAccused.push({
+                name: addrMatch[0]?.replace(/[,\n]+$/, "").trim() || part,
+                address: addrMatch[1] ? addrMatch[1].trim() : itemAddress,
+                phone: item.phone || "",
+                alias: item.alias || "",
+                relationWithComplainant: item.relationWithComplainant || "",
+              });
+            }
+            continue;
+          }
+        }
+
+        // Check for newline separated names
+        if (rawName.includes("\n")) {
+          const lineParts = rawName.split("\n").map((p: string) => p.trim()).filter((p: string) => p.length > 0);
+          if (lineParts.length > 1) {
+            for (const line of lineParts) {
+              expandedAccused.push({
+                name: line.replace(/^[0-9\-*•.)\s]+/, "").trim(),
+                address: itemAddress,
+                phone: item.phone || "",
+                alias: item.alias || "",
+                relationWithComplainant: item.relationWithComplainant || "",
+              });
+            }
+            continue;
+          }
+        }
+
+        // Check for conjunctions joining 2 or more names e.g. "Ram Kumar aur Shyam Kumar dono niwasi..."
+        const conjMatch = rawName.match(/^([^,]+?)\s+(?:aur|और|तथा|एवं|and|&)\s+([^,]+?)(?:\s+(?:dono|both|दोनो|दोनों|resident|niwasi|निवासी).*)?$/i);
+        if (conjMatch && conjMatch[1] && conjMatch[2]) {
+          expandedAccused.push({
+            name: conjMatch[1].trim(),
+            address: itemAddress,
+            phone: item.phone || "",
+            alias: item.alias || "",
+            relationWithComplainant: item.relationWithComplainant || "",
+          });
+          expandedAccused.push({
+            name: conjMatch[2].trim(),
+            address: itemAddress,
+            phone: item.phone || "",
+            alias: item.alias || "",
+            relationWithComplainant: item.relationWithComplainant || "",
+          });
+          continue;
+        }
+
+        // Standard single item with address guaranteed
+        expandedAccused.push({
+          ...item,
+          address: itemAddress,
+        });
+      }
+
+      const validAccusedCards: AccusedFormItem[] = expandedAccused
+        .filter((item) => {
+          if (!item || !item.name) return false;
+          const n = String(item.name).trim().toLowerCase();
+          return n.length > 0 && !n.includes("unknown") && !n.includes("अज्ञात");
+        })
+        .map((item, idx) => ({
+          id: `acc_${Date.now()}_${idx + 1}`,
+          name: String(item.name || "").trim(),
+          address: String(item.address || commonAddress).trim(),
+          phone: item.phone ? String(item.phone).trim() : "",
+          alias: item.alias ? String(item.alias).trim() : "",
+          relationWithComplainant: item.relationWithComplainant ? String(item.relationWithComplainant).trim() : "",
+        }));
+
+      const isKnown = Boolean(
+        (geminiData.isAccusedKnown !== false && validAccusedCards.length > 0) ||
+        (a.isKnown && validAccusedCards.length > 0)
+      );
+
       setIsAccusedKnown(isKnown);
-      if (isKnown && a.name) {
+      if (isKnown && validAccusedCards.length > 0) {
+        setAccusedList(validAccusedCards);
+      } else {
         setAccusedList([
           {
             id: "acc_1",
-            name: a.name,
-            address: a.address || "Particulars recorded in complaint dossier",
+            name: "",
+            address: "",
+            phone: "",
+            alias: "",
+            relationWithComplainant: "",
           },
         ]);
-      } else {
-        setAccusedList([]);
       }
 
       // 3. Incident details

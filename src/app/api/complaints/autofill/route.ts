@@ -46,10 +46,19 @@ Read and extract all particulars from this document to populate the Police Stati
    - District (e.g. "Kurukshetra")
    - State (e.g. "Haryana")
    - Nationality ("Indian" or other)
-2. Accused Details:
-   - isAccusedKnown (boolean: true if accused person or entity is named/known, false if unidentified/unknown)
-   - Accused Full Name (or alias, e.g. "Raju @ Pehalwan" or "Unknown thief")
-   - Accused Address or identifiable details
+2. Accused / Suspect Details (CRITICAL - SEPARATE CARDS FOR EACH ACCUSED EVEN WITH SAME ADDRESS):
+   - Strict Mandate: In Indian police complaints, multiple accused often share the same parentage or same address (e.g., "1. Ram Lal, 2. Shyam Lal, both sons of Sohan Lal, both residents of XYZ", or "A aur B dono niwasi XYZ").
+   - You MUST create a SEPARATE object for EACH individual accused person in the "accusedList" array.
+   - NEVER combine multiple accused into one name or one card! Even if they have the exact same address, create separate cards for each person!
+   - Copy the shared address to each individual accused card so every card has the complete address.
+   - For EACH accused person:
+     * name: Full name of THIS individual accused only (e.g., "Ram Lal s/o Sohan Lal")
+     * address: Full address of this individual (copy shared address here)
+     * phone: Phone number if mentioned, else ""
+     * alias: Nickname, alias (urf), or role/relation if mentioned
+     * relationWithComplainant: Relationship with complainant if mentioned
+   - If there are 3 accused mentioned, "accusedList" MUST have 3 separate objects.
+   - isAccusedKnown: true if one or more accused are identified/named, false if unidentified/unknown.
 3. Incident Details:
    - Place of Incident (specific location or landmark)
    - Date of Incident (YYYY-MM-DD if known)
@@ -82,10 +91,27 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
     "state": "Haryana",
     "nationality": "Indian"
   },
+  "isAccusedKnown": true,
+  "accusedList": [
+    {
+      "name": "Full Name of Accused 1 (Single individual)",
+      "address": "Address or location of Accused 1",
+      "phone": "",
+      "alias": "",
+      "relationWithComplainant": ""
+    },
+    {
+      "name": "Full Name of Accused 2 (Single individual)",
+      "address": "Address or location of Accused 2",
+      "phone": "",
+      "alias": "",
+      "relationWithComplainant": ""
+    }
+  ],
   "accused": {
     "isKnown": true,
-    "name": "Accused Name",
-    "address": "Accused Address"
+    "name": "Primary Accused Name",
+    "address": "Primary Accused Address"
   },
   "incident": {
     "place": "Incident Location",
