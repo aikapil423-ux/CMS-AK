@@ -1061,17 +1061,32 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
   return (
     <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
-      {/* Top Back Navigation Bar */}
-      <div className="flex items-center justify-between">
-        <Link
-          href="/complaints"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0b192c] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Complaints Register</span>
-        </Link>
-        <span className="text-xs font-mono text-slate-400">
-          Police Station: <strong className="text-slate-700">{complaint.policeStation}</strong>
+      {/* Top Header & Navigation Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/complaints"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0b192c] transition-colors bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Complaints</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-tight">
+                Complaint Profile
+              </h1>
+              <p className="text-[11px] text-slate-500 font-mono">
+                Haryana Police · Thanesar City
+              </p>
+            </div>
+          </div>
+        </div>
+        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto">
+          Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
         </span>
       </div>
 
@@ -1137,27 +1152,16 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                       <span>Assign EO</span>
                     </Button>
                   ) : (
-                    <>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setProgressModalOpen(true)}
-                        className="gap-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Ask for Progress Report</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleOpenAssign}
-                        className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                        title="Reassign to another Enquiry Officer"
-                      >
-                        <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Reassign EO</span>
-                      </Button>
-                    </>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenAssign}
+                      className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      title="Reassign to another Enquiry Officer"
+                    >
+                      <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Reassign EO</span>
+                    </Button>
                   )}
                 </>
               )}
@@ -1453,7 +1457,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               {isAssignedEo
                 ? "You are the designated Enquiry Officer for this complaint. Only you can upload evidence, record enquiry notes, upload documents, and modify this case file."
                 : isSho
-                ? `You have supervisory jurisdiction over this complaint. You can assign/reassign officers and demand progress reports. Investigation entries are recorded by designated EO (${complaint.assignedEoName || "Unassigned"}).`
+                ? `You have supervisory jurisdiction over this complaint. You can assign or reassign officers. Investigation entries are recorded by designated EO (${complaint.assignedEoName || "Unassigned"}).`
                 : `Official viewing mode. You can inspect all case progress, evidence, notes, documents, and reports in read-only mode. Adding or deleting items is restricted to assigned EO (${complaint.assignedEoName || "Unassigned"}).`}
             </p>
           </div>
@@ -1461,17 +1465,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
         {/* Shortcut Action Buttons based on role */}
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-          {isSho && !isUnassigned && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setProgressModalOpen(true)}
-              className="h-7 text-xs bg-white text-blue-700 border-blue-300 hover:bg-blue-50 font-semibold gap-1"
-            >
-              <Send className="w-3 h-3 text-blue-600" />
-              <span>Ask for Progress Report</span>
-            </Button>
-          )}
           {isAssignedEo && (
             <Button
               size="sm"
