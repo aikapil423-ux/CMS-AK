@@ -907,15 +907,6 @@ function ComplaintListContent() {
                             <Eye className="w-3.5 h-3.5" /> View Profile
                           </Button>
                         </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedComplaint(c)}
-                          className="text-xs font-semibold"
-                          title="Quick preview drawer"
-                        >
-                          Quick View
-                        </Button>
                       </div>
                     </td>
                   </tr>
