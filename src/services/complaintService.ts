@@ -774,6 +774,7 @@ export const ComplaintService = {
       fileSize: string;
       fileUrl?: string;
       dataUrl?: string;
+      contentHtml?: string;
       description?: string;
       uploadedBy: string;
     }
@@ -791,6 +792,7 @@ export const ComplaintService = {
       fileSize: doc.fileSize,
       fileUrl: doc.fileUrl || doc.dataUrl,
       dataUrl: doc.dataUrl || doc.fileUrl,
+      contentHtml: doc.contentHtml,
       description: doc.description,
     };
 

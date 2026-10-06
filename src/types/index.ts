@@ -239,6 +239,7 @@ export interface ComplaintReportItem {
   officerPno?: string;
   conclusionSummary?: string;
   content?: string;
+  contentHtml?: string;
   fileName?: string;
   fileSize?: string;
   fileUrl?: string;
@@ -271,8 +272,83 @@ export interface ComplaintDocumentItem {
   fileSize: string;
   fileUrl?: string;
   dataUrl?: string;
+  contentHtml?: string;
   mimeType?: string;
   description?: string;
+}
+
+export interface PoliceReportFormData {
+  dispatchNo: string;
+  complaintRefNo: string;
+  gdEntryNo: string;
+  policeStation: string;
+  district: string;
+  reportDate: string;
+  reportTime: string;
+
+  complainantName: string;
+  complainantFather: string;
+  complainantAge: string;
+  complainantAddress: string;
+  complainantPhone: string;
+
+  accusedName: string;
+  accusedFather: string;
+  accusedAddress: string;
+  accusedPhone: string;
+
+  incidentDate: string;
+  incidentPlace: string;
+  sectionsOfLaw: string;
+  disputeSubject: string;
+  amountOrPropertyDetails: string;
+  complaintSubstance: string;
+
+  witnessesExamined: string;
+  documentsVerified: string;
+  enquiryFindings: string;
+  finalConclusion: string;
+  shoRecommendation: string;
+
+  officerName: string;
+  officerRank: string;
+  officerPno: string;
+  officerPhone: string;
+}
+
+export interface NoticeFormData {
+  dispatchNo: string;
+  policeStation: string;
+  district: string;
+  issueDate: string;
+
+  noticeeName: string;
+  noticeeFather: string;
+  noticeeAge: string;
+  noticeeAddress: string;
+  noticeePhone: string;
+  noticeeRole: string;
+
+  complaintNo: string;
+  complainantName: string;
+  incidentDate: string;
+  sectionsOfLaw: string;
+  allegationsBrief: string;
+
+  appearanceDate: string;
+  appearanceTime: string;
+  appearancePlace: string;
+  documentsRequired: string;
+
+  officerName: string;
+  officerRank: string;
+  officerPno: string;
+  officerPhone: string;
+
+  mhcName?: string;
+  mhcRank?: string;
+  mhcBeltNumber?: string;
+  mhcPhone?: string;
 }
 
 export interface ConfidentialDossierItem {

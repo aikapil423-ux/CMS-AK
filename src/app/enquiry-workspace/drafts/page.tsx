@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem } from "@/types";
+import { generateEnquiryReportHtml } from "@/utils/documentHtmlGenerators";
 
 export type PoliceReportCategory =
   | "financial_fraud"
@@ -44,7 +45,7 @@ export type PoliceReportCategory =
   | "cyber_crime"
   | "lost_property_ncr";
 
-interface PoliceReportFormData {
+export interface PoliceReportFormData {
   // Station & Dispatch
   dispatchNo: string;
   complaintRefNo: string;
@@ -558,10 +559,9 @@ function DraftsAndNCRContent() {
   };
 
   const handleDownloadReport = () => {
-    if (!documentRef.current) return;
-    const text = documentRef.current.innerText;
-    const filename = `${(formData.dispatchNo || "ENQUIRY_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.txt`;
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const html = generateEnquiryReportHtml(formData, activeCategory);
+    const filename = `${(formData.dispatchNo || "ENQUIRY_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.html`;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -579,6 +579,7 @@ function DraftsAndNCRContent() {
       const label = CATEGORY_LABELS[activeCategory]?.label || "Enquiry Report";
       const reportTitle = `${label} - ${formData.complaintRefNo || complaint.complaintNumber}`;
       const docText = documentRef.current?.innerText || "";
+      const reportHtml = generateEnquiryReportHtml(formData, activeCategory);
 
       await ComplaintService.addComplaintReport(complaint.id, {
         title: reportTitle,
@@ -591,7 +592,11 @@ function DraftsAndNCRContent() {
         officerPno: formData.officerPno || currentUser.pno || "PNO-23841",
         conclusionSummary: formData.finalConclusion || formData.shoRecommendation,
         content: docText,
-        fileFormat: "txt",
+        contentHtml: reportHtml,
+        fileName: `${(formData.dispatchNo || "ENQUIRY_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.html`,
+        fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
+        fileFormat: "HTML",
+        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
         isUploaded: false,
       });
 
@@ -677,7 +682,7 @@ function DraftsAndNCRContent() {
               className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
             >
               <Download className="w-4 h-4 text-blue-700" />
-              <span>Download (.txt)</span>
+              <span>Download Report (.html)</span>
             </Button>
 
             <Button

@@ -155,6 +155,78 @@ const DOSSIER_CATEGORY_CONFIG: Record<
   },
 };
 
+const TEMPLATE_DROPDOWN_OPTIONS = [
+  {
+    key: "accused_notice_bnss",
+    label: "1. Notice to Accused u/s 35(3) BNSS",
+    desc: "Mandatory statutory appearance notice to suspect",
+    icon: Scale,
+  },
+  {
+    key: "witness_notice_bnss",
+    label: "2. Notice to Witness u/s 179 BNSS",
+    desc: "Summon key eyewitnesses & material persons",
+    icon: UserCheck,
+  },
+  {
+    key: "complaint_receipt",
+    label: "3. Official Complaint Acknowledgment Receipt",
+    desc: "Chapter XXII PPR sealed intake receipt for citizen",
+    icon: ScrollText,
+  },
+  {
+    key: "transfer_memo",
+    label: "4. Case Transfer / Forwarding Memo",
+    desc: "Jurisdictional police station forwarding letter",
+    icon: ArrowRightLeft,
+  },
+  {
+    key: "summons_production",
+    label: "5. Document Requisition u/s 94 BNSS",
+    desc: "Order bank statements, revenue records & digital CCTV",
+    icon: FileText,
+  },
+];
+
+const REPORT_DROPDOWN_OPTIONS = [
+  {
+    key: "land_dispute",
+    label: "1. Land & Civil Dispute Enquiry Report",
+    desc: "Boundary, passage & revenue partition disputes",
+    icon: Home,
+  },
+  {
+    key: "financial_fraud",
+    label: "2. Financial Fraud Verification Report",
+    desc: "Cheating, loan fraud, breach of trust u/s 318(4) BNS",
+    icon: Landmark,
+  },
+  {
+    key: "assault_ncr",
+    label: "3. Physical Assault & NCR (Section 174 BNSS)",
+    desc: "Non-cognizable scuffle report with MLR findings",
+    icon: BadgeAlert,
+  },
+  {
+    key: "matrimonial_dispute",
+    label: "4. Matrimonial Compromise / Domestic Report",
+    desc: "Reconciliation proceedings & mutual agreements",
+    icon: HeartHandshake,
+  },
+  {
+    key: "cyber_crime",
+    label: "5. Cyber Crime Preliminary Report",
+    desc: "Online fraud, OTP theft & helpline 1930 records",
+    icon: Laptop,
+  },
+  {
+    key: "lost_property_ncr",
+    label: "6. Lost Property / NCR Report",
+    desc: "Affidavit of lost documents, DL & ATM cards",
+    icon: HelpCircle,
+  },
+];
+
 // Voice Dictation / Audio Input Component for any entry column
 function VoiceInputButton({
   onTranscript,
@@ -389,9 +461,12 @@ export default function ComplaintProfilePage() {
   const [progressDeadlineHours, setProgressDeadlineHours] = useState(24);
   const [isSubmittingProgress, setIsSubmittingProgress] = useState(false);
 
-  // Report & Template Generator Modals State
-  const [generateDocModalOpen, setGenerateDocModalOpen] = useState(false);
-  const [generateReportModalOpen, setGenerateReportModalOpen] = useState(false);
+  // Report & Template Generator Dropdown States
+  const [generateDocDropdownOpen, setGenerateDocDropdownOpen] = useState(false);
+  const generateDocDropdownRef = useRef<HTMLDivElement>(null);
+  const [generateReportDropdownOpen, setGenerateReportDropdownOpen] = useState(false);
+  const generateReportDropdownRef = useRef<HTMLDivElement>(null);
+  const reportIframeRef = useRef<HTMLIFrameElement>(null);
   const [uploadReportModalOpen, setUploadReportModalOpen] = useState(false);
   const [uploadReportTitle, setUploadReportTitle] = useState("");
   const [uploadReportCategory, setUploadReportCategory] = useState("Civil / Land Dispute");
@@ -501,6 +576,12 @@ export default function ComplaintProfilePage() {
     function handleClickOutside(event: MouseEvent) {
       if (moreActionsRef.current && !moreActionsRef.current.contains(event.target as Node)) {
         setMoreActionsOpen(false);
+      }
+      if (generateDocDropdownRef.current && !generateDocDropdownRef.current.contains(event.target as Node)) {
+        setGenerateDocDropdownOpen(false);
+      }
+      if (generateReportDropdownRef.current && !generateReportDropdownRef.current.contains(event.target as Node)) {
+        setGenerateReportDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -1623,7 +1704,8 @@ Certified official record copy.`;
                 type="button"
                 onClick={() => {
                   setMoreActionsOpen(false);
-                  setGenerateDocModalOpen(true);
+                  setActiveTab("documents");
+                  setGenerateDocDropdownOpen(true);
                 }}
                 className="w-full text-left px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2 cursor-pointer transition-colors"
               >
@@ -1635,7 +1717,8 @@ Certified official record copy.`;
                 type="button"
                 onClick={() => {
                   setMoreActionsOpen(false);
-                  setGenerateReportModalOpen(true);
+                  setActiveTab("reports");
+                  setGenerateReportDropdownOpen(true);
                 }}
                 className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
               >
@@ -2041,15 +2124,59 @@ Certified official record copy.`;
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setGenerateDocModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 cursor-pointer shadow-2xs"
-                >
-                  <ScrollText className="w-3.5 h-3.5 text-purple-700" />
-                  <span>Generate Document</span>
-                </Button>
+                <div className="relative" ref={generateDocDropdownRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setGenerateDocDropdownOpen(!generateDocDropdownOpen)}
+                    className="gap-1.5 text-xs font-semibold border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 cursor-pointer shadow-2xs"
+                  >
+                    <ScrollText className="w-3.5 h-3.5 text-purple-700" />
+                    <span>Generate Document</span>
+                    <ChevronDown className={`w-3 h-3 text-purple-600 transition-transform duration-200 ${generateDocDropdownOpen ? "rotate-180" : ""}`} />
+                  </Button>
+
+                  {generateDocDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-84 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in-50 zoom-in-95">
+                      <div className="px-3 py-2 border-b border-slate-100">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
+                          Select Notice / Document Template
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Preloaded with Complaint {complaint.complaintNumber}
+                        </p>
+                      </div>
+                      <div className="py-1">
+                        {TEMPLATE_DROPDOWN_OPTIONS.map((tmpl) => {
+                          const IconComponent = tmpl.icon;
+                          return (
+                            <button
+                              key={tmpl.key}
+                              type="button"
+                              onClick={() => {
+                                setGenerateDocDropdownOpen(false);
+                                router.push(`/enquiry-workspace/templates?complaintId=${complaint.id}&template=${tmpl.key}`);
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-purple-50 hover:text-purple-900 transition-colors flex items-center gap-2.5 group cursor-pointer"
+                            >
+                              <div className="p-1.5 rounded-md bg-purple-50 text-purple-700 group-hover:bg-purple-100 shrink-0">
+                                <IconComponent className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-slate-800 group-hover:text-purple-950 truncate">
+                                  {tmpl.label}
+                                </p>
+                                <p className="text-[10px] text-slate-400 group-hover:text-purple-700 truncate">
+                                  {tmpl.desc}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {canUploadDocument && (
                   <Button
                     variant="primary"
@@ -2302,15 +2429,59 @@ Certified official record copy.`;
                   <span>Upload Report</span>
                 </Button>
 
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setGenerateReportModalOpen(true)}
-                  className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white cursor-pointer shadow-xs"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Generate Report</span>
-                </Button>
+                <div className="relative" ref={generateReportDropdownRef}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setGenerateReportDropdownOpen(!generateReportDropdownOpen)}
+                    className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white cursor-pointer shadow-xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Generate Report</span>
+                    <ChevronDown className={`w-3 h-3 text-amber-300 transition-transform duration-200 ${generateReportDropdownOpen ? "rotate-180" : ""}`} />
+                  </Button>
+
+                  {generateReportDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-84 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in-50 zoom-in-95">
+                      <div className="px-3 py-2 border-b border-slate-100">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                          Select Enquiry Report Category
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          Preloaded with Complaint {complaint.complaintNumber}
+                        </p>
+                      </div>
+                      <div className="py-1">
+                        {REPORT_DROPDOWN_OPTIONS.map((cat) => {
+                          const IconComponent = cat.icon;
+                          return (
+                            <button
+                              key={cat.key}
+                              type="button"
+                              onClick={() => {
+                                setGenerateReportDropdownOpen(false);
+                                router.push(`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${cat.key}`);
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50 hover:text-amber-900 transition-colors flex items-center gap-2.5 group cursor-pointer"
+                            >
+                              <div className="p-1.5 rounded-md bg-amber-50 text-amber-700 group-hover:bg-amber-100 shrink-0">
+                                <IconComponent className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-slate-800 group-hover:text-amber-950 truncate">
+                                  {cat.label}
+                                </p>
+                                <p className="text-[10px] text-slate-400 group-hover:text-amber-700 truncate">
+                                  {cat.desc}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2451,7 +2622,10 @@ Certified official record copy.`;
                     <Button
                       size="sm"
                       variant="primary"
-                      onClick={() => setGenerateReportModalOpen(true)}
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                        setGenerateReportDropdownOpen(true);
+                      }}
                       className="gap-1 text-xs font-bold bg-[#0b192c]"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -3941,6 +4115,15 @@ Certified official record copy.`;
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                  title="Print document"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() =>
                     handleDownloadDocument({
                       id: "preview_doc",
@@ -4023,7 +4206,9 @@ Certified official record copy.`;
                 <div className="w-full h-full min-h-[450px] flex flex-col items-center justify-center">
                   {previewModalFile.dataUrl &&
                   (previewModalFile.dataUrl.startsWith("data:application/pdf") ||
-                    previewModalFile.name.toLowerCase().endsWith(".pdf")) ? (
+                    previewModalFile.dataUrl.startsWith("data:text/html") ||
+                    previewModalFile.name.toLowerCase().endsWith(".pdf") ||
+                    previewModalFile.name.toLowerCase().endsWith(".html")) ? (
                     <iframe
                       src={previewModalFile.dataUrl}
                       title={previewModalFile.name}
@@ -4467,194 +4652,7 @@ Certified official record copy.`;
         onClose={() => setShowReceiptModal(false)}
       />
 
-      {/* ========================================================================= */}
-      {/* MODAL: GENERATE NOTICE / STATUTORY DOCUMENT                               */}
-      {/* ========================================================================= */}
-      {generateDocModalOpen && complaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setGenerateDocModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="space-y-0.5">
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <ScrollText className="w-5 h-5 text-purple-600" />
-                  <span>Generate Official Notice / Document</span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Select notice template. Page 2 will open with this complaint&apos;s details preloaded for direct editing.
-                </p>
-              </div>
-              <button onClick={() => setGenerateDocModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="grid grid-cols-1 gap-2.5">
-              {[
-                {
-                  key: "complaint_receipt",
-                  label: "1. Receipt of Registered Complaint (पावती रसीद)",
-                  desc: "Official statutory intake acknowledgment slip under PPR 22.48 for complainant",
-                  icon: FileCheck2,
-                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-                },
-                {
-                  key: "accused_notice_bnss",
-                  label: "2. Notice to Accused u/s 35(3) BNSS, 2023",
-                  desc: "Statutory appearance directive for named suspect(s) with compliance undertakings",
-                  icon: Shield,
-                  color: "text-red-600 bg-red-50 border-red-200",
-                },
-                {
-                  key: "witness_notice_bnss",
-                  label: "3. Notice to Witness u/s 179 BNSS, 2023",
-                  desc: "Order for attendance and examination of eyewitnesses / material witnesses",
-                  icon: UserCheck,
-                  color: "text-blue-600 bg-blue-50 border-blue-200",
-                },
-                {
-                  key: "document_notice_bnss",
-                  label: "4. Production of Documents Notice u/s 94 BNSS",
-                  desc: "Requisition bank statements, commercial invoices, or institutional records",
-                  icon: FileText,
-                  color: "text-amber-600 bg-amber-50 border-amber-200",
-                },
-                {
-                  key: "spot_panchnama",
-                  label: "5. Spot Panchnama / Inspection Memo",
-                  desc: "Topography verification, rough sketch memo, and local witness sign-offs",
-                  icon: FileCheck2,
-                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-                },
-              ].map((tmpl) => {
-                const Icon = tmpl.icon;
-                return (
-                  <button
-                    key={tmpl.key}
-                    type="button"
-                    onClick={() => {
-                      setGenerateDocModalOpen(false);
-                      router.push(`/enquiry-workspace/templates?complaintId=${complaint.id}&template=${tmpl.key}`);
-                    }}
-                    className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/40 transition-all flex items-start gap-3 group cursor-pointer"
-                  >
-                    <div className={`p-2 rounded-lg border shrink-0 ${tmpl.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-purple-900">
-                        {tmpl.label}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{tmpl.desc}</p>
-                    </div>
-                    <span className="text-xs font-bold text-purple-600 shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      Open &rarr;
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL: GENERATE ENQUIRY REPORT / DRAFTS                                    */}
-      {/* ========================================================================= */}
-      {generateReportModalOpen && complaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setGenerateReportModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="space-y-0.5">
-                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <FileCheck2 className="w-5 h-5 text-amber-600" />
-                  <span>Generate Enquiry Report / NCR</span>
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Select report category format. Page 2 opens directly in full-width editor with all details preloaded.
-                </p>
-              </div>
-              <button onClick={() => setGenerateReportModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5">
-              {[
-                {
-                  key: "land_dispute",
-                  label: "1. Land & Civil Boundary Dispute Report",
-                  desc: "Field verification u/s 173(3) BNSS / PPR Ch XXII for property & passage disputes",
-                  icon: Home,
-                  color: "text-blue-600 bg-blue-50 border-blue-200",
-                },
-                {
-                  key: "financial_fraud",
-                  label: "2. Financial Cheating & Fraud Enquiry Report",
-                  desc: "Investigation into business fraud, RTGS/UPI misappropriation u/s 318(4) BNS",
-                  icon: Landmark,
-                  color: "text-amber-600 bg-amber-50 border-amber-200",
-                },
-                {
-                  key: "assault_ncr",
-                  label: "3. Non-Cognizable Crime Report (NCR u/s 174 BNSS)",
-                  desc: "Simple hurt, verbal altercations, and scuffles u/s 115(2), 351(2), 352 BNS",
-                  icon: BadgeAlert,
-                  color: "text-red-600 bg-red-50 border-red-200",
-                },
-                {
-                  key: "matrimonial_dispute",
-                  label: "4. Matrimonial Compromise & Counseling Report",
-                  desc: "Women Cell mediation, agreed inventory of Stridhan, and joint settlement deeds",
-                  icon: HeartHandshake,
-                  color: "text-pink-600 bg-pink-50 border-pink-200",
-                },
-                {
-                  key: "cyber_crime",
-                  label: "5. Cyber Crime & Phishing Enquiry Report",
-                  desc: "1930 portal lien freeze, IT Act violations, and phishing APK investigation",
-                  icon: Laptop,
-                  color: "text-cyan-600 bg-cyan-50 border-cyan-200",
-                },
-                {
-                  key: "lost_property_ncr",
-                  label: "6. Lost Property / Document NCR (u/s 174 BNSS)",
-                  desc: "Accidental loss of identity cards, wallets, DL, ATM cards without crime suspicion",
-                  icon: HelpCircle,
-                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-                },
-              ].map((cat) => {
-                const Icon = cat.icon;
-                return (
-                  <button
-                    key={cat.key}
-                    type="button"
-                    onClick={() => {
-                      setGenerateReportModalOpen(false);
-                      router.push(`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${cat.key}`);
-                    }}
-                    className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all flex items-start gap-3 group cursor-pointer"
-                  >
-                    <div className={`p-2 rounded-lg border shrink-0 ${cat.color}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-amber-950">
-                        {cat.label}
-                      </h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{cat.desc}</p>
-                    </div>
-                    <span className="text-xs font-bold text-amber-700 shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      Open Draft &rarr;
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* MODAL: UPLOAD SIGNED REPORT FILE                                           */}
@@ -4781,6 +4779,53 @@ Certified official record copy.`;
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
+                  onClick={() => {
+                    if (reportIframeRef.current?.contentWindow) {
+                      reportIframeRef.current.contentWindow.focus();
+                      reportIframeRef.current.contentWindow.print();
+                    } else {
+                      window.print();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                  title="Print authentic A4 legal document"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print A4</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (reportPreviewItem.dataUrl && !reportPreviewItem.dataUrl.startsWith("data:text/html")) {
+                      const link = document.createElement("a");
+                      link.href = reportPreviewItem.dataUrl;
+                      link.download = reportPreviewItem.fileName || `${reportPreviewItem.title}.pdf`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    } else {
+                      const html = reportPreviewItem.contentHtml || reportPreviewItem.content || "";
+                      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = reportPreviewItem.fileName || `${(reportPreviewItem.dispatchNo || "ENQUIRY_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.html`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                  title="Download formatted document"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setReportPreviewItem(null)}
                   className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                 >
@@ -4789,12 +4834,20 @@ Certified official record copy.`;
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
-              {reportPreviewItem.dataUrl ? (
+            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 flex items-center justify-center min-h-[400px]">
+              {reportPreviewItem.contentHtml || (reportPreviewItem.dataUrl && reportPreviewItem.dataUrl.startsWith("data:text/html")) ? (
+                <iframe
+                  ref={reportIframeRef}
+                  srcDoc={reportPreviewItem.contentHtml || undefined}
+                  src={!reportPreviewItem.contentHtml && reportPreviewItem.dataUrl ? reportPreviewItem.dataUrl : undefined}
+                  title="Official Enquiry Report"
+                  className="w-full h-[72vh] rounded-xl border border-slate-300 bg-white shadow-xs"
+                />
+              ) : reportPreviewItem.dataUrl ? (
                 reportPreviewItem.dataUrl.startsWith("data:application/pdf") || reportPreviewItem.fileName?.toLowerCase().endsWith(".pdf") ? (
-                  <iframe src={reportPreviewItem.dataUrl} title="Report Document" className="w-full h-[65vh] rounded-xl border border-slate-200 bg-white" />
+                  <iframe src={reportPreviewItem.dataUrl} title="Report Document" className="w-full h-[72vh] rounded-xl border border-slate-200 bg-white" />
                 ) : reportPreviewItem.dataUrl.startsWith("data:image/") || /\.(png|jpe?g|webp)$/i.test(reportPreviewItem.fileName || "") ? (
-                  <img src={reportPreviewItem.dataUrl} alt="Report Scan" className="max-h-[65vh] mx-auto rounded-xl object-contain border border-slate-200" />
+                  <img src={reportPreviewItem.dataUrl} alt="Report Scan" className="max-h-[72vh] mx-auto rounded-xl object-contain border border-slate-200" />
                 ) : (
                   <div className="p-6 bg-white rounded-xl border border-slate-200 space-y-3">
                     <p className="font-bold text-slate-900 text-sm">Attached File: {reportPreviewItem.fileName}</p>
@@ -4804,8 +4857,15 @@ Certified official record copy.`;
                   </div>
                 )
               ) : reportPreviewItem.content ? (
-                <div className="bg-white p-8 rounded-xl border border-slate-300 shadow-xs font-sans text-xs sm:text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
-                  {reportPreviewItem.content}
+                <div className="w-full max-w-3xl bg-white p-8 rounded-xl border border-slate-300 shadow-sm font-sans text-xs sm:text-sm text-slate-900 leading-relaxed space-y-4">
+                  <div className="text-center pb-3 border-b border-slate-300">
+                    <h3 className="font-black text-sm tracking-wider uppercase text-slate-900">HARYANA POLICE</h3>
+                    <p className="text-xs font-bold text-slate-600 uppercase">{reportPreviewItem.title}</p>
+                    <p className="text-[11px] font-mono text-slate-500">Dispatch: {reportPreviewItem.dispatchNo || "N/A"}</p>
+                  </div>
+                  <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans">
+                    {reportPreviewItem.content}
+                  </div>
                 </div>
               ) : (
                 <div className="p-8 text-center text-slate-500 text-xs">

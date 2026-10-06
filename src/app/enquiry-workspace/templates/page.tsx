@@ -28,7 +28,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
-import { ComplaintItem } from "@/types";
+import { ComplaintItem, NoticeFormData } from "@/types";
+import { generateNoticeDocumentHtml } from "@/utils/documentHtmlGenerators";
 
 export type TemplateType =
   | "complaint_receipt"
@@ -36,47 +37,6 @@ export type TemplateType =
   | "witness_notice_bnss"
   | "document_notice_bnss"
   | "spot_panchnama";
-
-interface NoticeFormData {
-  // Police Station & Header
-  dispatchNo: string;
-  policeStation: string;
-  district: string;
-  issueDate: string;
-
-  // Noticee Details
-  noticeeName: string;
-  noticeeFather: string;
-  noticeeAge: string;
-  noticeeAddress: string;
-  noticeePhone: string;
-  noticeeRole: string;
-
-  // Case / Incident details
-  complaintNo: string;
-  complainantName: string;
-  incidentDate: string;
-  sectionsOfLaw: string;
-  allegationsBrief: string;
-
-  // Appearance / Direction
-  appearanceDate: string;
-  appearanceTime: string;
-  appearancePlace: string;
-  documentsRequired: string;
-
-  // Enquiry Officer details
-  officerName: string;
-  officerRank: string;
-  officerPno: string;
-  officerPhone: string;
-
-  // MHC Details (Auto-picked for complaint receipt)
-  mhcName?: string;
-  mhcRank?: string;
-  mhcBeltNumber?: string;
-  mhcPhone?: string;
-}
 
 const DEFAULT_SAMPLE_DATA: Record<TemplateType, NoticeFormData> = {
   complaint_receipt: {
@@ -438,10 +398,9 @@ function NoticeTemplatesContent() {
   };
 
   const handleDownloadNotice = () => {
-    if (!documentRef.current) return;
-    const text = documentRef.current.innerText;
-    const filename = `${(formData.dispatchNo || "NOTICE").replace(/[\/\\?%*:|"<>]/g, "_")}.txt`;
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const html = generateNoticeDocumentHtml(formData, activeTemplate);
+    const filename = `${(formData.dispatchNo || "NOTICE").replace(/[\/\\?%*:|"<>]/g, "_")}.html`;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -458,13 +417,14 @@ function NoticeTemplatesContent() {
     try {
       const label = TEMPLATE_CONFIG[activeTemplate]?.label || "Notice";
       const docTitle = `${label} - ${formData.noticeeName || formData.complaintNo}`;
-      const docText = documentRef.current?.innerText || "";
+      const docHtml = generateNoticeDocumentHtml(formData, activeTemplate);
 
       await ComplaintService.addDocument(complaint.id, {
-        fileName: `${docTitle}.txt`,
+        fileName: `${docTitle}.html`,
         fileCategory: "NOTICE",
-        fileSize: `${Math.round(docText.length / 1024) || 2} KB`,
-        dataUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(docText)}`,
+        fileSize: `${Math.round(docHtml.length / 1024) || 3} KB`,
+        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(docHtml)}`,
+        contentHtml: docHtml,
         description: `Generated ${label} issued under official dispatch ${formData.dispatchNo}`,
         uploadedBy: formData.officerName || currentUser.name || "Enquiry Officer",
       });
@@ -550,7 +510,7 @@ function NoticeTemplatesContent() {
               className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
             >
               <Download className="w-4 h-4 text-blue-700" />
-              <span>Download (.txt)</span>
+              <span>Download Notice (.html)</span>
             </Button>
 
             <Button
