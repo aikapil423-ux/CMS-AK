@@ -1092,9 +1092,49 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             </div>
           </div>
         </div>
-        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto shrink-0">
-          Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
-        </span>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
+          {complaint.assignedEoName ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReceiptModal(true)}
+              className="gap-1.5 text-xs font-semibold text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+              title="Official Receipt of registered complaints"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Print Receipt</span>
+            </Button>
+          ) : (
+            (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setAssignModalOpen(true)}
+                className="gap-1.5 text-xs font-bold bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+              >
+                <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                <span>Assign EO</span>
+              </Button>
+            )
+          )}
+
+          {isSho && complaint.assignedEoName && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenAssign}
+              className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-slate-200 cursor-pointer shadow-2xs"
+              title="Reassign to another Enquiry Officer"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+              <span>Reassign EO</span>
+            </Button>
+          )}
+
+          <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto shrink-0">
+            Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
+          </span>
+        </div>
       </div>
 
       {/* Sub-Tabs Row (DIRECTLY AFTER COMPLAINT PROFILE HEADER) */}
@@ -1142,326 +1182,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         {/* TAB 1: OVERVIEW */}
         {activeTab === "overview" && (
           <div className="space-y-5">
-            {/* Main Profile Header Banner */}
-            <Card className="border-slate-200 shadow-xs bg-white overflow-visible">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Left: Complaint Identification */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-base sm:text-lg font-bold text-[#0b192c]">
-                  {complaint.complaintNumber}
-                </span>
-                <PriorityBadge priority={complaint.priority} />
-                <StatusBadge status={complaint.status} />
-                <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    complaint.daysPending > 10
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {complaint.daysPending} Days Pending
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
-                <span className="flex items-center gap-1 font-semibold text-slate-900">
-                  <User className="w-3.5 h-3.5 text-blue-600" />
-                  {complaint.complainantName}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1 font-mono">
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  {complaint.complainantMobile}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  {complaint.incidentPlace}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  {formatDate(complaint.createdAt)}
-                </span>
-              </div>
-            </div>
-
-            {/* Right: Primary Top Actions based on Role */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* SHO View: Assign EO if unassigned, or Ask for Progress Report & Reassign if assigned */}
-              {isSho && (
-                <>
-                  {isUnassigned ? (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleOpenAssign}
-                      className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 shadow-xs"
-                    >
-                      <UserCheck className="w-4 h-4" />
-                      <span>Assign EO</span>
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleOpenAssign}
-                      className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                      title="Reassign to another Enquiry Officer"
-                    >
-                      <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Reassign EO</span>
-                    </Button>
-                  )}
-                </>
-              )}
-
-              {/* Assigned EO View: Primary Action Buttons & Full More Actions Dropdown */}
-              {isAssignedEo && (
-                <>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setEnquiryNoteModalOpen(true)}
-                    className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Record Enquiry Note</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEvidenceModalOpen(true)}
-                    className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    <Paperclip className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Add Evidence</span>
-                  </Button>
-
-                  {/* More Actions Dropdown for Assigned EO */}
-                  <div className="relative" ref={moreActionsRef}>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => setMoreActionsOpen(!moreActionsOpen)}
-                      className="gap-1.5 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white"
-                    >
-                      <span>More Actions</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${moreActionsOpen ? "rotate-180" : ""}`} />
-                    </Button>
-
-                    {moreActionsOpen && (
-                      <div className="absolute right-0 mt-1.5 w-64 rounded-xl bg-white border border-slate-200 shadow-xl z-50 py-1.5 animate-in fade-in-0 zoom-in-95 text-xs">
-                        <div className="px-3 py-1.5 border-b border-slate-100 font-bold uppercase text-[10px] text-slate-400 tracking-wider">
-                          Investigation & Case Actions
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setEnquiryNoteModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span>Record Enquiry Note</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setAiReportModalOpen(true);
-                            handleGenerateAiReport();
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                          <span>Prepare Report (AI Optional)</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setTransferModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <ArrowRightLeft className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span>Transfer</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setLinkModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Link2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span>Link Complaint</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setLinkModalOpen(true);
-                            setLinkRelationType("CLUBBED_INQUIRY");
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Layers className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                          <span>Club into Enquiry Group</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setActiveTab("history");
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <HistoryIcon className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                          <span>Complaint History</span>
-                        </button>
-
-                        <div className="my-1 border-t border-slate-100" />
-
-                        <div className="px-3 py-1 font-bold uppercase text-[10px] text-slate-400 tracking-wider">
-                          Legal Disposals & Evidence
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setNcrModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>Issue NCR Reference</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setFirModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Scale className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                          <span>FIR Linkage</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setEvidenceModalOpen(true);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Paperclip className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                          <span>Add Evidence</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            setEnquiryNoteModalOpen(true);
-                            setNewNoteType("WITNESS_EXAMINATION");
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                          <span>Add Statement (BNSS 180)</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setMoreActionsOpen(false);
-                            window.print();
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-slate-700 font-medium"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-slate-700 shrink-0" />
-                          <span>Print / Acknowledgement</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Other Officers View: Read-Only Badge */}
-              {!isAssignedEo && !isSho && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium">
-                  <Lock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Read-Only Progress Overview</span>
-                </div>
-              )}
-
-              {/* Receipt of registered complaints Button or Assign EO */}
-              {complaint.assignedEoName ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowReceiptModal(true)}
-                  className="gap-1.5 text-xs font-semibold text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
-                  title="Official Receipt of registered complaints (PPR 22.48 & BNSS 173(3))"
-                >
-                  <Printer className="w-3.5 h-3.5 text-emerald-700" />
-                  <span className="hidden sm:inline">Print Receipt</span>
-                </Button>
-              ) : (
-                (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setAssignModalOpen(true)}
-                    className="gap-1.5 text-xs font-bold bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
-                  >
-                    <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Assign EO</span>
-                  </Button>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Officer Assignment Bar (Shows active EO + Roster Duty or Unassigned status) */}
-          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-blue-600" />
-              <span className="text-slate-500 font-medium">Assigned Enquiry Officer:</span>
-              {complaint.assignedEoName ? (
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900">{complaint.assignedEoName}</span>
-                  <span className="text-[11px] text-slate-500">
-                    ({complaint.assignedEoRank}, PNO: {complaint.assignedEoPno})
-                  </span>
-                  <span className="text-[11px] font-medium text-blue-900 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                    Roster: {complaint.assignedRosterDuty || "Active Duty"}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-amber-800 bg-amber-50 border border-amber-200 font-bold px-2 py-0.5 rounded-full">
-                  Unassigned • Awaiting SHO Allocation
-                </span>
-              )}
-            </div>
-
-            {complaint.targetResolutionDate && (
-              <div className="text-slate-500">
-                Target Deadline: <strong className="text-slate-800">{formatDate(complaint.targetResolutionDate)}</strong>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-
-
       {/* SHO Progress Report Directive Notice Banner */}
       {complaint.progressReportRequested && (
         <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-950 animate-in fade-in-0">
