@@ -1075,66 +1075,22 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
               <FileText className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
-                  Complaint Profile
-                </h1>
-                <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {complaint.complaintNumber}
-                </span>
-                <StatusBadge status={complaint.status} />
-                <PriorityBadge priority={complaint.priority} />
-              </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Complainant: <strong className="text-slate-800">{complaint.complainantName}</strong> ({complaint.complainantMobile}) · PS {complaint.policeStation}
-              </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
+                Complaint Profile
+              </h1>
+              <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                {complaint.complaintNumber}
+              </span>
+              <StatusBadge status={complaint.status} />
+              <PriorityBadge priority={complaint.priority} />
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto shrink-0">
-          {complaint.assignedEoName ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowReceiptModal(true)}
-              className="gap-1.5 text-xs font-semibold text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
-              title="Official Receipt of registered complaints"
-            >
-              <Printer className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Print Receipt</span>
-            </Button>
-          ) : (
-            (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setAssignModalOpen(true)}
-                className="gap-1.5 text-xs font-bold bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                <span>Assign EO</span>
-              </Button>
-            )
-          )}
 
-          {isSho && complaint.assignedEoName && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenAssign}
-              className="gap-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 border-slate-200 cursor-pointer shadow-2xs"
-              title="Reassign to another Enquiry Officer"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-              <span>Reassign EO</span>
-            </Button>
-          )}
-
-          <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto shrink-0">
-            Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
-          </span>
-        </div>
+        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto shrink-0">
+          Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
+        </span>
       </div>
 
       {/* Sub-Tabs Row (DIRECTLY AFTER COMPLAINT PROFILE HEADER) */}
@@ -1439,6 +1395,21 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                       <span>Enquiry Notes:</span>
                       <strong className="text-slate-900">{complaint.enquiryNotes?.length || 0} Recorded</strong>
                     </div>
+
+                    {complaint.assignedEoName && (
+                      <div className="pt-2.5 border-t border-slate-100">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowReceiptModal(true)}
+                          className="w-full text-xs font-semibold gap-1.5 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>Print Official Receipt</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
