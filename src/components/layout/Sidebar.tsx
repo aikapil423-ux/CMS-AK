@@ -105,10 +105,9 @@ export function Sidebar() {
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
   ];
 
-  // MANAGEMENT NAVIGATION ITEMS (Settings and Dropdown Manager)
+  // MANAGEMENT NAVIGATION ITEMS (Settings Only in Slide Bar)
   const managementNavItems: NavItem[] = [
-    { name: "Settings", href: "/settings", icon: Settings, badge: "Config", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   return (
