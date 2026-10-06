@@ -28,6 +28,7 @@ import {
   Settings,
   ListFilter,
   SlidersHorizontal,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -92,6 +93,7 @@ export function Sidebar() {
   const roznamchaNavItems: NavItem[] = [
     { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "Add New GD Entry", href: "/general-diary/new", icon: PlusCircle },
+    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "Departure & Return", href: "/general-diary?type=RAVANGI_OFFICER", icon: Clock },
     { name: "Patrol & Night Vigilance", href: "/general-diary?type=BEAT_PATROLLING", icon: Car },
@@ -103,6 +105,7 @@ export function Sidebar() {
   const complaintNavItems: NavItem[] = [
     { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "6 Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
+    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   ];
 
   // MANAGEMENT NAVIGATION ITEMS (Settings Only in Slide Bar)

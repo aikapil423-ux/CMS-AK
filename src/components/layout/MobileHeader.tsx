@@ -215,6 +215,18 @@ export function MobileHeader() {
                       </Link>
                     </>
                   )}
+
+                  <div className="pt-2 pb-1 text-[10px] uppercase font-bold text-emerald-400">
+                    Legal Reference
+                  </div>
+                  <Link
+                    href="/acts-sections"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-xs font-semibold text-emerald-300 hover:bg-[#1e3e62] flex items-center justify-between"
+                  >
+                    <span>ACT and SECTIONs</span>
+                    <span className="text-[10px] bg-emerald-900/60 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">Bare Acts</span>
+                  </Link>
                 </>
               )}
 

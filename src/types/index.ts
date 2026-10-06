@@ -386,3 +386,41 @@ export interface IntelligenceCheckResult {
   scannedAt: string;
 }
 
+export interface LegalSectionItem {
+  sectionNumber: string;
+  title: string;
+  chapter?: string;
+  description: string;
+  punishment?: string;
+  cognizable?: 'Cognizable' | 'Non-cognizable';
+  bailable?: 'Bailable' | 'Non-bailable';
+  triableBy?: string;
+}
+
+export interface LegalActItem {
+  id: string;
+  title: string;
+  shortName: string;
+  actNumber: string;
+  enactmentDate: string;
+  effectiveDate: string;
+  category: 'CRIMINAL_CODE' | 'PROCEDURAL_CODE' | 'EVIDENCE_CODE' | 'SPECIAL_ACT' | 'ECONOMIC_PROPERTY' | 'POLICE_RULES' | 'OTHER';
+  categoryLabel: string;
+  totalSections: number;
+  totalChapters: number;
+  fileFormat: 'PDF' | 'DOCX' | 'TXT' | 'IMAGE' | 'OTHER';
+  fileName?: string;
+  fileSize?: string;
+  fileDataUrl?: string;
+  isCustomUpload?: boolean;
+  uploadedAt?: string;
+  uploadedBy?: string;
+  description: string;
+  chapters?: {
+    chapterNumber: string;
+    title: string;
+    sectionsRange: string;
+  }[];
+  keySections: LegalSectionItem[];
+}
+
