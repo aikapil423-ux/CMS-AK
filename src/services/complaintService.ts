@@ -15,6 +15,7 @@ import {
   ComplaintTimelineEvent,
   ComplaintEvidenceAttachment,
   ConfidentialDossierItem,
+  ComplaintReportItem,
 } from "@/types";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
@@ -1155,6 +1156,62 @@ export const ComplaintService = {
     complaintsStore[index] = {
       ...complaintsStore[index],
       confidentialDossier: (complaintsStore[index].confidentialDossier || []).filter((d) => d.id !== dossierId),
+      updatedAt: new Date().toISOString(),
+    };
+    saveComplaintsToStorage(complaintsStore);
+
+    return complaintsStore[index];
+  },
+
+  async addComplaintReport(
+    complaintId: string,
+    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string }
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const newReport: ComplaintReportItem = {
+      id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaintsStore[index].id,
+      title: report.title,
+      reportType: report.reportType,
+      reportTypeLabel: report.reportTypeLabel,
+      dispatchNo: report.dispatchNo,
+      generatedDate: report.generatedDate || new Date().toISOString(),
+      officerName: report.officerName,
+      officerRank: report.officerRank,
+      officerPno: report.officerPno,
+      conclusionSummary: report.conclusionSummary,
+      content: report.content,
+      fileName: report.fileName,
+      fileSize: report.fileSize,
+      fileUrl: report.fileUrl,
+      dataUrl: report.dataUrl,
+      fileFormat: report.fileFormat,
+      isUploaded: report.isUploaded,
+      createdAt: report.createdAt || new Date().toISOString(),
+    };
+
+    if (!complaintsStore[index].reports) {
+      complaintsStore[index].reports = [];
+    }
+    complaintsStore[index].reports!.unshift(newReport);
+    complaintsStore[index].updatedAt = new Date().toISOString();
+    saveComplaintsToStorage(complaintsStore);
+
+    return complaintsStore[index];
+  },
+
+  async deleteComplaintReport(
+    complaintId: string,
+    reportId: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    complaintsStore[index] = {
+      ...complaintsStore[index],
+      reports: (complaintsStore[index].reports || []).filter((r) => r.id !== reportId),
       updatedAt: new Date().toISOString(),
     };
     saveComplaintsToStorage(complaintsStore);

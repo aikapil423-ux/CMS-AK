@@ -31,6 +31,14 @@ import {
   ArrowUpDown,
   History as HistoryIcon,
   FileCheck,
+  FileCheck2,
+  ScrollText,
+  Landmark,
+  Home,
+  HeartHandshake,
+  Laptop,
+  HelpCircle,
+  BadgeAlert,
   Scale,
   X,
   UploadCloud,
@@ -42,6 +50,7 @@ import {
   Lock,
   Trash2,
   Download,
+  Edit3,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -53,6 +62,7 @@ import {
   ComplaintTimelineEvent,
   OfficerNotification,
   ConfidentialDossierItem,
+  ComplaintReportItem,
 } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,7 +72,7 @@ import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
-type ActiveTab = "overview" | "documents" | "links" | "history" | "confidential_dossier";
+type ActiveTab = "overview" | "documents" | "links" | "reports" | "history" | "confidential_dossier";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -378,6 +388,93 @@ export default function ComplaintProfilePage() {
   );
   const [progressDeadlineHours, setProgressDeadlineHours] = useState(24);
   const [isSubmittingProgress, setIsSubmittingProgress] = useState(false);
+
+  // Report & Template Generator Modals State
+  const [generateDocModalOpen, setGenerateDocModalOpen] = useState(false);
+  const [generateReportModalOpen, setGenerateReportModalOpen] = useState(false);
+  const [uploadReportModalOpen, setUploadReportModalOpen] = useState(false);
+  const [uploadReportTitle, setUploadReportTitle] = useState("");
+  const [uploadReportCategory, setUploadReportCategory] = useState("Civil / Land Dispute");
+  const [uploadReportDispatchNo, setUploadReportDispatchNo] = useState("");
+  const [uploadReportOfficer, setUploadReportOfficer] = useState("");
+  const [uploadReportRank, setUploadReportRank] = useState("Sub-Inspector");
+  const [uploadReportConclusion, setUploadReportConclusion] = useState("");
+  const [uploadReportFileName, setUploadReportFileName] = useState("");
+  const [uploadReportFileSize, setUploadReportFileSize] = useState("");
+  const [uploadReportDataUrl, setUploadReportDataUrl] = useState<string | undefined>();
+  const [uploadReportFormat, setUploadReportFormat] = useState("PDF");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportPreviewItem, setReportPreviewItem] = useState<ComplaintReportItem | null>(null);
+
+  const handleUploadReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadReportFileName(file.name);
+    setUploadReportFileSize(
+      file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${Math.round(file.size / 1024)} KB`
+    );
+    const ext = file.name.split(".").pop()?.toUpperCase() || "PDF";
+    setUploadReportFormat(ext);
+    if (!uploadReportTitle) {
+      setUploadReportTitle(file.name.replace(/\.[^/.]+$/, ""));
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setUploadReportDataUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complaint) return;
+    setIsSubmittingReport(true);
+    try {
+      await ComplaintService.addComplaintReport(complaint.id, {
+        title: uploadReportTitle || uploadReportFileName || "Official Enquiry Report",
+        reportType: uploadReportCategory.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+        reportTypeLabel: uploadReportCategory,
+        dispatchNo: uploadReportDispatchNo || `HP/KKR/CT/${new Date().getFullYear()}/REP-${Date.now().toString().slice(-4)}`,
+        generatedDate: new Date().toISOString().split("T")[0],
+        officerName: uploadReportOfficer || currentUser.name || "Enquiry Officer",
+        officerRank: uploadReportRank || currentUser.rankDisplay || "Sub-Inspector",
+        officerPno: currentUser.pno || "PNO-23841",
+        conclusionSummary: uploadReportConclusion || "Signed report uploaded to complaint file.",
+        fileName: uploadReportFileName,
+        fileSize: uploadReportFileSize,
+        dataUrl: uploadReportDataUrl,
+        fileFormat: uploadReportFormat,
+        isUploaded: true,
+      });
+      await loadComplaint();
+      setUploadReportModalOpen(false);
+      setUploadReportTitle("");
+      setUploadReportFileName("");
+      setUploadReportFileSize("");
+      setUploadReportDataUrl(undefined);
+      setUploadReportConclusion("");
+      setUploadReportDispatchNo("");
+      setActiveTab("reports");
+    } catch (err) {
+      console.error("Error uploading report:", err);
+      alert("Failed to upload report. Please try again.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (!complaint) return;
+    if (!confirm("Are you sure you want to remove this report from the complaint docket?")) return;
+    try {
+      await ComplaintService.deleteComplaintReport(complaint.id, reportId);
+      await loadComplaint();
+    } catch (err) {
+      console.error("Error deleting report:", err);
+    }
+  };
 
   // Fetch complaint
   const loadComplaint = async () => {
@@ -1416,12 +1513,13 @@ Certified official record copy.`;
       </div>
 
       {/* Sub-Tabs Row (DIRECTLY AFTER COMPLAINT PROFILE HEADER) */}
-      <div className="border-b border-slate-200 bg-white rounded-xl px-2 shadow-2xs">
-        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
+      <div className="border-b border-slate-200 bg-white rounded-xl px-2 shadow-2xs flex flex-wrap items-center justify-between gap-2">
+        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar flex-1" aria-label="Tabs">
           {[
             { key: "overview", label: "Overview", icon: Eye, count: null },
             { key: "documents", label: "Documents", icon: UploadCloud, count: combinedDocuments.length },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
+            { key: "reports", label: "Reports", icon: FileCheck2, count: complaint.reports?.length || 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
             ...(isEoPersona
               ? [
@@ -1461,6 +1559,170 @@ Certified official record copy.`;
             );
           })}
         </nav>
+
+        {/* More Actions Dropdown to the right of the sub-tabs */}
+        <div className="relative shrink-0 py-1.5 pr-1.5" ref={moreActionsRef}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setMoreActionsOpen(!moreActionsOpen)}
+            className="text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs cursor-pointer"
+          >
+            <span>More Actions</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreActionsOpen ? "rotate-180" : ""}`} />
+          </Button>
+
+          {moreActionsOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-40 animate-in fade-in-0 zoom-in-95 text-xs space-y-0.5">
+              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                Complaint Actions
+              </div>
+
+              {canAskProgress && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setProgressModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="font-semibold">Ask Progress Report</span>
+                </button>
+              )}
+
+              {canAssign && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    handleOpenAssign();
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="font-semibold">Assign / Reassign EO</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setShowReceiptModal(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="font-semibold">Print Official Receipt</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setGenerateDocModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <ScrollText className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span className="font-semibold">Generate Notice / Doc</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setGenerateReportModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="font-semibold">Generate Enquiry Report</span>
+              </button>
+
+              {canUploadDocument && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setDocumentModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="font-semibold">Upload Document</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setUploadReportModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="font-semibold">Upload Signed Report</span>
+              </button>
+
+              <div className="border-t border-slate-100 my-1" />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setTransferModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="font-semibold">Transfer Jurisdiction</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setLinkModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <Link2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="font-semibold">Link / Club Complaints</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setNcrModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="font-semibold">Issue NCR Reference</span>
+              </button>
+
+              {isEoPersona && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setDossierModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-900 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="font-semibold">Confidential Dossier</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tab Content Panes */}
@@ -1778,17 +2040,28 @@ Certified official record copy.`;
                   All citizen complaints, uploaded evidence, autofill documents, MLR copies, and official files sealed in case docket.
                 </p>
               </div>
-              {canUploadDocument && (
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  variant="primary"
+                  variant="outline"
                   size="sm"
-                  onClick={() => setDocumentModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold self-start sm:self-auto cursor-pointer"
+                  onClick={() => setGenerateDocModalOpen(true)}
+                  className="gap-1.5 text-xs font-semibold border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 cursor-pointer shadow-2xs"
                 >
-                  <UploadCloud className="w-3.5 h-3.5" />
-                  <span>Upload Document</span>
+                  <ScrollText className="w-3.5 h-3.5 text-purple-700" />
+                  <span>Generate Document</span>
                 </Button>
-              )}
+                {canUploadDocument && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setDocumentModalOpen(true)}
+                    className="gap-1.5 text-xs font-semibold self-start sm:self-auto cursor-pointer"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload Document</span>
+                  </Button>
+                )}
+              </div>
             </div>
 
             {combinedDocuments && combinedDocuments.length > 0 ? (
@@ -2001,6 +2274,202 @@ Certified official record copy.`;
                 </CardContent>
               </Card>
             </div>
+          </div>
+        )}
+
+        {/* TAB 4: REPORTS (Official Enquiry Reports & NCR Docket) */}
+        {activeTab === "reports" && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <FileCheck2 className="w-5 h-5 text-amber-600" />
+                  <span>Official Enquiry Reports &amp; NCRs Docket</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Legal enquiry drafts, field verification reports, compromise deeds, and Non-Cognizable Reports (NCR) recorded for this complaint.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUploadReportModalOpen(true)}
+                  className="gap-1.5 text-xs font-semibold border-slate-300 text-slate-800 bg-slate-50 hover:bg-slate-100 cursor-pointer shadow-2xs"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Upload Report</span>
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setGenerateReportModalOpen(true)}
+                  className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white cursor-pointer shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Generate Report</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Reports List */}
+            {complaint.reports && complaint.reports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {complaint.reports.map((report) => (
+                  <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 space-y-3 text-xs">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-mono">
+                              {report.reportTypeLabel || report.reportType}
+                            </span>
+                            {report.isUploaded && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                Uploaded File
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-bold text-sm text-slate-900 truncate">
+                            {report.title}
+                          </h4>
+                          {report.dispatchNo && (
+                            <p className="font-mono text-[11px] text-slate-500">
+                              Dispatch: <strong className="text-slate-800">{report.dispatchNo}</strong>
+                            </p>
+                          )}
+                        </div>
+
+                        <span className="text-[11px] text-slate-400 font-mono shrink-0">
+                          {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
+                        </span>
+                      </div>
+
+                      {report.conclusionSummary && (
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
+                          <span className="font-bold text-slate-900">Findings: </span>
+                          {report.conclusionSummary}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                        <span>
+                          Officer: <strong className="text-slate-800">{report.officerName}</strong> ({report.officerRank || "EO"})
+                        </span>
+                        <span className="font-mono uppercase font-semibold">
+                          {report.fileFormat || "TXT"} {report.fileSize ? `• ${report.fileSize}` : ""}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="pt-1 flex items-center justify-end gap-1.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReportPreviewItem(report)}
+                          className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
+                        >
+                          <Eye className="w-3 h-3 text-blue-600" />
+                          <span>Preview</span>
+                        </Button>
+
+                        {!report.isUploaded && (
+                          <Link href={`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${report.reportType}`}>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
+                            >
+                              <Edit3 className="w-3 h-3 text-amber-600" />
+                              <span>Edit in Drafts</span>
+                            </Button>
+                          </Link>
+                        )}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (report.dataUrl) {
+                              const link = document.createElement("a");
+                              link.href = report.dataUrl;
+                              link.download = report.fileName || `${report.title}.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            } else if (report.content) {
+                              const blob = new Blob([report.content], { type: "text/plain;charset=utf-8" });
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = `${report.title}.txt`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              URL.revokeObjectURL(url);
+                            }
+                          }}
+                          className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
+                        >
+                          <Download className="w-3 h-3 text-emerald-600" />
+                          <span>Download</span>
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                          title="Delete report"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="border-slate-200 border-dashed bg-slate-50/50">
+                <CardContent className="p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
+                    <FileCheck2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-800">No Reports Generated Yet</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                      Generate a category-specific police report (Civil dispute, Financial fraud, NCR, Matrimonial, Cyber crime) or upload a signed report copy.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={() => setGenerateReportModalOpen(true)}
+                      className="gap-1 text-xs font-bold bg-[#0b192c]"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Generate Report Now</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setUploadReportModalOpen(true)}
+                      className="gap-1 text-xs font-semibold"
+                    >
+                      <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Upload Signed File</span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -3997,6 +4466,363 @@ Certified official record copy.`;
         isOpen={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
       />
+
+      {/* ========================================================================= */}
+      {/* MODAL: GENERATE NOTICE / STATUTORY DOCUMENT                               */}
+      {/* ========================================================================= */}
+      {generateDocModalOpen && complaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setGenerateDocModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="space-y-0.5">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <ScrollText className="w-5 h-5 text-purple-600" />
+                  <span>Generate Official Notice / Document</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Select notice template. Page 2 will open with this complaint&apos;s details preloaded for direct editing.
+                </p>
+              </div>
+              <button onClick={() => setGenerateDocModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {[
+                {
+                  key: "complaint_receipt",
+                  label: "1. Receipt of Registered Complaint (पावती रसीद)",
+                  desc: "Official statutory intake acknowledgment slip under PPR 22.48 for complainant",
+                  icon: FileCheck2,
+                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+                },
+                {
+                  key: "accused_notice_bnss",
+                  label: "2. Notice to Accused u/s 35(3) BNSS, 2023",
+                  desc: "Statutory appearance directive for named suspect(s) with compliance undertakings",
+                  icon: Shield,
+                  color: "text-red-600 bg-red-50 border-red-200",
+                },
+                {
+                  key: "witness_notice_bnss",
+                  label: "3. Notice to Witness u/s 179 BNSS, 2023",
+                  desc: "Order for attendance and examination of eyewitnesses / material witnesses",
+                  icon: UserCheck,
+                  color: "text-blue-600 bg-blue-50 border-blue-200",
+                },
+                {
+                  key: "document_notice_bnss",
+                  label: "4. Production of Documents Notice u/s 94 BNSS",
+                  desc: "Requisition bank statements, commercial invoices, or institutional records",
+                  icon: FileText,
+                  color: "text-amber-600 bg-amber-50 border-amber-200",
+                },
+                {
+                  key: "spot_panchnama",
+                  label: "5. Spot Panchnama / Inspection Memo",
+                  desc: "Topography verification, rough sketch memo, and local witness sign-offs",
+                  icon: FileCheck2,
+                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+                },
+              ].map((tmpl) => {
+                const Icon = tmpl.icon;
+                return (
+                  <button
+                    key={tmpl.key}
+                    type="button"
+                    onClick={() => {
+                      setGenerateDocModalOpen(false);
+                      router.push(`/enquiry-workspace/templates?complaintId=${complaint.id}&template=${tmpl.key}`);
+                    }}
+                    className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-purple-300 hover:bg-purple-50/40 transition-all flex items-start gap-3 group cursor-pointer"
+                  >
+                    <div className={`p-2 rounded-lg border shrink-0 ${tmpl.color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-purple-900">
+                        {tmpl.label}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{tmpl.desc}</p>
+                    </div>
+                    <span className="text-xs font-bold text-purple-600 shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      Open &rarr;
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: GENERATE ENQUIRY REPORT / DRAFTS                                    */}
+      {/* ========================================================================= */}
+      {generateReportModalOpen && complaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setGenerateReportModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xl w-full p-6 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="space-y-0.5">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <FileCheck2 className="w-5 h-5 text-amber-600" />
+                  <span>Generate Enquiry Report / NCR</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Select report category format. Page 2 opens directly in full-width editor with all details preloaded.
+                </p>
+              </div>
+              <button onClick={() => setGenerateReportModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {[
+                {
+                  key: "land_dispute",
+                  label: "1. Land & Civil Boundary Dispute Report",
+                  desc: "Field verification u/s 173(3) BNSS / PPR Ch XXII for property & passage disputes",
+                  icon: Home,
+                  color: "text-blue-600 bg-blue-50 border-blue-200",
+                },
+                {
+                  key: "financial_fraud",
+                  label: "2. Financial Cheating & Fraud Enquiry Report",
+                  desc: "Investigation into business fraud, RTGS/UPI misappropriation u/s 318(4) BNS",
+                  icon: Landmark,
+                  color: "text-amber-600 bg-amber-50 border-amber-200",
+                },
+                {
+                  key: "assault_ncr",
+                  label: "3. Non-Cognizable Crime Report (NCR u/s 174 BNSS)",
+                  desc: "Simple hurt, verbal altercations, and scuffles u/s 115(2), 351(2), 352 BNS",
+                  icon: BadgeAlert,
+                  color: "text-red-600 bg-red-50 border-red-200",
+                },
+                {
+                  key: "matrimonial_dispute",
+                  label: "4. Matrimonial Compromise & Counseling Report",
+                  desc: "Women Cell mediation, agreed inventory of Stridhan, and joint settlement deeds",
+                  icon: HeartHandshake,
+                  color: "text-pink-600 bg-pink-50 border-pink-200",
+                },
+                {
+                  key: "cyber_crime",
+                  label: "5. Cyber Crime & Phishing Enquiry Report",
+                  desc: "1930 portal lien freeze, IT Act violations, and phishing APK investigation",
+                  icon: Laptop,
+                  color: "text-cyan-600 bg-cyan-50 border-cyan-200",
+                },
+                {
+                  key: "lost_property_ncr",
+                  label: "6. Lost Property / Document NCR (u/s 174 BNSS)",
+                  desc: "Accidental loss of identity cards, wallets, DL, ATM cards without crime suspicion",
+                  icon: HelpCircle,
+                  color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+                },
+              ].map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => {
+                      setGenerateReportModalOpen(false);
+                      router.push(`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${cat.key}`);
+                    }}
+                    className="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all flex items-start gap-3 group cursor-pointer"
+                  >
+                    <div className={`p-2 rounded-lg border shrink-0 ${cat.color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-amber-950">
+                        {cat.label}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{cat.desc}</p>
+                    </div>
+                    <span className="text-xs font-bold text-amber-700 shrink-0 self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      Open Draft &rarr;
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: UPLOAD SIGNED REPORT FILE                                           */}
+      {/* ========================================================================= */}
+      {uploadReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setUploadReportModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                <UploadCloud className="w-5 h-5 text-emerald-600" />
+                <span>Upload Signed Enquiry Report</span>
+              </h3>
+              <button onClick={() => setUploadReportModalOpen(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadReportSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Report Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={uploadReportTitle}
+                  onChange={(e) => setUploadReportTitle(e.target.value)}
+                  placeholder="e.g. Signed Field Verification Report / SDM Revenue Demarcation"
+                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Report Category</label>
+                  <select
+                    value={uploadReportCategory}
+                    onChange={(e) => setUploadReportCategory(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 bg-white"
+                  >
+                    <option value="Civil / Land Dispute">Civil / Land Dispute</option>
+                    <option value="Financial Fraud">Financial Fraud</option>
+                    <option value="Assault & NCR">Assault &amp; NCR</option>
+                    <option value="Matrimonial Compromise">Matrimonial Compromise</option>
+                    <option value="Cyber Crime">Cyber Crime</option>
+                    <option value="Final Enquiry Report">Final Enquiry Report</option>
+                    <option value="Interim Progress Report">Interim Progress Report</option>
+                    <option value="Other Report">Other Report</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Dispatch / Report Ref No.</label>
+                  <input
+                    type="text"
+                    value={uploadReportDispatchNo}
+                    onChange={(e) => setUploadReportDispatchNo(e.target.value)}
+                    placeholder="e.g. HP/KKR/CT/2026/REP-098"
+                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 bg-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Upload Report File (PDF, Word, Scan, Image) *</label>
+                <input
+                  type="file"
+                  required
+                  onChange={handleUploadReportFileChange}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                />
+                {uploadReportFileName && (
+                  <p className="text-[11px] text-emerald-700 font-semibold mt-1">
+                    Selected: {uploadReportFileName} ({uploadReportFileSize})
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Enquiry Findings / Conclusion Summary</label>
+                <textarea
+                  rows={2}
+                  value={uploadReportConclusion}
+                  onChange={(e) => setUploadReportConclusion(e.target.value)}
+                  placeholder="Brief summary of findings, recommendation to SHO, or final disposal conclusion..."
+                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 bg-white"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <Button variant="outline" size="sm" type="button" onClick={() => setUploadReportModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" size="sm" type="submit" disabled={isSubmittingReport} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer">
+                  {isSubmittingReport ? "Saving..." : "Save Report to File"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: PREVIEW SAVED / UPLOADED REPORT                                     */}
+      {/* ========================================================================= */}
+      {reportPreviewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setReportPreviewItem(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="min-w-0 pr-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                    {reportPreviewItem.reportTypeLabel}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400">
+                    {reportPreviewItem.dispatchNo}
+                  </span>
+                </div>
+                <h3 className="font-bold text-sm sm:text-base text-white truncate mt-0.5">
+                  {reportPreviewItem.title}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setReportPreviewItem(null)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
+              {reportPreviewItem.dataUrl ? (
+                reportPreviewItem.dataUrl.startsWith("data:application/pdf") || reportPreviewItem.fileName?.toLowerCase().endsWith(".pdf") ? (
+                  <iframe src={reportPreviewItem.dataUrl} title="Report Document" className="w-full h-[65vh] rounded-xl border border-slate-200 bg-white" />
+                ) : reportPreviewItem.dataUrl.startsWith("data:image/") || /\.(png|jpe?g|webp)$/i.test(reportPreviewItem.fileName || "") ? (
+                  <img src={reportPreviewItem.dataUrl} alt="Report Scan" className="max-h-[65vh] mx-auto rounded-xl object-contain border border-slate-200" />
+                ) : (
+                  <div className="p-6 bg-white rounded-xl border border-slate-200 space-y-3">
+                    <p className="font-bold text-slate-900 text-sm">Attached File: {reportPreviewItem.fileName}</p>
+                    <a href={reportPreviewItem.dataUrl} download={reportPreviewItem.fileName} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold cursor-pointer">
+                      <Download className="w-3.5 h-3.5" /> Download Attached File
+                    </a>
+                  </div>
+                )
+              ) : reportPreviewItem.content ? (
+                <div className="bg-white p-8 rounded-xl border border-slate-300 shadow-xs font-sans text-xs sm:text-sm text-slate-900 leading-relaxed whitespace-pre-wrap">
+                  {reportPreviewItem.content}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-500 text-xs">
+                  {reportPreviewItem.conclusionSummary || "No textual preview available."}
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+              <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
+              <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
+                Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -212,6 +212,9 @@ export interface ComplaintItem {
   
   // EO Private Confidential Dossier (Never attached to public complaint or history)
   confidentialDossier?: ConfidentialDossierItem[];
+
+  // Investigation Reports & Statutory Drafts
+  reports?: ComplaintReportItem[];
   
   // Progress Report Demand from SHO
   progressReportRequested?: boolean;
@@ -221,6 +224,28 @@ export interface ComplaintItem {
   
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ComplaintReportItem {
+  id: string;
+  complaintId: string;
+  title: string;
+  reportType: string;
+  reportTypeLabel: string;
+  dispatchNo?: string;
+  generatedDate: string;
+  officerName: string;
+  officerRank?: string;
+  officerPno?: string;
+  conclusionSummary?: string;
+  content?: string;
+  fileName?: string;
+  fileSize?: string;
+  fileUrl?: string;
+  dataUrl?: string;
+  fileFormat?: string;
+  isUploaded?: boolean;
+  createdAt?: string;
 }
 
 export interface EnquiryNoteItem {
