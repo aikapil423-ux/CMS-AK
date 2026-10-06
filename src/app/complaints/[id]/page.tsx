@@ -1325,25 +1325,46 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                         </div>
                       )}
 
-                      <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Target: {complaint.targetResolutionDate ? formatDate(complaint.targetResolutionDate) : "14 Days"}</span>
-                        {canAssign ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleOpenAssign}
-                            className="text-[11px] h-7"
-                          >
-                            Reassign EO
-                          </Button>
-                        ) : isAssignedEo ? (
-                          <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            Assigned to You
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-                            Allocated
-                          </span>
+                      <div className="pt-2 border-t border-slate-100 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span>Target: <strong className="text-slate-800">{complaint.targetResolutionDate ? formatDate(complaint.targetResolutionDate) : "14 Days"}</strong></span>
+                          {isAssignedEo ? (
+                            <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                              Assigned to You
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                              Allocated
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Supervisory Actions: Ask Progress Report & Reassign EO */}
+                        {canAssign && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="primary"
+                              onClick={() => setProgressModalOpen(true)}
+                              className="w-full text-xs font-semibold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs cursor-pointer justify-center"
+                              title="Ask Enquiry Officer for Interim Progress Report"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Ask Progress Report</span>
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleOpenAssign}
+                              className="w-full text-xs font-semibold gap-1 text-slate-700 hover:bg-slate-50 border-slate-200 cursor-pointer justify-center"
+                              title="Reassign to another Enquiry Officer"
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Reassign EO</span>
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>
