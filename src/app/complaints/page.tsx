@@ -869,8 +869,17 @@ function ComplaintListContent() {
                       </span>
                     </td>
 
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="py-2.5 px-4 text-right align-middle">
+                      <div className="flex flex-col items-end gap-1.5 min-w-[115px]">
+                        <Link href={`/complaints/${c.id}`} className="w-full sm:w-28">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            className="w-full text-xs font-semibold gap-1 justify-center"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View Profile
+                          </Button>
+                        </Link>
                         {c.assignedEoName ? (
                           <Button
                             size="sm"
@@ -879,7 +888,7 @@ function ComplaintListContent() {
                               setReceiptComplaint(c);
                               setShowReceiptModal(true);
                             }}
-                            className="text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                            className="w-full sm:w-28 text-xs font-semibold gap-1 justify-center text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
                             title="Official Receipt of registered complaints"
                           >
                             <Printer className="w-3.5 h-3.5 text-emerald-700" />
@@ -891,22 +900,13 @@ function ComplaintListContent() {
                               size="sm"
                               variant="primary"
                               onClick={() => handleOpenAssignModal(c)}
-                              className="text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+                              className="w-full sm:w-28 text-xs font-bold gap-1 justify-center bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
                             >
                               <UserCheck className="w-3.5 h-3.5 text-amber-300" />
                               <span>Assign EO</span>
                             </Button>
                           )
                         )}
-                        <Link href={`/complaints/${c.id}`}>
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            className="text-xs font-semibold gap-1"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> View Profile
-                          </Button>
-                        </Link>
                       </div>
                     </td>
                   </tr>
