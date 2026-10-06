@@ -51,6 +51,7 @@ import {
   Trash2,
   Download,
   Edit3,
+  Table,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -190,40 +191,28 @@ const TEMPLATE_DROPDOWN_OPTIONS = [
 
 const REPORT_DROPDOWN_OPTIONS = [
   {
-    key: "land_dispute",
-    label: "1. Land & Civil Dispute Enquiry Report",
-    desc: "Boundary, passage & revenue partition disputes",
-    icon: Home,
+    key: "standard_4row",
+    label: "1. मानक 4-रो जांच रिपोर्ट (हरियाणा पुलिस प्रपत्र)",
+    desc: "परिवादी, परिवाद का सार, उत्तरवादी व जांच की स्थिती का विवरण",
+    icon: Shield,
   },
   {
-    key: "financial_fraud",
-    label: "2. Financial Fraud Verification Report",
-    desc: "Cheating, loan fraud, breach of trust u/s 318(4) BNS",
-    icon: Landmark,
+    key: "three_column",
+    label: "2. बिन्दुवार तुलनात्मक जांच रिपोर्ट (3-कॉलम प्रपत्र)",
+    desc: "आरोप बिन्दूवार, जांच विवरण (सही/गलत) व पुलिस कार्यवाही",
+    icon: Table,
   },
   {
-    key: "assault_ncr",
-    label: "3. Physical Assault & NCR (Section 174 BNSS)",
-    desc: "Non-cognizable scuffle report with MLR findings",
+    key: "citizen_detail",
+    label: "3. नागरिक शिकायत / CM Window जांच रिपोर्ट",
+    desc: "Citizen Detail, Allegations & Citizen Satisfaction",
+    icon: UserCheck,
+  },
+  {
+    key: "ncr_174",
+    label: "4. असंज्ञेय अपराध रिपोर्ट (NCR जेर धारा 174 BNSS)",
+    desc: "थाना रोजनामचा जीडी प्रविष्टि व गैर-संज्ञेय जांच",
     icon: BadgeAlert,
-  },
-  {
-    key: "matrimonial_dispute",
-    label: "4. Matrimonial Compromise / Domestic Report",
-    desc: "Reconciliation proceedings & mutual agreements",
-    icon: HeartHandshake,
-  },
-  {
-    key: "cyber_crime",
-    label: "5. Cyber Crime Preliminary Report",
-    desc: "Online fraud, OTP theft & helpline 1930 records",
-    icon: Laptop,
-  },
-  {
-    key: "lost_property_ncr",
-    label: "6. Lost Property / NCR Report",
-    desc: "Affidavit of lost documents, DL & ATM cards",
-    icon: HelpCircle,
   },
 ];
 

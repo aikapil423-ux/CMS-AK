@@ -1,5 +1,5 @@
 // High-fidelity HTML & Print Generators for Haryana Police Official Legal Documents & Enquiry Reports
-import { PoliceReportFormData, NoticeFormData } from "@/types";
+import { PoliceReportFormData, NoticeFormData, DynamicDocumentSection } from "@/types";
 
 const BASE_DOC_STYLES = `
   @page {
@@ -179,6 +179,11 @@ const BASE_DOC_STYLES = `
     color: #78350f;
     font-weight: 600;
   }
+  .section-content.danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
   .signatures-row {
     display: flex;
     justify-content: space-between;
@@ -265,7 +270,9 @@ const BASE_DOC_STYLES = `
 
 export function generateEnquiryReportHtml(
   formData: PoliceReportFormData,
-  categoryKey: string
+  categoryKey: string,
+  customSections?: DynamicDocumentSection[],
+  customTitle?: { title?: string; subtitle?: string }
 ): string {
   const categoryTitles: Record<string, { title: string; subtitle: string }> = {
     land_dispute: {
@@ -294,10 +301,70 @@ export function generateEnquiryReportHtml(
     },
   };
 
-  const titleInfo = categoryTitles[categoryKey] || {
+  const defaultTitleInfo = categoryTitles[categoryKey] || {
     title: "OFFICIAL ENQUIRY REPORT & FINDINGS DOCKET",
     subtitle: "INVESTIGATION REPORT UNDER BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS), 2023",
   };
+
+  const titleInfo = {
+    title: customTitle?.title || defaultTitleInfo.title,
+    subtitle: customTitle?.subtitle || defaultTitleInfo.subtitle,
+  };
+
+  const bodySectionsHtml = (customSections && customSections.length > 0)
+    ? customSections.map((sec) => `
+    <div class="section-block">
+      <div class="section-label">${sec.title}</div>
+      <div class="section-content ${sec.variant === "highlight" ? "highlight" : sec.variant === "danger" ? "danger" : ""}">${sec.content}</div>
+    </div>
+    `).join("\n")
+    : `
+    <!-- Matter Details -->
+    <div class="section-block">
+      <div class="section-label">SUBJECT & STATUTORY SECTIONS OF LAW</div>
+      <div class="section-content" style="background-color: #f1f5f9; font-weight: 600;">
+        <b>Subject:</b> ${formData.disputeSubject || "Matter under enquiry"}<br/>
+        <b>Sections / Nature:</b> ${formData.sectionsOfLaw || "Section 173(3) BNSS"}
+        ${formData.amountOrPropertyDetails ? `<br/><b>Property / Disputed Matter:</b> ${formData.amountOrPropertyDetails}` : ""}
+      </div>
+    </div>
+
+    <!-- Complaint Substance -->
+    <div class="section-block">
+      <div class="section-label">SUBSTANCE OF COMPLAINT / ALLEGATIONS</div>
+      <div class="section-content">${formData.complaintSubstance || "No specific allegations stated."}</div>
+    </div>
+
+    <!-- Witnesses & Documents Examined -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+      <div class="section-block" style="margin-bottom: 0;">
+        <div class="section-label">WITNESSES EXAMINED & STATEMENTS RECORDED</div>
+        <div class="section-content" style="min-height: 90px;">${formData.witnessesExamined || "None examined"}</div>
+      </div>
+      <div class="section-block" style="margin-bottom: 0;">
+        <div class="section-label">DOCUMENTS & MATERIAL EVIDENCE VERIFIED</div>
+        <div class="section-content" style="min-height: 90px;">${formData.documentsVerified || "None verified"}</div>
+      </div>
+    </div>
+
+    <!-- Enquiry Findings -->
+    <div class="section-block">
+      <div class="section-label">ENQUIRY FINDINGS & SPOT VERIFICATION OBSERVATIONS</div>
+      <div class="section-content">${formData.enquiryFindings || "Verification conducted."}</div>
+    </div>
+
+    <!-- Final Conclusion -->
+    <div class="section-block">
+      <div class="section-label">FINAL CONCLUSION OF ENQUIRY OFFICER</div>
+      <div class="section-content highlight">${formData.finalConclusion || "Enquiry concluded."}</div>
+    </div>
+
+    <!-- Recommendation -->
+    <div class="section-block">
+      <div class="section-label">RECOMMENDATION TO S.H.O. FOR DISPOSAL / ORDER</div>
+      <div class="section-content">${formData.shoRecommendation || "Submitted for orders."}</div>
+    </div>
+    `;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -368,51 +435,7 @@ export function generateEnquiryReportHtml(
       </div>
     </div>
 
-    <!-- Matter Details -->
-    <div class="section-block">
-      <div class="section-label">SUBJECT & STATUTORY SECTIONS OF LAW</div>
-      <div class="section-content" style="background-color: #f1f5f9; font-weight: 600;">
-        <b>Subject:</b> ${formData.disputeSubject || "Matter under enquiry"}<br/>
-        <b>Sections / Nature:</b> ${formData.sectionsOfLaw || "Section 173(3) BNSS"}
-        ${formData.amountOrPropertyDetails ? `<br/><b>Property / Disputed Matter:</b> ${formData.amountOrPropertyDetails}` : ""}
-      </div>
-    </div>
-
-    <!-- Complaint Substance -->
-    <div class="section-block">
-      <div class="section-label">SUBSTANCE OF COMPLAINT / ALLEGATIONS</div>
-      <div class="section-content">${formData.complaintSubstance || "No specific allegations stated."}</div>
-    </div>
-
-    <!-- Witnesses & Documents Examined -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-      <div class="section-block" style="margin-bottom: 0;">
-        <div class="section-label">WITNESSES EXAMINED & STATEMENTS RECORDED</div>
-        <div class="section-content" style="min-height: 90px;">${formData.witnessesExamined || "None examined"}</div>
-      </div>
-      <div class="section-block" style="margin-bottom: 0;">
-        <div class="section-label">DOCUMENTS & MATERIAL EVIDENCE VERIFIED</div>
-        <div class="section-content" style="min-height: 90px;">${formData.documentsVerified || "None verified"}</div>
-      </div>
-    </div>
-
-    <!-- Enquiry Findings -->
-    <div class="section-block">
-      <div class="section-label">ENQUIRY FINDINGS & SPOT VERIFICATION OBSERVATIONS</div>
-      <div class="section-content">${formData.enquiryFindings || "Verification conducted."}</div>
-    </div>
-
-    <!-- Final Conclusion -->
-    <div class="section-block">
-      <div class="section-label">FINAL CONCLUSION OF ENQUIRY OFFICER</div>
-      <div class="section-content highlight">${formData.finalConclusion || "Enquiry concluded."}</div>
-    </div>
-
-    <!-- Recommendation -->
-    <div class="section-block">
-      <div class="section-label">RECOMMENDATION TO S.H.O. FOR DISPOSAL / ORDER</div>
-      <div class="section-content">${formData.shoRecommendation || "Submitted for orders."}</div>
-    </div>
+    ${bodySectionsHtml}
 
     <!-- Signatures & Seal Block -->
     <div class="signatures-row">
@@ -450,7 +473,9 @@ export function generateEnquiryReportHtml(
 
 export function generateNoticeDocumentHtml(
   formData: NoticeFormData,
-  templateType: string
+  templateType: string,
+  customSections?: DynamicDocumentSection[],
+  customTitle?: { title?: string; subtitle?: string }
 ): string {
   const templateTitles: Record<string, { title: string; subtitle: string; mandateText: string }> = {
     accused_notice_bnss: {
@@ -480,11 +505,74 @@ export function generateNoticeDocumentHtml(
     },
   };
 
-  const info = templateTitles[templateType] || {
+  const defaultInfo = templateTitles[templateType] || {
     title: "OFFICIAL POLICE NOTICE / REQUISITION MEMO",
     subtitle: "ISSUED UNDER BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS), 2023",
     mandateText: "You are hereby directed to comply with the instructions detailed below.",
   };
+
+  const info = {
+    title: customTitle?.title || defaultInfo.title,
+    subtitle: customTitle?.subtitle || defaultInfo.subtitle,
+    mandateText: defaultInfo.mandateText,
+  };
+
+  const bodySectionsHtml = (customSections && customSections.length > 0)
+    ? customSections.map((sec) => `
+    <div class="section-block">
+      <div class="section-label">${sec.title}</div>
+      <div class="section-content ${sec.variant === "highlight" ? "highlight" : sec.variant === "danger" ? "danger" : ""}">${sec.content}</div>
+    </div>
+    `).join("\n")
+    : `
+    <!-- Reference / Allegations -->
+    <div class="section-block">
+      <div class="section-label">SUBJECT MATTER & GIST OF ALLEGATIONS / ENQUIRY</div>
+      <div class="section-content" style="background-color: #f1f5f9;">
+        <b>Subject / Allegations:</b> ${formData.allegationsBrief || "Verification of facts"}<br/>
+        <b>Sections of Law:</b> ${formData.sectionsOfLaw || "Section 173(3) BNSS"}<br/>
+        <b>Date of Alleged Incident:</b> ${formData.incidentDate || "N/A"}
+      </div>
+    </div>
+
+    <!-- Mandate & Appearance Schedule -->
+    <div class="section-block">
+      <div class="section-label">MANDATE OF ATTENDANCE & INSTRUCTIONS</div>
+      <div class="section-content highlight" style="line-height: 1.7;">
+        ${info.mandateText}<br/><br/>
+        <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
+          <tr>
+            <td style="padding: 4px 8px; font-weight: bold; width: 160px; color: #475569;">Date of Appearance:</td>
+            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearanceDate || "Forthwith / As directed"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 8px; font-weight: bold; color: #475569;">Time of Appearance:</td>
+            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearanceTime || "11:00 AM"}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 8px; font-weight: bold; color: #475569;">Place of Appearance:</td>
+            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearancePlace || "Police Station City Thanesar"}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Documents to be produced -->
+    ${formData.documentsRequired ? `
+    <div class="section-block">
+      <div class="section-label">DOCUMENTS / RECORDS REQUIRED TO BE PRODUCED</div>
+      <div class="section-content">${formData.documentsRequired}</div>
+    </div>
+    ` : ""}
+
+    <!-- Statutory Warning -->
+    <div class="section-block">
+      <div class="section-label">LEGAL NOTICE & STATUTORY CONSEQUENCE OF NON-COMPLIANCE</div>
+      <div class="section-content" style="background-color: #fef2f2; border-color: #fecaca; color: #991b1b; font-size: 8.5pt;">
+        TAKE NOTICE that failure to comply with the terms of this notice without reasonable cause will render you liable for legal action under Section 35(4) / 35(5) of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023, and may result in your arrest upon issuance of orders by the competent Court, as well as prosecution under Section 221 of Bharatiya Nyaya Sanhita (BNS), 2023.
+      </div>
+    </div>
+    `;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -542,53 +630,7 @@ export function generateNoticeDocumentHtml(
       <div class="party-field"><strong>Capacity / Status:</strong> <span class="badge-tag">${formData.noticeeRole || "Noticee"}</span></div>
     </div>
 
-    <!-- Reference / Allegations -->
-    <div class="section-block">
-      <div class="section-label">SUBJECT MATTER & GIST OF ALLEGATIONS / ENQUIRY</div>
-      <div class="section-content" style="background-color: #f1f5f9;">
-        <b>Subject / Allegations:</b> ${formData.allegationsBrief || "Verification of facts"}<br/>
-        <b>Sections of Law:</b> ${formData.sectionsOfLaw || "Section 173(3) BNSS"}<br/>
-        <b>Date of Alleged Incident:</b> ${formData.incidentDate || "N/A"}
-      </div>
-    </div>
-
-    <!-- Mandate & Appearance Schedule -->
-    <div class="section-block">
-      <div class="section-label">MANDATE OF ATTENDANCE & INSTRUCTIONS</div>
-      <div class="section-content highlight" style="line-height: 1.7;">
-        ${info.mandateText}<br/><br/>
-        <table style="width: 100%; border-collapse: collapse; font-size: 9.5pt;">
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold; width: 160px; color: #475569;">Date of Appearance:</td>
-            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearanceDate || "Forthwith / As directed"}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold; color: #475569;">Time of Appearance:</td>
-            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearanceTime || "11:00 AM"}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 8px; font-weight: bold; color: #475569;">Place of Appearance:</td>
-            <td style="padding: 4px 8px; font-weight: 800; color: #0b192c;">${formData.appearancePlace || "Police Station City Thanesar"}</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- Documents to be produced -->
-    ${formData.documentsRequired ? `
-    <div class="section-block">
-      <div class="section-label">DOCUMENTS / RECORDS REQUIRED TO BE PRODUCED</div>
-      <div class="section-content">${formData.documentsRequired}</div>
-    </div>
-    ` : ""}
-
-    <!-- Statutory Warning -->
-    <div class="section-block">
-      <div class="section-label">LEGAL NOTICE & STATUTORY CONSEQUENCE OF NON-COMPLIANCE</div>
-      <div class="section-content" style="background-color: #fef2f2; border-color: #fecaca; color: #991b1b; font-size: 8.5pt;">
-        TAKE NOTICE that failure to comply with the terms of this notice without reasonable cause will render you liable for legal action under Section 35(4) / 35(5) of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023, and may result in your arrest upon issuance of orders by the competent Court, as well as prosecution under Section 221 of Bharatiya Nyaya Sanhita (BNS), 2023.
-      </div>
-    </div>
+    ${bodySectionsHtml}
 
     <!-- Officer Signatures Block -->
     <div class="signatures-row">
@@ -632,3 +674,250 @@ export function generateNoticeDocumentHtml(
 </body>
 </html>`;
 }
+
+export interface HaryanaPoliceProformaData {
+  headerLeft?: string; // e.g. "पुलिस विभाग"
+  headerRight?: string; // e.g. "जिला पानीपत"
+  subHeaderLeft?: string; // e.g. "श्रीमान जी"
+  title: string; // e.g. "जांच रिपोर्ट परिवाद नम्बरी 128-SPL-III DT 10.02.2026"
+  subTitle?: string; // e.g. "परिवाद की जांच रिपोर्ट इस प्रकार है -"
+  columns?: string[]; // If multi-column table (e.g. 3-column proforma)
+  rows: {
+    id: string;
+    label?: string; // Col 1
+    cells: string[]; // Cell text
+  }[];
+  closingLine?: string; // e.g. "रिपोर्ट सेवा में पेश है।"
+  officerName?: string;
+  officerRank?: string;
+  officerLocation?: string;
+  reportDate?: string;
+  borderStyle?: "solid" | "double" | "light" | "none";
+}
+
+export function generateHaryanaPoliceProformaHtml(data: HaryanaPoliceProformaData): string {
+  const borderCss =
+    data.borderStyle === "none"
+      ? "border: none;"
+      : data.borderStyle === "light"
+      ? "border: 1px solid #cbd5e1;"
+      : data.borderStyle === "double"
+      ? "border: 3px double #000000;"
+      : "border: 1.5px solid #000000;";
+
+  const cellBorderCss =
+    data.borderStyle === "none"
+      ? "border: none;"
+      : data.borderStyle === "light"
+      ? "border: 1px solid #e2e8f0;"
+      : "border: 1.5px solid #000000;";
+
+  // If table has column headers (like PDF 3)
+  const isMultiCol = data.columns && data.columns.length > 0;
+
+  const tableHeaderHtml = isMultiCol
+    ? `<thead>
+        <tr>
+          ${data.columns!
+            .map(
+              (col) =>
+                `<th style="padding: 8px 10px; ${cellBorderCss} background-color: #f8fafc; font-weight: 800; font-size: 10.5pt; text-align: left; vertical-align: top; color: #000000;">${col}</th>`
+            )
+            .join("\n")}
+        </tr>
+      </thead>`
+    : "";
+
+  const tableBodyHtml = `<tbody>
+    ${data.rows
+      .map((row) => {
+        if (isMultiCol) {
+          return `<tr>
+            ${row.cells
+              .map(
+                (cell) =>
+                  `<td style="padding: 8px 10px; ${cellBorderCss} vertical-align: top; font-size: 10pt; line-height: 1.6; white-space: pre-wrap; color: #000000;">${cell || ""}</td>`
+              )
+              .join("\n")}
+          </tr>`;
+        }
+
+        // Standard 2-column key-value proforma (like PDF 1, 2, 5)
+        const label = row.label || "";
+        const val = row.cells?.[0] || "";
+        return `<tr>
+          <td style="width: 140px; min-width: 120px; max-width: 160px; padding: 8px 10px; ${cellBorderCss} font-weight: 800; font-size: 10.5pt; vertical-align: top; color: #000000;">
+            ${label}
+          </td>
+          <td style="padding: 8px 10px; ${cellBorderCss} vertical-align: top; font-size: 10pt; line-height: 1.65; white-space: pre-wrap; color: #000000;">
+            ${val}
+          </td>
+        </tr>`;
+      })
+      .join("\n")}
+  </tbody>`;
+
+  return `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${data.title || "जांच रिपोर्ट"} - हरियाणा पुलिस</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 15mm 15mm 15mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Mangal", "Nirmala UI", "Mukta", Roboto, Arial, sans-serif;
+      color: #000000;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      font-size: 10pt;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .sheet {
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 16mm 18mm;
+      background: #ffffff;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      font-weight: 800;
+      font-size: 11pt;
+    }
+    .header-sub {
+      font-weight: 800;
+      font-size: 11pt;
+      margin-bottom: 8px;
+    }
+    .report-title-block {
+      text-align: center;
+      margin: 12px 0 16px 0;
+    }
+    .report-title {
+      font-weight: 800;
+      font-size: 11.5pt;
+      margin: 0 0 4px 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .report-subtitle {
+      font-weight: 700;
+      font-size: 10.5pt;
+      margin: 0;
+    }
+    table.proforma-table {
+      width: 100%;
+      border-collapse: collapse;
+      ${borderCss}
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+    .closing-line {
+      margin-top: 18px;
+      margin-bottom: 24px;
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-align: left;
+    }
+    .signature-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 30px;
+      page-break-inside: avoid;
+    }
+    .signature-block {
+      width: 240px;
+      text-align: right;
+      font-size: 10pt;
+      line-height: 1.5;
+    }
+    .signature-mark {
+      height: 48px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding-bottom: 4px;
+    }
+    .officer-name {
+      font-weight: 800;
+      font-size: 10.5pt;
+      color: #000000;
+    }
+    .officer-rank {
+      font-weight: 700;
+      color: #000000;
+    }
+    .officer-location {
+      font-weight: 600;
+      color: #000000;
+    }
+    .report-date {
+      font-weight: 700;
+      margin-top: 2px;
+      color: #000000;
+    }
+    @media print {
+      body {
+        background: transparent;
+      }
+      .sheet {
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    ${(data.headerLeft || data.headerRight) ? `
+    <div class="header-top">
+      <div>${data.headerLeft || ""}</div>
+      <div>${data.headerRight || ""}</div>
+    </div>` : ""}
+
+    ${data.subHeaderLeft ? `<div class="header-sub">${data.subHeaderLeft}</div>` : ""}
+
+    <div class="report-title-block">
+      <div class="report-title">${data.title || "जांच रिपोर्ट"}</div>
+      ${data.subTitle ? `<div class="report-subtitle">${data.subTitle}</div>` : ""}
+    </div>
+
+    <table class="proforma-table">
+      ${tableHeaderHtml}
+      ${tableBodyHtml}
+    </table>
+
+    ${data.closingLine ? `<div class="closing-line">${data.closingLine}</div>` : ""}
+
+    <div class="signature-container">
+      <div class="signature-block">
+        <div class="signature-mark">
+          <svg width="120" height="42" viewBox="0 0 120 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 32C25 15 45 8 70 20C90 28 85 10 110 12" stroke="#1e293b" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        ${data.officerName ? `<div class="officer-name">${data.officerName}</div>` : ""}
+        ${data.officerRank ? `<div class="officer-rank">${data.officerRank}</div>` : ""}
+        ${data.officerLocation ? `<div class="officer-location">${data.officerLocation}</div>` : ""}
+        ${data.reportDate ? `<div class="report-date">${data.reportDate}</div>` : ""}
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+

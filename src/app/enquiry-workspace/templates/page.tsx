@@ -23,12 +23,19 @@ import {
   Save,
   CheckCircle2,
   Calendar,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Layers,
+  UploadCloud,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
-import { ComplaintItem, NoticeFormData } from "@/types";
+import { ComplaintItem, NoticeFormData, DynamicDocumentSection } from "@/types";
 import { generateNoticeDocumentHtml } from "@/utils/documentHtmlGenerators";
 
 export type TemplateType =
@@ -254,6 +261,10 @@ function NoticeTemplatesContent() {
   const [copied, setCopied] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [customClauses, setCustomClauses] = useState<DynamicDocumentSection[]>([]);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const documentRef = useRef<HTMLDivElement>(null);
 
@@ -397,8 +408,93 @@ function NoticeTemplatesContent() {
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const handleAddClause = (preset?: { title: string; content?: string }) => {
+    const newClause: DynamicDocumentSection = {
+      id: `clause_${Date.now()}`,
+      title: preset?.title || `Additional Clause ${customClauses.length + 1}`,
+      content: preset?.content || "",
+      variant: "standard",
+    };
+    setCustomClauses((prev) => [...prev, newClause]);
+  };
+
+  const handleUpdateClauseTitle = (id: string, newTitle: string) => {
+    setCustomClauses((prev) => prev.map((c) => (c.id === id ? { ...c, title: newTitle } : c)));
+  };
+
+  const handleUpdateClauseContent = (id: string, newContent: string) => {
+    setCustomClauses((prev) => prev.map((c) => (c.id === id ? { ...c, content: newContent } : c)));
+  };
+
+  const handleDeleteClause = (id: string) => {
+    setCustomClauses((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const handleMoveClause = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === customClauses.length - 1) return;
+    const target = direction === "up" ? index - 1 : index + 1;
+    const updated = [...customClauses];
+    const temp = updated[index];
+    updated[index] = updated[target];
+    updated[target] = temp;
+    setCustomClauses(updated);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadLoading(true);
+    setUploadSuccessMessage(null);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("targetType", "notice");
+
+      const res = await fetch("/api/documents/parse-proforma", {
+        method: "POST",
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "दस्तावेज़ प्रोसेस करने में त्रुटि हुई");
+      }
+
+      const pData = data.proformaData;
+      if (pData) {
+        if (pData.title) handleFieldChange("dispatchNo", pData.title);
+        if (pData.headerLeft) handleFieldChange("policeStation", pData.headerLeft);
+        if (pData.headerRight) handleFieldChange("district", pData.headerRight);
+        if (pData.officerName) handleFieldChange("officerName", pData.officerName);
+        if (pData.officerRank) handleFieldChange("officerRank", pData.officerRank);
+
+        if (Array.isArray(pData.rows) && pData.rows.length > 0) {
+          const newClauses: DynamicDocumentSection[] = pData.rows.map((r: any, idx: number) => ({
+            id: r.id || `clause_${idx + 1}`,
+            title: r.label || `Clause ${idx + 1}`,
+            content: Array.isArray(r.cells) ? r.cells.join("\n") : String(r.cells || ""),
+            variant: "standard",
+          }));
+          setCustomClauses(newClauses);
+        }
+
+        setUploadSuccessMessage(`दस्तावेज़ (${file.name}) सफलतापूर्वक प्रोसेस हुआ! सभी धाराएं व शर्तें नीचे टेम्पलेट में जोड़ दी गई हैं।`);
+        setTimeout(() => setUploadSuccessMessage(null), 6000);
+      }
+    } catch (err: any) {
+      console.error("Template upload error:", err);
+      alert(`दस्तावेज़ प्रोसेस करने में त्रुटि: ${err.message || "कृपया पुनः प्रयास करें"}`);
+    } finally {
+      setUploadLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleDownloadNotice = () => {
-    const html = generateNoticeDocumentHtml(formData, activeTemplate);
+    const html = generateNoticeDocumentHtml(formData, activeTemplate, customClauses);
     const filename = `${(formData.dispatchNo || "NOTICE").replace(/[\/\\?%*:|"<>]/g, "_")}.html`;
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -417,7 +513,7 @@ function NoticeTemplatesContent() {
     try {
       const label = TEMPLATE_CONFIG[activeTemplate]?.label || "Notice";
       const docTitle = `${label} - ${formData.noticeeName || formData.complaintNo}`;
-      const docHtml = generateNoticeDocumentHtml(formData, activeTemplate);
+      const docHtml = generateNoticeDocumentHtml(formData, activeTemplate, customClauses);
 
       await ComplaintService.addDocument(complaint.id, {
         fileName: `${docTitle}.html`,
@@ -503,6 +599,35 @@ function NoticeTemplatesContent() {
               </Button>
             )}
 
+            {/* Upload Document to Notice Button */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".pdf,.png,.jpg,.jpeg,.webp,.txt"
+              className="hidden"
+            />
+            <Button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadLoading}
+              variant="outline"
+              size="sm"
+              className="text-xs font-bold text-purple-700 bg-purple-50/80 hover:bg-purple-100 hover:text-purple-900 border-purple-300 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              {uploadLoading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600" />
+                  <span>दस्तावेज़ पढ़ रहे हैं (OCR)...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-3.5 h-3.5 text-purple-600" />
+                  <span>दस्तावेज़ अपलोड करें (Upload Document)</span>
+                </>
+              )}
+            </Button>
+
             <Button
               onClick={handleDownloadNotice}
               variant="outline"
@@ -534,6 +659,34 @@ function NoticeTemplatesContent() {
             </Button>
           </div>
         </div>
+
+        {/* Upload Processing Indicator */}
+        {uploadLoading && (
+          <div className="p-3 bg-purple-50 border border-purple-300 rounded-xl flex items-center gap-2.5 text-xs text-purple-900 animate-in fade-in-50">
+            <Loader2 className="w-4 h-4 text-purple-600 animate-spin shrink-0" />
+            <div>
+              <span className="font-bold">AI OCR दस्तावेज़ का विश्लेषण कर रहा है... </span>
+              <span className="text-purple-700">धाराएं, नोटिस की शर्तें व विवरण हुबहू निकाला जा रहा है।</span>
+            </div>
+          </div>
+        )}
+
+        {/* Upload Success Alert */}
+        {uploadSuccessMessage && (
+          <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-900 animate-in fade-in-50">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span className="font-bold">{uploadSuccessMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadSuccessMessage(null)}
+              className="text-emerald-800 hover:text-emerald-950 text-xs font-bold underline cursor-pointer"
+            >
+              बंद करें
+            </button>
+          </div>
+        )}
 
         {/* Success Banner if Saved */}
         {saveSuccess && complaint && (
@@ -1115,6 +1268,130 @@ function NoticeTemplatesContent() {
                     onChange={(e) => handleFieldChange("documentsRequired", e.target.value)}
                     className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:bg-white"
                   />
+                </div>
+
+                {/* Dynamic & Custom Notice Clauses / Tabs */}
+                {customClauses.map((clause, idx) => (
+                  <div
+                    key={clause.id}
+                    className="p-3 bg-purple-50/50 border border-purple-200 rounded-xl space-y-2 text-xs group"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <span className="font-mono font-bold text-purple-700">#{idx + 1}</span>
+                        <input
+                          type="text"
+                          value={clause.title}
+                          onChange={(e) => handleUpdateClauseTitle(clause.id, e.target.value)}
+                          className="w-full font-bold text-purple-950 bg-white border border-purple-200 rounded px-2 py-0.5"
+                          placeholder="Clause Title"
+                        />
+                      </div>
+                      <div className="no-print flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveClause(idx, "up")}
+                          className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer"
+                          title="Move Up"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === customClauses.length - 1}
+                          onClick={() => handleMoveClause(idx, "down")}
+                          className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer"
+                          title="Move Down"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                        <VoiceInputButton
+                          preferredLang={voiceLang}
+                          fieldLabel={clause.title}
+                          currentValue={clause.content}
+                          onTranscript={(val) => handleUpdateClauseContent(clause.id, val)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteClause(clause.id)}
+                          className="p-1 rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-600 cursor-pointer"
+                          title="Delete this clause"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={clause.content}
+                      onChange={(e) => handleUpdateClauseContent(clause.id, e.target.value)}
+                      className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs leading-relaxed text-slate-800 focus:outline-none"
+                      placeholder="Clause conditions / requirements..."
+                    />
+                  </div>
+                ))}
+
+                {/* Toolbar to Add Notice Clauses */}
+                <div className="no-print pt-2 pb-1 border-t border-dashed border-slate-300 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5 text-purple-600" />
+                    Add Notice Clause / Tab:
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handleAddClause({
+                        title: "Production of Additional Books of Accounts & Electronic Devices",
+                        content:
+                          "Directed to also produce:\n1. Mobile handsets/SIM cards used during communication\n2. Certified bank statements for the relevant financial year\n3. Relevant emails and chat transcripts with Section 63 BNSS Certificate",
+                      })
+                    }
+                    className="text-xs bg-white hover:bg-purple-50 text-slate-700 border-slate-200 cursor-pointer"
+                  >
+                    + Additional Evidence Clause
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handleAddClause({
+                        title: "Undertaking & Cooperation Clause",
+                        content:
+                          "The noticee shall furnish a written undertaking to join investigation whenever summoned, not tamper with evidence, and not influence witnesses directly or indirectly.",
+                      })
+                    }
+                    className="text-xs bg-white hover:bg-purple-50 text-slate-700 border-slate-200 cursor-pointer"
+                  >
+                    + Undertaking Clause
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handleAddClause({
+                        title: "Right to Legal Consultation & Conduct",
+                        content:
+                          "The noticee may be accompanied by a legal advocate during attendance as per statutory guidelines, but the advocate shall not interfere with lawful enquiry.",
+                      })
+                    }
+                    className="text-xs bg-white hover:bg-purple-50 text-slate-700 border-slate-200 cursor-pointer"
+                  >
+                    + Advocate Clause
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddClause()}
+                    className="text-xs bg-purple-900 text-white hover:bg-purple-800 font-bold cursor-pointer"
+                  >
+                    + Custom Clause (स्वेच्छा क्लॉज)
+                  </Button>
                 </div>
               </div>
 

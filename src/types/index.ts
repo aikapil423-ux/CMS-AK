@@ -351,6 +351,13 @@ export interface NoticeFormData {
   mhcPhone?: string;
 }
 
+export interface DynamicDocumentSection {
+  id: string;
+  title: string;
+  content: string;
+  variant?: "standard" | "highlight" | "danger" | "grid";
+}
+
 export interface ConfidentialDossierItem {
   id: string;
   complaintId: string;
