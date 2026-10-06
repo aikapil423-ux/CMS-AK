@@ -1460,76 +1460,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         </CardContent>
       </Card>
 
-      {/* Role & Access Control Notice Banner */}
-      <div
-        className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs transition-colors ${
-          isAssignedEo
-            ? "bg-emerald-50/80 border-emerald-300 text-emerald-950"
-            : isSho
-            ? "bg-blue-50/80 border-blue-300 text-blue-950"
-            : "bg-slate-50 border-slate-200 text-slate-800"
-        }`}
-      >
-        <div className="flex items-center gap-2.5">
-          {isAssignedEo ? (
-            <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4" />
-            </div>
-          ) : isSho ? (
-            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
-              <UserCheck className="w-4 h-4" />
-            </div>
-          ) : (
-            <div className="w-7 h-7 rounded-lg bg-slate-400 text-white flex items-center justify-center shrink-0">
-              <Lock className="w-4 h-4" />
-            </div>
-          )}
-          <div>
-            <div className="font-bold flex items-center gap-1.5">
-              <span>
-                {isAssignedEo
-                  ? `Active Persona: Assigned Enquiry Officer (${currentUser.name})`
-                  : isSho
-                  ? `Active Persona: Station House Officer (${currentUser.name})`
-                  : `Active Persona: ${currentUser.name} (${currentUser.roleDisplay || "Officer"})`}
-              </span>
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                  isAssignedEo
-                    ? "bg-emerald-200/80 text-emerald-900 border border-emerald-300"
-                    : isSho
-                    ? "bg-blue-200/80 text-blue-900 border border-blue-300"
-                    : "bg-slate-200 text-slate-700 border border-slate-300"
-                }`}
-              >
-                {isAssignedEo ? "Full Authoring Access" : isSho ? "Supervisory & Review Access" : "Read-Only Overview Access"}
-              </span>
-            </div>
-            <p className="text-[11px] opacity-90 mt-0.5">
-              {isAssignedEo
-                ? "You are the designated Enquiry Officer for this complaint. Only you can upload evidence, record enquiry notes, upload documents, and modify this case file."
-                : isSho
-                ? `You have supervisory jurisdiction over this complaint. You can assign or reassign officers. Investigation entries are recorded by designated EO (${complaint.assignedEoName || "Unassigned"}).`
-                : `Official viewing mode. You can inspect all case progress, evidence, notes, documents, and reports in read-only mode. Adding or deleting items is restricted to assigned EO (${complaint.assignedEoName || "Unassigned"}).`}
-            </p>
-          </div>
-        </div>
 
-        {/* Shortcut Action Buttons based on role */}
-        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-          {isAssignedEo && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEnquiryNoteModalOpen(true)}
-              className="h-7 text-xs bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-semibold gap-1"
-            >
-              <FileText className="w-3 h-3 text-emerald-600" />
-              <span>Record Note</span>
-            </Button>
-          )}
-        </div>
-      </div>
 
       {/* SHO Progress Report Directive Notice Banner */}
       {complaint.progressReportRequested && (
