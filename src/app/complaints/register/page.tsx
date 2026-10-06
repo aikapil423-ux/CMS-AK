@@ -111,9 +111,9 @@ const DIRECTION_TEMPLATES = [
 interface ComplainantFormItem {
   id: string;
   name: string;
-  relationType: RelativeRelation;
-  relativeName: string;
-  gender: "MALE" | "FEMALE" | "TRANSGENDER";
+  relationType?: RelativeRelation | string;
+  relativeName?: string;
+  gender?: "MALE" | "FEMALE" | "TRANSGENDER" | string;
   age?: string;
   nationalityChoice: "Indian" | "Other";
   otherNationality: string;
@@ -1530,12 +1530,6 @@ export default function RegisterComplaintPage() {
       if (!comp.name.trim()) {
         errors[`comp_${idx}_name`] = `Complainant ${idx + 1}: Name is required`;
       }
-      if (!comp.relativeName.trim()) {
-        errors[`comp_${idx}_relativeName`] = `Complainant ${idx + 1}: Relative name (${comp.relationType}) is required`;
-      }
-      if (!comp.gender) {
-        errors[`comp_${idx}_gender`] = `Complainant ${idx + 1}: Gender is required`;
-      }
       if (comp.age && String(comp.age).trim() && (isNaN(Number(comp.age)) || Number(comp.age) < 1 || Number(comp.age) > 120)) {
         errors[`comp_${idx}_age`] = `Complainant ${idx + 1}: Valid age (1-120 years) is required`;
       }
@@ -2195,8 +2189,8 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-1">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Relation">
-                        Relation *
+                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Relation (Optional)">
+                        Relation
                       </label>
                       <select
                         value={comp.relationType}
@@ -2222,24 +2216,15 @@ export default function RegisterComplaintPage() {
 
                     <div className="sm:col-span-4">
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Relative Name ({comp.relationType}) *
+                        Relative Name {comp.relationType ? `(${comp.relationType})` : ""}
                       </label>
                       <input
                         type="text"
-                        value={comp.relativeName}
+                        value={comp.relativeName || ""}
                         onChange={(e) => handleComplainantChange(idx, "relativeName", e.target.value)}
-                        placeholder="e.g. Sh. Balwant Rai"
-                        className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                          validationErrors[`comp_${idx}_relativeName`]
-                            ? "border-red-500 bg-red-50"
-                            : "border-slate-300"
-                        }`}
+                        placeholder="e.g. Sh. Balwant Rai (Optional)"
+                        className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
                       />
-                      {validationErrors[`comp_${idx}_relativeName`] && (
-                        <p className="text-[11px] text-red-600 mt-0.5">
-                          {validationErrors[`comp_${idx}_relativeName`]}
-                        </p>
-                      )}
                     </div>
 
                     <div className="sm:col-span-1">
@@ -2264,22 +2249,17 @@ export default function RegisterComplaintPage() {
 
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Gender *
+                        Gender
                       </label>
                       <select
-                        value={comp.gender}
+                        value={comp.gender || "MALE"}
                         onChange={(e: any) => handleComplainantChange(idx, "gender", e.target.value)}
-                        className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold ${
-                          validationErrors[`comp_${idx}_gender`] ? "border-red-500 bg-red-50" : "border-slate-300"
-                        }`}
+                        className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold"
                       >
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
                         <option value="TRANSGENDER">Transgender</option>
                       </select>
-                      {validationErrors[`comp_${idx}_gender`] && (
-                        <p className="text-[11px] text-red-600 mt-0.5">{validationErrors[`comp_${idx}_gender`]}</p>
-                      )}
                     </div>
                   </div>
 
