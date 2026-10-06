@@ -14,6 +14,7 @@ import {
   ComplaintDocumentItem,
   ComplaintTimelineEvent,
   ComplaintEvidenceAttachment,
+  ConfidentialDossierItem,
 } from "@/types";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
@@ -1094,6 +1095,69 @@ export const ComplaintService = {
       officerName,
       timestamp: new Date().toISOString(),
     });
+
+    return complaintsStore[index];
+  },
+
+  async addConfidentialDossier(
+    complaintId: string,
+    dossier: {
+      officerName: string;
+      officerRank?: string;
+      officerPno: string;
+      category: 'INFORMANT_LEAD' | 'FIELD_OBSERVATION' | 'OFF_RECORD_STATEMENT' | 'SUSPECT_INTEL' | 'PERSONAL_REMINDER' | 'GENERAL_CONFIDENTIAL';
+      title: string;
+      content: string;
+      referenceTag?: string;
+      attachmentName?: string;
+      attachmentDataUrl?: string;
+      attachmentType?: 'audio' | 'video' | 'document' | 'image' | 'other';
+      attachmentSize?: string;
+    }
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const newDossier: ConfidentialDossierItem = {
+      id: `dos_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaintsStore[index].id,
+      officerName: dossier.officerName,
+      officerRank: dossier.officerRank,
+      officerPno: dossier.officerPno,
+      category: dossier.category,
+      title: dossier.title,
+      content: dossier.content,
+      referenceTag: dossier.referenceTag,
+      attachmentName: dossier.attachmentName,
+      attachmentDataUrl: dossier.attachmentDataUrl,
+      attachmentType: dossier.attachmentType,
+      attachmentSize: dossier.attachmentSize,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (!complaintsStore[index].confidentialDossier) {
+      complaintsStore[index].confidentialDossier = [];
+    }
+    complaintsStore[index].confidentialDossier!.unshift(newDossier);
+    saveComplaintsToStorage(complaintsStore);
+
+    // Note: No public timeline or history generated - strictly private EO dossier
+    return complaintsStore[index];
+  },
+
+  async deleteConfidentialDossier(
+    complaintId: string,
+    dossierId: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    complaintsStore[index] = {
+      ...complaintsStore[index],
+      confidentialDossier: (complaintsStore[index].confidentialDossier || []).filter((d) => d.id !== dossierId),
+      updatedAt: new Date().toISOString(),
+    };
+    saveComplaintsToStorage(complaintsStore);
 
     return complaintsStore[index];
   },

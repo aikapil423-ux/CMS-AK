@@ -210,6 +210,9 @@ export interface ComplaintItem {
   documents?: ComplaintDocumentItem[];
   timeline?: ComplaintTimelineEvent[];
   
+  // EO Private Confidential Dossier (Never attached to public complaint or history)
+  confidentialDossier?: ConfidentialDossierItem[];
+  
   // Progress Report Demand from SHO
   progressReportRequested?: boolean;
   progressReportRequestedAt?: string;
@@ -245,6 +248,23 @@ export interface ComplaintDocumentItem {
   dataUrl?: string;
   mimeType?: string;
   description?: string;
+}
+
+export interface ConfidentialDossierItem {
+  id: string;
+  complaintId: string;
+  officerName: string;
+  officerRank?: string;
+  officerPno: string;
+  category: 'INFORMANT_LEAD' | 'FIELD_OBSERVATION' | 'OFF_RECORD_STATEMENT' | 'SUSPECT_INTEL' | 'PERSONAL_REMINDER' | 'GENERAL_CONFIDENTIAL';
+  title: string;
+  content: string;
+  referenceTag?: string;
+  attachmentName?: string;
+  attachmentDataUrl?: string;
+  attachmentType?: 'audio' | 'video' | 'document' | 'image' | 'other';
+  attachmentSize?: string;
+  createdAt: string;
 }
 
 export interface ComplaintTimelineEvent {

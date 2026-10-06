@@ -52,6 +52,7 @@ import {
   ComplaintDocumentItem,
   ComplaintTimelineEvent,
   OfficerNotification,
+  ConfidentialDossierItem,
 } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
-type ActiveTab = "overview" | "documents" | "links" | "history";
+type ActiveTab = "overview" | "documents" | "links" | "history" | "confidential_dossier";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -107,6 +108,42 @@ const DIRECTION_TEMPLATES = [
     recommendedDays: 14,
   },
 ];
+
+const DOSSIER_CATEGORY_CONFIG: Record<
+  ConfidentialDossierItem["category"],
+  { label: string; badgeClass: string; iconText: string }
+> = {
+  INFORMANT_LEAD: {
+    label: "Secret Informant / Mukhbir Lead",
+    badgeClass: "bg-red-100 text-red-800 border-red-200",
+    iconText: "🕵️",
+  },
+  FIELD_OBSERVATION: {
+    label: "Field Observation / Ground Reality",
+    badgeClass: "bg-amber-100 text-amber-800 border-amber-200",
+    iconText: "📍",
+  },
+  OFF_RECORD_STATEMENT: {
+    label: "Off-The-Record Statement",
+    badgeClass: "bg-purple-100 text-purple-800 border-purple-200",
+    iconText: "🤫",
+  },
+  SUSPECT_INTEL: {
+    label: "Suspect Intel / Discrepancy",
+    badgeClass: "bg-rose-100 text-rose-800 border-rose-200",
+    iconText: "⚠️",
+  },
+  PERSONAL_REMINDER: {
+    label: "EO Strategy & Personal Reminder",
+    badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
+    iconText: "🧠",
+  },
+  GENERAL_CONFIDENTIAL: {
+    label: "General Confidential Note",
+    badgeClass: "bg-slate-100 text-slate-800 border-slate-200",
+    iconText: "📝",
+  },
+};
 
 // Voice Dictation / Audio Input Component for any entry column
 function VoiceInputButton({
@@ -255,6 +292,21 @@ export default function ComplaintProfilePage() {
     size?: number | string;
   } | null>(null);
 
+  // Confidential Dossier State (Strictly EO ID only)
+  const [dossierModalOpen, setDossierModalOpen] = useState(false);
+  const [dossierModalTab, setDossierModalTab] = useState<"upload" | "note">("upload");
+  const [dossierTitle, setDossierTitle] = useState("");
+  const [dossierCategory, setDossierCategory] = useState<ConfidentialDossierItem["category"]>("FIELD_OBSERVATION");
+  const [dossierContent, setDossierContent] = useState("");
+  const [dossierReferenceTag, setDossierReferenceTag] = useState("");
+  const [dossierAttachmentName, setDossierAttachmentName] = useState("");
+  const [dossierAttachmentDataUrl, setDossierAttachmentDataUrl] = useState<string | undefined>(undefined);
+  const [dossierAttachmentType, setDossierAttachmentType] = useState<"audio" | "video" | "document" | "image" | "other">("document");
+  const [dossierAttachmentSize, setDossierAttachmentSize] = useState<string>("");
+  const [dossierSearch, setDossierSearch] = useState("");
+  const [dossierFilterCategory, setDossierFilterCategory] = useState<string>("ALL");
+  const [isSavingDossier, setIsSavingDossier] = useState(false);
+
   // Handler for Enquiry Note file attachment (Any format: video, audio, document, photo)
   const handleNoteFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -376,11 +428,27 @@ export default function ComplaintProfilePage() {
       ))
     )
   );
+  const isEoPersona = currentUser.role === "ENQUIRY_OFFICER" || isAssignedEo;
   const isUnassigned = !complaint?.assignedEoName || complaint?.status === "REGISTERED";
   const canAssign = isSho || currentUser.role === "DSP_SUBDIV" || currentUser.role === "SUPER_ADMIN";
   const canAskProgress = isSho && !isUnassigned;
   const canModifyCase = isAssignedEo; // Strictly EO only whom complaint is assigned!
   const canUploadDocument = canModifyCase || isSho || currentUser.role === "SUPER_ADMIN" || currentUser.role === "DUTY_OFFICER";
+
+  const filteredDossierEntries = useMemo(() => {
+    const list = complaint?.confidentialDossier || [];
+    return list.filter((item) => {
+      const matchesCategory =
+        dossierFilterCategory === "ALL" || item.category === dossierFilterCategory;
+      const q = dossierSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.content.toLowerCase().includes(q) ||
+        (item.referenceTag && item.referenceTag.toLowerCase().includes(q));
+      return matchesCategory && matchesSearch;
+    });
+  }, [complaint?.confidentialDossier, dossierFilterCategory, dossierSearch]);
 
   // Open Assign EO modal
   const handleOpenAssign = () => {
@@ -789,6 +857,146 @@ export default function ComplaintProfilePage() {
       setComplaint(updated);
     } catch (err: any) {
       alert(err.message || "Failed to delete document");
+    }
+  };
+
+  // Confidential Dossier Handlers (strictly restricted to Enquiry Officer IDs)
+  const handleDossierAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDossierAttachmentName(file.name);
+    const sizeStr =
+      file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${(file.size / 1024).toFixed(1)} KB`;
+    setDossierAttachmentSize(sizeStr);
+
+    let type: "audio" | "video" | "document" | "image" | "other" = "other";
+    const lowerName = file.name.toLowerCase();
+    if (
+      file.type.startsWith("audio/") ||
+      lowerName.endsWith(".mp3") ||
+      lowerName.endsWith(".wav") ||
+      lowerName.endsWith(".m4a") ||
+      lowerName.endsWith(".aac") ||
+      lowerName.endsWith(".ogg")
+    ) {
+      type = "audio";
+    } else if (
+      file.type.startsWith("video/") ||
+      lowerName.endsWith(".mp4") ||
+      lowerName.endsWith(".mkv") ||
+      lowerName.endsWith(".avi") ||
+      lowerName.endsWith(".mov") ||
+      lowerName.endsWith(".webm")
+    ) {
+      type = "video";
+    } else if (
+      file.type.startsWith("image/") ||
+      lowerName.endsWith(".jpg") ||
+      lowerName.endsWith(".jpeg") ||
+      lowerName.endsWith(".png") ||
+      lowerName.endsWith(".webp")
+    ) {
+      type = "image";
+    } else if (
+      file.type.includes("pdf") ||
+      file.type.includes("word") ||
+      file.type.includes("document") ||
+      lowerName.endsWith(".pdf") ||
+      lowerName.endsWith(".doc") ||
+      lowerName.endsWith(".docx") ||
+      lowerName.endsWith(".txt") ||
+      lowerName.endsWith(".xlsx") ||
+      lowerName.endsWith(".csv")
+    ) {
+      type = "document";
+    }
+    setDossierAttachmentType(type);
+
+    if (!dossierTitle.trim()) {
+      setDossierTitle(file.name.replace(/\.[^/.]+$/, ""));
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setDossierAttachmentDataUrl(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenUploadDossier = () => {
+    setDossierModalTab("upload");
+    setDossierModalOpen(true);
+  };
+
+  const handleOpenNoteDossier = () => {
+    setDossierModalTab("note");
+    setDossierModalOpen(true);
+  };
+
+  const handleAddDossierSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!complaint) return;
+    if (!isEoPersona) {
+      alert("Access Denied: Confidential Dossier is strictly restricted to Enquiry Officer IDs.");
+      return;
+    }
+    const finalTitle = dossierTitle.trim() || dossierAttachmentName || "Confidential Entry";
+    const finalContent =
+      dossierContent.trim() ||
+      (dossierAttachmentName
+        ? `Uploaded file: ${dossierAttachmentName} (${dossierAttachmentType.toUpperCase()} · ${dossierAttachmentSize || "Saved"})`
+        : "Confidential officer memory note recorded.");
+
+    setIsSavingDossier(true);
+    try {
+      const updated = await ComplaintService.addConfidentialDossier(complaint.id, {
+        officerName: currentUser.name,
+        officerRank: currentUser.rankDisplay || "Enquiry Officer",
+        officerPno: currentUser.pno || "EO-OFFICER",
+        category: dossierCategory,
+        title: finalTitle,
+        content: finalContent,
+        referenceTag: dossierReferenceTag.trim() || undefined,
+        attachmentName: dossierAttachmentName || undefined,
+        attachmentDataUrl: dossierAttachmentDataUrl || undefined,
+        attachmentType: dossierAttachmentName ? dossierAttachmentType : undefined,
+        attachmentSize: dossierAttachmentName ? dossierAttachmentSize : undefined,
+      });
+      setComplaint(updated);
+      setDossierModalOpen(false);
+      setDossierTitle("");
+      setDossierContent("");
+      setDossierReferenceTag("");
+      setDossierAttachmentName("");
+      setDossierAttachmentDataUrl(undefined);
+      setDossierAttachmentSize("");
+      setDossierAttachmentType("document");
+      setDossierCategory("FIELD_OBSERVATION");
+      alert("Confidential Dossier entry saved! Isolated from public records and kept strictly for your internal recollection.");
+    } catch (err: any) {
+      alert(err.message || "Failed to record confidential dossier note");
+    } finally {
+      setIsSavingDossier(false);
+    }
+  };
+
+  const handleDeleteDossier = async (dossierId: string) => {
+    if (!complaint) return;
+    if (!isEoPersona) {
+      alert("Access Denied: Confidential Dossier is strictly restricted to Enquiry Officer IDs.");
+      return;
+    }
+    if (!confirm("Are you sure you want to permanently delete this confidential dossier note?")) {
+      return;
+    }
+    try {
+      const updated = await ComplaintService.deleteConfidentialDossier(complaint.id, dossierId);
+      setComplaint(updated);
+    } catch (err: any) {
+      alert(err.message || "Failed to delete confidential note");
     }
   };
 
@@ -1215,6 +1423,16 @@ Certified official record copy.`;
             { key: "documents", label: "Documents", icon: UploadCloud, count: combinedDocuments.length },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
+            ...(isEoPersona
+              ? [
+                  {
+                    key: "confidential_dossier",
+                    label: "Confidential Dossier",
+                    icon: Lock,
+                    count: complaint.confidentialDossier?.length || 0,
+                  },
+                ]
+              : []),
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -1850,6 +2068,307 @@ Certified official record copy.`;
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* TAB 7: CONFIDENTIAL DOSSIER (Strictly Restricted to Enquiry Officer ID - Isolated from Complaint File) */}
+        {activeTab === "confidential_dossier" && isEoPersona && (
+          <div className="space-y-5 animate-in fade-in-0 duration-200">
+            {/* Top Secrecy & Memory Protocol Banner */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-[#0d1f38] to-slate-900 border-2 border-amber-500/40 rounded-2xl shadow-md text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                    <Lock className="w-3 h-3 text-amber-400" />
+                    <span>EO Case Memory &amp; Classified Diary</span>
+                  </span>
+                  <span className="text-xs font-mono text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                    Officer: {currentUser.name} ({currentUser.rankDisplay || "Enquiry Officer"})
+                  </span>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-rose-400 bg-rose-950/60 border border-rose-800/50 px-2 py-0.5 rounded">
+                    Strictly Isolated
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                  <span>Confidential Dossier • Enquiry Memory Notes</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
+                  Ye record complaint se attach nahi hoga khi bhi. Ye sirf aapke personal record, secret informant leads, off-the-record observations aur strategy yaad rakhne ke liye hai. Yeh kisi supervisory officer, citizen receipt ya public case history me show nahi hota.
+                </p>
+              </div>
+
+              <div className="shrink-0 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleOpenUploadDossier}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow-sm px-3.5 py-2 cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>Upload Dossier File</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={handleOpenNoteDossier}
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs gap-1.5 shadow-sm px-3.5 py-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Memory Note</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={dossierSearch}
+                    onChange={(e) => setDossierSearch(e.target.value)}
+                    placeholder="Search confidential notes, informant tags, suspect keywords..."
+                    className="w-full text-xs rounded-lg border border-slate-300 pl-3 pr-8 py-2 text-slate-900 placeholder:text-slate-400 bg-slate-50/50 focus:bg-white focus:border-blue-500 focus:outline-none"
+                  />
+                  {dossierSearch && (
+                    <button
+                      onClick={() => setDossierSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter */}
+                <select
+                  value={dossierFilterCategory}
+                  onChange={(e) => setDossierFilterCategory(e.target.value)}
+                  className="text-xs rounded-lg border border-slate-300 px-3 py-2 text-slate-800 bg-slate-50/50 focus:bg-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="ALL">All Categories ({complaint.confidentialDossier?.length || 0})</option>
+                  {Object.entries(DOSSIER_CATEGORY_CONFIG).map(([key, config]) => (
+                    <option key={key} value={key}>
+                      {config.iconText} {config.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="text-[11px] font-semibold text-slate-500 shrink-0">
+                Showing <strong>{filteredDossierEntries.length}</strong> of {complaint.confidentialDossier?.length || 0} Entries
+              </div>
+            </div>
+
+            {/* Dossier Notes List */}
+            {filteredDossierEntries.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-8 sm:p-12 text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-2xs">
+                  <Lock className="w-7 h-7" />
+                </div>
+                <div className="max-w-md mx-auto space-y-1">
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900">
+                    {dossierSearch || dossierFilterCategory !== "ALL"
+                      ? "No matching confidential notes found"
+                      : "No Confidential Dossier Entries Recorded Yet"}
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {dossierSearch || dossierFilterCategory !== "ALL"
+                      ? "Try adjusting your search keywords or category filter."
+                      : "Keep personal notes, confidential audio/call recordings, videos, PDFs, Word documents, or photos strictly for your own investigation diary. Nothing added here is attached to the complaint or shared outside."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={handleOpenUploadDossier}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>Upload Audio, Video, PDF, Word or Doc</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOpenNoteDossier}
+                    className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Write Note</span>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredDossierEntries.map((entry) => {
+                  const catConfig = DOSSIER_CATEGORY_CONFIG[entry.category] || {
+                    label: entry.category,
+                    badgeClass: "bg-slate-100 text-slate-800 border-slate-200",
+                    iconText: "📝",
+                  };
+                  return (
+                    <Card
+                      key={entry.id}
+                      className="border-slate-200 shadow-2xs hover:shadow-sm transition-shadow overflow-hidden bg-white"
+                    >
+                      <CardContent className="p-4 sm:p-5 space-y-3">
+                        {/* Header Row */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md border flex items-center gap-1.5 ${catConfig.badgeClass}`}
+                            >
+                              <span>{catConfig.iconText}</span>
+                              <span>{catConfig.label}</span>
+                            </span>
+
+                            {entry.referenceTag && (
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                #{entry.referenceTag}
+                              </span>
+                            )}
+
+                            {entry.attachmentType && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 uppercase tracking-wider">
+                                {entry.attachmentType === "audio" && "🎧 Audio File"}
+                                {entry.attachmentType === "video" && "🎬 Video File"}
+                                {entry.attachmentType === "document" && "📄 Document / PDF"}
+                                {entry.attachmentType === "image" && "📸 Image"}
+                                {entry.attachmentType === "other" && "📁 File"}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatDateTime(entry.createdAt)}</span>
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteDossier(entry.id)}
+                              className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Delete Confidential Entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Title & Officer */}
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{entry.title}</h4>
+                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                            Recorded by: <strong className="text-slate-700">{entry.officerName}</strong> ({entry.officerRank || "EO"}, PNO: {entry.officerPno})
+                          </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 text-xs text-slate-800 leading-relaxed font-sans whitespace-pre-wrap">
+                          {entry.content}
+                        </div>
+
+                        {/* Rich Attachment Section with Audio/Video/Doc/Image Players */}
+                        {entry.attachmentName && (
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                              <div className="flex items-center gap-2 truncate pr-2">
+                                {entry.attachmentType === "audio" && <Music className="w-4 h-4 text-amber-600 shrink-0" />}
+                                {entry.attachmentType === "video" && <Video className="w-4 h-4 text-purple-600 shrink-0" />}
+                                {entry.attachmentType === "image" && <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />}
+                                {entry.attachmentType === "document" && <FileText className="w-4 h-4 text-blue-600 shrink-0" />}
+                                {!["audio", "video", "image", "document"].includes(entry.attachmentType || "") && (
+                                  <Paperclip className="w-4 h-4 text-slate-600 shrink-0" />
+                                )}
+                                <span className="font-semibold text-slate-900 truncate text-xs">
+                                  {entry.attachmentName}
+                                </span>
+                                {entry.attachmentSize && (
+                                  <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-mono font-medium">
+                                    {entry.attachmentSize}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {entry.attachmentDataUrl && entry.attachmentType !== "audio" && entry.attachmentType !== "video" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPreviewModalFile({
+                                        name: entry.attachmentName || "Dossier File",
+                                        dataUrl: entry.attachmentDataUrl,
+                                        category: entry.attachmentType || "document",
+                                      })
+                                    }
+                                    className="text-blue-700 hover:text-blue-900 font-bold text-[11px] hover:underline flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>Preview</span>
+                                  </button>
+                                )}
+                                {entry.attachmentDataUrl && (
+                                  <a
+                                    href={entry.attachmentDataUrl}
+                                    download={entry.attachmentName}
+                                    className="text-blue-700 hover:text-blue-900 font-bold text-[11px] hover:underline flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    <span>Download</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Direct Inline Audio Player */}
+                            {entry.attachmentType === "audio" && entry.attachmentDataUrl && (
+                              <div className="pt-1 space-y-1">
+                                <div className="text-[10px] text-amber-800 font-semibold flex items-center gap-1">
+                                  <Volume2 className="w-3 h-3" />
+                                  <span>Confidential Audio Playback (Call Recording / Voice Intel):</span>
+                                </div>
+                                <audio controls src={entry.attachmentDataUrl} className="w-full h-8 pt-0.5" />
+                              </div>
+                            )}
+
+                            {/* Direct Inline Video Player */}
+                            {entry.attachmentType === "video" && entry.attachmentDataUrl && (
+                              <div className="pt-1 space-y-1">
+                                <div className="text-[10px] text-purple-800 font-semibold flex items-center gap-1">
+                                  <Video className="w-3 h-3" />
+                                  <span>Confidential Video Playback:</span>
+                                </div>
+                                <video controls src={entry.attachmentDataUrl} className="w-full max-h-56 rounded-lg bg-black" />
+                              </div>
+                            )}
+
+                            {/* Image Thumbnail */}
+                            {entry.attachmentType === "image" && entry.attachmentDataUrl && (
+                              <div className="pt-1">
+                                <img
+                                  src={entry.attachmentDataUrl}
+                                  alt={entry.attachmentName}
+                                  onClick={() =>
+                                    setPreviewModalFile({
+                                      name: entry.attachmentName || "Photo",
+                                      dataUrl: entry.attachmentDataUrl,
+                                      category: "image",
+                                    })
+                                  }
+                                  className="max-h-36 rounded-lg border border-slate-200 cursor-pointer object-cover hover:opacity-90 transition-opacity"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -3102,6 +3621,372 @@ Certified official record copy.`;
                 Close Preview
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADD CONFIDENTIAL DOSSIER / EO MEMORY NOTE                          */}
+      {/* ========================================================================= */}
+      {dossierModalOpen && isEoPersona && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => {
+              if (!isSavingDossier) setDossierModalOpen(false);
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-[#0e223d] text-white flex items-center justify-between border-b border-slate-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase tracking-wider flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-400" />
+                    <span>EO Memory Isolated Docket</span>
+                  </span>
+                  <span className="text-xs font-mono text-slate-300 font-bold">
+                    {complaint.complaintNumber}
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>Record Confidential Dossier Entry</span>
+                </h3>
+                <p className="text-[11px] text-slate-300">
+                  This note will NOT be attached to the complaint or visible in public receipts.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (!isSavingDossier) setDossierModalOpen(false);
+                }}
+                className="p-1 rounded-md text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Tabs: Upload Dossier File vs Write Memory Note */}
+            <div className="flex border-b border-slate-200 bg-slate-100/80 px-3 pt-2 gap-1">
+              <button
+                type="button"
+                onClick={() => setDossierModalTab("upload")}
+                className={`flex items-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                  dossierModalTab === "upload"
+                    ? "border-emerald-600 text-emerald-800 bg-white rounded-t-lg shadow-2xs"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Upload Audio, Video, PDF, Doc or Any File</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDossierModalTab("note")}
+                className={`flex items-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                  dossierModalTab === "note"
+                    ? "border-amber-600 text-amber-800 bg-white rounded-t-lg shadow-2xs"
+                    : "border-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-600" />
+                <span>Write Memory Note</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleAddDossierSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
+              {/* UPLOAD FILE MODE: Prominent File Upload Section First */}
+              {dossierModalTab === "upload" && (
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                      <UploadCloud className="w-4 h-4 text-emerald-600" />
+                      <span>Select Dossier File (Audio, Video, PDF, Word, Image, Any Format) *</span>
+                    </label>
+                    <span className="text-[10px] text-slate-500 font-medium">Any format supported</span>
+                  </div>
+
+                  <div className="border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-xl p-3.5 bg-white text-center transition-colors">
+                    <input
+                      type="file"
+                      id="dossierAttachmentUploadInput"
+                      onChange={handleDossierAttachmentChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="dossierAttachmentUploadInput" className="cursor-pointer block space-y-2">
+                      {dossierAttachmentName ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+                            <div className="flex items-center gap-2 truncate pr-2 font-bold text-slate-900 text-xs">
+                              {dossierAttachmentType === "audio" && <Music className="w-4 h-4 text-amber-600 shrink-0" />}
+                              {dossierAttachmentType === "video" && <Video className="w-4 h-4 text-purple-600 shrink-0" />}
+                              {dossierAttachmentType === "image" && <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />}
+                              {dossierAttachmentType === "document" && <FileText className="w-4 h-4 text-blue-600 shrink-0" />}
+                              {!["audio", "video", "image", "document"].includes(dossierAttachmentType) && (
+                                <Paperclip className="w-4 h-4 text-slate-600 shrink-0" />
+                              )}
+                              <span className="truncate max-w-[220px]">{dossierAttachmentName}</span>
+                              <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-mono uppercase">
+                                {dossierAttachmentType} · {dossierAttachmentSize || "Saved"}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setDossierAttachmentName("");
+                                setDossierAttachmentDataUrl(undefined);
+                                setDossierAttachmentSize("");
+                              }}
+                              className="text-[11px] text-red-600 hover:underline font-bold shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          {/* Direct Test Playback inside Modal */}
+                          {dossierAttachmentType === "audio" && dossierAttachmentDataUrl && (
+                            <div className="p-2 bg-amber-50 rounded-lg border border-amber-200 space-y-1">
+                              <span className="text-[10px] text-amber-900 font-bold flex items-center gap-1">
+                                <Volume2 className="w-3 h-3" />
+                                <span>Preview Audio:</span>
+                              </span>
+                              <audio controls src={dossierAttachmentDataUrl} className="w-full h-8 pt-0.5" />
+                            </div>
+                          )}
+
+                          {dossierAttachmentType === "video" && dossierAttachmentDataUrl && (
+                            <div className="p-2 bg-purple-50 rounded-lg border border-purple-200 space-y-1">
+                              <span className="text-[10px] text-purple-900 font-bold flex items-center gap-1">
+                                <Video className="w-3 h-3" />
+                                <span>Preview Video:</span>
+                              </span>
+                              <video controls src={dossierAttachmentDataUrl} className="w-full max-h-40 rounded-lg bg-black" />
+                            </div>
+                          )}
+
+                          {dossierAttachmentType === "image" && dossierAttachmentDataUrl && (
+                            <img
+                              src={dossierAttachmentDataUrl}
+                              alt="preview"
+                              className="max-h-28 mx-auto rounded object-contain border border-slate-200"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="py-2 space-y-1.5">
+                          <UploadCloud className="w-7 h-7 text-emerald-600 mx-auto" />
+                          <p className="font-bold text-emerald-700 hover:underline text-xs">
+                            Click here to select Audio, Video, PDF, Word doc, or any file
+                          </p>
+                          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] text-slate-500 pt-1">
+                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              🎧 MP3, WAV, M4A
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
+                              🎬 MP4, MKV, AVI
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                              📄 PDF, Word DOCX/DOC
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              📸 JPG, PNG
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Title Input */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-800">
+                    {dossierModalTab === "upload" ? "Dossier File Title / Brief Description *" : "Entry Title / Brief Lead *"}
+                  </label>
+                  <VoiceInputButton
+                    onTranscript={(txt) => setDossierTitle((p) => (p ? p + " " + txt : txt))}
+                    fieldLabel="dossier title"
+                  />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={dossierTitle}
+                  onChange={(e) => setDossierTitle(e.target.value)}
+                  placeholder={
+                    dossierModalTab === "upload"
+                      ? "e.g. Call Recording of Witness Sunil / Spot Video / Patwari Demarcation Map"
+                      : "e.g. Secret Informant Tip regarding hidden vehicle / Off-record confession"
+                  }
+                  className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              {/* Category & Tag Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-800 mb-1">
+                    Dossier Category *
+                  </label>
+                  <select
+                    value={dossierCategory}
+                    onChange={(e) => setDossierCategory(e.target.value as ConfidentialDossierItem["category"])}
+                    className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white font-medium focus:border-emerald-500 focus:outline-none"
+                  >
+                    {Object.entries(DOSSIER_CATEGORY_CONFIG).map(([key, config]) => (
+                      <option key={key} value={key}>
+                        {config.iconText} {config.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold text-slate-800">
+                      Reference / Intel Tag
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={dossierReferenceTag}
+                    onChange={(e) => setDossierReferenceTag(e.target.value)}
+                    placeholder="e.g. Mukhbir-Sunil / CDR-9812 / SuspectBrother"
+                    className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Content / Observations */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-800">
+                    {dossierModalTab === "upload"
+                      ? "Investigation Context / Remarks (Optional)"
+                      : "Confidential Observations & Memory Notes *"}
+                  </label>
+                  <VoiceInputButton
+                    onTranscript={(txt) => setDossierContent((p) => (p ? p + " " + txt : txt))}
+                    fieldLabel="confidential observations"
+                  />
+                </div>
+                <textarea
+                  rows={dossierModalTab === "upload" ? 2 : 4}
+                  required={dossierModalTab === "note"}
+                  value={dossierContent}
+                  onChange={(e) => setDossierContent(e.target.value)}
+                  placeholder={
+                    dossierModalTab === "upload"
+                      ? "Add optional remarks regarding who gave this recording/file, spot location, or investigation context..."
+                      : "Record confidential intel, personal recollection, witness body language, unverified allegations, or investigation strategy..."
+                  }
+                  className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none font-sans"
+                />
+              </div>
+
+              {/* Optional File Attachment inside "Note" mode */}
+              {dossierModalTab === "note" && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-slate-800 flex items-center gap-1.5">
+                      <Paperclip className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Optional Attachment (Audio, Video, PDF, Word, Photo)</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">Optional</span>
+                  </div>
+
+                  <div className="border border-dashed border-slate-300 hover:border-amber-500 rounded-lg p-2.5 bg-white text-center transition-colors">
+                    <input
+                      type="file"
+                      id="dossierAttachmentNoteInput"
+                      onChange={handleDossierAttachmentChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="dossierAttachmentNoteInput" className="cursor-pointer block space-y-1">
+                      {dossierAttachmentName ? (
+                        <div className="flex items-center justify-between px-2 py-1">
+                          <div className="flex items-center gap-2 truncate font-bold text-slate-900 text-xs">
+                            <Paperclip className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span className="truncate max-w-[220px]">{dossierAttachmentName}</span>
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-mono">
+                              {dossierAttachmentSize}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setDossierAttachmentName("");
+                              setDossierAttachmentDataUrl(undefined);
+                              setDossierAttachmentSize("");
+                            }}
+                            className="text-[11px] text-red-600 hover:underline font-semibold"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-1">
+                          <UploadCloud className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+                          <p className="font-semibold text-amber-600 hover:underline text-xs">
+                            Click to attach Audio, Video, PDF, Word, or Photo
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            Supports any audio, video, document, or image format
+                          </p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={() => setDossierModalOpen(false)}
+                  disabled={isSavingDossier}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  disabled={isSavingDossier}
+                  className={
+                    dossierModalTab === "upload"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-xs"
+                      : "bg-amber-600 hover:bg-amber-700 text-white font-bold gap-1.5 shadow-xs"
+                  }
+                >
+                  {isSavingDossier ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : dossierModalTab === "upload" ? (
+                    <>
+                      <UploadCloud className="w-3.5 h-3.5" />
+                      <span>Upload to Confidential Dossier</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Save Confidential Note</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
