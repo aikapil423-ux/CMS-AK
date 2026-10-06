@@ -28,6 +28,7 @@ import {
   Link2,
   Layers,
   ArrowRightLeft,
+  ArrowUpDown,
   History as HistoryIcon,
   FileCheck,
   Scale,
@@ -220,6 +221,7 @@ export default function ComplaintProfilePage() {
   const [complaint, setComplaint] = useState<ComplaintItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+  const [historySortOrder, setHistorySortOrder] = useState<"asc" | "desc">("asc");
 
   // More Actions dropdown state
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
@@ -1020,14 +1022,19 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       });
     }
 
-    // Sort: Newest timestamp first. If timestamps are identical, sort by stageWeight descending
+    // Sort chronologically: Default 'asc' (jo kaam pehle hua hai vo pehle dikhe)
     return entries.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
       const timeB = new Date(b.timestamp).getTime();
-      if (timeB !== timeA) return timeB - timeA;
-      return (b.stageWeight || 0) - (a.stageWeight || 0);
+      if (historySortOrder === "asc") {
+        if (timeA !== timeB) return timeA - timeB;
+        return (a.stageWeight || 0) - (b.stageWeight || 0);
+      } else {
+        if (timeB !== timeA) return timeB - timeA;
+        return (b.stageWeight || 0) - (a.stageWeight || 0);
+      }
     });
-  }, [complaint]);
+  }, [complaint, historySortOrder]);
 
   const combinedTimeline = combinedHistory;
 
@@ -2318,17 +2325,53 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
         {/* TAB 6: HISTORY (Official Case History Timeline matching PPR / CMS) */}
         {activeTab === "history" && (
-          <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-2xs">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 sm:p-8 shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <HistoryIcon className="w-4 h-4 text-blue-600" />
+                  <span>Case History &amp; Proceedings Timeline</span>
+                  <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    {combinedHistory.length} Steps
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Chronological progression of actions taken (Jo kaam pehle hua hai vo pehle)
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistorySortOrder(historySortOrder === "asc" ? "desc" : "asc")}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
+                  title="Toggle Chronological Order"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 text-blue-600" />
+                  <span>
+                    {historySortOrder === "asc"
+                      ? "Earliest First (Pehle hua kaam pehle)"
+                      : "Latest First (Naya kaam pehle)"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
             <div className="relative pl-7 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-blue-300">
-              {combinedHistory.map((item) => (
+              {combinedHistory.map((item, index) => (
                 <div key={item.id} className="relative group">
                   {/* Timeline Blue Dot */}
                   <div className="absolute -left-[22px] top-1 w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-white shadow-2xs" />
 
                   <div className="space-y-0.5">
                     {/* Event Title (Uppercase Blue) */}
-                    <div className="text-xs sm:text-sm font-bold text-blue-600 tracking-wider uppercase">
-                      {item.title}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-bold text-blue-600 tracking-wider uppercase">
+                        {item.title}
+                      </span>
+                      <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                        Step #{index + 1}
+                      </span>
                     </div>
 
                     {/* Date Time & Officer Subline */}
