@@ -58,6 +58,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
+import {
+  DropdownManagerService,
+  DropdownItem,
+} from "@/services/dropdownManagerService";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -364,6 +368,26 @@ export default function RegisterComplaintPage() {
     size?: number | string;
   } | null>(null);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+
+  // Dynamic Dropdown Options from Dropdown Manager
+  const [dynamicCategories, setDynamicCategories] = useState<DropdownItem[]>([]);
+  const [dynamicRelations, setDynamicRelations] = useState<DropdownItem[]>([]);
+
+  useEffect(() => {
+    const cats = DropdownManagerService.getItems("complaint_categories", true);
+    if (cats && cats.length > 0) setDynamicCategories(cats);
+    const rels = DropdownManagerService.getItems("relation_types", true);
+    if (rels && rels.length > 0) setDynamicRelations(rels);
+
+    const handleUpdate = () => {
+      const updatedCats = DropdownManagerService.getItems("complaint_categories", true);
+      if (updatedCats && updatedCats.length > 0) setDynamicCategories(updatedCats);
+      const updatedRels = DropdownManagerService.getItems("relation_types", true);
+      if (updatedRels && updatedRels.length > 0) setDynamicRelations(updatedRels);
+    };
+    window.addEventListener("cms-dropdowns-updated", handleUpdate);
+    return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
+  }, []);
 
   // Convert base64 dataUrl into Blob Object URL for reliable native PDF rendering
   useEffect(() => {
@@ -2179,10 +2203,20 @@ export default function RegisterComplaintPage() {
                         onChange={(e) => handleComplainantChange(idx, "relationType", e.target.value)}
                         className="w-full px-2 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center"
                       >
-                        <option value="S/O">S/o</option>
-                        <option value="D/O">D/o</option>
-                        <option value="W/O">W/o</option>
-                        <option value="C/O">C/o</option>
+                        {dynamicRelations.length > 0 ? (
+                          dynamicRelations.map((r) => (
+                            <option key={r.code} value={r.code}>
+                              {r.label}
+                            </option>
+                          ))
+                        ) : (
+                          <>
+                            <option value="S/O">S/o</option>
+                            <option value="D/O">D/o</option>
+                            <option value="W/O">W/o</option>
+                            <option value="C/O">C/o</option>
+                          </>
+                        )}
                       </select>
                     </div>
 
@@ -2815,17 +2849,27 @@ export default function RegisterComplaintPage() {
                     onChange={(e: any) => setIncidentCategory(e.target.value)}
                     className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
                   >
-                    <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
-                    <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
-                    <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
-                    <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
-                    <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
-                    <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
-                    <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
-                    <option value="MISSING_PERSON">Missing Person</option>
-                    <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
-                    <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
-                    <option value="OTHER_GENERAL">Other General Matter</option>
+                    {dynamicCategories.length > 0 ? (
+                      dynamicCategories.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.label}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
+                        <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
+                        <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
+                        <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
+                        <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
+                        <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
+                        <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
+                        <option value="MISSING_PERSON">Missing Person</option>
+                        <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
+                        <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
+                        <option value="OTHER_GENERAL">Other General Matter</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>

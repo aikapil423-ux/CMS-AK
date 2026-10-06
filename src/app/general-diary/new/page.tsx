@@ -29,6 +29,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { DropdownManagerService } from "@/services/dropdownManagerService";
 
 function NewGDEntryContent() {
   const router = useRouter();
@@ -121,10 +122,55 @@ function NewGDEntryContent() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Load configured types
+  // Load configured types (merged with Dropdown Manager)
   useEffect(() => {
     const loadedTypes = GeneralDiaryService.getTypes();
-    setTypes(loadedTypes);
+    const dynamicGdTypes = DropdownManagerService.getItems("gd_types", true);
+
+    if (dynamicGdTypes && dynamicGdTypes.length > 0) {
+      const merged: GDEntryTypeConfig[] = dynamicGdTypes.map((d) => {
+        const found = loadedTypes.find((t) => t.code === d.code);
+        if (found) return { ...found, nameEn: d.label, nameHi: d.label };
+        return {
+          code: d.code,
+          category: "ROUTINE_ADMINISTRATION",
+          nameEn: d.label,
+          nameHi: d.label,
+          description: d.description || d.label,
+          isEnabled: d.isActive,
+          usedCount: 0,
+          requiresOfficer: true,
+          defaultTemplates: [],
+        };
+      });
+      setTypes(merged);
+    } else {
+      setTypes(loadedTypes);
+    }
+
+    const handleUpdate = () => {
+      const updated = DropdownManagerService.getItems("gd_types", true);
+      if (updated && updated.length > 0) {
+        const merged: GDEntryTypeConfig[] = updated.map((d) => {
+          const found = loadedTypes.find((t) => t.code === d.code);
+          if (found) return { ...found, nameEn: d.label, nameHi: d.label };
+          return {
+            code: d.code,
+            category: "ROUTINE_ADMINISTRATION",
+            nameEn: d.label,
+            nameHi: d.label,
+            description: d.description || d.label,
+            isEnabled: d.isActive,
+            usedCount: 0,
+            requiresOfficer: true,
+            defaultTemplates: [],
+          };
+        });
+        setTypes(merged);
+      }
+    };
+    window.addEventListener("cms-dropdowns-updated", handleUpdate);
+    return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
   }, []);
 
   // Get active officer

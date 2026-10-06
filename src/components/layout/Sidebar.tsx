@@ -25,6 +25,9 @@ import {
   ScrollText,
   FileCheck2,
   Sparkles,
+  Settings,
+  ListFilter,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -46,13 +49,15 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha and Complaints (always keep accessible, never hide)
+  // Toggle slide bar states for Roznamcha, Complaints, and Management
   const [roznamchaOpen, setRoznamchaOpen] = useState(true);
   const [complaintsOpen, setComplaintsOpen] = useState(true);
+  const [managementOpen, setManagementOpen] = useState(true);
 
   // Detect active module
   const isRoznamchaPath = pathname.startsWith("/general-diary");
   const isComplaintsPath = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+  const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
@@ -98,6 +103,12 @@ export function Sidebar() {
   const complaintNavItems: NavItem[] = [
     { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "6 Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
+  ];
+
+  // MANAGEMENT NAVIGATION ITEMS (Settings and Dropdown Manager)
+  const managementNavItems: NavItem[] = [
+    { name: "Settings", href: "/settings", icon: Settings, badge: "Config", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
   ];
 
   return (
@@ -349,7 +360,84 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* 3. Station Info Links (Station Profile & Officer Roster) */}
+        {/* 3. MANAGEMENT TOGGLE SLIDE BAR */}
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setManagementOpen(!managementOpen)}
+            className={cn(
+              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+              isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+              isManagementPath ? "bg-blue-50/70" : ""
+            )}
+            title="Toggle Management Menu"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <SlidersHorizontal className="w-4 h-4 text-blue-600 shrink-0" />
+              {isExpanded && (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                  Management
+                </span>
+              )}
+            </div>
+            {isExpanded && (
+              <span className="text-slate-400">
+                {managementOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+          </button>
+
+          {managementOpen && (
+            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+              {managementNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href || (item.href === "/settings" && pathname === "/settings");
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    title={!isExpanded ? item.name : undefined}
+                    className={cn(
+                      "flex items-center rounded-lg text-xs font-medium transition-all group",
+                      isExpanded
+                        ? "justify-between px-3 py-2"
+                        : "justify-center p-2.5",
+                      isActive
+                        ? "bg-blue-50 text-blue-700 font-bold border-l-3 border-blue-600 shadow-2xs"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+                    )}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Icon
+                        className={cn(
+                          "w-4 h-4 shrink-0",
+                          isActive ? "text-blue-600" : "text-slate-400 group-hover:text-blue-600"
+                        )}
+                      />
+                      {isExpanded && <span className="truncate">{item.name}</span>}
+                    </div>
+                    {isExpanded && item.badge && (
+                      <span
+                        className={cn(
+                          "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                          item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
+        </div>
+
+        {/* 4. Station Info Links (Station Profile & Officer Roster) */}
         <div className="pt-2 border-t border-slate-200">
           {isExpanded && (
             <div className="px-2 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 animate-in fade-in duration-200">
