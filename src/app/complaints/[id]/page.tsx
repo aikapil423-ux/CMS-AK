@@ -1062,36 +1062,88 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
   return (
     <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
       {/* Top Header & Navigation Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-3">
           <Link
             href="/complaints"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0b192c] transition-colors bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#0b192c] transition-colors bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Complaints</span>
+            <span>Back</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs">
-              <FileText className="w-4 h-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+              <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-tight">
-                Complaint Profile
-              </h1>
-              <p className="text-[11px] text-slate-500 font-mono">
-                Haryana Police · Thanesar City
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
+                  Complaint Profile
+                </h1>
+                <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  {complaint.complaintNumber}
+                </span>
+                <StatusBadge status={complaint.status} />
+                <PriorityBadge priority={complaint.priority} />
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Complainant: <strong className="text-slate-800">{complaint.complainantName}</strong> ({complaint.complainantMobile}) · PS {complaint.policeStation}
               </p>
             </div>
           </div>
         </div>
-        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto">
+        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto shrink-0">
           Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
         </span>
       </div>
 
-      {/* Main Profile Header Banner */}
-      <Card className="border-slate-200 shadow-xs bg-white overflow-visible">
+      {/* Sub-Tabs Row (DIRECTLY AFTER COMPLAINT PROFILE HEADER) */}
+      <div className="border-b border-slate-200 bg-white rounded-xl px-2 shadow-2xs">
+        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
+          {[
+            { key: "overview", label: "Overview", icon: Eye, count: null },
+            { key: "evidence", label: "Evidence", icon: Paperclip, count: complaint.attachments?.length || 0 },
+            { key: "enquiry_notes", label: "Enquiry Notes", icon: FileText, count: complaint.enquiryNotes?.length || 0 },
+            { key: "documents", label: "Documents", icon: UploadCloud, count: complaint.documents?.length || 0 },
+            { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
+            { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as ActiveTab)}
+                className={`flex items-center gap-1.5 py-3 px-3 border-b-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+                {tab.count !== null && tab.count > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] ${
+                      isActive ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content Panes */}
+      <div className="space-y-5">
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === "overview" && (
+          <div className="space-y-5">
+            {/* Main Profile Header Banner */}
+            <Card className="border-slate-200 shadow-xs bg-white overflow-visible">
         <CardContent className="p-5 sm:p-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Left: Complaint Identification */}
@@ -1518,51 +1570,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         </div>
       )}
 
-      {/* Sub-Tabs Row (Clean, single-row navigation) */}
-      <div className="border-b border-slate-200 bg-white rounded-t-xl px-2">
-        <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
-          {[
-            { key: "overview", label: "Overview", icon: Eye, count: null },
-            { key: "evidence", label: "Evidence", icon: Paperclip, count: complaint.attachments?.length || 0 },
-            { key: "enquiry_notes", label: "Enquiry Notes", icon: FileText, count: complaint.enquiryNotes?.length || 0 },
-            { key: "documents", label: "Documents", icon: UploadCloud, count: complaint.documents?.length || 0 },
-            { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
-            { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as ActiveTab)}
-                className={`flex items-center gap-1.5 py-3 px-3 border-b-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
-                {tab.count !== null && tab.count > 0 && (
-                  <span
-                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] ${
-                      isActive ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tab Content Panes */}
-      <div className="space-y-5">
-        {/* TAB 1: OVERVIEW */}
-        {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Overview Particulars Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* Left: 2 Columns of Details */}
             <div className="lg:col-span-2 space-y-5">
               {/* Complainant Details */}
@@ -1784,7 +1793,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               </Card>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
         {/* TAB 2: EVIDENCE */}
         {activeTab === "evidence" && (
