@@ -51,6 +51,7 @@ import {
   ComplaintItem,
   IntelligenceCheckResult,
   ComplaintEvidenceAttachment,
+  ComplaintDocumentItem,
   RelativeRelation,
   AccusedPerson,
 } from "@/types";
@@ -361,6 +362,7 @@ export default function RegisterComplaintPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [isDraggingEvidence, setIsDraggingEvidence] = useState(false);
+  const [isDraggingAutofill, setIsDraggingAutofill] = useState(false);
   const [previewModalFile, setPreviewModalFile] = useState<{
     name: string;
     category: string;
@@ -1646,6 +1648,42 @@ export default function RegisterComplaintPage() {
       : [];
 
     try {
+      // Collect all uploaded evidence attachments, drag & drop files, and autofill files into documents
+      const documentsToSave: ComplaintDocumentItem[] = [
+        ...attachments.map((att) => ({
+          id: `doc_${att.id}`,
+          complaintId: "",
+          fileName: att.name,
+          fileCategory: att.category.toUpperCase(),
+          uploadedBy: currentUser.name,
+          uploadedAt: att.uploadedAt || new Date().toISOString(),
+          fileSize: typeof att.size === "number" ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || "10 KB"),
+          fileUrl: att.dataUrl,
+          dataUrl: att.dataUrl,
+          description: att.description || "Uploaded during complaint registration",
+        })),
+      ];
+
+      // If an autofill document was processed and is not yet in documentsToSave, add it as application copy
+      if (
+        autofillSuccessNotice &&
+        autofillSuccessNotice.fileName &&
+        !documentsToSave.some((d) => d.fileName.toLowerCase() === autofillSuccessNotice.fileName.toLowerCase())
+      ) {
+        documentsToSave.unshift({
+          id: `doc_autofill_${Date.now()}`,
+          complaintId: "",
+          fileName: autofillSuccessNotice.fileName,
+          fileCategory: "APPLICATION / COMPLAINT COPY",
+          uploadedBy: currentUser.name,
+          uploadedAt: new Date().toISOString(),
+          fileSize: "120 KB",
+          fileUrl: autofillSuccessNotice.dataUrl,
+          dataUrl: autofillSuccessNotice.dataUrl,
+          description: `Original ${autofillSuccessNotice.typeLabel || "Document"} uploaded during intake`,
+        });
+      }
+
       const complaint = await ComplaintService.createComplaint(
         {
           source: sourceChannel,
@@ -1710,6 +1748,7 @@ export default function RegisterComplaintPage() {
           linkedComplaintNumber: linkedComplaintNo || undefined,
           isCrossComplaint: isCrossCaseTagged || undefined,
           attachments,
+          documents: documentsToSave,
         } as any,
         currentUser.name,
         currentUser.stationName,
@@ -2125,11 +2164,39 @@ export default function RegisterComplaintPage() {
                     type="button"
                     onClick={() => autofillFileInputRef.current?.click()}
                     disabled={isAutofilling}
-                    className="px-3 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                    title="Upload handwritten photo, scanned PDF, document, or audio to autofill all fields"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingAutofill(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingAutofill(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingAutofill(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        handleAutofillFileSelect(e.dataTransfer.files);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer ${
+                      isDraggingAutofill
+                        ? "bg-amber-500 text-slate-900 scale-105 ring-2 ring-amber-300"
+                        : "bg-[#0b192c] hover:bg-slate-900 text-white"
+                    }`}
+                    title="Click or Drag & Drop handwritten photo, scanned PDF, document, or audio to autofill all fields"
                   >
                     <Upload className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{isAutofilling ? "Processing..." : "Upload & Autofill Form"}</span>
+                    <span>
+                      {isAutofilling
+                        ? "Processing..."
+                        : isDraggingAutofill
+                        ? "Drop File to Autofill"
+                        : "Upload & Autofill Form"}
+                    </span>
                   </button>
                   <button
                     type="button"

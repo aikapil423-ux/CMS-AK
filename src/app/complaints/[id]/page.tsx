@@ -61,7 +61,7 @@ import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 
-type ActiveTab = "overview" | "evidence" | "enquiry_notes" | "documents" | "links" | "history";
+type ActiveTab = "overview" | "documents" | "links" | "history";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -380,6 +380,7 @@ export default function ComplaintProfilePage() {
   const canAssign = isSho || currentUser.role === "DSP_SUBDIV" || currentUser.role === "SUPER_ADMIN";
   const canAskProgress = isSho && !isUnassigned;
   const canModifyCase = isAssignedEo; // Strictly EO only whom complaint is assigned!
+  const canUploadDocument = canModifyCase || isSho || currentUser.role === "SUPER_ADMIN" || currentUser.role === "DUTY_OFFICER";
 
   // Open Assign EO modal
   const handleOpenAssign = () => {
@@ -509,7 +510,7 @@ export default function ComplaintProfilePage() {
     setNoteAttachmentDataUrl(undefined);
     setEnquiryNoteModalOpen(false);
     await loadComplaint();
-    setActiveTab("enquiry_notes");
+    setActiveTab("documents");
   };
 
   // Evidence file upload handler
@@ -567,7 +568,7 @@ export default function ComplaintProfilePage() {
     setEvidenceDataUrl(undefined);
     setEvidenceModalOpen(false);
     await loadComplaint();
-    setActiveTab("evidence");
+    setActiveTab("documents");
   };
 
   // Document file upload handler (Any format)
@@ -608,8 +609,8 @@ export default function ComplaintProfilePage() {
     e.preventDefault();
     if (!complaint) return;
 
-    if (!canModifyCase) {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) has permission to upload documents.`);
+    if (!canUploadDocument) {
+      alert(`Access Denied: You do not have permission to upload documents.`);
       return;
     }
 
@@ -1038,6 +1039,119 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
   const combinedTimeline = combinedHistory;
 
+  // File Category Detector for preview icons and modal rendering
+  const detectCategory = (fileName: string, cat?: string): "document" | "video" | "audio" | "image" | "other" => {
+    const ext = (fileName || "").split(".").pop()?.toLowerCase() || "";
+    if (["jpg", "jpeg", "png", "webp", "gif", "bmp", "svg"].includes(ext)) return "image";
+    if (["mp4", "mov", "avi", "mkv", "webm", "3gp"].includes(ext)) return "video";
+    if (["mp3", "wav", "m4a", "ogg", "aac", "flac"].includes(ext)) return "audio";
+    if (["pdf", "doc", "docx", "txt", "rtf", "xls", "xlsx", "csv"].includes(ext)) return "document";
+    const c = (cat || "").toLowerCase();
+    if (c.includes("image") || c.includes("photo")) return "image";
+    if (c.includes("video")) return "video";
+    if (c.includes("audio") || c.includes("voice")) return "audio";
+    return "document";
+  };
+
+  // Combine all documents: complaint.documents + complaint.attachments + any enquiry note media
+  const combinedDocuments: ComplaintDocumentItem[] = useMemo(() => {
+    if (!complaint) return [];
+    const list: ComplaintDocumentItem[] = [...(complaint.documents || [])];
+    const existingNames = new Set(list.map((d) => (d.fileName || "").toLowerCase().trim()));
+
+    // 1. Evidence Attachments uploaded during registration or enquiry
+    (complaint.attachments || []).forEach((att) => {
+      const key = (att.name || "").toLowerCase().trim();
+      if (!existingNames.has(key)) {
+        list.push({
+          id: `doc_${att.id}`,
+          complaintId: complaint.id,
+          fileName: att.name,
+          fileCategory: att.category.toUpperCase(),
+          uploadedBy: complaint.registeredBy || "Intake Officer",
+          uploadedAt: att.uploadedAt || complaint.createdAt,
+          fileSize: typeof att.size === "number" ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || "10 KB"),
+          fileUrl: att.dataUrl,
+          dataUrl: att.dataUrl,
+          description: att.description || "Uploaded evidence docket",
+        });
+        existingNames.add(key);
+      }
+    });
+
+    // 2. Media attached to any Enquiry Notes
+    (complaint.enquiryNotes || []).forEach((n) => {
+      if (n.attachment) {
+        const key = (n.attachment.name || "").toLowerCase().trim();
+        if (!existingNames.has(key)) {
+          list.push({
+            id: `doc_enq_${n.attachment.id}`,
+            complaintId: complaint.id,
+            fileName: n.attachment.name,
+            fileCategory: `${n.attachment.category.toUpperCase()} (ENQUIRY)`,
+            uploadedBy: n.officerName || "Enquiry Officer",
+            uploadedAt: n.createdAt,
+            fileSize: typeof n.attachment.size === "number" ? `${(n.attachment.size / 1024).toFixed(1)} KB` : String(n.attachment.size || "10 KB"),
+            fileUrl: n.attachment.dataUrl,
+            dataUrl: n.attachment.dataUrl,
+            description: `Attached to enquiry note by ${n.officerName}`,
+          });
+          existingNames.add(key);
+        }
+      }
+    });
+
+    return list;
+  }, [complaint]);
+
+  // Handle instant preview for any document
+  const handlePreviewDocument = (doc: ComplaintDocumentItem) => {
+    const cat = detectCategory(doc.fileName, doc.fileCategory);
+    let dataUrl = doc.dataUrl || doc.fileUrl;
+    if (!dataUrl) {
+      const sampleText = `HARYANA POLICE OFFICIAL DOCKET RECORD\nComplaint: ${complaint?.complaintNumber || "N/A"}\nDocument: ${doc.fileName}\nCategory: ${doc.fileCategory}\nUploaded By: ${doc.uploadedBy}\nTimestamp: ${formatDateTime(doc.uploadedAt)}\n\nThis record is officially sealed under BNSS Section 173(3).`;
+      dataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(sampleText)}`;
+    }
+    setPreviewModalFile({
+      name: doc.fileName,
+      category: cat,
+      dataUrl,
+      size: doc.fileSize,
+    });
+  };
+
+  // Handle instant download for any document
+  const handleDownloadDocument = (doc: ComplaintDocumentItem) => {
+    const url = doc.dataUrl || doc.fileUrl;
+    if (url && (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("http"))) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      const content = `HARYANA POLICE - CMS CASE RECORD
+Complaint Number: ${complaint?.complaintNumber || "N/A"}
+Document Name: ${doc.fileName}
+Category: ${doc.fileCategory}
+Uploaded By: ${doc.uploadedBy}
+Date: ${formatDateTime(doc.uploadedAt)}
+Description: ${doc.description || "Official police docket attachment"}
+--------------------------------------------------
+Certified official record copy.`;
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = doc.fileName.includes(".") ? doc.fileName : `${doc.fileName}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-4">
@@ -1098,9 +1212,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto no-scrollbar" aria-label="Tabs">
           {[
             { key: "overview", label: "Overview", icon: Eye, count: null },
-            { key: "evidence", label: "Evidence", icon: Paperclip, count: complaint.attachments?.length || 0 },
-            { key: "enquiry_notes", label: "Enquiry Notes", icon: FileText, count: complaint.enquiryNotes?.length || 0 },
-            { key: "documents", label: "Documents", icon: UploadCloud, count: complaint.documents?.length || 0 },
+            { key: "documents", label: "Documents", icon: UploadCloud, count: combinedDocuments.length },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
           ].map((tab) => {
@@ -1409,12 +1521,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                       <strong className="text-emerald-700">PPR 22.48 Certified</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>Evidence Count:</span>
-                      <strong className="text-slate-900">{complaint.attachments?.length || 0} Files</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Enquiry Notes:</span>
-                      <strong className="text-slate-900">{complaint.enquiryNotes?.length || 0} Recorded</strong>
+                      <span>Documents Docket:</span>
+                      <strong className="text-slate-900">{combinedDocuments.length} Files</strong>
                     </div>
 
                     {complaint.assignedEoName && (
@@ -1439,417 +1547,126 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         </div>
       )}
 
-        {/* TAB 2: EVIDENCE */}
-        {activeTab === "evidence" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                  Evidence Attachments & Chain-of-Custody
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Secure evidence locker supporting any format (document, audio, video, photos).
-                </p>
-              </div>
-              {isAssignedEo ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setEvidenceModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold self-start sm:self-auto"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Evidence</span>
-                </Button>
-              ) : (
-                <span className="text-xs text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-medium">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Upload restricted to assigned EO ({complaint.assignedEoName || "Unassigned"})</span>
-                </span>
-              )}
-            </div>
-
-            {complaint.attachments && complaint.attachments.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {complaint.attachments.map((file) => (
-                  <Card key={file.id} className="border-slate-200 shadow-xs">
-                    <CardContent className="p-4 space-y-2 text-xs">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {file.category === "video" && <Video className="w-4 h-4 text-purple-600 shrink-0" />}
-                          {file.category === "audio" && <Music className="w-4 h-4 text-amber-600 shrink-0" />}
-                          {file.category === "image" && <ImageIcon className="w-4 h-4 text-emerald-600 shrink-0" />}
-                          {file.category === "document" && <FileText className="w-4 h-4 text-blue-600 shrink-0" />}
-                          {file.category === "other" && <Paperclip className="w-4 h-4 text-slate-600 shrink-0" />}
-                          <strong className="text-slate-900 truncate">{file.name}</strong>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                            {file.category}
-                          </span>
-                          {file.dataUrl && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPreviewModalFile({
-                                  name: file.name,
-                                  category: file.category,
-                                  dataUrl: file.dataUrl,
-                                  size: file.size,
-                                })
-                              }
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
-                              title="Instant Preview without downloading"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-blue-600" />
-                              <span>Preview</span>
-                            </button>
-                          )}
-                          {file.dataUrl && (
-                            <a
-                              href={file.dataUrl}
-                              download={file.name}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
-                              title="Download evidence attachment"
-                            >
-                              <Download className="w-3.5 h-3.5 text-blue-600" />
-                              <span>Download</span>
-                            </a>
-                          )}
-                          {isAssignedEo && (
-                            <button
-                              onClick={() => handleDeleteEvidence(file.id)}
-                              className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="Delete evidence attachment (Assigned EO only)"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {file.description && (
-                        <p className="text-slate-600 italic">&ldquo;{file.description}&rdquo;</p>
-                      )}
-
-                      {/* Multimedia Players & Document Preview */}
-                      {file.category === "audio" && file.dataUrl && (
-                        <audio controls src={file.dataUrl} className="w-full h-8 pt-1" />
-                      )}
-
-                      {file.category === "video" && file.dataUrl && (
-                        <video controls src={file.dataUrl} className="w-full rounded-lg max-h-48 bg-black" />
-                      )}
-
-                      {file.category === "image" && file.dataUrl && (
-                        <div className="pt-1">
-                          <img
-                            src={file.dataUrl}
-                            alt={file.name}
-                            className="max-h-40 rounded-lg object-contain border border-slate-200 bg-slate-50"
-                          />
-                        </div>
-                      )}
-
-                      {file.category === "document" && file.dataUrl && (
-                        <div className="pt-1 flex items-center gap-2">
-                          <a
-                            href={file.dataUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-md text-xs font-semibold transition-colors"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>Preview / Open Document</span>
-                          </a>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-2 text-[11px] text-slate-500 border-t border-slate-100">
-                        <span>Uploaded: {formatDateTime(file.uploadedAt)}</span>
-                        <span className="font-mono text-[10px]">
-                          {(file.size / 1024).toFixed(1)} KB • Digitally Sealed
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed border-2 border-slate-200">
-                <CardContent className="p-8 text-center space-y-3">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
-                    <Paperclip className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">No Evidence Files Attached Yet</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Upload audio records, CCTV footage, photographs, or supporting documents.
-                    </p>
-                  </div>
-                  {isAssignedEo ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEvidenceModalOpen(true)}
-                      className="gap-1.5 text-xs font-semibold"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Upload Evidence
-                    </Button>
-                  ) : (
-                    <p className="text-xs text-slate-400 font-medium italic">
-                      Awaiting assigned Enquiry Officer ({complaint.assignedEoName || "Unassigned"}) to inspect & upload evidence.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: ENQUIRY NOTES */}
-        {activeTab === "enquiry_notes" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                  Official Enquiry Notes & Witness Statements
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Chronological enquiry logs maintained by the designated officer.
-                </p>
-              </div>
-              {isAssignedEo ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setEnquiryNoteModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold self-start sm:self-auto"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Record Enquiry Note</span>
-                </Button>
-              ) : (
-                <span className="text-xs text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-medium">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Recording restricted to assigned EO ({complaint.assignedEoName || "Unassigned"})</span>
-                </span>
-              )}
-            </div>
-
-            {complaint.enquiryNotes && complaint.enquiryNotes.length > 0 ? (
-              <div className="space-y-3">
-                {complaint.enquiryNotes.map((note) => (
-                  <Card key={note.id} className="border-slate-200 shadow-xs">
-                    <CardContent className="p-4 space-y-2 text-xs">
-                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-sm">
-                            {note.officerName}
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-mono">
-                            ({note.officerRank}, PNO: {note.officerPno})
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                            {note.noteType.replace(/_/g, " ")}
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            {formatDateTime(note.createdAt)}
-                          </span>
-                          {isAssignedEo && (
-                            <button
-                              onClick={() => handleDeleteEnquiryNote(note.id)}
-                              className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="Expunge enquiry note (Assigned EO only)"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {note.location && (
-                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span>Location: {note.location}</span>
-                        </p>
-                      )}
-
-                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 text-slate-800 font-sans leading-relaxed text-xs sm:text-sm whitespace-pre-line">
-                        {note.content}
-                      </div>
-
-                      {/* Attached Media for this Enquiry Note (Any format: video, audio, document, photo) */}
-                      {note.attachment && (
-                        <div className="p-3 bg-white border border-slate-200 rounded-lg space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                              <Paperclip className="w-3.5 h-3.5 text-blue-600" />
-                              <span>Attached Media: {note.attachment.name}</span>
-                            </span>
-                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                              {note.attachment.category} • {(note.attachment.size / 1024).toFixed(1)} KB
-                            </span>
-                          </div>
-
-                          {note.attachment.category === "audio" && note.attachment.dataUrl && (
-                            <audio controls src={note.attachment.dataUrl} className="w-full h-8 pt-1" />
-                          )}
-                          {note.attachment.category === "video" && note.attachment.dataUrl && (
-                            <video controls src={note.attachment.dataUrl} className="w-full rounded max-h-48 bg-black" />
-                          )}
-                          {note.attachment.category === "image" && note.attachment.dataUrl && (
-                            <img
-                              src={note.attachment.dataUrl}
-                              alt={note.attachment.name}
-                              className="max-h-36 rounded object-contain border border-slate-200 bg-slate-50"
-                            />
-                          )}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="border-dashed border-2 border-slate-200">
-                <CardContent className="p-8 text-center space-y-3">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">No Enquiry Notes Recorded</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Chronological field findings, witness examination logs, and spot visit records.
-                    </p>
-                  </div>
-                  {isAssignedEo ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEnquiryNoteModalOpen(true)}
-                      className="gap-1.5 text-xs font-semibold"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Record First Note
-                    </Button>
-                  ) : (
-                    <p className="text-xs text-slate-400 font-medium italic">
-                      Awaiting assigned Enquiry Officer ({complaint.assignedEoName || "Unassigned"}) to record inquiry notes.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* TAB 4: DOCUMENTS */}
+        {/* TAB 2: DOCUMENTS (Official repository for all evidence, intake documents, autofill forms, and case files) */}
         {activeTab === "documents" && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                  Official Documents Repository
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <UploadCloud className="w-5 h-5 text-blue-600" />
+                  <span>Official Documents &amp; Evidence Repository</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Upload MLR copies, revenue patwari demarcation records, notices, or formal affidavits.
+                  All citizen complaints, uploaded evidence, autofill documents, MLR copies, and official files sealed in case docket.
                 </p>
               </div>
-              {isAssignedEo ? (
+              {canUploadDocument && (
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={() => setDocumentModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold self-start sm:self-auto"
+                  className="gap-1.5 text-xs font-semibold self-start sm:self-auto cursor-pointer"
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
                   <span>Upload Document</span>
                 </Button>
-              ) : (
-                <span className="text-xs text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 font-medium">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Upload restricted to assigned EO ({complaint.assignedEoName || "Unassigned"})</span>
-                </span>
               )}
             </div>
 
-            {complaint.documents && complaint.documents.length > 0 ? (
+            {combinedDocuments && combinedDocuments.length > 0 ? (
               <Card className="border-slate-200 shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">Document Name</th>
+                        <th className="py-3 px-4">Document / File Name</th>
                         <th className="py-3 px-4">Category</th>
                         <th className="py-3 px-4">Uploaded By</th>
-                        <th className="py-3 px-4">Date & Time</th>
+                        <th className="py-3 px-4">Date &amp; Time</th>
                         <th className="py-3 px-4 text-right">Size</th>
                         <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {complaint.documents.map((doc) => (
-                        <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-4 font-semibold text-slate-900 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                            <span>{doc.fileName}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                              {doc.fileCategory}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-700">{doc.uploadedBy}</td>
-                          <td className="py-3 px-4 text-slate-500 font-mono">
-                            {formatDateTime(doc.uploadedAt)}
-                          </td>
-                          <td className="py-3 px-4 text-right font-mono text-slate-500">{doc.fileSize}</td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {doc.fileUrl && (
+                      {combinedDocuments.map((doc) => {
+                        const cat = detectCategory(doc.fileName, doc.fileCategory);
+                        return (
+                          <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-4 font-semibold text-slate-900">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                    cat === "image"
+                                      ? "bg-emerald-100 text-emerald-700"
+                                      : cat === "video"
+                                      ? "bg-purple-100 text-purple-700"
+                                      : cat === "audio"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : "bg-blue-100 text-blue-700"
+                                  }`}
+                                >
+                                  {cat === "image" && <ImageIcon className="w-4 h-4" />}
+                                  {cat === "video" && <Video className="w-4 h-4" />}
+                                  {cat === "audio" && <Music className="w-4 h-4" />}
+                                  {cat === "document" && <FileText className="w-4 h-4" />}
+                                  {cat === "other" && <Paperclip className="w-4 h-4" />}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="truncate font-semibold text-slate-900" title={doc.fileName}>
+                                    {doc.fileName}
+                                  </p>
+                                  {doc.description && (
+                                    <p className="text-[10px] text-slate-500 truncate" title={doc.description}>
+                                      {doc.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                                {doc.fileCategory}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-700">{doc.uploadedBy}</td>
+                            <td className="py-3 px-4 text-slate-500 font-mono">
+                              {formatDateTime(doc.uploadedAt)}
+                            </td>
+                            <td className="py-3 px-4 text-right font-mono text-slate-500">{doc.fileSize}</td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setPreviewModalFile({
-                                      name: doc.fileName,
-                                      category: doc.fileCategory.toLowerCase(),
-                                      dataUrl: doc.fileUrl,
-                                      size: doc.fileSize,
-                                    })
-                                  }
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                                  onClick={() => handlePreviewDocument(doc)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                                   title="Instant Preview without downloading"
                                 >
                                   <Eye className="w-3.5 h-3.5 text-blue-600" />
                                   <span>Preview</span>
                                 </button>
-                              )}
-                              {doc.fileUrl && (
-                                <a
-                                  href={doc.fileUrl}
-                                  download={doc.fileName}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
-                                  title="Download official document"
-                                >
-                                  <Download className="w-3.5 h-3.5" />
-                                  <span>Download</span>
-                                </a>
-                              )}
-                              {isAssignedEo && (
                                 <button
-                                  onClick={() => handleDeleteDocument(doc.id)}
-                                  className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center"
-                                  title="Delete document (Assigned EO only)"
+                                  type="button"
+                                  onClick={() => handleDownloadDocument(doc)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                  title="Download file"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Download className="w-3.5 h-3.5 text-slate-600" />
+                                  <span>Download</span>
                                 </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {isAssignedEo && (
+                                  <button
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
+                                    title="Delete document (Assigned EO only)"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1863,21 +1680,21 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   <div>
                     <h4 className="font-bold text-slate-900 text-sm">No Documents Uploaded</h4>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Upload MLR reports, bank statements, affidavits, or patwari demarcation files.
+                      Upload MLR reports, citizen petitions, evidence attachments, or bank statements.
                     </p>
                   </div>
-                  {isAssignedEo ? (
+                  {canUploadDocument ? (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setDocumentModalOpen(true)}
-                      className="gap-1.5 text-xs font-semibold"
+                      className="gap-1.5 text-xs font-semibold cursor-pointer"
                     >
                       <UploadCloud className="w-3.5 h-3.5" /> Upload Document
                     </Button>
                   ) : (
                     <p className="text-xs text-slate-400 font-medium italic">
-                      Awaiting assigned Enquiry Officer ({complaint.assignedEoName || "Unassigned"}) to upload case documents.
+                      No case documents currently uploaded to docket.
                     </p>
                   )}
                 </CardContent>
@@ -3134,21 +2951,31 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {previewModalFile.dataUrl && (
-                  <a
-                    href={previewModalFile.dataUrl}
-                    download={previewModalFile.name}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
-                    title="Download file"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download</span>
-                  </a>
-                )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleDownloadDocument({
+                      id: "preview_doc",
+                      complaintId: complaint?.id || "",
+                      fileName: previewModalFile.name,
+                      fileCategory: previewModalFile.category || "DOCUMENT",
+                      uploadedBy: complaint?.registeredBy || "Intake Officer",
+                      uploadedAt: new Date().toISOString(),
+                      fileSize: typeof previewModalFile.size === "number" ? `${(previewModalFile.size / 1024).toFixed(1)} KB` : String(previewModalFile.size || "10 KB"),
+                      fileUrl: previewModalFile.dataUrl,
+                      dataUrl: previewModalFile.dataUrl,
+                    })
+                  }
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                  title="Download file"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setPreviewModalFile(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
                   title="Close preview"
                 >
                   <X className="w-5 h-5" />
@@ -3158,7 +2985,10 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
             {/* Modal Body */}
             <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 flex items-center justify-center min-h-[300px]">
-              {previewModalFile.category === "image" && previewModalFile.dataUrl && (
+              {(previewModalFile.category === "image" ||
+                previewModalFile.dataUrl?.startsWith("data:image/") ||
+                /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(previewModalFile.name)) &&
+                previewModalFile.dataUrl && (
                 <div className="max-h-[70vh] flex items-center justify-center">
                   <img
                     src={previewModalFile.dataUrl}
@@ -3168,13 +2998,19 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 </div>
               )}
 
-              {previewModalFile.category === "video" && previewModalFile.dataUrl && (
+              {(previewModalFile.category === "video" ||
+                previewModalFile.dataUrl?.startsWith("data:video/") ||
+                /\.(mp4|webm|mov|avi|mkv)$/i.test(previewModalFile.name)) &&
+                previewModalFile.dataUrl && (
                 <div className="w-full max-w-2xl bg-black rounded-xl overflow-hidden shadow-lg">
                   <video controls autoPlay src={previewModalFile.dataUrl} className="w-full max-h-[65vh]" />
                 </div>
               )}
 
-              {previewModalFile.category === "audio" && previewModalFile.dataUrl && (
+              {(previewModalFile.category === "audio" ||
+                previewModalFile.dataUrl?.startsWith("data:audio/") ||
+                /\.(mp3|wav|m4a|ogg|aac)$/i.test(previewModalFile.name)) &&
+                previewModalFile.dataUrl && (
                 <div className="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg border border-slate-200 text-center space-y-4">
                   <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
                     <Music className="w-8 h-8" />
@@ -3188,10 +3024,18 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               )}
 
               {previewModalFile.category !== "image" &&
+                !previewModalFile.dataUrl?.startsWith("data:image/") &&
+                !/\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(previewModalFile.name) &&
                 previewModalFile.category !== "video" &&
-                previewModalFile.category !== "audio" && (
+                !previewModalFile.dataUrl?.startsWith("data:video/") &&
+                !/\.(mp4|webm|mov|avi|mkv)$/i.test(previewModalFile.name) &&
+                previewModalFile.category !== "audio" &&
+                !previewModalFile.dataUrl?.startsWith("data:audio/") &&
+                !/\.(mp3|wav|m4a|ogg|aac)$/i.test(previewModalFile.name) && (
                 <div className="w-full h-full min-h-[450px] flex flex-col items-center justify-center">
-                  {previewModalFile.dataUrl && previewModalFile.dataUrl.startsWith("data:application/pdf") ? (
+                  {previewModalFile.dataUrl &&
+                  (previewModalFile.dataUrl.startsWith("data:application/pdf") ||
+                    previewModalFile.name.toLowerCase().endsWith(".pdf")) ? (
                     <iframe
                       src={previewModalFile.dataUrl}
                       title={previewModalFile.name}
@@ -3220,16 +3064,26 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                             <span>Open in Browser Tab</span>
                           </a>
                         )}
-                        {previewModalFile.dataUrl && (
-                          <a
-                            href={previewModalFile.dataUrl}
-                            download={previewModalFile.name}
-                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            <span>Download File</span>
-                          </a>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDownloadDocument({
+                              id: "preview_doc",
+                              complaintId: complaint?.id || "",
+                              fileName: previewModalFile.name,
+                              fileCategory: previewModalFile.category || "DOCUMENT",
+                              uploadedBy: complaint?.registeredBy || "Intake Officer",
+                              uploadedAt: new Date().toISOString(),
+                              fileSize: typeof previewModalFile.size === "number" ? `${(previewModalFile.size / 1024).toFixed(1)} KB` : String(previewModalFile.size || "10 KB"),
+                              fileUrl: previewModalFile.dataUrl,
+                              dataUrl: previewModalFile.dataUrl,
+                            })
+                          }
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download File</span>
+                        </button>
                       </div>
                     </div>
                   )}

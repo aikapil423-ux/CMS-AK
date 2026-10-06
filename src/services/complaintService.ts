@@ -334,17 +334,21 @@ export const ComplaintService = {
       crossComplaintNumber: input.isCrossComplaint ? input.linkedComplaintNumber : undefined,
       isCrossComplaint: input.isCrossComplaint,
       attachments: input.attachments || [],
-      documents: (input.attachments || []).map((att) => ({
-        id: `doc_${att.id}`,
-        complaintId: `cmp_${Date.now()}`,
-        fileName: att.name,
-        fileCategory: att.category.toUpperCase(),
-        uploadedBy: officerName,
-        uploadedAt: att.uploadedAt || new Date().toISOString(),
-        fileSize: typeof att.size === 'number' ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || '10 KB'),
-        fileUrl: att.dataUrl,
-        description: att.description || "Uploaded during complaint registration",
-      })),
+      documents: [
+        ...((input as any).documents || []),
+        ...(input.attachments || []).map((att) => ({
+          id: `doc_${att.id}`,
+          complaintId: generatedComplaintNumber,
+          fileName: att.name,
+          fileCategory: att.category.toUpperCase(),
+          uploadedBy: officerName,
+          uploadedAt: att.uploadedAt || new Date().toISOString(),
+          fileSize: typeof att.size === 'number' ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || '10 KB'),
+          fileUrl: att.dataUrl,
+          dataUrl: att.dataUrl,
+          description: att.description || "Uploaded during complaint registration",
+        })),
+      ].filter((doc, idx, arr) => arr.findIndex((d) => d.fileName.toLowerCase() === doc.fileName.toLowerCase()) === idx),
       daysPending: 0,
       mhcName: officerName || "HC Devinder Kumar",
       mhcRank: "Head Constable (MHC)",
@@ -729,6 +733,24 @@ export const ComplaintService = {
     }
     complaintsStore[index].attachments!.unshift(newEvidence);
 
+    // Also mirror to documents repository so it appears in Documents tab
+    if (!complaintsStore[index].documents) {
+      complaintsStore[index].documents = [];
+    }
+    const mirroredDoc: ComplaintDocumentItem = {
+      id: `doc_${newEvidence.id}`,
+      complaintId: complaintsStore[index].id,
+      fileName: newEvidence.name,
+      fileCategory: newEvidence.category.toUpperCase(),
+      uploadedBy: evidence.officerName || "Enquiry Officer",
+      uploadedAt: newEvidence.uploadedAt,
+      fileSize: typeof newEvidence.size === 'number' ? `${(newEvidence.size / 1024).toFixed(1)} KB` : String(newEvidence.size || '10 KB'),
+      fileUrl: newEvidence.dataUrl,
+      dataUrl: newEvidence.dataUrl,
+      description: newEvidence.description || "Evidence attachment",
+    };
+    complaintsStore[index].documents!.unshift(mirroredDoc);
+
     // Add to timeline
     this.addTimelineEvent(complaintsStore[index].id, {
       title: `Evidence Attached: ${evidence.name}`,
@@ -749,6 +771,7 @@ export const ComplaintService = {
       fileCategory: string;
       fileSize: string;
       fileUrl?: string;
+      dataUrl?: string;
       description?: string;
       uploadedBy: string;
     }
@@ -764,7 +787,8 @@ export const ComplaintService = {
       uploadedBy: doc.uploadedBy,
       uploadedAt: new Date().toISOString(),
       fileSize: doc.fileSize,
-      fileUrl: doc.fileUrl,
+      fileUrl: doc.fileUrl || doc.dataUrl,
+      dataUrl: doc.dataUrl || doc.fileUrl,
       description: doc.description,
     };
 

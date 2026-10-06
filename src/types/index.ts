@@ -242,6 +242,8 @@ export interface ComplaintDocumentItem {
   uploadedAt: string;
   fileSize: string;
   fileUrl?: string;
+  dataUrl?: string;
+  mimeType?: string;
   description?: string;
 }
 
