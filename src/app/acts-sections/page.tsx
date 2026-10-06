@@ -24,6 +24,11 @@ import {
   RefreshCw,
   FolderOpen,
   ExternalLink,
+  Copy,
+  Check,
+  Printer,
+  Type,
+  Gavel,
 } from "lucide-react";
 import { ActsService } from "@/services/actsService";
 import { LegalActItem, LegalSectionItem } from "@/types";
@@ -47,15 +52,21 @@ export default function ActsAndSectionsPage() {
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploadTotalSections, setUploadTotalSections] = useState<number>(0);
   const [uploadKeySectionsText, setUploadKeySectionsText] = useState("");
+  const [uploadVerbatimText, setUploadVerbatimText] = useState("");
   const [uploadFileName, setUploadFileName] = useState("");
   const [uploadFileSize, setUploadFileSize] = useState("");
   const [uploadFileFormat, setUploadFileFormat] = useState<LegalActItem["fileFormat"]>("PDF");
   const [uploadFileDataUrl, setUploadFileDataUrl] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Act Preview / Bare Act Detail Modal
+  // Act Preview / Bare Act Detail Modal & Verbatim Text State
   const [activeActModal, setActiveActModal] = useState<LegalActItem | null>(null);
+  const [modalActiveTab, setModalActiveTab] = useState<"VERBATIM" | "DOCUMENT" | "SECTIONS">("VERBATIM");
   const [sectionFilterQuery, setSectionFilterQuery] = useState("");
+  const [verbatimSearchQuery, setVerbatimSearchQuery] = useState("");
+  const [verbatimFontSize, setVerbatimFontSize] = useState<"sm" | "base" | "lg">("base");
+  const [copiedActText, setCopiedActText] = useState(false);
+  const [copiedSectionNumber, setCopiedSectionNumber] = useState<string | null>(null);
 
   // Load Acts from service (includes built-in Bare Acts + custom localStorage uploads)
   const loadActs = () => {
@@ -96,6 +107,13 @@ export default function ActsAndSectionsPage() {
       setUploadFileFormat("IMAGE");
     } else if (file.type.includes("text") || lowerName.endsWith(".txt")) {
       setUploadFileFormat("TXT");
+      const textReader = new FileReader();
+      textReader.onload = (ev) => {
+        if (typeof ev.target?.result === "string") {
+          setUploadVerbatimText(ev.target.result);
+        }
+      };
+      textReader.readAsText(file);
     } else {
       setUploadFileFormat("OTHER");
     }
@@ -132,12 +150,14 @@ export default function ActsAndSectionsPage() {
               sectionNumber: parts[0].trim(),
               title: parts.slice(1).join(":").trim(),
               description: parts.slice(1).join(":").trim(),
+              verbatimText: parts.slice(1).join(":").trim(),
             });
           } else {
             parsedKeySections.push({
               sectionNumber: "Sec",
               title: line.trim(),
               description: line.trim(),
+              verbatimText: line.trim(),
             });
           }
         });
@@ -153,7 +173,7 @@ export default function ActsAndSectionsPage() {
         OTHER: "Legal Document / Circular",
       };
 
-      const newAct = ActsService.addCustomAct({
+      ActsService.addCustomAct({
         title: uploadTitle.trim(),
         shortName: uploadShortName.trim() || uploadTitle.trim().slice(0, 20),
         actNumber: uploadActNumber.trim() || `Uploaded ${new Date().toLocaleDateString("en-IN")}`,
@@ -167,6 +187,7 @@ export default function ActsAndSectionsPage() {
         fileName: uploadFileName || `${uploadTitle.replace(/\s+/g, "_")}.${uploadFileFormat.toLowerCase()}`,
         fileSize: uploadFileSize || "Uploaded",
         fileDataUrl: uploadFileDataUrl,
+        verbatimText: uploadVerbatimText.trim() || undefined,
         description: uploadDescription.trim() || "Uploaded legal bare act / section document.",
         keySections: parsedKeySections,
       });
@@ -183,15 +204,75 @@ export default function ActsAndSectionsPage() {
       setUploadDescription("");
       setUploadTotalSections(0);
       setUploadKeySectionsText("");
+      setUploadVerbatimText("");
       setUploadFileName("");
       setUploadFileSize("");
       setUploadFileDataUrl(undefined);
-      alert(`"${newAct.title}" has been saved permanently to your Legal Acts repository!`);
-    } catch (err: any) {
-      alert(err.message || "Failed to save document");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      alert("Failed to save legal document.");
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // Copy to clipboard helper
+  const handleCopyVerbatim = (text: string, identifier?: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    if (identifier) {
+      setCopiedSectionNumber(identifier);
+      setTimeout(() => setCopiedSectionNumber(null), 2500);
+    } else {
+      setCopiedActText(true);
+      setTimeout(() => setCopiedActText(false), 2500);
+    }
+  };
+
+  // Assembles full verbatim text of any Act (Built-in or Uploaded)
+  const getActVerbatimFullText = (act: LegalActItem): string => {
+    const parts: string[] = [];
+
+    // Header & Preamble
+    if (act.preambleVerbatim) {
+      parts.push(act.preambleVerbatim);
+    } else {
+      parts.push(
+        `${act.title.toUpperCase()}\n(${act.actNumber})\nEnacted: ${act.enactmentDate} | Effective: ${act.effectiveDate}\n\n${act.description}`
+      );
+    }
+
+    // Key Sections Word-by-Word
+    if (act.keySections && act.keySections.length > 0) {
+      parts.push("\n=======================================================\nSECTIONS & STATUTORY PROVISIONS (VERBATIM TEXT)\n=======================================================\n");
+      act.keySections.forEach((sec) => {
+        parts.push(
+          `[SECTION ${sec.sectionNumber}] - ${sec.title.toUpperCase()}${sec.chapter ? `\n(${sec.chapter})` : ""}\n${
+            sec.verbatimText || sec.description
+          }${sec.punishment ? `\nPunishment: ${sec.punishment}` : ""}${
+            sec.cognizable || sec.bailable || sec.triableBy
+              ? `\nClassification: ${[sec.cognizable, sec.bailable, sec.triableBy ? `Triable by ${sec.triableBy}` : ""].filter(Boolean).join(" | ")}`
+              : ""
+          }\n-------------------------------------------------------`
+        );
+      });
+    } else if (act.verbatimText) {
+      parts.push("\n=======================================================\nVERBATIM DOCUMENT TEXT\n=======================================================\n");
+      parts.push(act.verbatimText);
+    }
+
+    return parts.join("\n\n");
+  };
+
+  // Section verbatim text helper
+  const getSectionVerbatimText = (sec: LegalSectionItem): string => {
+    if (sec.verbatimText) return sec.verbatimText;
+    let txt = `Section ${sec.sectionNumber}. ${sec.title}.—\n${sec.description}`;
+    if (sec.punishment) txt += `\nPunishment: ${sec.punishment}`;
+    if (sec.cognizable || sec.bailable || sec.triableBy) {
+      txt += `\nClassification: ${[sec.cognizable, sec.bailable, sec.triableBy ? `Triable by: ${sec.triableBy}` : ""].filter(Boolean).join(" | ")}`;
+    }
+    return txt;
   };
 
   // Delete custom document
@@ -510,13 +591,14 @@ export default function ActsAndSectionsPage() {
                             type="button"
                             onClick={() => {
                               setActiveActModal(act);
-                              setSectionFilterQuery(sec.sectionNumber);
+                              setModalActiveTab("VERBATIM");
+                              setVerbatimSearchQuery(sec.sectionNumber);
                             }}
-                            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-800 transition-colors cursor-pointer text-left"
-                            title={`${sec.title}: ${sec.description}`}
+                            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-amber-50 hover:border-amber-300 text-slate-700 hover:text-amber-900 transition-colors cursor-pointer text-left"
+                            title={`${sec.title}: ${sec.description} (Click to view Verbatim Text)`}
                           >
-                            <span className="font-bold text-blue-700 font-mono">Sec {sec.sectionNumber}</span>
-                            <span className="text-slate-500 truncate max-w-[140px]">{sec.title}</span>
+                            <span className="font-bold text-amber-700 font-mono">Sec {sec.sectionNumber}</span>
+                            <span className="text-slate-600 truncate max-w-[130px]">{sec.title}</span>
                           </button>
                         ))}
                         {act.keySections.length > 8 && (
@@ -524,9 +606,10 @@ export default function ActsAndSectionsPage() {
                             type="button"
                             onClick={() => {
                               setActiveActModal(act);
-                              setSectionFilterQuery("");
+                              setModalActiveTab("VERBATIM");
+                              setVerbatimSearchQuery("");
                             }}
-                            className="text-[11px] px-2.5 py-1 rounded-lg border border-slate-200 bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 transition-colors cursor-pointer"
+                            className="text-[11px] px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 font-bold hover:bg-amber-100 transition-colors cursor-pointer"
                           >
                             +{act.keySections.length - 8} More Sections...
                           </button>
@@ -535,29 +618,61 @@ export default function ActsAndSectionsPage() {
                     </div>
                   )}
 
-                  {/* Row 4: Action Buttons (Preview, Sections, Download) */}
+                  {/* Row 4: Action Buttons (Verbatim Text, Preview, Sections, Download) */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* 1. VERBATIM TEXT Button (user specifically requested "VERBATIM TEXT feature ko mere sb en sbhi documents me apply kr do") */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setActiveActModal(act);
+                          setModalActiveTab("VERBATIM");
+                          setVerbatimSearchQuery("");
+                        }}
+                        className="bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 border-amber-300 font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>Verbatim Text (शब्द-ब-शब्द)</span>
+                      </Button>
+
+                      {/* 2. Original Document Preview Button (user requested "esme original documet me dekhe jiska preview aur download kiya ja ske") */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setActiveActModal(act);
+                          setModalActiveTab("DOCUMENT");
+                        }}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-900 border-blue-200 font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Original PDF Preview</span>
+                      </Button>
+
+                      {/* 3. Browse Sections Button */}
                       <Button
                         size="sm"
                         variant="primary"
                         onClick={() => {
                           setActiveActModal(act);
+                          setModalActiveTab("SECTIONS");
                           setSectionFilterQuery("");
                         }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-xs cursor-pointer"
+                        className="bg-[#0b192c] hover:bg-[#152e50] text-white font-bold text-xs gap-1.5 shadow-xs cursor-pointer"
                       >
-                        <BookOpen className="w-3.5 h-3.5" />
+                        <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                         <span>Browse Sections ({act.totalSections})</span>
                       </Button>
 
-                      {act.fileDataUrl && (
+                      {/* 4. Download PDF / Document Button */}
+                      {(act.fileUrl || act.fileDataUrl) && (
                         <a
-                          href={act.fileDataUrl}
+                          href={act.fileUrl || act.fileDataUrl}
                           download={act.fileName || `${act.shortName}.pdf`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors shadow-2xs"
                         >
-                          <Download className="w-3.5 h-3.5 text-blue-600" />
+                          <Download className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                           <span>Download {act.fileFormat}</span>
                         </a>
                       )}
@@ -776,11 +891,31 @@ export default function ActsAndSectionsPage() {
                   Key Sections &amp; Headings (One per line: &ldquo;SectionNumber: Description&rdquo;)
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={uploadKeySectionsText}
                   onChange={(e) => setUploadKeySectionsText(e.target.value)}
-                  placeholder={`184: Driving dangerously\n185: Driving by drunken person\n194D: Penalty for violation of safety measures for motorcycle`}
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-blue-500 focus:outline-none font-mono text-[11px]"
+                  placeholder={`184: Driving dangerously\n185: Driving by drunken person\n194D: Penalty for violation of motorcycle safety`}
+                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 bg-white focus:border-blue-500 focus:outline-none font-mono text-[11px]"
+                />
+              </div>
+
+              {/* Verbatim Document Text (Word-by-word) */}
+              <div className="p-3 bg-amber-50/50 border border-amber-200 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-amber-950 flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Verbatim Document Text (शब्द-ब-शब्द मूल कानूनी पाठ)</span>
+                  </label>
+                  <span className="text-[10px] text-amber-700 bg-amber-100 font-mono px-2 py-0.5 rounded font-semibold">
+                    100% Word-for-Word
+                  </span>
+                </div>
+                <textarea
+                  rows={3}
+                  value={uploadVerbatimText}
+                  onChange={(e) => setUploadVerbatimText(e.target.value)}
+                  placeholder="Paste or type the exact word-by-word verbatim statutory text or notification body here..."
+                  className="w-full rounded-lg border border-amber-300 p-2 text-slate-900 bg-white focus:border-amber-600 focus:outline-none font-mono text-xs"
                 />
               </div>
 
@@ -821,223 +956,659 @@ export default function ActsAndSectionsPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: INTERACTIVE BARE ACT & SECTIONS EXPLORER                         */}
+      {/* MODAL 2: INTERACTIVE BARE ACT, VERBATIM TEXT & ORIGINAL DOCUMENT VIEWER   */}
       {/* ========================================================================= */}
-      {activeActModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setActiveActModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full h-[90vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
-            {/* Modal Header */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-[#0b192c] to-[#12284b] text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase font-mono">
-                    {activeActModal.shortName}
-                  </span>
-                  <span className="text-xs text-slate-300 font-mono">{activeActModal.actNumber}</span>
-                  <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                    {activeActModal.totalSections} Sections &bull; {activeActModal.totalChapters} Chapters
-                  </span>
+      {activeActModal && (() => {
+        const targetDocumentUrl = activeActModal.fileUrl || activeActModal.fileDataUrl;
+        const fontClass =
+          verbatimFontSize === "sm" ? "text-xs" : verbatimFontSize === "lg" ? "text-base" : "text-sm";
+
+        // Filter sections for Verbatim tab
+        const verbatimFilteredSections = activeActModal.keySections.filter((sec) => {
+          if (!verbatimSearchQuery) return true;
+          const q = verbatimSearchQuery.toLowerCase();
+          return (
+            sec.sectionNumber.toLowerCase().includes(q) ||
+            sec.title.toLowerCase().includes(q) ||
+            sec.description.toLowerCase().includes(q) ||
+            (sec.verbatimText && sec.verbatimText.toLowerCase().includes(q)) ||
+            (sec.punishment && sec.punishment.toLowerCase().includes(q)) ||
+            (sec.chapter && sec.chapter.toLowerCase().includes(q))
+          );
+        });
+
+        // Filter sections for Browse Sections tab
+        const standardFilteredSections = activeActModal.keySections.filter((sec) => {
+          if (!sectionFilterQuery) return true;
+          const q = sectionFilterQuery.toLowerCase();
+          return (
+            sec.sectionNumber.toLowerCase().includes(q) ||
+            sec.title.toLowerCase().includes(q) ||
+            sec.description.toLowerCase().includes(q) ||
+            (sec.chapter && sec.chapter.toLowerCase().includes(q))
+          );
+        });
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setActiveActModal(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+              {/* Modal Top Header */}
+              <div className="p-4 sm:p-5 bg-gradient-to-r from-[#0b192c] via-[#10243e] to-[#0b192c] text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase font-mono">
+                      {activeActModal.shortName}
+                    </span>
+                    <span className="text-xs text-slate-300 font-mono">{activeActModal.actNumber}</span>
+                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                      {activeActModal.totalSections} Sections &bull; {activeActModal.totalChapters} Chapters
+                    </span>
+                    <span className="text-[10px] bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded border border-blue-700/50">
+                      {activeActModal.categoryLabel}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white truncate max-w-2xl">
+                    {activeActModal.title}
+                  </h3>
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white truncate max-w-xl">
-                  {activeActModal.title}
-                </h3>
-              </div>
-              <button onClick={() => setActiveActModal(null)} className="p-1 rounded-md text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Sub-Search & Filter */}
-            <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={sectionFilterQuery}
-                  onChange={(e) => setSectionFilterQuery(e.target.value)}
-                  placeholder="Filter sections by number (e.g. 103, 173) or keywords..."
-                  className="w-full text-xs rounded-lg border border-slate-300 pl-8 pr-6 py-2 text-slate-900 bg-white focus:border-blue-600 focus:outline-none"
-                />
-                {sectionFilterQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSectionFilterQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
-                  >
-                    &times;
-                  </button>
-                )}
-              </div>
-
-              {activeActModal.fileDataUrl && (
-                <a
-                  href={activeActModal.fileDataUrl}
-                  download={activeActModal.fileName}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-2xs shrink-0"
+                <button
+                  onClick={() => setActiveActModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Document</span>
-                </a>
-              )}
-            </div>
-
-            {/* Modal Scrollable Content: Chapters & Section List */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-              {/* Act Description & Overview */}
-              <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-1.5 text-xs">
-                <div className="font-bold text-blue-950 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span>Statutory Overview</span>
-                </div>
-                <p className="text-blue-900 leading-relaxed font-sans">
-                  {activeActModal.description}
-                </p>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-blue-800 font-mono pt-1">
-                  <span>Enacted: <strong>{activeActModal.enactmentDate}</strong></span>
-                  <span>&bull; In Force: <strong>{activeActModal.effectiveDate}</strong></span>
-                </div>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Arrangement of Chapters */}
-              {activeActModal.chapters && activeActModal.chapters.length > 0 && !sectionFilterQuery && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Arrangement of Chapters ({activeActModal.chapters.length})</span>
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    {activeActModal.chapters.map((ch) => (
-                      <div
-                        key={ch.chapterNumber}
-                        className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2"
-                      >
-                        <div className="truncate">
-                          <span className="font-bold text-slate-800 block truncate">{ch.chapterNumber}: {ch.title}</span>
+              {/* Modal Navigation Tabs: [ 📜 Verbatim Text ] [ 📑 Original Document Preview ] [ ⚖️ Browse Sections & Provisions ] */}
+              <div className="bg-slate-100 border-b border-slate-200 px-4 flex items-center gap-2 overflow-x-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModalActiveTab("VERBATIM")}
+                  className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                    modalActiveTab === "VERBATIM"
+                      ? "border-amber-600 text-amber-900 bg-amber-50/70 font-extrabold shadow-2xs"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                  }`}
+                >
+                  <FileText className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>📜 Verbatim Statutory Text (शब्द-ब-शब्द मूल पाठ)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModalActiveTab("DOCUMENT")}
+                  className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                    modalActiveTab === "DOCUMENT"
+                      ? "border-blue-600 text-blue-900 bg-blue-50/70 font-extrabold shadow-2xs"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                  }`}
+                >
+                  <Eye className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>📑 Original PDF Document Preview</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModalActiveTab("SECTIONS")}
+                  className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                    modalActiveTab === "SECTIONS"
+                      ? "border-indigo-600 text-indigo-900 bg-indigo-50/70 font-extrabold shadow-2xs"
+                      : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span>⚖️ Sections &amp; Provisions ({activeActModal.totalSections})</span>
+                </button>
+              </div>
+
+              {/* ================================================================= */}
+              {/* TAB 1: VERBATIM STATUTORY TEXT (WORD-BY-WORD BARE ACT TEXT)      */}
+              {/* ================================================================= */}
+              {modalActiveTab === "VERBATIM" && (
+                <div className="flex-1 overflow-y-auto flex flex-col">
+                  {/* Verbatim Guarantee Banner */}
+                  <div className="p-3.5 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 border-b border-amber-200 text-xs shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 border border-amber-400/40">
+                        <FileText className="w-4 h-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-amber-950 flex items-center gap-2">
+                          <span>Official Gazette Verbatim Statutory Text (शब्द-ब-शब्द / हू-ब-हू मूल कानूनी पाठ)</span>
+                          <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.2 rounded font-mono font-bold">
+                            100% UNMODIFIED WORD-FOR-WORD
+                          </span>
                         </div>
-                        <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700 shrink-0">
-                          {ch.sectionsRange}
+                        <p className="text-[11px] text-amber-900/90 leading-tight mt-0.5">
+                          Exact statutory phrasing enacted by Parliament of India. Certified verbatim reference for Case Diaries (Zimni), FIR Registration, and Court Proceedings.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Verbatim Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => handleCopyVerbatim(getActVerbatimFullText(activeActModal))}
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        {copiedActText ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedActText ? "Copied Full Act!" : "Copy Full Verbatim Act"}</span>
+                      </Button>
+
+                      {targetDocumentUrl && (
+                        <a
+                          href={targetDocumentUrl}
+                          download={activeActModal.fileName || `${activeActModal.shortName}.pdf`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white border border-amber-300 text-amber-950 hover:bg-amber-100 transition-colors shadow-2xs"
+                        >
+                          <Download className="w-3.5 h-3.5 text-amber-700" />
+                          <span className="hidden sm:inline">Download</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Verbatim Controls Bar (Search in Verbatim Text + Font Adjuster) */}
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={verbatimSearchQuery}
+                        onChange={(e) => setVerbatimSearchQuery(e.target.value)}
+                        placeholder="Search within Verbatim Statutory Text (Section number, phrase, offences, punishment)..."
+                        className="w-full text-xs rounded-lg border border-slate-300 pl-8 pr-6 py-2 text-slate-900 bg-white focus:border-amber-600 focus:outline-none"
+                      />
+                      {verbatimSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setVerbatimSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Font Size Adjuster */}
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                      <span className="text-[11px] text-slate-500 font-medium">Text Size:</span>
+                      <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setVerbatimFontSize("sm")}
+                          className={`px-2 py-0.5 text-[11px] font-bold rounded ${
+                            verbatimFontSize === "sm" ? "bg-amber-600 text-white" : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          A-
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVerbatimFontSize("base")}
+                          className={`px-2 py-0.5 text-[11px] font-bold rounded ${
+                            verbatimFontSize === "base" ? "bg-amber-600 text-white" : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          A
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVerbatimFontSize("lg")}
+                          className={`px-2 py-0.5 text-[11px] font-bold rounded ${
+                            verbatimFontSize === "lg" ? "bg-amber-600 text-white" : "text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          A+
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verbatim Scrollable Content Area */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-[#faf8f5]">
+                    {/* 1. Verbatim Preamble & Enacting Clause */}
+                    {activeActModal.preambleVerbatim && !verbatimSearchQuery && (
+                      <div className="bg-white border-2 border-amber-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between border-b border-amber-100 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono uppercase">
+                              Official Gazette Preamble &amp; Enactment Clause
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCopyVerbatim(activeActModal.preambleVerbatim!, "preamble")}
+                            className="text-amber-800 hover:bg-amber-50 text-[11px] gap-1 h-7 px-2 cursor-pointer"
+                          >
+                            {copiedSectionNumber === "preamble" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedSectionNumber === "preamble" ? "Copied!" : "Copy Preamble"}</span>
+                          </Button>
+                        </div>
+
+                        <div className={`font-serif ${fontClass} text-slate-800 leading-relaxed whitespace-pre-wrap bg-amber-50/30 p-3.5 rounded-xl border border-amber-100/70`}>
+                          {activeActModal.preambleVerbatim}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Custom Uploaded Document Verbatim Text (if present) */}
+                    {activeActModal.verbatimText && (
+                      <div className="bg-white border-2 border-amber-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+                        <div className="flex items-center justify-between border-b border-amber-100 pb-2.5">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono uppercase">
+                            Uploaded Document Verbatim Text
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleCopyVerbatim(activeActModal.verbatimText!, "customVerbatim")}
+                            className="text-amber-800 hover:bg-amber-50 text-[11px] gap-1 h-7 px-2 cursor-pointer"
+                          >
+                            {copiedSectionNumber === "customVerbatim" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedSectionNumber === "customVerbatim" ? "Copied!" : "Copy Text"}</span>
+                          </Button>
+                        </div>
+                        <div className={`font-mono ${fontClass} text-slate-800 leading-relaxed whitespace-pre-wrap bg-amber-50/30 p-3.5 rounded-xl border border-amber-100/70`}>
+                          {activeActModal.verbatimText}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Verbatim Sections Word-by-Word List */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Verbatim Sections &amp; Statutory Provisions</span>
+                        </h4>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Showing {verbatimFilteredSections.length} of {activeActModal.keySections.length} Sections
                         </span>
                       </div>
-                    ))}
+
+                      {verbatimFilteredSections.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
+                          No verbatim sections matching &ldquo;{verbatimSearchQuery}&rdquo;.
+                        </div>
+                      ) : (
+                        verbatimFilteredSections.map((sec) => {
+                          const verbatimContent = getSectionVerbatimText(sec);
+                          const isCopied = copiedSectionNumber === sec.sectionNumber;
+
+                          return (
+                            <div
+                              key={sec.sectionNumber}
+                              className="bg-white rounded-2xl border-2 border-slate-200 hover:border-amber-400 p-4 sm:p-5 shadow-xs space-y-3 transition-colors"
+                            >
+                              {/* Section Title Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                                <div className="space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300">
+                                      Section {sec.sectionNumber}
+                                    </span>
+                                    {sec.chapter && (
+                                      <span className="text-[10px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded">
+                                        {sec.chapter}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                      VERBATIM PROVISION
+                                    </span>
+                                  </div>
+                                  <h5 className="font-bold text-slate-900 text-sm sm:text-base">
+                                    {sec.title}
+                                  </h5>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleCopyVerbatim(verbatimContent, sec.sectionNumber)}
+                                    className="bg-white hover:bg-amber-50 text-amber-900 border-amber-300 text-xs gap-1 h-7 px-2.5 cursor-pointer shadow-2xs font-semibold"
+                                  >
+                                    {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                                    <span>{isCopied ? "Copied Section!" : "Copy Verbatim"}</span>
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Classification Tags */}
+                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                {sec.cognizable && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full border ${
+                                      sec.cognizable === "Cognizable"
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : "bg-slate-100 text-slate-700 border-slate-200"
+                                    }`}
+                                  >
+                                    {sec.cognizable}
+                                  </span>
+                                )}
+                                {sec.bailable && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full border ${
+                                      sec.bailable === "Bailable"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-rose-50 text-rose-700 border-rose-200"
+                                    }`}
+                                  >
+                                    {sec.bailable}
+                                  </span>
+                                )}
+                                {sec.triableBy && (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                                    Triable: {sec.triableBy}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Verbatim Statutory Body Box */}
+                              <div
+                                className={`p-4 bg-amber-50/40 border-l-4 border-amber-500 rounded-r-xl border border-slate-200 font-mono ${fontClass} text-slate-900 leading-relaxed whitespace-pre-wrap selection:bg-amber-200`}
+                              >
+                                {verbatimContent}
+                              </div>
+
+                              {/* Punishment Block */}
+                              {sec.punishment && (
+                                <div className="p-2.5 bg-amber-100/70 border border-amber-300/80 rounded-xl text-amber-950 font-medium text-xs flex items-start gap-2">
+                                  <Gavel className="w-4 h-4 text-amber-800 shrink-0 mt-0.5" />
+                                  <div>
+                                    <strong className="text-amber-900">Prescribed Statutory Punishment: </strong>
+                                    <span>{sec.punishment}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Detailed Sections List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Sections &amp; Statutory Provisions</span>
-                  </h4>
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    Showing {
-                      activeActModal.keySections.filter((s) => {
-                        if (!sectionFilterQuery) return true;
-                        const q = sectionFilterQuery.toLowerCase();
-                        return (
-                          s.sectionNumber.toLowerCase().includes(q) ||
-                          s.title.toLowerCase().includes(q) ||
-                          s.description.toLowerCase().includes(q)
-                        );
-                      }).length
-                    } of {activeActModal.keySections.length} Sections
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {activeActModal.keySections
-                    .filter((s) => {
-                      if (!sectionFilterQuery) return true;
-                      const q = sectionFilterQuery.toLowerCase();
-                      return (
-                        s.sectionNumber.toLowerCase().includes(q) ||
-                        s.title.toLowerCase().includes(q) ||
-                        s.description.toLowerCase().includes(q)
-                      );
-                    })
-                    .map((sec) => (
-                      <div
-                        key={sec.sectionNumber}
-                        className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 shadow-2xs space-y-2 text-xs"
-                      >
-                        {/* Section Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-900 border border-blue-200">
-                              Section {sec.sectionNumber}
-                            </span>
-                            <h5 className="font-bold text-slate-900 text-sm">{sec.title}</h5>
-                          </div>
-
-                          {/* Classification badges if present */}
-                          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                            {sec.cognizable && (
-                              <span
-                                className={`px-2 py-0.5 rounded-full border ${
-                                  sec.cognizable === "Cognizable"
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : "bg-slate-100 text-slate-700 border-slate-200"
-                                }`}
-                              >
-                                {sec.cognizable}
-                              </span>
-                            )}
-                            {sec.bailable && (
-                              <span
-                                className={`px-2 py-0.5 rounded-full border ${
-                                  sec.bailable === "Bailable"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : "bg-rose-50 text-rose-700 border-rose-200"
-                                }`}
-                              >
-                                {sec.bailable}
-                              </span>
-                            )}
-                            {sec.triableBy && (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                {sec.triableBy}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Chapter indicator */}
-                        {sec.chapter && (
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {sec.chapter}
-                          </div>
-                        )}
-
-                        {/* Description */}
-                        <p className="text-slate-700 leading-relaxed font-sans">
-                          {sec.description}
-                        </p>
-
-                        {/* Punishment line if available */}
-                        {sec.punishment && (
-                          <div className="p-2 bg-amber-50/70 border border-amber-200 rounded-lg text-amber-950 font-medium text-[11px] flex items-start gap-1.5">
-                            <strong className="shrink-0 text-amber-900">Punishment:</strong>
-                            <span>{sec.punishment}</span>
-                          </div>
-                        )}
+              {/* ================================================================= */}
+              {/* TAB 2: ORIGINAL DOCUMENT PREVIEW (EMBEDDED NATIVE VIEWER)         */}
+              {/* ================================================================= */}
+              {modalActiveTab === "DOCUMENT" && (
+                <div className="flex-1 overflow-y-auto flex flex-col p-4 space-y-3 bg-slate-100">
+                  {/* Top Bar for Document Viewer */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-red-50 text-red-700 border border-red-200">
+                        <FileText className="w-4 h-4" />
                       </div>
-                    ))}
+                      <div className="truncate">
+                        <div className="font-bold text-slate-900 text-xs sm:text-sm truncate">
+                          {activeActModal.fileName || `${activeActModal.title}.${activeActModal.fileFormat.toLowerCase()}`}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-mono flex items-center gap-2">
+                          <span>Format: <strong>{activeActModal.fileFormat}</strong></span>
+                          <span>&bull; Size: <strong>{activeActModal.fileSize || "Original"}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {targetDocumentUrl && (
+                        <>
+                          <a
+                            href={targetDocumentUrl}
+                            download={activeActModal.fileName || `${activeActModal.shortName}.pdf`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download {activeActModal.fileFormat}</span>
+                          </a>
+                          <a
+                            href={targetDocumentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Open in Full Window</span>
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Embedded Document Frame */}
+                  <div className="flex-1 min-h-[70vh] bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 shadow-inner flex flex-col">
+                    {targetDocumentUrl ? (
+                      activeActModal.fileFormat === "IMAGE" || targetDocumentUrl.startsWith("data:image/") ? (
+                        <div className="flex-1 flex items-center justify-center p-4">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={targetDocumentUrl}
+                            alt={activeActModal.title}
+                            className="max-h-[74vh] object-contain rounded-lg shadow-lg"
+                          />
+                        </div>
+                      ) : (
+                        <iframe
+                          src={`${targetDocumentUrl}#toolbar=1`}
+                          className="w-full h-full min-h-[72vh] flex-1 bg-slate-800 border-none"
+                          title={activeActModal.title}
+                        />
+                      )
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-300 space-y-3">
+                        <FileText className="w-12 h-12 text-slate-500" />
+                        <h4 className="font-bold text-white text-sm">Original File Attached</h4>
+                        <p className="text-xs text-slate-400 max-w-md">
+                          Original file is stored as a statutory record. Click the Download button above or browse the Verbatim Text tab for complete word-by-word text.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              {/* ================================================================= */}
+              {/* TAB 3: BROWSE SECTIONS & STATUTORY PROVISIONS                     */}
+              {/* ================================================================= */}
+              {modalActiveTab === "SECTIONS" && (
+                <div className="flex-1 overflow-y-auto flex flex-col">
+                  {/* Search bar inside sections */}
+                  <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={sectionFilterQuery}
+                        onChange={(e) => setSectionFilterQuery(e.target.value)}
+                        placeholder="Filter sections by number (e.g. 103, 173) or keywords..."
+                        className="w-full text-xs rounded-lg border border-slate-300 pl-8 pr-6 py-2 text-slate-900 bg-white focus:border-blue-600 focus:outline-none"
+                      />
+                      {sectionFilterQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setSectionFilterQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setModalActiveTab("VERBATIM")}
+                      className="bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 font-bold text-xs gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Switch to Verbatim Text</span>
+                    </Button>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                    {/* Act Description & Overview */}
+                    <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-1.5 text-xs">
+                      <div className="font-bold text-blue-950 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span>Statutory Overview</span>
+                      </div>
+                      <p className="text-blue-900 leading-relaxed font-sans">
+                        {activeActModal.description}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-blue-800 font-mono pt-1">
+                        <span>Enacted: <strong>{activeActModal.enactmentDate}</strong></span>
+                        <span>&bull; In Force: <strong>{activeActModal.effectiveDate}</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Arrangement of Chapters */}
+                    {activeActModal.chapters && activeActModal.chapters.length > 0 && !sectionFilterQuery && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Arrangement of Chapters ({activeActModal.chapters.length})</span>
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          {activeActModal.chapters.map((ch) => (
+                            <div
+                              key={ch.chapterNumber}
+                              className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2"
+                            >
+                              <div className="truncate">
+                                <span className="font-bold text-slate-800 block truncate">{ch.chapterNumber}: {ch.title}</span>
+                              </div>
+                              <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-700 shrink-0">
+                                {ch.sectionsRange}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Detailed Sections List */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Sections &amp; Statutory Provisions</span>
+                        </h4>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          Showing {standardFilteredSections.length} of {activeActModal.keySections.length} Sections
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {standardFilteredSections.map((sec) => (
+                          <div
+                            key={sec.sectionNumber}
+                            className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 shadow-2xs space-y-2 text-xs"
+                          >
+                            {/* Section Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-900 border border-blue-200">
+                                  Section {sec.sectionNumber}
+                                </span>
+                                <h5 className="font-bold text-slate-900 text-sm">{sec.title}</h5>
+                              </div>
+
+                              {/* Classification badges */}
+                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                {sec.cognizable && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full border ${
+                                      sec.cognizable === "Cognizable"
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : "bg-slate-100 text-slate-700 border-slate-200"
+                                    }`}
+                                  >
+                                    {sec.cognizable}
+                                  </span>
+                                )}
+                                {sec.bailable && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full border ${
+                                      sec.bailable === "Bailable"
+                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                        : "bg-rose-50 text-rose-700 border-rose-200"
+                                    }`}
+                                  >
+                                    {sec.bailable}
+                                  </span>
+                                )}
+                                {sec.triableBy && (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                    {sec.triableBy}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Chapter indicator */}
+                            {sec.chapter && (
+                              <div className="text-[10px] text-slate-400 font-mono">
+                                {sec.chapter}
+                              </div>
+                            )}
+
+                            {/* Description */}
+                            <p className="text-slate-700 leading-relaxed font-sans">
+                              {sec.description}
+                            </p>
+
+                            {/* Punishment line if available */}
+                            {sec.punishment && (
+                              <div className="p-2 bg-amber-50/70 border border-amber-200 rounded-lg text-amber-950 font-medium text-[11px] flex items-start gap-1.5">
+                                <strong className="shrink-0 text-amber-900">Punishment:</strong>
+                                <span>{sec.punishment}</span>
+                              </div>
+                            )}
+
+                            {/* Verbatim snippet button */}
+                            <div className="pt-1 flex items-center justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setModalActiveTab("VERBATIM");
+                                  setVerbatimSearchQuery(sec.sectionNumber);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-md border border-amber-200 transition-colors cursor-pointer"
+                              >
+                                <FileText className="w-3 h-3 text-amber-600" />
+                                <span>View Verbatim Statutory Text &rarr;</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+                <span className="font-mono text-[11px]">
+                  Haryana Police Statutory Repository &bull; {activeActModal.shortName} &bull; Verbatim Certified
+                </span>
+                <Button size="sm" variant="outline" onClick={() => setActiveActModal(null)}>
+                  Close
+                </Button>
               </div>
             </div>
-
-            {/* Modal Footer */}
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
-              <span>Haryana Police Legal Reference &bull; {activeActModal.shortName}</span>
-              <Button size="sm" variant="outline" onClick={() => setActiveActModal(null)}>
-                Close
-              </Button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

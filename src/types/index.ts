@@ -391,6 +391,7 @@ export interface LegalSectionItem {
   title: string;
   chapter?: string;
   description: string;
+  verbatimText?: string;
   punishment?: string;
   cognizable?: 'Cognizable' | 'Non-cognizable';
   bailable?: 'Bailable' | 'Non-bailable';
@@ -411,7 +412,10 @@ export interface LegalActItem {
   fileFormat: 'PDF' | 'DOCX' | 'TXT' | 'IMAGE' | 'OTHER';
   fileName?: string;
   fileSize?: string;
+  fileUrl?: string;
   fileDataUrl?: string;
+  verbatimText?: string;
+  preambleVerbatim?: string;
   isCustomUpload?: boolean;
   uploadedAt?: string;
   uploadedBy?: string;
