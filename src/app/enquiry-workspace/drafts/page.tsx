@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
-  FileCheck2,
   Printer,
   Copy,
   Check,
@@ -25,7 +24,6 @@ import {
   UserCheck,
   UploadCloud,
   Loader2,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -38,8 +36,8 @@ import {
 } from "@/utils/documentHtmlGenerators";
 
 export type EnquiryProformaType =
-  | "standard_4row" // PDF 1, 2, 5: परिवादी / परिवाद का सार / उत्तरवादी / जांच स्थिति
-  | "three_column" // PDF 3: आरोप बिन्दूवार / जांच का विवरण / पुलिस कार्यवाही
+  | "standard_4row" // PDF 1, 2, 5: Complainant / Substance / Opposite Party / Findings
+  | "three_column" // PDF 3: Allegations / Enquiry Findings / Police Action
   | "citizen_detail" // PDF 4: DEPARTMENT / CITIZEN DETAIL / CITIZEN SATISFACTION
   | "ncr_174"; // NCR u/s 174 BNSS
 
@@ -67,97 +65,97 @@ interface FormatTemplate {
 }
 
 const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
-  // 1. PDF 1, 2, 5: मानक 4-रो जांच रिपोर्ट
+  // 1. PDF 1, 2, 5: Standard 4-Row Official Haryana Police Proforma
   standard_4row: {
-    name: "मानक जांच रिपोर्ट (PDF 1, 2, 5)",
-    badge: "Official Haryana Police Standard",
+    name: "1. Standard 4-Row Enquiry Report",
+    badge: "Official Police Proforma (PDF 1, 2, 5)",
     icon: Shield,
-    headerLeft: "पुलिस विभाग",
-    headerRight: "जिला पानीपत",
+    headerLeft: "POLICE DEPARTMENT",
+    headerRight: "DISTRICT PANIPAT",
     subHeaderLeft: "",
-    title: "जांच रिपोर्ट परिवाद नम्बरी 128-SPL-III DT 10.02.2026",
+    title: "ENQUIRY REPORT ON COMPLAINT NO. 128-SPL-III DATED 10.02.2026",
     subTitle: "",
     columns: [],
     rows: [
       {
         id: "row_complainant",
-        label: "परिवादी",
+        label: "Complainant / Informant",
         cells: [
-          "बबली देवी पत्नी गुरदयाल सिंह वासी जौंसी रोड समालखा पानीपत (मो0 9812033441)",
+          "Babli Devi w/o Gurdyal Singh, r/o Jaurasi Road, Samalkha, Panipat (Mob: 9812033441)",
         ],
       },
       {
         id: "row_gist",
-        label: "परिवाद का सार",
-        cells: ["मारपीट करने व जान से मारने की धमकी देने बारे"],
+        label: "Gist / Substance of Complaint",
+        cells: ["Regarding physical assault and extending death threats."],
       },
       {
         id: "row_accused",
-        label: "उत्तरवादी का विवरण",
+        label: "Opposite Party / Accused Details",
         cells: [
-          "चन्द्रपाल वासी जौंसी रोड समालखा पानीपत (मो0 9812044551)",
+          "Chanderpal, r/o Jaurasi Road, Samalkha, District Panipat (Mob: 9812044551)",
         ],
       },
       {
         id: "row_findings",
-        label: "जांच की स्थिती का विवरण",
+        label: "Enquiry Findings & Action Taken",
         cells: [
-          "अन्तिम रिपोर्ट (फाइनल रिपोर्ट) तथा की गई कार्यवाही- श्रीमान जी परिवाद नम्बरी 128-SPL-III DT 10.02.2026 अजाने बबली देवी पत्नी गुरदयाल सिंह वासी जौंसी रोड समालखा पानीपत की जांच मेरे द्वारा अमल में लाई गई। दौरान जांच परिवाद का अध्ययन किया गया।\n\nदौरान जांच परिवादिया व उत्तरवादी को शामिल जांच करके पूछताछ की गई। परिवादिया ने अपनी शिकायत मे लगाये गये कोई भी साक्ष्य व गवाह पेश नही किए। मौका पर जाकर आमजन व पड़ोसियों को शामिल जांच करके पूछताछ की गई व उनके कथन अंकित किए गए।\n\nउत्तरवादी को भी शामिल जांच किया गया तथा कथन अंकित किए गए। मौका की पूछताछ व गवाहों के बयानात से पाया गया कि बबली देवी द्वारा जो आरोप लगाए गए हैं उनमे कोई सच्चाई नही है बल्कि बार-बार झूठे आरोप लगाकर दरखास्तें देती रहती है। उत्तरवादी के खिलाफ निवारक कार्यवाही अमल में लाई गई है। अतः उक्त परिवाद पर किसी कानूनी कार्यवाही की आवश्यकता नहीं है। परिवाद को दफ्तर दाखिल करने के सादर आदेश फरमाए जाएं।",
+          "FINAL REPORT & PROCEEDINGS CONDUCTED: Respected Sir, the preliminary enquiry into Complaint No. 128-SPL-III Dated 10.02.2026 lodged by Babli Devi was conducted by me. During the enquiry, the complaint contents and previous records were thoroughly examined.\n\nBoth the complainant and the opposite party were joined in the enquiry and interrogated. The complainant failed to produce any corroborating witness or documentary evidence to substantiate her allegations. Spot inspection was conducted and statements of independent local neighbors were recorded.\n\nInterrogation and witness statements revealed that the allegations leveled by Babli Devi are unsubstantiated and false, and she repeatedly submits groundless applications over mutual trivial disputes. Preventive proceedings under Sections 126(2)/170 BNSS, 2023 have been initiated against the opposite party vide Daily Diary GD No. 27. No further cognizable police action is warranted. Recommended for file closure / consigned to record room.",
         ],
       },
     ],
-    closingLine: "रिपोर्ट सेवा में पेश है।",
-    officerName: "(सतीश कुमार ह.पु.से.)",
-    officerRank: "उप पुलिस अधीक्षक",
-    officerLocation: "मुख्यालय पानीपत",
+    closingLine: "Report is submitted for perusal and orders.",
+    officerName: "(Satish Kumar, HPS)",
+    officerRank: "Deputy Superintendent of Police",
+    officerLocation: "Headquarters Panipat",
   },
 
-  // 2. PDF 3: 3-स्तंभीय आरोप-वार तुलनात्मक जांच रिपोर्ट
+  // 2. PDF 3: 3-Column Comparative Proforma
   three_column: {
-    name: "बिन्दुवार तुलनात्मक रिपोर्ट (PDF 3)",
-    badge: "3-Column Proforma",
+    name: "2. Point-wise Comparative Report (3-Column)",
+    badge: "Comparative Proforma (PDF 3)",
     icon: Table,
-    headerLeft: "पुलिस विभाग",
-    headerRight: "जिला पानीपत",
-    subHeaderLeft: "श्रीमान जी,",
+    headerLeft: "POLICE DEPARTMENT",
+    headerRight: "DISTRICT PANIPAT",
+    subHeaderLeft: "Respected Sir,",
     title:
-      "परिवाद नम्बरी 1736-पेशी दिनांक 19.12.2025 शिकायतकर्ता सम्पदा अधिकारी ह.श.वि.प्रा. पानीपत जांच हेतु प्राप्त हुई",
-    subTitle: "परिवाद की जांच रिपोर्ट इस प्रकार है -",
+      "ENQUIRY REPORT ON COMPLAINT NO. 1736 DATED 19.12.2025",
+    subTitle: "Point-wise enquiry findings on allegations are submitted as follows -",
     columns: [
-      "शिकायतकर्ता द्वारा लगाये गये आरोप (बिन्दूवार)",
-      "जांच का विवरण (सही/गलत) बिन्दूवार कारण सहित",
-      "स्थानीय पुलिस/ एस.एच.ओ. द्वारा की गई कार्यवाही",
+      "Allegations Leveled by Complainant (Point-wise)",
+      "Enquiry Findings (Substantiated / Unsubstantiated with Reasons)",
+      "Action Taken by Local Police / S.H.O.",
     ],
     rows: [
       {
         id: "row_col_1",
-        label: "आरोप 1",
+        label: "Point 1",
         cells: [
-          "सम्पदा अधिकारी ह.श.वि.प्रा. पानीपत की अनुमति के बिना व गलत हस्ताक्षर करके प्लाट नम्बर 118 सैक्टर-25-PI पानीपत, प्लाट नम्बर 11 सैक्टर 29-PII पानीपत व प्लाट नंबर 51 सैक्टर-29 P-II पानीपत के अलाटमैन्ट लैटर जारी करने व डिस्पैच रजिस्टर में इन्द्राज करके प्लाट धारको को देने बारे।",
-          "अभी तक की जांच मे प्लाट धारको श्री लक्की अरोडा, मैसर्स प्रदीप एक्सपोर्ट, विजय मोटर्स निवासी सैक्टर 25 द्वारा हुडा विभाग के कर्मचारियों से मिलीभगत करके बिना अनुमति फर्जी हस्ताक्षर से अलाटमैन्ट लैटर जारी करवाकर डिस्पैच रजिस्टर में इन्द्राज करना पाया गया है।",
-          "श्रीमान जी, परिवाद की जांच मेरे द्वारा की गई। जांच के दौरान सम्पदा अधिकारी, रिकॉर्ड क्लर्क व सम्बंधित पार्टीज को नोटिस जारी कर तलब किया गया। बैंक व हुडा रिकॉर्ड का गहन निरीक्षण किया गया। प्रथम दृष्टया अपराध धारा 318(4), 338, 336(3), 340(2), 61(2) BNS घटित होना पाया गया है। अभियोग अंकित करने की सिफारिश की जाती है।",
+          "Unauthorized issuance of allotment letters and fraudulent entries in dispatch register for Plot No. 118, Sector 25 Part-I, Plot No. 11, Sector 29 Part-II, and Plot No. 51, Sector 29 Part-II Panipat without authorization from Estate Officer HSVP.",
+          "Field verification and departmental scrutiny revealed that plot holders in connivance with departmental staff fabricated allotment letters without lawful authorization and forged signatures.",
+          "Preliminary verification conducted. Original records and dispatch registers requisitioned. Prima facie commission of offences under Sections 318(4), 338, 336(3), 340(2), 61(2) BNS, 2023 is revealed. Regular FIR recommended.",
         ],
       },
       {
         id: "row_col_2",
-        label: "आरोप 2",
+        label: "Point 2",
         cells: [
-          "विभागीय डिस्पैच रजिस्टर में कूटरचित प्रविष्टि करके अनाधिकृत पत्राचार करना।",
-          "जांच के दौरान डिस्पैच क्लर्क के बयान अंकित किए गए। मूल डिस्पैच रजिस्टर जब्त कर एफएसएल मधुबन भेजा गया है।",
-          "थाना संबंधित को आवश्यक सुबूत एकत्र कर कानूनी कार्रवाई हेतु दिशा-निर्देश जारी किए गए।",
+          "Forging dispatch register numbers and manipulating official office correspondence.",
+          "Statements of dispatch clerk recorded. Original register seized and referred for forensic document examination (FSL).",
+          "Directions issued to concerned Police Station for registering case and initiating custodial investigation.",
         ],
       },
     ],
-    closingLine: "रिपोर्ट सेवा में प्रस्तुत है।",
-    officerName: "हर्षित गोयल भा.पु.से.",
-    officerRank: "सहायक पुलिस अधीक्षक",
-    officerLocation: "पानीपत",
+    closingLine: "Report is submitted for perusal and further orders.",
+    officerName: "Harshit Goyal, IPS",
+    officerRank: "Assistant Superintendent of Police",
+    officerLocation: "Panipat",
   },
 
-  // 3. PDF 4: सीएम विंडो / नागरिक शिकायत जांच रिपोर्ट
+  // 3. PDF 4: Citizen Grievance / CM Window Proforma
   citizen_detail: {
-    name: "नागरिक शिकायत / CM Window (PDF 4)",
-    badge: "Citizen Satisfaction Docket",
+    name: "3. Citizen Grievance / CM Window Report",
+    badge: "Citizen Satisfaction Docket (PDF 4)",
     icon: UserCheck,
     headerLeft: "DEPARTMENT- POLICE",
     headerRight: "DISTRICT PANIPAT",
@@ -170,14 +168,14 @@ const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
         id: "row_citizen_detail",
         label: "CITIZEN DETAIL-",
         cells: [
-          "NAME- दीपक पुत्र ओमप्रकाश\nMOBILE NO.- 9992998522\nADDRESS- दीपक पुत्र ओमप्रकाश, गांव जासोर पानीपत",
+          "NAME- Deepak s/o Omprakash\nMOBILE NO.- 9992998522\nADDRESS- Village Jasor, District Panipat",
         ],
       },
       {
         id: "row_allegation",
-        label: "शिकायत मे लगाये गये आरोप-",
+        label: "ALLEGATIONS LEVELED IN COMPLAINT-",
         cells: [
-          "जाति सूचक शब्द बोलने, जान से मारने की धमकी देने व कार्य कराने के पैसे ना देने बारे।",
+          "Regarding financial dispute in contract construction work, altercation and threats.",
         ],
       },
       {
@@ -189,67 +187,67 @@ const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
         id: "row_satisfaction",
         label: "CITIZEN SATISFACTION- YES/NO -",
         cells: [
-          "SATISFIED (संतुष्ट) - दोनों पक्षों को आमने-सामने बैठाकर वार्ता कराई गई। परिवादी ने स्वीकार किया कि हिसाब-किताब का विवाद था जो सुलझा लिया गया है।",
+          "SATISFIED (YES) - Both parties were brought face-to-face. Dispute was mutually resolved and written settlement deed was furnished.",
         ],
       },
       {
         id: "row_final_report",
-        label: "FINAL REPORT ON THE ENQUIRY CONDUCTED BY THE INVESTIGATING -",
+        label: "FINAL REPORT ON THE ENQUIRY CONDUCTED BY THE INVESTIGATING OFFICER -",
         cells: [
-          "जांच रिपोर्ट परिवाद नम्बरी 71-DCR DT 19.01.2026 अजाने दीपक पुत्र ओमप्रकाश वासी जासोर की जांच मेरे द्वारा अमल में लाई गई।\n\nदौरान जांच परिवादी व उत्तरवादी को शामिल जांच करके पूछताछ की गई व कथन अंकित किए गए। उत्तरवादी प्रमोद ने बताया कि कम्पनी के ठेके के तहत नाला निर्माण में भुगतान का विवाद था।\n\nजांच उपरांत दोनों पक्षों को आमने-सामने किया गया तो सच्चाई सामने आई कि कोई मारपीट या जातिसूचक गाली-गलौज नहीं हुआ था। मामला केवल पैसों के लेनदेन का था, जिसका निपटारा हो चुका है। परिवादी ने अपनी लिखित रजामंदी पेश की है। अतः परिवाद को दफ्तर दाखिल करने के सादर आदेश फरमाए जाएं।",
+          "Inquiry was conducted into Complaint No. 71-DCR. Complainant and opposite party appeared. The issue pertained to pending payment for masonry and drain work under a sub-contract. No caste-based slurs or cognizable hurt was caused. Financial accounts were settled amicably before respectables. Complainant gave statement expressing full satisfaction. Matter is disposed of.",
         ],
       },
     ],
-    closingLine: "रिपोर्ट सेवा में पेश है।",
-    officerName: "सहायक पुलिस अधीक्षक,",
-    officerRank: "समालखा पानीपत",
+    closingLine: "Report is submitted for perusal and orders.",
+    officerName: "Assistant Superintendent of Police,",
+    officerRank: "Samalkha, Panipat",
     officerLocation: "",
   },
 
   // 4. NCR u/s 174 BNSS
   ncr_174: {
-    name: "असंज्ञेय अपराध रिपोर्ट (NCR u/s 174 BNSS)",
-    badge: "Non-Cognizable Report Proforma",
+    name: "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
+    badge: "Station GD Roznamcha Proforma",
     icon: BadgeAlert,
-    headerLeft: "पुलिस विभाग (थाना दैनिकी रोजनामचा)",
-    headerRight: "जिला पानीपत",
-    subHeaderLeft: "श्रीमान जी,",
-    title: "प्रथम सूचना असंज्ञेय अपराध रिपोर्ट (NCR) जेर धारा 174 BNSS, 2023",
-    subTitle: "थाना रोजनामचा जनरल डायरी प्रविष्टि संख्या 018",
+    headerLeft: "POLICE DEPARTMENT (STATION GENERAL DIARY)",
+    headerRight: "DISTRICT PANIPAT",
+    subHeaderLeft: "Respected Sir,",
+    title: "FIRST INFORMATION OF A NON-COGNIZABLE OFFENCE (NCR) U/S 174 BNSS, 2023",
+    subTitle: "Police Station General Diary Roznamcha Entry No. 018",
     columns: [],
     rows: [
       {
         id: "row_ncr_complainant",
-        label: "परिवादी / सूचनाकर्ता का विवरण",
+        label: "Complainant / Informant Details",
         cells: [
-          "संजीव कुमार वासी 116/5 हंस एन्कलेव गुरुग्राम (मो0 9991155540)",
+          "Sanjeev Kumar, r/o 116/5 Hans Enclave, Gurugram (Mob: 9991155540)",
         ],
       },
       {
         id: "row_ncr_gist",
-        label: "घटना व असंज्ञेय अपराध का सार",
+        label: "Gist of Non-Cognizable Occurrence",
         cells: [
-          "मानसिक प्रताड़ित करने, साधारण गाली-गलौच व जान से मारने की धमकी देने बारे।",
+          "Regarding verbal dispute, mental harassment and exchange of heated words.",
         ],
       },
       {
         id: "row_ncr_accused",
-        label: "उत्तरवादी / संदेही का विवरण",
+        label: "Opposite Party / Suspect Details",
         cells: [
-          "विनोद पुत्र ओमप्रकाश, सुनीता पत्नी विनोद, रामनिवास पुत्र राजबीर, अनिल पुत्र लक्ष्मीदत्त वासीयान वासी गांव डाहौला पानीपत",
+          "Vinod s/o Omprakash, Sunita w/o Vinod, Ramniwas s/o Rajbir, Anil s/o Laxmi Dutt, r/o Village Dahola, Panipat",
         ],
       },
       {
         id: "row_ncr_findings",
-        label: "जांच की स्थिती व जीडी प्रविष्टि का विवरण",
+        label: "General Diary Entry & Enquiry Report Details",
         cells: [
-          "जांच रिपोर्ट- परिवाद नम्बरी 789-SPR DT 07.03.2026 अजाने संजीव कुमार वासी गुरुग्राम की जांच मेरे द्वारा अमल में लाई गई।\n\nदौरान जांच परिवाद का अध्ययन किया गया व परिवादी के मोबाईल न0 पर सम्पर्क किया गया। परिवादी ने बतलाया कि इसी संदर्भ में एक परिवाद थाना सेक्टर 29 पानीपत में चली हुई है, मेरी परिवाद को भी वहीं भिजवाया जाए। परिवादी ने अपनी स्टेटमेंट व्हाट्सअप के माध्यम से भेजी जो साथ संलग्न है।\n\nअतः उक्त असंज्ञेय परिवाद को आगामी कानूनी कार्यवाही व रोजनामचा प्रविष्टि हेतु संबंधित पर्यवेक्षण अधिकारी के पास भिजवाया जाए।",
+          "Enquiry conducted into complaint 789-SPR. Complainant was contacted on his registered mobile number. He informed that the dispute has been transferred for jurisdictional enquiry. Statements and phone recordings placed on record. Entered in Station General Diary Roznamcha under Section 174 BNSS, 2023. Submitted for transmission to supervisory authority.",
         ],
       },
     ],
-    closingLine: "रिपोर्ट सेवा में पेश है।",
-    officerName: "सहायक पुलिस अधीक्षक,",
-    officerRank: "समालखा पानीपत",
+    closingLine: "Report is submitted for perusal and orders.",
+    officerName: "Assistant Superintendent of Police,",
+    officerRank: "Samalkha, Panipat",
     officerLocation: "",
   },
 };
@@ -286,7 +284,7 @@ function EnquiryDraftsContent() {
   const [officerName, setOfficerName] = useState(TEMPLATE_PRESETS[initialFormat].officerName);
   const [officerRank, setOfficerRank] = useState(TEMPLATE_PRESETS[initialFormat].officerRank);
   const [officerLocation, setOfficerLocation] = useState(TEMPLATE_PRESETS[initialFormat].officerLocation);
-  const [reportDate, setReportDate] = useState(`दिनांक ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
+  const [reportDate, setReportDate] = useState(`Dated: ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
 
   // Appearance & Border Controls
   const [borderStyle, setBorderStyle] = useState<"solid" | "double" | "light" | "none">("solid");
@@ -295,7 +293,7 @@ function EnquiryDraftsContent() {
   const [showClosingLine, setShowClosingLine] = useState(true);
   const [showSignatures, setShowSignatures] = useState(true);
 
-  const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
+  const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("en-IN");
   const [copied, setCopied] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -324,7 +322,7 @@ function EnquiryDraftsContent() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "दस्तावेज़ प्रोसेस करने में त्रुटि हुई");
+        throw new Error(data.error || "Failed to parse document");
       }
 
       const pData = data.proformaData;
@@ -342,7 +340,7 @@ function EnquiryDraftsContent() {
           setRows(
             pData.rows.map((r: any, idx: number) => ({
               id: r.id || `row_${idx + 1}`,
-              label: r.label || `पंक्ति ${idx + 1}`,
+              label: r.label || `Row ${idx + 1}`,
               cells: Array.isArray(r.cells) ? r.cells : [r.cells || ""],
             }))
           );
@@ -358,13 +356,13 @@ function EnquiryDraftsContent() {
         if (pData.borderStyle) setBorderStyle(pData.borderStyle);
 
         setUploadSuccessMessage(
-          `दस्तावेज़ (${file.name}) सफलतापूर्वक प्रोसेस हुआ! सभी टेबल कॉलम व फील्ड्स सीधे एडिट करें।`
+          `Document (${file.name}) processed successfully! All table columns and fields are ready to edit.`
         );
         setTimeout(() => setUploadSuccessMessage(null), 6000);
       }
     } catch (err: any) {
       console.error("Upload parse error:", err);
-      alert(`दस्तावेज़ प्रोसेस करने में त्रुटि: ${err.message || "कृपया पुनः प्रयास करें"}`);
+      alert(`Error processing document: ${err.message || "Please try again"}`);
     } finally {
       setUploadLoading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -379,13 +377,13 @@ function EnquiryDraftsContent() {
         const found = await ComplaintService.getComplaintById(complaintIdParam!);
         if (found) {
           setComplaint(found);
-          const districtName = found.district || currentUser.district || "पानीपत";
-          setHeaderRight(`जिला ${districtName}`);
-          setTitle(`जांच रिपोर्ट परिवाद नम्बरी ${found.complaintNumber} DT ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
+          const districtName = (found.district || currentUser.district || "PANIPAT").toUpperCase();
+          setHeaderRight(`DISTRICT ${districtName}`);
+          setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
 
           const primaryAccused = found.accusedList?.[0] || {};
-          const complainantInfo = `${found.complainantName}${found.complainantFatherSpouse ? ` पुत्र/पत्नी ${found.complainantFatherSpouse}` : ""}${found.complainantAddress ? ` वासी ${found.complainantAddress}` : ""}${found.complainantMobile ? ` (मो0 ${found.complainantMobile})` : ""}`;
-          const accusedInfo = `${primaryAccused.name || "अज्ञात"}${primaryAccused.fatherName ? ` पुत्र ${primaryAccused.fatherName}` : ""}${primaryAccused.address ? ` वासी ${primaryAccused.address}` : ""}${primaryAccused.phone ? ` (मो0 ${primaryAccused.phone})` : ""}`;
+          const complainantInfo = `${found.complainantName}${found.complainantFatherSpouse ? ` s/o / w/o ${found.complainantFatherSpouse}` : ""}${found.complainantAddress ? `, r/o ${found.complainantAddress}` : ""}${found.complainantMobile ? ` (Mob: ${found.complainantMobile})` : ""}`;
+          const accusedInfo = `${primaryAccused.name || "Unknown"}${primaryAccused.fatherName ? ` s/o ${primaryAccused.fatherName}` : ""}${primaryAccused.address ? `, r/o ${primaryAccused.address}` : ""}${primaryAccused.phone ? ` (Mob: ${primaryAccused.phone})` : ""}`;
 
           setRows((prev) =>
             prev.map((r) => {
@@ -396,7 +394,7 @@ function EnquiryDraftsContent() {
                 return {
                   ...r,
                   cells: [
-                    `अन्तिम रिपोर्ट (फाइनल रिपोर्ट) तथा की गई कार्यवाही- श्रीमान जी परिवाद नम्बरी ${found.complaintNumber} अजाने ${found.complainantName} की जांच मेरे द्वारा अमल में लाई गई। दौरान जांच परिवाद का अध्ययन किया गया व दोनों पक्षों को शामिल जांच कर पूछताछ की गई...\n\nरिपोर्ट सादर सेवा में प्रस्तुत है।`,
+                    `FINAL REPORT & PROCEEDINGS CONDUCTED: Respected Sir, the preliminary enquiry into Complaint No. ${found.complaintNumber} lodged by ${found.complainantName} was conducted by me. Both parties were joined in enquiry, statements recorded, and spot inspection conducted...\n\nReport is submitted for perusal and orders.`,
                   ],
                 };
               }
@@ -406,8 +404,8 @@ function EnquiryDraftsContent() {
 
           if (found.assignedEoName || currentUser.name) {
             setOfficerName(`(${found.assignedEoName || currentUser.name})`);
-            setOfficerRank(found.assignedEoRank || currentUser.rankDisplay || "सहायक पुलिस अधीक्षक");
-            setOfficerLocation(found.policeStation || `मुख्यालय ${districtName}`);
+            setOfficerRank(found.assignedEoRank || currentUser.rankDisplay || "Assistant Superintendent of Police");
+            setOfficerLocation(found.policeStation || `Headquarters ${districtName}`);
           }
         }
       } catch (err) {
@@ -453,7 +451,7 @@ function EnquiryDraftsContent() {
 
   const handleDeleteRow = (id: string) => {
     if (rows.length <= 1) {
-      alert("कम से कम एक पंक्ति (Row) अवश्य रहनी चाहिए।");
+      alert("At least one row must remain in the proforma.");
       return;
     }
     setRows((prev) => prev.filter((r) => r.id !== id));
@@ -476,7 +474,7 @@ function EnquiryDraftsContent() {
     const defaultCells = Array(cellCount).fill(presetValue || "");
     const newRow: ProformaRowState = {
       id: newId,
-      label: presetLabel || `पंक्ति ${rows.length + 1}`,
+      label: presetLabel || `Row ${rows.length + 1}`,
       cells: defaultCells,
     };
     setRows((prev) => [...prev, newRow]);
@@ -484,7 +482,7 @@ function EnquiryDraftsContent() {
 
   // Column operations (for multi-column table)
   const handleAddColumn = () => {
-    const newColName = prompt("नये कॉलम का शीर्षक (Column Title) दर्ज करें:", `कॉलम ${columns.length + 1}`);
+    const newColName = prompt("Enter new Column Title:", `Column ${columns.length + 1}`);
     if (!newColName) return;
     setColumns((prev) => [...prev, newColName]);
     setRows((prev) => prev.map((r) => ({ ...r, cells: [...r.cells, ""] })));
@@ -492,10 +490,10 @@ function EnquiryDraftsContent() {
 
   const handleDeleteColumn = (colIndex: number) => {
     if (columns.length <= 1) {
-      alert("कम से कम एक कॉलम अवश्य रहना चाहिए।");
+      alert("At least one column must remain in the table.");
       return;
     }
-    if (!confirm(`क्या आप '${columns[colIndex]}' कॉलम को हटाना चाहते हैं?`)) return;
+    if (!confirm(`Are you sure you want to delete column '${columns[colIndex]}'?`)) return;
     setColumns((prev) => prev.filter((_, i) => i !== colIndex));
     setRows((prev) =>
       prev.map((r) => ({
@@ -573,13 +571,13 @@ function EnquiryDraftsContent() {
       await ComplaintService.addComplaintReport(complaint.id, {
         title: reportTitle,
         reportType: activeFormat,
-        reportTypeLabel: TEMPLATE_PRESETS[activeFormat]?.name || "जांच रिपोर्ट",
+        reportTypeLabel: TEMPLATE_PRESETS[activeFormat]?.name || "Enquiry Report",
         dispatchNo: title,
         generatedDate: new Date().toISOString().split("T")[0],
-        officerName: officerName || currentUser.name || "जांच अधिकारी",
-        officerRank: officerRank || currentUser.rankDisplay || "सहायक पुलिस अधीक्षक",
+        officerName: officerName || currentUser.name || "Enquiry Officer",
+        officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
         officerPno: currentUser.pno || "PNO-23841",
-        conclusionSummary: rows[rows.length - 1]?.cells[0]?.substring(0, 200) || "जांच पूर्ण",
+        conclusionSummary: rows[rows.length - 1]?.cells[0]?.substring(0, 200) || "Enquiry completed",
         content: docText,
         contentHtml: reportHtml,
         fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
@@ -593,7 +591,7 @@ function EnquiryDraftsContent() {
       setTimeout(() => setSaveSuccess(false), 4000);
     } catch (err) {
       console.error("Failed to save report to complaint:", err);
-      alert("रिपोर्ट सुरक्षित करने में त्रुटि हुई। कृपया पुनः प्रयास करें।");
+      alert("Error saving report. Please try again.");
     } finally {
       setSaveLoading(false);
     }
@@ -610,7 +608,7 @@ function EnquiryDraftsContent() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                हरियाणा पुलिस आधिकारिक जांच रिपोर्ट प्रपत्र (Exact Police Proforma)
+                Official Police Enquiry Report &amp; NCR Proforma (Exact Format)
               </span>
               {complaint && (
                 <span className="text-[11px] font-bold font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -620,10 +618,10 @@ function EnquiryDraftsContent() {
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-[#0b192c] tracking-tight mt-1 flex items-center gap-2">
               <Shield className="w-6 h-6 text-red-600" />
-              <span>पुलिस जांच रिपोर्ट व एनसीआर ड्राफ्ट्स</span>
+              <span>Police Enquiry Report &amp; NCR Drafts</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              असली पुलिस जांच रिपोर्ट (PDF) के हुबहू प्रपत्र में सीधा संपादन: सभी कॉलम, हेडर, बॉर्डर, विवरण जोड़ें अथवा हटाएं।
+              Direct in-place legal proforma editor: Customize all columns, rows, headers, and borders freely.
             </p>
           </div>
 
@@ -632,14 +630,14 @@ function EnquiryDraftsContent() {
               <Link href={`/complaints/${complaint.id}`}>
                 <Button variant="outline" size="sm" className="text-xs gap-1.5 border-slate-300">
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>परिवाद प्रोफाइल पर वापस जाएं</span>
+                  <span>Back to Complaint Profile</span>
                 </Button>
               </Link>
             ) : (
               <Link href="/enquiry-workspace">
                 <Button variant="outline" size="sm" className="text-xs gap-1.5 border-slate-300">
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>जांच कार्यक्षेत्र</span>
+                  <span>Enquiry Workspace</span>
                 </Button>
               </Link>
             )}
@@ -655,12 +653,12 @@ function EnquiryDraftsContent() {
                 {saveSuccess ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>रिपोर्ट सुरक्षित हुई!</span>
+                    <span>Report Saved!</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>{saveLoading ? "सहेज रहे हैं..." : "परिवाद में सहेजें (Save)"}</span>
+                    <span>{saveLoading ? "Saving..." : "Save to Complaint"}</span>
                   </>
                 )}
               </Button>
@@ -685,12 +683,12 @@ function EnquiryDraftsContent() {
               {uploadLoading ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                  <span>दस्तावेज़ पढ़ रहे हैं (OCR)...</span>
+                  <span>Reading Document (OCR)...</span>
                 </>
               ) : (
                 <>
                   <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>दस्तावेज़ अपलोड करें (Upload Document)</span>
+                  <span>Upload Document (AI OCR)</span>
                 </>
               )}
             </Button>
@@ -702,7 +700,7 @@ function EnquiryDraftsContent() {
               className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
             >
               <Download className="w-4 h-4 text-blue-700" />
-              <span>डाउनलोड (.html)</span>
+              <span>Download (.html)</span>
             </Button>
 
             <Button
@@ -712,7 +710,7 @@ function EnquiryDraftsContent() {
               className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? "कॉपी हुआ!" : "कॉपी टेक्स्ट"}</span>
+              <span>{copied ? "Copied!" : "Copy Text"}</span>
             </Button>
 
             <Button
@@ -722,7 +720,7 @@ function EnquiryDraftsContent() {
               className="bg-[#0b192c] hover:bg-slate-900 text-white flex items-center gap-1.5 shadow-xs font-bold"
             >
               <Printer className="w-4 h-4" />
-              <span>प्रिंट (A4 Print)</span>
+              <span>Print A4</span>
             </Button>
           </div>
         </div>
@@ -732,8 +730,8 @@ function EnquiryDraftsContent() {
           <div className="p-3 bg-indigo-50 border border-indigo-300 rounded-xl flex items-center gap-2.5 text-xs text-indigo-900 animate-in fade-in-50">
             <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
             <div>
-              <span className="font-bold">AI OCR दस्तावेज़ का विश्लेषण कर रहा है... </span>
-              <span className="text-indigo-700">तालिका, कॉलम, हेडर व पूरा मजमून हुबहू निकाला जा रहा है।</span>
+              <span className="font-bold">AI OCR is analyzing your document... </span>
+              <span className="text-indigo-700">Extracting tables, columns, headers, and text verbatim.</span>
             </div>
           </div>
         )}
@@ -750,48 +748,39 @@ function EnquiryDraftsContent() {
               onClick={() => setUploadSuccessMessage(null)}
               className="text-emerald-800 hover:text-emerald-950 text-xs font-bold underline cursor-pointer"
             >
-              बंद करें
+              Dismiss
             </button>
           </div>
         )}
 
-        {/* Success Alert */}
+        {/* Save Success Alert */}
         {saveSuccess && complaint && (
           <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-900 animate-in fade-in-50">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-700" />
               <span className="font-bold">
-                जांच रिपोर्ट परिवाद {complaint.complaintNumber} के &ldquo;Reports&rdquo; डॉकेट में सफलतापूर्वक सहेजी गई!
+                Report successfully saved into Complaint {complaint.complaintNumber} under the &ldquo;Reports&rdquo; docket!
               </span>
             </div>
             <Link
               href={`/complaints/${complaint.id}`}
               className="text-xs font-bold text-emerald-800 underline hover:text-emerald-950"
             >
-              रिपोर्ट डॉकेट खोलें &rarr;
+              Open Reports Docket &rarr;
             </Link>
           </div>
         )}
 
-        {/* Format Selector Bar (The 4 Real Haryana Police Formats from User's PDFs) */}
+        {/* Format Selector Bar */}
         <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-red-600" />
-              पुलिस जांच प्रारूप चुनें (Select Police Proforma Format):
+              Select Police Proforma Format:
             </span>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500 font-medium">बोलकर लिखें (Voice):</span>
+              <span className="text-slate-500 font-medium">Dictation:</span>
               <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setVoiceLang("hi-IN")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  हिन्दी
-                </button>
                 <button
                   type="button"
                   onClick={() => setVoiceLang("en-IN")}
@@ -801,15 +790,24 @@ function EnquiryDraftsContent() {
                 >
                   English
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang("hi-IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Hindi
+                </button>
               </div>
               <button
                 type="button"
                 onClick={() => handleSelectFormat(activeFormat)}
                 className="px-2 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1"
-                title="वर्तमान प्रारूप को मूल रूप में रीसेट करें"
+                title="Reset this format to standard template"
               >
                 <RotateCcw className="w-3 h-3 text-slate-500" />
-                <span>प्रारूप रीसेट</span>
+                <span>Reset Proforma</span>
               </button>
             </div>
           </div>
@@ -848,21 +846,21 @@ function EnquiryDraftsContent() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-slate-700 flex items-center gap-1">
               <Sliders className="w-3.5 h-3.5 text-blue-600" />
-              कस्टमाइज़ेशन टूलबार:
+              Proforma Customization Toolbar:
             </span>
 
             {/* Border Style */}
             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-1">
-              <span className="text-[11px] text-slate-500 font-medium">बॉर्डर (Border):</span>
+              <span className="text-[11px] text-slate-500 font-medium">Border Style:</span>
               <select
                 value={borderStyle}
                 onChange={(e) => setBorderStyle(e.target.value as any)}
                 className="text-[11px] font-bold bg-transparent border-0 outline-none cursor-pointer text-slate-900"
               >
-                <option value="solid">ठोस काला (Solid Black - PDF)</option>
-                <option value="double">डबल बॉर्डर (Double)</option>
-                <option value="light">हल्का धूसर (Light Gray)</option>
-                <option value="none">कोई बॉर्डर नहीं (None)</option>
+                <option value="solid">Solid Black (Official PDF)</option>
+                <option value="double">Double Border</option>
+                <option value="light">Light Gray</option>
+                <option value="none">No Border</option>
               </select>
             </div>
 
@@ -870,39 +868,39 @@ function EnquiryDraftsContent() {
             <button
               type="button"
               onClick={() => setShowHeader(!showHeader)}
-              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all ${
+              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
                 showHeader
                   ? "bg-blue-50 text-blue-800 border-blue-200"
                   : "bg-white text-slate-500 border-slate-200"
               }`}
             >
-              {showHeader ? "✓ हेडर (पुलिस विभाग) सक्रिय" : "✕ हेडर छिपा हुआ"}
+              {showHeader ? "✓ Header: Active" : "✕ Header: Hidden"}
             </button>
 
             {/* Toggle Sub-Header */}
             <button
               type="button"
               onClick={() => setShowSubHeader(!showSubHeader)}
-              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all ${
+              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
                 showSubHeader
                   ? "bg-blue-50 text-blue-800 border-blue-200"
                   : "bg-white text-slate-500 border-slate-200"
               }`}
             >
-              {showSubHeader ? "✓ 'श्रीमान जी' सक्रिय" : "✕ 'श्रीमान जी' छिपा हुआ"}
+              {showSubHeader ? "✓ Sub-Header: Active" : "✕ Sub-Header: Hidden"}
             </button>
 
             {/* Toggle Signatures */}
             <button
               type="button"
               onClick={() => setShowSignatures(!showSignatures)}
-              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all ${
+              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
                 showSignatures
                   ? "bg-blue-50 text-blue-800 border-blue-200"
                   : "bg-white text-slate-500 border-slate-200"
               }`}
             >
-              {showSignatures ? "✓ हस्ताक्षर ब्लॉक सक्रिय" : "✕ हस्ताक्षर छिपा हुआ"}
+              {showSignatures ? "✓ Signatures: Active" : "✕ Signatures: Hidden"}
             </button>
           </div>
 
@@ -914,10 +912,10 @@ function EnquiryDraftsContent() {
                 variant="outline"
                 size="sm"
                 onClick={handleAddColumn}
-                className="text-xs bg-white hover:bg-slate-100 text-blue-700 font-bold border-blue-200"
+                className="text-xs bg-white hover:bg-slate-100 text-blue-700 font-bold border-blue-200 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>+ नया कॉलम जोड़ें (Add Column)</span>
+                <span>+ Add Column</span>
               </Button>
             )}
 
@@ -926,16 +924,16 @@ function EnquiryDraftsContent() {
               variant="outline"
               size="sm"
               onClick={() => handleAddRow()}
-              className="text-xs bg-white hover:bg-slate-100 text-emerald-700 font-bold border-emerald-200"
+              className="text-xs bg-white hover:bg-slate-100 text-emerald-700 font-bold border-emerald-200 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ नई पंक्ति जोड़ें (Add Row)</span>
+              <span>+ Add Row</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* ================= 2. THE DOCUMENT SHEET (EXACT HARYANA POLICE A4 PROFORMA) ================= */}
+      {/* ================= 2. THE DOCUMENT SHEET (EXACT POLICE A4 PROFORMA) ================= */}
       <div className="w-full max-w-4xl mx-auto space-y-4">
         <div
           ref={documentRef}
@@ -944,10 +942,10 @@ function EnquiryDraftsContent() {
             minHeight: "1050px",
             lineHeight: "1.65",
             fontFamily:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", "Mangal", "Nirmala UI", Roboto, sans-serif',
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
           }}
         >
-          {/* Header Row: Top Left (पुलिस विभाग) & Top Right (जिला पानीपत) */}
+          {/* Header Row: Top Left (POLICE DEPARTMENT) & Top Right (DISTRICT PANIPAT) */}
           {showHeader && (
             <div className="flex items-center justify-between text-sm sm:text-base font-bold pb-2 border-b border-transparent">
               <div className="flex items-center gap-1 group relative">
@@ -955,14 +953,14 @@ function EnquiryDraftsContent() {
                   type="text"
                   value={headerLeft}
                   onChange={(e) => setHeaderLeft(e.target.value)}
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base"
-                  placeholder="पुलिस विभाग"
+                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base uppercase"
+                  placeholder="POLICE DEPARTMENT"
                 />
                 <button
                   type="button"
                   onClick={() => setHeaderLeft("")}
-                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs"
-                  title="हेडर हटाएं"
+                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs cursor-pointer"
+                  title="Remove Header"
                 >
                   ✕
                 </button>
@@ -973,14 +971,14 @@ function EnquiryDraftsContent() {
                   type="text"
                   value={headerRight}
                   onChange={(e) => setHeaderRight(e.target.value)}
-                  className="font-bold text-slate-950 text-right bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base"
-                  placeholder="जिला पानीपत"
+                  className="font-bold text-slate-950 text-right bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base uppercase"
+                  placeholder="DISTRICT PANIPAT"
                 />
                 <button
                   type="button"
                   onClick={() => setHeaderRight("")}
-                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs"
-                  title="जिला हटाएं"
+                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs cursor-pointer"
+                  title="Remove District"
                 >
                   ✕
                 </button>
@@ -988,7 +986,7 @@ function EnquiryDraftsContent() {
             </div>
           )}
 
-          {/* Sub Header: 'श्रीमान जी' */}
+          {/* Sub Header: 'Respected Sir,' */}
           {showSubHeader && subHeaderLeft && (
             <div className="pt-1 flex items-center gap-1 group">
               <input
@@ -1000,23 +998,23 @@ function EnquiryDraftsContent() {
               <button
                 type="button"
                 onClick={() => setSubHeaderLeft("")}
-                className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs"
-                title="हटाएं"
+                className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs cursor-pointer"
+                title="Remove Sub-header"
               >
                 ✕
               </button>
             </div>
           )}
 
-          {/* Report Title Center (उदा: जांच रिपोर्ट परिवाद नम्बरी 128-SPL-III DT 10.02.2026) */}
+          {/* Report Title Center */}
           <div className="my-2 text-center space-y-1">
             <div className="relative group">
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-center text-sm sm:text-base font-black tracking-wide text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-1"
-                placeholder="जांच रिपोर्ट परिवाद नम्बरी..."
+                className="w-full text-center text-sm sm:text-base font-black tracking-wide text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-1 uppercase"
+                placeholder="ENQUIRY REPORT ON COMPLAINT NO..."
               />
             </div>
 
@@ -1027,7 +1025,7 @@ function EnquiryDraftsContent() {
                   value={subTitle}
                   onChange={(e) => setSubTitle(e.target.value)}
                   className="w-full text-center text-xs sm:text-sm font-bold text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-0.5"
-                  placeholder="परिवाद की जांच रिपोर्ट इस प्रकार है -"
+                  placeholder="Enquiry findings are as follows -"
                 />
               </div>
             )}
@@ -1048,7 +1046,7 @@ function EnquiryDraftsContent() {
                     : "1.5px solid #000000",
               }}
             >
-              {/* Optional Table Header (Multi-Column Format - PDF 3) */}
+              {/* Optional Table Header (Multi-Column Format) */}
               {isMultiCol && (
                 <thead>
                   <tr className="bg-slate-50/80">
@@ -1075,8 +1073,8 @@ function EnquiryDraftsContent() {
                           <button
                             type="button"
                             onClick={() => handleDeleteColumn(colIdx)}
-                            className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-0.5 text-[10px]"
-                            title="इस कॉलम को हटाएं"
+                            className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-0.5 text-[10px] cursor-pointer"
+                            title="Delete this column"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -1091,7 +1089,7 @@ function EnquiryDraftsContent() {
               <tbody>
                 {rows.map((row, rowIdx) => (
                   <tr key={row.id} className="group/row">
-                    {/* If Multi-Column (like PDF 3) */}
+                    {/* If Multi-Column */}
                     {isMultiCol ? (
                       columns.map((_, colIdx) => (
                         <td
@@ -1112,14 +1110,14 @@ function EnquiryDraftsContent() {
                               value={row.cells[colIdx] || ""}
                               onChange={(e) => handleUpdateCell(row.id, colIdx, e.target.value)}
                               className="w-full text-xs sm:text-sm text-black bg-transparent hover:bg-slate-50/50 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded p-1.5 leading-relaxed font-sans focus:outline-none"
-                              placeholder="विवरण दर्ज करें..."
+                              placeholder="Enter particulars..."
                             />
 
                             {/* Cell Voice Button */}
                             <div className="no-print absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
                               <VoiceInputButton
                                 preferredLang={voiceLang}
-                                fieldLabel={`कॉलम ${colIdx + 1}`}
+                                fieldLabel={`Column ${colIdx + 1}`}
                                 currentValue={row.cells[colIdx] || ""}
                                 onTranscript={(val) => handleUpdateCell(row.id, colIdx, val)}
                               />
@@ -1133,8 +1131,8 @@ function EnquiryDraftsContent() {
                                 type="button"
                                 disabled={rowIdx === 0}
                                 onClick={() => handleMoveRow(rowIdx, "up")}
-                                className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 shadow-xs"
-                                title="ऊपर ले जाएं"
+                                className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 shadow-xs cursor-pointer"
+                                title="Move Up"
                               >
                                 <ChevronUp className="w-3 h-3" />
                               </button>
@@ -1142,16 +1140,16 @@ function EnquiryDraftsContent() {
                                 type="button"
                                 disabled={rowIdx === rows.length - 1}
                                 onClick={() => handleMoveRow(rowIdx, "down")}
-                                className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 shadow-xs"
-                                title="नीचे ले जाएं"
+                                className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 shadow-xs cursor-pointer"
+                                title="Move Down"
                               >
                                 <ChevronDown className="w-3 h-3" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteRow(row.id)}
-                                className="p-1 rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-600 shadow-xs"
-                                title="पंक्ति हटाएं"
+                                className="p-1 rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-600 shadow-xs cursor-pointer"
+                                title="Delete Row"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -1160,11 +1158,11 @@ function EnquiryDraftsContent() {
                         </td>
                       ))
                     ) : (
-                      /* Standard 2-Column Official Proforma (like PDF 1, 2, 5) */
+                      /* Standard 2-Column Official Proforma */
                       <>
-                        {/* Col 1: Label / शीर्षक (उदा: परिवादी, परिवाद का सार, उत्तरवादी का विवरण, जांच की स्थिती का विवरण) */}
+                        {/* Col 1: Label (Complainant, Substance, Opposite Party, Findings) */}
                         <td
-                          className="w-32 sm:w-44 p-2 sm:p-2.5 text-xs sm:text-sm font-black text-black align-top relative group"
+                          className="w-36 sm:w-52 p-2 sm:p-2.5 text-xs sm:text-sm font-black text-black align-top relative group"
                           style={{
                             border:
                               borderStyle === "none"
@@ -1180,7 +1178,7 @@ function EnquiryDraftsContent() {
                               value={row.label}
                               onChange={(e) => handleUpdateRowLabel(row.id, e.target.value)}
                               className="w-full font-black text-xs sm:text-sm text-black bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                              placeholder="लेबल"
+                              placeholder="Label"
                             />
                           </div>
 
@@ -1190,8 +1188,8 @@ function EnquiryDraftsContent() {
                               type="button"
                               disabled={rowIdx === 0}
                               onClick={() => handleMoveRow(rowIdx, "up")}
-                              className="p-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20"
-                              title="ऊपर ले जाएं"
+                              className="p-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer"
+                              title="Move Up"
                             >
                               <ChevronUp className="w-2.5 h-2.5" />
                             </button>
@@ -1199,15 +1197,15 @@ function EnquiryDraftsContent() {
                               type="button"
                               disabled={rowIdx === rows.length - 1}
                               onClick={() => handleMoveRow(rowIdx, "down")}
-                              className="p-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20"
-                              title="नीचे ले जाएं"
+                              className="p-0.5 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer"
+                              title="Move Down"
                             >
                               <ChevronDown className="w-2.5 h-2.5" />
                             </button>
                           </div>
                         </td>
 
-                        {/* Col 2: Value / विस्तृत विवरण */}
+                        {/* Col 2: Content */}
                         <td
                           className="p-2 sm:p-2.5 text-xs sm:text-sm text-black align-top relative"
                           style={{
@@ -1225,7 +1223,7 @@ function EnquiryDraftsContent() {
                               value={row.cells[0] || ""}
                               onChange={(e) => handleUpdateCell(row.id, 0, e.target.value)}
                               className="w-full text-xs sm:text-sm text-black bg-transparent hover:bg-slate-50/50 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded p-1.5 leading-relaxed font-sans focus:outline-none"
-                              placeholder="विवरण दर्ज करें..."
+                              placeholder="Enter details..."
                             />
 
                             {/* Voice Button & Delete Row Button */}
@@ -1239,8 +1237,8 @@ function EnquiryDraftsContent() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteRow(row.id)}
-                                className="p-1 rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-600 shadow-2xs"
-                                title="यह पंक्ति हटाएं"
+                                className="p-1 rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-600 shadow-2xs cursor-pointer"
+                                title="Delete this row"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -1258,7 +1256,7 @@ function EnquiryDraftsContent() {
           {/* Preset Quick Row Adders (No-print) */}
           <div className="no-print pt-2 pb-1 border-t border-dashed border-slate-300 flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] font-bold text-slate-500 uppercase mr-1">
-              + त्वरित पंक्ति जोड़ें:
+              + Quick Rows:
             </span>
             <Button
               type="button"
@@ -1266,13 +1264,13 @@ function EnquiryDraftsContent() {
               size="sm"
               onClick={() =>
                 handleAddRow(
-                  "गवाहों के बयान",
-                  "1. गवाह श्री ... वासी ... के बयान अंकित किए गए।\n2. मौके के स्वतंत्र गवाह श्री ... ने बयान दिया कि ..."
+                  "Statements of Witnesses Examined",
+                  "1. Statement of Witness 1: Sh. ... r/o ... was recorded.\n2. Statement of Independent Eye-Witness: Sh. ... recorded stating that ..."
                 )
               }
-              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700"
+              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
-              + गवाहों के बयान
+              + Witness Statements
             </Button>
             <Button
               type="button"
@@ -1280,13 +1278,13 @@ function EnquiryDraftsContent() {
               size="sm"
               onClick={() =>
                 handleAddRow(
-                  "मौका मुआयना व पंचनामा",
-                  "दिनांक ... को मौका पर जाकर स्वतंत्र पंच गवाहों की मौजूदगी में मुआयना किया गया। मौके पर पाई गई स्थिति: ..."
+                  "Spot Panchnama & Site Verification",
+                  "Spot inspection was conducted on ... in presence of independent panch witnesses. Topography and observations noted at scene: ..."
                 )
               }
-              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700"
+              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
-              + मौका मुआयना
+              + Spot Panchnama
             </Button>
             <Button
               type="button"
@@ -1294,13 +1292,13 @@ function EnquiryDraftsContent() {
               size="sm"
               onClick={() =>
                 handleAddRow(
-                  "राजीनामा व समझौता",
-                  "दोनों पक्षों ने आपसी रजामंदी से मौजिज व्यक्तियों के समक्ष समझौता कर लिया है। किसी पक्ष को कोई शिकायत शेष नहीं है।"
+                  "Compromise & Mutual Settlement",
+                  "Both parties appeared voluntarily with family respectables and settled the controversy amicably. Written compromise deed executed."
                 )
               }
-              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700"
+              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
-              + राजीनामा
+              + Settlement Agreement
             </Button>
             <Button
               type="button"
@@ -1308,26 +1306,26 @@ function EnquiryDraftsContent() {
               size="sm"
               onClick={() =>
                 handleAddRow(
-                  "दस्तावेजी साक्ष्य",
-                  "1. बैंक खाता विवरण एवं लेन-देन रसीद\n2. शिकायतकर्ता द्वारा प्रस्तुत मूल साक्ष्य प्रति"
+                  "Documentary & Technical Evidence",
+                  "1. Certified Bank Statement & Transaction Receipts\n2. Call Detail Records (CDR) / CCTV Footage analysis"
                 )
               }
-              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700"
+              className="text-[11px] h-7 bg-white hover:bg-slate-100 text-slate-700 cursor-pointer"
             >
-              + दस्तावेजी साक्ष्य
+              + Documentary Evidence
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => handleAddRow()}
-              className="text-[11px] h-7 bg-[#0b192c] text-white hover:bg-slate-800 font-bold"
+              className="text-[11px] h-7 bg-[#0b192c] text-white hover:bg-slate-800 font-bold cursor-pointer"
             >
-              + कस्टम पंक्ति (Add Row)
+              + Custom Row
             </Button>
           </div>
 
-          {/* Closing Line: 'रिपोर्ट सेवा में पेश है।' */}
+          {/* Closing Line: 'Report is submitted for perusal and orders.' */}
           {showClosingLine && (
             <div className="pt-2 flex items-center justify-between text-sm sm:text-base font-bold">
               <div className="flex items-center gap-1 group">
@@ -1335,14 +1333,14 @@ function EnquiryDraftsContent() {
                   type="text"
                   value={closingLine}
                   onChange={(e) => setClosingLine(e.target.value)}
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base w-72"
-                  placeholder="रिपोर्ट सेवा में पेश है।"
+                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base w-80"
+                  placeholder="Report is submitted for perusal and orders."
                 />
                 <button
                   type="button"
                   onClick={() => setShowClosingLine(false)}
-                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs"
-                  title="हटाएं"
+                  className="no-print opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 text-xs cursor-pointer"
+                  title="Remove"
                 >
                   ✕
                 </button>
@@ -1371,7 +1369,7 @@ function EnquiryDraftsContent() {
                   value={officerName}
                   onChange={(e) => setOfficerName(e.target.value)}
                   className="w-full text-right font-black text-slate-950 text-sm sm:text-base bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                  placeholder="(सतीश कुमार ह.पु.से.)"
+                  placeholder="(Satish Kumar, HPS)"
                 />
 
                 <input
@@ -1379,7 +1377,7 @@ function EnquiryDraftsContent() {
                   value={officerRank}
                   onChange={(e) => setOfficerRank(e.target.value)}
                   className="w-full text-right font-bold text-slate-900 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                  placeholder="उप पुलिस अधीक्षक"
+                  placeholder="Deputy Superintendent of Police"
                 />
 
                 {officerLocation && (
@@ -1388,7 +1386,7 @@ function EnquiryDraftsContent() {
                     value={officerLocation}
                     onChange={(e) => setOfficerLocation(e.target.value)}
                     className="w-full text-right font-medium text-slate-800 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                    placeholder="मुख्यालय पानीपत"
+                    placeholder="Headquarters Panipat"
                   />
                 )}
 
@@ -1397,7 +1395,7 @@ function EnquiryDraftsContent() {
                   value={reportDate}
                   onChange={(e) => setReportDate(e.target.value)}
                   className="w-full text-right font-bold text-slate-900 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                  placeholder="दिनांक 17.03.2026"
+                  placeholder="Dated: 17.03.2026"
                 />
               </div>
             </div>
@@ -1408,21 +1406,21 @@ function EnquiryDraftsContent() {
         {complaint && (
           <div className="no-print p-4 bg-white border border-slate-200 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <FileCheck2 className="w-5 h-5 text-emerald-600" />
+              <Shield className="w-5 h-5 text-emerald-600" />
               <div>
                 <p className="text-xs font-bold text-slate-900">
-                  परिवाद {complaint.complaintNumber} के साथ इस जांच रिपोर्ट को लिंक करें?
+                  Ready to link this report to Complaint {complaint.complaintNumber}?
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  सहेजने पर यह असली पुलिस प्रपत्र परिवाद प्रोफाइल के &ldquo;Reports&rdquo; डॉकेट में लाइव सुरक्षित हो जाएगा।
+                  Click save to persist this drafted report directly into the complaint profile &ldquo;Reports&rdquo; docket.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <Link href={`/complaints/${complaint.id}`}>
-                <Button variant="outline" size="sm" className="text-xs">
-                  वापस जाएं
+                <Button variant="outline" size="sm" className="text-xs cursor-pointer">
+                  Cancel &amp; Return
                 </Button>
               </Link>
               <Button
@@ -1430,17 +1428,17 @@ function EnquiryDraftsContent() {
                 disabled={saveLoading}
                 variant="primary"
                 size="sm"
-                className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+                className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer"
               >
                 {saveSuccess ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>सहेजा गया!</span>
+                    <span>Saved to Docket!</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    <span>{saveLoading ? "सहेज रहे हैं..." : "रिपोर्ट सहेजें"}</span>
+                    <span>{saveLoading ? "Saving..." : "Save Report to Complaint"}</span>
                   </>
                 )}
               </Button>
@@ -1457,7 +1455,7 @@ export default function EnquiryDraftsPage() {
     <Suspense
       fallback={
         <div className="p-8 text-center text-xs text-slate-500">
-          पुलिस जांच रिपोर्ट व एनसीआर ड्राफ्ट लोड हो रहा है...
+          Loading Police Enquiry Reports &amp; NCR Drafts...
         </div>
       }
     >

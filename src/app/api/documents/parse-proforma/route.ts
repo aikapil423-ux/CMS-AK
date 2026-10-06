@@ -18,64 +18,71 @@ export async function POST(req: NextRequest) {
 
     const fileName = file?.name || "Uploaded_Document.pdf";
     const prompt = `You are an elite Indian Police Document Digitizer & OCR Specialist for Haryana Police.
-Your task is to analyze the uploaded document image/PDF (e.g. Haryana Police Enquiry Report / जांच रिपोर्ट, Police Notice, NCR, Panchnama, or official legal document) and convert it into a structured, fully editable proforma table.
+Your task is to analyze the uploaded document image/PDF (e.g. Haryana Police Enquiry Report, Police Notice, NCR, Panchnama, or official legal document) and convert it into a structured, fully editable proforma table in ENGLISH.
 
 CRITICAL INSTRUCTIONS:
 1. Examine the visual document layout carefully:
-   - Identify header lines: Top left (e.g. "विभाग" or "पुलिस विभाग"), Top right (e.g. "जिला पानीपत"), Sub-header (e.g. "श्रीमान जी").
-   - Identify the main case reference title: e.g. "जांच रिपोर्ट परिवाद नम्बरी 128-SPL-III DT 10.02.2026", or "परिवाद नम्बरी 1736-पेशी दिनांक 19.12.2025...".
+   - Identify header lines: Top left (e.g. "POLICE DEPARTMENT"), Top right (e.g. "DISTRICT PANIPAT"), Sub-header (e.g. "Respected Sir,").
+   - Identify the main case reference title: e.g. "ENQUIRY REPORT ON COMPLAINT NO. 128-SPL-III DATED 10.02.2026", or "ENQUIRY REPORT ON COMPLAINT NO. 1736...".
    - Identify whether the table is:
-     a) STANDARD 2-COLUMN PROFORMA (like Haryana Police Formats 1, 2, 5 with rows: परिवादी, परिवाद का सार, उत्तरवादी का विवरण, जांच की स्थिती का विवरण). For this, keep "columns": [] (empty array) and put the row headers in "label", and row contents in "cells": [ "content..." ].
-     b) MULTI-COLUMN COMPARATIVE TABLE (like 3-column Format with headers: "शिकायतकर्ता द्वारा लगाये गये आरोप (बिन्दूवार)", "जांच का विवरण (सही/गलत) बिन्दूवार कारण सहित", "स्थानीय पुलिस/ एस.एच.ओ. द्वारा की गई कार्यवाही"). For this, put the column headers in "columns": ["Col 1", "Col 2", "Col 3"] and row values in "cells": ["val 1", "val 2", "val 3"].
-     c) CITIZEN GRIEVANCE PROFORMA (like CM Window / DCR with DEPARTMENT, CITIZEN DETAIL, लगाये गये आरोप, DATE, CITIZEN SATISFACTION, FINAL REPORT).
+     a) STANDARD 2-COLUMN PROFORMA (like Haryana Police Formats 1, 2, 5 with rows: Complainant / Informant, Gist / Substance of Complaint, Opposite Party / Accused Details, Enquiry Findings & Action Taken). For this, keep "columns": [] (empty array) and put the row headers in "label", and row contents in "cells": [ "content..." ].
+     b) MULTI-COLUMN COMPARATIVE TABLE (like 3-column Format with headers: "Allegations Leveled by Complainant (Point-wise)", "Enquiry Findings (Substantiated / Unsubstantiated with Reasons)", "Action Taken by Local Police / S.H.O."). For this, put the column headers in "columns": ["Col 1", "Col 2", "Col 3"] and row values in "cells": ["val 1", "val 2", "val 3"].
+     c) CITIZEN GRIEVANCE PROFORMA (like CM Window / DCR with DEPARTMENT, CITIZEN DETAIL, ALLEGATIONS LEVELED, DATE, CITIZEN SATISFACTION, FINAL REPORT).
      d) NOTICE / ORDER (Notice u/s 35(3) BNSS, Notice u/s 179 BNSS, Order u/s 94 BNSS).
-2. Extract EVERY piece of text VERBATIM without truncating, omitting, or summarizing.
-3. Extract the closing line: e.g. "रिपोर्ट सेवा में पेश है।" or "रिपोर्ट सेवा में प्रस्तुत है।".
+2. All labels, headings, and proforma text should be in clean ENGLISH. Translate Hindi labels cleanly into standard police terminology:
+   - परिवादी -> "Complainant / Informant"
+   - परिवाद का सार -> "Gist / Substance of Complaint"
+   - उत्तरवादी का विवरण -> "Opposite Party / Accused Details"
+   - जांच की स्थिती का विवरण -> "Enquiry Findings & Action Taken"
+   - पुलिस विभाग -> "POLICE DEPARTMENT"
+   - जिला -> "DISTRICT"
+   - रिपोर्ट सेवा में पेश है। -> "Report is submitted for perusal and orders."
+3. Extract content accurately while preserving names, dates, amounts, and facts verbatim.
 4. Extract the officer's signature block:
-   - officerName: e.g. "(सतीश कुमार ह.पु.से.)"
-   - officerRank: e.g. "उप पुलिस अधीक्षक" or "सहायक पुलिस अधीक्षक"
-   - officerLocation: e.g. "मुख्यालय पानीपत" or "समालखा पानीपत"
-   - reportDate: e.g. "दिनांक 17.03.26"
+   - officerName: e.g. "(Satish Kumar, HPS)"
+   - officerRank: e.g. "Deputy Superintendent of Police" or "Assistant Superintendent of Police"
+   - officerLocation: e.g. "Headquarters Panipat" or "Samalkha, Panipat"
+   - reportDate: e.g. "Dated: 17.03.2026"
 5. Set "borderStyle": "solid".
 
 Return ONLY valid JSON matching this exact structure without markdown backticks:
 {
   "documentType": "enquiry_report",
-  "headerLeft": "पुलिस विभाग",
-  "headerRight": "जिला पानीपत",
-  "subHeaderLeft": "श्रीमान जी,",
-  "title": "जांच रिपोर्ट परिवाद नम्बरी...",
+  "headerLeft": "POLICE DEPARTMENT",
+  "headerRight": "DISTRICT PANIPAT",
+  "subHeaderLeft": "Respected Sir,",
+  "title": "ENQUIRY REPORT ON COMPLAINT NO...",
   "subTitle": "",
   "columns": [],
   "rows": [
     {
       "id": "row_1",
-      "label": "परिवादी",
-      "cells": ["पूरी जानकारी..."]
+      "label": "Complainant / Informant",
+      "cells": ["Full particulars..."]
     },
     {
       "id": "row_2",
-      "label": "परिवाद का सार",
-      "cells": ["पूरी जानकारी..."]
+      "label": "Gist / Substance of Complaint",
+      "cells": ["Full particulars..."]
     },
     {
       "id": "row_3",
-      "label": "उत्तरवादी का विवरण",
-      "cells": ["पूरी जानकारी..."]
+      "label": "Opposite Party / Accused Details",
+      "cells": ["Full particulars..."]
     },
     {
       "id": "row_4",
-      "label": "जांच की स्थिती का विवरण",
-      "cells": ["पूर्ण जांच विवरण..."]
+      "label": "Enquiry Findings & Action Taken",
+      "cells": ["Full enquiry findings..."]
     }
   ],
-  "closingLine": "रिपोर्ट सेवा में पेश है।",
-  "officerName": "(सतीश कुमार ह.पु.से.)",
-  "officerRank": "उप पुलिस अधीक्षक",
-  "officerLocation": "मुख्यालय पानीपत",
-  "reportDate": "दिनांक 17.03.2026",
+  "closingLine": "Report is submitted for perusal and orders.",
+  "officerName": "(Satish Kumar, HPS)",
+  "officerRank": "Deputy Superintendent of Police",
+  "officerLocation": "Headquarters Panipat",
+  "reportDate": "Dated: 17.03.2026",
   "borderStyle": "solid",
-  "rawText": "Word by word text extracted..."
+  "rawText": "Extracted text..."
 }`;
 
     if (GEMINI_API_KEY) {

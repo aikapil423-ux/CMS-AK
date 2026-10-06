@@ -192,26 +192,26 @@ const TEMPLATE_DROPDOWN_OPTIONS = [
 const REPORT_DROPDOWN_OPTIONS = [
   {
     key: "standard_4row",
-    label: "1. मानक 4-रो जांच रिपोर्ट (हरियाणा पुलिस प्रपत्र)",
-    desc: "परिवादी, परिवाद का सार, उत्तरवादी व जांच की स्थिती का विवरण",
+    label: "1. Standard 4-Row Enquiry Report (Police Proforma)",
+    desc: "Complainant, Gist, Opposite Party & Enquiry Findings",
     icon: Shield,
   },
   {
     key: "three_column",
-    label: "2. बिन्दुवार तुलनात्मक जांच रिपोर्ट (3-कॉलम प्रपत्र)",
-    desc: "आरोप बिन्दूवार, जांच विवरण (सही/गलत) व पुलिस कार्यवाही",
+    label: "2. Point-wise Comparative Report (3-Column Proforma)",
+    desc: "Allegations, Enquiry Findings & Police Action Taken",
     icon: Table,
   },
   {
     key: "citizen_detail",
-    label: "3. नागरिक शिकायत / CM Window जांच रिपोर्ट",
-    desc: "Citizen Detail, Allegations & Citizen Satisfaction",
+    label: "3. Citizen Grievance / CM Window Enquiry Report",
+    desc: "Citizen Details, Allegations & Satisfaction Docket",
     icon: UserCheck,
   },
   {
     key: "ncr_174",
-    label: "4. असंज्ञेय अपराध रिपोर्ट (NCR जेर धारा 174 BNSS)",
-    desc: "थाना रोजनामचा जीडी प्रविष्टि व गैर-संज्ञेय जांच",
+    label: "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
+    desc: "Station General Diary Roznamcha Entry & Enquiry",
     icon: BadgeAlert,
   },
 ];

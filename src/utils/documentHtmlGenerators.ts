@@ -758,11 +758,11 @@ export function generateHaryanaPoliceProformaHtml(data: HaryanaPoliceProformaDat
   </tbody>`;
 
   return `<!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${data.title || "जांच रिपोर्ट"} - हरियाणा पुलिस</title>
+  <title>${data.title || "ENQUIRY REPORT"} - HARYANA POLICE</title>
   <style>
     @page {
       size: A4 portrait;
