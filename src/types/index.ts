@@ -322,6 +322,9 @@ export interface ComplaintItem {
   progressReportRemarks?: string;
   progressReportRequestedBy?: string;
 
+  // AI & Statutory Legal Assistant Analysis
+  legalAnalysis?: LegalAnalysisReport;
+
   // Direct Send to FIR
   directSendToFir?: boolean;
   directSendToFirChoice?: 'YES' | 'NO';
@@ -838,5 +841,45 @@ export interface LegalActItem {
     sectionsRange: string;
   }[];
   keySections: LegalSectionItem[];
+}
+
+export interface LegalSuggestionItem {
+  id: string;
+  actId: string;
+  actTitle: string;
+  actShortName: string;
+  actFileName?: string;
+  sectionNumber: string;
+  sectionTitle: string;
+  chapter: string;
+  pageNumber: number | string;
+  description: string;
+  verbatimSnippet?: string;
+  punishment?: string;
+  cognizable?: 'Cognizable' | 'Non-cognizable';
+  bailable?: 'Bailable' | 'Non-bailable';
+  triableBy?: string;
+  recommendationType: 'PRIMARY_OFFENCE' | 'CORROBORATING_OFFENCE' | 'PROCEDURAL_MANDATE' | 'EVIDENTIARY_RULE';
+  recommendationTypeLabel: string;
+  reason: string;
+  evidenceProof: string[];
+  confidenceScore: number;
+}
+
+export interface LegalAnalysisReport {
+  complaintId: string;
+  complaintNumber: string;
+  analyzedAt: string;
+  summary: string;
+  scannedFactsCount: number;
+  scannedDocumentsCount: number;
+  scannedEvidenceSummary: {
+    documentsFound: string[];
+    keyAllegationsIdentified: string[];
+    accusedIdentified: string[];
+    injuriesOrLossNoted: string[];
+  };
+  suggestedSections: LegalSuggestionItem[];
+  investigativeStepsRecommended: string[];
 }
 

@@ -659,19 +659,6 @@ function ComplaintListContent() {
             Station intake, preliminary verification, and enquiry monitoring
           </p>
         </div>
-
-        {canRegisterComplaint && (
-          <Link href="/complaints/register">
-            <Button
-              size="sm"
-              variant="danger"
-              className="gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs self-start sm:self-auto"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Register Complaint</span>
-            </Button>
-          </Link>
-        )}
       </div>
 
       {/* Officer Persona & Assignment Scope Notice Banner */}

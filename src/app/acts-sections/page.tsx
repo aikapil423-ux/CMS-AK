@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Scale,
   Search,
@@ -35,7 +36,8 @@ import { LegalActItem, LegalSectionItem } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function ActsAndSectionsPage() {
+function ActsAndSectionsContent() {
+  const searchParams = useSearchParams();
   const [actsList, setActsList] = useState<LegalActItem[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
@@ -56,6 +58,7 @@ export default function ActsAndSectionsPage() {
   // Act Preview / Bare Act Detail Modal & Verbatim Text State
   const [activeActModal, setActiveActModal] = useState<LegalActItem | null>(null);
   const [modalActiveTab, setModalActiveTab] = useState<"VERBATIM" | "DOCUMENT" | "SECTIONS">("VERBATIM");
+  const [targetPageNumber, setTargetPageNumber] = useState<number | null>(null);
   const [sectionFilterQuery, setSectionFilterQuery] = useState("");
   const [verbatimSearchQuery, setVerbatimSearchQuery] = useState("");
   const [verbatimFontSize, setVerbatimFontSize] = useState<"sm" | "base" | "lg">("base");
@@ -71,6 +74,55 @@ export default function ActsAndSectionsPage() {
   useEffect(() => {
     loadActs();
   }, []);
+
+  // Handle URL Query Params from Legal Assistant (e.g. ?act=act_bns_2023&section=318&page=95&tab=DOCUMENT)
+  useEffect(() => {
+    if (actsList.length === 0) return;
+
+    const actParam = searchParams?.get("act");
+    const sectionParam = searchParams?.get("section");
+    const pageParam = searchParams?.get("page");
+    const tabParam = searchParams?.get("tab");
+
+    if (actParam) {
+      const normalizedParam = actParam.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const matchedAct = actsList.find((a) => {
+        const normId = a.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normShort = a.shortName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normTitle = a.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return (
+          normId === normalizedParam ||
+          normShort.includes(normalizedParam) ||
+          normalizedParam.includes(normShort) ||
+          normTitle.includes(normalizedParam)
+        );
+      });
+
+      if (matchedAct) {
+        setActiveActModal(matchedAct);
+
+        if (pageParam) {
+          const parsedPage = parseInt(pageParam);
+          if (!isNaN(parsedPage)) {
+            setTargetPageNumber(parsedPage);
+          }
+        }
+
+        if (tabParam === "DOCUMENT" || pageParam) {
+          setModalActiveTab("DOCUMENT");
+        } else if (tabParam === "SECTIONS") {
+          setModalActiveTab("SECTIONS");
+        } else {
+          setModalActiveTab("VERBATIM");
+        }
+
+        if (sectionParam) {
+          setSectionFilterQuery(sectionParam);
+          setVerbatimSearchQuery(sectionParam);
+        }
+      }
+    }
+  }, [actsList, searchParams]);
 
   // Handle Search Submission
   const handleTriggerSearch = (e?: React.FormEvent) => {
@@ -1303,6 +1355,13 @@ export default function ActsAndSectionsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      {targetPageNumber && (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
+                          <BookOpen className="w-3.5 h-3.5 text-amber-700" />
+                          <span>पेज {targetPageNumber} (Page {targetPageNumber})</span>
+                        </div>
+                      )}
+
                       {targetDocumentUrl && (
                         <>
                           <a
@@ -1314,7 +1373,7 @@ export default function ActsAndSectionsPage() {
                             <span>Download {activeActModal.fileFormat}</span>
                           </a>
                           <a
-                            href={targetDocumentUrl}
+                            href={targetPageNumber ? `${targetDocumentUrl}#page=${targetPageNumber}` : targetDocumentUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors"
@@ -1341,7 +1400,7 @@ export default function ActsAndSectionsPage() {
                         </div>
                       ) : (
                         <iframe
-                          src={`${targetDocumentUrl}#toolbar=1`}
+                          src={targetPageNumber ? `${targetDocumentUrl}#page=${targetPageNumber}&toolbar=1` : `${targetDocumentUrl}#toolbar=1`}
                           className="w-full h-full min-h-[72vh] flex-1 bg-slate-800 border-none"
                           title={activeActModal.title}
                         />
@@ -1556,3 +1615,21 @@ export default function ActsAndSectionsPage() {
     </div>
   );
 }
+
+export default function ActsAndSectionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex items-center justify-center p-8 text-slate-500 text-xs">
+          <div className="flex items-center gap-2 font-medium">
+            <Scale className="w-4 h-4 animate-spin text-indigo-600" />
+            <span>Loading Statutory Bare Acts Repository...</span>
+          </div>
+        </div>
+      }
+    >
+      <ActsAndSectionsContent />
+    </Suspense>
+  );
+}
+

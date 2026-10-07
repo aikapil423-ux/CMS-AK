@@ -76,8 +76,9 @@ import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
+import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 
-type ActiveTab = "overview" | "documents" | "links" | "reports" | "history" | "confidential_dossier";
+type ActiveTab = "overview" | "documents" | "legal_assistant" | "links" | "reports" | "history" | "confidential_dossier";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -1991,6 +1992,12 @@ Certified official record copy.`;
           {[
             { key: "overview", label: "Overview", icon: Eye, count: null },
             { key: "documents", label: "Documents", icon: UploadCloud, count: combinedDocuments.length },
+            {
+              key: "legal_assistant",
+              label: "Legal Assistant",
+              icon: Scale,
+              count: complaint.legalAnalysis?.suggestedSections?.length || null,
+            },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
             { key: "reports", label: "Reports", icon: FileCheck2, count: complaint.reports?.length || 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
@@ -2051,6 +2058,18 @@ Certified official record copy.`;
               <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                 Complaint Actions
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setActiveTab("legal_assistant");
+                }}
+                className="w-full text-left px-3 py-2 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
+              >
+                <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <span>Legal Assistant (कानूनी सहायक)</span>
+              </button>
 
               {canAskProgress && (
                 <button
@@ -2790,6 +2809,23 @@ Certified official record copy.`;
               </Card>
             )}
           </div>
+        )}
+
+        {/* TAB: LEGAL ASSISTANT (BNS, BNSS, BSA Statutory Analysis & Bare Act Indexing) */}
+        {activeTab === "legal_assistant" && (
+          <ComplaintLegalAssistant
+            complaint={complaint}
+            onUpdateComplaint={async (updated) => {
+              setComplaint(updated);
+              if (updated.legalAnalysis) {
+                try {
+                  await ComplaintService.saveLegalAnalysis(updated.id, updated.legalAnalysis);
+                } catch (e) {
+                  console.error("Failed to persist legal analysis", e);
+                }
+              }
+            }}
+          />
         )}
 
         {/* TAB 5: LINKS (Cross, Linked, Repeated) */}
