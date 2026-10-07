@@ -325,6 +325,9 @@ export interface ComplaintItem {
   // AI & Statutory Legal Assistant Analysis
   legalAnalysis?: LegalAnalysisReport;
 
+  // AI & Investigation Case Summary (Overview, Documents & History)
+  investigationSummary?: InvestigationSummaryReport;
+
   // Direct Send to FIR
   directSendToFir?: boolean;
   directSendToFirChoice?: 'YES' | 'NO';
@@ -881,5 +884,66 @@ export interface LegalAnalysisReport {
   };
   suggestedSections: LegalSuggestionItem[];
   investigativeStepsRecommended: string[];
+}
+
+export interface InvestigationSummaryActionItem {
+  id: string;
+  category: 'OVERVIEW' | 'DOCUMENTS' | 'HISTORY' | 'FIELD_ACTION' | 'LEGAL_PROCEDURE';
+  categoryLabel: string;
+  title: string;
+  detail: string;
+  status: 'COMPLETED' | 'PENDING' | 'CRITICAL';
+  completedAt?: string;
+  officerResponsible?: string;
+  remarks?: string;
+}
+
+export interface InvestigationSummaryReport {
+  id: string;
+  complaintId: string;
+  complaintNumber: string;
+  generatedAt: string;
+  updatedAt: string;
+  version: number;
+  generatedBy: string;
+
+  // Executive Synopsis & Standing
+  caseSynopsis: string;
+  currentStage: string;
+  progressPercentage: number; // e.g. 65%
+
+  // Work Done So Far (कितना काम हुआ है अब तक)
+  workDoneSummary: string;
+  completedActions: InvestigationSummaryActionItem[];
+  scannedOverviewHighlights: string[];
+  scannedDocumentsHighlights: {
+    name: string;
+    type: string;
+    status: string;
+    summary: string;
+  }[];
+  scannedHistoryMilestones: {
+    date: string;
+    action: string;
+    officer: string;
+    details: string;
+  }[];
+
+  // Pending Work & Next Steps (क्या बाकी है)
+  pendingWorkSummary: string;
+  pendingActions: InvestigationSummaryActionItem[];
+  urgentDeadlines: string[];
+  recommendedEoActions: string[];
+  recommendedShoDirections: string[];
+
+  // Evidence & Risk Evaluation
+  evidenceStrength: 'STRONG' | 'MODERATE' | 'PRELIMINARY' | 'INSUFFICIENT';
+  primaFacieObservation: string;
+  suggestedOutcome: 'REGISTER_FIR' | 'FURTHER_ENQUIRY' | 'MUTUAL_SETTLEMENT' | 'NON_COGNIZABLE_NCR' | 'CLOSURE_REPORT';
+  suggestedOutcomeReason: string;
+
+  // Change Log / Update Track (for when update summary is triggered)
+  lastUpdateNotes?: string;
+  newItemsDetectedSinceLastUpdate?: string[];
 }
 

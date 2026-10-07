@@ -77,8 +77,9 @@ import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
+import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
 
-type ActiveTab = "overview" | "documents" | "legal_assistant" | "links" | "reports" | "history" | "confidential_dossier";
+type ActiveTab = "overview" | "documents" | "legal_assistant" | "summary" | "links" | "reports" | "history" | "confidential_dossier";
 
 const DIRECTION_TEMPLATES = [
   {
@@ -1998,6 +1999,12 @@ Certified official record copy.`;
               icon: Scale,
               count: complaint.legalAnalysis?.suggestedSections?.length || null,
             },
+            {
+              key: "summary",
+              label: "Summary",
+              icon: Sparkles,
+              count: complaint.investigationSummary ? 1 : null,
+            },
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
             { key: "reports", label: "Reports", icon: FileCheck2, count: complaint.reports?.length || 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
@@ -2069,6 +2076,18 @@ Certified official record copy.`;
               >
                 <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                 <span>Legal Assistant (कानूनी सहायक)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMoreActionsOpen(false);
+                  setActiveTab("summary");
+                }}
+                className="w-full text-left px-3 py-2 text-blue-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span>Investigation Summary (जांच सारांश)</span>
               </button>
 
               {canAskProgress && (
@@ -2822,6 +2841,24 @@ Certified official record copy.`;
                   await ComplaintService.saveLegalAnalysis(updated.id, updated.legalAnalysis);
                 } catch (e) {
                   console.error("Failed to persist legal analysis", e);
+                }
+              }
+            }}
+          />
+        )}
+
+        {/* TAB: SUMMARY (Deep Investigation Case Summary: Overview, Documents & History) */}
+        {activeTab === "summary" && (
+          <ComplaintSummaryTab
+            complaint={complaint}
+            currentUser={currentUser}
+            onUpdateComplaint={async (updated) => {
+              setComplaint(updated);
+              if (updated.investigationSummary) {
+                try {
+                  await ComplaintService.saveInvestigationSummary(updated.id, updated.investigationSummary);
+                } catch (e) {
+                  console.error("Failed to persist investigation summary", e);
                 }
               }
             }}

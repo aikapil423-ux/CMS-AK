@@ -22,6 +22,7 @@ import {
   MainComplaintStatus,
   getMainComplaintStatus,
   LegalAnalysisReport,
+  InvestigationSummaryReport,
 } from "@/types";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
@@ -2136,6 +2137,24 @@ export const ComplaintService = {
     complaintsStore[index] = {
       ...complaintsStore[index],
       legalAnalysis: analysis,
+      updatedAt: new Date().toISOString(),
+    };
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    return complaintsStore[index];
+  },
+
+  async saveInvestigationSummary(
+    complaintId: string,
+    summary: InvestigationSummaryReport
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    complaintsStore[index] = {
+      ...complaintsStore[index],
+      investigationSummary: summary,
       updatedAt: new Date().toISOString(),
     };
     saveComplaintsToStorage(complaintsStore);
