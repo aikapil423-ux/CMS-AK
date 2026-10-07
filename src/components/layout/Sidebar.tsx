@@ -174,33 +174,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Officer Profile Strip */}
-      <div
-        className={cn(
-          "bg-white border-b border-slate-100 flex items-center overflow-hidden transition-all",
-          isExpanded ? "px-3.5 py-2.5 justify-between" : "p-2.5 justify-center"
-        )}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200"
-            title={`${currentUser.name} (${currentUser.roleDisplay})`}
-          >
-            {currentUser.name.split(" ")[1]?.slice(0, 2) || currentUser.name.slice(0, 2)}
-          </div>
-          {isExpanded && (
-            <div className="min-w-0 animate-in fade-in duration-200">
-              <p className="font-bold text-slate-800 truncate text-[11px]">{currentUser.name}</p>
-              <span className="text-[10px] text-slate-500 font-medium block truncate">
-                {currentUser.roleDisplay}
-              </span>
-            </div>
-          )}
-        </div>
-        {isExpanded && (
-          <span className="text-[10px] text-slate-400 font-mono shrink-0">PNO: {currentUser.pno}</span>
-        )}
-      </div>
+
 
       {/* Navigation Links: Module specific isolation */}
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">

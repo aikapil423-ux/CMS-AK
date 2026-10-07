@@ -22,6 +22,8 @@ import {
   Send,
   Bell,
   CheckCircle,
+  CheckCircle2,
+  Check,
   AlertTriangle,
   Printer,
   Sparkles,
@@ -64,6 +66,8 @@ import {
   OfficerNotification,
   ConfidentialDossierItem,
   ComplaintReportItem,
+  EOOutcome,
+  getMainComplaintStatus,
 } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -158,34 +162,28 @@ const DOSSIER_CATEGORY_CONFIG: Record<
 
 const TEMPLATE_DROPDOWN_OPTIONS = [
   {
-    key: "accused_notice_bnss",
-    label: "1. Notice to Accused u/s 35(3) BNSS",
-    desc: "Mandatory statutory appearance notice to suspect",
-    icon: Scale,
-  },
-  {
-    key: "witness_notice_bnss",
-    label: "2. Notice to Witness u/s 179 BNSS",
-    desc: "Summon key eyewitnesses & material persons",
-    icon: UserCheck,
-  },
-  {
-    key: "complaint_receipt",
-    label: "3. Official Complaint Acknowledgment Receipt",
-    desc: "Chapter XXII PPR sealed intake receipt for citizen",
-    icon: ScrollText,
-  },
-  {
-    key: "transfer_memo",
-    label: "4. Case Transfer / Forwarding Memo",
-    desc: "Jurisdictional police station forwarding letter",
-    icon: ArrowRightLeft,
-  },
-  {
-    key: "summons_production",
-    label: "5. Document Requisition u/s 94 BNSS",
-    desc: "Order bank statements, revenue records & digital CCTV",
+    key: "haryana_notice",
+    label: "1. Haryana Police Appearance Notice (Sec 173(3) BNSS)",
+    desc: "Appearance notice with video-conferencing option & non-arrest guarantee",
     icon: FileText,
+  },
+  {
+    key: "cdr_requisition",
+    label: "2. CDR & Digital Evidence Requisition (Panipat Format)",
+    desc: "Call Detail Records, CAF, IMEI & WhatsApp requisition with non-VIP certificate",
+    icon: Phone,
+  },
+  {
+    key: "arrest_memo",
+    label: "3. Arrest & Surrender Memo Form 26.8(1) & Jama Talashi",
+    desc: "Form 26.8(1), Section 47 BNSS grounds, Jama Talashi & identification features",
+    icon: Shield,
+  },
+  {
+    key: "natgrid_proforma",
+    label: "4. NATGRID Intelligence Requisition Proforma",
+    desc: "Inter-agency intelligence query table (Banks, Telecom, Immigration, VAHAN)",
+    icon: Layers,
   },
 ];
 
@@ -335,8 +333,11 @@ export default function ComplaintProfilePage() {
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const moreActionsRef = useRef<HTMLDivElement>(null);
 
-  // Assign EO Modal state
+  // Assign EO Modal state & Quick Assign Dropdown states (No dialogue box, rank & name only)
   const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignEoDropdownOpen, setAssignEoDropdownOpen] = useState(false);
+  const [profileAssignToast, setProfileAssignToast] = useState<{ title: string; message: string } | null>(null);
+  const [isQuickAssigning, setIsQuickAssigning] = useState<boolean>(false);
   const [selectedEoId, setSelectedEoId] = useState<string>("eo_1");
   const [directionTemplate, setDirectionTemplate] = useState<string>("SPOT_VERIFY");
   const [assignedDirections, setAssignedDirections] = useState<string>("");
@@ -457,6 +458,7 @@ export default function ComplaintProfilePage() {
   const generateReportDropdownRef = useRef<HTMLDivElement>(null);
   const reportIframeRef = useRef<HTMLIFrameElement>(null);
   const [uploadReportModalOpen, setUploadReportModalOpen] = useState(false);
+  const [uploadReportOutcome, setUploadReportOutcome] = useState<EOOutcome>("Complete");
   const [uploadReportTitle, setUploadReportTitle] = useState("");
   const [uploadReportCategory, setUploadReportCategory] = useState("Civil / Land Dispute");
   const [uploadReportDispatchNo, setUploadReportDispatchNo] = useState("");
@@ -469,6 +471,16 @@ export default function ComplaintProfilePage() {
   const [uploadReportFormat, setUploadReportFormat] = useState("PDF");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportPreviewItem, setReportPreviewItem] = useState<ComplaintReportItem | null>(null);
+
+  // SHO Action States
+  const [shoReEnquiryModalOpen, setShoReEnquiryModalOpen] = useState(false);
+  const [shoReEnquiryReason, setShoReEnquiryReason] = useState("");
+  const [isSubmittingShoReEnquiry, setIsSubmittingShoReEnquiry] = useState(false);
+  const [shoRejectModalOpen, setShoRejectModalOpen] = useState(false);
+  const [shoRejectReason, setShoRejectReason] = useState("");
+  const [isShoRejecting, setIsShoRejecting] = useState(false);
+  const [shoApproveRemarks, setShoApproveRemarks] = useState("");
+  const [isShoApproving, setIsShoApproving] = useState(false);
 
   const handleUploadReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -496,22 +508,30 @@ export default function ComplaintProfilePage() {
     if (!complaint) return;
     setIsSubmittingReport(true);
     try {
-      await ComplaintService.addComplaintReport(complaint.id, {
-        title: uploadReportTitle || uploadReportFileName || "Official Enquiry Report",
-        reportType: uploadReportCategory.toLowerCase().replace(/[^a-z0-9]/g, "_"),
-        reportTypeLabel: uploadReportCategory,
-        dispatchNo: uploadReportDispatchNo || `HP/KKR/CT/${new Date().getFullYear()}/REP-${Date.now().toString().slice(-4)}`,
-        generatedDate: new Date().toISOString().split("T")[0],
-        officerName: uploadReportOfficer || currentUser.name || "Enquiry Officer",
-        officerRank: uploadReportRank || currentUser.rankDisplay || "Sub-Inspector",
-        officerPno: currentUser.pno || "PNO-23841",
-        conclusionSummary: uploadReportConclusion || "Signed report uploaded to complaint file.",
-        fileName: uploadReportFileName,
-        fileSize: uploadReportFileSize,
-        dataUrl: uploadReportDataUrl,
-        fileFormat: uploadReportFormat,
-        isUploaded: true,
-      });
+      await ComplaintService.submitEoReportWithOutcome(
+        complaint.id,
+        {
+          title: uploadReportTitle || uploadReportFileName || "Official Enquiry Report",
+          reportType: uploadReportCategory.toLowerCase().replace(/[^a-z0-9]/g, "_"),
+          reportTypeLabel: uploadReportCategory,
+          dispatchNo: uploadReportDispatchNo || `HP/KKR/CT/${new Date().getFullYear()}/REP-${Date.now().toString().slice(-4)}`,
+          generatedDate: new Date().toISOString().split("T")[0],
+          officerName: uploadReportOfficer || currentUser.name || "Enquiry Officer",
+          officerRank: uploadReportRank || currentUser.rankDisplay || "Sub-Inspector",
+          officerPno: currentUser.pno || "PNO-23841",
+          conclusionSummary: uploadReportConclusion || "Signed report uploaded to complaint file.",
+          fileName: uploadReportFileName,
+          fileSize: uploadReportFileSize,
+          dataUrl: uploadReportDataUrl,
+          fileFormat: uploadReportFormat,
+          isUploaded: true,
+        },
+        uploadReportOutcome,
+        currentUser.name || "Enquiry Officer",
+        currentUser.rankDisplay,
+        currentUser.pno,
+        currentUser.role
+      );
       await loadComplaint();
       setUploadReportModalOpen(false);
       setUploadReportTitle("");
@@ -572,6 +592,9 @@ export default function ComplaintProfilePage() {
       if (generateReportDropdownRef.current && !generateReportDropdownRef.current.contains(event.target as Node)) {
         setGenerateReportDropdownOpen(false);
       }
+      if (!(event.target as HTMLElement)?.closest?.("[data-assign-eo-dropdown]")) {
+        setAssignEoDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -584,7 +607,8 @@ export default function ComplaintProfilePage() {
   }, [selectedEoId]);
 
   // Role & Permission Computations
-  const isSho = currentUser.role === "SHO" || currentUser.id === "usr_sho_1";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || currentUser.role === "DSP_SUBDIV") && !isMhc;
   const isAssignedEo = Boolean(
     complaint?.assignedEoName && (
       (complaint.assignedEoPno && currentUser.pno === complaint.assignedEoPno) ||
@@ -596,9 +620,10 @@ export default function ComplaintProfilePage() {
     )
   );
   const isEoPersona = currentUser.role === "ENQUIRY_OFFICER" || isAssignedEo;
-  const isUnassigned = !complaint?.assignedEoName || complaint?.status === "REGISTERED";
-  const canAssign = isSho || currentUser.role === "DSP_SUBDIV" || currentUser.role === "SUPER_ADMIN";
-  const canAskProgress = isSho && !isUnassigned;
+  const isDirectFirCase = Boolean(complaint?.directSendToFir || complaint?.status === "FIR_REGISTER" || complaint?.workflowState === "FIR_REGISTER");
+  const isUnassigned = (!complaint?.assignedEoName || complaint?.status === "REGISTERED") && !isDirectFirCase;
+  const canAssign = isSho && !isMhc && !isDirectFirCase;
+  const canAskProgress = isSho && !isUnassigned && !isDirectFirCase;
   const canModifyCase = isAssignedEo; // Strictly EO only whom complaint is assigned!
   const canUploadDocument = canModifyCase || isSho || currentUser.role === "SUPER_ADMIN" || currentUser.role === "DUTY_OFFICER";
 
@@ -700,6 +725,41 @@ export default function ComplaintProfilePage() {
       console.error(err);
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  // Instant SHO Quick Assign EO (No dialogue box, rank & name only)
+  const handleQuickAssignEO = async (eo: (typeof MOCK_ENQUIRY_OFFICERS)[0]) => {
+    if (!complaint) return;
+    if (!canAssign) {
+      alert("Access Denied: Only SHO or Supervisory Officers can assign or reassign Enquiry Officers.");
+      return;
+    }
+    setIsQuickAssigning(true);
+    try {
+      await ComplaintService.assignEnquiryOfficer(
+        complaint.id,
+        eo.id,
+        eo.name,
+        eo.rank,
+        eo.pno,
+        currentUser.name || "SHO Civil Lines"
+      );
+      setAssignEoDropdownOpen(false);
+      setMoreActionsOpen(false);
+      const officerLabel = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+      setProfileAssignToast({
+        title: "Officer Assigned Successfully",
+        message: `${officerLabel} has been assigned to enquiry docket for complaint ${complaint.complaintNumber}.`,
+      });
+      setTimeout(() => {
+        setProfileAssignToast(null);
+      }, 5000);
+      await loadComplaint();
+    } catch (err) {
+      console.error("Assignment error:", err);
+    } finally {
+      setIsQuickAssigning(false);
     }
   };
 
@@ -929,19 +989,126 @@ export default function ComplaintProfilePage() {
     setActiveTab("history");
   };
 
-  // Link FIR Submit
+  const [sendingReportToSho, setSendingReportToSho] = useState(false);
+
+  // Send Report to SHO for Review & Action
+  const handleSendReportToSho = async (report?: ComplaintReportItem) => {
+    if (!complaint) return;
+    setSendingReportToSho(true);
+    try {
+      const updated = await ComplaintService.sendReportToSho(
+        complaint.id,
+        currentUser.name || complaint.assignedEoName || "Enquiry Officer",
+        currentUser.pno || "PNO-23841",
+        `Enquiry report "${report?.title || "Enquiry Report"}" submitted with outcome: ${complaint.eoOutcome || report?.selectedOutcome || "Complete"}. Submitted for SHO approval.`
+      );
+      setComplaint(updated);
+      alert(`शिकायत ${complaint.complaintNumber} की जांच रिपोर्ट SHO ID को भेज दी गई है। यह शिकायत अब SHO रिव्यू डेस्क पर उपलब्ध है।`);
+      await loadComplaint();
+      if (isAssignedEo) {
+        router.push("/complaints");
+      }
+    } catch (err) {
+      console.error("Error sending report to SHO:", err);
+      alert("Error sending report to SHO");
+    } finally {
+      setSendingReportToSho(false);
+    }
+  };
+
+  const handleShoApproveAction = async () => {
+    if (!complaint) return;
+    setIsShoApproving(true);
+    try {
+      const updated = await ComplaintService.shoApprove(
+        complaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        shoApproveRemarks
+      );
+      setComplaint(updated);
+      setShoApproveRemarks("");
+      alert("Enquiry report has been approved.");
+      await loadComplaint();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to approve report.");
+    } finally {
+      setIsShoApproving(false);
+    }
+  };
+
+  const handleShoReEnquiryAction = async () => {
+    if (!complaint || !shoReEnquiryReason.trim()) {
+      alert("Please enter directions/reason for re-enquiry.");
+      return;
+    }
+    setIsSubmittingShoReEnquiry(true);
+    try {
+      const updated = await ComplaintService.shoReEnquiry(
+        complaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        shoReEnquiryReason
+      );
+      setComplaint(updated);
+      setShoReEnquiryModalOpen(false);
+      setShoReEnquiryReason("");
+      alert("Re-enquiry ordered. Complaint returned to Enquiry Officer.");
+      await loadComplaint();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to order re-enquiry.");
+    } finally {
+      setIsSubmittingShoReEnquiry(false);
+    }
+  };
+
+  const handleShoRejectAction = async () => {
+    if (!complaint || !shoRejectReason.trim()) {
+      alert("Please enter the mandatory rejection reason / instructions for correction.");
+      return;
+    }
+    setIsShoRejecting(true);
+    try {
+      const updated = await ComplaintService.shoReject(
+        complaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        shoRejectReason.trim()
+      );
+      setComplaint(updated);
+      setShoRejectModalOpen(false);
+      setShoRejectReason("");
+      alert("Report rejected. Complaint returned to assigned Enquiry Officer for correction.");
+      await loadComplaint();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to reject report.");
+    } finally {
+      setIsShoRejecting(false);
+    }
+  };
+
+  // Register FIR Submit (SHO or authorized officer, strictly blocked for MHC)
   const handleFirSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!complaint) return;
 
-    if (!canModifyCase) {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) can link FIR.`);
+    if (isMhc) {
+      alert("Access Denied: MHC cannot register FIR.");
       return;
     }
 
-    const num = firNumber || `FIR-${Math.floor(100 + Math.random() * 900)}/2026`;
+    if (!isSho && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "DUTY_OFFICER") {
+      alert("Access Denied: Only SHO or authorized officers can register FIR.");
+      return;
+    }
 
-    await ComplaintService.linkFir(complaint.id, num, firSections, currentUser.name);
+    const num = firNumber || `HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`;
+    const sections = firSections || complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023";
+
+    await ComplaintService.registerFir(complaint.id, num, sections, currentUser.name, currentUser.role);
 
     setFirModalOpen(false);
     await loadComplaint();
@@ -1012,8 +1179,8 @@ export default function ComplaintProfilePage() {
 
   const handleDeleteDocument = async (docId: string) => {
     if (!complaint) return;
-    if (!canModifyCase) {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) can delete documents.`);
+    if (!canModifyCase && !isSho && currentUser.role !== "SUPER_ADMIN") {
+      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) or SHO can delete documents.`);
       return;
     }
     if (!confirm("Are you sure you want to remove this document from the official repository?")) {
@@ -1398,6 +1565,20 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       });
     }
 
+    // 9. Audit Trail events from CMS workflow
+    if (complaint.auditTrail && complaint.auditTrail.length > 0) {
+      complaint.auditTrail.forEach((aud) => {
+        addUnique({
+          id: aud.id,
+          title: (aud.actionLabel || aud.action).toUpperCase(),
+          timestamp: aud.timestamp || new Date().toISOString(),
+          officerName: aud.performedBy || "Authorized Officer",
+          details: aud.details || aud.reason || (aud.outcome ? `Outcome: ${aud.outcome}` : ""),
+          stageWeight: 4,
+        });
+      });
+    }
+
     // Sort chronologically: Default 'asc' (jo kaam pehle hua hai vo pehle dikhe)
     return entries.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
@@ -1571,7 +1752,7 @@ Certified official record copy.`;
               <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                 {complaint.complaintNumber}
               </span>
-              <StatusBadge status={complaint.status} />
+              <StatusBadge status={getMainComplaintStatus(complaint)} />
               <PriorityBadge priority={complaint.priority} />
             </div>
           </div>
@@ -1581,6 +1762,228 @@ Certified official record copy.`;
           Police Station: <strong className="text-slate-800">{complaint.policeStation}</strong>
         </span>
       </div>
+
+      {/* Quick Assign Success Toast Notification Banner */}
+      {profileAssignToast && (
+        <div className="bg-emerald-50 border-2 border-emerald-400 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-emerald-950">{profileAssignToast.title}</p>
+              <p className="text-xs text-emerald-800">{profileAssignToast.message}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setProfileAssignToast(null)}
+            className="p-1 text-emerald-600 hover:text-emerald-900 rounded cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* 1. DIRECT FIR BANNER */}
+      {(complaint.directSendToFir || complaint.status === "FIR_REGISTER" || complaint.workflowState === "FIR_REGISTER") && !complaint.isFirRegistered && (
+        <div className="bg-purple-50 border-2 border-purple-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-purple-700 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                Direct FIR Mode
+              </span>
+              <h3 className="font-bold text-sm text-purple-950">
+                Direct Send to FIR: Complaint Registered for Immediate FIR Registration
+              </h3>
+            </div>
+            <p className="text-xs text-purple-900 leading-relaxed font-sans">
+              This complaint was registered with <strong>Direct send to FIR: YES</strong>. No EO enquiry is required.
+              Current status: <strong>FIR Register</strong>.
+              {isSho ? " Click 'Register FIR' below to assign an FIR number and formally register the criminal case." : " Awaiting SHO to formally assign FIR number and register case."}
+            </p>
+          </div>
+
+          {isSho && !isMhc && (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
+                setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
+                setFirModalOpen(true);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Register FIR</span>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* 2. SHO REJECTION / CORRECTION REQUIRED BANNER */}
+      {(complaint.workflowState === "CORRECTION_REQUIRED" || complaint.shoDecision === "REJECT" || complaint.status === "CORRECTION_REQUIRED") && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                Correction Required • Report Rejected
+              </span>
+              <h3 className="font-bold text-sm text-amber-950">
+                SHO has rejected the enquiry report and returned this case for correction
+              </h3>
+            </div>
+            <div className="p-2.5 bg-white/90 border border-amber-300 rounded-lg text-xs text-amber-950 font-medium">
+              <strong>Mandatory Rejection Reason:</strong> &ldquo;{complaint.rejectionReason || "Report rejected by SHO. Correction and resubmission required."}&rdquo;
+            </div>
+            <p className="text-[11px] text-amber-800">
+              Rejected by {complaint.rejectionBy || "Station House Officer (SHO)"} on {formatDate(complaint.rejectionAt || complaint.updatedAt)}. Case status is <strong>Correction Required</strong>.
+            </p>
+          </div>
+
+          {canModifyCase && (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setActiveTab("reports");
+                setUploadReportOutcome("Complete");
+                setUploadReportModalOpen(true);
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Correct &amp; Resubmit Report</span>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* 3. RE-ENQUIRY NOTIFICATION BANNER */}
+      {complaint.workflowState === "RE_ENQUIRY" && complaint.reEnquiryRemarks && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                Re-Enquiry Ordered (Cycle #{complaint.reEnquiryCount || 1})
+              </span>
+              <h3 className="font-bold text-sm text-amber-950">
+                SHO has returned this case to Enquiry Officer for re-enquiry
+              </h3>
+            </div>
+            <p className="text-xs text-amber-900 leading-relaxed font-sans">
+              <strong>Directions / Reason:</strong> &ldquo;{complaint.reEnquiryRemarks}&rdquo;
+            </p>
+            <p className="text-[11px] text-amber-700">
+              Ordered by {complaint.reEnquiryBy || "SHO"} on {formatDate(complaint.reEnquiryAt || complaint.updatedAt)}. Case status remains <strong>Pending</strong> in EO docket.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 4. SHO REPORT REVIEW BANNER (APPROVE & REJECT BUTTONS) */}
+      {isSho && !isMhc && !complaint.isFirRegistered && !complaint.directSendToFir && complaint.status !== "FIR_REGISTER" && (
+        complaint.status === "COMPLETE" ||
+        complaint.workflowState === "COMPLETE" ||
+        complaint.eoOutcome === "Complete" ||
+        (complaint.isSentToSho && !complaint.isFirApprovedBySho)
+      ) && complaint.workflowState !== "CORRECTION_REQUIRED" && complaint.status !== "CORRECTION_REQUIRED" && complaint.shoDecision !== "REJECT" && complaint.shoDecision !== "APPROVE" && (
+        <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-blue-700 text-white px-2.5 py-0.5 rounded-full shadow-2xs animate-pulse">
+                SHO Approval Required
+              </span>
+              <h3 className="font-bold text-sm text-blue-950">
+                Enquiry Report Ready for SHO Decision ({complaint.assignedEoName || "Enquiry Officer"})
+              </h3>
+            </div>
+            <p className="text-xs text-blue-900 leading-relaxed">
+              Enquiry Outcome: <strong className="font-bold uppercase text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">{complaint.eoOutcome || "Complete"}</strong>.
+              Review the enquiry report below and decide: <strong>Approve</strong> or <strong>Reject</strong>.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={handleShoApproveAction}
+              disabled={isShoApproving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setShoRejectReason("");
+                setShoRejectModalOpen(true);
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              <span>Reject Report</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. SHO ACTION BANNER: FIR REGISTRATION APPROVED */}
+      {isSho && !isMhc && (complaint.isFirApprovedBySho || complaint.workflowState === "FIR_REGISTRATION_PENDING") && !complaint.isFirRegistered && (
+        <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                FIR Sanctioned
+              </span>
+              <h3 className="font-bold text-sm text-red-950">
+                SHO Sanction Granted: Regular FIR Registration Pending
+              </h3>
+            </div>
+            <p className="text-xs text-red-800 leading-relaxed">
+              Enquiry findings and FIR recommendation have been approved by SHO. Click below to formally register FIR. Status remains <strong>Pending</strong> until FIR is registered.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
+              setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
+              setFirModalOpen(true);
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
+          >
+            <Scale className="w-4 h-4" />
+            <span>Register FIR (प्राथमिकी दर्ज करें)</span>
+          </Button>
+        </div>
+      )}
+
+      {/* 2. SUCCESS BANNER: FORMAL FIR REGISTERED */}
+      {(complaint.isFirRegistered || complaint.firNumber) && (
+        <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <h4 className="font-bold text-xs text-emerald-950">
+                Regular FIR Formally Registered: <span className="font-mono">{complaint.firNumber}</span>
+              </h4>
+              <p className="text-[11px] text-emerald-800">
+                Registered under {complaint.firSections || "BNS Sections"} by {complaint.firRegisteredBy || "SHO"}.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sub-Tabs Row (DIRECTLY AFTER COMPLAINT PROFILE HEADER) */}
       <div className="border-b border-slate-200 bg-white rounded-xl px-2 shadow-2xs flex flex-wrap items-center justify-between gap-2">
@@ -1664,17 +2067,32 @@ Certified official record copy.`;
               )}
 
               {canAssign && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    handleOpenAssign();
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="font-semibold">Assign / Reassign EO</span>
-                </button>
+                <div className="border-t border-b border-slate-100 py-1 bg-slate-50/50">
+                  <div className="px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                    <span>{complaint.assignedEoName ? "Reassign EO" : "Assign EO"}</span>
+                    <span className="text-[9px] font-mono text-slate-400">Rank &amp; Name</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                      const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                      return (
+                        <button
+                          key={eo.id}
+                          type="button"
+                          disabled={isQuickAssigning}
+                          onClick={() => handleQuickAssignEO(eo)}
+                          className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                            isSelected ? "bg-blue-50 text-blue-900 font-bold" : "text-slate-700 hover:bg-blue-50 hover:text-blue-900"
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
 
               <button
@@ -2017,17 +2435,49 @@ Certified official record copy.`;
                               <Send className="w-3.5 h-3.5" />
                               <span>Ask Progress Report</span>
                             </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={handleOpenAssign}
-                              className="w-full text-xs font-semibold gap-1 text-slate-700 hover:bg-slate-50 border-slate-200 cursor-pointer justify-center"
-                              title="Reassign to another Enquiry Officer"
-                            >
-                              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-                              <span>Reassign EO</span>
-                            </Button>
+                            <div className="relative w-full" data-assign-eo-dropdown>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAssignEoDropdownOpen((prev) => !prev)}
+                                className="w-full text-xs font-semibold gap-1 text-slate-700 hover:bg-slate-50 border-slate-200 cursor-pointer justify-center"
+                                title="Reassign to another Enquiry Officer"
+                              >
+                                <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Reassign EO ▾</span>
+                              </Button>
+                              {assignEoDropdownOpen && (
+                                <div className="absolute right-0 bottom-full sm:bottom-auto sm:top-full mt-1 mb-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
+                                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Select EO / IO</span>
+                                    <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                  </div>
+                                  <div className="max-h-56 overflow-y-auto py-0.5">
+                                    {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                      const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                      return (
+                                        <button
+                                          key={eo.id}
+                                          type="button"
+                                          disabled={isQuickAssigning}
+                                          onClick={() => handleQuickAssignEO(eo)}
+                                          className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                            isSelected
+                                              ? "bg-blue-50 text-blue-900 font-bold"
+                                              : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                          }`}
+                                        >
+                                          <span className="truncate">{label}</span>
+                                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2039,14 +2489,46 @@ Certified official record copy.`;
                         Allocate an officer from active duty roster with specific directions.
                       </p>
                       {canAssign && (
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={handleOpenAssign}
-                          className="w-full text-xs font-semibold gap-1"
-                        >
-                          <UserCheck className="w-3.5 h-3.5" /> Assign Enquiry Officer
-                        </Button>
+                        <div className="relative w-full" data-assign-eo-dropdown>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => setAssignEoDropdownOpen((prev) => !prev)}
+                            className="w-full text-xs font-semibold gap-1 justify-center bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+                          >
+                            <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign Enquiry Officer ▾
+                          </Button>
+                          {assignEoDropdownOpen && (
+                            <div className="absolute left-0 bottom-full sm:bottom-auto sm:top-full mt-1 mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
+                              <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                <span>Select EO / IO</span>
+                                <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                              </div>
+                              <div className="max-h-56 overflow-y-auto py-0.5">
+                                {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                  const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                  const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                  return (
+                                    <button
+                                      key={eo.id}
+                                      type="button"
+                                      disabled={isQuickAssigning}
+                                      onClick={() => handleQuickAssignEO(eo)}
+                                      className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                        isSelected
+                                          ? "bg-blue-50 text-blue-900 font-bold"
+                                          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                      }`}
+                                    >
+                                      <span className="truncate">{label}</span>
+                                      {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -2260,11 +2742,11 @@ Certified official record copy.`;
                                   <Download className="w-3.5 h-3.5 text-slate-600" />
                                   <span>Download</span>
                                 </button>
-                                {isAssignedEo && (
+                                {(isAssignedEo || isSho || currentUser.role === "SUPER_ADMIN") && (
                                   <button
                                     onClick={() => handleDeleteDocument(doc.id)}
                                     className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
-                                    title="Delete document (Assigned EO only)"
+                                    title="Delete document"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -2482,15 +2964,54 @@ Certified official record copy.`;
                     <CardContent className="p-4 space-y-3 text-xs">
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-mono">
                               {report.reportTypeLabel || report.reportType}
                             </span>
+                            {report.versionNumber && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
+                                v{report.versionNumber}
+                              </span>
+                            )}
                             {report.isUploaded && (
                               <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
                                 Uploaded File
                               </span>
                             )}
+                            {report.selectedOutcome === "Complete" && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 font-mono">
+                                <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                <span>Outcome: Complete</span>
+                              </span>
+                            )}
+                            {report.selectedOutcome === "Pending" && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 font-mono">
+                                <Clock className="w-3 h-3 text-amber-600" />
+                                <span>Outcome: Pending</span>
+                              </span>
+                            )}
+                            {(report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED") ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-300 flex items-center gap-1 font-mono">
+                                <Scale className="w-3 h-3 text-red-600" />
+                                <span>{report.selectedOutcome === "FIR Recommend" ? "Outcome: FIR Recommend" : "FIR Recommended"}</span>
+                              </span>
+                            ) : report.recommendationType === "RAJINAMA_COMPROMISE" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">
+                                🤝 Rajinama / Compromise
+                              </span>
+                            ) : report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-semibold">
+                                🌾 Jamini / Land Dispute
+                              </span>
+                            ) : report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300 font-semibold">
+                                💼 Diwani / Money Dispute
+                              </span>
+                            ) : report.recommendationType === "NIVARAK_PREVENTIVE" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300 font-semibold">
+                                🛡️ Nivarak BNSS 126/170
+                              </span>
+                            ) : null}
                           </div>
                           <h4 className="font-bold text-sm text-slate-900 truncate">
                             {report.title}
@@ -2579,6 +3100,28 @@ Certified official record copy.`;
                           <Download className="w-3 h-3 text-emerald-600" />
                           <span>Download</span>
                         </Button>
+
+                        {!isMhc && (report.selectedOutcome === "Complete" || report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED") && (
+                          !complaint.isSentToSho ? (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleSendReportToSho(report)}
+                              disabled={sendingReportToSho}
+                              className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                              title="Send Enquiry Report to Station House Officer (SHO) for Review & Approval"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>{sendingReportToSho ? "Sending..." : "Send to SHO ID"}</span>
+                            </Button>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
+                              <Check className="w-3 h-3 text-blue-600" />
+                              <span>Sent to SHO ID</span>
+                            </span>
+                          )
+                        )}
 
                         <Button
                           type="button"
@@ -3005,236 +3548,7 @@ Certified official record copy.`;
         )}
       </div>
 
-      {/* ========================================================================= */}
-      {/* MODAL 1: ASSIGN ENQUIRY OFFICER & DUTY ROSTER                             */}
-      {/* ========================================================================= */}
-      {assignModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            onClick={() => {
-              if (!isAssigning) setAssignModalOpen(false);
-            }}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
-            {/* Header */}
-            <div className="p-4 sm:p-5 bg-[#081225] text-white flex items-center justify-between border-b border-slate-800">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-amber-400">
-                    {complaint.complaintNumber}
-                  </span>
-                  <PriorityBadge priority={complaint.priority} />
-                </div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-blue-400" />
-                  <span>Assign Enquiry Officer (EO) & Roster Duty</span>
-                </h3>
-              </div>
-              <button
-                onClick={() => {
-                  if (!isAssigning) setAssignModalOpen(false);
-                }}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Content Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-              {assignSuccess ? (
-                <div className="p-4 sm:p-6 text-center space-y-4 animate-in fade-in-0 zoom-in-95">
-                  <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-200">
-                    <CheckCircle className="w-10 h-10" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-900">
-                      Enquiry Officer Assigned & Marked in Database!
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Status moved to <strong className="text-blue-700">Under Enquiry</strong>. Registered in General Diary.
-                    </p>
-                  </div>
-
-                  {/* Dispatched Notification Card */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-2 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <div className="flex items-center gap-2">
-                        <Bell className="w-4 h-4 text-blue-600" />
-                        <span className="font-bold text-slate-900">
-                          Notice Dispatched to {selectedEo.name} ({selectedEo.rank}, PNO: {selectedEo.pno})
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        Dispatched
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Roster Duty:</span>{" "}
-                      <strong className="text-slate-800">{selectedEo.rosterDuty}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Directions:</span>
-                      <p className="mt-1 p-2 bg-white rounded border border-slate-200 text-slate-800">
-                        {assignedDirections}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {/* Step 1: Officer Selection & Duty Roster */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-blue-600" />
-                        <span>1. Active Officer Duty Roster</span>
-                      </label>
-                      <span className="text-[11px] text-slate-500">Click to select officer</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                        const isSelected = selectedEoId === eo.id;
-                        return (
-                          <div
-                            key={eo.id}
-                            onClick={() => setSelectedEoId(eo.id)}
-                            className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-500/20"
-                                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/70"
-                            }`}
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div>
-                                <h4 className="font-bold text-slate-900 text-sm">
-                                  {eo.name}{" "}
-                                  <span className="text-[10px] text-slate-500 font-normal">
-                                    ({eo.rank}, PNO: {eo.pno})
-                                  </span>
-                                </h4>
-                                <p className="text-[11px] text-slate-500 mt-0.5">Beat: {eo.beatZone}</p>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                <span className="px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  {eo.availability}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-700">
-                                  {eo.shift}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  {eo.activeCases} Cases
-                                </span>
-                              </div>
-                            </div>
-                            <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                              <span className="text-blue-900 font-medium bg-blue-100/70 px-2 py-0.5 rounded">
-                                Roster: {eo.rosterDuty}
-                              </span>
-                              <span className={`font-semibold ${isSelected ? "text-blue-700" : "text-slate-400"}`}>
-                                {isSelected ? "✓ Selected" : "Click to Assign"}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Step 2: Directions Dropdown & Instructions */}
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <strong className="text-[#0b192c] uppercase font-bold flex items-center gap-1.5">
-                        <Send className="w-3.5 h-3.5 text-blue-600" />
-                        <span>2. Directions for {selectedEo.name}</span>
-                      </strong>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">
-                        Select Direction Template
-                      </label>
-                      <select
-                        value={directionTemplate}
-                        onChange={(e) => handleTemplateChange(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 font-medium"
-                      >
-                        {DIRECTION_TEMPLATES.map((tmpl) => (
-                          <option key={tmpl.key} value={tmpl.key}>
-                            {tmpl.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="font-semibold text-slate-700">
-                          Supervisory Directions & Specific Instructions
-                        </label>
-                        <VoiceInputButton
-                          onTranscript={(txt) => setAssignedDirections((p) => (p ? p + " " + txt : txt))}
-                          fieldLabel="supervisory directions"
-                        />
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={assignedDirections}
-                        onChange={(e) => setAssignedDirections(e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-slate-900"
-                        placeholder="Inquiry directions to be dispatched to officer..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">
-                        Target Completion Timeline
-                      </label>
-                      <select
-                        value={targetDays}
-                        onChange={(e) => setTargetDays(Number(e.target.value))}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 font-medium"
-                      >
-                        <option value={3}>3 Days - Urgent Priority / Sensitive Case</option>
-                        <option value={7}>7 Days - Standard Spot Inquiry (BNSS 173(3))</option>
-                        <option value={10}>10 Days - Complex / Witness Verification</option>
-                        <option value={14}>14 Days - Regular Statutory Inquiry Period</option>
-                        <option value={30}>30 Days - Extended Inquiries</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            {!assignSuccess && (
-              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <span className="text-xs text-slate-600">
-                  Assigning to: <strong>{selectedEo.name}</strong>
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setAssignModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleConfirmAssign}
-                    disabled={isAssigning}
-                    className="gap-1.5"
-                  >
-                    {isAssigning ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                    <span>Confirm Assign</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* MODAL 1: ASSIGN ENQUIRY OFFICER (Removed: Instant inline dropdown used, rank & name only) */}
 
       {/* ========================================================================= */}
       {/* MODAL 2: RECORD ENQUIRY NOTE                                              */}
@@ -4730,6 +5044,68 @@ Certified official record copy.`;
                 />
               </div>
 
+              {/* Mandatory Enquiry Outcome Selector */}
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1.5">
+                  Mandatory Enquiry Outcome (जांच निष्कर्ष) <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUploadReportOutcome("Complete")}
+                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                      uploadReportOutcome === "Complete"
+                        ? "border-emerald-500 bg-emerald-50/80 ring-2 ring-emerald-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-emerald-950">1. Complete</span>
+                      {uploadReportOutcome === "Complete" && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                    </div>
+                    <p className="text-[10px] text-slate-600 leading-tight">
+                      Enquiry completed. Status becomes Complete. Can send to SHO for approval.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUploadReportOutcome("Pending")}
+                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                      uploadReportOutcome === "Pending"
+                        ? "border-amber-500 bg-amber-50/80 ring-2 ring-amber-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-amber-950">2. Pending</span>
+                      {uploadReportOutcome === "Pending" && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
+                    </div>
+                    <p className="text-[10px] text-slate-600 leading-tight">
+                      Interim report. Status remains Pending. Complaint stays in EO active queue.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUploadReportOutcome("FIR Recommend")}
+                    className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                      uploadReportOutcome === "FIR Recommend"
+                        ? "border-red-500 bg-red-50/80 ring-2 ring-red-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-red-950">3. FIR Recommend</span>
+                      {uploadReportOutcome === "FIR Recommend" && <CheckCircle2 className="w-4 h-4 text-red-600" />}
+                    </div>
+                    <p className="text-[10px] text-slate-600 leading-tight">
+                      Recommends FIR. Status stays Pending until SHO registers FIR. Can send to SHO.
+                    </p>
+                  </button>
+                </div>
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                 <Button variant="outline" size="sm" type="button" onClick={() => setUploadReportModalOpen(false)}>
                   Cancel
@@ -4867,6 +5243,115 @@ Certified official record copy.`;
               <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
               <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
                 Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHO Re-Enquiry Modal */}
+      {shoReEnquiryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-bold text-sm">Order Re-Enquiry (SHO Action)</h3>
+              </div>
+              <button onClick={() => setShoReEnquiryModalOpen(false)} className="text-white hover:opacity-80 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {complaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {complaint.complainantName}</p>
+                <p><strong>Enquiry Officer:</strong> {complaint.assignedEoName}</p>
+                <p className="text-amber-800 font-semibold pt-1">
+                  This complaint will be re-assigned to the SAME Enquiry Officer ({complaint.assignedEoName}), status will remain &quot;Pending&quot;, and the EO will be notified immediately.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Re-Enquiry Reason &amp; Specific Directions <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={shoReEnquiryReason}
+                  onChange={(e) => setShoReEnquiryReason(e.target.value)}
+                  placeholder="Explain why re-enquiry is required (e.g. key witnesses not examined, site plan missing, clarification required)..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShoReEnquiryModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleShoReEnquiryAction}
+                disabled={isSubmittingShoReEnquiry || !shoReEnquiryReason.trim()}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer"
+              >
+                {isSubmittingShoReEnquiry ? "Submitting..." : "Confirm & Order Re-Enquiry"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHO Reject Report Modal */}
+      {shoRejectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-rose-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-bold text-sm">Reject Enquiry Report &amp; Return to EO</h3>
+              </div>
+              <button onClick={() => setShoRejectModalOpen(false)} className="text-white hover:opacity-80 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {complaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {complaint.complainantName}</p>
+                <p><strong>Assigned EO:</strong> {complaint.assignedEoName} (PNO: {complaint.assignedEoPno})</p>
+                <p className="text-rose-800 font-semibold pt-1">
+                  On rejection submission, this complaint will be returned to the same assigned EO ({complaint.assignedEoName}) for correction and resubmission.
+                  The complaint status will change to <strong>&ldquo;Correction Required&rdquo;</strong>, and your rejection reason will be prominently displayed in the EO account.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Rejection Reason &amp; Required Corrections <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={shoRejectReason}
+                  onChange={(e) => setShoRejectReason(e.target.value)}
+                  placeholder="Enter mandatory rejection reason and required corrections (e.g. key witnesses not examined, site plan missing, clarification required on suspect version)..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-sans text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShoRejectModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleShoRejectAction}
+                disabled={isShoRejecting || !shoRejectReason.trim()}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer"
+              >
+                {isShoRejecting ? "Submitting..." : "Submit Rejection & Return to EO"}
               </Button>
             </div>
           </div>

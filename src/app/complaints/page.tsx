@@ -14,6 +14,7 @@ import {
   Shield,
   UserCheck,
   Eye,
+  Check,
   CheckCircle,
   X,
   FileText,
@@ -31,10 +32,14 @@ import {
   Send,
   Printer,
   AlertCircle,
+  Edit3,
+  Scale,
+  SlidersHorizontal,
+  Columns3,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
-import { ComplaintItem, OfficerNotification } from "@/types";
+import { ComplaintItem, OfficerNotification, getMainComplaintStatus } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
@@ -53,13 +58,22 @@ type ComplaintSortField =
   | "daysPending";
 
 const STATUS_OPTIONS = [
-  { key: "UNASSIGNED", label: "Unassigned" },
-  { key: "UNDER_ENQUIRY", label: "Under Enquiry" },
-  { key: "UNDER_REVIEW", label: "Under Review" },
-  { key: "DISPOSED", label: "Disposed" },
+  { key: "NOT_ASSIGNED", label: "Not Assigned" },
+  { key: "PENDING", label: "Pending" },
+  { key: "COMPLETE", label: "Complete" },
+  { key: "FIR_REGISTER", label: "FIR Register" },
+  { key: "FIR_REGISTERED", label: "FIR Registered" },
+  { key: "CORRECTION_REQUIRED", label: "Correction Required" },
 ];
 
-const ALL_STATUS_KEYS = ["UNASSIGNED", "UNDER_ENQUIRY", "UNDER_REVIEW", "DISPOSED"];
+const ALL_STATUS_KEYS = [
+  "NOT_ASSIGNED",
+  "PENDING",
+  "COMPLETE",
+  "FIR_REGISTER",
+  "FIR_REGISTERED",
+  "CORRECTION_REQUIRED",
+];
 
 const DIRECTION_TEMPLATES = [
   {
@@ -123,6 +137,12 @@ function ComplaintListContent() {
 
   const [statusCounts, setStatusCounts] = useState({
     all: 0,
+    notAssigned: 0,
+    pending: 0,
+    complete: 0,
+    firRegister: 0,
+    firRegistered: 0,
+    correctionRequired: 0,
     unassigned: 0,
     underEnquiry: 0,
     underReview: 0,
@@ -131,8 +151,63 @@ function ComplaintListContent() {
 
   const isAllSelected = selectedStatuses.length === ALL_STATUS_KEYS.length;
 
-  const isEo = currentUser.role === "ENQUIRY_OFFICER";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isSho = currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1";
+  const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "SP_DISTRICT");
   const eoFilterParam = isEo ? (currentUser.pno || currentUser.name) : undefined;
+
+  // Column Selection Checkboxes state
+  const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
+  const columnDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState({
+    complaintId: true,
+    dateTime: true,
+    complainant: true,
+    categoryLocation: true,
+    status: true,
+    assignedEo: true,
+    daysPending: true,
+    action: true,
+  });
+
+  const toggleColumn = (key: keyof typeof visibleColumns) => {
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const resetColumns = () => {
+    setVisibleColumns({
+      complaintId: true,
+      dateTime: true,
+      complainant: true,
+      categoryLocation: true,
+      status: true,
+      assignedEo: true,
+      daysPending: true,
+      action: true,
+    });
+  };
+
+  // Master Filter Tabs: ALL | DIRECT_FIR | NOT_ASSIGNED | PENDING | COMPLETE | FIR_REGISTERED | CORRECTION
+  const [masterFilterTab, setMasterFilterTab] = useState<string>("ALL");
+
+  const handleMasterTabChange = (tab: string) => {
+    setMasterFilterTab(tab);
+    if (tab === "ALL") {
+      setSelectedStatuses([...ALL_STATUS_KEYS]);
+    } else if (tab === "DIRECT_FIR") {
+      setSelectedStatuses(["FIR_REGISTER"]);
+    } else if (tab === "NOT_ASSIGNED") {
+      setSelectedStatuses(["NOT_ASSIGNED"]);
+    } else if (tab === "PENDING") {
+      setSelectedStatuses(["PENDING"]);
+    } else if (tab === "COMPLETE") {
+      setSelectedStatuses(["COMPLETE"]);
+    } else if (tab === "FIR_REGISTERED") {
+      setSelectedStatuses(["FIR_REGISTERED"]);
+    } else if (tab === "CORRECTION") {
+      setSelectedStatuses(["CORRECTION_REQUIRED"]);
+    }
+  };
 
   const [priorityFilter, setPriorityFilter] = useState(initialPriority);
   const [categoryFilter, setCategoryFilter] = useState("ALL");
@@ -143,9 +218,32 @@ function ComplaintListContent() {
   // Selected complaint for drawer/modal inspection
   const [selectedComplaint, setSelectedComplaint] = useState<ComplaintItem | null>(null);
 
+  // Workflow Modals: SHO & EO Decision
+  const [shoApproveModalComplaint, setShoApproveModalComplaint] = useState<ComplaintItem | null>(null);
+  const [shoApproveRemarks, setShoApproveRemarks] = useState("");
+  const [isApproving, setIsApproving] = useState(false);
+
+  const [shoReEnquiryModalComplaint, setShoReEnquiryModalComplaint] = useState<ComplaintItem | null>(null);
+  const [reEnquiryReason, setReEnquiryReason] = useState("");
+  const [isSubmittingReEnquiry, setIsSubmittingReEnquiry] = useState(false);
+
+  const [shoRejectModalComplaint, setShoRejectModalComplaint] = useState<ComplaintItem | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
+  const [firRegisterModalComplaint, setFirRegisterModalComplaint] = useState<ComplaintItem | null>(null);
+  const [firNumberInput, setFirNumberInput] = useState("");
+  const [firSectionsInput, setFirSectionsInput] = useState("");
+  const [firDateInput, setFirDateInput] = useState("");
+  const [isRegisteringFir, setIsRegisteringFir] = useState(false);
+
+  const [eoSendToShoModalComplaint, setEoSendToShoModalComplaint] = useState<ComplaintItem | null>(null);
+  const [eoSendRemarks, setEoSendRemarks] = useState("");
+  const [isSendingToSho, setIsSendingToSho] = useState(false);
+
   // Assignment Modal & Directions
   const [assigningComplaint, setAssigningComplaint] = useState<ComplaintItem | null>(null);
-  const [selectedEoId, setSelectedEoId] = useState(MOCK_ENQUIRY_OFFICERS[0].id);
+  const [selectedEoId, setSelectedEoId] = useState("");
   const [directionTemplate, setDirectionTemplate] = useState("SPOT_VERIFY");
   const [assignedDirections, setAssignedDirections] = useState(
     DIRECTION_TEMPLATES[0].text
@@ -159,8 +257,53 @@ function ComplaintListContent() {
   const [receiptComplaint, setReceiptComplaint] = useState<ComplaintItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
+  // Quick Assign EO dropdown state (directly opens dropdown on click, no dialogue box)
+  const [assignDropdownComplaintId, setAssignDropdownComplaintId] = useState<string | null>(null);
+  const [assignToast, setAssignToast] = useState<string | null>(null);
+  const [isQuickAssigning, setIsQuickAssigning] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-assign-dropdown]")) {
+        setAssignDropdownComplaintId(null);
+      }
+    };
+    if (assignDropdownComplaintId) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [assignDropdownComplaintId]);
+
+  const handleQuickAssignEO = async (complaintId: string, eo: (typeof MOCK_ENQUIRY_OFFICERS)[0]) => {
+    try {
+      setIsQuickAssigning(true);
+      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+      await ComplaintService.assignEnquiryOfficer(
+        complaintId,
+        eo.id,
+        eo.name,
+        eo.rank,
+        eo.pno,
+        currentUser.name
+      );
+      setAssignDropdownComplaintId(null);
+      await fetchComplaints();
+      setAssignToast(`Enquiry Officer assigned: ${label}`);
+      setTimeout(() => setAssignToast(null), 3500);
+    } catch (err) {
+      console.error("Failed to assign EO:", err);
+      setAssignToast("Failed to assign Enquiry Officer.");
+      setTimeout(() => setAssignToast(null), 3000);
+    } finally {
+      setIsQuickAssigning(false);
+    }
+  };
+
   const selectedEo = useMemo(() => {
-    return MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId) || MOCK_ENQUIRY_OFFICERS[0];
+    return MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId) || null;
   }, [selectedEoId]);
 
   const handleOpenAssignModal = (complaint: ComplaintItem) => {
@@ -169,26 +312,18 @@ function ComplaintListContent() {
     setLastAssignedNotification(null);
 
     let defaultTemplate = "SPOT_VERIFY";
-    let defaultEoId = "eo_1";
-
     if (complaint.category === "LAND_PROPERTY_DISPUTE") {
       defaultTemplate = "REVENUE_LAND";
-      defaultEoId = "eo_2";
     } else if (complaint.category === "DOMESTIC_VIOLENCE_DOWRY") {
       defaultTemplate = "MEDIATION";
-      defaultEoId = "eo_4";
     } else if (complaint.category === "PHYSICAL_ASSAULT_AFFRAY") {
       defaultTemplate = "MEDICAL_MLR";
-      defaultEoId = "eo_1";
     } else if (complaint.category === "CYBER_CRIME" || complaint.category === "FINANCIAL_FRAUD_CHEATING") {
       defaultTemplate = "DIGITAL_CCTV";
-      defaultEoId = "eo_1";
-    } else {
-      defaultEoId = "eo_3";
     }
 
     const tmpl = DIRECTION_TEMPLATES.find((t) => t.key === defaultTemplate);
-    setSelectedEoId(defaultEoId);
+    setSelectedEoId(complaint.assignedEoId || "");
     setDirectionTemplate(defaultTemplate);
     setAssignedDirections(tmpl?.text || "");
     setTargetDays(tmpl?.recommendedDays || 14);
@@ -210,9 +345,10 @@ function ComplaintListContent() {
   };
 
   const handleAssignEO = async () => {
-    if (!assigningComplaint) return;
+    if (!assigningComplaint || !selectedEoId) return;
+    const eo = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId);
+    if (!eo) return;
     setIsAssigning(true);
-    const eo = selectedEo;
 
     try {
       const result = await ComplaintService.assignEnquiryOfficer(
@@ -246,11 +382,137 @@ function ComplaintListContent() {
     }
   };
 
-  // Close status dropdown on click outside
+  const handleShoApprove = async () => {
+    if (!shoApproveModalComplaint) return;
+    setIsApproving(true);
+    try {
+      await ComplaintService.shoApprove(
+        shoApproveModalComplaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        shoApproveRemarks
+      );
+      setShoApproveModalComplaint(null);
+      setShoApproveRemarks("");
+      fetchComplaints();
+    } catch (e) {
+      console.error(e);
+      alert("Error approving report");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleShoReEnquiry = async () => {
+    if (!shoReEnquiryModalComplaint || !reEnquiryReason.trim()) {
+      alert("Please provide the reason / instructions for re-enquiry.");
+      return;
+    }
+    setIsSubmittingReEnquiry(true);
+    try {
+      await ComplaintService.shoReEnquiry(
+        shoReEnquiryModalComplaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        reEnquiryReason
+      );
+      setShoReEnquiryModalComplaint(null);
+      setReEnquiryReason("");
+      fetchComplaints();
+    } catch (e) {
+      console.error(e);
+      alert("Error ordering re-enquiry");
+    } finally {
+      setIsSubmittingReEnquiry(false);
+    }
+  };
+
+  const handleShoReject = async () => {
+    if (!shoRejectModalComplaint || !rejectionReason.trim()) {
+      alert("Please provide the rejection reason / instructions for correction.");
+      return;
+    }
+    setIsSubmittingReject(true);
+    try {
+      await ComplaintService.shoReject(
+        shoRejectModalComplaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        rejectionReason.trim()
+      );
+      setShoRejectModalComplaint(null);
+      setRejectionReason("");
+      fetchComplaints();
+    } catch (e) {
+      console.error(e);
+      alert("Error rejecting report");
+    } finally {
+      setIsSubmittingReject(false);
+    }
+  };
+
+  const handleOpenFirRegisterModal = (c: ComplaintItem) => {
+    const defaultFirNo = `HAR-KKR-2026-FIR-${String(Math.floor(100 + Math.random() * 900))}`;
+    setFirNumberInput(defaultFirNo);
+    setFirSectionsInput(c.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
+    setFirDateInput(new Date().toISOString().split("T")[0]);
+    setFirRegisterModalComplaint(c);
+  };
+
+  const handleRegisterFirSubmit = async () => {
+    if (!firRegisterModalComplaint || !firNumberInput.trim()) {
+      alert("Please enter a valid FIR Number.");
+      return;
+    }
+    setIsRegisteringFir(true);
+    try {
+      await ComplaintService.registerFir(
+        firRegisterModalComplaint.id,
+        firNumberInput.trim(),
+        firSectionsInput.trim(),
+        currentUser.name,
+        currentUser.role,
+        firDateInput
+      );
+      setFirRegisterModalComplaint(null);
+      fetchComplaints();
+    } catch (e) {
+      console.error(e);
+      alert("Error registering FIR");
+    } finally {
+      setIsRegisteringFir(false);
+    }
+  };
+
+  const handleEoSendToShoSubmit = async () => {
+    if (!eoSendToShoModalComplaint) return;
+    setIsSendingToSho(true);
+    try {
+      await ComplaintService.sendReportToSho(
+        eoSendToShoModalComplaint.id,
+        currentUser.name,
+        currentUser.pno || "04291882",
+        eoSendRemarks
+      );
+      setEoSendToShoModalComplaint(null);
+      setEoSendRemarks("");
+      fetchComplaints();
+    } catch (e) {
+      console.error(e);
+      alert("Error sending report to SHO");
+    } finally {
+      setIsSendingToSho(false);
+    }
+  };
+
+  // Close status dropdown and column dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
         setStatusDropdownOpen(false);
+      }
+      if (columnDropdownRef.current && !columnDropdownRef.current.contains(event.target as Node)) {
+        setColumnDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -306,6 +568,7 @@ function ComplaintListContent() {
         priority: priorityFilter,
         category: categoryFilter,
         assignedEo: eoFilterParam,
+        viewerRole: currentUser.role,
       }),
       ComplaintService.getStatusCounts(eoFilterParam),
     ]);
@@ -316,6 +579,13 @@ function ComplaintListContent() {
 
   useEffect(() => {
     fetchComplaints();
+    const handleUpdate = () => {
+      fetchComplaints();
+    };
+    window.addEventListener("complaints_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("complaints_updated", handleUpdate);
+    };
   }, [searchQuery, selectedStatuses, priorityFilter, categoryFilter, currentUser]);
 
   // Check if deep linked via query param
@@ -427,6 +697,23 @@ function ComplaintListContent() {
         </div>
       )}
 
+      {/* Quick Assign Success Toast */}
+      {assignToast && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-950 font-bold shadow-xs animate-in fade-in-50">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{assignToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAssignToast(null)}
+            className="text-emerald-700 hover:text-emerald-900 p-1 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Unassigned Complaint Alert Banner (Directly routed to SHO) */}
       {unassignedComplaintNo && (
         <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-950 animate-in fade-in-50 shadow-xs">
@@ -443,6 +730,120 @@ function ComplaintListContent() {
           </div>
         </div>
       )}
+
+      {/* Master Filter Bar (Requirement 10) */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100/90 border border-slate-200 rounded-xl text-xs">
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("ALL")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "ALL"
+              ? "bg-[#0b192c] text-white shadow-xs"
+              : "text-slate-700 hover:text-slate-900 hover:bg-white/80"
+          }`}
+        >
+          <span>All Enquiries</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "ALL" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+            {statusCounts.all}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("DIRECT_FIR")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "DIRECT_FIR"
+              ? "bg-purple-700 text-white shadow-xs"
+              : "text-purple-900 hover:bg-purple-50"
+          }`}
+        >
+          <Scale className="w-3.5 h-3.5" />
+          <span>Direct FIR</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "DIRECT_FIR" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
+            {statusCounts.firRegister}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("NOT_ASSIGNED")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "NOT_ASSIGNED"
+              ? "bg-amber-600 text-white shadow-xs"
+              : "text-amber-900 hover:bg-amber-50"
+          }`}
+        >
+          <UserCheck className="w-3.5 h-3.5" />
+          <span>Not Assigned</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "NOT_ASSIGNED" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
+            {statusCounts.notAssigned}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("PENDING")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "PENDING"
+              ? "bg-blue-600 text-white shadow-xs"
+              : "text-blue-900 hover:bg-blue-50"
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Pending / Under Enquiry</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "PENDING" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
+            {statusCounts.pending}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("COMPLETE")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "COMPLETE"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-emerald-900 hover:bg-emerald-50"
+          }`}
+        >
+          <CheckCircle className="w-3.5 h-3.5" />
+          <span>Complete (Report Ready)</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "COMPLETE" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+            {statusCounts.complete}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("FIR_REGISTERED")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "FIR_REGISTERED"
+              ? "bg-red-700 text-white shadow-xs"
+              : "text-red-900 hover:bg-red-50"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>FIR Registered</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "FIR_REGISTERED" ? "bg-white/20 text-white" : "bg-red-100 text-red-800"}`}>
+            {statusCounts.firRegistered}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleMasterTabChange("CORRECTION")}
+          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            masterFilterTab === "CORRECTION"
+              ? "bg-rose-700 text-white shadow-xs"
+              : "text-rose-900 hover:bg-rose-50"
+          }`}
+        >
+          <AlertTriangle className="w-3.5 h-3.5" />
+          <span>Correction Required</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "CORRECTION" ? "bg-white/20 text-white" : "bg-rose-100 text-rose-800"}`}>
+            {statusCounts.correctionRequired}
+          </span>
+        </button>
+      </div>
 
       {/* Filter and Search Controls */}
       <Card className="border-slate-200 !overflow-visible relative z-30">
@@ -527,13 +928,17 @@ function ComplaintListContent() {
                     {STATUS_OPTIONS.map((opt) => {
                       const isChecked = selectedStatuses.includes(opt.key);
                       const count =
-                        opt.key === "UNASSIGNED"
-                          ? statusCounts.unassigned
-                          : opt.key === "UNDER_ENQUIRY"
-                          ? statusCounts.underEnquiry
-                          : opt.key === "UNDER_REVIEW"
-                          ? statusCounts.underReview
-                          : statusCounts.disposed;
+                        opt.key === "NOT_ASSIGNED"
+                          ? statusCounts.notAssigned
+                          : opt.key === "PENDING"
+                          ? statusCounts.pending
+                          : opt.key === "COMPLETE"
+                          ? statusCounts.complete
+                          : opt.key === "FIR_REGISTER"
+                          ? statusCounts.firRegister
+                          : opt.key === "FIR_REGISTERED"
+                          ? statusCounts.firRegistered
+                          : statusCounts.correctionRequired;
 
                       return (
                         <div
@@ -599,7 +1004,7 @@ function ComplaintListContent() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by Complaint No, Complainant Name, Phone, Accused..."
+                placeholder="Search by Complaint No, Complainant Name, Phone, Accused, Subject, Station..."
                 className="w-full h-10 pl-9 pr-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0b192c] focus:outline-none"
               />
             </div>
@@ -670,17 +1075,131 @@ function ComplaintListContent() {
         </CardContent>
       </Card>
 
-      {/* Results Count & Quick Refresh */}
-      <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-        <span>
-          Showing <strong className="text-slate-800">{complaints.length}</strong> {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
-        </span>
-        <button
-          onClick={fetchComplaints}
-          className="flex items-center gap-1 hover:text-slate-900 transition-colors font-medium"
-        >
-          <RefreshCw className="w-3 h-3" /> Refresh
-        </button>
+      {/* Results Count, Column Visibility Popover & Quick Refresh */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 px-1">
+        <div className="flex items-center gap-3">
+          <span>
+            Showing <strong className="text-slate-800">{complaints.length}</strong> {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-[11px] text-slate-500">
+            Use horizontal scroll <span className="font-mono">↔</span> for wide columns
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          {/* Column Visibility Customizer Button & Dropdown (Requirement 9) */}
+          <div className="relative" ref={columnDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setColumnDropdownOpen((prev) => !prev)}
+              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+              title="Select which columns are visible in the register table"
+            >
+              <Columns3 className="w-3.5 h-3.5 text-blue-600" />
+              <span>Columns</span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${columnDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {columnDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-60 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-3 animate-in fade-in-50 zoom-in-95 ring-1 ring-slate-900/10">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Visible Columns
+                  </span>
+                  <button
+                    type="button"
+                    onClick={resetColumns}
+                    className="text-[10px] font-bold text-blue-700 hover:text-blue-900"
+                  >
+                    Reset All
+                  </button>
+                </div>
+                <div className="space-y-1.5 text-xs text-slate-700">
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.complaintId}
+                      onChange={() => toggleColumn("complaintId")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Complaint ID &amp; Priority</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.dateTime}
+                      onChange={() => toggleColumn("dateTime")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Date &amp; Time</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.complainant}
+                      onChange={() => toggleColumn("complainant")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Complainant</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.categoryLocation}
+                      onChange={() => toggleColumn("categoryLocation")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Category &amp; Location</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.status}
+                      onChange={() => toggleColumn("status")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Enquiry Status</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.assignedEo}
+                      onChange={() => toggleColumn("assignedEo")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Enquiry Officer</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.daysPending}
+                      onChange={() => toggleColumn("daysPending")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Days Pending</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
+                      checked={visibleColumns.action}
+                      onChange={() => toggleColumn("action")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Action</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={fetchComplaints}
+            className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-2xs hover:text-slate-900 transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3 text-slate-500" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Main Content: Table on Desktop, Cards on Mobile */}
@@ -704,215 +1223,467 @@ function ComplaintListContent() {
         />
       ) : (
         <div className="space-y-4">
-          {/* Desktop Table View */}
+          {/* Desktop Table View with Horizontal Scrolling & Column Customization */}
           <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                <tr>
-                  <th
-                    onClick={() => handleSort("complaintNumber")}
-                    className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Complaint ID & Priority</span>
-                      {renderSortIcon("complaintNumber")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("createdAt")}
-                    className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Date & Time</span>
-                      {renderSortIcon("createdAt")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("complainantName")}
-                    className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Complainant</span>
-                      {renderSortIcon("complainantName")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("categoryDisplay")}
-                    className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Category & Incident Location</span>
-                      {renderSortIcon("categoryDisplay")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("status")}
-                    className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Enquiry Status</span>
-                      {renderSortIcon("status")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("assignedEoName")}
-                    className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Enquiry Officer</span>
-                      {renderSortIcon("assignedEoName")}
-                    </div>
-                  </th>
-                  <th
-                    onClick={() => handleSort("daysPending")}
-                    className="py-3 px-4 text-center cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                  >
-                    <div className="flex items-center justify-center gap-1.5">
-                      <span>Days Pending</span>
-                      {renderSortIcon("daysPending")}
-                    </div>
-                  </th>
-                  <th className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {sortedComplaints.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
-                    <td className="py-3 px-4 font-mono">
-                      <Link
-                        href={`/complaints/${c.id}`}
-                        className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
+            <div className="overflow-x-auto min-w-full">
+              <table className="min-w-[1050px] w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                  <tr>
+                    {visibleColumns.complaintId && (
+                      <th
+                        onClick={() => handleSort("complaintNumber")}
+                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
                       >
-                        {c.complaintNumber}
-                      </Link>
-                      <div className="mt-1">
-                        <PriorityBadge priority={c.priority} />
-                      </div>
-                    </td>
-
-                    {/* Date & Time */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                        <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                        <span>{formatDate(c.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>
-                          {new Date(c.createdAt).toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <Link
-                        href={`/complaints/${c.id}`}
-                        className="font-bold text-slate-900 hover:text-blue-600 hover:underline block"
-                      >
-                        {c.complainantName}
-                      </Link>
-                      <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{c.complainantMobile}</span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-slate-800">{c.categoryDisplay}</div>
-                      <div className="text-[11px] text-slate-500 truncate max-w-[200px] flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="truncate">{c.incidentPlace}</span>
-                      </div>
-                    </td>
-
-                    <td className="py-3 px-4">
-                      <StatusBadge status={c.status} />
-                    </td>
-
-                    <td className="py-3 px-4">
-                      {c.assignedEoName ? (
-                        <div>
-                          <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
-                          <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span>Complaint ID &amp; Priority</span>
+                          {renderSortIcon("complaintNumber")}
                         </div>
-                      ) : (
-                        <div className="space-y-1">
-                          <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
-                            Unassigned
-                          </span>
-                          {(currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
-                            <button
-                              onClick={() => handleOpenAssignModal(c)}
-                              className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
-                            >
-                              <UserCheck className="w-3 h-3 text-blue-700" />
-                              Assign EO
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                      </th>
+                    )}
 
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          c.daysPending > 10
-                            ? "bg-red-50 text-red-700 border border-red-200"
-                            : "bg-slate-100 text-slate-700"
-                        }`}
+                    {visibleColumns.dateTime && (
+                      <th
+                        onClick={() => handleSort("createdAt")}
+                        className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors select-none group"
                       >
-                        {c.daysPending}d
-                      </span>
-                    </td>
+                        <div className="flex items-center gap-1.5">
+                          <span>Date &amp; Time</span>
+                          {renderSortIcon("createdAt")}
+                        </div>
+                      </th>
+                    )}
 
-                    <td className="py-2.5 px-4 text-right align-middle">
-                      <div className="flex flex-col items-end gap-1.5 min-w-[115px]">
-                        <Link href={`/complaints/${c.id}`} className="w-full sm:w-28">
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            className="w-full text-xs font-semibold gap-1 justify-center"
-                          >
-                            <Eye className="w-3.5 h-3.5" /> View Profile
-                          </Button>
-                        </Link>
-                        {c.assignedEoName ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setReceiptComplaint(c);
-                              setShowReceiptModal(true);
-                            }}
-                            className="w-full sm:w-28 text-xs font-semibold gap-1 justify-center text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
-                            title="Official Receipt of registered complaints"
-                          >
-                            <Printer className="w-3.5 h-3.5 text-emerald-700" />
-                            <span>Receipt</span>
-                          </Button>
-                        ) : (
-                          (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => handleOpenAssignModal(c)}
-                              className="w-full sm:w-28 text-xs font-bold gap-1 justify-center bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
-                            >
-                              <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                              <span>Assign EO</span>
-                            </Button>
-                          )
-                        )}
-                      </div>
-                    </td>
+                    {visibleColumns.complainant && (
+                      <th
+                        onClick={() => handleSort("complainantName")}
+                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Complainant</span>
+                          {renderSortIcon("complainantName")}
+                        </div>
+                      </th>
+                    )}
+
+                    {visibleColumns.categoryLocation && (
+                      <th
+                        onClick={() => handleSort("categoryDisplay")}
+                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Category &amp; Incident Location</span>
+                          {renderSortIcon("categoryDisplay")}
+                        </div>
+                      </th>
+                    )}
+
+                    {visibleColumns.status && (
+                      <th
+                        onClick={() => handleSort("status")}
+                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Enquiry Status</span>
+                          {renderSortIcon("status")}
+                        </div>
+                      </th>
+                    )}
+
+                    {visibleColumns.assignedEo && (
+                      <th
+                        onClick={() => handleSort("assignedEoName")}
+                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Enquiry Officer</span>
+                          {renderSortIcon("assignedEoName")}
+                        </div>
+                      </th>
+                    )}
+
+                    {visibleColumns.daysPending && (
+                      <th
+                        onClick={() => handleSort("daysPending")}
+                        className="py-3 px-4 text-center cursor-pointer hover:bg-slate-100 transition-colors select-none group"
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>Days Pending</span>
+                          {renderSortIcon("daysPending")}
+                        </div>
+                      </th>
+                    )}
+
+                    {visibleColumns.action && (
+                      <th className="py-3 px-4 text-right">Action</th>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {sortedComplaints.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
+                      {visibleColumns.complaintId && (
+                        <td className="py-3 px-4 font-mono">
+                          <Link
+                            href={`/complaints/${c.id}`}
+                            className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
+                          >
+                            {c.complaintNumber}
+                          </Link>
+                          <div className="mt-1">
+                            <PriorityBadge priority={c.priority} />
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Date & Time */}
+                      {visibleColumns.dateTime && (
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                            <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{formatDate(c.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>
+                              {new Date(c.createdAt).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </span>
+                          </div>
+                        </td>
+                      )}
+
+                      {/* Complainant: Display full name without truncation (Requirement 6) */}
+                      {visibleColumns.complainant && (
+                        <td className="py-3 px-4">
+                          <Link
+                            href={`/complaints/${c.id}`}
+                            className="font-bold text-slate-900 hover:text-blue-600 hover:underline block break-words"
+                          >
+                            {c.complainantName}
+                          </Link>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            <span>+91 {c.complainantMobile}</span>
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.categoryLocation && (
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-900">{c.categoryDisplay}</div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="line-clamp-2">{c.incidentPlace}</span>
+                          </div>
+                        </td>
+                      )}
+
+                      {visibleColumns.status && (
+                        <td className="py-3 px-4">
+                          <StatusBadge status={getMainComplaintStatus(c)} />
+                        </td>
+                      )}
+
+                      {visibleColumns.assignedEo && (
+                        <td className="py-3 px-4">
+                          {c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER" ? (
+                            <div className="space-y-1">
+                              <span className="text-purple-700 bg-purple-50 border border-purple-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
+                                Direct to FIR (No EO)
+                              </span>
+                            </div>
+                          ) : c.assignedEoName ? (
+                            <div className="space-y-1">
+                              <div>
+                                <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
+                                <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
+                              </div>
+                              {isSho && !isMhc && (
+                                <div className="relative inline-block mt-0.5" data-assign-dropdown>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                                    className="text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                    title="Reassign to another Enquiry Officer"
+                                  >
+                                    <UserCheck className="w-3 h-3 text-amber-700" />
+                                    <span>Reassign EO ▾</span>
+                                  </button>
+                                  {assignDropdownComplaintId === c.id && (
+                                    <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
+                                      <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                        <span>Select EO / IO</span>
+                                        <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                      </div>
+                                      <div className="max-h-56 overflow-y-auto py-0.5">
+                                        {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                          const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                          const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                          return (
+                                            <button
+                                              key={eo.id}
+                                              type="button"
+                                              disabled={isQuickAssigning}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleQuickAssignEO(c.id, eo);
+                                              }}
+                                              className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                                isSelected
+                                                  ? "bg-blue-50 text-blue-900 font-bold"
+                                                  : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                              }`}
+                                            >
+                                              <span className="truncate">{label}</span>
+                                              {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
+                                Not Assigned
+                              </span>
+                              {isSho && !isMhc && (
+                                <div className="relative inline-block" data-assign-dropdown>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                                    className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shadow-2xs"
+                                  >
+                                    <UserCheck className="w-3 h-3 text-blue-700" />
+                                    <span>Assign EO ▾</span>
+                                  </button>
+                                  {assignDropdownComplaintId === c.id && (
+                                    <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
+                                      <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                        <span>Select EO / IO</span>
+                                        <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                      </div>
+                                      <div className="max-h-56 overflow-y-auto py-0.5">
+                                        {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                          const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                          return (
+                                            <button
+                                              key={eo.id}
+                                              type="button"
+                                              disabled={isQuickAssigning}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleQuickAssignEO(c.id, eo);
+                                              }}
+                                              className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center justify-between cursor-pointer"
+                                            >
+                                              <span className="truncate">{label}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )}
+
+                      {visibleColumns.daysPending && (
+                        <td className="py-3 px-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              c.daysPending > 10
+                                ? "bg-red-50 text-red-700 border border-red-200"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            {c.daysPending}d
+                          </span>
+                        </td>
+                      )}
+
+                      {visibleColumns.action && (
+                        <td className="py-2.5 px-4 text-right align-middle">
+                          <div className="flex flex-col items-end gap-1.5 min-w-[130px]">
+                            <Link href={`/complaints/${c.id}`} className="w-full">
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                className="w-full text-xs font-semibold gap-1 justify-center"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View Profile
+                              </Button>
+                            </Link>
+
+                            {/* SHO Quick Assign / Reassign EO Dropdown (No dialogue box, rank & name only) */}
+                            {!c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && isSho && !isMhc && (
+                              <div className="relative w-full" data-assign-dropdown>
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                                  className="w-full text-xs font-bold gap-1 justify-center bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
+                                >
+                                  <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                                  <span>{c.assignedEoName ? "Reassign EO ▾" : "Assign EO ▾"}</span>
+                                </Button>
+                                {assignDropdownComplaintId === c.id && (
+                                  <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
+                                    <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                      <span>Select EO / IO</span>
+                                      <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                    </div>
+                                    <div className="max-h-56 overflow-y-auto py-0.5">
+                                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                        const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                        const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                        return (
+                                          <button
+                                            key={eo.id}
+                                            type="button"
+                                            disabled={isQuickAssigning}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleQuickAssignEO(c.id, eo);
+                                            }}
+                                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                              isSelected
+                                                ? "bg-blue-50 text-blue-900 font-bold"
+                                                : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                            }`}
+                                          >
+                                            <span className="truncate">{label}</span>
+                                            {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Direct FIR for SHO account: Show "Register FIR" button */}
+                            {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleOpenFirRegisterModal(c)}
+                                className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Register FIR</span>
+                              </Button>
+                            )}
+
+                            {/* EO: If Report prepared with Complete or FIR Recommend and not yet sent */}
+                            {isEo && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
+                              <Button
+                                size="sm"
+                                onClick={() => setEoSendToShoModalComplaint(c)}
+                                className="w-full text-xs font-bold gap-1 justify-center bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-2xs"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                <span>Send to SHO</span>
+                              </Button>
+                            )}
+
+                            {/* EO: Display Rejection Reason & Correct Button if rejected by SHO */}
+                            {isEo && (c.workflowState === "CORRECTION_REQUIRED" || c.shoDecision === "REJECT" || c.status === "CORRECTION_REQUIRED") && (
+                              <div className="w-full text-left bg-amber-50 border border-amber-300 rounded p-1.5 text-[11px] text-amber-900 space-y-1">
+                                <div className="font-bold flex items-center gap-1 text-amber-800">
+                                  <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                                  <span>Correction Required</span>
+                                </div>
+                                <p className="line-clamp-2 text-[10px] text-amber-950 font-medium bg-white/80 p-1 rounded border border-amber-200">
+                                  <strong>Reason:</strong> {c.rejectionReason || "Report rejected by SHO. Correction required."}
+                                </p>
+                                <Link href={`/complaints/${c.id}`} className="block">
+                                  <Button
+                                    size="sm"
+                                    className="w-full text-[11px] font-bold justify-center bg-amber-600 hover:bg-amber-700 text-white cursor-pointer h-6 px-1"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Correct &amp; Resubmit</span>
+                                  </Button>
+                                </Link>
+                              </div>
+                            )}
+
+                            {/* SHO: Action on Completed EO Report -> Approve and Reject buttons */}
+                            {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
+                              c.status === "COMPLETE" ||
+                              c.workflowState === "COMPLETE" ||
+                              c.eoOutcome === "Complete" ||
+                              (c.isSentToSho && !c.isFirApprovedBySho)
+                            ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
+                              <div className="flex items-center gap-1 w-full">
+                                <Button
+                                  size="sm"
+                                  onClick={() => setShoApproveModalComplaint(c)}
+                                  className="flex-1 text-[11px] font-bold justify-center bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-7 px-1.5"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Approve</span>
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    setShoRejectModalComplaint(c);
+                                    setRejectionReason("");
+                                  }}
+                                  className="flex-1 text-[11px] font-bold justify-center bg-rose-600 hover:bg-rose-700 text-white cursor-pointer h-7 px-1.5"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Reject</span>
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* SHO: Regular FIR Registration when recommended & approved */}
+                            {isSho && !isMhc && (c.isFirApprovedBySho || c.workflowState === "FIR_REGISTRATION_PENDING") && !c.isFirRegistered && !c.directSendToFir && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleOpenFirRegisterModal(c)}
+                                className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Register FIR</span>
+                              </Button>
+                            )}
+
+                            {/* Receipt Button */}
+                            {c.assignedEoName && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setReceiptComplaint(c);
+                                  setShowReceiptModal(true);
+                                }}
+                                className="w-full text-xs font-semibold gap-1 justify-center text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                                title="Official Receipt of registered complaints"
+                              >
+                                <Printer className="w-3.5 h-3.5 text-emerald-700" />
+                                <span>Receipt</span>
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile Card-Based View */}
@@ -968,9 +1739,11 @@ function ComplaintListContent() {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 text-xs">
-                    <StatusBadge status={c.status} />
+                    <StatusBadge status={getMainComplaintStatus(c)} />
                     <span className="text-[11px] text-slate-500 font-medium">
-                      EO: {c.assignedEoName || "Unassigned"}
+                      {c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER"
+                        ? "Direct to FIR"
+                        : `EO: ${c.assignedEoName || "Not Assigned"}`}
                     </span>
                   </div>
 
@@ -986,30 +1759,189 @@ function ComplaintListContent() {
                         </Button>
                       </Link>
                       {c.assignedEoName ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setReceiptComplaint(c);
-                            setShowReceiptModal(true);
-                          }}
-                          className="w-full text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-emerald-700" /> Receipt
-                        </Button>
-                      ) : (
-                        (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                        <>
                           <Button
-                            variant="primary"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleOpenAssignModal(c)}
-                            className="w-full text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800"
+                            onClick={() => {
+                              setReceiptComplaint(c);
+                              setShowReceiptModal(true);
+                            }}
+                            className="w-full text-xs font-semibold gap-1 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100"
                           >
-                            <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign EO
+                            <Printer className="w-3.5 h-3.5 text-emerald-700" /> Receipt
                           </Button>
+                          {isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && (
+                            <div className="relative w-full" data-assign-dropdown>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                                className="w-full text-xs font-bold gap-1 text-slate-700 border-slate-300 hover:bg-slate-100"
+                              >
+                                <UserCheck className="w-3.5 h-3.5 text-slate-600" /> Reassign EO ▾
+                              </Button>
+                              {assignDropdownComplaintId === c.id && (
+                                <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
+                                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                    <span>Select EO / IO</span>
+                                    <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                  </div>
+                                  <div className="max-h-56 overflow-y-auto py-0.5">
+                                    {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                      const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                      return (
+                                        <button
+                                          key={eo.id}
+                                          type="button"
+                                          disabled={isQuickAssigning}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleQuickAssignEO(c.id, eo);
+                                          }}
+                                          className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                            isSelected ? "bg-blue-50 text-blue-900 font-bold" : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                          }`}
+                                        >
+                                          <span className="truncate">{label}</span>
+                                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && (
+                          <div className="relative w-full" data-assign-dropdown>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                              className="w-full text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800"
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign EO ▾
+                            </Button>
+                            {assignDropdownComplaintId === c.id && (
+                              <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
+                                <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                  <span>Select EO / IO</span>
+                                  <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                                </div>
+                                <div className="max-h-56 overflow-y-auto py-0.5">
+                                  {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                                    const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                                    const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                                    return (
+                                      <button
+                                        key={eo.id}
+                                        type="button"
+                                        disabled={isQuickAssigning}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleQuickAssignEO(c.id, eo);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                          isSelected ? "bg-blue-50 text-blue-900 font-bold" : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                        }`}
+                                      >
+                                        <span className="truncate">{label}</span>
+                                        {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )
                       )}
                     </div>
+
+                    {/* Direct FIR on mobile for SHO */}
+                    {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenFirRegisterModal(c)}
+                        className="w-full text-xs font-bold gap-1 bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Register FIR
+                      </Button>
+                    )}
+
+                    {/* EO Rejection Banner & Correct Button on mobile */}
+                    {isEo && (c.workflowState === "CORRECTION_REQUIRED" || c.shoDecision === "REJECT" || c.status === "CORRECTION_REQUIRED") && (
+                      <div className="w-full text-left bg-amber-50 border border-amber-300 rounded p-2 text-xs text-amber-900 space-y-1">
+                        <div className="font-bold flex items-center gap-1 text-amber-800">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>Correction Required</span>
+                        </div>
+                        <p className="text-[11px] text-amber-950 font-medium bg-white/80 p-1.5 rounded border border-amber-200">
+                          <strong>Reason:</strong> {c.rejectionReason || "Report rejected by SHO. Correction required."}
+                        </p>
+                        <Link href={`/complaints/${c.id}`} className="block">
+                          <Button
+                            size="sm"
+                            className="w-full text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white mt-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" /> Correct &amp; Resubmit
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+
+                    {/* Additional action buttons on mobile */}
+                    {isEo && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
+                      <Button
+                        size="sm"
+                        onClick={() => setEoSendToShoModalComplaint(c)}
+                        className="w-full text-xs font-bold gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Send to SHO
+                      </Button>
+                    )}
+
+                    {/* SHO: Approve / Reject buttons on Mobile */}
+                    {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
+                      c.status === "COMPLETE" ||
+                      c.workflowState === "COMPLETE" ||
+                      c.eoOutcome === "Complete" ||
+                      (c.isSentToSho && !c.isFirApprovedBySho)
+                    ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => setShoApproveModalComplaint(c)}
+                          className="flex-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5 mr-1 inline" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setShoRejectModalComplaint(c);
+                            setRejectionReason("");
+                          }}
+                          className="flex-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white"
+                        >
+                          <X className="w-3.5 h-3.5 mr-1 inline" /> Reject
+                        </Button>
+                      </div>
+                    )}
+
+                    {isSho && !isMhc && (c.isFirApprovedBySho || c.workflowState === "FIR_REGISTRATION_PENDING") && !c.isFirRegistered && !c.directSendToFir && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenFirRegisterModal(c)}
+                        className="w-full text-xs font-bold bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Register FIR
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1272,7 +2204,7 @@ function ComplaintListContent() {
                     <Eye className="w-3.5 h-3.5" /> Open Full Profile
                   </Button>
                 </Link>
-                {selectedComplaint.assignedEoName ? (
+                {selectedComplaint.assignedEoName && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1284,20 +2216,53 @@ function ComplaintListContent() {
                   >
                     <Printer className="w-3.5 h-3.5 text-emerald-700" /> Print Receipt
                   </Button>
-                ) : (
-                  (currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1") && (
+                )}
+                {isSho && !isMhc && !selectedComplaint.directSendToFir && selectedComplaint.status !== "FIR_REGISTER" && selectedComplaint.workflowState !== "FIR_REGISTER" && (
+                  <div className="relative" data-assign-dropdown>
                     <Button
                       size="sm"
                       variant="primary"
-                      onClick={() => {
-                        handleOpenAssignModal(selectedComplaint);
-                        setSelectedComplaint(null);
-                      }}
+                      onClick={() => setAssignDropdownComplaintId((prev) => prev === selectedComplaint.id ? null : selectedComplaint.id)}
                       className="text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer"
                     >
-                      <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign Enquiry Officer
+                      <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{selectedComplaint.assignedEoName ? "Reassign EO ▾" : "Assign Enquiry Officer ▾"}</span>
                     </Button>
-                  )
+                    {assignDropdownComplaintId === selectedComplaint.id && (
+                      <div className="absolute right-0 bottom-full mb-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
+                        <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                          <span>Select EO / IO</span>
+                          <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto py-0.5">
+                          {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                            const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                            const isSelected = selectedComplaint.assignedEoId === eo.id || selectedComplaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
+                            return (
+                              <button
+                                key={eo.id}
+                                type="button"
+                                disabled={isQuickAssigning}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickAssignEO(selectedComplaint.id, eo);
+                                  setSelectedComplaint((prev) => prev ? { ...prev, assignedEoId: eo.id, assignedEoName: eo.name, assignedEoPno: eo.pno, status: "ENQUIRY_IN_PROGRESS" } : null);
+                                }}
+                                className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                  isSelected
+                                    ? "bg-blue-50 text-blue-900 font-bold"
+                                    : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                                }`}
+                              >
+                                <span className="truncate">{label}</span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 <Button size="sm" variant="outline" onClick={() => setSelectedComplaint(null)} className="text-xs">
                   Close
@@ -1308,322 +2273,311 @@ function ComplaintListContent() {
         </div>
       )}
 
-      {/* Assignment Modal with Roster Duty & Officer Directions */}
-      {assigningComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            onClick={() => {
-              if (!isAssigning) {
-                setAssigningComplaint(null);
-                setAssignSuccess(false);
-                setLastAssignedNotification(null);
-              }
-            }}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
-            {/* Header */}
-            <div className="p-4 sm:p-5 bg-[#081225] text-white flex items-center justify-between border-b border-slate-800">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-amber-400">
-                    {assigningComplaint.complaintNumber}
-                  </span>
-                  <PriorityBadge priority={assigningComplaint.priority} />
-                </div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-blue-400" />
-                  <span>Assign Enquiry Officer (EO) & Roster Duty</span>
-                </h3>
-                <p className="text-xs text-slate-300">
-                  Complainant: <span className="font-semibold text-white">{assigningComplaint.complainantName}</span> • Category: <span className="font-semibold text-white">{assigningComplaint.categoryDisplay}</span>
-                </p>
+      {/* SHO Assign EO Modal removed: SHO uses instant inline dropdown showing Rank & Name only (no dialogue box) */}
+
+      {/* SHO Approve Modal */}
+      {shoApproveModalComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-emerald-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                <h3 className="font-bold text-sm">SHO Report Approval</h3>
               </div>
-              <button
-                onClick={() => {
-                  if (!isAssigning) {
-                    setAssigningComplaint(null);
-                    setAssignSuccess(false);
-                    setLastAssignedNotification(null);
-                  }
-                }}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setShoApproveModalComplaint(null)} className="text-white hover:opacity-80">
+                <X className="w-4 h-4" />
               </button>
             </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {shoApproveModalComplaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {shoApproveModalComplaint.complainantName}</p>
+                <p><strong>Enquiry Officer:</strong> {shoApproveModalComplaint.assignedEoName}</p>
+                <p><strong>EO Outcome:</strong> <span className="font-bold text-blue-700">{shoApproveModalComplaint.eoOutcome || "Complete"}</span></p>
+              </div>
 
-            {/* Content Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
-              {assignSuccess ? (
-                <div className="p-4 sm:p-6 text-center space-y-4 animate-in fade-in-0 zoom-in-95">
-                  <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-200">
-                    <CheckCircle className="w-10 h-10" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-bold text-slate-900">
-                      Enquiry Officer Assigned & Marked in Database!
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Complaint status transitioned to <strong className="text-blue-700">Under Enquiry</strong>. Registered in Station General Diary.
-                    </p>
-                  </div>
-
-                  {/* Dispatched Notification Card */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
-                          <Bell className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-slate-900">Notice Dispatched to EO</p>
-                          <p className="text-[11px] text-slate-500">
-                            Sent to {selectedEo.name} ({selectedEo.rank}, PNO: {selectedEo.pno})
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        Dispatched
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 text-xs">
-                      <div>
-                        <span className="text-slate-500 font-medium">Assigned Roster Duty:</span>{" "}
-                        <span className="font-semibold text-slate-800">{selectedEo.rosterDuty}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 font-medium">Target Completion:</span>{" "}
-                        <span className="font-semibold text-blue-700">{targetDays} Days (Due within deadline)</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 font-medium">Supervisory Directions:</span>
-                        <div className="mt-1 p-2.5 bg-white border border-slate-200 rounded-lg text-slate-800 font-sans text-xs">
-                          {assignedDirections || "Preliminary spot verification & witness examination."}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-200 flex items-center justify-between">
-                      <span>Recorded under Punjab Police Rules 22.48 (General Diary)</span>
-                      <span className="font-mono text-[10px]">Station: {assigningComplaint.policeStation}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <Button
-                      variant="primary"
-                      className="w-full sm:w-auto"
-                      onClick={() => {
-                        setAssignSuccess(false);
-                        setAssigningComplaint(null);
-                        setLastAssignedNotification(null);
-                      }}
-                    >
-                      Done & Return to Register
-                    </Button>
-                  </div>
+              {shoApproveModalComplaint.eoOutcome === "FIR Recommend" ? (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 space-y-1">
+                  <p className="font-bold text-sm">FIR Recommendation Approval</p>
+                  <p className="text-xs">
+                    Approving this report will sanction the EO&apos;s recommendation to register a regular FIR. You can subsequently click &quot;Register FIR&quot; to formally assign an FIR Number and register the criminal case.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-5">
-                  {/* Step 1: Officer Selection & Duty Roster */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5 text-blue-600" />
-                        <span>1. Active Officer Duty Roster</span>
-                      </label>
-                      <span className="text-[11px] text-slate-500">
-                        Click on any officer name to assign directions
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2.5">
-                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                        const isSelected = selectedEoId === eo.id;
-                        return (
-                          <div
-                            key={eo.id}
-                            onClick={() => handleSelectEo(eo.id)}
-                            className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-500/20"
-                                : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/70"
-                            }`}
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div className="flex items-center gap-3">
-                                <div
-                                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                    isSelected
-                                      ? "bg-[#0b192c] text-white"
-                                      : "bg-slate-100 text-slate-700"
-                                  }`}
-                                >
-                                  {eo.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-bold text-slate-900 text-sm">{eo.name}</h4>
-                                    <span className="text-[10px] font-semibold text-slate-500">
-                                      ({eo.rank})
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono mt-0.5">
-                                    <span>PNO: {eo.pno}</span>
-                                    <span>•</span>
-                                    <span>{eo.beatZone}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  {eo.availability}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-700">
-                                  {eo.shift}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  {eo.activeCases} Active Cases
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Roster Duty Bar */}
-                            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                              <div className="flex items-center gap-1.5 text-slate-700">
-                                <span className="font-bold text-slate-900">Current Roster Duty:</span>
-                                <span className="font-medium text-blue-900 bg-blue-100/70 px-2 py-0.5 rounded">
-                                  {eo.rosterDuty}
-                                </span>
-                              </div>
-                              <span className={`font-semibold ${isSelected ? "text-blue-700" : "text-slate-400"}`}>
-                                {isSelected ? "✓ Selected for Assignment" : "Click to Assign"}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Step 2: Directions Dropdown & Instructions (Opens for Selected Officer) */}
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
-                        <Send className="w-3.5 h-3.5 text-blue-600" />
-                        <span>2. Supervisory Directions for {selectedEo.name} ({selectedEo.rank})</span>
-                      </label>
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
-                        Notice will be sent to EO
-                      </span>
-                    </div>
-
-                    {/* Pre-set Direction Template Dropdown */}
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Select Direction Template (or customize below)
-                      </label>
-                      <select
-                        value={directionTemplate}
-                        onChange={(e) => handleTemplateChange(e.target.value)}
-                        className="w-full text-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
-                      >
-                        {DIRECTION_TEMPLATES.map((tmpl) => (
-                          <option key={tmpl.key} value={tmpl.key}>
-                            {tmpl.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Directions Text Area */}
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Supervisory Directions & Specific Instructions
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={assignedDirections}
-                        onChange={(e) => setAssignedDirections(e.target.value)}
-                        placeholder="Enter clear, actionable inquiry directions for the Enquiry Officer..."
-                        className="w-full text-xs rounded-lg border border-slate-300 bg-white p-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-sans"
-                      />
-                      <p className="text-[11px] text-slate-500 mt-1">
-                        These instructions will be formally dispatched to {selectedEo.name} and logged in the Station General Diary.
-                      </p>
-                    </div>
-
-                    {/* Target Timeline */}
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Target Enquiry Completion Timeline
-                      </label>
-                      <select
-                        value={targetDays}
-                        onChange={(e) => setTargetDays(Number(e.target.value))}
-                        className="w-full text-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
-                      >
-                        <option value={3}>3 Days - Urgent Priority / Sensitive Case</option>
-                        <option value={7}>7 Days - Standard Spot Inquiry (BNSS 173(3))</option>
-                        <option value={10}>10 Days - Complex / Witness Verification</option>
-                        <option value={14}>14 Days - Regular Statutory Inquiry Period</option>
-                        <option value={30}>30 Days - Extended Revenue / Multi-party Inquiry</option>
-                      </select>
-                    </div>
-                  </div>
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 space-y-1">
+                  <p className="font-bold text-sm">Enquiry Closure Approval</p>
+                  <p className="text-xs">
+                    Approving this report will formally close the preliminary enquiry as Complete.
+                  </p>
                 </div>
               )}
-            </div>
 
-            {/* Modal Footer */}
-            {!assignSuccess && (
-              <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs text-slate-600 text-center sm:text-left">
-                  <span>Assigning to: </span>
-                  <strong className="text-slate-900">{selectedEo.name}</strong>
-                  <span className="text-slate-500"> • Roster: {selectedEo.rosterDuty}</span>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setAssigningComplaint(null);
-                      setAssignSuccess(false);
-                      setLastAssignedNotification(null);
-                    }}
-                    disabled={isAssigning}
-                    className="flex-1 sm:flex-none"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleAssignEO}
-                    disabled={isAssigning}
-                    className="flex-1 sm:flex-none gap-1.5"
-                  >
-                    {isAssigning ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Assigning...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-3.5 h-3.5" />
-                        <span>Confirm Assign & Dispatch Notice</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  SHO Supervisory Remarks / Directions (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={shoApproveRemarks}
+                  onChange={(e) => setShoApproveRemarks(e.target.value)}
+                  placeholder="Enter supervisory remarks, observations or concurrence notes..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                />
               </div>
-            )}
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShoApproveModalComplaint(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleShoApprove}
+                disabled={isApproving}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+              >
+                {isApproving ? "Approving..." : "Confirm & Approve Report"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHO Re-Enquiry Modal */}
+      {shoReEnquiryModalComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-bold text-sm">Order Re-Enquiry by SHO</h3>
+              </div>
+              <button onClick={() => setShoReEnquiryModalComplaint(null)} className="text-white hover:opacity-80">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {shoReEnquiryModalComplaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {shoReEnquiryModalComplaint.complainantName}</p>
+                <p><strong>Enquiry Officer:</strong> {shoReEnquiryModalComplaint.assignedEoName}</p>
+                <p className="text-amber-800 font-semibold pt-1">
+                  This complaint will be returned to the SAME Enquiry Officer ({shoReEnquiryModalComplaint.assignedEoName}), status will remain &quot;Pending&quot;, and the EO will be notified immediately.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Re-Enquiry Reason &amp; Specific Directions <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={reEnquiryReason}
+                  onChange={(e) => setReEnquiryReason(e.target.value)}
+                  placeholder="Explain why re-enquiry is required (e.g. key witnesses not examined, site plan missing, clarification required)..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShoReEnquiryModalComplaint(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleShoReEnquiry}
+                disabled={isSubmittingReEnquiry || !reEnquiryReason.trim()}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+              >
+                {isSubmittingReEnquiry ? "Submitting..." : "Order Re-Enquiry & Notify EO"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHO Reject Report Modal */}
+      {shoRejectModalComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-rose-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                <h3 className="font-bold text-sm">Reject Enquiry Report &amp; Return to EO</h3>
+              </div>
+              <button onClick={() => setShoRejectModalComplaint(null)} className="text-white hover:opacity-80">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {shoRejectModalComplaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {shoRejectModalComplaint.complainantName}</p>
+                <p><strong>Assigned EO:</strong> {shoRejectModalComplaint.assignedEoName} (PNO: {shoRejectModalComplaint.assignedEoPno})</p>
+                <p className="text-rose-800 font-semibold pt-1">
+                  On rejection submission, this complaint will be returned to the same assigned EO ({shoRejectModalComplaint.assignedEoName}) for correction and resubmission.
+                  The complaint status will change to <strong>&ldquo;Correction Required&rdquo;</strong>, and the rejection reason will be clearly displayed in the EO account.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Rejection Reason &amp; Specific Corrections Required <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Enter mandatory rejection reason and required corrections (e.g. statements incomplete, site plan missing, clarification required on suspect version)..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs font-sans text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShoRejectModalComplaint(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleShoReject}
+                disabled={isSubmittingReject || !rejectionReason.trim()}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer"
+              >
+                {isSubmittingReject ? "Submitting..." : "Submit Rejection & Return to EO"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHO Register FIR Modal */}
+      {firRegisterModalComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-red-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                <h3 className="font-bold text-sm">Register Regular FIR (BNSS / BNS)</h3>
+              </div>
+              <button onClick={() => setFirRegisterModalComplaint(null)} className="text-white hover:opacity-80">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {firRegisterModalComplaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {firRegisterModalComplaint.complainantName}</p>
+                <p><strong>Station:</strong> {firRegisterModalComplaint.policeStation}</p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  FIR Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={firNumberInput}
+                  onChange={(e) => setFirNumberInput(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                  placeholder="e.g. HAR-KKR-2026-FIR-0042"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Sections of Law <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={firSectionsInput}
+                  onChange={(e) => setFirSectionsInput(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  placeholder="e.g. Section 115(2), 351(2), 3(5) BNS, 2023"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Registration Date
+                </label>
+                <input
+                  type="date"
+                  value={firDateInput}
+                  onChange={(e) => setFirDateInput(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setFirRegisterModalComplaint(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleRegisterFirSubmit}
+                disabled={isRegisteringFir || !firNumberInput.trim()}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              >
+                {isRegisteringFir ? "Registering..." : "Confirm FIR Registration"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EO Send to SHO Modal */}
+      {eoSendToShoModalComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+            <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Send className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-sm">Send Report to SHO ID</h3>
+              </div>
+              <button onClick={() => setEoSendToShoModalComplaint(null)} className="text-white hover:opacity-80">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> {eoSendToShoModalComplaint.complaintNumber}</p>
+                <p><strong>Complainant:</strong> {eoSendToShoModalComplaint.complainantName}</p>
+                <p><strong>Outcome Selected:</strong> <span className="font-bold text-blue-700">{eoSendToShoModalComplaint.eoOutcome || "Complete"}</span></p>
+                <p className="text-slate-600 text-[11px] pt-1">
+                  Once sent, this complaint will be dispatched to the Station House Officer (SHO) for formal review and decision, and will move out of your active daily queue until approved or returned for re-enquiry.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Remarks / Submission Note for SHO (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={eoSendRemarks}
+                  onChange={(e) => setEoSendRemarks(e.target.value)}
+                  placeholder="Enquiry completed as per directions. Submitted for approval..."
+                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEoSendToShoModalComplaint(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleEoSendToShoSubmit}
+                disabled={isSendingToSho}
+                className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold"
+              >
+                {isSendingToSho ? "Sending..." : "Dispatch to SHO ID"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

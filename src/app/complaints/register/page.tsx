@@ -43,6 +43,7 @@ import {
   UserCheck,
   Download,
   Eye,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -59,6 +60,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
+import {
+  ComplaintVerificationModal,
+  ComplaintPreviewData,
+} from "@/components/complaints/ComplaintVerificationModal";
+import { generateComplaintIntakeHtml } from "@/utils/complaintIntakeHtmlGenerator";
 import {
   DropdownManagerService,
   DropdownItem,
@@ -221,13 +227,15 @@ export default function RegisterComplaintPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [previewVerificationData, setPreviewVerificationData] = useState<ComplaintPreviewData | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
   // SHO Specific: Direct Assign EO states (Shown only when registered from SHO ID)
   const isSho = currentUser ? (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") : false;
-  const [shouldAssignEoNow, setShouldAssignEoNow] = useState(true);
-  const [selectedEoId, setSelectedEoId] = useState(MOCK_ENQUIRY_OFFICERS[0].id);
+  const [shouldAssignEoNow, setShouldAssignEoNow] = useState(false);
+  const [selectedEoId, setSelectedEoId] = useState("");
   const [directionTemplate, setDirectionTemplate] = useState("SPOT_VERIFY");
   const [assignedDirections, setAssignedDirections] = useState(DIRECTION_TEMPLATES[0].text);
   const [targetDays, setTargetDays] = useState(14);
@@ -349,6 +357,7 @@ export default function RegisterComplaintPage() {
   const [complaintClassification, setComplaintClassification] = useState<string>("COGNIZABLE_OFFENCE");
   const [complaintPurpose, setComplaintPurpose] = useState<string>("PRELIMINARY_ENQUIRY_BNSS_173");
 
+
   // 4. Intelligence Check States
   const [intelDropdownOpen, setIntelDropdownOpen] = useState(false);
   const [showIntelModal, setShowIntelModal] = useState(false);
@@ -427,49 +436,130 @@ export default function RegisterComplaintPage() {
     }
   }, [previewModalFile]);
 
-  // FORM DRAFT STORAGE KEY: Prevents losing filled data on page refresh
+  // FORM DRAFT STORAGE KEY: Prevents losing filled data on page navigation / refresh
   const FORM_DRAFT_KEY = "haryana_police_cms_register_form_draft_v1";
 
-  // 1. Restore saved form draft on page mount
+  // DRAFT MANAGEMENT STATE
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [hasStoredDraft, setHasStoredDraft] = useState<boolean>(false);
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState<boolean>(false);
+  const [draftToast, setDraftToast] = useState<string | null>(null);
+
+  // AUTOFILL HIGHLIGHT TRACKING
+  const [autofilledFieldKeys, setAutofilledFieldKeys] = useState<Set<string>>(new Set());
+
+  // EVIDENCE UPLOAD ENHANCEMENTS
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const isAutofilled = (key: string) => autofilledFieldKeys.has(key);
+  const markFieldAsEdited = (key: string) => {
+    setAutofilledFieldKeys((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  };
+
+  // Helper: check if data has genuine user entries (not all blank/empty)
+  const hasFormContent = (data: any): boolean => {
+    if (!data) return false;
+    const hasComp = Array.isArray(data.complainants) && data.complainants.some(
+      (c: any) => Boolean(
+        c.name?.trim() ||
+        c.relativeName?.trim() ||
+        c.mobile?.trim() ||
+        c.presentAddress?.trim() ||
+        (c.age && String(c.age).trim())
+      )
+    );
+    const hasInc = Boolean(
+      data.incidentPlace?.trim() ||
+      data.incidentLandmark?.trim() ||
+      data.incidentDetails?.trim() ||
+      data.complaintSubject?.trim() ||
+      data.complaintDescription?.trim() ||
+      data.firNumber?.trim() ||
+      data.assignedDirections?.trim()
+    );
+    const hasAcc = Array.isArray(data.accusedList) && data.accusedList.some(
+      (a: any) => Boolean(a.name?.trim() || a.address?.trim() || a.phone?.trim() || a.alias?.trim())
+    );
+    const hasAttach = Array.isArray(data.attachments) && data.attachments.length > 0;
+    return Boolean(hasComp || hasInc || hasAcc || hasAttach);
+  };
+
+  // Helper: apply all draft fields to React state
+  const applyDraftData = (draft: any) => {
+    if (!draft) return;
+    if (draft.sourceChannel) setSourceChannel(draft.sourceChannel);
+    if (draft.priorityLevel) setPriorityLevel(draft.priorityLevel);
+    if (Array.isArray(draft.complainants) && draft.complainants.length > 0) setComplainants(draft.complainants);
+    if (typeof draft.isAccusedKnown === "boolean") setIsAccusedKnown(draft.isAccusedKnown);
+    if (Array.isArray(draft.accusedList) && draft.accusedList.length > 0) setAccusedList(draft.accusedList);
+    if (draft.incidentPlace !== undefined) setIncidentPlace(draft.incidentPlace);
+    if (draft.incidentLandmark !== undefined) setIncidentLandmark(draft.incidentLandmark);
+    if (typeof draft.isDateTimeKnown === "boolean") setIsDateTimeKnown(draft.isDateTimeKnown);
+    if (draft.incidentDate !== undefined) setIncidentDate(draft.incidentDate);
+    if (draft.incidentTime !== undefined) setIncidentTime(draft.incidentTime);
+    if (draft.incidentApproxPeriod !== undefined) setIncidentApproxPeriod(draft.incidentApproxPeriod);
+    if (draft.incidentCategory !== undefined) setIncidentCategory(draft.incidentCategory);
+    if (draft.incidentDetails !== undefined) setIncidentDetails(draft.incidentDetails);
+    if (Array.isArray(draft.attachments)) setAttachments(draft.attachments);
+    if (draft.intakeMode !== undefined) setIntakeMode(draft.intakeMode);
+    if (draft.complaintSubject !== undefined) setComplaintSubject(draft.complaintSubject);
+    if (draft.complaintDescription !== undefined) setComplaintDescription(draft.complaintDescription);
+    if (typeof draft.isFirRegistered === "boolean") setIsFirRegistered(draft.isFirRegistered);
+    if (draft.firNumber !== undefined) setFirNumber(draft.firNumber);
+    if (draft.firDate !== undefined) setFirDate(draft.firDate);
+    if (draft.complaintAgeType !== undefined) setComplaintAgeType(draft.complaintAgeType);
+    if (draft.complaintClassification !== undefined) setComplaintClassification(draft.complaintClassification);
+    if (draft.complaintPurpose !== undefined) setComplaintPurpose(draft.complaintPurpose);
+    if (draft.selectedEoId !== undefined) {
+      setSelectedEoId(draft.selectedEoId);
+      setShouldAssignEoNow(Boolean(draft.selectedEoId));
+    }
+    if (draft.directionTemplate !== undefined) setDirectionTemplate(draft.directionTemplate);
+    if (draft.assignedDirections !== undefined) setAssignedDirections(draft.assignedDirections);
+    if (draft.targetDays !== undefined) setTargetDays(draft.targetDays);
+    if (Array.isArray(draft.autofilledFieldKeys) && draft.autofilledFieldKeys.length > 0) {
+      setAutofilledFieldKeys(new Set(draft.autofilledFieldKeys));
+    }
+  };
+
+  // 1. Check and restore saved form draft on page mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const saved = window.localStorage.getItem(FORM_DRAFT_KEY);
-      if (!saved) return;
+      if (!saved) {
+        setHasStoredDraft(false);
+        return;
+      }
       const draft = JSON.parse(saved);
-      if (!draft || typeof draft !== "object") return;
+      if (!draft || !hasFormContent(draft)) {
+        return;
+      }
 
-      if (Array.isArray(draft.complainants) && draft.complainants.length > 0) setComplainants(draft.complainants);
-      if (typeof draft.isAccusedKnown === "boolean") setIsAccusedKnown(draft.isAccusedKnown);
-      if (Array.isArray(draft.accusedList)) setAccusedList(draft.accusedList);
-      if (draft.incidentPlace) setIncidentPlace(draft.incidentPlace);
-      if (draft.incidentLandmark) setIncidentLandmark(draft.incidentLandmark);
-      if (typeof draft.isDateTimeKnown === "boolean") setIsDateTimeKnown(draft.isDateTimeKnown);
-      if (draft.incidentDate) setIncidentDate(draft.incidentDate);
-      if (draft.incidentTime) setIncidentTime(draft.incidentTime);
-      if (draft.incidentApproxPeriod) setIncidentApproxPeriod(draft.incidentApproxPeriod);
-      if (draft.incidentCategory) setIncidentCategory(draft.incidentCategory);
-      if (draft.incidentDetails) setIncidentDetails(draft.incidentDetails);
-      if (Array.isArray(draft.attachments)) setAttachments(draft.attachments);
-      if (draft.intakeMode) setIntakeMode(draft.intakeMode);
-      if (draft.complaintSubject) setComplaintSubject(draft.complaintSubject);
-      if (draft.complaintDescription) setComplaintDescription(draft.complaintDescription);
-      if (typeof draft.isFirRegistered === "boolean") setIsFirRegistered(draft.isFirRegistered);
-      if (draft.firNumber) setFirNumber(draft.firNumber);
-      if (draft.firDate) setFirDate(draft.firDate);
-      if (draft.complaintAgeType) setComplaintAgeType(draft.complaintAgeType);
-      if (draft.complaintClassification) setComplaintClassification(draft.complaintClassification);
-      if (draft.complaintPurpose) setComplaintPurpose(draft.complaintPurpose);
+      setHasStoredDraft(true);
+      if (draft.savedAt) setDraftSavedAt(draft.savedAt);
+
+      // Auto-restore so user never loses work when returning to this page
+      applyDraftData(draft);
     } catch (e) {
       console.warn("Could not restore form draft from localStorage:", e);
     }
   }, []);
 
-  // 2. Automatically save filled form values to localStorage
+  // 2. Automatically save filled form values to localStorage whenever valid content is entered (debounced)
   useEffect(() => {
     if (typeof window === "undefined" || createdComplaint) return;
-    try {
-      const draft = {
+
+    const timer = setTimeout(() => {
+      const currentData = {
+        sourceChannel,
+        priorityLevel,
         complainants,
         isAccusedKnown,
         accusedList,
@@ -481,7 +571,7 @@ export default function RegisterComplaintPage() {
         incidentApproxPeriod,
         incidentCategory,
         incidentDetails,
-        attachments,
+        attachments: attachments.map((a: any) => ({ ...a, dataUrl: undefined })),
         intakeMode,
         complaintSubject,
         complaintDescription,
@@ -491,12 +581,35 @@ export default function RegisterComplaintPage() {
         complaintAgeType,
         complaintClassification,
         complaintPurpose,
+        selectedEoId,
+        directionTemplate,
+        assignedDirections,
+        targetDays,
+        autofilledFieldKeys: Array.from(autofilledFieldKeys),
       };
-      window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
-    } catch (e) {
-      console.warn("Could not auto-save form draft:", e);
-    }
+
+      if (!hasFormContent(currentData)) {
+        return;
+      }
+
+      try {
+        const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        const draft = {
+          ...currentData,
+          savedAt: nowStr,
+        };
+        window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+        setDraftSavedAt(nowStr);
+        setHasStoredDraft(true);
+      } catch (e) {
+        // Silently ignore quota warning for draft
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
   }, [
+    sourceChannel,
+    priorityLevel,
     complainants,
     isAccusedKnown,
     accusedList,
@@ -518,8 +631,88 @@ export default function RegisterComplaintPage() {
     complaintAgeType,
     complaintClassification,
     complaintPurpose,
+    selectedEoId,
+    directionTemplate,
+    assignedDirections,
+    targetDays,
+    autofilledFieldKeys,
     createdComplaint,
   ]);
+
+  const handleRestoreDraft = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(FORM_DRAFT_KEY);
+      if (!saved) {
+        setDraftToast("No saved draft found in local storage.");
+        setTimeout(() => setDraftToast(null), 3000);
+        return;
+      }
+      const draft = JSON.parse(saved);
+      applyDraftData(draft);
+      setDraftSavedAt(draft.savedAt || new Date().toLocaleTimeString("en-IN"));
+      setDraftToast("Last filled draft restored successfully! / सुरक्षित ड्राफ्ट पुनः लोड हो गया!");
+      setDraftBannerDismissed(true);
+      setTimeout(() => setDraftToast(null), 4000);
+    } catch (e) {
+      setDraftToast("Failed to restore draft.");
+      setTimeout(() => setDraftToast(null), 3000);
+    }
+  };
+
+  const handleManualSaveDraft = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const draft = {
+        sourceChannel,
+        priorityLevel,
+        complainants,
+        isAccusedKnown,
+        accusedList,
+        incidentPlace,
+        incidentLandmark,
+        isDateTimeKnown,
+        incidentDate,
+        incidentTime,
+        incidentApproxPeriod,
+        incidentCategory,
+        incidentDetails,
+        attachments: attachments.map((a: any) => ({ ...a, dataUrl: undefined })),
+        intakeMode,
+        complaintSubject,
+        complaintDescription,
+        isFirRegistered,
+        firNumber,
+        firDate,
+        complaintAgeType,
+        complaintClassification,
+        complaintPurpose,
+        selectedEoId,
+        directionTemplate,
+        assignedDirections,
+        targetDays,
+        autofilledFieldKeys: Array.from(autofilledFieldKeys),
+        savedAt: nowStr,
+      };
+      window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+      setDraftSavedAt(nowStr);
+      setHasStoredDraft(true);
+      setDraftToast(`Form draft saved successfully at ${nowStr}!`);
+      setTimeout(() => setDraftToast(null), 3000);
+    } catch {}
+  };
+
+  const handleDiscardDraft = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(FORM_DRAFT_KEY);
+    }
+    setHasStoredDraft(false);
+    setDraftSavedAt(null);
+    setDraftBannerDismissed(true);
+    setDraftToast("Saved draft discarded.");
+    setTimeout(() => setDraftToast(null), 3000);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -604,7 +797,13 @@ export default function RegisterComplaintPage() {
     setIsCrossCaseTagged(false);
     setPreviewModalFile(null);
 
-    // 6. Purge saved draft from localStorage
+    // 6. Purge saved draft from localStorage & reset draft indicators
+    setAutofilledFieldKeys(new Set());
+    setHasStoredDraft(false);
+    setDraftSavedAt(null);
+    setDraftBannerDismissed(true);
+    setDraftToast("Form cleared.");
+    setTimeout(() => setDraftToast(null), 3000);
     try {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(FORM_DRAFT_KEY);
@@ -783,11 +982,29 @@ export default function RegisterComplaintPage() {
     return "other";
   };
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
+
   const handleFileUpload = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setIsUploadingFiles(true);
+    setUploadError(null);
 
     const fileArray = Array.from(files);
+
+    // Validate size limit up to 20 MB per file
+    const oversized = fileArray.filter((f) => f.size > MAX_FILE_SIZE);
+    if (oversized.length > 0) {
+      setUploadError(
+        `File size limit exceeded: ${oversized
+          .map((f) => `"${f.name}" (${(f.size / (1024 * 1024)).toFixed(1)} MB)`)
+          .join(", ")} exceeds the maximum allowed limit of 20 MB per file.`
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setIsUploadingFiles(true);
+    setUploadProgress(15);
+
     let loadedCount = 0;
     const newAttachments: ComplaintEvidenceAttachment[] = [];
 
@@ -808,16 +1025,24 @@ export default function RegisterComplaintPage() {
         });
 
         loadedCount++;
+        const pct = Math.round((loadedCount / fileArray.length) * 100);
+        setUploadProgress(pct);
+
         if (loadedCount === fileArray.length) {
           setAttachments((prev) => [...prev, ...newAttachments]);
           setIsUploadingFiles(false);
+          setUploadProgress(null);
           if (fileInputRef.current) fileInputRef.current.value = "";
         }
       };
 
       reader.onerror = () => {
         loadedCount++;
-        if (loadedCount === fileArray.length) setIsUploadingFiles(false);
+        setUploadError(`Failed to process file "${file.name}". Please try uploading again.`);
+        if (loadedCount === fileArray.length) {
+          setIsUploadingFiles(false);
+          setUploadProgress(null);
+        }
       };
 
       reader.readAsDataURL(file);
@@ -1142,6 +1367,45 @@ export default function RegisterComplaintPage() {
       setAutofillProgress(100);
       setAutofillStepText("All fields successfully populated from Gemini 3.5 Flash!");
 
+      const filledKeys = new Set<string>();
+      if (c.name) filledKeys.add("complainantName");
+      if (c.relativeName) filledKeys.add("complainantRelativeName");
+      if (c.relationType) filledKeys.add("complainantRelationType");
+      if (c.gender) filledKeys.add("complainantGender");
+      if (c.age) filledKeys.add("complainantAge");
+      if (c.mobile) filledKeys.add("complainantMobile");
+      if (c.presentAddress) filledKeys.add("complainantPresentAddress");
+      if (c.city) filledKeys.add("complainantPresentCity");
+      if (c.district) filledKeys.add("complainantPresentDistrict");
+      if (c.state) filledKeys.add("complainantPresentState");
+
+      if (isKnown) {
+        filledKeys.add("isAccusedKnown");
+        validAccusedCards.forEach((_, idx) => {
+          filledKeys.add(`accused_${idx}_name`);
+          filledKeys.add(`accused_${idx}_address`);
+          filledKeys.add(`accused_${idx}_phone`);
+          filledKeys.add(`accused_${idx}_alias`);
+          filledKeys.add(`accused_${idx}_relationWithComplainant`);
+        });
+      }
+
+      if (inc.place) filledKeys.add("incidentPlace");
+      if (inc.landmark) filledKeys.add("incidentLandmark");
+      if (inc.category) filledKeys.add("incidentCategory");
+      if (inc.date) filledKeys.add("incidentDate");
+      if (inc.time) filledKeys.add("incidentTime");
+      if (inc.details) filledKeys.add("incidentDetails");
+
+      if (comp.mode) filledKeys.add("intakeMode");
+      if (comp.subject) filledKeys.add("complaintSubject");
+      if (comp.description) filledKeys.add("complaintDescription");
+      if (comp.type) filledKeys.add("complaintAgeType");
+      if (comp.classification) filledKeys.add("complaintClassification");
+      if (comp.purpose) filledKeys.add("complaintPurpose");
+
+      setAutofilledFieldKeys(filledKeys);
+
       // Set success notice
       setAutofillSuccessNotice({
         fileName: classifiedName,
@@ -1455,6 +1719,38 @@ export default function RegisterComplaintPage() {
     // Clear validation errors
     setValidationErrors({});
 
+    const localFilledKeys = new Set<string>([
+      "complainantName",
+      "complainantRelativeName",
+      "complainantRelationType",
+      "complainantGender",
+      "complainantAge",
+      "complainantMobile",
+      "complainantPresentAddress",
+      "complainantPresentCity",
+      "complainantPresentDistrict",
+      "complainantPresentState",
+      "incidentPlace",
+      "incidentCategory",
+      "incidentDate",
+      "incidentTime",
+      "incidentDetails",
+      "complaintSubject",
+      "complaintDescription",
+      "intakeMode",
+      "complaintAgeType",
+      "complaintClassification",
+      "complaintPurpose",
+    ]);
+    if (accKnown) {
+      localFilledKeys.add("isAccusedKnown");
+      localFilledKeys.add("accused_0_name");
+      localFilledKeys.add("accused_0_address");
+      localFilledKeys.add("accused_0_phone");
+      localFilledKeys.add("accused_0_alias");
+    }
+    setAutofilledFieldKeys(localFilledKeys);
+
     // Set success banner notice
     setAutofillSuccessNotice({
       fileName,
@@ -1621,7 +1917,8 @@ export default function RegisterComplaintPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Step 1: When user clicks "Confirm & Register Complaint", validate and show Auto-Preview Modal
+  const handleInitiateRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
       setTimeout(() => {
@@ -1633,6 +1930,66 @@ export default function RegisterComplaintPage() {
       return;
     }
 
+    const primaryComp = complainants[0];
+    const selectedEo = selectedEoId ? MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId) : undefined;
+
+    const previewData: ComplaintPreviewData = {
+      sourceChannel,
+      priorityLevel,
+      complainants: complainants.map((c) => ({
+        name: c.name,
+        relationType: c.relationType,
+        relativeName: c.relativeName,
+        gender: c.gender,
+        age: c.age,
+        nationalityChoice: c.nationalityChoice,
+        otherNationality: c.otherNationality,
+        mobile: c.nationalityChoice === "Indian" ? c.mobile : `${c.countryCode} ${c.mobile}`.trim(),
+        presentAddress: c.presentAddress,
+        presentCity: c.presentCity,
+        presentDistrict: c.presentDistrict,
+        presentState: c.presentState,
+        presentCountry: c.presentCountry,
+      })),
+      isAccusedKnown,
+      accusedList: isAccusedKnown ? accusedList : [],
+      incidentPlace,
+      incidentLandmark,
+      isDateTimeKnown,
+      incidentDate,
+      incidentTime,
+      incidentApproxPeriod,
+      incidentCategory,
+      incidentDetails,
+      complaintSubject: complaintSubject.trim(),
+      complaintDescription,
+      isFirRegistered,
+      firNumber: isFirRegistered ? firNumber : undefined,
+      firDate: isFirRegistered ? firDate : undefined,
+      complaintClassification,
+      complaintPurpose,
+      directSendToFir: false,
+      directSendToFirChoice: "NO",
+      attachmentsCount: attachments.length,
+      isSho,
+      shouldAssignEoNow: Boolean(selectedEoId),
+      selectedEoName: selectedEo?.name,
+      selectedEoRank: selectedEo?.rank,
+      selectedEoPno: selectedEo?.pno,
+      assignedDirections: selectedEoId ? assignedDirections : undefined,
+      targetDays: selectedEoId ? targetDays : undefined,
+      policeStation: currentUser.stationName,
+      district: currentUser.district,
+      registeredBy: currentUser.name,
+    };
+
+    setPreviewVerificationData(previewData);
+    setShowVerificationModal(true);
+  };
+
+  // Step 2: When user clicks "Submit & Register Complaint" from the Preview Modal
+  const handleFinalSubmit = async () => {
+    if (!previewVerificationData) return;
     setIsSubmitting(true);
     const primaryComp = complainants[0];
     const otherComplainants = complainants.slice(1);
@@ -1684,6 +2041,7 @@ export default function RegisterComplaintPage() {
         });
       }
 
+      // 1. Create Complaint
       const complaint = await ComplaintService.createComplaint(
         {
           source: sourceChannel,
@@ -1741,6 +2099,8 @@ export default function RegisterComplaintPage() {
           complaintAgeType,
           complaintClassification,
           complaintPurpose,
+          directSendToFir: false,
+          directSendToFirChoice: "NO",
           isAccusedKnown,
           accusedList: formattedAccusedList,
           accusedName: formattedAccusedList[0]?.name,
@@ -1756,36 +2116,57 @@ export default function RegisterComplaintPage() {
         currentUser.pno
       );
 
-      // If registered by SHO with Assign EO active, immediately allocate to selected officer
-      if (isSho && shouldAssignEoNow && selectedEoId) {
-        const eo = MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId) || MOCK_ENQUIRY_OFFICERS[0];
-        const assignRes = await ComplaintService.assignEnquiryOfficer(
-          complaint.id,
-          eo.id,
-          eo.name,
-          eo.rank,
-          eo.pno,
-          currentUser.name,
-          assignedDirections || "Conduct preliminary spot verification & verify facts as per Section 173(3) BNSS.",
-          targetDays || 14
-        );
-        setCreatedComplaint(assignRes.complaint);
-        setShowReceiptModal(true);
-      } else {
-        // Clear the saved draft from localStorage
-        try {
-          window.localStorage.removeItem(FORM_DRAFT_KEY);
-        } catch {}
+      // 2. Generate the verified preview HTML document and save it in complaint.documents synchronously
+      try {
+        const previewHtml = generateComplaintIntakeHtml(previewVerificationData, complaint.complaintNumber);
+        const previewDataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+        await ComplaintService.addDocument(complaint.id, {
+          fileName: `Intake_Verification_Proforma_${complaint.complaintNumber}.html`,
+          fileCategory: "INTAKE VERIFICATION PROFORMA",
+          uploadedBy: currentUser.name,
+          fileSize: `${(previewHtml.length / 1024).toFixed(1)} KB`,
+          dataUrl: previewDataUrl,
+          fileUrl: previewDataUrl,
+          contentHtml: previewHtml,
+          description: "Official Citizen Complaint Verification & Intake Proforma saved upon registration",
+        });
+      } catch (docErr) {
+        console.error("Failed to auto-save intake verification proforma document:", docErr);
+      }
 
-        // User rule: If EO is not assigned, do NOT show receipt modal,
-        // navigate directly to SHO ID complaints queue (/complaints) where Assign EO option is available
-        router.push(`/complaints?unassigned=${complaint.complaintNumber}`);
-        return;
+      setShowVerificationModal(false);
+
+      if (selectedEoId) {
+        // If registered with an EO selected, immediately allocate to selected officer
+        const eo = MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId);
+        if (eo) {
+          const assignRes = await ComplaintService.assignEnquiryOfficer(
+            complaint.id,
+            eo.id,
+            eo.name,
+            eo.rank,
+            eo.pno,
+            currentUser.name,
+            assignedDirections || "Conduct preliminary spot verification & verify facts as per Section 173(3) BNSS.",
+            targetDays || 14
+          );
+          setCreatedComplaint(assignRes.complaint);
+          setShowReceiptModal(true);
+        } else {
+          setCreatedComplaint(complaint);
+          setShowReceiptModal(true);
+        }
+      } else {
+        // Registered without immediate EO assignment: show success view and generate official receipt with SHO supervision & IO not assigned
+        setCreatedComplaint(complaint);
+        setShowReceiptModal(true);
       }
 
       // Clear the saved draft from localStorage upon successful registration
       try {
         window.localStorage.removeItem(FORM_DRAFT_KEY);
+        setHasStoredDraft(false);
+        setDraftSavedAt(null);
       } catch {}
     } catch (err: any) {
       setValidationErrors({ submit: err.message || "Failed to register complaint." });
@@ -1883,6 +2264,24 @@ export default function RegisterComplaintPage() {
               </div>
             )}
 
+            {/* Direct Send to FIR Card */}
+            {createdComplaint.directSendToFir && (
+              <div className="p-4 bg-purple-50 border border-purple-300 rounded-xl text-left text-xs space-y-1.5 animate-in fade-in-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-purple-950 font-bold">
+                    <Scale className="w-4 h-4 text-purple-700 shrink-0" />
+                    <span>Direct Send to FIR: Yes • Status: FIR Register</span>
+                  </div>
+                  <span className="text-[10px] bg-purple-200 text-purple-900 font-bold px-2 py-0.5 rounded-full">
+                    FIR Register
+                  </span>
+                </div>
+                <p className="text-[11px] text-purple-900">
+                  यह शिकायत सीधे FIR दर्ज करने हेतु भेज दी गई है। EO असाइनमेंट की आवश्यकता नहीं है। SHO के Complaint Register में Action कॉलम में &ldquo;Register FIR&rdquo; बटन उपलब्ध रहेगा।
+                </p>
+              </div>
+            )}
+
             {/* Unassigned EO SHO Desk Alert Card */}
             {!createdComplaint.assignedEoName && (
               <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl text-left text-xs space-y-1.5 animate-in fade-in-50">
@@ -1909,16 +2308,17 @@ export default function RegisterComplaintPage() {
                   View Complaint Profile
                 </Button>
               </Link>
-              {createdComplaint.assignedEoName && (
-                <button
-                  type="button"
-                  onClick={() => setShowReceiptModal(true)}
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-                >
-                  <FileText className="w-4 h-4" />
-                  View &amp; Print Complaint Receipt
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowReceiptModal(true)}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-emerald-200" />
+                <span>
+                  Print Official Receipt of registered complaints
+                  {!createdComplaint.assignedEoName ? " (SHO Supervision • IO Not Assigned)" : " (EO Assigned)"}
+                </span>
+              </button>
               <Link href="/complaints">
                 <Button variant="outline" size="md" className="text-xs">
                   Return to Complaints Register
@@ -2110,46 +2510,147 @@ export default function RegisterComplaintPage() {
         </div>
       )}
 
-      {/* Voice Dictation Control Bar */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 flex items-center justify-between text-xs text-slate-600">
-        <div className="flex items-center gap-2">
-          <Mic className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>
-            Voice typing enabled for <strong>Facts of Details</strong> &amp; <strong>Detailed Allegations</strong>.
-          </span>
+      {/* Draft Notification Toast */}
+      {draftToast && (
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-950 flex items-center justify-between gap-2 shadow-xs animate-in fade-in-50">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-semibold">{draftToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDraftToast(null)}
+            className="text-emerald-700 hover:text-emerald-950 p-1 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
+      )}
+
+      {/* Draft Restoration Alert Banner (When stored draft exists and not yet dismissed) */}
+      {hasStoredDraft && !draftBannerDismissed && (
+        <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-950 text-xs sm:text-sm">
+                Saved Draft Available / सुरक्षित ड्राफ्ट उपलब्ध है
+              </p>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                A previously filled complaint draft is saved in this browser{draftSavedAt ? ` (Saved at: ${draftSavedAt})` : ""}. Your entered data is preserved automatically even when navigating to other pages. Click &ldquo;Restore Last Filled Draft&rdquo; anytime to recover your entries.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleRestoreDraft}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-xs"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Restore Last Filled Draft</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDiscardDraft}
+              className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 cursor-pointer"
+            >
+              Discard Draft
+            </Button>
+            <button
+              type="button"
+              onClick={() => setDraftBannerDismissed(true)}
+              className="p-1 text-amber-700 hover:text-amber-950 rounded cursor-pointer"
+              title="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Status & Actions Control Bar + Voice Dictation Bar */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${hasStoredDraft ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+          <div>
+            <span className="font-bold text-slate-800">
+              {hasStoredDraft
+                ? `Draft Auto-Saved${draftSavedAt ? ` at ${draftSavedAt}` : ""}`
+                : "Auto-Save Active"}
+            </span>
+            <span className="text-[11px] text-slate-500 ml-1.5 hidden md:inline">
+              (Form stays preserved when navigating across pages)
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Restore Last Draft Button */}
+          <Button
             type="button"
-            onClick={() => setVoiceLang("en-IN")}
-            className={`px-2.5 py-0.5 rounded text-xs font-bold transition-colors ${
-              voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
-            }`}
+            variant="outline"
+            size="sm"
+            onClick={handleRestoreDraft}
+            disabled={!hasStoredDraft}
+            className="text-xs font-bold gap-1.5 border-slate-300 hover:bg-white text-blue-900 bg-blue-50/50 cursor-pointer shadow-2xs"
+            title="Restore the last auto-saved draft"
           >
-            English
-          </button>
-          <button
+            <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+            <span>Restore Last Draft</span>
+          </Button>
+
+          {/* Manual Save Draft Button */}
+          <Button
             type="button"
-            onClick={() => setVoiceLang("hi-IN")}
-            className={`px-2.5 py-0.5 rounded text-xs font-bold transition-colors ${
-              voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
-            }`}
+            variant="outline"
+            size="sm"
+            onClick={handleManualSaveDraft}
+            className="text-xs font-semibold gap-1.5 border-slate-300 hover:bg-white text-emerald-900 bg-emerald-50/50 cursor-pointer shadow-2xs"
+            title="Explicitly save form as draft now"
           >
-            Hindi
-          </button>
+            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Save as Draft</span>
+          </Button>
+
+          {/* Voice Language Selector */}
+          <div className="flex items-center gap-1 pl-2 border-l border-slate-300 shrink-0">
+            <Mic className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <button
+              type="button"
+              onClick={() => setVoiceLang("en-IN")}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setVoiceLang("hi-IN")}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Hindi
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Single Form Card */}
       <Card className="border-slate-200 shadow-xs">
         <CardContent className="p-5 sm:p-7">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleInitiateRegister} className="space-y-8">
 
             {/* =========================================================================
                 1. COMPLAINANT DETAILS
                ========================================================================= */}
-            <div id="sec-complainant" className="space-y-4">
-              <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
+            <div id="sec-complainant" className="space-y-4 p-4 sm:p-6 bg-sky-50/60 border border-sky-200 rounded-2xl shadow-2xs">
+              <div className="border-b border-sky-200/80 pb-3 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
                     <User className="w-4 h-4 text-blue-600" />
@@ -2238,16 +2739,30 @@ export default function RegisterComplaintPage() {
                   {/* (a) Name, Relation, Relative Name, Age, Gender (All Mandatory) */}
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                     <div className="sm:col-span-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Complainant Full Name *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Complainant Full Name *
+                        </label>
+                        {isAutofilled("complainantName") && idx === 0 && (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                            ✨ Auto-filled
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={comp.name}
-                        onChange={(e) => handleComplainantChange(idx, "name", e.target.value)}
+                        onChange={(e) => {
+                          handleComplainantChange(idx, "name", e.target.value);
+                          if (idx === 0) markFieldAsEdited("complainantName");
+                        }}
                         placeholder="e.g. Rameshwar Dass"
-                        className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                          validationErrors[`comp_${idx}_name`] ? "border-red-500 bg-red-50" : "border-slate-300"
+                        className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all font-medium ${
+                          validationErrors[`comp_${idx}_name`]
+                            ? "border-red-500 bg-red-50"
+                            : isAutofilled("complainantName") && idx === 0
+                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            : "bg-slate-50 border-slate-300"
                         }`}
                       />
                       {validationErrors[`comp_${idx}_name`] && (
@@ -2256,13 +2771,27 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-1">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Relation (Optional)">
-                        Relation
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 truncate" title="Relation (Optional)">
+                          Relation
+                        </label>
+                        {isAutofilled("complainantRelationType") && idx === 0 && (
+                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                            ✨ Auto
+                          </span>
+                        )}
+                      </div>
                       <select
                         value={comp.relationType}
-                        onChange={(e) => handleComplainantChange(idx, "relationType", e.target.value)}
-                        className="w-full px-2 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center"
+                        onChange={(e) => {
+                          handleComplainantChange(idx, "relationType", e.target.value);
+                          if (idx === 0) markFieldAsEdited("complainantRelationType");
+                        }}
+                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center ${
+                          isAutofilled("complainantRelationType") && idx === 0
+                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            : "bg-slate-50 border-slate-300"
+                        }`}
                       >
                         {dynamicRelations.length > 0 ? (
                           dynamicRelations.map((r) => (
@@ -2282,31 +2811,59 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-4">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Relative Name {comp.relationType ? `(${comp.relationType})` : ""}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Relative Name {comp.relationType ? `(${comp.relationType})` : ""}
+                        </label>
+                        {isAutofilled("complainantRelativeName") && idx === 0 && (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                            ✨ Auto
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         value={comp.relativeName || ""}
-                        onChange={(e) => handleComplainantChange(idx, "relativeName", e.target.value)}
+                        onChange={(e) => {
+                          handleComplainantChange(idx, "relativeName", e.target.value);
+                          if (idx === 0) markFieldAsEdited("complainantRelativeName");
+                        }}
                         placeholder="e.g. Sh. Balwant Rai (Optional)"
-                        className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                        className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                          isAutofilled("complainantRelativeName") && idx === 0
+                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            : "bg-slate-50 border-slate-300"
+                        }`}
                       />
                     </div>
 
                     <div className="sm:col-span-1">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Age (Years, Optional)">
-                        Age
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 truncate" title="Age (Years, Optional)">
+                          Age
+                        </label>
+                        {isAutofilled("complainantAge") && idx === 0 && (
+                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                            ✨ Auto
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="number"
                         min="1"
                         max="120"
                         value={comp.age || ""}
-                        onChange={(e) => handleComplainantChange(idx, "age", e.target.value)}
+                        onChange={(e) => {
+                          handleComplainantChange(idx, "age", e.target.value);
+                          if (idx === 0) markFieldAsEdited("complainantAge");
+                        }}
                         placeholder="35"
-                        className={`w-full px-2 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center ${
-                          validationErrors[`comp_${idx}_age`] ? "border-red-500 bg-red-50" : "border-slate-300"
+                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center ${
+                          validationErrors[`comp_${idx}_age`]
+                            ? "border-red-500 bg-red-50"
+                            : isAutofilled("complainantAge") && idx === 0
+                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            : "bg-slate-50 border-slate-300"
                         }`}
                       />
                       {validationErrors[`comp_${idx}_age`] && (
@@ -2315,13 +2872,27 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Gender
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-slate-700">
+                          Gender
+                        </label>
+                        {isAutofilled("complainantGender") && idx === 0 && (
+                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                            ✨ Auto
+                          </span>
+                        )}
+                      </div>
                       <select
                         value={comp.gender || "MALE"}
-                        onChange={(e: any) => handleComplainantChange(idx, "gender", e.target.value)}
-                        className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold"
+                        onChange={(e: any) => {
+                          handleComplainantChange(idx, "gender", e.target.value);
+                          if (idx === 0) markFieldAsEdited("complainantGender");
+                        }}
+                        className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold ${
+                          isAutofilled("complainantGender") && idx === 0
+                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            : "bg-slate-50 border-slate-300"
+                        }`}
                       >
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
@@ -2380,18 +2951,30 @@ export default function RegisterComplaintPage() {
 
                       {/* Address */}
                       <div className={comp.nationalityChoice === "Other" ? "sm:col-span-6" : "sm:col-span-9"}>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Address (House / Street / Mohalla) *
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700">
+                            Address (House / Street / Mohalla) *
+                          </label>
+                          {isAutofilled("complainantPresentAddress") && idx === 0 && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                              ✨ Auto-filled
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           value={comp.presentAddress}
-                          onChange={(e) => handleComplainantChange(idx, "presentAddress", e.target.value)}
+                          onChange={(e) => {
+                            handleComplainantChange(idx, "presentAddress", e.target.value);
+                            if (idx === 0) markFieldAsEdited("complainantPresentAddress");
+                          }}
                           placeholder="e.g. House No. 89, Gali No. 4, Mohan Nagar"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentAddress`]
                               ? "border-red-500 bg-red-50"
-                              : "border-slate-300"
+                              : isAutofilled("complainantPresentAddress") && idx === 0
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentAddress`] && (
@@ -2403,18 +2986,30 @@ export default function RegisterComplaintPage() {
 
                       {/* Village / City */}
                       <div className="sm:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Village / City *
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700">
+                            Village / City *
+                          </label>
+                          {isAutofilled("complainantPresentCity") && idx === 0 && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                              ✨ Auto-filled
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           value={comp.presentCity}
-                          onChange={(e) => handleComplainantChange(idx, "presentCity", e.target.value)}
+                          onChange={(e) => {
+                            handleComplainantChange(idx, "presentCity", e.target.value);
+                            if (idx === 0) markFieldAsEdited("complainantPresentCity");
+                          }}
                           placeholder="e.g. Kurukshetra"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentCity`]
                               ? "border-red-500 bg-red-50"
-                              : "border-slate-300"
+                              : isAutofilled("complainantPresentCity") && idx === 0
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentCity`] && (
@@ -2426,18 +3021,30 @@ export default function RegisterComplaintPage() {
 
                       {/* District */}
                       <div className="sm:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          District *
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700">
+                            District *
+                          </label>
+                          {isAutofilled("complainantPresentDistrict") && idx === 0 && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                              ✨ Auto-filled
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           value={comp.presentDistrict}
-                          onChange={(e) => handleComplainantChange(idx, "presentDistrict", e.target.value)}
+                          onChange={(e) => {
+                            handleComplainantChange(idx, "presentDistrict", e.target.value);
+                            if (idx === 0) markFieldAsEdited("complainantPresentDistrict");
+                          }}
                           placeholder="e.g. Kurukshetra"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentDistrict`]
                               ? "border-red-500 bg-red-50"
-                              : "border-slate-300"
+                              : isAutofilled("complainantPresentDistrict") && idx === 0
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentDistrict`] && (
@@ -2449,18 +3056,30 @@ export default function RegisterComplaintPage() {
 
                       {/* State */}
                       <div className="sm:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          State *
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700">
+                            State *
+                          </label>
+                          {isAutofilled("complainantPresentState") && idx === 0 && (
+                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                              ✨ Auto-filled
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="text"
                           value={comp.presentState}
-                          onChange={(e) => handleComplainantChange(idx, "presentState", e.target.value)}
+                          onChange={(e) => {
+                            handleComplainantChange(idx, "presentState", e.target.value);
+                            if (idx === 0) markFieldAsEdited("complainantPresentState");
+                          }}
                           placeholder="e.g. Haryana"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentState`]
                               ? "border-red-500 bg-red-50"
-                              : "border-slate-300"
+                              : isAutofilled("complainantPresentState") && idx === 0
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentState`] && (
@@ -2501,9 +3120,16 @@ export default function RegisterComplaintPage() {
 
                     {/* Mobile No. showing Country Code: Default +91 and 10 digits if Indian, editable if other */}
                     <div className="pt-2">
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Mobile Number {comp.nationalityChoice === "Indian" ? "(Strictly 10 Digits)" : "(Contact Phone)"} *
-                      </label>
+                      <div className="flex items-center justify-between max-w-md mb-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Mobile Number {comp.nationalityChoice === "Indian" ? "(Strictly 10 Digits)" : "(Contact Phone)"} *
+                        </label>
+                        {isAutofilled("complainantMobile") && idx === 0 && (
+                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                            ✨ Auto-filled
+                          </span>
+                        )}
+                      </div>
                       <div className="max-w-md flex items-center gap-2">
                         {comp.nationalityChoice === "Indian" ? (
                           <div className="w-full relative flex items-center">
@@ -2514,10 +3140,17 @@ export default function RegisterComplaintPage() {
                               type="tel"
                               maxLength={10}
                               value={comp.mobile}
-                              onChange={(e) => handleComplainantChange(idx, "mobile", e.target.value)}
+                              onChange={(e) => {
+                                handleComplainantChange(idx, "mobile", e.target.value);
+                                if (idx === 0) markFieldAsEdited("complainantMobile");
+                              }}
                               placeholder="9812000000"
-                              className={`w-full pl-14 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] ${
-                                validationErrors[`comp_${idx}_mobile`] ? "border-red-500 bg-red-50" : "border-slate-300"
+                              className={`w-full pl-14 pr-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                                validationErrors[`comp_${idx}_mobile`]
+                                  ? "border-red-500 bg-red-50"
+                                  : isAutofilled("complainantMobile") && idx === 0
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
                               }`}
                             />
                           </div>
@@ -2537,10 +3170,17 @@ export default function RegisterComplaintPage() {
                               type="tel"
                               maxLength={15}
                               value={comp.mobile}
-                              onChange={(e) => handleComplainantChange(idx, "mobile", e.target.value)}
+                              onChange={(e) => {
+                                handleComplainantChange(idx, "mobile", e.target.value);
+                                if (idx === 0) markFieldAsEdited("complainantMobile");
+                              }}
                               placeholder="Enter Phone Number"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] ${
-                                validationErrors[`comp_${idx}_mobile`] ? "border-red-500 bg-red-50" : "border-slate-300"
+                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                                validationErrors[`comp_${idx}_mobile`]
+                                  ? "border-red-500 bg-red-50"
+                                  : isAutofilled("complainantMobile") && idx === 0
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
                               }`}
                             />
                           </div>
@@ -2678,8 +3318,8 @@ export default function RegisterComplaintPage() {
             {/* =========================================================================
                 2. ACCUSED DETAILS (Default: NO)
                ========================================================================= */}
-            <div id="sec-accused" className="space-y-4 pt-6 border-t border-slate-200">
-              <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div id="sec-accused" className="space-y-4 p-4 sm:p-6 bg-amber-50/60 border border-amber-200 rounded-2xl shadow-2xs">
+              <div className="border-b border-amber-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
                     <Users className="w-4 h-4 text-amber-600" />
@@ -2691,8 +3331,15 @@ export default function RegisterComplaintPage() {
                 </div>
 
                 {/* Accused Known Toggle: Default NO */}
-                <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                  <span className="text-xs font-bold text-slate-700 px-2">Accused Known?</span>
+                <div className="flex items-center gap-2 bg-white/90 p-1 rounded-lg border border-amber-200 shadow-2xs">
+                  <div className="flex items-center gap-1.5 px-2">
+                    <span className="text-xs font-bold text-slate-700">Accused Known?</span>
+                    {isAutofilled("isAccusedKnown") && (
+                      <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                        ✨ Auto
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setIsAccusedKnown(false)}
@@ -2720,7 +3367,7 @@ export default function RegisterComplaintPage() {
 
               {!isAccusedKnown ? (
                 /* Default NO View */
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center space-y-1.5">
+                <div className="p-4 bg-white/80 border border-amber-200 rounded-xl text-center space-y-1.5 shadow-2xs">
                   <p className="text-xs font-bold text-slate-700">
                     Suspect(s) Unidentified / Unknown at this stage
                   </p>
@@ -2739,7 +3386,7 @@ export default function RegisterComplaintPage() {
                     <button
                       type="button"
                       onClick={handleAddAccused}
-                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+                      className="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors shadow-2xs"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add Another Accused</span>
@@ -2750,10 +3397,10 @@ export default function RegisterComplaintPage() {
                     {accusedList.map((acc, idx) => (
                       <div
                         key={acc.id}
-                        className="p-3.5 sm:p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3"
+                        className="p-3.5 sm:p-4 bg-white border border-amber-200 rounded-xl space-y-3 shadow-2xs"
                       >
-                        <div className="flex items-center justify-between border-b border-slate-200/60 pb-1.5">
-                          <span className="font-bold text-xs text-slate-800 font-mono">
+                        <div className="flex items-center justify-between border-b border-amber-100 pb-1.5">
+                          <span className="font-bold text-xs text-amber-950 font-mono">
                             S. No. {idx + 1}
                           </span>
                           {accusedList.length > 1 && (
@@ -2770,16 +3417,30 @@ export default function RegisterComplaintPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              Accused Name *
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-slate-700">
+                                Accused Name *
+                              </label>
+                              {(isAutofilled(`accused_${idx}_name`) || (idx === 0 && isAutofilled("accused_0_name"))) && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                                  ✨ Auto-filled
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               value={acc.name}
-                              onChange={(e) => handleAccusedChange(idx, "name", e.target.value)}
+                              onChange={(e) => {
+                                handleAccusedChange(idx, "name", e.target.value);
+                                markFieldAsEdited(`accused_${idx}_name`);
+                              }}
                               placeholder="e.g. Vikas Aggarwal"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                                validationErrors[`acc_${idx}_name`] ? "border-red-500 bg-red-50" : "border-slate-300"
+                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                                validationErrors[`acc_${idx}_name`]
+                                  ? "border-red-500 bg-red-50"
+                                  : (isAutofilled(`accused_${idx}_name`) || (idx === 0 && isAutofilled("accused_0_name")))
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
                               }`}
                             />
                             {validationErrors[`acc_${idx}_name`] && (
@@ -2790,18 +3451,30 @@ export default function RegisterComplaintPage() {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              Accused Address *
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-slate-700">
+                                Accused Address *
+                              </label>
+                              {(isAutofilled(`accused_${idx}_address`) || (idx === 0 && isAutofilled("accused_0_address"))) && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                                  ✨ Auto-filled
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               value={acc.address}
-                              onChange={(e) => handleAccusedChange(idx, "address", e.target.value)}
+                              onChange={(e) => {
+                                handleAccusedChange(idx, "address", e.target.value);
+                                markFieldAsEdited(`accused_${idx}_address`);
+                              }}
                               placeholder="e.g. Shop No. 12, Old Grain Market, Thanesar"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                                 validationErrors[`acc_${idx}_address`]
                                   ? "border-red-500 bg-red-50"
-                                  : "border-slate-300"
+                                  : (isAutofilled(`accused_${idx}_address`) || (idx === 0 && isAutofilled("accused_0_address")))
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
                               }`}
                             />
                             {validationErrors[`acc_${idx}_address`] && (
@@ -2812,28 +3485,56 @@ export default function RegisterComplaintPage() {
                           </div>
 
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              Contact Phone (If Known)
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-slate-700">
+                                Contact Phone (If Known)
+                              </label>
+                              {(isAutofilled(`accused_${idx}_phone`) || (idx === 0 && isAutofilled("accused_0_phone"))) && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                                  ✨ Auto-filled
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="tel"
                               value={acc.phone || ""}
-                              onChange={(e) => handleAccusedChange(idx, "phone", e.target.value)}
+                              onChange={(e) => {
+                                handleAccusedChange(idx, "phone", e.target.value);
+                                markFieldAsEdited(`accused_${idx}_phone`);
+                              }}
                               placeholder="e.g. 9416000000"
-                              className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg font-mono focus:ring-2 focus:ring-[#0b192c]"
+                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg font-mono focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                                (isAutofilled(`accused_${idx}_phone`) || (idx === 0 && isAutofilled("accused_0_phone")))
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
+                              }`}
                             />
                           </div>
 
                           <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              Alias / Nickname / Relation (If Known)
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-slate-700">
+                                Alias / Nickname / Relation (If Known)
+                              </label>
+                              {(isAutofilled(`accused_${idx}_alias`) || (idx === 0 && isAutofilled("accused_0_alias"))) && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                                  ✨ Auto-filled
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               value={acc.alias || ""}
-                              onChange={(e) => handleAccusedChange(idx, "alias", e.target.value)}
+                              onChange={(e) => {
+                                handleAccusedChange(idx, "alias", e.target.value);
+                                markFieldAsEdited(`accused_${idx}_alias`);
+                              }}
                               placeholder="e.g. alias Vicky / Business Partner"
-                              className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                                (isAutofilled(`accused_${idx}_alias`) || (idx === 0 && isAutofilled("accused_0_alias")))
+                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  : "bg-slate-50 border-slate-300"
+                              }`}
                             />
                           </div>
                         </div>
@@ -2845,30 +3546,43 @@ export default function RegisterComplaintPage() {
             </div>
 
             {/* =========================================================================
-                3. INCIDENT DETAILS
+                3. INCIDENT DETAILS (COMBINED INCIDENT & COMPLAINT DETAILS)
                ========================================================================= */}
-            <div id="sec-incident" className="space-y-4 pt-6 border-t border-slate-200">
-              <div className="border-b border-slate-200 pb-3">
-                <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span>3. Incident Details</span>
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Location, date/time, classification of crime, allegations and evidence attachments
-                </p>
+            <div id="sec-incident" className="space-y-5 p-4 sm:p-6 bg-indigo-50/50 border border-indigo-200 rounded-2xl shadow-2xs">
+              <div className="border-b border-indigo-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span>3. Incident &amp; Complaint Details</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Occurrence spot, date/time, classification of crime, brief subject, summary and comprehensive allegations
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-white px-2.5 py-1 rounded-full border border-indigo-200 self-start sm:self-auto shadow-2xs">
+                  BNSS Sec 173(3) Particulars
+                </span>
               </div>
 
-              {/* (a) Place of Incident & (b) Class of Incident (Crime Category) side-by-side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Row 1: Place of Incident & Crime Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (a) Place of Incident *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">
+                      (a) Place of Incident (Crime Spot) *
+                    </label>
+                    {isAutofilled("incidentPlace") && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                        ✨ Auto-filled
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={incidentPlace}
                     onChange={(e) => {
                       setIncidentPlace(e.target.value);
+                      markFieldAsEdited("incidentPlace");
                       if (validationErrors.incidentPlace) {
                         setValidationErrors((prev) => {
                           const next = { ...prev };
@@ -2878,8 +3592,12 @@ export default function RegisterComplaintPage() {
                       }
                     }}
                     placeholder="e.g. Near New Bus Stand Chowk, Thanesar"
-                    className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                      validationErrors.incidentPlace ? "border-red-500 bg-red-50" : "border-slate-300"
+                    className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                      validationErrors.incidentPlace
+                        ? "border-red-500 bg-red-50"
+                        : isAutofilled("incidentPlace")
+                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        : "bg-white border-slate-300"
                     }`}
                   />
                   {validationErrors.incidentPlace && (
@@ -2888,13 +3606,27 @@ export default function RegisterComplaintPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (b) Class of Incident (Crime Category) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">
+                      (b) Class of Incident (Crime Category) *
+                    </label>
+                    {isAutofilled("incidentCategory") && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                        ✨ Auto-filled
+                      </span>
+                    )}
+                  </div>
                   <select
                     value={incidentCategory}
-                    onChange={(e: any) => setIncidentCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
+                    onChange={(e: any) => {
+                      setIncidentCategory(e.target.value);
+                      markFieldAsEdited("incidentCategory");
+                    }}
+                    className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
+                      isAutofilled("incidentCategory")
+                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        : "bg-white border-slate-300"
+                    }`}
                   >
                     {dynamicCategories.length > 0 ? (
                       dynamicCategories.map((c) => (
@@ -2921,15 +3653,14 @@ export default function RegisterComplaintPage() {
                 </div>
               </div>
 
-              {/* (c) Date / Time of Incident if known then Yes otherwise No in one single line */}
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              {/* Row 2: Date / Time of Incident Known toggle & Inputs */}
+              <div className="p-3 bg-white/90 border border-indigo-200 rounded-xl shadow-2xs">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                  {/* Label + Yes/No toggle */}
                   <div className="flex items-center gap-2.5 shrink-0">
                     <label className="text-xs font-bold text-slate-800 whitespace-nowrap">
                       (c) Date / Time of Incident Known?
                     </label>
-                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-xs">
+                    <div className="flex items-center gap-1 bg-slate-50 p-0.5 rounded-lg border border-slate-200 text-xs">
                       <button
                         type="button"
                         onClick={() => setIsDateTimeKnown(true)}
@@ -2951,29 +3682,56 @@ export default function RegisterComplaintPage() {
                     </div>
                   </div>
 
-                  {/* Date & Time (if Yes) or Approximate Period (if No) in same row */}
                   {isDateTimeKnown ? (
                     <div className="flex flex-1 flex-col sm:flex-row items-center gap-2.5 min-w-0">
                       <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
-                        <label className="text-xs font-semibold text-slate-600 shrink-0">
-                          Date *
-                        </label>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <label className="text-xs font-semibold text-slate-600">
+                            Date *
+                          </label>
+                          {isAutofilled("incidentDate") && (
+                            <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                              ✨ Auto
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="date"
                           value={incidentDate}
-                          onChange={(e) => setIncidentDate(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                          onChange={(e) => {
+                            setIncidentDate(e.target.value);
+                            markFieldAsEdited("incidentDate");
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                            isAutofilled("incidentDate")
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "border-slate-300"
+                          }`}
                         />
                       </div>
                       <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
-                        <label className="text-xs font-semibold text-slate-600 shrink-0">
-                          Time
-                        </label>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <label className="text-xs font-semibold text-slate-600">
+                            Time
+                          </label>
+                          {isAutofilled("incidentTime") && (
+                            <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                              ✨ Auto
+                            </span>
+                          )}
+                        </div>
                         <input
                           type="time"
                           value={incidentTime}
-                          onChange={(e) => setIncidentTime(e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                          onChange={(e) => {
+                            setIncidentTime(e.target.value);
+                            markFieldAsEdited("incidentTime");
+                          }}
+                          className={`w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                            isAutofilled("incidentTime")
+                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              : "border-slate-300"
+                          }`}
                         />
                       </div>
                     </div>
@@ -2994,128 +3752,491 @@ export default function RegisterComplaintPage() {
                 </div>
               </div>
 
-              {/* (d) Facts of Details / Detailed Allegations (Optional) */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-slate-700">
-                    (d) Facts of Details / Detailed Allegations (Optional)
-                  </label>
-                  <VoiceInputButton
-                    preferredLang={voiceLang}
-                    fieldLabel="Detailed Allegations"
-                    currentValue={incidentDetails}
-                    onTranscript={(val) => setIncidentDetails((prev) => (prev ? `${prev} ${val}` : val))}
-                  />
-                </div>
-                <textarea
-                  rows={4}
-                  value={incidentDetails}
-                  onChange={(e) => setIncidentDetails(e.target.value)}
-                  placeholder="Optional: Narrate specific facts, sequence of events, weapon used, amounts defrauded, witnesses present..."
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                />
-              </div>
-
-              {/* (e) Upload Evidence / Attachments in Any Format */}
-              <div className="pt-2 border-t border-slate-200 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <Paperclip className="w-4 h-4 text-blue-600" />
-                      <h4 className="text-xs font-bold text-slate-900">
-                        (e) Upload Evidence / Attachments (Any Format: Video, Audio, Document, Photo)
-                      </h4>
-                      {attachments.length > 0 && (
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                          {attachments.length} Attached
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      Supports CCTV videos, call recordings, stamped documents, PDFs, photos and any legal files
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Compact Drag & Drop Area next to Upload Evidence */}
-                    <div
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingEvidence(true);
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingEvidence(false);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsDraggingEvidence(false);
-                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                          handleFileUpload(e.dataTransfer.files);
-                        }
-                      }}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`px-3 py-1.5 border border-dashed rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition-all ${
-                        isDraggingEvidence
-                          ? "border-blue-600 bg-blue-100/90 text-blue-900 scale-102"
-                          : "border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 text-slate-600"
-                      }`}
-                      title="Drag and drop files here, or click to browse"
-                    >
-                      <Paperclip className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      <span className="font-medium text-[11px] hidden sm:inline">
-                        {isDraggingEvidence ? "Drop file here" : "Drag & Drop files"}
+              {/* Row 3: Intake Mode, Subject Headline, Fresh/Old, and Is FIR Registered */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end p-3.5 bg-white/90 border border-indigo-200 rounded-xl shadow-2xs">
+                {/* Mode of Intake */}
+                <div className="sm:col-span-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700 truncate" title="Mode of Intake">
+                      Mode of Intake *
+                    </label>
+                    {isAutofilled("intakeMode") && (
+                      <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                        ✨ Auto
                       </span>
-                      <span className="font-medium text-[11px] sm:hidden">Drop</span>
-                    </div>
+                    )}
+                  </div>
+                  <select
+                    value={intakeMode}
+                    onChange={(e) => {
+                      setIntakeMode(e.target.value);
+                      setSourceChannel(e.target.value as any);
+                      markFieldAsEdited("intakeMode");
+                    }}
+                    className={`w-full px-2.5 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
+                      isAutofilled("intakeMode")
+                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        : "bg-white border-slate-300"
+                    }`}
+                  >
+                    <option value="WALK_IN_STATION">Walk-in Counter</option>
+                    <option value="CM_WINDOW_HARYANA">CM Window (VIP)</option>
+                    <option value="CITIZEN_PORTAL_HARPATH">Citizen Portal (HarPath)</option>
+                    <option value="EMERGENCY_112">Emergency 112 Call</option>
+                    <option value="SP_OFFICE_REFERENCE">SP Office Reference</option>
+                    <option value="POSTAL_APPLICATION">Postal Application</option>
+                    <option value="WOMEN_HELPDESK">Women Helpdesk</option>
+                  </select>
+                </div>
 
+                {/* Subject Headline */}
+                <div className="sm:col-span-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700 truncate" title="Subject Headline">
+                      Subject (Brief Headline) *
+                    </label>
+                    {isAutofilled("complaintSubject") && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
+                        ✨ Auto
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={complaintSubject}
+                    onChange={(e) => {
+                      setComplaintSubject(e.target.value);
+                      markFieldAsEdited("complaintSubject");
+                      if (validationErrors.complaintSubject) {
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.complaintSubject;
+                          return next;
+                        });
+                      }
+                    }}
+                    placeholder="e.g. Complaint regarding cheating / online fraud"
+                    className={`w-full px-2.5 py-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                      validationErrors.complaintSubject
+                        ? "border-red-500 bg-red-50"
+                        : isAutofilled("complaintSubject")
+                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        : "border-slate-300"
+                    }`}
+                  />
+                  {validationErrors.complaintSubject && (
+                    <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintSubject}</p>
+                  )}
+                </div>
+
+                {/* Type of Complaint (Fresh / Old) */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Type of Complaint">
+                    Complaint Age *
+                  </label>
+                  <div className="flex items-center bg-white p-0.5 rounded-lg border border-slate-200 text-xs">
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingFiles}
-                      className="px-3 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-2xs shrink-0 cursor-pointer"
+                      onClick={() => setComplaintAgeType("FRESH")}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        complaintAgeType === "FRESH"
+                          ? "bg-[#0b192c] text-white shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
                     >
-                      <Upload className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{isUploadingFiles ? "Processing..." : "Upload Evidence"}</span>
+                      Fresh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComplaintAgeType("OLD")}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        complaintAgeType === "OLD"
+                          ? "bg-amber-600 text-white shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Old
                     </button>
                   </div>
                 </div>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="*/*"
-                  onChange={(e) => handleFileUpload(e.target.files)}
-                  className="hidden"
-                />
+                {/* Is FIR Registered */}
+                <div className="sm:col-span-3">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Is FIR Registered?">
+                    Is FIR Registered? *
+                  </label>
+                  <div className="flex items-center bg-white p-0.5 rounded-lg border border-slate-200 text-xs w-full">
+                    <button
+                      type="button"
+                      onClick={() => setIsFirRegistered(false)}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        !isFirRegistered ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      No
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFirRegistered(true)}
+                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                        isFirRegistered ? "bg-red-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Yes
+                    </button>
+                  </div>
+                </div>
 
-                {/* Attached Files List */}
-                {attachments.length > 0 && (
-                  <div className="space-y-2 pt-1">
-                    <div className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
-                      <span>Attached Evidence Files ({attachments.length}):</span>
-                      <button
-                        type="button"
-                        onClick={() => setAttachments([])}
-                        className="text-red-600 hover:text-red-800 text-[10px] font-semibold underline"
-                      >
-                        Remove All
-                      </button>
+                {/* If FIR Registered is Yes, show inputs inline */}
+                {isFirRegistered && (
+                  <div className="sm:col-span-12 p-3 bg-red-50/60 border border-red-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in-50">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        FIR Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={firNumber}
+                        onChange={(e) => setFirNumber(e.target.value)}
+                        placeholder="e.g. FIR No. 104/2026"
+                        className={`w-full px-2.5 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          validationErrors.firNumber ? "border-red-500 bg-red-50" : "border-slate-300"
+                        }`}
+                      />
+                      {validationErrors.firNumber && (
+                        <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.firNumber}</p>
+                      )}
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        FIR Registration Date
+                      </label>
+                      <input
+                        type="date"
+                        value={firDate}
+                        onChange={(e) => setFirDate(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
+              {/* Row 4: Description of Incident (Enlarged Box + Brief Summary Guidance + Live Word Count) */}
+              <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-800">
+                      Description of Incident (घटना का संक्षिप्त विवरण) *
+                    </label>
+                    {isAutofilled("incidentDetails") && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                        ✨ Auto-filled
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
+                    <span className="italic text-slate-500">
+                      Brief &amp; summary in minimum words
+                    </span>
+                    <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
+                      {incidentDetails.trim() ? incidentDetails.trim().split(/\s+/).length : 0} words
+                    </span>
+                    <VoiceInputButton
+                      preferredLang={voiceLang}
+                      fieldLabel="Description of Incident"
+                      currentValue={incidentDetails}
+                      onTranscript={(val) => {
+                        setIncidentDetails((prev) => (prev ? `${prev} ${val}` : val));
+                        markFieldAsEdited("incidentDetails");
+                      }}
+                    />
+                  </div>
+                </div>
+                <textarea
+                  rows={12}
+                  value={incidentDetails}
+                  onChange={(e) => {
+                    setIncidentDetails(e.target.value);
+                    markFieldAsEdited("incidentDetails");
+                  }}
+                  placeholder="Provide a concise summary of the incident in minimum words: What occurred, where, sequence of events, persons involved, loss/property details, and immediate witness observations..."
+                  className={`w-full min-h-[260px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
+                    isAutofilled("incidentDetails")
+                      ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                      : "bg-white border-slate-300"
+                  }`}
+                />
+                <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
+                  <span>State the core facts and incident chronology briefly without repetitive statements.</span>
+                  <span className="font-mono text-[10px] text-slate-400">{incidentDetails.length} characters</span>
+                </p>
+              </div>
+
+              {/* Row 5: Description of Complaint (Enlarged Box + Brief Summary Guidance + Live Word Count) */}
+              <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-800">
+                      Description of Complaint (शिकायत का विवरण / Detailed Allegations) *
+                    </label>
+                    {isAutofilled("complaintDescription") && (
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
+                        ✨ Auto-filled
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
+                    <span className="italic text-slate-500">
+                      Summary of complaint in minimum words
+                    </span>
+                    <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
+                      {complaintDescription.trim() ? complaintDescription.trim().split(/\s+/).length : 0} words
+                    </span>
+                    <VoiceInputButton
+                      preferredLang={voiceLang}
+                      fieldLabel="Description of Complaint"
+                      currentValue={complaintDescription}
+                      onTranscript={(val) => {
+                        setComplaintDescription((prev) => (prev ? `${prev} ${val}` : val));
+                        markFieldAsEdited("complaintDescription");
+                      }}
+                    />
+                  </div>
+                </div>
+                <textarea
+                  rows={12}
+                  value={complaintDescription}
+                  onChange={(e) => {
+                    setComplaintDescription(e.target.value);
+                    markFieldAsEdited("complaintDescription");
+                    if (validationErrors.complaintDescription) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.complaintDescription;
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="Enter a brief, structured summary of the complaint allegations: specific accusations against each named respondent, monetary loss or injury sustained, and prayer for police action..."
+                  className={`w-full min-h-[260px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
+                    validationErrors.complaintDescription
+                      ? "border-red-500 bg-red-50"
+                      : isAutofilled("complaintDescription")
+                      ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                      : "bg-white border-slate-300"
+                  }`}
+                />
+                {validationErrors.complaintDescription && (
+                  <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintDescription}</p>
+                )}
+                <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
+                  <span>Keep allegations succinct and focused on actionable points for the Enquiry Officer.</span>
+                  <span className="font-mono text-[10px] text-slate-400">{complaintDescription.length} characters</span>
+                </p>
+              </div>
+
+              {/* Row 6: Classification & Purpose */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    (d) Type of Complaint (Classification) *
+                  </label>
+                  <select
+                    value={complaintClassification}
+                    onChange={(e) => setComplaintClassification(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
+                  >
+                    <option value="COGNIZABLE_OFFENCE">Cognizable Offence (Requires Investigation)</option>
+                    <option value="NON_COGNIZABLE_INCIDENT">Non-Cognizable Incident (NCR Docket)</option>
+                    <option value="CIVIL_LAND_DISPUTE">Civil / Land &amp; Demarcation Dispute</option>
+                    <option value="DOMESTIC_FAMILY_ACCORD">Domestic / Matrimonial Discord</option>
+                    <option value="CYBER_FINANCIAL_FRAUD">Cyber / Online Financial Fraud</option>
+                    <option value="PUBLIC_NUISANCE">Public Nuisance / Breach of Peace</option>
+                    <option value="MISSING_PERSON_REPORT">Missing Person / Lost Article</option>
+                    <option value="SERVICE_VIGILANCE_PETITION">Service Vigilance / Official Petition</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    (e) Complaint Purpose *
+                  </label>
+                  <select
+                    value={complaintPurpose}
+                    onChange={(e) => setComplaintPurpose(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
+                  >
+                    <option value="PRELIMINARY_ENQUIRY_BNSS_173">
+                      Preliminary Enquiry as per Section 173(3) BNSS
+                    </option>
+                    <option value="REGISTRATION_OF_FIR">
+                      Registration of FIR / Criminal Action
+                    </option>
+                    <option value="MEDIATION_SETTLEMENT">
+                      Mediation &amp; Amicable Settlement
+                    </option>
+                    <option value="PREVENTIVE_ACTION_BNSS_126">
+                      Preventive Action (Security Bond BNSS 126/129)
+                    </option>
+                    <option value="GENERAL_DIARY_RECORD">
+                      Station General Diary (GD / Roznamcha) Record Entry Only
+                    </option>
+                    <option value="POLICE_ASSISTANCE">
+                      Police Assistance &amp; Citizen Protection
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================================================
+                4. EVIDENCE & DIGITAL ATTACHMENTS (ENLARGED PANEL & 20MB LIMIT)
+               ========================================================================= */}
+            <div id="sec-evidence-upload" className="space-y-4 p-4 sm:p-6 bg-emerald-50/50 border border-emerald-200 rounded-2xl shadow-2xs">
+              <div className="border-b border-emerald-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                    <Paperclip className="w-4 h-4 text-emerald-700" />
+                    <span>4. Evidence &amp; Digital Attachments</span>
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Upload supporting case evidence up to 20 MB per file (PDF, Docs, CCTV Videos, Audio, Images, Records)
+                  </p>
+                </div>
+                {attachments.length > 0 && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-white text-emerald-800 border border-emerald-300 self-start sm:self-auto shadow-2xs">
+                    {attachments.length} {attachments.length === 1 ? "File Attached" : "Files Attached"}
+                  </span>
+                )}
+              </div>
+
+              {/* Upload Validation Error Alert */}
+              {uploadError && (
+                <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-xs text-red-950 flex items-center justify-between gap-2 animate-in fade-in-50">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span className="font-semibold">{uploadError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUploadError(null)}
+                    className="text-red-700 hover:text-red-950 p-1 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Upload Progress Bar */}
+              {uploadProgress !== null && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl space-y-1.5 animate-in fade-in-50">
+                  <div className="flex items-center justify-between text-xs font-semibold text-blue-900">
+                    <span>Processing &amp; Validating Uploads...</span>
+                    <span className="font-mono">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-[#0b192c] h-full transition-all duration-200 rounded-full"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Enlarged Evidence Upload Drag-and-Drop Panel */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingEvidence(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingEvidence(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDraggingEvidence(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleFileUpload(e.dataTransfer.files);
+                  }
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative min-h-[190px] border-2 border-dashed rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 ${
+                  isDraggingEvidence
+                    ? "border-blue-600 bg-blue-100/70 scale-101 shadow-md"
+                    : "border-slate-300 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/30"
+                }`}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center mb-3">
+                  <Upload className="w-7 h-7 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                  Drag and drop evidence files here, or <span className="text-blue-600 underline">browse files</span>
+                </h3>
+                <p className="text-xs text-slate-500 max-w-md mb-3">
+                  Upload relevant proof including scanned petitions, CCTV clips, bank screenshots, audio recordings, or call transcripts
+                </p>
+
+                {/* Formats and Size Limit Badges */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xl text-[10px]">
+                  <span className="px-2 py-0.5 rounded-md font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                    PDF, DOC, DOCX
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    JPG, PNG, WEBP
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    MP3, WAV, M4A
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    MP4, AVI, MOV
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    CSV, TXT
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md font-extrabold bg-red-100 text-red-800 border border-red-300">
+                    Max File Size: 20 MB
+                  </span>
+                </div>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="*/*"
+                onChange={(e) => handleFileUpload(e.target.files)}
+                className="hidden"
+              />
+
+              {/* Attached Files List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2.5 pt-2">
+                  <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Attached Evidence Dossier ({attachments.length} items):</span>
+                    <button
+                      type="button"
+                      onClick={() => setAttachments([])}
+                      className="text-red-600 hover:text-red-800 text-xs font-semibold underline cursor-pointer"
+                    >
+                      Remove All Files
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
                     {attachments.map((file) => (
                       <div
                         key={file.id}
-                        className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-slate-300 transition-colors"
+                        className="p-3 sm:p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-slate-300 transition-colors"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
                                 file.category === "video"
                                   ? "bg-purple-100 text-purple-700"
                                   : file.category === "audio"
@@ -3135,11 +4256,20 @@ export default function RegisterComplaintPage() {
                             </div>
 
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-900 truncate">{file.name}</p>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                                <span className="uppercase font-semibold text-slate-700">{file.category}</span>
+                              <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{file.name}</p>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                                <span className="uppercase font-bold text-slate-700">{file.category}</span>
                                 <span>•</span>
                                 <span>{formatFileSize(file.size)}</span>
+                                {file.size > 20 * 1024 * 1024 ? (
+                                  <span className="text-red-600 font-bold bg-red-50 px-1.5 py-0.2 rounded border border-red-200">
+                                    Exceeds 20 MB Limit
+                                  </span>
+                                ) : (
+                                  <span className="text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                    Within 20 MB Limit
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -3149,7 +4279,7 @@ export default function RegisterComplaintPage() {
                               <button
                                 type="button"
                                 onClick={() => setPreviewModalFile(file)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                                 title="Instant preview without downloading"
                               >
                                 <Eye className="w-3.5 h-3.5 text-blue-600" />
@@ -3160,7 +4290,7 @@ export default function RegisterComplaintPage() {
                               <a
                                 href={file.dataUrl}
                                 download={file.name}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                 title="Download file"
                               >
                                 <Download className="w-3.5 h-3.5 text-slate-600" />
@@ -3170,7 +4300,7 @@ export default function RegisterComplaintPage() {
                             <button
                               type="button"
                               onClick={() => handleRemoveAttachment(file.id)}
-                              className="text-slate-400 hover:text-red-600 p-1 rounded-md transition-colors"
+                              className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg transition-colors cursor-pointer"
                               title="Remove file"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -3205,269 +4335,15 @@ export default function RegisterComplaintPage() {
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* =========================================================================
-                4. COMPLAINT DETAILS
-               ========================================================================= */}
-            <div id="sec-complaint-details" className="space-y-4 pt-6 border-t border-slate-200">
-              <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
-                    <FileCheck className="w-4 h-4 text-blue-600" />
-                    <span>4. Complaint Details</span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Mode of intake, description, FIR status, complaint type, classification and purpose
-                  </p>
                 </div>
-              </div>
-
-              {/* Single row with Mode of Intake, Subject, Type of Complaint (Fresh/Old), and Is FIR Registered */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                {/* Mode of Intake */}
-                <div className="sm:col-span-3">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Mode of Intake">
-                    Mode of Intake *
-                  </label>
-                  <select
-                    value={intakeMode}
-                    onChange={(e) => {
-                      setIntakeMode(e.target.value);
-                      setSourceChannel(e.target.value as any);
-                    }}
-                    className="w-full px-2.5 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
-                  >
-                    <option value="WALK_IN_STATION">Walk-in Counter</option>
-                    <option value="CM_WINDOW_HARYANA">CM Window (VIP)</option>
-                    <option value="CITIZEN_PORTAL_HARPATH">Citizen Portal (HarPath)</option>
-                    <option value="EMERGENCY_112">Emergency 112 Call</option>
-                    <option value="SP_OFFICE_REFERENCE">SP Office Reference</option>
-                    <option value="POSTAL_APPLICATION">Postal Application</option>
-                    <option value="WOMEN_HELPDESK">Women Helpdesk</option>
-                  </select>
-                </div>
-
-                {/* Subject */}
-                <div className="sm:col-span-4">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Subject">
-                    Subject *
-                  </label>
-                  <input
-                    type="text"
-                    value={complaintSubject}
-                    onChange={(e) => {
-                      setComplaintSubject(e.target.value);
-                      if (validationErrors.complaintSubject) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.complaintSubject;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="e.g. Complaint regarding cheating / fraud"
-                    className={`w-full px-2.5 py-2 text-xs bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                      validationErrors.complaintSubject ? "border-red-500 bg-red-50" : "border-slate-300"
-                    }`}
-                  />
-                  {validationErrors.complaintSubject && (
-                    <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintSubject}</p>
-                  )}
-                </div>
-
-                {/* Type of Complaint (Fresh / Old) */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Type of Complaint">
-                    Type of Complaint *
-                  </label>
-                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setComplaintAgeType("FRESH")}
-                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                        complaintAgeType === "FRESH"
-                          ? "bg-[#0b192c] text-white shadow-2xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Fresh
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setComplaintAgeType("OLD")}
-                      className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                        complaintAgeType === "OLD"
-                          ? "bg-amber-600 text-white shadow-2xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      Old
-                    </button>
-                  </div>
-                </div>
-
-                {/* Is FIR Registered */}
-                <div className="sm:col-span-3">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1 truncate" title="Is FIR Registered?">
-                    Is FIR Registered? *
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs w-full">
-                      <button
-                        type="button"
-                        onClick={() => setIsFirRegistered(false)}
-                        className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                          !isFirRegistered ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        No
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsFirRegistered(true)}
-                        className={`flex-1 py-1.5 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
-                          isFirRegistered ? "bg-red-600 text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        Yes
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* If FIR Registered is Yes, show inputs inline/expandable */}
-                {isFirRegistered && (
-                  <div className="sm:col-span-12 p-3 bg-red-50/60 border border-red-200 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in-50">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        FIR Number *
-                      </label>
-                      <input
-                        type="text"
-                        value={firNumber}
-                        onChange={(e) => setFirNumber(e.target.value)}
-                        placeholder="e.g. FIR No. 104/2026"
-                        className={`w-full px-2.5 py-1.5 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                          validationErrors.firNumber ? "border-red-500 bg-red-50" : "border-slate-300"
-                        }`}
-                      />
-                      {validationErrors.firNumber && (
-                        <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.firNumber}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        FIR Registration Date
-                      </label>
-                      <input
-                        type="date"
-                        value={firDate}
-                        onChange={(e) => setFirDate(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Description / Detailed Allegations (Full Width) */}
-                <div className="sm:col-span-12 pt-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      Description / Detailed Allegations *
-                    </label>
-                    <VoiceInputButton
-                      preferredLang={voiceLang}
-                      fieldLabel="Complaint Description"
-                      currentValue={complaintDescription}
-                      onTranscript={(val) => setComplaintDescription((prev) => (prev ? `${prev} ${val}` : val))}
-                    />
-                  </div>
-                  <textarea
-                    rows={5}
-                    value={complaintDescription}
-                    onChange={(e) => {
-                      setComplaintDescription(e.target.value);
-                      if (validationErrors.complaintDescription) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.complaintDescription;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="Enter full description and detailed narrative of the complaint..."
-                    className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                      validationErrors.complaintDescription ? "border-red-500 bg-red-50" : "border-slate-300"
-                    }`}
-                  />
-                  {validationErrors.complaintDescription && (
-                    <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintDescription}</p>
-                  )}
-                </div>
-
-
-                {/* (e) Type of Complaint in Dropdown */}
-                <div className="sm:col-span-6">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (e) Type of Complaint (Classification) *
-                  </label>
-                  <select
-                    value={complaintClassification}
-                    onChange={(e) => setComplaintClassification(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
-                  >
-                    <option value="COGNIZABLE_OFFENCE">Cognizable Offence (Requires Investigation)</option>
-                    <option value="NON_COGNIZABLE_INCIDENT">Non-Cognizable Incident (NCR Docket)</option>
-                    <option value="CIVIL_LAND_DISPUTE">Civil / Land &amp; Demarcation Dispute</option>
-                    <option value="DOMESTIC_FAMILY_ACCORD">Domestic / Matrimonial Discord</option>
-                    <option value="CYBER_FINANCIAL_FRAUD">Cyber / Online Financial Fraud</option>
-                    <option value="PUBLIC_NUISANCE">Public Nuisance / Breach of Peace</option>
-                    <option value="MISSING_PERSON_REPORT">Missing Person / Lost Article</option>
-                    <option value="SERVICE_VIGILANCE_PETITION">Service Vigilance / Official Petition</option>
-                  </select>
-                </div>
-
-                {/* (f) Complaint Purpose */}
-                <div className="sm:col-span-6">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    (f) Complaint Purpose *
-                  </label>
-                  <select
-                    value={complaintPurpose}
-                    onChange={(e) => setComplaintPurpose(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium"
-                  >
-                    <option value="PRELIMINARY_ENQUIRY_BNSS_173">
-                      Preliminary Enquiry as per Section 173(3) BNSS
-                    </option>
-                    <option value="REGISTRATION_OF_FIR">
-                      Registration of FIR / Criminal Action
-                    </option>
-                    <option value="MEDIATION_SETTLEMENT">
-                      Mediation &amp; Amicable Settlement
-                    </option>
-                    <option value="PREVENTIVE_ACTION_BNSS_126">
-                      Preventive Action (Security Bond BNSS 126/129)
-                    </option>
-                    <option value="GENERAL_DIARY_RECORD">
-                      Station General Diary (GD / Roznamcha) Record Entry Only
-                    </option>
-                    <option value="POLICE_ASSISTANCE">
-                      Police Assistance &amp; Citizen Protection
-                    </option>
-                  </select>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* =========================================================================
                 5. RUN INTELLIGENCE CHECK (LOCAL ENGINE WITHOUT AI MODEL)
                ========================================================================= */}
-            <div id="sec-intel" className="space-y-4 pt-6 border-t border-slate-200">
-              <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div id="sec-intel" className="space-y-4 p-4 sm:p-6 bg-purple-50/50 border border-purple-200 rounded-2xl shadow-2xs">
+              <div className="border-b border-purple-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
                     <Search className="w-4 h-4 text-purple-600" />
@@ -3671,67 +4547,58 @@ export default function RegisterComplaintPage() {
               )}
             </div>
             {isSho && (
-              <div id="sec-assign-eo" className="space-y-4 pt-6 border-t border-slate-200">
-                <div className="border-b border-slate-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div id="sec-assign-eo" className="space-y-4 p-4 sm:p-6 bg-teal-50/60 border border-teal-200 rounded-2xl shadow-2xs">
+                <div className="border-b border-teal-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
-                        <UserCheck className="w-4 h-4 text-emerald-600" />
+                        <UserCheck className="w-4 h-4 text-teal-700" />
                         <span>6. Assign EO</span>
                       </h2>
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold bg-white text-teal-800 border border-teal-300 px-2 py-0.5 rounded-full shadow-2xs">
                         SHO Authority
                       </span>
                     </div>
                     <p className="text-xs text-slate-500">
-                      Allocate an Enquiry Officer immediately during complaint registration and issue supervisory directions
+                      Allocate an Enquiry Officer immediately during complaint registration and issue supervisory directions (Optional)
                     </p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShouldAssignEoNow(!shouldAssignEoNow)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs self-start sm:self-auto ${
-                      shouldAssignEoNow
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : "bg-slate-200 hover:bg-slate-300 text-slate-700"
-                    }`}
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>{shouldAssignEoNow ? "Assign EO: Enabled" : "Assign EO: Disabled"}</span>
-                  </button>
                 </div>
 
-                {shouldAssignEoNow ? (
-                  <div className="p-4 sm:p-5 bg-emerald-50/40 border border-emerald-200 rounded-xl space-y-4 animate-in fade-in-50">
-                    {/* Enquiry Officer Selection */}
-                    <div className="space-y-3">
-                      <label className="block text-xs font-bold text-slate-800">
-                        Select Enquiry Officer (From Active Station Roster) *
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <select
-                            value={selectedEoId}
-                            onChange={(e) => setSelectedEoId(e.target.value)}
-                            className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
-                          >
-                            {MOCK_ENQUIRY_OFFICERS.map((eo) => (
-                              <option key={eo.id} value={eo.id}>
-                                {eo.rank} {eo.name} ({eo.pno}) — {eo.activeCases} Active Cases ({eo.availability})
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-[10px] text-slate-500 mt-1">
-                            Officer will receive instant dispatch alert and case docket access upon submission.
-                          </p>
-                        </div>
+                <div className="p-4 sm:p-5 bg-white border border-teal-200 rounded-xl space-y-4 animate-in fade-in-50 shadow-2xs">
+                  {/* Enquiry Officer Selection */}
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Select Enquiry Officer (From Active Station Roster)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <select
+                          value={selectedEoId}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedEoId(val);
+                            setShouldAssignEoNow(Boolean(val));
+                          }}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
+                        >
+                          <option value="">Select EO</option>
+                          {MOCK_ENQUIRY_OFFICERS.map((eo) => (
+                            <option key={eo.id} value={eo.id}>
+                              {eo.rank} {eo.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-slate-500 mt-1">
+                          Officer will receive instant dispatch alert and case docket access upon submission.
+                        </p>
+                      </div>
 
-                        {/* Selected Officer Preview Card */}
-                        {(() => {
-                          const currentEo =
-                            MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId) ||
-                            MOCK_ENQUIRY_OFFICERS[0];
+                      {/* Selected Officer Preview Card or Unassigned Notice */}
+                      {selectedEoId ? (
+                        (() => {
+                          const currentEo = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId);
+                          if (!currentEo) return null;
                           return (
                             <div className="p-3 bg-white border border-emerald-300 rounded-lg text-xs space-y-1 shadow-2xs">
                               <div className="flex items-center justify-between">
@@ -3756,31 +4623,77 @@ export default function RegisterComplaintPage() {
                               </div>
                             </div>
                           );
-                        })()}
-                      </div>
+                        })()
+                      ) : (
+                        <div className="p-3 bg-white/80 border border-slate-200 rounded-lg text-xs text-slate-600 flex items-center">
+                          <p className="text-[11px] text-slate-500">
+                            <strong>Note:</strong> If left as &ldquo;Select EO&rdquo;, the complaint will be registered without assigning an EO. The SHO can allocate an officer later from the Complaint Register.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ) : (
-                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center justify-between">
-                    <span>
-                      Enquiry Officer assignment is currently skipped. The complaint will be registered in &ldquo;REGISTERED&rdquo; status and can be assigned later from the Complaint Profile or Pending Roster.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShouldAssignEoNow(true)}
-                      className="text-xs font-bold text-emerald-700 hover:text-emerald-900 underline ml-2 shrink-0"
-                    >
-                      Assign EO Now
-                    </button>
-                  </div>
-                )}
+
+                  {/* Direction template & Supervisory directions when EO is selected */}
+                  {selectedEoId && (
+                    <div className="pt-3 border-t border-emerald-200/60 space-y-3 animate-in fade-in-50">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Directions Template
+                          </label>
+                          <select
+                            value={directionTemplate}
+                            onChange={(e) => handleTemplateChange(e.target.value)}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-medium text-slate-800"
+                          >
+                            {DIRECTION_TEMPLATES.map((tmpl) => (
+                              <option key={tmpl.key} value={tmpl.key}>
+                                {tmpl.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">
+                            Target Completion Timeline
+                          </label>
+                          <select
+                            value={targetDays}
+                            onChange={(e) => setTargetDays(Number(e.target.value))}
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-medium text-slate-800"
+                          >
+                            <option value={3}>3 Days - Urgent Priority</option>
+                            <option value={7}>7 Days - Standard Spot Inquiry</option>
+                            <option value={10}>10 Days - Complex / Witness Verification</option>
+                            <option value={14}>14 Days - Statutory Inquiry Period</option>
+                            <option value={30}>30 Days - Extended Multi-party Inquiry</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Supervisory Directions for Assigned Officer
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={assignedDirections}
+                          onChange={(e) => setAssignedDirections(e.target.value)}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 text-slate-800 font-sans"
+                          placeholder="Enter supervisory instructions for the enquiry officer..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             {/* =========================================================================
                 7. STATUTORY CERTIFICATION & FORM SUBMISSION
                ========================================================================= */}
-            <div className="space-y-4 pt-6 border-t border-slate-200">
+            <div id="sec-submission" className="space-y-4 p-4 sm:p-6 bg-slate-100/70 border border-slate-200 rounded-2xl shadow-2xs">
 
               {/* Validation Errors Alert Banner */}
               {Object.keys(validationErrors).length > 0 && (
@@ -4335,6 +5248,15 @@ export default function RegisterComplaintPage() {
           </div>
         </div>
       )}
+
+      {/* Complaint Pre-Registration Verification & Auto-Preview Modal */}
+      <ComplaintVerificationModal
+        isOpen={showVerificationModal}
+        previewData={previewVerificationData}
+        isSubmitting={isSubmitting}
+        onEdit={() => setShowVerificationModal(false)}
+        onSubmit={handleFinalSubmit}
+      />
     </div>
   );
 }

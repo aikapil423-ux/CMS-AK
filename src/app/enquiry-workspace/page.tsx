@@ -12,106 +12,110 @@ export default function EnquiryWorkspacePage() {
 
   return (
     <div className="space-y-6 animate-in fade-in-50">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-[#b8001f]">
-            Field Investigation & Verification
-          </span>
-          <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
-            Enquiry Officer (EO) Workspace
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Field enquiry logs, witness statements, spot inspection records, and draft enquiry reports
-          </p>
-        </div>
-        <Link href="/enquiry-workspace/templates">
-          <Button variant="primary" size="sm" className="bg-[#0b192c] text-white flex items-center gap-1.5 shadow-xs">
-            <ScrollText className="w-4 h-4" />
-            <span>Notice Templates & Generator</span>
-          </Button>
-        </Link>
+      <div>
+        <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
+          Enquiry Officer (EO) Workspace
+        </h1>
       </div>
 
-      {/* Top Workspace Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-        <Link
-          href="/enquiry-workspace"
-          className="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-[#0b192c] text-white shadow-xs transition-all"
-        >
-          Enquiry Dashboard
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link href="/enquiry-workspace/drafts" className="block group">
+          <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <FileCheck2 className="w-5 h-5 text-amber-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-800 transition-colors">
+                    Draft Enquiry Reports
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Haryana Police structured proformas (4-Row, 3-Column, CM Window) based on complaint docket.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-amber-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Reports</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
         </Link>
-        <Link
-          href="/enquiry-workspace/drafts"
-          className="px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 transition-all"
-        >
-          <FileCheck2 className="w-3.5 h-3.5 text-amber-600" />
-          <span>Draft Reports &amp; NCR</span>
-          <span className="px-1.5 py-0.2 text-[10px] bg-amber-100 text-amber-800 rounded font-mono font-bold">1 Draft</span>
+
+        <Link href="/enquiry-workspace/ncr" className="block group">
+          <Card className="border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-emerald-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-emerald-800 transition-colors">
+                    NCR u/s 174 BNSS
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    First Information of Non-Cognizable Offence proforma, Station GD entry &amp; magistrate advice.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open NCR</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
         </Link>
-        <Link
-          href="/enquiry-workspace/templates"
-          className="px-3.5 py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 transition-all"
-        >
-          <ScrollText className="w-3.5 h-3.5 text-purple-600" />
-          <span>Notice &amp; Legal Templates</span>
+
+        <Link href="/enquiry-workspace/templates" className="block group">
+          <Card className="border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-purple-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
+                  <ScrollText className="w-5 h-5 text-purple-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-purple-800 transition-colors">
+                    Notice Generator
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Legal notices (u/s 173(3) BNSS), CDR requisition, 4-page arrest memo, &amp; NATGRID.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-purple-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Generator</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
         </Link>
-      </div>
 
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3">
-        <UserCheck className="w-5 h-5 text-blue-700 shrink-0 mt-0.5" />
-        <div className="text-xs text-blue-900">
-          <p className="font-bold">Active Officer: {currentUser.name} ({currentUser.roleDisplay})</p>
-          <p className="mt-0.5 text-blue-800">
-            Field inquiry workspace for complaint verification, notice generation, and final enquiry reports.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-slate-200">
-          <CardContent className="p-5 space-y-2">
-            <h3 className="font-bold text-slate-900 text-sm">Assigned Field Inquiries</h3>
-            <p className="text-2xl font-black text-[#0b192c]">4 Cases</p>
-            <p className="text-xs text-slate-500">Pending statement recording and spot verification.</p>
-            <div className="pt-2">
-              <Link href="/complaints">
-                <Button variant="outline" size="sm" className="w-full text-xs">
-                  View Cases in Register
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200">
-          <CardContent className="p-5 space-y-2">
-            <h3 className="font-bold text-slate-900 text-sm">Draft Enquiry Reports &amp; NCR</h3>
-            <p className="text-2xl font-black text-amber-700">1 Draft</p>
-            <p className="text-xs text-slate-500">NCR templates, preliminary inquiry reports &amp; FIR recommendations.</p>
-            <div className="pt-2">
-              <Link href="/enquiry-workspace/drafts">
-                <Button variant="outline" size="sm" className="w-full text-xs text-amber-800 border-amber-300 hover:bg-amber-50">
-                  Open Drafts &amp; NCR &rarr;
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200">
-          <CardContent className="p-5 space-y-2">
-            <h3 className="font-bold text-slate-900 text-sm">Notice & Report Generator</h3>
-            <p className="text-2xl font-black text-purple-700">4 Templates</p>
-            <p className="text-xs text-slate-500">Notice to Accused u/s 35(3) BNSS, Witness Notice, & Panchnama.</p>
-            <div className="pt-2">
-              <Link href="/enquiry-workspace/templates">
-                <Button variant="outline" size="sm" className="w-full text-xs text-purple-700 border-purple-200 hover:bg-purple-50">
-                  Open Notice Templates &rarr;
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/enquiry-workspace/builder" className="block group">
+          <Card className="border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-blue-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-800 transition-colors">
+                      Generate Report Template
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Word-style Document Builder, dynamic CMS placeholders, case tokens &amp; templates.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-blue-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Builder</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

@@ -17,70 +17,61 @@ export async function POST(req: NextRequest) {
     }
 
     const fileName = file?.name || "Uploaded_Document.pdf";
-    const prompt = `You are an elite Indian Police Document Digitizer & OCR Specialist for Haryana Police.
-Your task is to analyze the uploaded document image/PDF (e.g. Haryana Police Enquiry Report, Police Notice, NCR, Panchnama, or official legal document) and convert it into a structured, fully editable proforma table in ENGLISH.
+    const prompt = `You are an elite Indian Police Document Digitizer & Analysis Specialist for Haryana Police.
+Your task is to analyze the uploaded document (PDF, Word DOCX, Image, Text) and mirror its structure WORD-TO-WORD into a fully editable digital template in its EXACT ORIGINAL LANGUAGE.
 
 CRITICAL INSTRUCTIONS:
-1. Examine the visual document layout carefully:
-   - Identify header lines: Top left (e.g. "POLICE DEPARTMENT"), Top right (e.g. "DISTRICT PANIPAT"), Sub-header (e.g. "Respected Sir,").
-   - Identify the main case reference title: e.g. "ENQUIRY REPORT ON COMPLAINT NO. 128-SPL-III DATED 10.02.2026", or "ENQUIRY REPORT ON COMPLAINT NO. 1736...".
-   - Identify whether the table is:
-     a) STANDARD 2-COLUMN PROFORMA (like Haryana Police Formats 1, 2, 5 with rows: Complainant / Informant, Gist / Substance of Complaint, Opposite Party / Accused Details, Enquiry Findings & Action Taken). For this, keep "columns": [] (empty array) and put the row headers in "label", and row contents in "cells": [ "content..." ].
-     b) MULTI-COLUMN COMPARATIVE TABLE (like 3-column Format with headers: "Allegations Leveled by Complainant (Point-wise)", "Enquiry Findings (Substantiated / Unsubstantiated with Reasons)", "Action Taken by Local Police / S.H.O."). For this, put the column headers in "columns": ["Col 1", "Col 2", "Col 3"] and row values in "cells": ["val 1", "val 2", "val 3"].
-     c) CITIZEN GRIEVANCE PROFORMA (like CM Window / DCR with DEPARTMENT, CITIZEN DETAIL, ALLEGATIONS LEVELED, DATE, CITIZEN SATISFACTION, FINAL REPORT).
-     d) NOTICE / ORDER (Notice u/s 35(3) BNSS, Notice u/s 179 BNSS, Order u/s 94 BNSS).
-2. All labels, headings, and proforma text should be in clean ENGLISH. Translate Hindi labels cleanly into standard police terminology:
-   - परिवादी -> "Complainant / Informant"
-   - परिवाद का सार -> "Gist / Substance of Complaint"
-   - उत्तरवादी का विवरण -> "Opposite Party / Accused Details"
-   - जांच की स्थिती का विवरण -> "Enquiry Findings & Action Taken"
-   - पुलिस विभाग -> "POLICE DEPARTMENT"
-   - जिला -> "DISTRICT"
-   - रिपोर्ट सेवा में पेश है। -> "Report is submitted for perusal and orders."
-3. Extract content accurately while preserving names, dates, amounts, and facts verbatim.
-4. Extract the officer's signature block:
-   - officerName: e.g. "(Satish Kumar, HPS)"
-   - officerRank: e.g. "Deputy Superintendent of Police" or "Assistant Superintendent of Police"
-   - officerLocation: e.g. "Headquarters Panipat" or "Samalkha, Panipat"
-   - reportDate: e.g. "Dated: 17.03.2026"
-5. Set "borderStyle": "solid".
+1. PRESERVE ORIGINAL LANGUAGE & PHRASING WORD-TO-WORD:
+   - If the document is in HINDI, keep all headings, labels, and text in HINDI (देवनागरी). Do NOT translate to English!
+   - If the document is in ENGLISH, keep all text in ENGLISH.
+   - If the document is BILINGUAL, preserve the exact bilingual text.
+   - Mirror the exact words, statutory section numbers, dates, titles, and layout verbatim!
+
+2. EXAMINE VISUAL STRUCTURE & MIRROR EXACT LAYOUT:
+   - Identify header lines: Top left (e.g. "हरियाणा पुलिस" / "POLICE DEPARTMENT"), Top right (e.g. "जिला पानीपत" / "DISTRICT PANIPAT"), Sub-header (e.g. "श्रीमान जी," / "Respected Sir,").
+   - Identify the main case reference title: e.g. "जांच रिपोर्ट बाबत दरखास्त न. 128-SPL..." or "REQUISITION PROFORMA FOR CDR..." or "NOTICE OF APPEARANCE U/S 173(3) BNSS...".
+   - Identify table or key-value format:
+     a) STANDARD PROFORMA (with rows: Complainant, Gist, Opposite Party, Findings, or custom rows). For this, keep "columns": [] (empty array) and put row labels in "label" and contents in "cells": [ "content..." ].
+     b) MULTI-COLUMN TABLE (e.g. 3-column with headers like Allegations, Findings, Action Taken). Put column titles in "columns": ["...", "..."] and row values in "cells": ["...", "..."].
+     c) REQUISITION / NOTICE / MEMO (e.g. NATGRID table, CDR proforma, Arrest Memo, 173(3) notice). Extract all labeled rows and clauses word-to-word.
+   - Extract clauses/sections for notice templates: "clauses": [ { "id": "clause_1", "title": "...", "content": "..." } ].
+
+3. Extract the officer's signature block word-to-word:
+   - officerName: e.g. "(Satish Kumar, HPS)" or "(सतीश कुमार, उप पुलिस अधीक्षक)"
+   - officerRank: e.g. "Deputy Superintendent of Police" or "उप पुलिस अधीक्षक"
+   - officerLocation: e.g. "Headquarters Panipat" or "मुख्यालय पानीपत"
+   - reportDate: date mentioned on document
+   - closingLine: closing greeting/submission phrase from document
 
 Return ONLY valid JSON matching this exact structure without markdown backticks:
 {
   "documentType": "enquiry_report",
-  "headerLeft": "POLICE DEPARTMENT",
-  "headerRight": "DISTRICT PANIPAT",
-  "subHeaderLeft": "Respected Sir,",
-  "title": "ENQUIRY REPORT ON COMPLAINT NO...",
-  "subTitle": "",
+  "language": "hindi | english | bilingual",
+  "headerLeft": "Top left header",
+  "headerRight": "Top right header",
+  "subHeaderLeft": "Sub header if any",
+  "title": "Main document title",
+  "subTitle": "Subtitle if any",
   "columns": [],
   "rows": [
     {
       "id": "row_1",
-      "label": "Complainant / Informant",
-      "cells": ["Full particulars..."]
-    },
-    {
-      "id": "row_2",
-      "label": "Gist / Substance of Complaint",
-      "cells": ["Full particulars..."]
-    },
-    {
-      "id": "row_3",
-      "label": "Opposite Party / Accused Details",
-      "cells": ["Full particulars..."]
-    },
-    {
-      "id": "row_4",
-      "label": "Enquiry Findings & Action Taken",
-      "cells": ["Full enquiry findings..."]
+      "label": "Original Row Label",
+      "cells": ["Exact original cell content..."]
     }
   ],
-  "closingLine": "Report is submitted for perusal and orders.",
-  "officerName": "(Satish Kumar, HPS)",
-  "officerRank": "Deputy Superintendent of Police",
-  "officerLocation": "Headquarters Panipat",
-  "reportDate": "Dated: 17.03.2026",
+  "clauses": [
+    {
+      "id": "clause_1",
+      "title": "Clause / Section Title",
+      "content": "Clause body text word-to-word..."
+    }
+  ],
+  "closingLine": "Closing submission line",
+  "officerName": "Officer Name",
+  "officerRank": "Officer Rank",
+  "officerLocation": "Police Station / District",
+  "reportDate": "Date",
   "borderStyle": "solid",
   "rawText": "Extracted text..."
 }`;
@@ -192,50 +183,44 @@ Return ONLY valid JSON matching this exact structure without markdown backticks:
       }
     }
 
-    // Heuristic Fallback Parser
+    // Heuristic Fallback Parser: Word-to-word mirroring without inventing text
     const lines = (fallbackText || fileName)
-      .split("\n")
+      .split(/\r?\n/)
       .map((l) => l.trim())
       .filter(Boolean);
 
+    const docTitle = lines[0] || fileName.replace(/\.[^/.]+$/, "");
+    const parsedRows = lines.slice(1).map((line, idx) => {
+      const match = line.match(/^([^:-]{2,40})[:\-]\s*(.*)$/);
+      if (match) {
+        return {
+          id: `row_${idx + 1}`,
+          label: match[1].trim(),
+          cells: [match[2].trim() || "—"],
+        };
+      }
+      return {
+        id: `row_${idx + 1}`,
+        label: `Item ${idx + 1}`,
+        cells: [line],
+      };
+    });
+
     const fallbackProforma = {
       documentType: "enquiry_report",
-      headerLeft: "पुलिस विभाग",
-      headerRight: "जिला पानीपत",
+      headerLeft: "",
+      headerRight: "",
       subHeaderLeft: "",
-      title: `जांच रिपोर्ट परिवाद (${fileName.replace(/\.[^/.]+$/, "")})`,
+      title: docTitle,
       subTitle: "",
       columns: [],
-      rows: [
-        {
-          id: "row_1",
-          label: "परिवादी",
-          cells: [lines[0] || "परिवादी का नाम व पता"],
-        },
-        {
-          id: "row_2",
-          label: "परिवाद का सार",
-          cells: [lines[1] || "शिकायत का संक्षिप्त विवरण"],
-        },
-        {
-          id: "row_3",
-          label: "उत्तरवादी का विवरण",
-          cells: [lines[2] || "उत्तरवादी का नाम व पता"],
-        },
-        {
-          id: "row_4",
-          label: "जांच की स्थिती का विवरण",
-          cells: [
-            fallbackText ||
-              "दौरान जांच परिवाद का अध्ययन किया गया व दोनों पक्षों को शामिल जांच कर पूछताछ की गई। साक्ष्य का अवलोकन कर रिपोर्ट तैयार की गई।",
-          ],
-        },
-      ],
-      closingLine: "रिपोर्ट सेवा में पेश है।",
-      officerName: "(जांच अधिकारी)",
-      officerRank: "सहायक पुलिस अधीक्षक",
-      officerLocation: "समालखा पानीपत",
-      reportDate: `दिनांक ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`,
+      rows: parsedRows.length > 0 ? parsedRows : [{ id: "row_1", label: docTitle, cells: [fallbackText || fileName] }],
+      clauses: parsedRows.map((r, i) => ({ id: `clause_${i + 1}`, title: r.label, content: r.cells[0] })),
+      closingLine: "",
+      officerName: "",
+      officerRank: "",
+      officerLocation: "",
+      reportDate: new Date().toLocaleDateString("en-GB").replace(/\//g, "."),
       borderStyle: "solid",
       rawText: fallbackText,
     };

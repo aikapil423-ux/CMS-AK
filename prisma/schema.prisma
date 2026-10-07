@@ -102,6 +102,12 @@ model Complaint {
   isSensitive          Boolean                      @default(false)
   isFIRRecommended     Boolean                      @default(false)
   recommendedFIRNumber String?
+  directSendToFir      Boolean                      @default(false)
+  shoDecision          String?
+  rejectionReason      String?
+  rejectionAt          DateTime?
+  rejectionBy          String?
+  rejectionCount       Int                          @default(0)
   createdAt            DateTime                     @default(now())
   updatedAt            DateTime                     @updatedAt
 
@@ -247,3 +253,50 @@ model AuditLog {
   @@index([userId])
   @@index([timestamp])
 }
+
+model BuilderTemplate {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  content           String
+  documentStructure String?
+  customFields      String?
+  createdBy         String
+  createdByName     String?
+  createdByRank     String?
+  status            String   @default("ACTIVE")
+  version           Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  drafts            BuilderDraft[]
+
+  @@index([createdBy])
+  @@index([status])
+}
+
+model BuilderDraft {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  content           String
+  documentStructure String?
+  customFields      String?
+  caseId            String?
+  complaintNumber   String?
+  templateId        String?
+  template          BuilderTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy         String
+  createdByName     String?
+  createdByRank     String?
+  status            String           @default("DRAFT")
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([createdBy])
+  @@index([caseId])
+  @@index([templateId])
+  @@index([status])
+}
+

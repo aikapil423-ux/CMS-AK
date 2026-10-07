@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { ComplaintPriority, ComplaintStatus } from "@/types";
+import { ComplaintPriority, ComplaintStatus, MainComplaintStatus } from "@/types";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "success" | "warning" | "danger" | "info" | "neutral" | "gold";
@@ -38,33 +38,109 @@ export function Badge({ className, variant = "default", size = "sm", children, .
   );
 }
 
-export function StatusBadge({ status }: { status: ComplaintStatus }) {
-  switch (status) {
-    case "REGISTERED":
-      return <Badge variant="default">New Registered</Badge>;
-    case "ASSIGNED_TO_EO":
-      return <Badge variant="warning">EO Assigned</Badge>;
-    case "ENQUIRY_IN_PROGRESS":
-      return <Badge variant="info">Enquiry Active</Badge>;
-    case "INTERIM_REPORT_SUBMITTED":
-      return <Badge variant="warning">Interim Filed</Badge>;
-    case "REPORT_SUBMITTED":
-      return <Badge variant="warning">Report Filed</Badge>;
-    case "PENDING_SHO_REVIEW":
-      return <Badge variant="danger">Pending SHO</Badge>;
-    case "RECOMMENDED_FOR_FIR":
-      return <Badge variant="danger">FIR Recommended</Badge>;
-    case "DISPOSED_CIVIL_NATURE":
-      return <Badge variant="neutral">Disposed (Civil)</Badge>;
-    case "DISPOSED_MUTUAL_ACCORD":
-      return <Badge variant="success">Settled Accord</Badge>;
-    case "DISPOSED_UNSUBSTANTIATED":
-      return <Badge variant="neutral">Unsubstantiated</Badge>;
-    case "TRANSFERRED_OTHER_PS":
-      return <Badge variant="neutral">Transferred</Badge>;
-    default:
-      return <Badge variant="default">{status}</Badge>;
+export function StatusBadge({
+  status,
+  className,
+}: {
+  status: ComplaintStatus | MainComplaintStatus | string;
+  className?: string;
+}) {
+  const s = String(status || "").trim();
+
+  // 1. Not Assigned
+  if (s === "Not Assigned" || s === "NOT_ASSIGNED" || s === "UNASSIGNED" || s === "REGISTERED") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs",
+          className
+        )}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+        <span>Not Assigned</span>
+      </span>
+    );
   }
+
+  // 2. FIR Register (Direct Send to FIR, awaiting formal FIR registration by SHO)
+  if (s === "FIR Register" || s === "FIR_REGISTER") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-900 border border-purple-300 shadow-2xs",
+          className
+        )}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0 animate-pulse" />
+        <span>FIR Register</span>
+      </span>
+    );
+  }
+
+  // 3. FIR Registered (Formal FIR has been registered with FIR Number)
+  if (s === "FIR Registered" || s === "FIR_REGISTERED") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 shadow-2xs",
+          className
+        )}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0" />
+        <span>FIR Registered</span>
+      </span>
+    );
+  }
+
+  // 4. Correction Required (Report rejected by SHO for correction/resubmission)
+  if (s === "Correction Required" || s === "CORRECTION_REQUIRED" || s === "RE_ENQUIRY") {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs",
+          className
+        )}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" />
+        <span>Correction Required</span>
+      </span>
+    );
+  }
+
+  // 3. Complete
+  if (
+    s === "Complete" ||
+    s === "COMPLETE" ||
+    s === "DISPOSED_MUTUAL_ACCORD" ||
+    s === "DISPOSED_CIVIL_NATURE" ||
+    s === "DISPOSED_UNSUBSTANTIATED" ||
+    s === "DISPOSED"
+  ) {
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs",
+          className
+        )}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+        <span>Complete</span>
+      </span>
+    );
+  }
+
+  // 4. Pending (all in-progress / ongoing / awaiting SHO / re-enquiry)
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs",
+        className
+      )}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+      <span>Pending</span>
+    </span>
+  );
 }
 
 export function PriorityBadge({ priority }: { priority: ComplaintPriority }) {

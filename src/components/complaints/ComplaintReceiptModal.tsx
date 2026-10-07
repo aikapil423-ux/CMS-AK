@@ -8,6 +8,7 @@ import {
   FileCheck2,
   Building,
   UserCheck,
+  AlertCircle,
 } from "lucide-react";
 import { ComplaintItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -48,11 +49,26 @@ export function ComplaintReceiptModal({
     window.print();
   };
 
-  // Assigned IO / EO details fallback
+  // Determine if Enquiry Officer (EO / IO) is currently assigned
+  const isEoAssigned = Boolean(
+    complaint.assignedEoName &&
+    complaint.assignedEoName.trim() !== "" &&
+    complaint.assignedEoName !== "Not Assigned" &&
+    complaint.assignedEoName !== "None" &&
+    complaint.assignedEoName !== "Pending"
+  );
+
+  // IO Details (if assigned)
   const ioRank = complaint.assignedEoRank || "Sub-Inspector";
-  const ioName = complaint.assignedEoName || "Not Assigned";
-  const ioBeltNumber = complaint.assignedEoBeltNumber || complaint.assignedEoPno || "742/KKR";
+  const ioName = complaint.assignedEoName || "";
+  const ioBeltNumber = complaint.assignedEoBeltNumber || complaint.assignedEoPno || "—";
   const ioMobile = complaint.assignedEoPhone || "9812034567";
+
+  // Station SHO Details (displayed when IO is not assigned)
+  const shoRank = "Inspector (SHO)";
+  const shoName = complaint.policeStation ? `SHO In-charge (${complaint.policeStation})` : "Inspector Surender Pal (SHO)";
+  const shoBeltNumber = "SHO/892";
+  const shoMobile = "9812033001";
 
   // MHC details fallback (auto-picked)
   const mhcRank = complaint.mhcRank || "Head Constable (MHC)";
@@ -194,7 +210,7 @@ export function ComplaintReceiptModal({
                 <span className="font-bold text-slate-900 min-w-[170px] shrink-0">
                   Complainant Name –
                 </span>
-                <span className="font-semibold text-slate-950">
+                <span className="font-semibold text-slate-950 break-words">
                   {complainantFullName}
                 </span>
               </div>
@@ -227,32 +243,65 @@ export function ComplaintReceiptModal({
               </div>
             </div>
 
-            {/* Officer Particulars: Assigned IO & MHC */}
+            {/* Officer Particulars: Assigned IO / Station SHO & MHC */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Assigned IO Details */}
-              <div className="p-4 bg-emerald-50/70 border border-emerald-300 rounded-xl space-y-2 text-xs">
-                <div className="flex items-center gap-2 pb-1.5 border-b border-emerald-200">
-                  <UserCheck className="w-4 h-4 text-emerald-800" />
-                  <h4 className="font-black text-emerald-950 uppercase tracking-wider text-[11px]">
-                    Assigned io details
-                  </h4>
+              {/* Assigned IO Details (or Station SHO In-charge if IO not assigned) */}
+              <div
+                className={`p-4 rounded-xl space-y-2 text-xs border ${
+                  isEoAssigned
+                    ? "bg-emerald-50/70 border-emerald-300"
+                    : "bg-amber-50/70 border-amber-300"
+                }`}
+              >
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <UserCheck
+                      className={`w-4 h-4 ${
+                        isEoAssigned ? "text-emerald-800" : "text-amber-800"
+                      }`}
+                    />
+                    <h4
+                      className={`font-black uppercase tracking-wider text-[11px] ${
+                        isEoAssigned ? "text-emerald-950" : "text-amber-950"
+                      }`}
+                    >
+                      {isEoAssigned ? "Assigned IO Details" : "Station SHO In-Charge"}
+                    </h4>
+                  </div>
+                  {!isEoAssigned ? (
+                    <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
+                      IO Not Assigned
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-bold bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded border border-emerald-300">
+                      EO Assigned
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-1 text-slate-800">
                   <p>
                     <span className="font-bold text-slate-700">Rank:</span>{" "}
-                    <span className="font-semibold text-slate-950">{ioRank}</span>
+                    <span className="font-semibold text-slate-950">
+                      {isEoAssigned ? ioRank : shoRank}
+                    </span>
                   </p>
                   <p>
                     <span className="font-bold text-slate-700">Name:</span>{" "}
-                    <span className="font-semibold text-slate-950">{ioName}</span>
+                    <span className="font-semibold text-slate-950">
+                      {isEoAssigned ? ioName : shoName}
+                    </span>
                   </p>
                   <p>
                     <span className="font-bold text-slate-700">Belt number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">{ioBeltNumber}</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      {isEoAssigned ? ioBeltNumber : shoBeltNumber}
+                    </span>
                   </p>
                   <p>
                     <span className="font-bold text-slate-700">Mobile number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">+91 {ioMobile}</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      +91 {isEoAssigned ? ioMobile : shoMobile}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -290,6 +339,24 @@ export function ComplaintReceiptModal({
                 </div>
               </div>
             </div>
+
+            {/* Dynamic IO Not Assigned Alert - Disappears automatically as soon as EO is assigned */}
+            {!isEoAssigned && (
+              <div className="p-3.5 bg-amber-50/90 border-2 border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 animate-in fade-in-50">
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold text-amber-950 flex items-center gap-2">
+                    <span>Note: IO not assigned</span>
+                    <span className="text-[10px] bg-amber-200 text-amber-950 px-2 py-0.2 rounded font-semibold border border-amber-300">
+                      जांच अधिकारी (IO) अभी नियुक्त नहीं है
+                    </span>
+                  </p>
+                  <p className="text-[11px] text-amber-900 leading-relaxed">
+                    यह शिकायत थाना पंजिका में विधिवत दर्ज हो चुकी है और वर्तमान में थाना प्रभारी (SHO) के सीधे पर्यवेक्षण में है। जैसे ही SHO द्वारा जांच अधिकारी (EO/IO) नियुक्त किया जाएगा, इस रसीद पर SHO के स्थान पर जांच अधिकारी का विवरण प्रदर्शित हो जाएगा तथा &lsquo;IO not assigned&rsquo; नोट हट जाएगा।
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Statutory Note */}
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 leading-relaxed font-sans">

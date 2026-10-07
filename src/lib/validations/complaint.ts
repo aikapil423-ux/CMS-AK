@@ -68,6 +68,8 @@ export const complaintRegistrationSchema = z.object({
   complaintAgeType: z.enum(["FRESH", "OLD"]).optional(),
   complaintClassification: z.string().optional(),
   complaintPurpose: z.string().optional(),
+  directSendToFir: z.boolean().optional(),
+  directSendToFirChoice: z.enum(["YES", "NO"]).optional(),
   
   // Accused / Suspects
   isAccusedKnown: z.boolean().optional(),

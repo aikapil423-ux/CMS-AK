@@ -16,6 +16,11 @@ import {
   ComplaintEvidenceAttachment,
   ConfidentialDossierItem,
   ComplaintReportItem,
+  ComplaintAuditRecord,
+  WorkflowState,
+  EOOutcome,
+  MainComplaintStatus,
+  getMainComplaintStatus,
 } from "@/types";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
@@ -25,29 +30,128 @@ import { GeneralDiaryService } from "./generalDiaryService";
 const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
 const NOTIFICATIONS_STORAGE_KEY = "haryana_police_cms_notifications_v1";
 
+// In-memory cache for large base64 data URLs so localStorage never hits quota
+const globalDataUrlCache = new Map<string, string>();
+
+function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
+  return {
+    ...item,
+    attachments: item.attachments?.map((att) => {
+      if (att.dataUrl && att.dataUrl.length > 30000) {
+        globalDataUrlCache.set(`att_${att.id}`, att.dataUrl);
+        globalDataUrlCache.set(`${item.id}_${att.name}`, att.dataUrl);
+        return { ...att, dataUrl: "" };
+      }
+      return att;
+    }),
+    documents: item.documents?.map((doc) => {
+      const url = doc.dataUrl || doc.fileUrl;
+      if (url && url.length > 30000) {
+        globalDataUrlCache.set(doc.id, url);
+        globalDataUrlCache.set(`${item.id}_${doc.fileName}`, url);
+        return {
+          ...doc,
+          dataUrl: "",
+          fileUrl: "",
+          contentHtml: doc.contentHtml && doc.contentHtml.length > 30000 ? doc.contentHtml.slice(0, 30000) : doc.contentHtml,
+        };
+      }
+      return doc;
+    }),
+    reports: item.reports?.map((rep) => {
+      const url = rep.dataUrl || rep.fileUrl;
+      if (url && url.length > 30000) {
+        globalDataUrlCache.set(rep.id, url);
+        return { ...rep, dataUrl: "", fileUrl: "" };
+      }
+      return rep;
+    }),
+  };
+}
+
+function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
+  return {
+    ...item,
+    attachments: item.attachments?.map((att) => {
+      if (!att.dataUrl) {
+        const cached = globalDataUrlCache.get(`att_${att.id}`) || globalDataUrlCache.get(`${item.id}_${att.name}`);
+        if (cached) return { ...att, dataUrl: cached };
+      }
+      return att;
+    }),
+    documents: item.documents?.map((doc) => {
+      if (!doc.dataUrl && !doc.fileUrl) {
+        const cached = globalDataUrlCache.get(doc.id) || globalDataUrlCache.get(`${item.id}_${doc.fileName}`);
+        if (cached) return { ...doc, dataUrl: cached, fileUrl: cached };
+      }
+      return doc;
+    }),
+  };
+}
+
+let complaintsStore: ComplaintItem[] = [];
+let officerNotificationsStore: OfficerNotification[] = [];
+
 function loadComplaintsFromStorage(): ComplaintItem[] {
+  let loaded: ComplaintItem[] = [];
   if (typeof window !== "undefined" && window.localStorage) {
     try {
       const stored = window.localStorage.getItem(COMPLAINTS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          loaded = parsed.map(restoreDataUrlsForComplaint);
         }
       }
     } catch (e) {
       console.warn("Could not load complaints from localStorage", e);
     }
   }
-  return [...MOCK_COMPLAINTS];
+
+  if (loaded.length === 0) {
+    return [...MOCK_COMPLAINTS];
+  }
+
+  // Preserve any in-memory complaints created during this session that might not be in storage
+  if (Array.isArray(complaintsStore) && complaintsStore.length > 0) {
+    const loadedIds = new Set(loaded.map((c) => c.id));
+    const memoryOnly = complaintsStore.filter((c) => !loadedIds.has(c.id));
+    return [...memoryOnly, ...loaded];
+  }
+
+  return loaded;
 }
 
 function saveComplaintsToStorage(items: ComplaintItem[]) {
+  complaintsStore = items;
   if (typeof window !== "undefined" && window.localStorage) {
     try {
-      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(items));
+      const sanitized = items.map(sanitizeComplaintForStorage);
+      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(sanitized));
     } catch (e) {
-      console.warn("Could not save complaints to localStorage", e);
+      console.warn("Storage quota exceeded, attempting fallback strip", e);
+      try {
+        // Fallback 1: completely strip all dataUrls, fileUrls, and contentHtml
+        const stripped = items.map((c) => ({
+          ...c,
+          attachments: c.attachments?.map((a) => ({ ...a, dataUrl: undefined })),
+          documents: c.documents?.map((d) => ({ ...d, dataUrl: undefined, fileUrl: undefined, contentHtml: undefined })),
+          reports: c.reports?.map((r) => ({ ...r, dataUrl: undefined, fileUrl: undefined, contentHtml: undefined })),
+        }));
+        window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(stripped));
+      } catch (err2) {
+        console.warn("Storage quota still exceeded, trimming to recent 30 complaints", err2);
+        try {
+          const trimmed = items.slice(0, 30).map((c) => ({
+            ...c,
+            attachments: c.attachments?.map((a) => ({ ...a, dataUrl: undefined })),
+            documents: c.documents?.map((d) => ({ ...d, dataUrl: undefined, fileUrl: undefined })),
+          }));
+          window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(trimmed));
+        } catch (err3) {
+          console.error("Critical: LocalStorage full", err3);
+        }
+      }
     }
   }
 }
@@ -76,8 +180,24 @@ function saveNotificationsToStorage(items: OfficerNotification[]) {
   }
 }
 
-let complaintsStore: ComplaintItem[] = loadComplaintsFromStorage();
-let officerNotificationsStore: OfficerNotification[] = loadNotificationsFromStorage();
+function syncComplaintsToServer(items: ComplaintItem[]) {
+  if (typeof window !== "undefined") {
+    try {
+      const sanitized = items.map(sanitizeComplaintForStorage);
+      fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complaints: sanitized }),
+      }).catch(() => {});
+    } catch (e) {
+      // ignore background sync errors
+    }
+  }
+}
+
+// Initialize stores
+complaintsStore = loadComplaintsFromStorage();
+officerNotificationsStore = loadNotificationsFromStorage();
 
 export const ComplaintService = {
   async getComplaints(filter?: {
@@ -87,58 +207,136 @@ export const ComplaintService = {
     priority?: string;
     category?: string;
     assignedEo?: string;
+    viewerRole?: SystemRole | string;
+    viewerStation?: string;
+    activeQueueOnly?: boolean;
+    showSentToSho?: boolean;
   }): Promise<ComplaintItem[]> {
     complaintsStore = loadComplaintsFromStorage();
     let list = [...complaintsStore];
 
+    // 1. Role-based visibility
+    const isEo =
+      filter?.viewerRole === "ENQUIRY_OFFICER" ||
+      (Boolean(filter?.assignedEo) &&
+        filter?.viewerRole !== "SHO" &&
+        filter?.viewerRole !== "MHC_GD_INCHARGE" &&
+        filter?.viewerRole !== "DSP_SUBDIV" &&
+        filter?.viewerRole !== "SP_DISTRICT" &&
+        filter?.viewerRole !== "SUPER_ADMIN");
+
+    if (isEo && filter?.assignedEo) {
+      const eo = (filter.assignedEo || "").toLowerCase().trim();
+      const eoTokens = eo
+        .split(" ")
+        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
+
+      list = list.filter((c) => {
+        // EO cannot see complaints when NO EO is assigned
+        const hasEo = Boolean(c.assignedEoId || c.assignedEoName || c.assignedEoPno);
+        if (!hasEo) return false;
+
+        const eoId = (c.assignedEoId || "").toLowerCase();
+        const eoPno = (c.assignedEoPno || "").toLowerCase();
+        const eoName = (c.assignedEoName || "").toLowerCase();
+
+        let matches = eoId === eo || eoPno === eo;
+        if (
+          !matches &&
+          eoId.replace("usr_", "").replace("eo_", "") &&
+          eo.replace("usr_", "").replace("eo_", "")
+        ) {
+          matches = eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "");
+        }
+        if (!matches && eoName && (eoName.includes(eo) || eo.includes(eoName))) {
+          matches = true;
+        }
+        if (!matches && eoTokens.length > 0 && eoTokens.some((t) => eoName.includes(t))) {
+          matches = true;
+        }
+        if (!matches) return false;
+
+        // Active queue rule:
+        // When EO sends a complaint to SHO, it leaves EO's active work queue.
+        // It reappears if SHO orders Re-Enquiry (workflowState === "RE_ENQUIRY" && !c.isSentToSho).
+        if (filter?.activeQueueOnly !== false && !filter?.showSentToSho) {
+          if (c.isSentToSho && !c.isFirApprovedBySho && c.workflowState !== "RE_ENQUIRY") {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    // 2. Status filtering based on the 3+1 statuses: Not Assigned, Pending, Complete, FIR Registered
     if (filter?.statuses && filter.statuses.length > 0 && !filter.statuses.includes("ALL")) {
       list = list.filter((c) => {
-        return filter.statuses!.some((s) => {
-          if (s === "UNASSIGNED" || s === "REGISTERED") {
-            return c.status === "REGISTERED";
+        const main = getMainComplaintStatus(c);
+        return filter.statuses!.some((st) => {
+          const sUpper = st.toUpperCase();
+          if (sUpper === "NOT_ASSIGNED" || sUpper === "UNASSIGNED" || sUpper === "REGISTERED") {
+            return main === "Not Assigned";
           }
-          if (s === "UNDER_ENQUIRY" || s === "ENQUIRY_IN_PROGRESS") {
-            return c.status === "ENQUIRY_IN_PROGRESS" || c.status === "ASSIGNED_TO_EO";
+          if (
+            sUpper === "PENDING" ||
+            sUpper === "UNDER_ENQUIRY" ||
+            sUpper === "ENQUIRY_IN_PROGRESS" ||
+            sUpper === "RE_ENQUIRY"
+          ) {
+            return main === "Pending";
           }
-          if (s === "UNDER_REVIEW" || s === "REPORT_SUBMITTED") {
-            return (
-              c.status === "REPORT_SUBMITTED" ||
-              c.status === "PENDING_SHO_REVIEW" ||
-              c.status === "INTERIM_REPORT_SUBMITTED"
-            );
+          if (
+            sUpper === "COMPLETE" ||
+            sUpper === "COMPLETED" ||
+            sUpper === "DISPOSED" ||
+            sUpper === "DISPOSED_CIVIL_NATURE"
+          ) {
+            return main === "Complete";
           }
-          if (s === "DISPOSED" || s === "DISPOSED_CIVIL_NATURE") {
-            return (
-              c.status.startsWith("DISPOSED_") ||
-              c.status === "RECOMMENDED_FOR_FIR" ||
-              c.status === "TRANSFERRED_OTHER_PS"
-            );
+          if (sUpper === "FIR_REGISTER" || sUpper === "FIR REGISTER") {
+            return main === "FIR Register";
           }
-          return c.status === s;
+          if (sUpper === "FIR_REGISTERED" || sUpper === "FIR REGISTERED") {
+            return main === "FIR Registered";
+          }
+          if (sUpper === "CORRECTION_REQUIRED" || sUpper === "CORRECTION REQUIRED") {
+            return main === "Correction Required";
+          }
+          if (sUpper === "WAITING_SHO" || sUpper === "UNDER_REVIEW") {
+            return Boolean(c.isSentToSho && !c.isFirRegistered);
+          }
+          return c.status === st || main === st;
         });
       });
     } else if (filter?.status && filter.status !== "ALL") {
-      const s = filter.status;
-      if (s === "UNASSIGNED" || s === "REGISTERED") {
-        list = list.filter((c) => c.status === "REGISTERED");
-      } else if (s === "UNDER_ENQUIRY" || s === "ENQUIRY_IN_PROGRESS") {
-        list = list.filter((c) => c.status === "ENQUIRY_IN_PROGRESS" || c.status === "ASSIGNED_TO_EO");
-      } else if (s === "UNDER_REVIEW" || s === "REPORT_SUBMITTED") {
-        list = list.filter(
-          (c) =>
-            c.status === "REPORT_SUBMITTED" ||
-            c.status === "PENDING_SHO_REVIEW" ||
-            c.status === "INTERIM_REPORT_SUBMITTED"
-        );
-      } else if (s === "DISPOSED" || s === "DISPOSED_CIVIL_NATURE") {
-        list = list.filter(
-          (c) =>
-            c.status.startsWith("DISPOSED_") ||
-            c.status === "RECOMMENDED_FOR_FIR" ||
-            c.status === "TRANSFERRED_OTHER_PS"
-        );
+      const sUpper = filter.status.toUpperCase();
+      if (sUpper === "NOT_ASSIGNED" || sUpper === "UNASSIGNED" || sUpper === "REGISTERED") {
+        list = list.filter((c) => getMainComplaintStatus(c) === "Not Assigned");
+      } else if (
+        sUpper === "PENDING" ||
+        sUpper === "UNDER_ENQUIRY" ||
+        sUpper === "ENQUIRY_IN_PROGRESS" ||
+        sUpper === "RE_ENQUIRY"
+      ) {
+        list = list.filter((c) => getMainComplaintStatus(c) === "Pending");
+      } else if (
+        sUpper === "COMPLETE" ||
+        sUpper === "COMPLETED" ||
+        sUpper === "DISPOSED" ||
+        sUpper === "DISPOSED_CIVIL_NATURE"
+      ) {
+        list = list.filter((c) => getMainComplaintStatus(c) === "Complete");
+      } else if (sUpper === "FIR_REGISTER" || sUpper === "FIR REGISTER") {
+        list = list.filter((c) => getMainComplaintStatus(c) === "FIR Register");
+      } else if (sUpper === "FIR_REGISTERED" || sUpper === "FIR REGISTERED") {
+        list = list.filter((c) => getMainComplaintStatus(c) === "FIR Registered");
+      } else if (sUpper === "CORRECTION_REQUIRED" || sUpper === "CORRECTION REQUIRED") {
+        list = list.filter((c) => getMainComplaintStatus(c) === "Correction Required");
+      } else if (sUpper === "WAITING_SHO" || sUpper === "UNDER_REVIEW") {
+        list = list.filter((c) => c.isSentToSho && !c.isFirRegistered);
       } else {
-        list = list.filter((c) => c.status === s);
+        list = list.filter((c) => c.status === filter.status);
       }
     }
 
@@ -151,51 +349,43 @@ export const ComplaintService = {
     }
 
     if (filter?.search) {
-      const q = filter.search.toLowerCase();
+      const q = filter.search.toLowerCase().trim();
       list = list.filter(
         (c) =>
           c.complaintNumber.toLowerCase().includes(q) ||
           c.complainantName.toLowerCase().includes(q) ||
           c.complainantMobile.includes(q) ||
           c.incidentPlace.toLowerCase().includes(q) ||
-          c.accusedList.some((a) => a.name.toLowerCase().includes(q))
+          (c.complaintSubject && c.complaintSubject.toLowerCase().includes(q)) ||
+          (c.complaintDescription && c.complaintDescription.toLowerCase().includes(q)) ||
+          (c.policeStation && c.policeStation.toLowerCase().includes(q)) ||
+          (c.assignedEoName && c.assignedEoName.toLowerCase().includes(q)) ||
+          (c.firNumber && c.firNumber.toLowerCase().includes(q)) ||
+          c.accusedList.some((a) => a.name.toLowerCase().includes(q) || (a.address && a.address.toLowerCase().includes(q)))
       );
-    }
-
-    if (filter?.assignedEo) {
-      const eo = filter.assignedEo.toLowerCase().trim();
-      const eoTokens = eo
-        .split(" ")
-        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
-      list = list.filter((c) => {
-        const eoId = (c.assignedEoId || "").toLowerCase();
-        const eoPno = (c.assignedEoPno || "").toLowerCase();
-        const eoName = (c.assignedEoName || "").toLowerCase();
-
-        if (eoId === eo || eoPno === eo) return true;
-        if (
-          eoId.replace("usr_", "").replace("eo_", "") &&
-          eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "")
-        ) {
-          return true;
-        }
-        if (eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
-        if (eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
-        return false;
-      });
     }
 
     return list;
   },
 
   async getComplaintById(id: string): Promise<ComplaintItem | undefined> {
+    if (!id) return undefined;
+    const cleanId = decodeURIComponent(id).trim().toLowerCase();
+
+    // 1. Search in-memory complaintsStore directly first
+    let found = complaintsStore.find(
+      (c) =>
+        c.id.toLowerCase() === cleanId ||
+        c.complaintNumber.toLowerCase() === cleanId
+    );
+    if (found) return found;
+
+    // 2. If not found in memory, reload from storage and search
     complaintsStore = loadComplaintsFromStorage();
-    const cleanId = id ? decodeURIComponent(id).trim() : "";
     return complaintsStore.find(
       (c) =>
-        c.id === id ||
-        c.complaintNumber === id ||
-        (cleanId && (c.id === cleanId || c.complaintNumber === cleanId))
+        c.id.toLowerCase() === cleanId ||
+        c.complaintNumber.toLowerCase() === cleanId
     );
   },
 
@@ -205,6 +395,12 @@ export const ComplaintService = {
     underEnquiry: number;
     underReview: number;
     disposed: number;
+    notAssigned: number;
+    pending: number;
+    complete: number;
+    firRegister: number;
+    firRegistered: number;
+    correctionRequired: number;
   }> {
     complaintsStore = loadComplaintsFromStorage();
     let baseList = [...complaintsStore];
@@ -214,20 +410,38 @@ export const ComplaintService = {
         .split(" ")
         .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
       baseList = baseList.filter((c) => {
+        // EO cannot see complaints without an assigned EO
+        const hasEo = Boolean(c.assignedEoId || c.assignedEoName || c.assignedEoPno);
+        if (!hasEo) return false;
+
         const eoId = (c.assignedEoId || "").toLowerCase();
         const eoPno = (c.assignedEoPno || "").toLowerCase();
         const eoName = (c.assignedEoName || "").toLowerCase();
 
-        if (eoId === eo || eoPno === eo) return true;
+        let matches = eoId === eo || eoPno === eo;
         if (
+          !matches &&
           eoId.replace("usr_", "").replace("eo_", "") &&
-          eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "")
+          eo.replace("usr_", "").replace("eo_", "")
         ) {
-          return true;
+          matches = eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "");
         }
-        if (eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
-        if (eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
-        return false;
+        if (!matches && eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
+        if (!matches && eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
+        if (!matches) return false;
+
+        // Active queue rule: when sent to SHO, it leaves EO active queue unless re-enquiry or correction required
+        if (
+          c.isSentToSho &&
+          !c.isFirApprovedBySho &&
+          c.workflowState !== "RE_ENQUIRY" &&
+          c.workflowState !== "CORRECTION_REQUIRED" &&
+          c.shoDecision !== "REJECT"
+        ) {
+          return false;
+        }
+
+        return true;
       });
     }
 
@@ -237,7 +451,22 @@ export const ComplaintService = {
     let underReview = 0;
     let disposed = 0;
 
+    let notAssigned = 0;
+    let pending = 0;
+    let complete = 0;
+    let firRegister = 0;
+    let firRegistered = 0;
+    let correctionRequired = 0;
+
     for (const c of baseList) {
+      const main = getMainComplaintStatus(c);
+      if (main === "Not Assigned") notAssigned++;
+      else if (main === "Pending") pending++;
+      else if (main === "Complete") complete++;
+      else if (main === "FIR Register") firRegister++;
+      else if (main === "FIR Registered") firRegistered++;
+      else if (main === "Correction Required") correctionRequired++;
+
       if (c.status === "REGISTERED") {
         unassigned++;
       } else if (c.status === "ENQUIRY_IN_PROGRESS" || c.status === "ASSIGNED_TO_EO") {
@@ -257,7 +486,7 @@ export const ComplaintService = {
       }
     }
 
-    return { all, unassigned, underEnquiry, underReview, disposed };
+    return { all, unassigned, underEnquiry, underReview, disposed, notAssigned, pending, complete, firRegister, firRegistered, correctionRequired };
   },
 
   async createComplaint(
@@ -267,8 +496,10 @@ export const ComplaintService = {
     district: string,
     officerPno: string = "04291882"
   ): Promise<ComplaintItem> {
-    const sequenceNumber = Math.floor(480 + complaintsStore.length + 1);
-    const generatedComplaintNumber = `HAR-KKR-2026-CMP-${String(sequenceNumber).padStart(5, "0")}`;
+    const isDirectFir = Boolean(input.directSendToFir || input.directSendToFirChoice === "YES");
+    const initialStatus: ComplaintStatus = isDirectFir ? "FIR_REGISTER" : "REGISTERED";
+    const initialWorkflow: WorkflowState = isDirectFir ? "FIR_REGISTER" : "NOT_ASSIGNED";
+    const generatedComplaintNumber = `HAR-KKR-2026-CMP-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
     const newComplaint: ComplaintItem = {
       id: `cmp_${Date.now()}`,
@@ -277,7 +508,9 @@ export const ComplaintService = {
       category: input.category,
       categoryDisplay: input.category.replace(/_/g, " "),
       priority: input.priority,
-      status: "REGISTERED",
+      status: initialStatus,
+      directSendToFir: isDirectFir,
+      directSendToFirChoice: isDirectFir ? "YES" : "NO",
       incidentDate: input.incidentDate,
       incidentTime: input.incidentTime,
       isIncidentDateTimeKnown: input.isIncidentDateTimeKnown,
@@ -352,6 +585,7 @@ export const ComplaintService = {
         })),
       ].filter((doc, idx, arr) => arr.findIndex((d) => d.fileName.toLowerCase() === doc.fileName.toLowerCase()) === idx),
       daysPending: 0,
+      workflowState: initialWorkflow,
       mhcName: officerName || "HC Devinder Kumar",
       mhcRank: "Head Constable (MHC)",
       mhcBeltNumber: officerPno === "05192834" ? "889/KKR" : (officerPno ? `${officerPno.slice(-3)}/KKR` : "889/KKR"),
@@ -360,8 +594,28 @@ export const ComplaintService = {
       updatedAt: new Date().toISOString(),
     };
 
+    const initialAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_reg`,
+      complaintId: newComplaint.id,
+      action: "COMPLAINT_REGISTERED",
+      actionLabel: isDirectFir ? "Complaint Registered (Direct FIR)" : "Complaint Registered",
+      performedBy: officerName,
+      userPno: officerPno,
+      userRole: "MHC_GD_INCHARGE",
+      timestamp: new Date().toISOString(),
+      details: isDirectFir
+        ? `Citizen complaint ${generatedComplaintNumber} registered with Direct send to FIR: YES. Status: FIR Register. Dispatched directly to SHO for formal FIR registration.`
+        : `Citizen complaint ${generatedComplaintNumber} registered in CMS register. Status: Not Assigned.`,
+    };
+    newComplaint.auditTrail = [initialAudit];
+
     complaintsStore.unshift(newComplaint);
     saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: newComplaint }));
+    }
 
     // Complaint registered directly without auto-entry in Roznamcha
     return newComplaint;
@@ -383,6 +637,7 @@ export const ComplaintService = {
     const eoRoster = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === eoId);
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + targetDays);
+    const nowIso = new Date().toISOString();
 
     const updated: ComplaintItem = {
       ...complaintsStore[index],
@@ -396,16 +651,34 @@ export const ComplaintService = {
       mhcRank: complaintsStore[index].mhcRank || "Head Constable (MHC)",
       mhcBeltNumber: complaintsStore[index].mhcBeltNumber || "889/KKR",
       mhcPhone: complaintsStore[index].mhcPhone || "9813098765",
-      assignedAt: new Date().toISOString(),
+      assignedAt: nowIso,
       assignedDirections: directions,
       assignedRosterDuty: eoRoster?.rosterDuty || "Investigation Duty",
       targetResolutionDate: targetDate.toISOString().split("T")[0],
       status: "ASSIGNED_TO_EO" as ComplaintStatus,
-      updatedAt: new Date().toISOString(),
+      workflowState: "PENDING",
+      isSentToSho: false,
+      shoActionRequired: false,
+      updatedAt: nowIso,
     };
+
+    const assignAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_assign`,
+      complaintId: updated.id,
+      action: "EO_ASSIGNED",
+      actionLabel: `EO Assigned: ${eoName} (${eoRank})`,
+      performedBy: assignedByName,
+      userRole: "SHO",
+      timestamp: nowIso,
+      details: `Enquiry Officer assigned: ${eoName}, PNO: ${eoPno}. Target: ${targetDays} days. Directions: "${directions}". Status changed to Pending.`,
+    };
+
+    if (!updated.auditTrail) updated.auditTrail = [];
+    updated.auditTrail.unshift(assignAudit);
 
     complaintsStore[index] = updated;
     saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
 
     // Create & dispatch notification to the respected Enquiry Officer
     const notification: OfficerNotification = {
@@ -449,25 +722,37 @@ export const ComplaintService = {
 
   async getDashboardMetrics() {
     const total = complaintsStore.length;
+    let notAssigned = 0;
+    let pending = 0;
+    let complete = 0;
+    let firRegistered = 0;
+
+    for (const c of complaintsStore) {
+      const main = getMainComplaintStatus(c);
+      if (main === "Not Assigned") notAssigned++;
+      else if (main === "Pending") pending++;
+      else if (main === "Complete") complete++;
+      else if (main === "FIR Registered") firRegistered++;
+    }
+
     const pendingEnquiry = complaintsStore.filter(
       (c) => c.status === "ASSIGNED_TO_EO" || c.status === "ENQUIRY_IN_PROGRESS"
     ).length;
-    const pendingAssignment = complaintsStore.filter((c) => c.status === "REGISTERED").length;
+    const pendingAssignment = complaintsStore.filter((c) => c.status === "REGISTERED" || !c.assignedEoName).length;
     const pendingApproval = complaintsStore.filter(
-      (c) => c.status === "REPORT_SUBMITTED" || c.status === "RECOMMENDED_FOR_FIR"
+      (c) => c.status === "REPORT_SUBMITTED" || c.status === "RECOMMENDED_FOR_FIR" || Boolean(c.isSentToSho)
     ).length;
-    const disposed = complaintsStore.filter(
-      (c) =>
-        c.status === "DISPOSED_CIVIL_NATURE" ||
-        c.status === "DISPOSED_MUTUAL_ACCORD" ||
-        c.status === "DISPOSED_UNSUBSTANTIATED"
-    ).length;
+    const disposed = complete;
     const criticalUrgent = complaintsStore.filter(
       (c) => c.priority === "URGENT" || c.priority === "CM_WINDOW_VIP" || c.priority === "CRITICAL_SENSITIVE"
     ).length;
 
     return {
       total,
+      notAssigned,
+      pending,
+      complete,
+      firRegistered,
       pendingEnquiry,
       pendingAssignment,
       pendingApproval,
@@ -943,17 +1228,29 @@ export const ComplaintService = {
     complaintsStore[index] = {
       ...complaintsStore[index],
       status: "RECOMMENDED_FOR_FIR",
+      isFirRegistered: true,
+      firNumber: firNumber,
+      firSections: sections,
+      firDate: new Date().toISOString(),
+      firRegisteredBy: officerName,
+      dispositionType: "FIR_REGISTERED",
       updatedAt: new Date().toISOString(),
     };
 
     this.addTimelineEvent(complaintsStore[index].id, {
       title: `Converted to FIR: ${firNumber}`,
-      description: `Enquiry completed and cognizable offense substantiated under BNSS sections ${sections}. Formal FIR registered.`,
+      description: `Cognizable offense substantiated under BNS sections ${sections}. Formal regular FIR ${firNumber} registered at Police Station by ${officerName}.`,
       category: "STATUS_CHANGE",
       officerName,
       timestamp: new Date().toISOString(),
       documentName: `FIR-${firNumber}.pdf`,
     });
+
+    saveComplaintsToStorage(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated"));
+    }
 
     return complaintsStore[index];
   },
@@ -1084,21 +1381,28 @@ export const ComplaintService = {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
-    const doc = (complaintsStore[index].documents || []).find((d) => d.id === docId);
+    const cleanDocId = docId.replace(/^doc_att_/, "").replace(/^doc_/, "");
+    const doc = (complaintsStore[index].documents || []).find((d) => d.id === docId || d.id === cleanDocId);
     complaintsStore[index] = {
       ...complaintsStore[index],
-      documents: (complaintsStore[index].documents || []).filter((d) => d.id !== docId),
+      documents: (complaintsStore[index].documents || []).filter(
+        (d) => d.id !== docId && d.id !== cleanDocId && `doc_${d.id}` !== docId
+      ),
+      attachments: (complaintsStore[index].attachments || []).filter(
+        (a) => a.id !== docId && a.id !== cleanDocId && `doc_${a.id}` !== docId
+      ),
       updatedAt: new Date().toISOString(),
     };
 
     this.addTimelineEvent(complaintsStore[index].id, {
-      title: `Document Record Deleted by EO`,
-      description: `Document record "${doc?.fileName || "Document"}" removed by assigned Enquiry Officer ${officerName}.`,
+      title: `Document Record Deleted`,
+      description: `Document record "${doc?.fileName || "Document"}" removed by ${officerName}.`,
       category: "DOCUMENT",
       officerName,
       timestamp: new Date().toISOString(),
     });
 
+    saveComplaintsToStorage(complaintsStore);
     return complaintsStore[index];
   },
 
@@ -1165,6 +1469,36 @@ export const ComplaintService = {
     return complaintsStore[index];
   },
 
+  addAuditRecord(
+    complaintId: string,
+    record: Omit<ComplaintAuditRecord, "id" | "timestamp" | "complaintId"> & { timestamp?: string; id?: string }
+  ): ComplaintItem | undefined {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) return undefined;
+    const newAudit: ComplaintAuditRecord = {
+      id: record.id || `audit_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaintsStore[index].id,
+      action: record.action,
+      actionLabel: record.actionLabel,
+      performedBy: record.performedBy,
+      userPno: record.userPno,
+      userRole: record.userRole,
+      timestamp: record.timestamp || new Date().toISOString(),
+      details: record.details,
+      outcome: record.outcome,
+      reason: record.reason,
+      metadata: record.metadata,
+    };
+    if (!complaintsStore[index].auditTrail) {
+      complaintsStore[index].auditTrail = [];
+    }
+    complaintsStore[index].auditTrail!.unshift(newAudit);
+    complaintsStore[index].updatedAt = new Date().toISOString();
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+    return complaintsStore[index];
+  },
+
   async addComplaintReport(
     complaintId: string,
     report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string }
@@ -1172,9 +1506,13 @@ export const ComplaintService = {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
+    const existingReports = complaintsStore[index].reports || [];
+    const versionNumber = existingReports.length + 1;
+
     const newReport: ComplaintReportItem = {
       id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       complaintId: complaintsStore[index].id,
+      versionNumber,
       title: report.title,
       reportType: report.reportType,
       reportTypeLabel: report.reportTypeLabel,
@@ -1192,16 +1530,581 @@ export const ComplaintService = {
       fileFormat: report.fileFormat,
       isUploaded: report.isUploaded,
       createdAt: report.createdAt || new Date().toISOString(),
+      recommendationType: report.recommendationType,
+      isFirRecommended: report.isFirRecommended,
+      selectedOutcome: report.selectedOutcome,
+      analysisClassification: report.analysisClassification,
+      analysisRationale: report.analysisRationale,
     };
 
-    if (!complaintsStore[index].reports) {
-      complaintsStore[index].reports = [];
+    complaintsStore[index].reports = [newReport, ...existingReports];
+
+    if (report.isFirRecommended) {
+      complaintsStore[index].isRecommendedForFir = true;
+      complaintsStore[index].recommendedAction = "RECOMMEND_FIR";
     }
-    complaintsStore[index].reports!.unshift(newReport);
+
+    if (report.selectedOutcome) {
+      complaintsStore[index].eoOutcome = report.selectedOutcome;
+      if (report.selectedOutcome === "Complete") {
+        complaintsStore[index].status = "COMPLETE";
+        complaintsStore[index].workflowState = "COMPLETE";
+      } else if (report.selectedOutcome === "Pending") {
+        complaintsStore[index].status = "ENQUIRY_IN_PROGRESS";
+        complaintsStore[index].workflowState = "PENDING";
+      } else if (report.selectedOutcome === "FIR Recommend") {
+        complaintsStore[index].status = "RECOMMENDED_FOR_FIR";
+        complaintsStore[index].workflowState = "FIR_RECOMMENDED";
+      }
+    }
+
     complaintsStore[index].updatedAt = new Date().toISOString();
     saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
 
     return complaintsStore[index];
+  },
+
+  async submitEoReportWithOutcome(
+    complaintId: string,
+    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string },
+    outcome: EOOutcome,
+    officerName: string,
+    officerRank?: string,
+    officerPno?: string,
+    userRole?: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const existingReports = complaint.reports || [];
+    const versionNumber = existingReports.length + 1;
+
+    const newReport: ComplaintReportItem = {
+      id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaint.id,
+      versionNumber,
+      title: report.title,
+      reportType: report.reportType,
+      reportTypeLabel: report.reportTypeLabel,
+      dispatchNo: report.dispatchNo,
+      generatedDate: report.generatedDate || nowIso.split("T")[0],
+      officerName: report.officerName || officerName,
+      officerRank: report.officerRank || officerRank,
+      officerPno: report.officerPno || officerPno,
+      conclusionSummary: report.conclusionSummary,
+      content: report.content,
+      contentHtml: report.contentHtml,
+      fileName: report.fileName,
+      fileSize: report.fileSize,
+      fileUrl: report.fileUrl,
+      dataUrl: report.dataUrl,
+      fileFormat: report.fileFormat,
+      isUploaded: report.isUploaded,
+      createdAt: report.createdAt || nowIso,
+      recommendationType: report.recommendationType,
+      isFirRecommended: outcome === "FIR Recommend" || report.isFirRecommended,
+      selectedOutcome: outcome,
+      analysisClassification: report.analysisClassification,
+      analysisRationale: report.analysisRationale,
+    };
+
+    let nextStatus: ComplaintStatus = complaint.status;
+    let nextWorkflowState: WorkflowState = complaint.workflowState || "PENDING";
+    let isRecommendedForFir = complaint.isRecommendedForFir;
+    let recommendedAction = complaint.recommendedAction;
+    const wasRejected = complaint.shoDecision === "REJECT" || complaint.workflowState === "CORRECTION_REQUIRED";
+
+    if (outcome === "Complete") {
+      nextStatus = "COMPLETE";
+      nextWorkflowState = "COMPLETE";
+    } else if (outcome === "Pending") {
+      nextStatus = "ENQUIRY_IN_PROGRESS";
+      nextWorkflowState = "PENDING";
+    } else if (outcome === "FIR Recommend") {
+      nextStatus = "RECOMMENDED_FOR_FIR";
+      isRecommendedForFir = true;
+      recommendedAction = "RECOMMEND_FIR";
+      nextWorkflowState = "FIR_RECOMMENDED";
+    }
+
+    complaintsStore[index] = {
+      ...complaint,
+      reports: [newReport, ...existingReports],
+      status: nextStatus,
+      workflowState: nextWorkflowState,
+      eoOutcome: outcome,
+      isRecommendedForFir,
+      recommendedAction,
+      shoDecision: outcome === "Complete" ? undefined : complaint.shoDecision,
+      isSentToSho: outcome === "Complete" ? true : complaint.isSentToSho,
+      shoActionRequired: outcome === "Complete" ? true : complaint.shoActionRequired,
+      updatedAt: nowIso,
+    };
+
+    if (wasRejected && outcome === "Complete") {
+      const shoNotif: OfficerNotification = {
+        id: `notif_${Date.now()}_sho_resubmitted`,
+        recipientPno: "04291882",
+        recipientName: "Station House Officer (SHO)",
+        complaintId: complaint.id,
+        complaintNumber: complaint.complaintNumber,
+        title: `REPORT RESUBMITTED: ${complaint.complaintNumber}`,
+        message: `EO ${officerName} has corrected and resubmitted the enquiry report on ${complaint.complaintNumber}. Action required: Review and Approve or Reject.`,
+        createdAt: nowIso,
+        priority: "URGENT",
+      };
+      officerNotificationsStore.unshift(shoNotif);
+      saveNotificationsToStorage(officerNotificationsStore);
+    }
+
+    // Add audit records
+    this.addAuditRecord(complaint.id, {
+      action: report.isUploaded ? "REPORT_UPLOADED" : "REPORT_SAVED",
+      actionLabel: report.isUploaded ? `Report Uploaded (v${versionNumber})` : `Report Saved (v${versionNumber})`,
+      performedBy: officerName,
+      userPno: officerPno,
+      userRole: userRole || "ENQUIRY_OFFICER",
+      timestamp: nowIso,
+      details: `${report.title} (${report.reportTypeLabel || report.reportType}) - File: ${report.fileName || "Draft proforma"}`,
+      outcome,
+    });
+
+    this.addAuditRecord(complaint.id, {
+      action: "EO_OUTCOME_SELECTED",
+      actionLabel: `Outcome Selected: ${outcome}`,
+      performedBy: officerName,
+      userPno: officerPno,
+      userRole: userRole || "ENQUIRY_OFFICER",
+      timestamp: nowIso,
+      outcome,
+      details: `Enquiry Officer designated outcome as: "${outcome}". Current main status: ${getMainComplaintStatus(complaintsStore[index])}.`,
+    });
+
+    this.addTimelineEvent(complaint.id, {
+      title: `Enquiry Report Recorded (v${versionNumber}) - Outcome: ${outcome}`,
+      description: `EO ${officerName} recorded report "${report.title}". Outcome set to ${outcome}.`,
+      category: "STATUS_CHANGE",
+      officerName,
+      timestamp: nowIso,
+      documentName: report.fileName,
+    });
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async sendReportToSho(
+    complaintId: string,
+    officerName: string,
+    officerPno: string = "04291882",
+    remarks?: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+
+    const updatedReports = (complaint.reports || []).map((r, i) =>
+      i === 0 ? { ...r, sentToSho: true, sentToShoAt: nowIso, sentToShoBy: officerName } : r
+    );
+
+    complaintsStore[index] = {
+      ...complaint,
+      reports: updatedReports,
+      isSentToSho: true,
+      sentToShoAt: nowIso,
+      sentToShoBy: officerName,
+      shoActionRequired: true,
+      workflowState: "SENT_TO_SHO",
+      updatedAt: nowIso,
+    };
+
+    // Audit record
+    this.addAuditRecord(complaint.id, {
+      action: "SENT_TO_SHO",
+      actionLabel: "Report Sent to SHO for Decision",
+      performedBy: officerName,
+      userPno: officerPno,
+      userRole: "ENQUIRY_OFFICER",
+      timestamp: nowIso,
+      details: remarks || `EO submitted completed enquiry report and outcome (${complaint.eoOutcome || "Pending"}) to Station House Officer (SHO).`,
+    });
+
+    // Timeline
+    this.addTimelineEvent(complaint.id, {
+      title: "Enquiry Report Dispatched to SHO",
+      description: `Enquiry Officer ${officerName} submitted report to SHO for review and action. Remarks: ${remarks || "Awaiting SHO approval."}`,
+      category: "STATUS_CHANGE",
+      officerName,
+      timestamp: nowIso,
+    });
+
+    // Officer Notification for SHO
+    const shoNotif: OfficerNotification = {
+      id: `notif_${Date.now()}_sho_action`,
+      recipientPno: "04291882",
+      recipientName: "Station House Officer (SHO)",
+      complaintId: complaint.id,
+      complaintNumber: complaint.complaintNumber,
+      title: `ACTION REQUIRED: Report Submitted (${complaint.complaintNumber})`,
+      message: `EO ${officerName} has submitted report with outcome "${complaint.eoOutcome || "Pending"}". Action required: Approve or Order Re-Enquiry.`,
+      createdAt: nowIso,
+      priority: complaint.priority === "ROUTINE" ? "URGENT" : "CRITICAL",
+    };
+    officerNotificationsStore.unshift(shoNotif);
+    saveNotificationsToStorage(officerNotificationsStore);
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async shoApprove(
+    complaintId: string,
+    shoName: string,
+    shoPno: string = "04291882",
+    remarks?: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const isFirOutcome = complaint.eoOutcome === "FIR Recommend" || complaint.isRecommendedForFir;
+
+    let nextWorkflowState: WorkflowState = "COMPLETE";
+    let nextStatus: ComplaintStatus = complaint.status;
+    let isFirApprovedBySho = false;
+
+    if (isFirOutcome) {
+      nextWorkflowState = "FIR_REGISTRATION_PENDING";
+      nextStatus = "RECOMMENDED_FOR_FIR";
+      isFirApprovedBySho = true;
+    } else {
+      nextWorkflowState = "COMPLETE";
+      nextStatus = "COMPLETE";
+    }
+
+    complaintsStore[index] = {
+      ...complaint,
+      status: nextStatus,
+      workflowState: nextWorkflowState,
+      shoDecision: "APPROVE",
+      shoDecisionAt: nowIso,
+      shoDecisionBy: shoName,
+      shoRemarks: remarks,
+      isFirApprovedBySho,
+      firApprovedAt: isFirApprovedBySho ? nowIso : undefined,
+      firApprovedBy: isFirApprovedBySho ? shoName : undefined,
+      shoActionRequired: isFirOutcome,
+      updatedAt: nowIso,
+    };
+
+    // Audit record
+    this.addAuditRecord(complaint.id, {
+      action: "SHO_APPROVED",
+      actionLabel: isFirOutcome ? "SHO Approved FIR Recommendation" : "SHO Approved & Closed Enquiry",
+      performedBy: shoName,
+      userPno: shoPno,
+      userRole: "SHO",
+      timestamp: nowIso,
+      details: remarks || (isFirOutcome ? "SHO concurred with EO findings and sanctioned regular FIR registration." : "SHO verified and approved complete enquiry report. Matter disposed/closed."),
+    });
+
+    // Timeline
+    this.addTimelineEvent(complaint.id, {
+      title: isFirOutcome ? "SHO Sanctioned FIR Registration" : "Enquiry Report Approved by SHO",
+      description: `Station House Officer ${shoName} approved the enquiry findings. ${remarks ? `Remarks: ${remarks}` : ""}`,
+      category: "STATUS_CHANGE",
+      officerName: shoName,
+      timestamp: nowIso,
+    });
+
+    // Notify EO that SHO approved
+    if (complaint.assignedEoPno) {
+      const eoNotif: OfficerNotification = {
+        id: `notif_${Date.now()}_eo_approved`,
+        recipientPno: complaint.assignedEoPno,
+        recipientName: complaint.assignedEoName || "Enquiry Officer",
+        complaintId: complaint.id,
+        complaintNumber: complaint.complaintNumber,
+        title: `Report Approved: ${complaint.complaintNumber}`,
+        message: `SHO ${shoName} has approved your enquiry report (${complaint.eoOutcome}). ${remarks ? `Remarks: "${remarks}"` : ""}`,
+        createdAt: nowIso,
+        priority: "ROUTINE",
+      };
+      officerNotificationsStore.unshift(eoNotif);
+      saveNotificationsToStorage(officerNotificationsStore);
+    }
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async shoReEnquiry(
+    complaintId: string,
+    shoName: string,
+    shoPno: string = "04291882",
+    reason: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const reEnquiryCount = (complaint.reEnquiryCount || 0) + 1;
+
+    // Re-assign to SAME EO, reappears in EO active list, status Pending
+    complaintsStore[index] = {
+      ...complaint,
+      status: "ENQUIRY_IN_PROGRESS",
+      workflowState: "RE_ENQUIRY",
+      eoOutcome: "Pending",
+      isSentToSho: false,
+      shoActionRequired: false,
+      isFirApprovedBySho: false,
+      shoDecision: "RE_ENQUIRY",
+      shoDecisionAt: nowIso,
+      shoDecisionBy: shoName,
+      reEnquiryCount,
+      reEnquiryRemarks: reason,
+      reEnquiryAt: nowIso,
+      reEnquiryBy: shoName,
+      updatedAt: nowIso,
+    };
+
+    // Audit record
+    this.addAuditRecord(complaint.id, {
+      action: "SHO_RE_ENQUIRY",
+      actionLabel: `Re-Enquiry Ordered by SHO (Cycle #${reEnquiryCount})`,
+      performedBy: shoName,
+      userPno: shoPno,
+      userRole: "SHO",
+      timestamp: nowIso,
+      reason,
+      details: `SHO ordered re-enquiry. Re-assigned to EO ${complaint.assignedEoName} (PNO: ${complaint.assignedEoPno}). Reason/Directions: "${reason}".`,
+    });
+
+    // Timeline
+    this.addTimelineEvent(complaint.id, {
+      title: `Re-Enquiry Ordered by SHO (Cycle #${reEnquiryCount})`,
+      description: `SHO ${shoName} returned the complaint to EO ${complaint.assignedEoName} for further enquiry. Directions: "${reason}". Status remains Pending.`,
+      category: "STATUS_CHANGE",
+      officerName: shoName,
+      timestamp: nowIso,
+    });
+
+    // Notify EO about re-enquiry!
+    if (complaint.assignedEoPno) {
+      const eoNotif: OfficerNotification = {
+        id: `notif_${Date.now()}_eo_reenquiry`,
+        recipientPno: complaint.assignedEoPno,
+        recipientName: complaint.assignedEoName || "Enquiry Officer",
+        complaintId: complaint.id,
+        complaintNumber: complaint.complaintNumber,
+        title: `RE-ENQUIRY ORDERED: ${complaint.complaintNumber}`,
+        message: `SHO ${shoName} ordered re-enquiry on ${complaint.complaintNumber}. Reason / Instructions: "${reason}". The case has been returned to your active docket.`,
+        directions: reason,
+        createdAt: nowIso,
+        priority: "URGENT",
+      };
+      officerNotificationsStore.unshift(eoNotif);
+      saveNotificationsToStorage(officerNotificationsStore);
+    }
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async shoReject(
+    complaintId: string,
+    shoName: string,
+    shoPno: string = "04291882",
+    reason: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const rejectionCount = (complaint.rejectionCount || 0) + 1;
+
+    // Return to the SAME assigned EO for correction and resubmission
+    complaintsStore[index] = {
+      ...complaint,
+      status: "CORRECTION_REQUIRED",
+      workflowState: "CORRECTION_REQUIRED",
+      eoOutcome: "Pending",
+      isSentToSho: false,
+      shoActionRequired: false,
+      isFirApprovedBySho: false,
+      shoDecision: "REJECT",
+      shoDecisionAt: nowIso,
+      shoDecisionBy: shoName,
+      rejectionCount,
+      rejectionReason: reason,
+      rejectionAt: nowIso,
+      rejectionBy: shoName,
+      updatedAt: nowIso,
+    };
+
+    // Audit record
+    this.addAuditRecord(complaint.id, {
+      action: "SHO_REJECTED",
+      actionLabel: `Report Rejected by SHO (Cycle #${rejectionCount})`,
+      performedBy: shoName,
+      userPno: shoPno,
+      userRole: "SHO",
+      timestamp: nowIso,
+      reason,
+      details: `SHO rejected enquiry report. Returned to assigned EO ${complaint.assignedEoName} (PNO: ${complaint.assignedEoPno}) for correction and report resubmission. Reason: "${reason}".`,
+    });
+
+    // Timeline
+    this.addTimelineEvent(complaint.id, {
+      title: `Enquiry Report Rejected by SHO (Cycle #${rejectionCount})`,
+      description: `SHO ${shoName} rejected the report and returned the case to EO ${complaint.assignedEoName} for correction and resubmission. Reason: "${reason}". Status: Correction Required.`,
+      category: "STATUS_CHANGE",
+      officerName: shoName,
+      timestamp: nowIso,
+    });
+
+    // Notify EO about rejection and required corrections
+    if (complaint.assignedEoPno) {
+      const eoNotif: OfficerNotification = {
+        id: `notif_${Date.now()}_eo_rejected`,
+        recipientPno: complaint.assignedEoPno,
+        recipientName: complaint.assignedEoName || "Enquiry Officer",
+        complaintId: complaint.id,
+        complaintNumber: complaint.complaintNumber,
+        title: `CORRECTION REQUIRED: Report Rejected (${complaint.complaintNumber})`,
+        message: `SHO ${shoName} rejected your enquiry report. Reason: "${reason}". Please correct and resubmit the report.`,
+        directions: reason,
+        createdAt: nowIso,
+        priority: "URGENT",
+      };
+      officerNotificationsStore.unshift(eoNotif);
+      saveNotificationsToStorage(officerNotificationsStore);
+    }
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async registerFir(
+    complaintId: string,
+    firNumber: string,
+    sections: string,
+    officerName: string,
+    userRole?: string,
+    firDate?: string
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const dateStr = firDate || nowIso.split("T")[0];
+
+    complaintsStore[index] = {
+      ...complaint,
+      isFirRegistered: true,
+      firNumber,
+      firDate: dateStr,
+      firRegisteredBy: officerName,
+      firRegisteredAt: nowIso,
+      firSections: sections,
+      status: "FIR_REGISTERED",
+      workflowState: "FIR_REGISTERED",
+      shoActionRequired: false,
+      updatedAt: nowIso,
+    };
+
+    // Audit record
+    this.addAuditRecord(complaint.id, {
+      action: "FIR_REGISTERED",
+      actionLabel: `Regular FIR Registered: ${firNumber}`,
+      performedBy: officerName,
+      userRole: userRole || "SHO",
+      timestamp: nowIso,
+      details: `Official FIR No. ${firNumber} registered under ${sections} at Police Station ${complaint.policeStation}. Complaint docket closed and converted to criminal FIR investigation.`,
+    });
+
+    // Timeline
+    this.addTimelineEvent(complaint.id, {
+      title: `FIR Registered: ${firNumber}`,
+      description: `Regular First Information Report No. ${firNumber} registered under ${sections} by ${officerName}. Complaint status converted to FIR Registered.`,
+      category: "STATUS_CHANGE",
+      officerName,
+      timestamp: nowIso,
+    });
+
+    // Log to Roznamcha General Diary
+    try {
+      await GeneralDiaryService.addEntry(
+        `Regular FIR Registered: ${firNumber} (ex-Complaint ${complaint.complaintNumber})`,
+        `Pursuant to preliminary enquiry under Section 173(3) BNSS, FIR No. ${firNumber} was officially registered under ${sections} at ${complaint.policeStation}. Complainant: ${complaint.complainantName}. Registered by ${officerName}.`,
+        "FIR_REGISTERED_ENTRY",
+        officerName,
+        "04291882",
+        complaint.policeStation,
+        complaint.complaintNumber
+      );
+    } catch (gdErr) {
+      console.warn("Could not log FIR to GD:", gdErr);
+    }
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return complaintsStore[index];
+  },
+
+  async sendReportToShoForFir(
+    complaintId: string,
+    officerName: string,
+    officerPno: string,
+    reportTitle?: string,
+    sections?: string
+  ): Promise<ComplaintItem> {
+    return this.sendReportToSho(complaintId, officerName, officerPno, `FIR recommended under ${sections || "BNS provisions"}. Title: ${reportTitle || "Enquiry Report"}`);
   },
 
   async deleteComplaintReport(
@@ -1217,6 +2120,7 @@ export const ComplaintService = {
       updatedAt: new Date().toISOString(),
     };
     saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
 
     return complaintsStore[index];
   },

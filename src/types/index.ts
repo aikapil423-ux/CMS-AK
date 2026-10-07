@@ -38,7 +38,36 @@ export interface UserSession {
 
 export type ComplaintPriority = 'ROUTINE' | 'URGENT' | 'CRITICAL_SENSITIVE' | 'CM_WINDOW_VIP';
 
+export type MainComplaintStatus =
+  | 'Not Assigned'
+  | 'Pending'
+  | 'Complete'
+  | 'FIR Register'
+  | 'FIR Registered'
+  | 'Correction Required';
+
+export type WorkflowState =
+  | 'NOT_ASSIGNED'
+  | 'PENDING'
+  | 'REPORT_READY'
+  | 'SENT_TO_SHO'
+  | 'RE_ENQUIRY'
+  | 'CORRECTION_REQUIRED'
+  | 'FIR_RECOMMENDED'
+  | 'FIR_REGISTER'
+  | 'FIR_REGISTRATION_PENDING'
+  | 'FIR_REGISTERED'
+  | 'COMPLETE';
+
+export type EOOutcome = 'Complete' | 'Pending' | 'FIR Recommend';
+
 export type ComplaintStatus =
+  | 'NOT_ASSIGNED'
+  | 'PENDING'
+  | 'COMPLETE'
+  | 'FIR_REGISTER'
+  | 'FIR_REGISTERED'
+  | 'CORRECTION_REQUIRED'
   | 'REGISTERED'
   | 'ASSIGNED_TO_EO'
   | 'ENQUIRY_IN_PROGRESS'
@@ -50,6 +79,70 @@ export type ComplaintStatus =
   | 'DISPOSED_CIVIL_NATURE'
   | 'DISPOSED_UNSUBSTANTIATED'
   | 'TRANSFERRED_OTHER_PS';
+
+export function getMainComplaintStatus(
+  complaint: {
+    assignedEoId?: string;
+    assignedEoName?: string;
+    status?: string;
+    workflowState?: string;
+    isFirRegistered?: boolean;
+    firNumber?: string;
+    eoOutcome?: string;
+    directSendToFir?: boolean;
+    shoDecision?: string;
+  },
+  viewerRole?: string
+): MainComplaintStatus {
+  // 1. Fully Registered FIR
+  if (
+    complaint.isFirRegistered ||
+    complaint.status === "FIR_REGISTERED" ||
+    complaint.workflowState === "FIR_REGISTERED" ||
+    (complaint.firNumber && complaint.firNumber.trim().length > 0)
+  ) {
+    return "FIR Registered";
+  }
+
+  // 2. Direct Send to FIR (awaiting formal registration by SHO)
+  if (
+    complaint.directSendToFir ||
+    complaint.status === "FIR_REGISTER" ||
+    complaint.workflowState === "FIR_REGISTER"
+  ) {
+    return "FIR Register";
+  }
+
+  // 3. SHO Rejection / Correction Required
+  if (
+    complaint.workflowState === "CORRECTION_REQUIRED" ||
+    complaint.status === "CORRECTION_REQUIRED" ||
+    (complaint.shoDecision === "REJECT" && complaint.workflowState !== "COMPLETE")
+  ) {
+    return "Correction Required";
+  }
+
+  const hasEo = Boolean(
+    (complaint.assignedEoId && complaint.assignedEoId.trim().length > 0) ||
+    (complaint.assignedEoName && complaint.assignedEoName.trim().length > 0)
+  );
+
+  if (!hasEo) {
+    return "Not Assigned";
+  }
+
+  if (
+    complaint.status === "COMPLETE" ||
+    complaint.workflowState === "COMPLETE" ||
+    complaint.eoOutcome === "Complete" ||
+    complaint.status === "DISPOSED_MUTUAL_ACCORD" ||
+    complaint.status === "DISPOSED_CIVIL_NATURE"
+  ) {
+    return "Complete";
+  }
+
+  return "Pending";
+}
 
 export type ComplaintSource =
   | 'WALK_IN_STATION'
@@ -163,6 +256,8 @@ export interface ComplaintItem {
   isFirRegistered?: boolean;
   firNumber?: string;
   firDate?: string;
+  firRegisteredBy?: string;
+  firRegisteredAt?: string;
   complaintAgeType?: 'FRESH' | 'OLD';
   complaintClassification?: string;
   complaintPurpose?: string;
@@ -199,8 +294,13 @@ export interface ComplaintItem {
   dispositionCategory?: string;
   dispositionRemarks?: string;
   disposedAt?: string;
-  disposedBy?: string;
   recommendedAction?: string;
+  isRecommendedForFir?: boolean;
+  recommendedForFirAt?: string;
+  recommendedForFirBy?: string;
+  firSections?: string;
+  sentToShoAt?: string;
+  sentToShoBy?: string;
   
   // Evidence Attachments (Documents, Audio, Video, Photos)
   attachments?: ComplaintEvidenceAttachment[];
@@ -221,14 +321,68 @@ export interface ComplaintItem {
   progressReportRequestedAt?: string;
   progressReportRemarks?: string;
   progressReportRequestedBy?: string;
+
+  // Direct Send to FIR
+  directSendToFir?: boolean;
+  directSendToFirChoice?: 'YES' | 'NO';
+
+  // New Complaint Status & SHO Approval Workflow
+  workflowState?: WorkflowState;
+  eoOutcome?: EOOutcome;
+  isSentToSho?: boolean;
+  isFirApprovedBySho?: boolean;
+  firApprovedAt?: string;
+  firApprovedBy?: string;
+  shoDecision?: 'APPROVE' | 'RE_ENQUIRY' | 'REJECT';
+  shoDecisionAt?: string;
+  shoDecisionBy?: string;
+  shoRemarks?: string;
+  rejectionReason?: string;
+  rejectionAt?: string;
+  rejectionBy?: string;
+  rejectionCount?: number;
+  reEnquiryCount?: number;
+  reEnquiryRemarks?: string;
+  reEnquiryAt?: string;
+  reEnquiryBy?: string;
+  shoActionRequired?: boolean;
+  auditTrail?: ComplaintAuditRecord[];
   
   createdAt: string;
   updatedAt: string;
 }
 
+export interface ComplaintAuditRecord {
+  id: string;
+  complaintId: string;
+  action:
+    | 'COMPLAINT_REGISTERED'
+    | 'EO_ASSIGNED'
+    | 'EO_REASSIGNED'
+    | 'REPORT_GENERATED'
+    | 'REPORT_SAVED'
+    | 'REPORT_UPLOADED'
+    | 'EO_OUTCOME_SELECTED'
+    | 'SENT_TO_SHO'
+    | 'SHO_APPROVED'
+    | 'SHO_RE_ENQUIRY'
+    | 'SHO_REJECTED'
+    | 'FIR_REGISTERED';
+  actionLabel: string;
+  performedBy: string;
+  userPno?: string;
+  userRole?: string;
+  timestamp: string;
+  details?: string;
+  outcome?: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+}
+
 export interface ComplaintReportItem {
   id: string;
   complaintId: string;
+  versionNumber?: number;
   title: string;
   reportType: string;
   reportTypeLabel: string;
@@ -247,6 +401,14 @@ export interface ComplaintReportItem {
   fileFormat?: string;
   isUploaded?: boolean;
   createdAt?: string;
+  recommendationType?: 'FIR_RECOMMENDED' | 'JAMINI_LAND_DISPUTE' | 'DIWANI_CIVIL_MONEY' | 'RAJINAMA_COMPROMISE' | 'NIVARAK_PREVENTIVE' | 'NO_COGNIZABLE_OFFENCE';
+  isFirRecommended?: boolean;
+  selectedOutcome?: EOOutcome;
+  sentToSho?: boolean;
+  analysisClassification?: string;
+  analysisRationale?: string;
+  sentToShoAt?: string;
+  sentToShoBy?: string;
 }
 
 export interface EnquiryNoteItem {
@@ -317,7 +479,7 @@ export interface PoliceReportFormData {
 }
 
 export interface NoticeFormData {
-  dispatchNo: string;
+  dispatchNo?: string;
   policeStation: string;
   district: string;
   issueDate: string;
@@ -330,25 +492,167 @@ export interface NoticeFormData {
   noticeeRole: string;
 
   complaintNo: string;
-  complainantName: string;
-  incidentDate: string;
-  sectionsOfLaw: string;
-  allegationsBrief: string;
+  complainantName?: string;
+  incidentDate?: string;
+  sectionsOfLaw?: string;
+  allegationsBrief?: string;
 
-  appearanceDate: string;
-  appearanceTime: string;
-  appearancePlace: string;
-  documentsRequired: string;
+  appearanceDate?: string;
+  appearanceTime?: string;
+  appearancePlace?: string;
+  documentsRequired?: string;
 
   officerName: string;
   officerRank: string;
   officerPno: string;
   officerPhone: string;
+  officerEmail?: string;
+  stationEmail?: string;
+  complainantAddress?: string;
+  videoConferenceDeadline?: string;
 
   mhcName?: string;
   mhcRank?: string;
   mhcBeltNumber?: string;
   mhcPhone?: string;
+
+  subjectTitle?: string;
+  recipientDesignation?: string;
+  groundsBrief?: string;
+  certificateText?: string;
+  shoName?: string;
+  supervisoryOfficerName?: string;
+  accusedAadhaar?: string;
+  accusedPan?: string;
+  accusedGender?: string;
+  jamaTalashiArticles?: string;
+  familyInformedDetails?: string;
+  witness1Details?: string;
+  witness2Details?: string;
+  natgridReason?: string;
+  natgridDepartment?: string;
+  natgridInfoRequired?: string;
+  shoPhone?: string;
+  shoEmail?: string;
+  noticeeDob?: string;
+  natgridNationalSecurity?: boolean;
+  natgridCounterTerror?: boolean;
+  natgridHeinousCrime?: boolean;
+  natgridOtherInfo?: string;
+
+  headerDept?: string;
+  headerGovt?: string;
+  docTitle?: string;
+  docSubTitle?: string;
+  statutoryClarification?: string;
+  toAuthority?: string;
+  cdrRows?: Array<{
+    id: string;
+    phone: string;
+    operator?: string;
+    period?: string;
+    details?: string;
+    periodFrom?: string;
+    periodTo?: string;
+    reason?: string;
+  }>;
+
+  // Arrest & Surrender Memo Form 26.8(1) (4 Pages Official Haryana Police Format)
+  headerVersion?: string;
+  arrestYear?: string;
+  arrestDate?: string;
+  arrestTime?: string;
+  arrestGdNo?: string;
+  arrestPlace?: string;
+  arrestPoliceStation?: string;
+  arrestDistrict?: string;
+  courtNameSurrender?: string;
+  noticeeAlias1?: string;
+  noticeeAlias2?: string;
+  noticeeNationality?: string;
+  voterOrIdCardNo?: string;
+  passportNo?: string;
+  passportIssueDate?: string;
+  passportIssuePlace?: string;
+  religion?: string;
+  categoryCaste?: string;
+  occupation?: string;
+  permanentAddress?: string;
+  currentAddress?: string;
+  mobileNo?: string;
+  phoneNo?: string;
+  userIdentificationNo?: string;
+  panNo?: string;
+  physicalConditionOrInjuries?: string;
+  custodyDate?: string;
+  custodyTime?: string;
+  custodyPlace?: string;
+  arrestWitnesses?: Array<{ id: string; srNo: string; name: string; address: string; signature: string }>;
+  relativeName?: string;
+  relativeRelation?: string;
+  intimationDate?: string;
+  intimationTime?: string;
+  relativeMobile?: string;
+  familyMember1?: string;
+  familyMember2?: string;
+  familyMember3?: string;
+  grounds47Sections?: string;
+  grounds47Role?: string;
+  grounds47Evidence?: string;
+  grounds47Other?: string;
+  jamaTalashiItems?: Array<{ id: string; srNo: string; description: string; quantity: string }>;
+  witnessSign1?: string;
+  witnessSign2?: string;
+  ioSignPlace?: string;
+  ioSignDate?: string;
+  accusedPhotoUrl?: string;
+  stateCaseTitle?: string;
+  caseNo?: string;
+  caseDate?: string;
+  caseSections?: string;
+  casePs?: string;
+  vsName?: string;
+  gender?: string;
+  dobYear?: string;
+  bodyBuild?: string;
+  heightCm?: string;
+  colorBloodGroup?: string;
+  identMarks?: string;
+  deformities?: string;
+  teeth?: string;
+  hair?: string;
+  eyes?: string;
+  habits?: string;
+  dress?: string;
+  languageDialect?: string;
+  burnMarks?: string;
+  leukodermaSpots?: string;
+  moleMarks?: string;
+  scarWoundMarks?: string;
+  tattooMarks?: string;
+  otherIdentTraits?: string;
+  fingerprintsTaken?: string;
+  livingStandard?: string;
+  educationalQualification?: string;
+  profession?: string;
+  incomeGroup?: string;
+  isDangerous?: string;
+  isBailJumped?: string;
+  usuallyCarriesArms?: string;
+  activeWithGang?: string;
+  isKnownListedCriminal?: string;
+  isHabitualOffender?: string;
+  isLikelyToEscapeBail?: string;
+  isLikelyToThreatenOrRepeat?: string;
+  wantedInOtherCrime?: string;
+  riskNotesRemarks?: string;
+  ioSignPlaceP4?: string;
+  ioSignDateP4?: string;
+  priorRecord1?: string;
+  priorRecord2?: string;
+  priorRecord3?: string;
+  eagleCriminalId?: string;
+  [key: string]: any;
 }
 
 export interface DynamicDocumentSection {
@@ -395,10 +699,10 @@ export interface OfficerNotification {
   complaintNumber: string;
   title: string;
   message: string;
-  directions: string;
+  directions?: string;
   priority: string;
   createdAt: string;
-  read: boolean;
+  read?: boolean;
 }
 
 export type GDEntryType =

@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
+import { ComplaintAnalysisHeader } from "@/components/enquiry-workspace/ComplaintAnalysisHeader";
+import { ComplaintAnalysisReport } from "@/services/complaintDocumentAnalysisService";
+import { BuilderService, BuilderDraftItem, BuilderTemplateItem } from "@/services/builderService";
+
 import {
   Printer,
   Copy,
@@ -24,16 +28,35 @@ import {
   UserCheck,
   UploadCloud,
   Loader2,
+  Eye,
+  X,
+  Search,
+  Sparkles,
+  Send,
+  Scale,
+  AlertTriangle,
+  AlertCircle,
+  FileCheck2,
+  Landmark,
+  Banknote,
+  Handshake,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
-import { ComplaintItem } from "@/types";
+import { ComplaintItem, EOOutcome } from "@/types";
 import {
   generateHaryanaPoliceProformaHtml,
   HaryanaPoliceProformaData,
 } from "@/utils/documentHtmlGenerators";
+import {
+  analyzeComplaintForEnquiry,
+  ComplaintAnalysisResult,
+  EnquiryClassificationType,
+} from "@/utils/complaintAnalysisEngine";
+import { parseUploadedDocument } from "@/utils/universalDocumentParser";
 
 export type EnquiryProformaType =
   | "standard_4row" // PDF 1, 2, 5: Complainant / Substance / Opposite Party / Findings
@@ -254,6 +277,7 @@ const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
 
 function EnquiryDraftsContent() {
   const { currentUser } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const complaintIdParam = searchParams.get("complaintId");
   const categoryParam = searchParams.get("category");
@@ -269,8 +293,96 @@ function EnquiryDraftsContent() {
       ? "three_column"
       : "standard_4row";
 
-  const [activeFormat, setActiveFormat] = useState<EnquiryProformaType>(initialFormat);
+  const [activeFormat, setActiveFormat] = useState<string>(initialFormat);
   const [complaint, setComplaint] = useState<ComplaintItem | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<ComplaintAnalysisResult | null>(null);
+  const [selectedClassification, setSelectedClassification] = useState<EnquiryClassificationType | "">("");
+  const [isSavedAndFirRecommended, setIsSavedAndFirRecommended] = useState(false);
+  const [sendingToSho, setSendingToSho] = useState(false);
+
+  const CUSTOM_DRAFTS_STORAGE_KEY = "cms_enquiry_custom_drafts";
+  const [customDrafts, setCustomDrafts] = useState<Record<string, FormatTemplate>>({});
+  const [proformaDropdownOpen, setProformaDropdownOpen] = useState(false);
+  const proformaDropdownRef = useRef<HTMLDivElement>(null);
+  const [availableComplaints, setAvailableComplaints] = useState<ComplaintItem[]>([]);
+  const [selectComplaintModalOpen, setSelectComplaintModalOpen] = useState(false);
+  const [complaintSearchQuery, setComplaintSearchQuery] = useState("");
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+
+  // Load custom drafts from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(CUSTOM_DRAFTS_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object") {
+            setCustomDrafts(parsed);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load custom drafts from localStorage", err);
+      }
+    }
+  }, []);
+
+  // Built Drafts & Templates from SQLite / Prisma Builder
+  const [builtDrafts, setBuiltDrafts] = useState<BuilderDraftItem[]>([]);
+  const [builtTemplates, setBuiltTemplates] = useState<BuilderTemplateItem[]>([]);
+
+  const fetchBuiltItems = useCallback(async () => {
+    try {
+      const [dList, tList] = await Promise.all([
+        BuilderService.getDrafts(),
+        BuilderService.getTemplates(),
+      ]);
+      setBuiltDrafts(dList);
+      setBuiltTemplates(tList);
+    } catch (e) {
+      console.error("Failed to load built drafts/templates:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBuiltItems();
+  }, [fetchBuiltItems]);
+
+  const handleDeleteBuiltDraft = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm(`Are you sure you want to delete built draft "${name}" from database?`)) return;
+    try {
+      await BuilderService.deleteDraft(id);
+      await fetchBuiltItems();
+    } catch (err) {
+      console.error("Failed to delete built draft:", err);
+      alert("Could not delete draft.");
+    }
+  };
+
+  const handleDeleteBuiltTemplate = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm(`Are you sure you want to delete built template "${name}" from database?`)) return;
+    try {
+      await BuilderService.deleteTemplate(id);
+      await fetchBuiltItems();
+    } catch (err) {
+      console.error("Failed to delete built template:", err);
+      alert("Could not delete template.");
+    }
+  };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (proformaDropdownRef.current && !proformaDropdownRef.current.contains(e.target as Node)) {
+        setProformaDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Editable Proforma Document State
   const [headerLeft, setHeaderLeft] = useState(TEMPLATE_PRESETS[initialFormat].headerLeft);
@@ -302,7 +414,134 @@ function EnquiryDraftsContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentRef = useRef<HTMLDivElement>(null);
 
-  // Upload Document and Convert to Editable Proforma
+  // Helper function to intelligently apply complaint and its legal analysis findings
+  const applyComplaintWithAnalysis = (
+    found: ComplaintItem,
+    fmtKey: string = activeFormat,
+    customClass?: EnquiryClassificationType
+  ) => {
+    setComplaint(found);
+    const analysis = analyzeComplaintForEnquiry(found);
+    if (customClass) {
+      analysis.classification = customClass;
+      analysis.isFirRecommended = customClass === "FIR_RECOMMENDED";
+    }
+    setAnalysisResult(analysis);
+    setSelectedClassification(customClass || analysis.classification);
+
+    const districtName = (found.district || currentUser.district || "PANIPAT").toUpperCase();
+    setHeaderRight(`DISTRICT ${districtName}`);
+    setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
+
+    const primaryAccused = found.accusedList?.[0] || {};
+    const complainantInfo = `${found.complainantName}${found.complainantFatherSpouse ? ` s/o / w/o ${found.complainantFatherSpouse}` : ""}${found.complainantAddress ? `, r/o ${found.complainantAddress}` : ""}${found.complainantMobile ? ` (Mob: ${found.complainantMobile})` : ""}`;
+    const accusedInfo = `${primaryAccused.name || "Unknown"}${primaryAccused.fatherName ? ` s/o ${primaryAccused.fatherName}` : ""}${primaryAccused.address ? `, r/o ${primaryAccused.address}` : ""}${primaryAccused.phone ? ` (Mob: ${primaryAccused.phone})` : ""}`;
+
+    if (fmtKey === "standard_4row") {
+      setColumns([]);
+      setRows([
+        { id: "row_complainant", label: "Complainant / Informant", cells: [complainantInfo] },
+        { id: "row_gist", label: "Gist / Substance of Complaint", cells: [found.subject || found.complaintDescription || "Regarding dispute between parties."] },
+        { id: "row_accused", label: "Opposite Party / Accused Details", cells: [accusedInfo] },
+        { id: "row_findings", label: "Enquiry Findings & Action Taken", cells: [analysis.proformaFindingsText.standard_4row] },
+      ]);
+    } else if (fmtKey === "three_column") {
+      setColumns([
+        "Allegations Leveled by Complainant (Point-wise)",
+        "Enquiry Findings (Substantiated / Unsubstantiated with Reasons)",
+        "Action Taken by Local Police / S.H.O.",
+      ]);
+      setRows(analysis.proformaFindingsText.three_column.map((tc, idx) => ({
+        id: `row_col_${idx + 1}`,
+        label: `Point ${idx + 1}`,
+        cells: [tc.allegation, tc.findings, tc.actionTaken],
+      })));
+    } else if (fmtKey === "citizen_detail") {
+      setColumns([]);
+      setRows([
+        { id: "row_citizen_detail", label: "CITIZEN DETAIL-", cells: [`NAME- ${found.complainantName}\nMOBILE NO.- ${found.complainantMobile || "N/A"}\nADDRESS- ${found.complainantAddress || "Panipat"}`] },
+        { id: "row_allegation", label: "ALLEGATIONS LEVELED IN COMPLAINT-", cells: [found.subject || found.complaintDescription || ""] },
+        { id: "row_report_date", label: "DATE OF REPORT-", cells: [new Date().toLocaleDateString("en-GB").replace(/\//g, ".")] },
+        { id: "row_satisfaction", label: "CITIZEN SATISFACTION- YES/NO -", cells: [analysis.proformaFindingsText.citizen_detail.satisfaction] },
+        { id: "row_final_report", label: "FINAL REPORT ON THE ENQUIRY CONDUCTED BY THE INVESTIGATING OFFICER -", cells: [analysis.proformaFindingsText.citizen_detail.finalReport] },
+      ]);
+    } else if (fmtKey === "ncr_174") {
+      setColumns([]);
+      setRows([
+        { id: "row_ncr_date", label: "Date & GD Entry Reference", cells: [`Roznamcha GD Reference Dated ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`] },
+        { id: "row_ncr_parties", label: "Complainant & Opposite Party Details", cells: [`Complainant: ${complainantInfo}\nOpposite Party: ${accusedInfo}`] },
+        { id: "row_ncr_findings", label: "General Diary Entry & Enquiry Report Details", cells: [analysis.proformaFindingsText.ncr_174] },
+      ]);
+    }
+
+    if (found.assignedEoName || currentUser.name) {
+      setOfficerName(`(${found.assignedEoName || currentUser.name})`);
+      setOfficerRank(found.assignedEoRank || currentUser.rankDisplay || "Assistant Superintendent of Police");
+      setOfficerLocation(found.policeStation || `Headquarters ${districtName}`);
+    }
+  };
+
+  // Switch classification override
+  const handleChangeClassification = (newClass: EnquiryClassificationType) => {
+    if (!complaint) return;
+    applyComplaintWithAnalysis(complaint, activeFormat, newClass);
+  };
+
+  // Forward Report to SHO ID for Review / Approval
+  const handleSendToSho = async () => {
+    if (!complaint) return;
+    setSendingToSho(true);
+    try {
+      const outcome = (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended
+        ? "FIR Recommend"
+        : "Complete";
+      await ComplaintService.sendReportToSho(
+        complaint.id,
+        officerName || currentUser.name || "Enquiry Officer",
+        currentUser.pno || "PNO-23841",
+        `Enquiry report "${title}" submitted. Outcome: ${outcome}. Forwarded for SHO approval.`
+      );
+      alert(`शिकायत ${complaint.complaintNumber} सफलतापूर्वक SHO ID को भेज दी गई है। यह शिकायत अब आपकी EO पेंडिंग लिस्ट से हट गई है।`);
+      router.push("/complaints");
+    } catch (err) {
+      console.error("Failed to forward report to SHO:", err);
+      alert("Error sending report to SHO. Please try again.");
+    } finally {
+      setSendingToSho(false);
+    }
+  };
+
+  // Handle Complaint selection from ComplaintAnalysisHeader
+  const handleComplaintSelected = (comp: ComplaintItem | null, report: ComplaintAnalysisReport | null) => {
+    if (!comp) {
+      setComplaint(null);
+      setAnalysisResult(null);
+      return;
+    }
+    applyComplaintWithAnalysis(comp, activeFormat);
+  };
+
+  // Load complaint if complaintIdParam exists, and initialize all complaints
+  useEffect(() => {
+    async function initComplaints() {
+      try {
+        const all = await ComplaintService.getComplaints();
+        setAvailableComplaints(all || []);
+
+        if (complaintIdParam) {
+          const found = await ComplaintService.getComplaintById(complaintIdParam);
+          if (found) {
+            applyComplaintWithAnalysis(found, initialFormat);
+          }
+        }
+      } catch (err) {
+        console.error("Error initializing complaints in drafts:", err);
+      }
+    }
+    initComplaints();
+  }, [complaintIdParam]);
+
+  // Upload Document and Convert to a Brand New Editable Proforma Tab
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -311,54 +550,105 @@ function EnquiryDraftsContent() {
     setUploadSuccessMessage(null);
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("targetType", "enquiry_report");
+      let pData: any = null;
 
-      const res = await fetch("/api/documents/parse-proforma", {
-        method: "POST",
-        body: fd,
-      });
+      // 1. Try server-side OCR & AI extraction
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("targetType", "enquiry_report");
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to parse document");
+        const res = await fetch("/api/documents/parse-proforma", {
+          method: "POST",
+          body: fd,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.proformaData) {
+          pData = data.proformaData;
+        }
+      } catch (apiErr) {
+        console.warn("API parsing error, using universal parser:", apiErr);
       }
 
-      const pData = data.proformaData;
+      // 2. Client-side universal parser (handles DOCX, PDF streams, TXT, Kruti-Dev conversion)
+      if (!pData || !Array.isArray(pData.rows) || pData.rows.length === 0) {
+        const parsedDoc = await parseUploadedDocument(file);
+        pData = {
+          title: parsedDoc.title,
+          headerLeft: parsedDoc.headerLeft,
+          headerRight: parsedDoc.headerRight,
+          subHeaderLeft: parsedDoc.subHeaderLeft,
+          subTitle: parsedDoc.subTitle,
+          columns: parsedDoc.columns,
+          rows: parsedDoc.rows,
+          closingLine: parsedDoc.closingLine,
+          officerName: parsedDoc.officerName,
+          officerRank: parsedDoc.officerRank,
+          officerLocation: parsedDoc.officerLocation,
+        };
+      }
+
       if (pData) {
-        if (pData.headerLeft !== undefined) setHeaderLeft(pData.headerLeft);
-        if (pData.headerRight !== undefined) setHeaderRight(pData.headerRight);
-        if (pData.subHeaderLeft !== undefined) {
-          setSubHeaderLeft(pData.subHeaderLeft);
-          setShowSubHeader(Boolean(pData.subHeaderLeft));
-        }
-        if (pData.title) setTitle(pData.title);
-        if (pData.subTitle !== undefined) setSubTitle(pData.subTitle);
-        if (Array.isArray(pData.columns)) setColumns(pData.columns);
-        if (Array.isArray(pData.rows) && pData.rows.length > 0) {
-          setRows(
-            pData.rows.map((r: any, idx: number) => ({
-              id: r.id || `row_${idx + 1}`,
-              label: r.label || `Row ${idx + 1}`,
-              cells: Array.isArray(r.cells) ? r.cells : [r.cells || ""],
-            }))
-          );
-        }
-        if (pData.closingLine !== undefined) {
-          setClosingLine(pData.closingLine);
-          setShowClosingLine(Boolean(pData.closingLine));
-        }
-        if (pData.officerName) setOfficerName(pData.officerName);
-        if (pData.officerRank) setOfficerRank(pData.officerRank);
-        if (pData.officerLocation !== undefined) setOfficerLocation(pData.officerLocation);
-        if (pData.reportDate) setReportDate(pData.reportDate);
-        if (pData.borderStyle) setBorderStyle(pData.borderStyle);
+        const customKey = `custom_${Date.now()}`;
+        const cleanName = pData.title || file.name.replace(/\.[^/.]+$/, "").toUpperCase();
+
+        const newTemplate: FormatTemplate = {
+          name: cleanName.length > 32 ? cleanName.substring(0, 30) + "..." : cleanName,
+          badge: `Uploaded (${file.name.split(".").pop()?.toUpperCase() || "DOC"})`,
+          icon: FileText,
+          headerLeft: pData.headerLeft || "POLICE DEPARTMENT",
+          headerRight: pData.headerRight || "DISTRICT PANIPAT",
+          subHeaderLeft: pData.subHeaderLeft || "",
+          title: pData.title || `ENQUIRY REPORT - ${cleanName}`,
+          subTitle: pData.subTitle || "",
+          columns: Array.isArray(pData.columns) ? pData.columns : [],
+          rows: (Array.isArray(pData.rows) && pData.rows.length > 0)
+            ? pData.rows.map((r: any, idx: number) => ({
+                id: r.id || `row_${idx + 1}`,
+                label: r.label || `Row ${idx + 1}`,
+                cells: Array.isArray(r.cells) ? r.cells : [r.cells || ""],
+              }))
+            : [{ id: "row_1", label: "Details", cells: [""] }],
+          closingLine: pData.closingLine || "Report is submitted for perusal and orders.",
+          officerName: pData.officerName || (currentUser.name ? `(${currentUser.name})` : "Enquiry Officer"),
+          officerRank: pData.officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+          officerLocation: pData.officerLocation || "",
+        };
+
+        setCustomDrafts((prev) => {
+          const updated = {
+            ...prev,
+            [customKey]: newTemplate,
+          };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(CUSTOM_DRAFTS_STORAGE_KEY, JSON.stringify(updated));
+            } catch (storageErr) {
+              console.warn("Storage quota / error saving draft to localStorage", storageErr);
+            }
+          }
+          return updated;
+        });
+
+        setActiveFormat(customKey);
+        setHeaderLeft(newTemplate.headerLeft);
+        setHeaderRight(newTemplate.headerRight);
+        setSubHeaderLeft(newTemplate.subHeaderLeft);
+        setTitle(newTemplate.title);
+        setSubTitle(newTemplate.subTitle);
+        setColumns(newTemplate.columns);
+        setRows(newTemplate.rows);
+        setClosingLine(newTemplate.closingLine);
+        setOfficerName(newTemplate.officerName);
+        setOfficerRank(newTemplate.officerRank);
+        setOfficerLocation(newTemplate.officerLocation);
+        setShowSubHeader(Boolean(newTemplate.subHeaderLeft));
 
         setUploadSuccessMessage(
-          `Document (${file.name}) processed successfully! All table columns and fields are ready to edit.`
+          `Document "${file.name}" successfully parsed! Added as brand new editable template "${newTemplate.name}". Words, language & formatting mirrored word-to-word.`
         );
-        setTimeout(() => setUploadSuccessMessage(null), 6000);
+        setTimeout(() => setUploadSuccessMessage(null), 8000);
       }
     } catch (err: any) {
       console.error("Upload parse error:", err);
@@ -369,56 +659,39 @@ function EnquiryDraftsContent() {
     }
   };
 
-  // Load complaint if complaintIdParam exists
-  useEffect(() => {
-    if (!complaintIdParam) return;
-    async function loadComplaint() {
-      try {
-        const found = await ComplaintService.getComplaintById(complaintIdParam!);
-        if (found) {
-          setComplaint(found);
-          const districtName = (found.district || currentUser.district || "PANIPAT").toUpperCase();
-          setHeaderRight(`DISTRICT ${districtName}`);
-          setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
-
-          const primaryAccused = found.accusedList?.[0] || {};
-          const complainantInfo = `${found.complainantName}${found.complainantFatherSpouse ? ` s/o / w/o ${found.complainantFatherSpouse}` : ""}${found.complainantAddress ? `, r/o ${found.complainantAddress}` : ""}${found.complainantMobile ? ` (Mob: ${found.complainantMobile})` : ""}`;
-          const accusedInfo = `${primaryAccused.name || "Unknown"}${primaryAccused.fatherName ? ` s/o ${primaryAccused.fatherName}` : ""}${primaryAccused.address ? `, r/o ${primaryAccused.address}` : ""}${primaryAccused.phone ? ` (Mob: ${primaryAccused.phone})` : ""}`;
-
-          setRows((prev) =>
-            prev.map((r) => {
-              if (r.id === "row_complainant") return { ...r, cells: [complainantInfo] };
-              if (r.id === "row_gist") return { ...r, cells: [found.subject || found.complaintDescription || r.cells[0]] };
-              if (r.id === "row_accused") return { ...r, cells: [accusedInfo] };
-              if (r.id === "row_findings") {
-                return {
-                  ...r,
-                  cells: [
-                    `FINAL REPORT & PROCEEDINGS CONDUCTED: Respected Sir, the preliminary enquiry into Complaint No. ${found.complaintNumber} lodged by ${found.complainantName} was conducted by me. Both parties were joined in enquiry, statements recorded, and spot inspection conducted...\n\nReport is submitted for perusal and orders.`,
-                  ],
-                };
-              }
-              return r;
-            })
-          );
-
-          if (found.assignedEoName || currentUser.name) {
-            setOfficerName(`(${found.assignedEoName || currentUser.name})`);
-            setOfficerRank(found.assignedEoRank || currentUser.rankDisplay || "Assistant Superintendent of Police");
-            setOfficerLocation(found.policeStation || `Headquarters ${districtName}`);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading complaint:", err);
-      }
+  const handleDeleteCustomDraft = (key: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
     }
-    loadComplaint();
-  }, [complaintIdParam]);
+    const tmplName = customDrafts[key]?.name || "this template";
+    if (!confirm(`Are you sure you want to remove "${tmplName}" from dropdown?`)) return;
+    setCustomDrafts((prev) => {
+      const copy = { ...prev };
+      delete copy[key];
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(CUSTOM_DRAFTS_STORAGE_KEY, JSON.stringify(copy));
+        } catch (storageErr) {
+          console.warn("Could not update localStorage", storageErr);
+        }
+      }
+      return copy;
+    });
+    if (activeFormat === key) {
+      handleSelectFormat("standard_4row");
+    }
+  };
 
   // Switch Format Template
-  const handleSelectFormat = (formatKey: EnquiryProformaType) => {
+  const handleSelectFormat = (formatKey: string) => {
     setActiveFormat(formatKey);
-    const tmpl = TEMPLATE_PRESETS[formatKey];
+    if (complaint) {
+      applyComplaintWithAnalysis(complaint, formatKey, (selectedClassification as EnquiryClassificationType) || undefined);
+      return;
+    }
+    const tmpl = customDrafts[formatKey] || TEMPLATE_PRESETS[formatKey as EnquiryProformaType];
+    if (!tmpl) return;
     setHeaderLeft(tmpl.headerLeft);
     setHeaderRight(tmpl.headerRight);
     setSubHeaderLeft(tmpl.subHeaderLeft);
@@ -559,36 +832,60 @@ function EnquiryDraftsContent() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveToComplaint = async () => {
-    if (!complaint?.id) return;
+  const handleSaveToComplaint = async (targetComplaintParam?: ComplaintItem) => {
+    const targetComp = targetComplaintParam || complaint;
+    if (!targetComp?.id) {
+      setSelectComplaintModalOpen(true);
+      return;
+    }
     setSaveLoading(true);
     try {
       const data = getProformaData();
       const reportHtml = generateHaryanaPoliceProformaHtml(data);
       const docText = documentRef.current?.innerText || "";
-      const reportTitle = `${title} - ${complaint.complaintNumber}`;
+      const reportTitle = `${title} - ${targetComp.complaintNumber}`;
 
-      await ComplaintService.addComplaintReport(complaint.id, {
-        title: reportTitle,
-        reportType: activeFormat,
-        reportTypeLabel: TEMPLATE_PRESETS[activeFormat]?.name || "Enquiry Report",
-        dispatchNo: title,
-        generatedDate: new Date().toISOString().split("T")[0],
-        officerName: officerName || currentUser.name || "Enquiry Officer",
-        officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
-        officerPno: currentUser.pno || "PNO-23841",
-        conclusionSummary: rows[rows.length - 1]?.cells[0]?.substring(0, 200) || "Enquiry completed",
-        content: docText,
-        contentHtml: reportHtml,
-        fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
-        fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
-        fileFormat: "HTML",
-        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
-        isUploaded: false,
-      });
+      const isFir = (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED";
+      const outcome: EOOutcome = isFir ? "FIR Recommend" : "Complete";
 
+      const updatedComp = await ComplaintService.submitEoReportWithOutcome(
+        targetComp.id,
+        {
+          title: reportTitle,
+          reportType: activeFormat,
+          reportTypeLabel: customDrafts[activeFormat]?.name || TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name || "Enquiry Report",
+          dispatchNo: title,
+          generatedDate: new Date().toISOString().split("T")[0],
+          officerName: officerName || currentUser.name || "Enquiry Officer",
+          officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+          officerPno: currentUser.pno || "PNO-23841",
+          conclusionSummary: rows[rows.length - 1]?.cells[0]?.substring(0, 200) || "Enquiry completed",
+          content: docText,
+          contentHtml: reportHtml,
+          fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
+          fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
+          fileFormat: "HTML",
+          dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
+          isUploaded: false,
+          recommendationType: (selectedClassification as any) || analysisResult?.classification || "NO_COGNIZABLE_OFFENCE",
+          isFirRecommended: isFir,
+          analysisClassification: analysisResult?.titleHindi || (isFir ? "संज्ञेय अपराध - एफआईआर की सिफारिश" : "जांच रिपोर्ट"),
+          analysisRationale: analysisResult?.rationaleHindi,
+        },
+        outcome,
+        officerName || currentUser.name || "Enquiry Officer",
+        officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+        currentUser.pno || "PNO-23841",
+        currentUser.role
+      );
+
+      setComplaint(updatedComp || targetComp);
+      setSelectComplaintModalOpen(false);
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
+      if (isFir) {
+        setIsSavedAndFirRecommended(true);
+      }
+      setTimeout(() => setSaveSuccess(false), 5000);
     } catch (err) {
       console.error("Failed to save report to complaint:", err);
       alert("Error saving report. Please try again.");
@@ -597,32 +894,378 @@ function EnquiryDraftsContent() {
     }
   };
 
+  const handleDiscardDraft = () => {
+    if (!confirm("Are you sure you want to discard this draft report? All changes will be reset to default.")) return;
+    const initialTmpl = TEMPLATE_PRESETS[initialFormat] || TEMPLATE_PRESETS.standard_4row;
+    setHeaderLeft(initialTmpl.headerLeft);
+    setHeaderRight(initialTmpl.headerRight);
+    setSubHeaderLeft(initialTmpl.subHeaderLeft);
+    setTitle(initialTmpl.title);
+    setSubTitle(initialTmpl.subTitle);
+    setColumns(initialTmpl.columns);
+    setRows(initialTmpl.rows);
+    setClosingLine(initialTmpl.closingLine);
+    setOfficerName(initialTmpl.officerName);
+    setOfficerRank(initialTmpl.officerRank);
+    setOfficerLocation(initialTmpl.officerLocation);
+  };
+
   const isMultiCol = columns.length > 0;
 
   return (
     <div className="space-y-5 animate-in fade-in-50 pb-20">
-      {/* ================= 1. TOP HEADER & WORKSPACE TOOLBAR (NO-PRINT) ================= */}
-      <div className="no-print space-y-3">
+      {/* Top Workspace Navigation Tabs */}
+      <EnquiryWorkspaceNav complaintId={complaint?.id} />
+
+      {/* 1. REQUIRED COMPLAINT DROPDOWN & ANALYSIS HEADER */}
+      <ComplaintAnalysisHeader
+        initialComplaintId={complaintIdParam}
+        showPersonDropdown={false}
+        onComplaintSelect={handleComplaintSelected}
+        selectedComplaintId={complaint?.id}
+      />
+
+      {!complaint && (
+        <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
+          <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto text-blue-700">
+            <FileText className="w-7 h-7" />
+          </div>
+          <h2 className="text-base font-bold text-slate-800">
+            Select a Complaint to Generate Draft Enquiry Report
+          </h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Choose a complaint from your Complaint Register in the required dropdown above. The system will analyze all facts from the Overview and Documents subtabs, extract particulars without inventing information, and generate an editable enquiry report proforma.
+          </p>
+        </div>
+      )}
+
+      {complaint && (
+        <div className="space-y-4">
+          {/* ================= 1. TOP HEADER & WORKSPACE TOOLBAR (NO-PRINT) ================= */}
+          <div className="no-print space-y-3">
         {/* Navigation & Action Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                Official Police Enquiry Report &amp; NCR Proforma (Exact Format)
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {complaint && (
+              <span className="text-[11px] font-bold font-mono text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
+                Complaint: {complaint.complaintNumber}
               </span>
-              {complaint && (
-                <span className="text-[11px] font-bold font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  {complaint.complaintNumber}
+            )}
+
+            {/* Police Proforma Format Selector Custom Dropdown */}
+            <div className="relative flex items-center gap-1.5" ref={proformaDropdownRef}>
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1 whitespace-nowrap">
+                <FileText className="w-3.5 h-3.5 text-red-600" />
+                <span>Proforma:</span>
+              </label>
+              
+              <button
+                type="button"
+                onClick={() => setProformaDropdownOpen((v) => !v)}
+                className="flex items-center justify-between gap-2 text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[210px] max-w-[320px] shadow-2xs text-left cursor-pointer"
+                title="Select Proforma Format"
+              >
+                <span className="truncate">
+                  {customDrafts[activeFormat]
+                    ? `📁 ${customDrafts[activeFormat].name}`
+                    : TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name || "Select Proforma"}
                 </span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${proformaDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Quick delete cross if current active item is uploaded */}
+              {customDrafts[activeFormat] && (
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteCustomDraft(activeFormat, e)}
+                  className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded-md border border-slate-200 transition-colors shadow-2xs cursor-pointer"
+                  title="Delete currently selected uploaded template"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {proformaDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1.5 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden animate-in fade-in-50 zoom-in-95">
+                  {/* Preset Standard Templates */}
+                  <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50">
+                    Standard Proforma Templates
+                  </div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
+                    {(Object.keys(TEMPLATE_PRESETS) as EnquiryProformaType[]).map((fmtKey) => {
+                      const isSelected = activeFormat === fmtKey;
+                      return (
+                        <button
+                          key={fmtKey}
+                          type="button"
+                          onClick={() => {
+                            handleSelectFormat(fmtKey);
+                            setProformaDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left transition-colors ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-900 font-bold"
+                              : "text-slate-700 hover:bg-slate-50 font-medium"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate pr-2">
+                            <FileText className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+                            <span className="truncate">{TEMPLATE_PRESETS[fmtKey].name}</span>
+                          </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Uploaded Documents Section */}
+                  <div className="border-t border-slate-200 mt-1 pt-1.5">
+                    <div className="px-3 py-1 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50">
+                      <span>📁 Uploaded Documents ({Object.keys(customDrafts).length})</span>
+                    </div>
+
+                    {Object.keys(customDrafts).length === 0 ? (
+                      <div className="px-3 py-2 text-[11px] text-slate-400 italic">
+                        No uploaded documents yet. Use &ldquo;Upload Document&rdquo; button.
+                      </div>
+                    ) : (
+                      <div className="max-h-56 overflow-y-auto divide-y divide-slate-100">
+                        {Object.keys(customDrafts).map((cKey) => {
+                          const isSelected = activeFormat === cKey;
+                          const tmpl = customDrafts[cKey];
+                          return (
+                            <div
+                              key={cKey}
+                              className={`flex items-center justify-between px-2.5 py-1.5 transition-colors group ${
+                                isSelected ? "bg-amber-50 text-amber-950 font-bold" : "hover:bg-slate-50 text-slate-700"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleSelectFormat(cKey);
+                                  setProformaDropdownOpen(false);
+                                }}
+                                className="flex-1 flex items-center gap-2 text-xs text-left truncate mr-2"
+                                title={tmpl.name}
+                              >
+                                <span className="shrink-0 text-amber-600 font-mono text-[11px]">📁</span>
+                                <span className="truncate">{tmpl.name}</span>
+                                {tmpl.badge && (
+                                  <span className="shrink-0 text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
+                                    {tmpl.badge}
+                                  </span>
+                                )}
+                              </button>
+
+                              {/* Delete Cross (X) Sign in front of uploaded item */}
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteCustomDraft(cKey, e)}
+                                className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-100 rounded-md transition-colors shrink-0 cursor-pointer"
+                                title={`Delete "${tmpl.name}" from dropdown`}
+                                aria-label={`Delete ${tmpl.name}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 3: Built Case Drafts (from Template & Draft Builder) */}
+                  <div className="border-t border-slate-200 mt-1 pt-1.5">
+                    <div className="px-3 py-1 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-50">
+                      <span className="flex items-center gap-1">
+                        <FileCheck2 className="w-3 h-3 text-amber-700" />
+                        <span>Built Drafts ({builtDrafts.length})</span>
+                      </span>
+                      <Link
+                        href={`/enquiry-workspace/builder${complaint ? `?complaintId=${complaint.id}` : ""}`}
+                        className="text-[9px] font-bold text-amber-800 hover:text-amber-950 underline lowercase"
+                        onClick={() => setProformaDropdownOpen(false)}
+                      >
+                        + new
+                      </Link>
+                    </div>
+
+                    {builtDrafts.length === 0 ? (
+                      <div className="px-3 py-2 text-[11px] text-slate-400 italic flex items-center justify-between">
+                        <span>No built drafts yet.</span>
+                        <Link
+                          href={`/enquiry-workspace/builder${complaint ? `?complaintId=${complaint.id}` : ""}`}
+                          className="text-[10px] text-amber-700 font-bold hover:underline"
+                          onClick={() => setProformaDropdownOpen(false)}
+                        >
+                          Draft in Builder
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
+                        {builtDrafts.map((bd) => (
+                          <div
+                            key={bd.id}
+                            className="flex items-center justify-between px-2.5 py-1.5 transition-colors group hover:bg-amber-50/60 text-slate-700"
+                          >
+                            <Link
+                              href={`/enquiry-workspace/builder?draftId=${bd.id}${bd.caseId || complaint?.id ? `&complaintId=${bd.caseId || complaint?.id}` : ""}`}
+                              onClick={() => setProformaDropdownOpen(false)}
+                              className="flex-1 flex items-center gap-2 text-xs text-left truncate mr-2"
+                              title={`${bd.name} (Click to open in Builder)`}
+                            >
+                              <span className="shrink-0 text-amber-600 font-mono text-[11px]">📄</span>
+                              <span className="truncate font-medium">{bd.name}</span>
+                              {bd.complaintNumber && (
+                                <span className="shrink-0 text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-mono">
+                                  {bd.complaintNumber}
+                                </span>
+                              )}
+                            </Link>
+
+                            {/* Delete Cross (X) */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteBuiltDraft(bd.id, bd.name, e)}
+                              className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-100 rounded-md transition-colors shrink-0 cursor-pointer"
+                              title={`Delete "${bd.name}" from database`}
+                              aria-label={`Delete ${bd.name}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 4: Built Custom Templates (from Template & Draft Builder) */}
+                  <div className="border-t border-slate-200 mt-1 pt-1.5">
+                    <div className="px-3 py-1 flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-blue-700 bg-blue-50">
+                      <span className="flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-blue-600" />
+                        <span>Built Templates ({builtTemplates.length})</span>
+                      </span>
+                      <Link
+                        href={`/enquiry-workspace/builder${complaint ? `?complaintId=${complaint.id}` : ""}`}
+                        className="text-[9px] font-bold text-blue-600 hover:text-blue-800 underline lowercase"
+                        onClick={() => setProformaDropdownOpen(false)}
+                      >
+                        + new
+                      </Link>
+                    </div>
+
+                    {builtTemplates.length === 0 ? (
+                      <div className="px-3 py-2 text-[11px] text-slate-400 italic">
+                        No built templates yet.
+                      </div>
+                    ) : (
+                      <div className="max-h-52 overflow-y-auto divide-y divide-slate-100">
+                        {builtTemplates.map((bt) => (
+                          <div
+                            key={bt.id}
+                            className="flex items-center justify-between px-2.5 py-1.5 transition-colors group hover:bg-blue-50/60 text-slate-700"
+                          >
+                            <Link
+                              href={`/enquiry-workspace/builder?templateId=${bt.id}${complaint ? `&complaintId=${complaint.id}` : ""}`}
+                              onClick={() => setProformaDropdownOpen(false)}
+                              className="flex-1 flex items-center gap-2 text-xs text-left truncate mr-2"
+                              title={`${bt.name} (Click to open and auto-populate in Builder)`}
+                            >
+                              <span className="shrink-0 text-blue-600 font-mono text-[11px]">📝</span>
+                              <span className="truncate font-medium">{bt.name}</span>
+                              <span className="shrink-0 text-[9px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
+                                v{bt.version || 1}
+                              </span>
+                            </Link>
+
+                            {/* Delete Cross (X) */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteBuiltTemplate(bt.id, bt.name, e)}
+                              className="p-1 text-slate-400 hover:text-red-700 hover:bg-red-100 rounded-md transition-colors shrink-0 cursor-pointer"
+                              title={`Delete "${bt.name}" from database`}
+                              aria-label={`Delete ${bt.name}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#0b192c] tracking-tight mt-1 flex items-center gap-2">
-              <Shield className="w-6 h-6 text-red-600" />
-              <span>Police Enquiry Report &amp; NCR Drafts</span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Direct in-place legal proforma editor: Customize all columns, rows, headers, and borders freely.
-            </p>
+
+            {/* Dictation Toggle */}
+            <div className="flex items-center gap-1 text-xs pl-1">
+              <span className="text-slate-500 font-medium text-[11px]">Dictation:</span>
+              <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang("en-IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang("hi-IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Hindi
+                </button>
+              </div>
+            </div>
+
+            {/* Reset Proforma Button */}
+            <button
+              type="button"
+              onClick={() => handleSelectFormat(activeFormat)}
+              className="px-2 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1 border border-transparent hover:border-slate-200 cursor-pointer"
+              title="Reset this format to standard template"
+            >
+              <RotateCcw className="w-3 h-3 text-slate-500" />
+              <span>Reset Proforma</span>
+            </button>
+
+            {/* Upload Document in Any Format Button */}
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.txt,.rtf,.odt,.csv,.png,.jpg,.jpeg,*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadLoading}
+                className="text-xs font-bold gap-1.5 border-blue-300 text-blue-700 bg-blue-50/70 hover:bg-blue-100 hover:text-blue-900 cursor-pointer shadow-2xs"
+                title="Upload document in any format (PDF, Word DOCX, Image, Text) to analyze, mirror word-to-word and create new editable template"
+              >
+                {uploadLoading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                    <span>Processing & Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Upload Document (Any Format)</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -642,88 +1285,125 @@ function EnquiryDraftsContent() {
               </Link>
             )}
 
-            {complaint && (
-              <Button
-                onClick={handleSaveToComplaint}
-                disabled={saveLoading}
-                variant="primary"
-                size="sm"
-                className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                {saveSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>Report Saved!</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>{saveLoading ? "Saving..." : "Save to Complaint"}</span>
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Upload Document to Draft Button */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept=".pdf,.png,.jpg,.jpeg,.webp,.txt"
-              className="hidden"
-            />
+            {/* Always-visible Save to Complaint / Save in Reports Button */}
             <Button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadLoading}
-              variant="outline"
+              onClick={() => {
+                if (complaint) {
+                  handleSaveToComplaint();
+                } else {
+                  setSelectComplaintModalOpen(true);
+                }
+              }}
+              disabled={saveLoading}
+              variant="primary"
               size="sm"
-              className="text-xs font-bold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 hover:text-indigo-900 border-indigo-300 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
-              {uploadLoading ? (
+              {saveSuccess ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
-                  <span>Reading Document (OCR)...</span>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Report Saved in Reports!</span>
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Upload Document (AI OCR)</span>
+                  <Save className="w-4 h-4" />
+                  <span>{saveLoading ? "Saving..." : complaint ? "Save in Reports" : "Save to Complaint..."}</span>
                 </>
               )}
             </Button>
 
-            <Button
-              onClick={handleDownloadReport}
-              variant="outline"
-              size="sm"
-              className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
-            >
-              <Download className="w-4 h-4 text-blue-700" />
-              <span>Download (.html)</span>
-            </Button>
+            {/* If FIR Recommended or saved with FIR recommendation, show Send to SHO ID Button */}
+            {complaint && ((selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+              <Button
+                type="button"
+                onClick={handleSendToSho}
+                disabled={sendingToSho}
+                variant="primary"
+                size="sm"
+                className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white flex items-center gap-1.5 shadow-xs cursor-pointer animate-pulse"
+                title="Send Enquiry Report to Station House Officer (SHO) for FIR Registration"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{sendingToSho ? "Sending to SHO..." : "Send to SHO ID (FIR हेतु)"}</span>
+              </Button>
+            )}
 
-            <Button
-              onClick={handleCopyReport}
-              variant="outline"
-              size="sm"
-              className="text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-1.5 border-slate-300 shadow-2xs"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? "Copied!" : "Copy Text"}</span>
-            </Button>
-
-            <Button
-              onClick={handlePrint}
-              variant="primary"
-              size="sm"
-              className="bg-[#0b192c] hover:bg-slate-900 text-white flex items-center gap-1.5 shadow-xs font-bold"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Print A4</span>
-            </Button>
           </div>
         </div>
+
+        {/* ================= INTELLIGENCE ANALYSIS & LEGAL CLASSIFICATION BANNER ================= */}
+        {complaint && analysisResult && (
+          <div className={`p-4 rounded-xl border ${analysisResult.badgeColor.border} ${analysisResult.badgeColor.bg} space-y-2.5 transition-all shadow-2xs`}>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#0b192c] text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>AI Legal Analysis (मामला कानूनी विश्लेषण)</span>
+                </span>
+                <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${analysisResult.badgeColor.border} bg-white ${analysisResult.badgeColor.text} shadow-2xs flex items-center gap-1`}>
+                  {analysisResult.titleHindi} ({analysisResult.titleEnglish})
+                </span>
+              </div>
+
+              {/* Recommendation Override Selector */}
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[11px] font-bold text-slate-700">जांच निष्कर्ष / Recommendation:</span>
+                <select
+                  value={selectedClassification || analysisResult.classification}
+                  onChange={(e) => handleChangeClassification(e.target.value as EnquiryClassificationType)}
+                  className="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer"
+                >
+                  <option value="FIR_RECOMMENDED">🚨 FIR Recommended (संज्ञेय अपराध - FIR की सिफारिश)</option>
+                  <option value="RAJINAMA_COMPROMISE">🤝 Rajinama / Compromise (राजीनामा / आपसी समझौता)</option>
+                  <option value="JAMINI_LAND_DISPUTE">🌾 Jamini / Land Dispute (ज़मीनी विवाद - राजस्व)</option>
+                  <option value="DIWANI_CIVIL_MONEY">💼 Diwani / Money Transaction (दीवानी लेन-देन)</option>
+                  <option value="NIVARAK_PREVENTIVE">🛡️ Nivarak / Preventive (निवारक BNSS 126/170)</option>
+                  <option value="NO_COGNIZABLE_OFFENCE">📁 No Cognizable Offence (कोई अपराध नहीं - दाखिल दफ्तर)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Analysis Rationale & Inspected Evidence */}
+            <div className="text-xs space-y-1.5 text-slate-800">
+              <p className="leading-relaxed">
+                <strong>कानूनी विश्लेषण व आधार: </strong>
+                {analysisResult.rationaleHindi}
+              </p>
+              {analysisResult.analyzedDocuments && analysisResult.analyzedDocuments.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px] text-slate-600">
+                  <span className="font-semibold text-slate-700">प्रोफाइल व साक्ष्य दस्तावेज विश्लेषित:</span>
+                  {analysisResult.analyzedDocuments.map((docName, idx) => (
+                    <span key={idx} className="bg-white/90 border border-slate-200 px-2 py-0.2 rounded font-mono text-slate-800 shadow-2xs">
+                      📄 {docName}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* If FIR is recommended: Prompt to Send to SHO */}
+            {((selectedClassification || analysisResult.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+              <div className="pt-2 border-t border-red-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs bg-red-100/50 p-2.5 rounded-lg">
+                <div className="flex items-center gap-2 text-red-950 font-semibold">
+                  <Scale className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>
+                    इस मामले में संज्ञेय अपराध प्रमाणित हुआ है। रिपोर्ट सेव करें व <strong>"Send to SHO ID"</strong> दबाकर SHO को एफआईआर दर्ज करने हेतु अग्रेषित करें।
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSendToSho}
+                  disabled={sendingToSho}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs h-7.5 px-3.5 gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{sendingToSho ? "Sending to SHO..." : "Send to SHO ID (FIR दर्ज हेतु)"}</span>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Upload Processing Indicator */}
         {uploadLoading && (
@@ -770,76 +1450,6 @@ function EnquiryDraftsContent() {
             </Link>
           </div>
         )}
-
-        {/* Format Selector Bar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-red-600" />
-              Select Police Proforma Format:
-            </span>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500 font-medium">Dictation:</span>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setVoiceLang("en-IN")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  English
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVoiceLang("hi-IN")}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  Hindi
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleSelectFormat(activeFormat)}
-                className="px-2 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1"
-                title="Reset this format to standard template"
-              >
-                <RotateCcw className="w-3 h-3 text-slate-500" />
-                <span>Reset Proforma</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            {(Object.keys(TEMPLATE_PRESETS) as EnquiryProformaType[]).map((fmtKey) => {
-              const tmpl = TEMPLATE_PRESETS[fmtKey];
-              const Icon = tmpl.icon;
-              const isActive = activeFormat === fmtKey;
-              return (
-                <button
-                  key={fmtKey}
-                  type="button"
-                  onClick={() => handleSelectFormat(fmtKey)}
-                  className={`px-3 py-2.5 rounded-lg text-xs font-bold transition-all flex items-start gap-2.5 border text-left cursor-pointer ${
-                    isActive
-                      ? "bg-[#0b192c] text-white border-[#0b192c] shadow-xs"
-                      : "bg-slate-50/80 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-950"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${isActive ? "text-amber-400" : "text-slate-600"}`} />
-                  <div>
-                    <div className="font-bold leading-tight">{tmpl.name}</div>
-                    <div className={`text-[10px] mt-0.5 ${isActive ? "text-slate-300" : "text-slate-500"}`}>
-                      {tmpl.badge}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* Proforma Customization & Control Toolbar */}
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -1402,51 +2012,277 @@ function EnquiryDraftsContent() {
           )}
         </div>
 
-        {/* Bottom Floating Save Action if complaint linked */}
-        {complaint && (
-          <div className="no-print p-4 bg-white border border-slate-200 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-600" />
-              <div>
-                <p className="text-xs font-bold text-slate-900">
-                  Ready to link this report to Complaint {complaint.complaintNumber}?
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Click save to persist this drafted report directly into the complaint profile &ldquo;Reports&rdquo; docket.
-                </p>
-              </div>
+        {/* Bottom Floating Save Action Bar (Always Visible) */}
+        <div className="no-print p-4 bg-white border border-slate-200 rounded-xl shadow-md flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-emerald-600" />
+            <div>
+              <p className="text-xs font-bold text-slate-900">
+                {complaint
+                  ? `Ready to save this report into Complaint ${complaint.complaintNumber}?`
+                  : "Drafted Report is ready to be saved into Complaint Reports docket."}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {complaint
+                  ? "Saves directly into the complaint's \"Reports\" docket with all columns and findings."
+                  : "Click save to select a complaint from your station docket and attach this report."}
+              </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Link href={`/complaints/${complaint.id}`}>
-                <Button variant="outline" size="sm" className="text-xs cursor-pointer">
-                  Cancel &amp; Return
-                </Button>
-              </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDiscardDraft}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-800 border-rose-200 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-500 mr-1" />
+              Discard Draft
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewModalOpen(true)}
+              className="text-xs font-semibold text-slate-700 hover:text-slate-950 border-slate-300 cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-600 mr-1" />
+              Preview Report
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (complaint) {
+                  handleSaveToComplaint();
+                } else {
+                  setSelectComplaintModalOpen(true);
+                }
+              }}
+              disabled={saveLoading}
+              variant="primary"
+              size="sm"
+              className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              {saveSuccess ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-white" />
+                  <span>Report Saved in Reports!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{saveLoading ? "Saving..." : complaint ? "Save in Reports" : "Save to Complaint..."}</span>
+                </>
+              )}
+            </Button>
+
+            {complaint && ((selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
               <Button
-                onClick={handleSaveToComplaint}
-                disabled={saveLoading}
+                type="button"
+                onClick={handleSendToSho}
+                disabled={sendingToSho}
                 variant="primary"
                 size="sm"
-                className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white flex items-center gap-1.5 cursor-pointer shadow-xs animate-pulse"
+                title="Send Enquiry Report to SHO ID"
               >
-                {saveSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>Saved to Docket!</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>{saveLoading ? "Saving..." : "Save Report to Complaint"}</span>
-                  </>
-                )}
+                <Send className="w-3.5 h-3.5" />
+                <span>{sendingToSho ? "Sending..." : "Send to SHO ID (FIR हेतु)"}</span>
               </Button>
+            )}
+          </div>
+        </div>
+        </div>
+      </div>
+      )}
+
+        {/* ================= PREVIEW REPORT MODAL ================= */}
+        {previewModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+              <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <h3 className="font-bold text-sm">Official Enquiry Report Preview</h3>
+                    <p className="text-[10px] text-slate-300 font-mono">
+                      {title} {complaint ? `• Complaint: ${complaint.complaintNumber}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadReport}
+                    className="text-xs h-7 text-slate-800 bg-white hover:bg-slate-100"
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                    Download (.html)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="text-xs h-7 text-slate-800 bg-white hover:bg-slate-100"
+                  >
+                    <Printer className="w-3.5 h-3.5 mr-1" />
+                    Print A4
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewModalOpen(false)}
+                    className="p-1.5 text-slate-300 hover:text-white rounded-lg cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100 flex items-center justify-center">
+                <iframe
+                  srcDoc={generateHaryanaPoliceProformaHtml(getProformaData())}
+                  title="Enquiry Report Preview"
+                  className="w-full h-[70vh] rounded-xl border border-slate-300 bg-white shadow-xs"
+                />
+              </div>
+
+              <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+                <span className="text-slate-500">
+                  {complaint ? `Linked to ${complaint.complaintNumber}` : "Standalone preview - not yet saved"}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewModalOpen(false)}
+                  >
+                    Close Preview
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setPreviewModalOpen(false);
+                      if (complaint) {
+                        handleSaveToComplaint();
+                      } else {
+                        setSelectComplaintModalOpen(true);
+                      }
+                    }}
+                    variant="primary"
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                  >
+                    <Save className="w-3.5 h-3.5 mr-1" />
+                    Save in Reports
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= SELECT COMPLAINT MODAL (IF NO COMPLAINT LINKED YET) ================= */}
+        {selectComplaintModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+              <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <Save className="w-5 h-5 text-emerald-400" />
+                  <div>
+                    <h3 className="font-bold text-sm">Save Report to Complaint</h3>
+                    <p className="text-[11px] text-slate-300">Choose which complaint docket to save this enquiry report to:</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectComplaintModalOpen(false)}
+                  className="p-1.5 text-slate-300 hover:text-white rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3 border-b border-slate-200 bg-slate-50 shrink-0">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search by Complaint No., Complainant, or Phone..."
+                    value={complaintSearchQuery}
+                    onChange={(e) => setComplaintSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-auto p-3 space-y-2">
+                {availableComplaints
+                  .filter((c) => {
+                    if (!complaintSearchQuery.trim()) return true;
+                    const q = complaintSearchQuery.toLowerCase();
+                    return (
+                      c.complaintNumber?.toLowerCase().includes(q) ||
+                      c.complainantName?.toLowerCase().includes(q) ||
+                      c.complainantMobile?.toLowerCase().includes(q) ||
+                      c.subject?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => handleSaveToComplaint(c)}
+                      className="p-3 border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                            {c.complaintNumber}
+                          </span>
+                          <span className="font-bold text-slate-900 truncate">{c.complainantName}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 truncate">
+                          {c.subject || c.complaintDescription || "Complaint under enquiry"}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="primary"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shrink-0"
+                      >
+                        Save Here
+                      </Button>
+                    </div>
+                  ))}
+
+                {availableComplaints.length === 0 && (
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    No registered complaints found in system.
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectComplaintModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           </div>
         )}
       </div>
-    </div>
   );
 }
 
