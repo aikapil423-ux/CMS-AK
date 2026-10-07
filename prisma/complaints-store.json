@@ -52,17 +52,7 @@
     "policeStation": "PS City Thanesar",
     "district": "Kurukshetra",
     "registeredBy": "Sub-Inspector Vikram Singh",
-    "attachments": [
-      {
-        "id": "ev_draft_1791307098346",
-        "name": "Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf",
-        "size": 1770684,
-        "type": "application/pdf",
-        "category": "document",
-        "uploadedAt": "2026-10-06T17:18:18.346Z",
-        "description": "शिकायत प्रार्थना पत्र मारपीट व धमकी के संबंध में अशोक कुमार बनाम टिनकू फौजी (Auto-classified by Gemini 3.5 Flash: COMPLAINT 13.pdf -> Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf)"
-      }
-    ],
+    "attachments": [],
     "documents": [
       {
         "id": "doc_1791307159991_yfv7",
@@ -73,16 +63,6 @@
         "uploadedAt": "2026-10-06T17:19:19.991Z",
         "fileSize": "8.7 KB",
         "description": "Official Citizen Complaint Verification & Intake Proforma saved upon registration"
-      },
-      {
-        "id": "doc_ev_draft_1791307098346",
-        "complaintId": "",
-        "fileName": "Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf",
-        "fileCategory": "DOCUMENT",
-        "uploadedBy": "Sub-Inspector Vikram Singh",
-        "uploadedAt": "2026-10-06T17:18:18.346Z",
-        "fileSize": "1729.2 KB",
-        "description": "शिकायत प्रार्थना पत्र मारपीट व धमकी के संबंध में अशोक कुमार बनाम टिनकू फौजी (Auto-classified by Gemini 3.5 Flash: COMPLAINT 13.pdf -> Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf)"
       }
     ],
     "daysPending": 0,
@@ -91,8 +71,17 @@
     "mhcBeltNumber": "930/KKR",
     "mhcPhone": "9813098765",
     "createdAt": "2026-10-06T17:19:19.981Z",
-    "updatedAt": "2026-10-07T08:05:44.610Z",
+    "updatedAt": "2026-10-07T11:31:12.626Z",
     "timeline": [
+      {
+        "id": "tl_1791372641184_7s85",
+        "complaintId": "cmp_1791307159981",
+        "title": "Document Record Deleted",
+        "description": "Document record \"Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf\" removed by Inspector Rajesh Kumar.",
+        "category": "DOCUMENT",
+        "officerName": "Inspector Rajesh Kumar",
+        "timestamp": "2026-10-07T11:30:41.184Z"
+      },
       {
         "id": "tl_1791360344615_kebp",
         "complaintId": "cmp_1791307159981",
@@ -193,81 +182,6 @@
     "targetResolutionDate": "2026-10-20",
     "reports": [
       {
-        "id": "rep_1791354910563_by07",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 5,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:10.563Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791354910340_ps4f",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 4,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:10.340Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791354909457_dyyo",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 3,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:09.457Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
         "id": "rep_1791354907343_tpsu",
         "complaintId": "cmp_1791307159981",
         "versionNumber": 2,
@@ -291,34 +205,6 @@
         "selectedOutcome": "Complete",
         "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
         "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791349385603_esdd",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 1,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "standard_4row",
-        "reportTypeLabel": "1. Standard 4-Row Enquiry Report",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "07182930",
-        "conclusionSummary": "FINAL REPORT & FINDINGS (COGNIZABLE OFFENCE SUBSTANTIATED):\nRespected Sir, the preliminary enquiry into Complaint No. HAR-KKR-2026-CMP-00487 lodged by अशोक कुमार was conducted by me. Statements of com",
-        "content": "✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "7 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T05:03:05.603Z",
-        "recommendationType": "FIR_RECOMMENDED",
-        "isFirRecommended": true,
-        "selectedOutcome": "FIR Recommend",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।",
-        "sentToSho": true,
-        "sentToShoAt": "2026-10-07T05:03:08.075Z",
-        "sentToShoBy": "(SI Vikram Singh)"
       }
     ],
     "workflowState": "CORRECTION_REQUIRED",
@@ -495,7 +381,316 @@
     "rejectionCount": 1,
     "rejectionReason": "jnj",
     "rejectionAt": "2026-10-07T08:05:44.610Z",
-    "rejectionBy": "Inspector Rajesh Kumar"
+    "rejectionBy": "Inspector Rajesh Kumar",
+    "legalAnalysis": {
+      "complaintId": "cmp_1791307159981",
+      "complaintNumber": "HAR-KKR-2026-CMP-00487",
+      "analyzedAt": "2026-10-07T11:31:12.625Z",
+      "summary": "Complaints Docket HAR-KKR-2026-CMP-00487 comprehensively evaluated across Incident Facts and 2 attached documents. Identified 5 primary cognizable offence(s), 4 corroborating provision(s), and mandatory BNSS 173(3) / BSA 63 statutory procedures.",
+      "scannedFactsCount": 471,
+      "scannedDocumentsCount": 2,
+      "scannedEvidenceSummary": {
+        "documentsFound": [
+          "Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html [INTAKE VERIFICATION PROFORMA]",
+          "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487 [REPORT]"
+        ],
+        "keyAllegationsIdentified": [
+          "Fraudulent monetary inducement & job racket allegation",
+          "Physical assault causing grievous hurt (fracture) on victim",
+          "Criminal intimidation with threat to life",
+          "Intentional insult and public peace provocation",
+          "Joint concerted action by multiple associates in common intention"
+        ],
+        "accusedIdentified": [
+          "टिनकू फौजी (पुत्र रामफल)"
+        ],
+        "injuriesOrLossNoted": [
+          "Financial loss quantified:  06",
+          "Physical injury: Fracture of left hand finger confirmed via Civil Hospital X-ray"
+        ]
+      },
+      "suggestedSections": [
+        {
+          "id": "sug_kb_bns_318_4_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 318(4)",
+          "sectionTitle": "Cheating and dishonestly inducing delivery of property",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 95,
+          "description": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security.",
+          "verbatimSnippet": "Section 318(4) BNS: Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, or anything which is signed or sealed, and which is capable of being converted into a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and mandatory fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "शिकायत विवरण के अनुसार अभियुक्त ने प्रार्थी को झूठा आश्वासन देकर धोखा दिया और बेईमानी से  06 की संपत्ति/राशि अपने खाते में अथवा नकद प्राप्त की। भारतीय न्याय संहिता, 2023 की धारा 318(4) के सभी आवश्यक तत्व (Deceitful inducement + Delivery of valuable property) स्पष्ट रूप से प्रमाणित होते हैं।",
+          "evidenceProof": [
+            "Complainant sworn allegation regarding transfer of funds based on false representation",
+            "Transaction references or monetary inducement stated in Incident Facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_316_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 316(2)",
+          "sectionTitle": "Criminal breach of trust",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 93,
+          "description": "Whoever, being in any manner entrusted with property, or with any dominion over property, dishonestly misappropriates or converts to his own use that property.",
+          "verbatimSnippet": "Section 316(2) BNS: Whoever commits criminal breach of trust shall be punished with imprisonment of either description for a term which may extend to five years, or with fine, or with both.",
+          "punishment": "Imprisonment up to 5 years, or fine, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "प्रार्थी द्वारा अभियुक्त को विश्वास में देकर सौंपी गई धनराशि अथवा अमानत को अभियुक्त ने बेईमानी से हड़प लिया तथा मांगने पर वापस करने से इनकार किया। BNS की धारा 316(2) (आपराधिक विश्वासघात) लागू होती है।",
+          "evidenceProof": [
+            "Entrustment of funds / property mentioned in complaint narrative",
+            "Failure or refusal by accused to account for entrusted property"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_115_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 115(2)",
+          "sectionTitle": "Voluntarily causing hurt",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "verbatimSnippet": "Section 115(2) BNS: Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 1 year, or fine up to ₹10,000, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Substantive Bodily Offence",
+          "reason": "घटना विवरण से स्पष्ट है कि अभियुक्त ने प्रार्थी पर शारीरिक हमला करके उसे चोट पहुंचाई तथा शारीरिक पीड़ा पहुंचाई। BNS की धारा 115(2) (स्वेच्छापूर्वक उपहति कारित करना) लागू होती है।",
+          "evidenceProof": [
+            "Physical assault and injury description in incident facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_117_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 117(2)",
+          "sectionTitle": "Voluntarily causing grievous hurt (Fracture / Severe Bodily Injury)",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes grievous hurt shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "verbatimSnippet": "Section 117(2) BNS: Whoever, except in the case provided for by sub-section (1) of section 122, voluntarily causes grievous hurt, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Cognizable Bodily Offence",
+          "reason": "घटना विवरण एवं मेडिकल एक्स-रे जांच के अनुसार प्रार्थी की अंगुली/हड्डी में फ्रैक्चर पाया गया है, जो BNS की धारा 116 के अंतर्गत 'घोर उपहति' (Grievous Hurt) की परिभाषा में आता है। अतः BNS धारा 117(2) सीधे तौर पर आकर्षित होती है।",
+          "evidenceProof": [
+            "Hospital X-ray report noting bone fracture",
+            "Medical officer findings recorded in Civil Hospital docket"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_118_1_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 118(1)",
+          "sectionTitle": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death.",
+          "verbatimSnippet": "Section 118(1) BNS: Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death... shall be punished with imprisonment of either description for a term which may extend to three years, or with fine which may extend to twenty thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 3 years, or fine up to ₹20,000, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Weapon-Assault Cognizable Offence",
+          "reason": "हमले के दौरान अभियुक्त द्वारा लोहे की पाइप अथवा घातक हथियार का इस्तेमाल कर प्रार्थी के सिर/शरीर पर जानलेवा प्रहार किया गया। BNS की धारा 118(1) (खतरनाक हथियारों द्वारा चोट पहुंचाना) स्पष्ट रूप से बनती है।",
+          "evidenceProof": [
+            "Allegation of using iron pipe / blunt impact weapon",
+            "Spot verification report noting impact weapon"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_336_3_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 336(3)",
+          "sectionTitle": "Forgery for purpose of cheating",
+          "chapter": "Chapter XVIII - Of Offences Relating to Documents (Sec 335 - 350)",
+          "pageNumber": 101,
+          "description": "Whoever commits forgery, intending that the document or electronic record forged shall be used for the purpose of cheating.",
+          "verbatimSnippet": "Section 336(3) BNS: Whoever commits forgery, intending that the document or electronic record forged shall be used for the purpose of cheating, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Corroborating Document Offence",
+          "reason": "शिकायत विवरण एवं संलग्न दस्तावेजों के अनुसार अभियुक्त ने धोखाधड़ी को अंजाम देने के लिए फर्जी/कूटरचित दस्तावेज (जैसे कि जाली नियुक्ति पत्र, जाली विभागीय मुहर अथवा फर्जी पत्र) तैयार किया था। BNS की धारा 336(3) (धोखाधड़ी के प्रयोजन से कूटरचना) आकर्षित होती है।",
+          "evidenceProof": [
+            "Allegation of fabricated/forged documents with fake departmental stamps"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_351_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 351(2)",
+          "sectionTitle": "Criminal intimidation (Threat of injury to person/property)",
+          "chapter": "Chapter XIX - Of Criminal Intimidation, Insult & Annoyance (Sec 351 - 356)",
+          "pageNumber": 106,
+          "description": "Whoever commits the offence of criminal intimidation shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both.",
+          "verbatimSnippet": "Section 351(2) BNS: Whoever commits the offence of criminal intimidation shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both; and if threat be to cause death or grievous hurt, with imprisonment up to seven years under Section 351(3).",
+          "punishment": "Imprisonment up to 2 years, or fine, or both (Up to 7 years if death threat under 351(3))",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Intimidation Offence",
+          "reason": "अभियुक्त द्वारा प्रार्थी को जान से मारने की सीधी धमकी दी गई तथा भयभीत किया गया। BNS की धारा 351(2) (आपराधिक अभित्रास / Criminal Intimidation) लागू होती है। यदि धमकी जान से मारने की है, तो 351(3) के अंतर्गत 7 वर्ष तक कारावास का प्रावधान है।",
+          "evidenceProof": [
+            "Threat statement specifically quoted in complainant allegations",
+            "Witness statements corroborating oral threats"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_352_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 352",
+          "sectionTitle": "Intentional insult with intent to provoke breach of peace",
+          "chapter": "Chapter XIX - Of Criminal Intimidation, Insult & Annoyance (Sec 351 - 356)",
+          "pageNumber": 106,
+          "description": "Whoever intentionally insults, and thereby gives provocation to any person, intending or knowing it to be likely that such provocation will cause him to break the public peace.",
+          "verbatimSnippet": "Section 352 BNS: Whoever intentionally insults, and thereby gives provocation to any person, intending or knowing it to be likely that such provocation will cause him to break the public peace, or to commit any other offence, shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both.",
+          "punishment": "Imprisonment up to 2 years, or fine, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Public Peace Offence",
+          "reason": "अभियुक्त ने सार्वजनिक स्थान पर प्रार्थी को अकारण गालियां दीं तथा शांति भंग करने के इरादे से उत्तेजित किया। BNS की धारा 352 (शांति भंग कराने के आशय से जानबूझकर अपमान) आकर्षित होती है।",
+          "evidenceProof": [
+            "Verbatim abusive words recorded in intake proforma",
+            "Eye-witness verification of public altercation"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_3_5_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 3(5)",
+          "sectionTitle": "Joint criminal liability - Common intention",
+          "chapter": "Chapter I - Preliminary & General Explanations (Sec 1 - 3)",
+          "pageNumber": 17,
+          "description": "When a criminal act is done by several persons in furtherance of the common intention of all, each of such persons is liable for that act in the same manner as if it were done by him alone.",
+          "verbatimSnippet": "Section 3(5) BNS: When a criminal act is done by several persons in furtherance of the common intention of all, each of such persons is liable for that act in the same manner as if it were done by him alone.",
+          "punishment": "Co-extensive liability with main perpetrators",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Same as substantive offence",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Vicarious Liability Rule",
+          "reason": "घटना में मुख्य आरोपी के साथ अन्य कई व्यक्ति (10-12 लोग) सामान्य आशय की पूर्ति में शामिल थे तथा समझौते के नाम पर दबाव बनाया। BNS की धारा 3(5) (साझा आशय / Common Intention) के तहत सभी सह-अभियुक्तों का संयुक्त दायित्व बनता है।",
+          "evidenceProof": [
+            "Multiple accused persons listed in Accused docket",
+            "Joint presence and concerted coercion described in allegations"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_173_3_1791372672625",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 173(3)",
+          "sectionTitle": "Preliminary Enquiry (14 Days Window Prior to FIR)",
+          "chapter": "Chapter XII - Information to Police & Powers to Investigate (Sec 173 - 196)",
+          "pageNumber": 67,
+          "description": "On receipt of information relating to commission of cognizable offence punishable with 3 to 7 years, officer in charge of police station may conduct preliminary enquiry within 14 days with prior permission of DSP.",
+          "verbatimSnippet": "Section 173(3) BNSS: On receipt of information relating to the commission of any cognizable offence, which is made punishable for three years or more but less than seven years, the officer in charge of the police station may with the prior permission from an officer not below the rank of Deputy Superintendent of Police, considering the nature and gravity of the offence— (i) proceed to conduct preliminary enquiry to ascertain whether there exists a prima facie case for proceeding in the matter, which shall be completed within a period of fourteen days; or (ii) proceed with investigation when there exists a prima facie case.",
+          "punishment": "Statutory Procedural Mandate (14-day completion binding on Police)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Statutory Police Investigation Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।",
+          "evidenceProof": [
+            "BNSS 173(3) enquiry docket open for Station PS City Thanesar",
+            "Mandatory supervisory directions issued by SHO to Enquiry Officer"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bnss_35_3_1791372672625",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 35(3)",
+          "sectionTitle": "Mandatory Notice of Appearance to Suspect Instead of Arrest",
+          "chapter": "Chapter V - Arrest of Persons (Sec 35 - 62)",
+          "pageNumber": 27,
+          "description": "The police officer shall, in all cases where arrest of a person is not required, issue a notice directing the person against whom a reasonable complaint has been made, to appear before him.",
+          "verbatimSnippet": "Section 35(3) BNSS: The police officer shall, in all cases where the arrest of a person is not required under sub-section (1), issue a notice directing the person against whom a reasonable complaint has been made, or credible information has been received, or a reasonable suspicion exists that he has committed a cognizable offence, to appear before him or at such other place as may be specified in the notice.",
+          "punishment": "Procedural Compliance (Protection against arbitrary arrest)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Investigating Officer Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।",
+          "evidenceProof": [
+            "Accused profile: टिनकू फौजी",
+            "Required Section 35(3) Appearance Proforma in Documents Tab"
+          ],
+          "confidenceScore": 88
+        }
+      ],
+      "investigativeStepsRecommended": [
+        "Notice under Section 35(3) BNSS to named accused (टिनकू फौजी (पुत्र रामफल)) for recording formal defense explanation.",
+        "Preservation & Digital Certification under Section 63(4) BSA of all attached evidence files (2 items).",
+        "Verification of hospital MLR records and obtaining formal doctor opinion regarding nature of injury.",
+        "Completion of Section 173(3) BNSS preliminary spot verification report within statutory 14-day timeline."
+      ]
+    }
   },
   {
     "id": "cmp_001",
@@ -736,7 +931,117 @@
     "daysPending": 7,
     "targetResolutionDate": "2026-10-10",
     "createdAt": "2026-09-26T10:00:00Z",
-    "updatedAt": "2026-10-02T14:45:00Z"
+    "updatedAt": "2026-10-07T11:45:45.423Z",
+    "investigationSummary": {
+      "id": "sum_1791373537103_al7jf",
+      "complaintId": "cmp_002",
+      "complaintNumber": "HAR-KKR-2026-CMP-00483",
+      "generatedAt": "2026-10-07T11:45:37.101Z",
+      "updatedAt": "2026-10-07T11:45:37.101Z",
+      "version": 1,
+      "generatedBy": "Gemini AI (gemini-3.5-flash-lite) & CMS Intelligence",
+      "caseSynopsis": "शिकायतकर्ता बलदेव सिंह, निवासी गाँव मिर्ज़ापुर, कुरुक्षेत्र द्वारा कृषि भूमि खसरा नंबर 14//8 पर बाउंड्री वॉल के निर्माण और साझा पानी का रास्ता रोकने को लेकर जोगिंदर सिंह के विरुद्ध मौखिक गाली-गलौज और धमकियों के संबंध में शिकायत दर्ज कराई गई है। वर्तमान में इस मामले की स्थिति रिपोर्ट सबमिट (REPORT_SUBMITTED) है और मामले के जाँच अधिकारी (EO) एएसआई रमेश चंद्र हैं।",
+      "currentStage": "REPORT_SUBMITTED",
+      "progressPercentage": 33,
+      "workDoneSummary": "रिकॉर्ड के अनुसार शिकायत का पंजीकरण किया गया है तथा जाँच अधिकारी एएसआई रमेश चंद्र द्वारा मामले की प्रारंभिक जाँच पूरी कर वर्तमान स्थिति 'रिपोर्ट सबमिट' (REPORT_SUBMITTED) दिखाई गई है। इसके अलावा संलग्न दस्तावेजों या गवाहों/बयानों का कोई अन्य विवरण रिकॉर्ड में उल्लेख नहीं (Not Found on Record) है।",
+      "completedActions": [
+        {
+          "id": "comp_act_1",
+          "category": "OVERVIEW",
+          "categoryLabel": "Registration & GD Entry",
+          "title": "Complaint Registration & General Diary Entry",
+          "detail": "Complaint #HAR-KKR-2026-CMP-00483 registered via WALK_IN_STATION under category Land / Boundary Dispute. Verbatim allegations and complainant details recorded.",
+          "status": "COMPLETED",
+          "completedAt": "2026-09-26T10:00:00Z",
+          "officerResponsible": "ASI Surender Pal"
+        },
+        {
+          "id": "comp_act_2",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Enquiry Officer Assignment",
+          "title": "Enquiry Officer Deputed & Briefed",
+          "detail": "Deputed ASI ASI Ramesh Chander (Belt N/A) for preliminary inquiry with specific mandate: Conduct spot verification & verify party claims under BNSS 173(3).",
+          "status": "COMPLETED",
+          "completedAt": "2026-09-26T11:00:00Z",
+          "officerResponsible": "SHO / Station Officer"
+        }
+      ],
+      "scannedOverviewHighlights": [
+        "Complainant: Baldev Singh  • Mobile: 9466088211",
+        "Address: Village Mirzapur, Post Office Thanesar, Kurukshetra, Kurukshetra",
+        "Accused / Suspects: Not Found / Unidentified Suspect(s) (नामजद नहीं) (No individual named in document)",
+        "Incident Classification: Land / Boundary Dispute • Location: Agricultural Land, Khasra No. 14//8, Village Mirzapur • Date: 2026-09-25",
+        "Assigned Enquiry Officer: ASI ASI Ramesh Chander (Belt N/A)",
+        "Inquiry Age: 7 day(s) elapsed under Police Station PS City Thanesar"
+      ],
+      "scannedDocumentsHighlights": [
+        {
+          "name": "No External Files Attached Yet",
+          "type": "Pending File Submission",
+          "status": "Pending",
+          "summary": "Citizen application narrative is recorded on docket. Physical evidence/bills/MLR yet to be submitted."
+        }
+      ],
+      "scannedHistoryMilestones": [],
+      "pendingWorkSummary": "दस्तावेज़ / रिकॉर्ड में उल्लेख नहीं (Not Found on Record)।",
+      "pendingActions": [
+        {
+          "id": "pend_act_2",
+          "category": "DOCUMENTS",
+          "categoryLabel": "Evidence Collection",
+          "title": "Collect Corroborative Documents / Physical Proof",
+          "detail": "Complainant has not attached external financial or medical documents. Obtain relevant receipts, bank records, MLR, or chat logs.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_3",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Preliminary Spot Visit",
+          "title": "Conduct Spot Verification under BNSS 173(3)",
+          "detail": "Enquiry Officer must visit the scene of occurrence, inspect landmarks, and record observations in the case diary.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_4",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Witness Examination",
+          "title": "Record Statements of Independent Witnesses",
+          "detail": "Examine independent neighborhood witnesses, spot witnesses, or family members to corroborate allegations.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_6",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Final Enquiry Report",
+          "title": "Draft & Submit Final Preliminary Inquiry Report",
+          "detail": "Compile all findings, statements, and evidence into final inquiry report recommending FIR registration, compromise, or closure.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        }
+      ],
+      "urgentDeadlines": [
+        "⏳ BNSS धारा 173(3) प्रारंभिक जांच समय-सीमा: 14 दिनों में से 7 दिन शेष हैं।"
+      ],
+      "recommendedEoActions": [
+        "घटनास्थल का मौका मुआयना (Spot Inspection) कर पंचनामा / नक्शा मौका तैयार करें।",
+        "आरोपी पक्ष को धारा 35(3) BNSS के तहत नोटिस तामील कराकर उनका लिखित स्पष्टीकरण प्राप्त करें।",
+        "शिकायत से जुड़े स्वतंत्र गवाहों व पड़ोसियों के बयान धारा 180 BNSS के तहत लिपिबद्ध करें।",
+        "बैंक/तकनीकी/मेडिकल साक्ष्यों का संबंधित संस्थान से आधिकारिक सत्यापन कराएं।"
+      ],
+      "recommendedShoDirections": [
+        "जांच अधिकारी को समयबद्ध (48 घंटे में) प्रगति रिपोर्ट प्रस्तुत करने के निर्देश दें।",
+        "यदि संज्ञेय अपराध (Cognizable Offence) स्पष्ट प्रमाणित होता है तो विलंब न करते हुए FIR दर्ज कराएं।",
+        "पारस्परिक विवाद अथवा दीवानी प्रकृति के मामलों में निष्पक्ष समझौता अथवा धारा 173 BNSS के तहत निस्तारण सुनिश्चित करें।"
+      ],
+      "evidenceStrength": "PRELIMINARY",
+      "primaFacieObservation": "यह मामला प्रथम दृष्टया कृषि भूमि की सीमा और साझा पानी के रास्ते के विवाद (Land / Boundary Dispute) से संबंधित प्रतीत होता है, जो कि दीवानी प्रकृति (Civil Dispute) का मामला है। मौखिक गाली-गलौज और धमकियों के संबंध में बीएनएस 2023 के तहत संज्ञेय अपराध के आवश्यक तथ्यात्मक साक्ष्य उपलब्ध होने या न होने की पुष्टि जाँच रिपोर्ट के विस्तृत अवलोकन के अधीन है।",
+      "suggestedOutcome": "FURTHER_ENQUIRY",
+      "suggestedOutcomeReason": "आरोपों की प्रकृति (Land / Boundary Dispute) तथा उपलब्ध साक्ष्यों के आधार पर अग्रिम गवाहों के बयान व आरोपी के पक्ष का परीक्षण आवश्यक है।",
+      "newItemsDetectedSinceLastUpdate": []
+    }
   },
   {
     "id": "cmp_003",
@@ -778,7 +1083,7 @@
     "daysPending": 2,
     "targetResolutionDate": "2026-10-05",
     "createdAt": "2026-10-01T21:00:00Z",
-    "updatedAt": "2026-10-06T10:18:06.756Z",
+    "updatedAt": "2026-10-07T10:46:58.559Z",
     "reports": [
       {
         "id": "rep_1791281857796_ct0d",
@@ -823,7 +1128,315 @@
         "timestamp": "2026-10-07T08:25:40.498Z",
         "documentName": "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html"
       }
-    ]
+    ],
+    "investigationSummary": {
+      "id": "sum_1791369875608_duocy",
+      "complaintId": "cmp_003",
+      "complaintNumber": "HAR-KKR-2026-CMP-00484",
+      "generatedAt": "2026-10-07T10:44:35.607Z",
+      "updatedAt": "2026-10-07T10:44:35.607Z",
+      "version": 1,
+      "generatedBy": "Gemini AI (gemini-3.5-flash-lite) & CMS Intelligence",
+      "caseSynopsis": "दिनांक 01-10-2026 को रेलवे रोड चौक, थानेसर पर पार्किंग के विवाद को लेकर मोहित वर्मा (दुकानदार) के साथ विकास उर्फ विक्की व तीन अन्य अज्ञात साथियों द्वारा लोहे की रॉड से मारपीट कर गंभीर चोट पहुँचाने का मामला सामने आया है। एलएनजेपी सिविल अस्पताल की एमएलआर रिपोर्ट में बाएं हाथ पर फ्रैक्चर की पुष्टि हुई है, जिस पर एसआई विक्रम सिंह द्वारा प्रारंभिक जांच पूरी कर एफआईआर दर्ज करने की अनुशंसा की गई है।",
+      "currentStage": "RECOMMENDED_FOR_FIR",
+      "progressPercentage": 57,
+      "workDoneSummary": "शिकायतकर्ता मोहित वर्मा के बयानों का सत्यापन किया गया है, एलएनजेपी सिविल अस्पताल से एमएलआर (मेडिकल लीगल रिपोर्ट) प्राप्त कर ली गई है जिसमें फ्रैक्चर की पुष्टि हुई है, और आरोपी विकास उर्फ विक्की के विरुद्ध हरियाणा पुलिस उपस्थिति नोटिस (सूचना-पत्र) जारी कर दिया गया है।",
+      "completedActions": [
+        {
+          "id": "comp_act_1",
+          "category": "OVERVIEW",
+          "categoryLabel": "Registration & GD Entry",
+          "title": "Complaint Registration & General Diary Entry",
+          "detail": "Complaint #HAR-KKR-2026-CMP-00484 registered via EMERGENCY_112 under category Physical Assault / Affray. Verbatim allegations and complainant details recorded.",
+          "status": "COMPLETED",
+          "completedAt": "2026-10-01T21:00:00Z",
+          "officerResponsible": "ASI Surender Pal"
+        },
+        {
+          "id": "comp_act_2",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Enquiry Officer Assignment",
+          "title": "Enquiry Officer Deputed & Briefed",
+          "detail": "Deputed SI SI Vikram Singh (Belt N/A) for preliminary inquiry with specific mandate: Conduct spot verification & verify party claims under BNSS 173(3).",
+          "status": "COMPLETED",
+          "completedAt": "2026-10-01T21:30:00Z",
+          "officerResponsible": "SHO / Station Officer"
+        },
+        {
+          "id": "comp_act_6",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Notice to Accused",
+          "title": "Section 35(3) BNSS Notice Issued to Suspect",
+          "detail": "Mandatory statutory appearance notice served on named suspect(s) requiring formal reply.",
+          "status": "COMPLETED",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "comp_act_7",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Inquiry Report Submission",
+          "title": "Formal Preliminary Enquiry Report Drafted",
+          "detail": "1 report(s) drafted on docket with prima facie findings and recommendations.",
+          "status": "COMPLETED",
+          "officerResponsible": "SI Vikram Singh"
+        }
+      ],
+      "scannedOverviewHighlights": [
+        "Complainant: Mohit Verma  • Mobile: 9812977431",
+        "Address: Shop No. 12, Main Bazaar, Thanesar, Kurukshetra, Kurukshetra",
+        "Accused / Suspects: Unknown / Unidentified Suspect(s) (2 individual(s) named)",
+        "Incident Classification: Physical Assault / Affray at Railway Road Chowk, Thanesar (Date: 2026-10-01)",
+        "Assigned Enquiry Officer: SI SI Vikram Singh (Belt N/A)",
+        "Days in Inquiry: 2 day(s) elapsed under Police Station PS City Thanesar"
+      ],
+      "scannedDocumentsHighlights": [
+        {
+          "name": "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+          "type": "NOTICE",
+          "status": "On File",
+          "summary": "Case diary procedural document on police docket"
+        }
+      ],
+      "scannedHistoryMilestones": [
+        {
+          "date": "2026-10-07",
+          "action": "Official Document Uploaded: 1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+          "officer": "Sub-Inspector Vikram Singh",
+          "details": "Category: NOTICE • Size: 11 KB"
+        }
+      ],
+      "pendingWorkSummary": "संबंधित थाने में औपचारिक एफआईआर (भारतीय न्याय संहिता 2023 की धाराओं के तहत) दर्ज करना शेष है; इसके अतिरिक्त तीन अज्ञात आरोपियों की पहचान व गिरफ्तारी, लोहे की रॉड (हथियार) की बरामदगी, तथा चश्मदीद गवाहों के विस्तृत बयान दर्ज किए जाने बाकी हैं।",
+      "pendingActions": [
+        {
+          "id": "pend_act_2",
+          "category": "DOCUMENTS",
+          "categoryLabel": "Evidence Collection",
+          "title": "Collect Corroborative Documents / Physical Proof",
+          "detail": "Complainant has not attached external financial or medical documents. Obtain relevant receipts, bank records, MLR, or chat logs.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "pend_act_3",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Preliminary Spot Visit",
+          "title": "Conduct Spot Verification under BNSS 173(3)",
+          "detail": "Enquiry Officer must visit the scene of occurrence, inspect landmarks, and record observations in the case diary.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "pend_act_4",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Witness Examination",
+          "title": "Record Statements of Independent Witnesses",
+          "detail": "Examine independent neighborhood witnesses, spot witnesses, or family members to corroborate allegations.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        }
+      ],
+      "urgentDeadlines": [
+        "⏳ BNSS धारा 173(3) प्रारंभिक जांच समय-सीमा: 14 दिनों में से 12 दिन शेष हैं।"
+      ],
+      "recommendedEoActions": [
+        "घटनास्थल का मौका मुआयना (Spot Inspection) कर पंचनामा / नक्शा मौका तैयार करें।",
+        "आरोपी पक्ष को धारा 35(3) BNSS के तहत नोटिस तामील कराकर उनका लिखित स्पष्टीकरण प्राप्त करें।",
+        "शिकायत से जुड़े स्वतंत्र गवाहों व पड़ोसियों के बयान धारा 180 BNSS के तहत लिपिबद्ध करें।",
+        "बैंक/तकनीकी/मेडिकल साक्ष्यों का संबंधित संस्थान से आधिकारिक सत्यापन कराएं।"
+      ],
+      "recommendedShoDirections": [
+        "जांच अधिकारी को समयबद्ध (48 घंटे में) प्रगति रिपोर्ट प्रस्तुत करने के निर्देश दें।",
+        "यदि संज्ञेय अपराध (Cognizable Offence) स्पष्ट प्रमाणित होता है तो विलंब न करते हुए FIR दर्ज कराएं।",
+        "पारस्परिक विवाद अथवा दीवानी प्रकृति के मामलों में निष्पक्ष समझौता अथवा धारा 173 BNSS के तहत निस्तारण सुनिश्चित करें।"
+      ],
+      "evidenceStrength": "MODERATE",
+      "primaFacieObservation": "प्रस्तुत मामले में प्रथम दृष्टया भारतीय न्याय संहिता (BNS) 2023 की संज्ञेय अपराध (Cognizable Offence) से संबंधित धाराओं जैसे कि स्वेच्छा से चोट पहुँचाना, खतरनाक हथियारों से हमला करना और दंगा करने (Affray) का मामला बनता है, और यह कोई मात्र दीवानी विवाद (Civil Dispute) नहीं है।",
+      "suggestedOutcome": "FURTHER_ENQUIRY",
+      "suggestedOutcomeReason": "आरोपों की प्रकृति (Physical Assault / Affray) तथा उपलब्ध साक्ष्यों के आधार पर अग्रिम गवाहों के बयान व आरोपी के पक्ष का परीक्षण आवश्यक है।",
+      "newItemsDetectedSinceLastUpdate": []
+    },
+    "legalAnalysis": {
+      "complaintId": "cmp_003",
+      "complaintNumber": "HAR-KKR-2026-CMP-00484",
+      "analyzedAt": "2026-10-07T10:46:58.559Z",
+      "summary": "Complaints Docket HAR-KKR-2026-CMP-00484 comprehensively evaluated across Incident Facts and 2 attached documents. Identified 4 primary cognizable offence(s), 0 corroborating provision(s), and mandatory BNSS 173(3) / BSA 63 statutory procedures.",
+      "scannedFactsCount": 25,
+      "scannedDocumentsCount": 2,
+      "scannedEvidenceSummary": {
+        "documentsFound": [
+          "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html [NOTICE]",
+          "2. Financial Fraud - HAR-KKR-2026-CMP-00482 [REPORT]"
+        ],
+        "keyAllegationsIdentified": [
+          "Fraudulent monetary inducement & job racket allegation",
+          "Physical assault causing grievous hurt (fracture) on victim"
+        ],
+        "accusedIdentified": [
+          "Vikas alias Vicky",
+          "3 Unidentified accomplices"
+        ],
+        "injuriesOrLossNoted": [
+          "Physical injury: Fracture of left hand finger confirmed via Civil Hospital X-ray"
+        ]
+      },
+      "suggestedSections": [
+        {
+          "id": "sug_kb_bns_318_4_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 318(4)",
+          "sectionTitle": "Cheating and dishonestly inducing delivery of property",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 95,
+          "description": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security.",
+          "verbatimSnippet": "Section 318(4) BNS: Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, or anything which is signed or sealed, and which is capable of being converted into a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and mandatory fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "शिकायत विवरण के अनुसार अभियुक्त ने प्रार्थी को झूठा आश्वासन देकर धोखा दिया और बेईमानी से funds की संपत्ति/राशि अपने खाते में अथवा नकद प्राप्त की। भारतीय न्याय संहिता, 2023 की धारा 318(4) के सभी आवश्यक तत्व (Deceitful inducement + Delivery of valuable property) स्पष्ट रूप से प्रमाणित होते हैं।",
+          "evidenceProof": [
+            "Complainant sworn allegation regarding transfer of funds based on false representation",
+            "Transaction references or monetary inducement stated in Incident Facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_115_2_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 115(2)",
+          "sectionTitle": "Voluntarily causing hurt",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "verbatimSnippet": "Section 115(2) BNS: Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 1 year, or fine up to ₹10,000, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Substantive Bodily Offence",
+          "reason": "घटना विवरण से स्पष्ट है कि अभियुक्त ने प्रार्थी पर शारीरिक हमला करके उसे चोट पहुंचाई तथा शारीरिक पीड़ा पहुंचाई। BNS की धारा 115(2) (स्वेच्छापूर्वक उपहति कारित करना) लागू होती है।",
+          "evidenceProof": [
+            "Physical assault and injury description in incident facts"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bns_117_2_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 117(2)",
+          "sectionTitle": "Voluntarily causing grievous hurt (Fracture / Severe Bodily Injury)",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes grievous hurt shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "verbatimSnippet": "Section 117(2) BNS: Whoever, except in the case provided for by sub-section (1) of section 122, voluntarily causes grievous hurt, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Cognizable Bodily Offence",
+          "reason": "घटना विवरण एवं मेडिकल एक्स-रे जांच के अनुसार प्रार्थी की अंगुली/हड्डी में फ्रैक्चर पाया गया है, जो BNS की धारा 116 के अंतर्गत 'घोर उपहति' (Grievous Hurt) की परिभाषा में आता है। अतः BNS धारा 117(2) सीधे तौर पर आकर्षित होती है।",
+          "evidenceProof": [
+            "Hospital X-ray report noting bone fracture",
+            "Medical officer findings recorded in Civil Hospital docket"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bns_118_1_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 118(1)",
+          "sectionTitle": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death.",
+          "verbatimSnippet": "Section 118(1) BNS: Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death... shall be punished with imprisonment of either description for a term which may extend to three years, or with fine which may extend to twenty thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 3 years, or fine up to ₹20,000, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Weapon-Assault Cognizable Offence",
+          "reason": "हमले के दौरान अभियुक्त द्वारा लोहे की पाइप अथवा घातक हथियार का इस्तेमाल कर प्रार्थी के सिर/शरीर पर जानलेवा प्रहार किया गया। BNS की धारा 118(1) (खतरनाक हथियारों द्वारा चोट पहुंचाना) स्पष्ट रूप से बनती है।",
+          "evidenceProof": [
+            "Allegation of using iron pipe / blunt impact weapon",
+            "Spot verification report noting impact weapon"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_173_3_1791370018558",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 173(3)",
+          "sectionTitle": "Preliminary Enquiry (14 Days Window Prior to FIR)",
+          "chapter": "Chapter XII - Information to Police & Powers to Investigate (Sec 173 - 196)",
+          "pageNumber": 67,
+          "description": "On receipt of information relating to commission of cognizable offence punishable with 3 to 7 years, officer in charge of police station may conduct preliminary enquiry within 14 days with prior permission of DSP.",
+          "verbatimSnippet": "Section 173(3) BNSS: On receipt of information relating to the commission of any cognizable offence, which is made punishable for three years or more but less than seven years, the officer in charge of the police station may with the prior permission from an officer not below the rank of Deputy Superintendent of Police, considering the nature and gravity of the offence— (i) proceed to conduct preliminary enquiry to ascertain whether there exists a prima facie case for proceeding in the matter, which shall be completed within a period of fourteen days; or (ii) proceed with investigation when there exists a prima facie case.",
+          "punishment": "Statutory Procedural Mandate (14-day completion binding on Police)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Statutory Police Investigation Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।",
+          "evidenceProof": [
+            "BNSS 173(3) enquiry docket open for Station PS City Thanesar",
+            "Mandatory supervisory directions issued by SHO to Enquiry Officer"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_35_3_1791370018558",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 35(3)",
+          "sectionTitle": "Mandatory Notice of Appearance to Suspect Instead of Arrest",
+          "chapter": "Chapter V - Arrest of Persons (Sec 35 - 62)",
+          "pageNumber": 27,
+          "description": "The police officer shall, in all cases where arrest of a person is not required, issue a notice directing the person against whom a reasonable complaint has been made, to appear before him.",
+          "verbatimSnippet": "Section 35(3) BNSS: The police officer shall, in all cases where the arrest of a person is not required under sub-section (1), issue a notice directing the person against whom a reasonable complaint has been made, or credible information has been received, or a reasonable suspicion exists that he has committed a cognizable offence, to appear before him or at such other place as may be specified in the notice.",
+          "punishment": "Procedural Compliance (Protection against arbitrary arrest)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Investigating Officer Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।",
+          "evidenceProof": [
+            "Accused profile: Vikas alias Vicky",
+            "Required Section 35(3) Appearance Proforma in Documents Tab"
+          ],
+          "confidenceScore": 96
+        }
+      ],
+      "investigativeStepsRecommended": [
+        "Notice under Section 35(3) BNSS to named accused (Vikas alias Vicky, 3 Unidentified accomplices) for recording formal defense explanation.",
+        "Preservation & Digital Certification under Section 63(4) BSA of all attached evidence files (2 items).",
+        "Verification of hospital MLR records and obtaining formal doctor opinion regarding nature of injury.",
+        "Completion of Section 173(3) BNSS preliminary spot verification report within statutory 14-day timeline."
+      ]
+    }
   },
   {
     "id": "cmp_004",

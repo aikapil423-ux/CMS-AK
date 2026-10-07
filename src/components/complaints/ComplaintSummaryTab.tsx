@@ -483,6 +483,32 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                   <span>{summary.primaFacieObservation}</span>
                 </div>
               </div>
+
+              {/* Scanned Overview Highlights Grid - Explicitly showing verified vs Not Found */}
+              {summary.scannedOverviewHighlights && summary.scannedOverviewHighlights.length > 0 && (
+                <div className="pt-2">
+                  <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-blue-600" />
+                    <span>दस्तावेज़ व प्रारंभिक रिकॉर्ड सत्यापन स्थिति (Verified Overview Data)</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                    {summary.scannedOverviewHighlights.map((highlight, idx) => {
+                      const isNotFound = highlight.includes("Not Found") || highlight.includes("Not Specified") || highlight.includes("Not Mentioned") || highlight.includes("उल्लेख नहीं");
+                      return (
+                        <div
+                          key={idx}
+                          className={`p-2.5 rounded-lg border flex items-start gap-2 ${
+                            isNotFound ? "bg-amber-50/60 border-amber-200 text-amber-900" : "bg-slate-50 border-slate-200 text-slate-800"
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isNotFound ? "bg-amber-500" : "bg-emerald-500"}`} />
+                          <span className="leading-relaxed font-medium">{highlight}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

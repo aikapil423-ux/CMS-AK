@@ -36,6 +36,13 @@ export async function POST(req: NextRequest) {
       const prompt = `You are an elite Senior Police Supervisory Officer & Investigative Analyst for Haryana Police (CMS Portal / BNSS 2023).
 Analyze the following police complaint case details covering Overview, Attached Documents, and Historical Timeline.
 
+STRICT ANTI-FABRICATION & ANTI-HALLUCINATION RULE (रिकॉर्ड में जो है केवल वही लिखें, खुद से मनगढ़ंत डेटा न बनाएं):
+- User instruction: "jaha be kuch generate ho raha hai usme jo data mila ha process and analysis kre ke vi dekhye aur forms me fill kre khud se generate na kre na milne par btaye no found jo data nhi mila aur jo fill krna hai to fill na kre blank rhne de khud se fill na kre aur false informaction na to fill kre na show kre".
+- Strictly base all analysis ONLY on the actual verified facts, documents, and timeline events provided below.
+- ABSOLUTELY DO NOT INVENT, FABRICATE, ASSUME, OR HALLUCINATE ANY FACTS, DATES, PERSONS, WITNESSES, EVIDENCE, OR POLICE ACTIONS!
+- If any detail is missing (e.g. mobile number not in document, no documents attached, no spot visit, no EO assigned), you must explicitly write "दस्तावेज़ / रिकॉर्ड में उल्लेख नहीं (Not Found on Record)".
+- NEVER output false or fabricated information under any circumstance.
+
 COMPLAINT OVERVIEW:
 - Complaint Number: ${complaint.complaintNumber}
 - Complainant: ${complaint.complainantName} (${complaint.complainantRelationType || ""} ${complaint.complainantRelativeName || ""})

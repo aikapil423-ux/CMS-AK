@@ -99,32 +99,34 @@ export const ComplaintSummaryService = {
       }
     }
 
-    // 4. Analyze Overview Data
-    const cName = complaint.complainantName || "Not Mentioned";
-    const cMobile = complaint.complainantMobile || "N/A";
-    const cAddress = complaint.complainantAddress || "N/A";
-    const cRelation = complaint.complainantRelationType ? `${complaint.complainantRelationType} ${complaint.complainantRelativeName || ""}` : "";
+    // 4. Analyze Overview Data - Strictly real data, explicit "Not Found" for missing data
+    const cName = complaint.complainantName ? String(complaint.complainantName).trim() : "Not Mentioned in Document (उल्लेख नहीं)";
+    const cMobile = complaint.complainantMobile ? String(complaint.complainantMobile).trim() : "Not Found / Not Provided (उपलब्ध नहीं)";
+    const cAddress = complaint.complainantAddress ? String(complaint.complainantAddress).trim() : "Not Found / Not Provided (उल्लेख नहीं)";
+    const cRelation = complaint.complainantRelationType && complaint.complainantRelativeName
+      ? `${complaint.complainantRelationType} ${complaint.complainantRelativeName}`
+      : "Not Mentioned in Document (उल्लेख नहीं)";
     
     const accusedList = complaint.accusedList || [];
-    const isAccusedIdentified = complaint.isAccusedKnown && accusedList.length > 0;
-    const accusedCount = accusedList.length;
+    const isAccusedIdentified = complaint.isAccusedKnown && accusedList.length > 0 && accusedList.some(a => Boolean(a.name?.trim()));
+    const accusedCount = isAccusedIdentified ? accusedList.filter(a => Boolean(a.name?.trim())).length : 0;
     const accusedNames = isAccusedIdentified
       ? accusedList.map((a) => a.name).filter(Boolean).join(", ")
-      : "Unknown / Unidentified Suspect(s)";
+      : "Not Found / Unidentified Suspect(s) (नामजद नहीं)";
 
-    const place = complaint.incidentPlace || "Not Specified";
-    const date = complaint.incidentDate || "Not Specified";
+    const place = complaint.incidentPlace ? String(complaint.incidentPlace).trim() : "Not Specified in Document (उल्लेख नहीं)";
+    const date = complaint.incidentDate ? String(complaint.incidentDate).trim() : "Not Specified in Document (उल्लेख नहीं)";
     const category = complaint.categoryDisplay || complaint.category || "General";
-    const eoName = complaint.assignedEoName ? `${complaint.assignedEoRank || "EO"} ${complaint.assignedEoName} (${complaint.assignedEoBeltNumber || "Belt N/A"})` : "Not Assigned Yet";
+    const eoName = complaint.assignedEoName ? `${complaint.assignedEoRank || "EO"} ${complaint.assignedEoName} (${complaint.assignedEoBeltNumber || "Belt N/A"})` : "Not Assigned (लंबित / नियुक्त नहीं)";
     const daysPending = complaint.daysPending || 0;
 
     const scannedOverviewHighlights: string[] = [
-      `Complainant: ${cName} ${cRelation ? `(${cRelation})` : ""} • Mobile: ${cMobile}`,
-      `Address: ${cAddress}, ${complaint.complainantCity || ""}, ${complaint.complainantDistrict || ""}`,
-      `Accused / Suspects: ${accusedNames} (${accusedCount} individual(s) named)`,
-      `Incident Classification: ${category} at ${place} (Date: ${date})`,
+      `Complainant: ${cName} ${cRelation !== "Not Mentioned in Document (उल्लेख नहीं)" ? `(${cRelation})` : ""} • Mobile: ${cMobile}`,
+      `Address: ${cAddress}${complaint.complainantCity ? ", " + complaint.complainantCity : ""}${complaint.complainantDistrict ? ", " + complaint.complainantDistrict : ""}`,
+      `Accused / Suspects: ${accusedNames} (${accusedCount > 0 ? `${accusedCount} individual(s) named` : "No individual named in document"})`,
+      `Incident Classification: ${category} • Location: ${place} • Date: ${date}`,
       `Assigned Enquiry Officer: ${eoName}`,
-      `Days in Inquiry: ${daysPending} day(s) elapsed under Police Station ${complaint.policeStation || "Kurukshetra"}`,
+      `Inquiry Age: ${daysPending} day(s) elapsed under Police Station ${complaint.policeStation || "Kurukshetra"}`,
     ];
 
     // 5. Analyze Documents & Documentary Evidence
@@ -282,20 +284,20 @@ export const ComplaintSummaryService = {
       });
     }
 
-    // Notes / Spot visit check
-    const hasSpotVisit = notes.some(n => n.noteType === "SPOT_VISIT") || (complaint.incidentDetails || "").includes("spot");
+    // Notes / Spot visit check - STRICT: only mark completed if an actual spot visit note exists on record
+    const hasSpotVisit = notes.some(n => n.noteType === "SPOT_VISIT");
     const hasWitnessStatements = notes.some(n => n.noteType === "WITNESS_EXAMINATION") || proceduralDocs.some(d => d.fileCategory.includes("STATEMENT"));
     const hasAccusedNotice = notes.some(n => n.noteType === "ACCUSED_EXAMINATION") || proceduralDocs.some(d => d.fileCategory.includes("NOTICE"));
 
-    if (hasSpotVisit || notes.length > 0) {
+    if (hasSpotVisit) {
       completedActions.push({
         id: "comp_act_4",
         category: "FIELD_ACTION",
         categoryLabel: "Spot Inquiry & Note Entry",
-        title: "Field Spot Verification & Enquiry Notes Logged",
-        detail: `${notes.length || 1} field investigation note(s) entered. Location inspected and local context verified.`,
+        title: "Field Spot Verification Completed & Logged",
+        detail: `${notes.filter(n => n.noteType === "SPOT_VISIT").length} spot inspection note(s) on case docket. Location verified.`,
         status: "COMPLETED",
-        completedAt: notes[0]?.createdAt || complaint.updatedAt,
+        completedAt: notes.find(n => n.noteType === "SPOT_VISIT")?.createdAt || complaint.updatedAt,
         officerResponsible: complaint.assignedEoName || "EO",
       });
     } else {
@@ -417,10 +419,22 @@ export const ComplaintSummaryService = {
       Math.max(15, Math.round((completedActions.length / Math.max(totalCheckpoints, 1)) * 100))
     );
 
-    // 8. Compile Executive Texts
-    const workDoneSummary = `अब तक शिकायत दर्ज कर संबंधित धाराओं के तहत प्रारंभिक जांच की प्रक्रिया शुरू की गई है। शिकायतकर्ता ${cName} के प्रारंभिक विवरण व संकलित ${allDocsCount} दस्तावेजी साक्ष्यों को केस डायरी में संलग्न किया गया है। जांच अधिकारी (${eoName}) द्वारा मामले के प्रमुख तथ्यों का सत्यापन किया जा रहा है।`;
+    // 8. Compile Executive Texts - Strictly factual synthesis
+    const docText = allDocsCount > 0 
+      ? `कुल ${allDocsCount} दस्तावेजी साक्ष्य संलग्न हैं।`
+      : `कोई दस्तावेजी साक्ष्य संलग्न नहीं मिला (दस्तावेज़ उपलब्ध नहीं)।`;
+    const eoText = complaint.assignedEoName 
+      ? `जांच अधिकारी (${eoName}) को जांच सौंपी गई है।`
+      : `जांच अधिकारी की नियुक्ति अभी लंबित है।`;
+    const noteText = notes.length > 0
+      ? `${notes.length} जांच नोट केस डायरी में दर्ज हैं।`
+      : `केस डायरी में अभी कोई फील्ड नोट या बयान दर्ज नहीं है।`;
 
-    const pendingWorkSummary = `शेष कार्यवाही में ${pendingActions.map(p => p.title).slice(0, 3).join(", ")} सम्मिलित है। विशेष रूप से अभियुक्तों के आधिकारिक बयान, स्वतंत्र साक्षियों की गवाही और जांच अधिकारी की अंतिम संस्तुति रिपोर्ट प्रस्तुत किया जाना शेष है।`;
+    const workDoneSummary = `शिकायत #${complaint.complaintNumber} दर्ज है। ${cName ? `प्रार्थी: ${cName}।` : "प्रार्थी का नाम दस्तावेज़ में उल्लेख नहीं है।"} ${docText} ${eoText} ${noteText}`;
+
+    const pendingWorkSummary = pendingActions.length > 0
+      ? `लंबित कार्यवाहियों में: ${pendingActions.map(p => p.title).join("; ")} सम्मिलित हैं। जो साक्ष्य या जानकारी उपलब्ध नहीं है, उसका सत्यापन किया जाना बाकी है।`
+      : `सभी प्राथमिक कार्यवाहियां पूर्ण कर ली गई हैं। अंतिम पर्यवेक्षी निर्णय प्रतीक्षित है।`;
 
     const urgentDeadlines: string[] = [];
     const bnssRemainingDays = Math.max(0, 14 - daysPending);
