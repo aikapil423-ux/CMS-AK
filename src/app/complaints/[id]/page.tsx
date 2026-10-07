@@ -2085,10 +2085,10 @@ Certified official record copy.`;
                 </button>
               )}
 
-              {canAssign && (
+              {canAssign && !complaint.assignedEoName && (
                 <div className="border-t border-b border-slate-100 py-1 bg-slate-50/50">
                   <div className="px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                    <span>{complaint.assignedEoName ? "Reassign EO" : "Assign EO"}</span>
+                    <span>Assign EO</span>
                     <span className="text-[9px] font-mono text-slate-400">Rank &amp; Name</span>
                   </div>
                   <div className="max-h-48 overflow-y-auto">
