@@ -470,12 +470,17 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
 export class LegalAssistantService {
   /**
    * Automatically process complaint overview, incident facts, accused, and all documents
-   * to produce deep statutory legal recommendations.
+   * to produce deep statutory legal recommendations (asynchronous with slight UI delay).
    */
   public static async analyzeComplaint(complaint: ComplaintItem): Promise<LegalAnalysisReport> {
-    // Artificial slight async delay to allow smooth animated multi-step scan
     await new Promise((resolve) => setTimeout(resolve, 600));
+    return this.analyzeComplaintSync(complaint);
+  }
 
+  /**
+   * Synchronous legal analysis for instant report generation.
+   */
+  public static analyzeComplaintSync(complaint: ComplaintItem): LegalAnalysisReport {
     // Combine all facts and document texts
     const incidentText = (complaint.incidentDetails || "").toLowerCase();
     const categoryText = (complaint.categoryDisplay || complaint.category || "").toLowerCase();

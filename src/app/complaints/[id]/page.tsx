@@ -82,7 +82,6 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
-import { RecommendationReportModal } from "@/components/complaints/RecommendationReportModal";
 import {
   RecommendationReportType,
   RECOMMENDATION_OPTIONS_CONFIG,
@@ -485,18 +484,21 @@ export default function ComplaintProfilePage() {
   const generateDocDropdownRef = useRef<HTMLDivElement>(null);
   const [generateReportDropdownOpen, setGenerateReportDropdownOpen] = useState(false);
   const generateReportDropdownRef = useRef<HTMLDivElement>(null);
-  const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
-  const [recommendationModalRecType, setRecommendationModalRecType] = useState<RecommendationReportType>("GAMINI");
-  const [editingReportItem, setEditingReportItem] = useState<ComplaintReportItem | null>(null);
-
-  const handleOpenRecommendationModal = (
-    recType: RecommendationReportType = "GAMINI",
-    reportItem: ComplaintReportItem | null = null
+  const handleNavigateToReportDraft = (
+    recType: string = "GAMINI",
+    reportItem?: ComplaintReportItem | null,
+    isNewVersion?: boolean
   ) => {
-    setRecommendationModalRecType(recType);
-    setEditingReportItem(reportItem);
+    if (!complaint) return;
     setGenerateReportDropdownOpen(false);
-    setRecommendationModalOpen(true);
+    let url = `/enquiry-workspace/drafts?complaintId=${encodeURIComponent(complaint.id)}&recommendation=${encodeURIComponent(recType)}`;
+    if (reportItem) {
+      url += `&reportId=${encodeURIComponent(reportItem.id)}`;
+      if (isNewVersion) {
+        url += `&newVersion=true`;
+      }
+    }
+    router.push(url);
   };
 
   const reportIframeRef = useRef<HTMLIFrameElement>(null);
@@ -3019,7 +3021,7 @@ Certified official record copy.`;
                     <Button
                       variant="primary"
                       size="sm"
-                      onClick={() => handleOpenRecommendationModal("GAMINI")}
+                      onClick={() => handleNavigateToReportDraft("GAMINI")}
                       className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white rounded-r-none cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -3059,8 +3061,7 @@ Certified official record copy.`;
                               key={cat.key}
                               type="button"
                               onClick={() => {
-                                setGenerateReportDropdownOpen(false);
-                                handleOpenRecommendationModal(cat.key);
+                                handleNavigateToReportDraft(cat.key);
                               }}
                               className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50/80 transition-colors flex items-center gap-2.5 group cursor-pointer border border-transparent hover:border-amber-200"
                             >
@@ -3224,7 +3225,7 @@ Certified official record copy.`;
                               size="sm"
                               onClick={() => {
                                 const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
-                                handleOpenRecommendationModal(rec, report);
+                                handleNavigateToReportDraft(rec, report, false);
                               }}
                               className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100 cursor-pointer font-semibold"
                               title="Edit this draft report"
@@ -3302,7 +3303,7 @@ Certified official record copy.`;
                               size="sm"
                               onClick={() => {
                                 const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
-                                handleOpenRecommendationModal(rec, report);
+                                handleNavigateToReportDraft(rec, report, true);
                               }}
                               className="text-[11px] h-7 px-2.5 gap-1 border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 cursor-pointer font-semibold"
                               title="Create new version based on this report"
@@ -5167,23 +5168,6 @@ Certified official record copy.`;
         complaint={complaint}
         isOpen={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
-      />
-
-      {/* Official Recommendation Based Report / Draft Generator Modal */}
-      <RecommendationReportModal
-        isOpen={recommendationModalOpen}
-        onClose={() => {
-          setRecommendationModalOpen(false);
-          setEditingReportItem(null);
-        }}
-        complaint={complaint}
-        currentUser={currentUser}
-        existingReport={editingReportItem}
-        initialRecommendation={recommendationModalRecType}
-        onReportSaved={async (updated) => {
-          setComplaint(updated);
-          await loadComplaint();
-        }}
       />
 
 

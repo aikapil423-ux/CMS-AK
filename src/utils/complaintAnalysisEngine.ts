@@ -458,7 +458,42 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
-    case "NCR":
+    case "NCR": {
+      return {
+        classification: "NCR",
+        titleHindi: "असंज्ञेय अपराध रिपोर्ट (u/s 174 BNSS)",
+        titleEnglish: "Non-Cognizable Report (NCR u/s 174 BNSS)",
+        badgeColor: {
+          bg: "bg-purple-50",
+          text: "text-purple-800",
+          border: "border-purple-300",
+        },
+        iconName: "BadgeAlert",
+        rationaleHindi: `जांच व गवाहों के बयानों से साधारण बोलचाल व कहासुनी का मामला पाया गया है। कोई गंभीर चोट या संज्ञेय अपराध नहीं बनता। मामला BNSS की धारा 174 के तहत असंज्ञेय (Non-Cognizable) है।`,
+        rationaleEnglish: `Spot verification and witness statements reveal minor oral altercation without serious hurt or weapons. Matter falls under Section 174 BNSS non-cognizable offence. Roznamcha entry recorded.`,
+        analyzedDocuments,
+        findingsGistHindi: `असंज्ञेय अपराध (NCR)। रोजनामचा आम में प्रविष्टि दर्ज। प्रार्थी को धारा 174(2) BNSS के तहत मजिस्ट्रेट के समक्ष परिवाद दायर करने की सूचना।`,
+        findingsGistEnglish: `Non-cognizable offence recorded in General Diary under Section 174 BNSS. Informant advised to approach competent Magistrate.`,
+        isFirRecommended: false,
+        recommendedActionText: "Record NCR Entry in GD and Consign (u/s 174 BNSS)",
+        proformaFindingsText: {
+          standard_4row: `FINAL REPORT & NON-COGNIZABLE REPORT (NCR U/S 174 BNSS) PROCEEDINGS:\nRespected Sir, preliminary enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted on the spot. Statements of complainant and opposite party ${oppositeParty} were examined along with available records.\n\nEnquiry reveals that minor oral altercation and exchange of heated words occurred between the parties. No weapon was used, nor was any serious or grevious hurt caused. The facts disclosed constitute an offence of non-cognizable nature under Section 174 of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023.\n\nA formal General Diary (GD) entry has been recorded in the Daily Diary of Police Station ${complaint.policeStation || "concerned"}. As per Section 174(2) BNSS, 2023, the informant has been formally briefed and supplied with a copy of this entry to prefer a private complaint before the Learned Judicial Magistrate if so advised.\n\nRECOMMENDATION: In absence of any cognizable offence, police cannot investigate without Magistrate orders. The complaint is recommended to be consigned to records under NCR category (दाखिल दफ्तर अदम वजूद NCR).`,
+          three_column: [
+            {
+              allegation: `Allegations of quarrel and verbal abuse leveled by ${complainantName} against opposite party ${oppositeParty}.`,
+              findings: `Spot inspection and independent neighbor statements reveal simple non-cognizable altercation. No cognizable offence established.`,
+              actionTaken: `Roznamcha GD entry registered under Section 174 BNSS. Complainant informed of remedy before Magistrate. File consigned.`,
+            },
+          ],
+          citizen_detail: {
+            satisfaction: "INFORMED - NCR recorded in Roznamcha. Informed of Section 174(2) BNSS magistrate procedure.",
+            finalReport: `Inquiry conducted into Complaint No. ${compNo}. Matter found non-cognizable under Section 174 BNSS. GD entry recorded. Disposed of.`,
+          },
+          ncr_174: `Inquiry into complaint ${compNo} completed. Offence is non-cognizable. Roznamcha GD entry registered u/s 174 BNSS and complainant notified.`,
+        },
+      };
+    }
+
     case "NO_COGNIZABLE_OFFENCE":
     default: {
       return {

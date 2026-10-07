@@ -46,7 +46,8 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
-import { ComplaintItem, EOOutcome } from "@/types";
+import { ComplaintItem, EOOutcome, LegalAnalysisReport } from "@/types";
+import { LegalAssistantService } from "@/services/legalAssistantService";
 import {
   generateHaryanaPoliceProformaHtml,
   HaryanaPoliceProformaData,
@@ -275,15 +276,231 @@ const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
   },
 };
 
+function mapRecommendationParam(param?: string | null): EnquiryClassificationType | undefined {
+  if (!param) return undefined;
+  const p = param.toUpperCase();
+  if (p === "GAMINI" || p === "JAMINI" || p === "JAMINI_LAND_DISPUTE") return "JAMINI_LAND_DISPUTE";
+  if (p === "DIWANI" || p === "DIWANI_CIVIL_MONEY") return "DIWANI_CIVIL_MONEY";
+  if (p === "NCR") return "NCR";
+  if (p === "FIR" || p === "FIR_RECOMMENDED") return "FIR_RECOMMENDED";
+  if (p === "NIVARAN" || p === "NIVARAK_PREVENTIVE") return "NIVARAK_PREVENTIVE";
+  if (p === "RAZINAMA" || p === "RAJINAMA_COMPROMISE") return "RAJINAMA_COMPROMISE";
+  return undefined;
+}
+
+function generateRow4Findings(
+  found: ComplaintItem,
+  classification: string,
+  legalReport: LegalAnalysisReport,
+  districtName: string
+): string {
+  const compNo = found.complaintNumber;
+  const complainantName = found.complainantName;
+  const oppositeParty = found.accusedList?.[0]?.name || "Opposite Party / Accused";
+  const psName = found.policeStation || `Police Station ${districtName}`;
+  const incidentDateStr = found.incidentDate
+    ? `${found.incidentDate}${found.incidentTime ? ` at ${found.incidentTime}` : ""}`
+    : "[तारीख व समय शिकायत रिकॉर्ड अनुसार]";
+  const incidentPlaceStr = found.incidentPlace || "[घटना स्थल शिकायत रिकॉर्ड अनुसार]";
+
+  // Gather all attached documents & files from Docket
+  const docsList: string[] = [];
+  if (found.attachments && found.attachments.length > 0) {
+    found.attachments.forEach((a) => {
+      docsList.push(`• ${a.name} (${a.category || "Evidence Attachment"}) [Size: ${a.size || "on record"}]`);
+    });
+  }
+  if (found.documents && found.documents.length > 0) {
+    found.documents.forEach((d) => {
+      docsList.push(`• ${d.fileName} (${d.fileCategory || "Docket Document"}) [${d.fileSize || "on record"}]`);
+    });
+  }
+
+  const isFir = classification === "FIR" || classification === "FIR_RECOMMENDED";
+  const isGamini = classification === "GAMINI" || classification === "JAMINI_LAND_DISPUTE" || classification === "JAMINI";
+  const isDiwani = classification === "DIWANI" || classification === "DIWANI_CIVIL_MONEY";
+  const isNcr = classification === "NCR";
+  const isNivaran = classification === "NIVARAN" || classification === "NIVARAK_PREVENTIVE";
+  const isRazinama = classification === "RAZINAMA" || classification === "RAJINAMA_COMPROMISE";
+
+  // Build section listings from Acts & Sections knowledge base
+  const actsBreakdown = (legalReport.suggestedSections && legalReport.suggestedSections.length > 0)
+    ? legalReport.suggestedSections.map((sec, idx) => {
+        return `${idx + 1}. ${sec.actShortName}: ${sec.sectionNumber} - "${sec.sectionTitle}" (Bare Act Page No. ${sec.pageNumber})
+   - Classification: ${sec.cognizable}, ${sec.bailable}, Triable by: ${sec.triableBy}
+   - Prescribed Punishment: ${sec.punishment}
+   - Factual Justification: ${sec.reason}`;
+      }).join("\n\n")
+    : `1. The Bharatiya Nyaya Sanhita, 2023 (BNS, 2023): Substantive Cognizable Sections
+   - Prescribed Punishment: As per statutory schedule
+   - Factual Justification: Prima facie commission of cognizable offence substantiated through preliminary spot enquiry and evidence.`;
+
+  const sectionsShortList = legalReport.suggestedSections?.length
+    ? legalReport.suggestedSections.map((s) => `${s.sectionNumber} ${s.actShortName}`).join(", ")
+    : "applicable sections of BNS, 2023";
+
+  if (isFir) {
+    return `FINAL ENQUIRY REPORT & STATUTORY FINDINGS (COGNIZABLE OFFENCE SUBSTANTIATED)
+
+Respected Sir,
+The preliminary enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted by me on the spot at ${incidentPlaceStr}. Statements of the complainant, available eye-witnesses, and local residents were recorded, and physical inspection was carried out.
+
+I. COMPLAINT OVERVIEW & INCIDENT VERIFICATION:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Occurrence Date & Place: ${incidentDateStr} at ${incidentPlaceStr}
+• Factual Substance: ${found.complaintDescription || found.incidentDetails || "The incident narrative and allegations on record were verified through spot inspection and witness interrogation."}
+
+II. SCRUTINY OF ATTACHED DOCUMENTS & EVIDENTIARY RECORDS:
+${docsList.length > 0 ? `The following documents submitted in the complaint docket were verified:\n${docsList.join("\n")}` : "Scrutiny of complaint statement, witness depositions and case docket records conducted (No separate external documentary files attached in docket)."}
+Evidentiary Scrutiny: Scrutiny of the medical/transactional/witness material on record corroborates the complainant's averments and establishes prima facie commission of unlawful penal acts by opposite party ${oppositeParty}.
+
+III. STATUTORY ACTS & SECTIONS APPLICABLE (PROCESSED FROM ACTS & SECTIONS BARE ACTS):
+Evaluation of the verified facts and documentary evidence against statutory provisions of the new criminal laws substantiates prima facie commission of the following offences:
+
+${actsBreakdown}
+
+IV. STATUTORY PROCEDURAL MANDATES & LEGAL COMPLIANCE:
+• Section 173(1) BNSS, 2023 & Lalita Kumari v. Govt of UP (2014) 2 SCC 1: The Hon'ble Supreme Court Constitution Bench has ruled that registration of FIR is mandatory under Section 173(1) BNSS if information discloses commission of a cognizable offence.
+• Section 63(4) Bharatiya Sakshya Adhiniyam, 2023: Digital and electronic records on docket have been marked for statutory certificate.
+• Section 35(3) BNSS, 2023: Notice of appearance to be issued to named accused for custodial/formal investigation.
+
+V. FINAL RECOMMENDATION & ACTION TAKEN:
+In view of the above substantiated facts, corroborated documentary evidence, and attracted penal sections, it is respectfully recommended that:
+(1) Regular First Information Report (FIR) under ${sectionsShortList} be registered immediately at ${psName}.
+(2) Investigation be entrusted to an Investigating Officer for detailed investigation, scene of crime plan, and further proceedings under BNSS, 2023.
+
+Report is submitted for approval and registration of FIR.`;
+  }
+
+  if (isGamini) {
+    return `FINAL ENQUIRY REPORT & REVENUE PROCEEDINGS (LAND & REVENUE DEMARCATION DISPUTE)
+
+Respected Sir,
+Preliminary field enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted on the spot. Both the complainant and opposite party ${oppositeParty} were joined in the enquiry and their statements were recorded.
+
+I. COMPLAINT OVERVIEW & SPOT INSPECTION:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Occurrence Details: Regarding agricultural land / plot boundary demarcation at ${incidentPlaceStr}.
+• Factual Scrutiny: ${found.complaintDescription || found.incidentDetails || "Dispute between adjoining land holders regarding boundary line and passage."}
+
+II. SCRUTINY OF REVENUE DOCUMENTS & RECORDS:
+${docsList.length > 0 ? `The following records submitted in docket were scrutinized:\n${docsList.join("\n")}` : "Revenue Khasra details, demarcation applications, and spot statements on docket were scrutinized."}
+Record Verification: Scrutiny of land revenue records, Patwari demarcation reports, and local inquiries reveal that this dispute is fundamentally over the boundary line, Khasra demarcation, and passage between adjacent plots. Neither party has caused any cognizable hurt, nor is there any criminal trespass with penal intent established.
+
+III. STATUTORY PROVISIONS & JURISDICTIONAL EVALUATION (ACTS & SECTIONS):
+• Haryana Land Revenue Act / Revenue Demarcation Procedure: Boundary demarcation (निशानदेही) and passage disputes fall squarely within the statutory jurisdiction of the Revenue Authorities (Tehsildar / Halqa Patwari / Kanungo).
+• Bharatiya Nyaya Sanhita, 2023 & BNSS 2023: No cognizable criminal offence is made out. Civil boundary disputes between co-owners or neighbors do not attract penal provisions.
+
+IV. FINAL RECOMMENDATION & ACTION TAKEN:
+As no cognizable criminal offence is made out, both parties have been formally advised to obtain lawful demarcation through the Revenue Tehsildar. No police cognizance is warranted. Matter is recommended to be consigned to the record room (दाखिल दफ्तर).`;
+  }
+
+  if (isDiwani) {
+    return `FINAL ENQUIRY REPORT & PROCEEDINGS (CIVIL MONETARY TRANSACTION & CONTRACTUAL DISPUTE)
+
+Respected Sir,
+Enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted. Both parties appeared and furnished their account details, receipts, and mutual financial explanations.
+
+I. COMPLAINT OVERVIEW & TRANSACTION INQUIRY:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Nature of Dispute: Unpaid commercial dues / monetary loan recovery / business reconciliation.
+• Factual Gist: ${found.complaintDescription || found.incidentDetails || "Financial transaction entered into between parties with mutual consent."}
+
+II. SCRUTINY OF FINANCIAL DOCUMENTS & LEDGERS:
+${docsList.length > 0 ? `The following financial documents submitted in docket were analyzed:\n${docsList.join("\n")}` : "Bank account statements, transaction receipts, and promissory notes on docket were analyzed."}
+Verification of Accounts: Enquiry establishes that the dispute centers around pending business dues, work contract payments, and monetary reconciliation between the parties. The initial monetary transaction was conducted by mutual consent, and there is no evidence of fraudulent dishonest inducement from inception or forgery of documents.
+
+III. STATUTORY PROVISIONS & LEGAL PRINCIPLES (ACTS & SECTIONS):
+• Indian Contract Act, 1872 & Code of Civil Procedure, 1908: Purely civil dispute for recovery of money and settlement of accounts, triable by the competent Civil Court.
+• Hon'ble Supreme Court Jurisprudence (Dalip Kaur v. Jagnar Singh; Vesa Holdings): Breach of contract or unpaid commercial debt cannot be given the cloak of criminal offence under BNS Section 318(4) in the absence of dishonest intention at the beginning.
+
+IV. FINAL RECOMMENDATION & ACTION TAKEN:
+No cognizable criminal offence is substantiated. Parties have been advised to approach the competent Civil Court for recovery. Recommended for file closure / consigned to record room (दाखिल दफ्तर दीवानी मामला).`;
+  }
+
+  if (isNcr) {
+    return `FINAL ENQUIRY REPORT & GENERAL DIARY PROCEEDINGS (NON-COGNIZABLE OCCURRENCE)
+
+Respected Sir,
+Enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted. Statements of complainant and opposite party ${oppositeParty} were recorded.
+
+I. COMPLAINT OVERVIEW & OCCURRENCE INQUIRY:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Occurrence Date & Place: ${incidentDateStr} at ${incidentPlaceStr}
+• Nature: Verbal dispute, heated arguments, and mutual insult without grievous hurt or weapon.
+
+II. SCRUTINY OF DOCUMENTS & EVIDENCE:
+${docsList.length > 0 ? `Documents inspected on docket:\n${docsList.join("\n")}` : "Oral statements and local enquiry on docket examined."}
+Verification: No medico-legal report (MLR), weapon, or cognizable injury was found. The dispute involves minor verbal insult / non-cognizable differences.
+
+III. STATUTORY PROVISIONS APPLICABLE (ACTS & SECTIONS):
+• Bharatiya Nyaya Sanhita, 2023: Offence disclosed falls under non-cognizable categories (e.g. Sections 351(1), 352 BNS).
+• Section 174(1) BNSS, 2023 (Information as to non-cognizable cases): The substance of information has been entered in the General Diary (GD Roznamcha) of the police station.
+• Section 174(2) BNSS, 2023: No police officer shall investigate a non-cognizable case without an order of a Magistrate having jurisdiction.
+
+IV. FINAL RECOMMENDATION & ACTION TAKEN:
+The occurrence has been recorded in the Station Daily Diary (GD Entry) under Section 174 BNSS. Complainant has been formally informed of their right to approach the Learned Magistrate under Section 174(2) BNSS. Complaint file consigned as NCR.`;
+  }
+
+  if (isNivaran) {
+    return `FINAL ENQUIRY REPORT & PREVENTIVE PROCEEDINGS (BNSS SECTIONS 126 / 129 / 170)
+
+Respected Sir,
+Enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted on the spot. Statements of both parties and independent local neighbors were recorded.
+
+I. COMPLAINT OVERVIEW & SPOT VERIFICATION:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Occurrence Location: ${incidentPlaceStr}
+• Assessment: Ongoing friction, repeated verbal confrontations, and imminent apprehension of breach of peace.
+
+II. SCRUTINY OF DOCUMENTS & LOCAL WITNESS DEPOSITIONS:
+${docsList.length > 0 ? `Documents & evidence inspected:\n${docsList.join("\n")}` : "Spot inspection statements and neighborhood verification on docket examined."}
+Situation Scrutiny: Minor altercations and heated verbal arguments take place between the parties due to previous petty disputes. While no cognizable physical crime has occurred so far, there is an imminent threat to public peace and tranquility.
+
+III. STATUTORY PREVENTIVE PROVISIONS (ACTS & SECTIONS):
+• Section 126 BNSS, 2023: Security for keeping the peace in other cases where breach of peace is apprehended.
+• Sections 129 / 170 BNSS, 2023: Preventive action and submission of Kalandra to bind down parties before the Executive Magistrate.
+
+IV. FINAL RECOMMENDATION & ACTION TAKEN:
+Preventive Kalandra under Section 126/170 BNSS, 2023 is submitted before the Learned Executive Magistrate for binding down both parties with sureties to maintain good behavior and public peace. Complaint file may be consigned to record room.`;
+  }
+
+  // Default: Razinama / Mutual Accord
+  return `FINAL ENQUIRY REPORT & PROCEEDINGS (MUTUAL ACCORD & RAJINAMA)
+
+Respected Sir,
+Enquiry into Complaint No. ${compNo} lodged by ${complainantName} was conducted. Complainant ${complainantName} and opposite party ${oppositeParty} appeared along with respectable members of their village/community and family elders.
+
+I. COMPLAINT OVERVIEW & INQUIRY CONVENING:
+• Complaint Reference: No. ${compNo}, Police Station: ${psName}, District: ${districtName}
+• Original Gist: ${found.subject || found.complaintDescription || "Mutual misunderstandings and disputes between parties."}
+
+II. SCRUTINY OF DOCUMENTS & COMPROMISE DEED:
+${docsList.length > 0 ? `Documents & records submitted on docket:\n${docsList.join("\n")}` : "Written compromise deed (Iqrarnama / Raazinama) and witness statements submitted on docket."}
+Compromise Verification: Both parties discussed their grievances and mutually sorted out all differences and misunderstandings amicably without any threat, coercion, undue influence or greed. A written compromise deed (Iqrarnama / Raazinama) has been voluntarily executed and submitted on record along with signatures of respectable witnesses.
+
+III. STATUTORY PROVISIONS & STATEMENTS OF SATISFACTION (ACTS & SECTIONS):
+• Section 173 BNSS, 2023 / Compounding of Disputes: The complainant has furnished a written statement stating that she/he has no subsisting grudge or grievance against the opposite party and voluntarily withdraws the complaint, requesting file closure.
+• Absence of Cognizable Offence: In view of the amicable settlement, no cognizable offence subsists requiring police investigation.
+
+IV. FINAL RECOMMENDATION & ACTION TAKEN:
+In view of the genuine written compromise deed and voluntary statements of satisfaction placed on record, the matter has been peacefully resolved. Recommended that the complaint be disposed of on mutual accord and consigned to the record room (दाखिल दफ्तर राजीनामा).`;
+}
+
 function EnquiryDraftsContent() {
   const { currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const complaintIdParam = searchParams.get("complaintId");
+  const recommendationParam = searchParams.get("recommendation");
+  const reportIdParam = searchParams.get("reportId");
+  const newVersionParam = searchParams.get("newVersion") === "true";
   const categoryParam = searchParams.get("category");
 
   const initialFormat: EnquiryProformaType =
-    categoryParam && TEMPLATE_PRESETS[categoryParam as EnquiryProformaType]
+    complaintIdParam || recommendationParam
+      ? "standard_4row"
+      : categoryParam && TEMPLATE_PRESETS[categoryParam as EnquiryProformaType]
       ? (categoryParam as EnquiryProformaType)
       : categoryParam?.includes("ncr") || categoryParam?.includes("assault")
       ? "ncr_174"
@@ -294,6 +511,8 @@ function EnquiryDraftsContent() {
       : "standard_4row";
 
   const [activeFormat, setActiveFormat] = useState<string>(initialFormat);
+  const [editingReportId, setEditingReportId] = useState<string | null>(reportIdParam || null);
+  const [isNewVersionMode, setIsNewVersionMode] = useState<boolean>(newVersionParam);
   const [complaint, setComplaint] = useState<ComplaintItem | null>(null);
   const [analysisResult, setAnalysisResult] = useState<ComplaintAnalysisResult | null>(null);
   const [selectedClassification, setSelectedClassification] = useState<EnquiryClassificationType | "">("");
@@ -417,34 +636,89 @@ function EnquiryDraftsContent() {
   // Helper function to intelligently apply complaint and its legal analysis findings
   const applyComplaintWithAnalysis = (
     found: ComplaintItem,
-    fmtKey: string = activeFormat,
-    customClass?: EnquiryClassificationType
+    fmtKey: string = activeFormat || "standard_4row",
+    customClass?: EnquiryClassificationType,
+    targetReportId?: string | null,
+    isNewVer?: boolean
   ) => {
     setComplaint(found);
+    const mappedCustom = customClass || mapRecommendationParam(recommendationParam);
     const analysis = analyzeComplaintForEnquiry(found);
-    if (customClass) {
-      analysis.classification = customClass;
-      analysis.isFirRecommended = customClass === "FIR_RECOMMENDED";
+    if (mappedCustom) {
+      analysis.classification = mappedCustom;
+      analysis.isFirRecommended = mappedCustom === "FIR_RECOMMENDED" || mappedCustom === "FIR";
     }
     setAnalysisResult(analysis);
-    setSelectedClassification(customClass || analysis.classification);
+    const activeClass = mappedCustom || analysis.classification;
+    setSelectedClassification(activeClass);
 
     const districtName = (found.district || currentUser.district || "PANIPAT").toUpperCase();
+    setHeaderLeft("POLICE DEPARTMENT");
     setHeaderRight(`DISTRICT ${districtName}`);
     setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
 
-    const primaryAccused = found.accusedList?.[0] || {};
-    const complainantInfo = `${found.complainantName}${found.complainantFatherSpouse ? ` s/o / w/o ${found.complainantFatherSpouse}` : ""}${found.complainantAddress ? `, r/o ${found.complainantAddress}` : ""}${found.complainantMobile ? ` (Mob: ${found.complainantMobile})` : ""}`;
-    const accusedInfo = `${primaryAccused.name || "Unknown"}${primaryAccused.fatherName ? ` s/o ${primaryAccused.fatherName}` : ""}${primaryAccused.address ? `, r/o ${primaryAccused.address}` : ""}${primaryAccused.phone ? ` (Mob: ${primaryAccused.phone})` : ""}`;
+    // If reportId is provided, check if existing report exists
+    const existingReport = targetReportId ? found.reports?.find((r) => r.id === targetReportId) : null;
+    if (existingReport) {
+      setEditingReportId(existingReport.id);
+      setIsNewVersionMode(Boolean(isNewVer));
+      if (isNewVer) {
+        const nextVer = (existingReport.versionNumber || 1) + 1;
+        setTitle(`${existingReport.title.replace(/\s*\(v\d+\)$/i, "")} (v${nextVer})`);
+      } else {
+        setTitle(existingReport.title);
+      }
+    }
+
+    // Process Acts & Sections deeply
+    const legalReport = found.legalAnalysis || LegalAssistantService.analyzeComplaintSync(found);
+
+    // Build Row 1: Complainant (strictly anti-fabrication)
+    const compFatherSpouse = found.complainantFatherSpouse
+      ? ` s/o / w/o / d/o ${found.complainantFatherSpouse}`
+      : " [विवरण शिकायत रिकॉर्ड में उपलब्ध नहीं]";
+    const compAddress = found.complainantAddress
+      ? `, r/o ${found.complainantAddress}`
+      : ", r/o [पता शिकायत रिकॉर्ड में उपलब्ध नहीं]";
+    const compMobile = found.complainantMobile
+      ? ` (Mob: ${found.complainantMobile})`
+      : " (Mob: [मोबाइल नंबर उपलब्ध नहीं])";
+    const complainantInfo = `${found.complainantName}${compFatherSpouse}${compAddress}${compMobile}`;
+
+    // Build Row 2: Gist of Complaint (strictly actual facts)
+    const gistInfo = found.subject && found.subject.trim().length > 0
+      ? found.subject
+      : found.complaintDescription && found.complaintDescription.trim().length > 0
+      ? found.complaintDescription
+      : "Regarding dispute and matter reported in complaint docket.";
+
+    // Build Row 3: Opposite Party / Accused Details (strictly anti-fabrication)
+    let accusedInfo = "";
+    if (found.accusedList && found.accusedList.length > 0) {
+      accusedInfo = found.accusedList.map((a, i) => {
+        const aFather = a.fatherName ? ` s/o ${a.fatherName}` : " [पिता का नाम उपलब्ध नहीं]";
+        const aAddr = a.address ? `, r/o ${a.address}` : ", r/o [पता उपलब्ध नहीं]";
+        const aPhone = a.phone ? ` (Mob: ${a.phone})` : "";
+        const aAlias = a.alias ? ` alias ${a.alias}` : "";
+        return `${found.accusedList && found.accusedList.length > 1 ? `${i + 1}. ` : ""}${a.name}${aAlias}${aFather}${aAddr}${aPhone}`;
+      }).join("\n");
+    } else {
+      accusedInfo = "[नामजद अथवा अज्ञात विपक्षी / विस्तृत पहचान शिकायत रिकॉर्ड में दर्ज नहीं]";
+    }
+
+    // Build Row 4: Findings & Action Taken
+    // Process Overview + Documents + Acts & Sections!
+    const row4Content = generateRow4Findings(found, activeClass, legalReport, districtName);
 
     if (fmtKey === "standard_4row") {
       setColumns([]);
       setRows([
         { id: "row_complainant", label: "Complainant / Informant", cells: [complainantInfo] },
-        { id: "row_gist", label: "Gist / Substance of Complaint", cells: [found.subject || found.complaintDescription || "Regarding dispute between parties."] },
+        { id: "row_gist", label: "Gist / Substance of Complaint", cells: [gistInfo] },
         { id: "row_accused", label: "Opposite Party / Accused Details", cells: [accusedInfo] },
-        { id: "row_findings", label: "Enquiry Findings & Action Taken", cells: [analysis.proformaFindingsText.standard_4row] },
+        { id: "row_findings", label: "Enquiry Findings & Action Taken", cells: [row4Content] },
       ]);
+      setClosingLine("Report is submitted for perusal and orders.");
     } else if (fmtKey === "three_column") {
       setColumns([
         "Allegations Leveled by Complainant (Point-wise)",
@@ -470,7 +744,7 @@ function EnquiryDraftsContent() {
       setRows([
         { id: "row_ncr_date", label: "Date & GD Entry Reference", cells: [`Roznamcha GD Reference Dated ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`] },
         { id: "row_ncr_parties", label: "Complainant & Opposite Party Details", cells: [`Complainant: ${complainantInfo}\nOpposite Party: ${accusedInfo}`] },
-        { id: "row_ncr_findings", label: "General Diary Entry & Enquiry Report Details", cells: [analysis.proformaFindingsText.ncr_174] },
+        { id: "row_ncr_findings", label: "General Diary Entry & Enquiry Report Details", cells: [row4Content] },
       ]);
     }
 
@@ -484,7 +758,7 @@ function EnquiryDraftsContent() {
   // Switch classification override
   const handleChangeClassification = (newClass: EnquiryClassificationType) => {
     if (!complaint) return;
-    applyComplaintWithAnalysis(complaint, activeFormat, newClass);
+    applyComplaintWithAnalysis(complaint, activeFormat, newClass, editingReportId, isNewVersionMode);
   };
 
   // Forward Report to SHO ID for Review / Approval
@@ -531,7 +805,14 @@ function EnquiryDraftsContent() {
         if (complaintIdParam) {
           const found = await ComplaintService.getComplaintById(complaintIdParam);
           if (found) {
-            applyComplaintWithAnalysis(found, initialFormat);
+            const mappedRec = mapRecommendationParam(recommendationParam);
+            applyComplaintWithAnalysis(
+              found,
+              "standard_4row",
+              mappedRec,
+              reportIdParam,
+              newVersionParam
+            );
           }
         }
       } catch (err) {
@@ -539,7 +820,7 @@ function EnquiryDraftsContent() {
       }
     }
     initComplaints();
-  }, [complaintIdParam]);
+  }, [complaintIdParam, recommendationParam, reportIdParam, newVersionParam]);
 
   // Upload Document and Convert to a Brand New Editable Proforma Tab
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -845,33 +1126,48 @@ function EnquiryDraftsContent() {
       const docText = documentRef.current?.innerText || "";
       const reportTitle = `${title} - ${targetComp.complaintNumber}`;
 
-      const isFir = (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED";
+      const isFir =
+        (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" ||
+        selectedClassification === "FIR";
       const outcome: EOOutcome = isFir ? "FIR Recommend" : "Complete";
+
+      const findingSummary =
+        rows.find((r) => r.id === "row_findings")?.cells[0]?.substring(0, 300) ||
+        rows[rows.length - 1]?.cells[0]?.substring(0, 300) ||
+        "Enquiry completed";
+
+      const reportPayload = {
+        id: editingReportId && !isNewVersionMode ? editingReportId : undefined,
+        title: reportTitle,
+        reportType: activeFormat,
+        reportTypeLabel:
+          activeFormat === "standard_4row"
+            ? "1. Standard 4-Row Enquiry Report"
+            : customDrafts[activeFormat]?.name ||
+              TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name ||
+              "Enquiry Report",
+        dispatchNo: title,
+        generatedDate: new Date().toISOString().split("T")[0],
+        officerName: officerName || currentUser.name || "Enquiry Officer",
+        officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+        officerPno: currentUser.pno || "PNO-23841",
+        conclusionSummary: findingSummary,
+        content: docText,
+        contentHtml: reportHtml,
+        fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
+        fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
+        fileFormat: "HTML",
+        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
+        isUploaded: false,
+        recommendationType: (selectedClassification as any) || analysisResult?.classification || (isFir ? "FIR" : "GAMINI"),
+        isFirRecommended: isFir,
+        analysisClassification: analysisResult?.titleHindi || (isFir ? "संज्ञेय अपराध - एफआईआर की सिफारिश" : "जांच रिपोर्ट"),
+        analysisRationale: analysisResult?.rationaleHindi,
+      };
 
       const updatedComp = await ComplaintService.submitEoReportWithOutcome(
         targetComp.id,
-        {
-          title: reportTitle,
-          reportType: activeFormat,
-          reportTypeLabel: customDrafts[activeFormat]?.name || TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name || "Enquiry Report",
-          dispatchNo: title,
-          generatedDate: new Date().toISOString().split("T")[0],
-          officerName: officerName || currentUser.name || "Enquiry Officer",
-          officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
-          officerPno: currentUser.pno || "PNO-23841",
-          conclusionSummary: rows[rows.length - 1]?.cells[0]?.substring(0, 200) || "Enquiry completed",
-          content: docText,
-          contentHtml: reportHtml,
-          fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
-          fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
-          fileFormat: "HTML",
-          dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
-          isUploaded: false,
-          recommendationType: (selectedClassification as any) || analysisResult?.classification || "NO_COGNIZABLE_OFFENCE",
-          isFirRecommended: isFir,
-          analysisClassification: analysisResult?.titleHindi || (isFir ? "संज्ञेय अपराध - एफआईआर की सिफारिश" : "जांच रिपोर्ट"),
-          analysisRationale: analysisResult?.rationaleHindi,
-        },
+        reportPayload,
         outcome,
         officerName || currentUser.name || "Enquiry Officer",
         officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
