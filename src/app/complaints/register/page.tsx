@@ -232,8 +232,11 @@ export default function RegisterComplaintPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
-  // SHO Specific: Direct Assign EO states (Shown only when registered from SHO ID)
+  // Permissions: Only MHC, SHO, and Superior officers can register complaints
+  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
   const isSho = currentUser ? (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") : false;
+  const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
   const [shouldAssignEoNow, setShouldAssignEoNow] = useState(false);
   const [selectedEoId, setSelectedEoId] = useState("");
   const [directionTemplate, setDirectionTemplate] = useState("SPOT_VERIFY");
@@ -2334,6 +2337,29 @@ export default function RegisterComplaintPage() {
           isOpen={showReceiptModal}
           onClose={() => setShowReceiptModal(false)}
         />
+      </div>
+    );
+  }
+
+  // Access Guard: Only MHC, SHO, and Superior officers can register complaints
+  if (!canRegisterComplaint) {
+    return (
+      <div className="max-w-2xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-inner">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Access Restricted</h2>
+        <p className="text-sm text-slate-600 leading-relaxed">
+          Complaint registration is restricted to Station MHC, SHO, and Supervisory officers.
+          As an Enquiry Officer ({currentUser?.name}), your role is to conduct enquiry and submit enquiry reports on assigned cases.
+        </p>
+        <div className="pt-2">
+          <Link href="/complaints">
+            <Button variant="primary" className="bg-[#0b192c] hover:bg-slate-800 text-white cursor-pointer">
+              Return to Complaints Register
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }

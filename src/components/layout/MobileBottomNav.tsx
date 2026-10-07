@@ -15,6 +15,7 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface MobileNavItem {
   name: string;
@@ -25,9 +26,16 @@ interface MobileNavItem {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const { currentUser } = useAuth();
 
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+
+  // Only MHC, SHO, and Superior officers can register complaints
+  const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
+  const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
+  const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
 
   // Navigation items strictly for Roznamcha GD Module
   const roznamchaItems: MobileNavItem[] = [
@@ -42,7 +50,9 @@ export function MobileBottomNav() {
   const complaintItems: MobileNavItem[] = [
     { name: "Complaints", href: "/complaints", icon: FileText },
     { name: "Enquiry", href: "/enquiry-workspace", icon: UserCheck },
-    { name: "Register", href: "/complaints/register", icon: PlusCircle, isPrimaryAction: true },
+    ...(canRegisterComplaint
+      ? [{ name: "Register", href: "/complaints/register", icon: PlusCircle, isPrimaryAction: true }]
+      : []),
     { name: "CM Window", href: "/complaints?priority=CM_WINDOW_VIP", icon: Flame },
     { name: "Modules", href: "/", icon: LayoutGrid },
   ];

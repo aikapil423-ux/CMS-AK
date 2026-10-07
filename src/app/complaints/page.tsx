@@ -36,6 +36,7 @@ import {
   Scale,
   SlidersHorizontal,
   Columns3,
+  PlusCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -151,9 +152,11 @@ function ComplaintListContent() {
 
   const isAllSelected = selectedStatuses.length === ALL_STATUS_KEYS.length;
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
-  const isSho = currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1";
-  const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "SP_DISTRICT");
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isSho = currentUser.role === "SHO" || currentUser.id === "usr_sho_1";
+  const isSuperior = currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN";
+  const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
   const eoFilterParam = isEo ? (currentUser.pno || currentUser.name) : undefined;
 
   // Column Selection Checkboxes state
@@ -656,6 +659,19 @@ function ComplaintListContent() {
             Station intake, preliminary verification, and enquiry monitoring
           </p>
         </div>
+
+        {canRegisterComplaint && (
+          <Link href="/complaints/register">
+            <Button
+              size="sm"
+              variant="danger"
+              className="gap-1.5 text-xs font-bold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs self-start sm:self-auto"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Register Complaint</span>
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Officer Persona & Assignment Scope Notice Banner */}
