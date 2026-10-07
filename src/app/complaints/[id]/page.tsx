@@ -54,6 +54,10 @@ import {
   Download,
   Edit3,
   Table,
+  Banknote,
+  Handshake,
+  ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -78,6 +82,11 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
+import { RecommendationReportModal } from "@/components/complaints/RecommendationReportModal";
+import {
+  RecommendationReportType,
+  RECOMMENDATION_OPTIONS_CONFIG,
+} from "@/services/recommendationReportService";
 
 type ActiveTab = "overview" | "documents" | "legal_assistant" | "summary" | "links" | "reports" | "history" | "confidential_dossier";
 
@@ -191,28 +200,46 @@ const TEMPLATE_DROPDOWN_OPTIONS = [
 
 const REPORT_DROPDOWN_OPTIONS = [
   {
-    key: "standard_4row",
-    label: "1. Standard 4-Row Enquiry Report (Police Proforma)",
-    desc: "Complainant, Gist, Opposite Party & Enquiry Findings",
+    key: "GAMINI" as RecommendationReportType,
+    label: "1. Gamini",
+    desc: "Land & Boundary Demarcation Dispute / राजस्व ज़मीनी विवाद",
+    icon: Landmark,
+    badgeBg: "bg-amber-50 text-amber-800 border-amber-300",
+  },
+  {
+    key: "DIWANI" as RecommendationReportType,
+    label: "2. Diwani",
+    desc: "Civil & Monetary Dealing Dispute / दीवानी लेन-देन",
+    icon: Banknote,
+    badgeBg: "bg-blue-50 text-blue-800 border-blue-300",
+  },
+  {
+    key: "NCR" as RecommendationReportType,
+    label: "3. NCR",
+    desc: "Non-Cognizable Report u/s 174 BNSS / असंज्ञेय रिपोर्ट",
+    icon: FileText,
+    badgeBg: "bg-purple-50 text-purple-800 border-purple-300",
+  },
+  {
+    key: "FIR" as RecommendationReportType,
+    label: "4. FIR",
+    desc: "Cognizable Offence - Regular FIR Recommendation / संज्ञेय अपराध",
+    icon: ShieldAlert,
+    badgeBg: "bg-red-50 text-red-800 border-red-300",
+  },
+  {
+    key: "NIVARAN" as RecommendationReportType,
+    label: "5. Nivaran",
+    desc: "Preventive Action u/s 126/170 BNSS & Disposal / निवारक व निस्तारण",
     icon: Shield,
+    badgeBg: "bg-indigo-50 text-indigo-800 border-indigo-300",
   },
   {
-    key: "three_column",
-    label: "2. Point-wise Comparative Report (3-Column Proforma)",
-    desc: "Allegations, Enquiry Findings & Police Action Taken",
-    icon: Table,
-  },
-  {
-    key: "citizen_detail",
-    label: "3. Citizen Grievance / CM Window Enquiry Report",
-    desc: "Citizen Details, Allegations & Satisfaction Docket",
-    icon: UserCheck,
-  },
-  {
-    key: "ncr_174",
-    label: "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-    desc: "Station General Diary Roznamcha Entry & Enquiry",
-    icon: BadgeAlert,
+    key: "RAZINAMA" as RecommendationReportType,
+    label: "6. Razinama",
+    desc: "Mutual Compromise & Settlement Accord / राजीनामा / आपसी समझौता",
+    icon: Handshake,
+    badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-300",
   },
 ];
 
@@ -458,6 +485,20 @@ export default function ComplaintProfilePage() {
   const generateDocDropdownRef = useRef<HTMLDivElement>(null);
   const [generateReportDropdownOpen, setGenerateReportDropdownOpen] = useState(false);
   const generateReportDropdownRef = useRef<HTMLDivElement>(null);
+  const [recommendationModalOpen, setRecommendationModalOpen] = useState(false);
+  const [recommendationModalRecType, setRecommendationModalRecType] = useState<RecommendationReportType>("GAMINI");
+  const [editingReportItem, setEditingReportItem] = useState<ComplaintReportItem | null>(null);
+
+  const handleOpenRecommendationModal = (
+    recType: RecommendationReportType = "GAMINI",
+    reportItem: ComplaintReportItem | null = null
+  ) => {
+    setRecommendationModalRecType(recType);
+    setEditingReportItem(reportItem);
+    setGenerateReportDropdownOpen(false);
+    setRecommendationModalOpen(true);
+  };
+
   const reportIframeRef = useRef<HTMLIFrameElement>(null);
   const [uploadReportModalOpen, setUploadReportModalOpen] = useState(false);
   const [uploadReportOutcome, setUploadReportOutcome] = useState<EOOutcome>("Complete");
@@ -2974,28 +3015,43 @@ Certified official record copy.`;
                 </Button>
 
                 <div className="relative" ref={generateReportDropdownRef}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setGenerateReportDropdownOpen(!generateReportDropdownOpen)}
-                    className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white cursor-pointer shadow-xs"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Generate Report</span>
-                    <ChevronDown className={`w-3 h-3 text-amber-300 transition-transform duration-200 ${generateReportDropdownOpen ? "rotate-180" : ""}`} />
-                  </Button>
+                  <div className="inline-flex rounded-lg shadow-xs">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleOpenRecommendationModal("GAMINI")}
+                      className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white rounded-r-none cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Generate Report</span>
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setGenerateReportDropdownOpen(!generateReportDropdownOpen)}
+                      className="px-2 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white border-l border-slate-700 rounded-r-lg transition-colors cursor-pointer"
+                      title="Select Recommendation Report Type"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 text-amber-300 transition-transform duration-200 ${generateReportDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
 
                   {generateReportDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-84 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in-50 zoom-in-95">
-                      <div className="px-3 py-2 border-b border-slate-100">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
-                          Select Enquiry Report Category
-                        </p>
-                        <p className="text-[10px] text-slate-500">
-                          Preloaded with Complaint {complaint.complaintNumber}
-                        </p>
+                    <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 z-40 animate-in fade-in-50 zoom-in-95">
+                      <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                            <span>Select Recommendation Report (6 Types)</span>
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            Preloaded with Complaint #{complaint.complaintNumber}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-mono bg-amber-50 text-amber-900 px-1.5 py-0.5 rounded border border-amber-200">
+                          Automatic Draft
+                        </span>
                       </div>
-                      <div className="py-1">
+                      <div className="py-1.5 space-y-1">
                         {REPORT_DROPDOWN_OPTIONS.map((cat) => {
                           const IconComponent = cat.icon;
                           return (
@@ -3004,24 +3060,39 @@ Certified official record copy.`;
                               type="button"
                               onClick={() => {
                                 setGenerateReportDropdownOpen(false);
-                                router.push(`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${cat.key}`);
+                                handleOpenRecommendationModal(cat.key);
                               }}
-                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50 hover:text-amber-900 transition-colors flex items-center gap-2.5 group cursor-pointer"
+                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50/80 transition-colors flex items-center gap-2.5 group cursor-pointer border border-transparent hover:border-amber-200"
                             >
-                              <div className="p-1.5 rounded-md bg-amber-50 text-amber-700 group-hover:bg-amber-100 shrink-0">
-                                <IconComponent className="w-3.5 h-3.5" />
+                              <div className="p-2 rounded-lg bg-slate-100 text-slate-700 group-hover:bg-amber-100 group-hover:text-amber-800 shrink-0">
+                                <IconComponent className="w-4 h-4" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="font-bold text-slate-800 group-hover:text-amber-950 truncate">
-                                  {cat.label}
-                                </p>
-                                <p className="text-[10px] text-slate-400 group-hover:text-amber-700 truncate">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-bold text-slate-800 group-hover:text-amber-950 truncate">
+                                    {cat.label}
+                                  </p>
+                                  <span className="text-[10px] font-mono text-slate-400 group-hover:text-amber-700 font-semibold">
+                                    Auto Draft
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 group-hover:text-amber-800 truncate">
                                   {cat.desc}
                                 </p>
                               </div>
                             </button>
                           );
                         })}
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 px-2 flex items-center justify-between">
+                        <Link
+                          href={`/enquiry-workspace/drafts?complaintId=${complaint.id}`}
+                          className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                          onClick={() => setGenerateReportDropdownOpen(false)}
+                        >
+                          <span>Open Full Enquiry Workspace</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -3032,184 +3103,254 @@ Certified official record copy.`;
             {/* Reports List */}
             {complaint.reports && complaint.reports.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {complaint.reports.map((report) => (
-                  <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 space-y-3 text-xs">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-mono">
-                              {report.reportTypeLabel || report.reportType}
-                            </span>
-                            {report.versionNumber && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
-                                v{report.versionNumber}
-                              </span>
+                {complaint.reports.map((report) => {
+                  const isSavedInComplaint = report.status === "Saved in Complaint" || report.status === "Saved" || !report.status;
+                  const isDraftStatus = report.status === "Draft";
+
+                  return (
+                    <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+                      <CardContent className="p-4 space-y-3 text-xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {/* Recommendation Type Badges (Gamini, Diwani, NCR, FIR, Nivaran, Razinama) */}
+                              {report.recommendationType === "GAMINI" || report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 font-semibold flex items-center gap-1">
+                                  🌾 Gamini (Land Dispute)
+                                </span>
+                              ) : report.recommendationType === "DIWANI" || report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-300 font-semibold flex items-center gap-1">
+                                  💼 Diwani (Civil Dealing)
+                                </span>
+                              ) : report.recommendationType === "NCR" ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-300 font-semibold flex items-center gap-1">
+                                  📄 NCR (u/s 174 BNSS)
+                                </span>
+                              ) : report.recommendationType === "FIR" || report.recommendationType === "FIR_RECOMMENDED" || report.isFirRecommended ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-800 border border-red-300 font-semibold flex items-center gap-1">
+                                  🚨 FIR Recommended
+                                </span>
+                              ) : report.recommendationType === "NIVARAN" || report.recommendationType === "NIVARAK_PREVENTIVE" ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-300 font-semibold flex items-center gap-1">
+                                  🛡️ Nivaran (BNSS 126/170)
+                                </span>
+                              ) : report.recommendationType === "RAZINAMA" || report.recommendationType === "RAJINAMA_COMPROMISE" ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold flex items-center gap-1">
+                                  🤝 Razinama (Compromise)
+                                </span>
+                              ) : (
+                                <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
+                                  {report.reportTypeLabel || report.reportType}
+                                </span>
+                              )}
+
+                              {/* Version Number */}
+                              {report.versionNumber && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
+                                  v{report.versionNumber}
+                                </span>
+                              )}
+
+                              {/* Status Badge: "Saved in Complaint" vs "Draft" */}
+                              {isDraftStatus ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono">
+                                  Status: Draft
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                  <span>Saved in Complaint</span>
+                                </span>
+                              )}
+
+                              {report.isUploaded && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                  Uploaded File
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="font-bold text-sm text-slate-900 truncate">
+                              {report.title}
+                            </h4>
+                            {report.dispatchNo && (
+                              <p className="font-mono text-[11px] text-slate-500">
+                                Dispatch: <strong className="text-slate-800">{report.dispatchNo}</strong>
+                              </p>
                             )}
-                            {report.isUploaded && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                                Uploaded File
-                              </span>
-                            )}
-                            {report.selectedOutcome === "Complete" && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 font-mono">
-                                <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                <span>Outcome: Complete</span>
-                              </span>
-                            )}
-                            {report.selectedOutcome === "Pending" && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 font-mono">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                <span>Outcome: Pending</span>
-                              </span>
-                            )}
-                            {(report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED") ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-300 flex items-center gap-1 font-mono">
-                                <Scale className="w-3 h-3 text-red-600" />
-                                <span>{report.selectedOutcome === "FIR Recommend" ? "Outcome: FIR Recommend" : "FIR Recommended"}</span>
-                              </span>
-                            ) : report.recommendationType === "RAJINAMA_COMPROMISE" ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">
-                                🤝 Rajinama / Compromise
-                              </span>
-                            ) : report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-semibold">
-                                🌾 Jamini / Land Dispute
-                              </span>
-                            ) : report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300 font-semibold">
-                                💼 Diwani / Money Dispute
-                              </span>
-                            ) : report.recommendationType === "NIVARAK_PREVENTIVE" ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300 font-semibold">
-                                🛡️ Nivarak BNSS 126/170
-                              </span>
-                            ) : null}
                           </div>
-                          <h4 className="font-bold text-sm text-slate-900 truncate">
-                            {report.title}
-                          </h4>
-                          {report.dispatchNo && (
-                            <p className="font-mono text-[11px] text-slate-500">
-                              Dispatch: <strong className="text-slate-800">{report.dispatchNo}</strong>
-                            </p>
-                          )}
+
+                          <span className="text-[11px] text-slate-400 font-mono shrink-0">
+                            {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
+                          </span>
                         </div>
 
-                        <span className="text-[11px] text-slate-400 font-mono shrink-0">
-                          {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
-                        </span>
-                      </div>
+                        {report.conclusionSummary && (
+                          <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
+                            <span className="font-bold text-slate-900">Findings: </span>
+                            {report.conclusionSummary}
+                          </div>
+                        )}
 
-                      {report.conclusionSummary && (
-                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
-                          <span className="font-bold text-slate-900">Findings: </span>
-                          {report.conclusionSummary}
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                          <span>
+                            Created By: <strong className="text-slate-800">{report.createdBy || report.officerName}</strong> ({report.officerRank || "EO"})
+                          </span>
+                          <span className="font-mono uppercase font-semibold">
+                            {report.fileFormat || "TXT"} {report.fileSize ? `• ${report.fileSize}` : ""}
+                          </span>
                         </div>
-                      )}
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                        <span>
-                          Officer: <strong className="text-slate-800">{report.officerName}</strong> ({report.officerRank || "EO"})
-                        </span>
-                        <span className="font-mono uppercase font-semibold">
-                          {report.fileFormat || "TXT"} {report.fileSize ? `• ${report.fileSize}` : ""}
-                        </span>
-                      </div>
+                        {/* Action buttons: View, Edit, Download, Print, Create New Version */}
+                        <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
+                          {/* 1. View / Preview */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReportPreviewItem(report)}
+                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            title="View report details"
+                          >
+                            <Eye className="w-3 h-3 text-blue-600" />
+                            <span>View</span>
+                          </Button>
 
-                      {/* Action buttons */}
-                      <div className="pt-1 flex items-center justify-end gap-1.5">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setReportPreviewItem(report)}
-                          className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
-                        >
-                          <Eye className="w-3 h-3 text-blue-600" />
-                          <span>Preview</span>
-                        </Button>
-
-                        {!report.isUploaded && (
-                          <Link href={`/enquiry-workspace/drafts?complaintId=${complaint.id}&category=${report.reportType}`}>
+                          {/* 2. Edit (Re-opens in Draft Editor) */}
+                          {!report.isUploaded && (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
+                              onClick={() => {
+                                const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
+                                handleOpenRecommendationModal(rec, report);
+                              }}
+                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100 cursor-pointer font-semibold"
+                              title="Edit this draft report"
                             >
                               <Edit3 className="w-3 h-3 text-amber-600" />
-                              <span>Edit in Drafts</span>
+                              <span>Edit</span>
                             </Button>
-                          </Link>
-                        )}
+                          )}
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (report.dataUrl) {
-                              const link = document.createElement("a");
-                              link.href = report.dataUrl;
-                              link.download = report.fileName || `${report.title}.pdf`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            } else if (report.content) {
-                              const blob = new Blob([report.content], { type: "text/plain;charset=utf-8" });
-                              const url = URL.createObjectURL(blob);
-                              const link = document.createElement("a");
-                              link.href = url;
-                              link.download = `${report.title}.txt`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              URL.revokeObjectURL(url);
-                            }
-                          }}
-                          className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 cursor-pointer"
-                        >
-                          <Download className="w-3 h-3 text-emerald-600" />
-                          <span>Download</span>
-                        </Button>
+                          {/* 3. Download */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (report.dataUrl) {
+                                const link = document.createElement("a");
+                                link.href = report.dataUrl;
+                                link.download = report.fileName || `${report.title}.pdf`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              } else if (report.content) {
+                                const blob = new Blob([report.content], { type: "text/plain;charset=utf-8" });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.download = `${report.title.replace(/[^a-zA-Z0-9_-]/g, "_")}.txt`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
+                              }
+                            }}
+                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            title="Download report file"
+                          >
+                            <Download className="w-3 h-3 text-emerald-600" />
+                            <span>Download</span>
+                          </Button>
 
-                        {!isMhc && (report.selectedOutcome === "Complete" || report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED") && (
-                          !complaint.isSentToSho ? (
+                          {/* 4. Print */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const printWindow = window.open("", "_blank", "width=900,height=800");
+                              if (!printWindow) {
+                                alert("Please allow popups to print report.");
+                                return;
+                              }
+                              const html = report.contentHtml || `<pre style="font-family: Arial; padding: 20px; white-space: pre-wrap;">${report.content || ""}</pre>`;
+                              printWindow.document.write(`
+                                <!DOCTYPE html>
+                                <html>
+                                  <head><title>${report.title}</title><style>@media print { body { margin: 15mm; } @page { size: A4; margin: 15mm; } }</style></head>
+                                  <body>${html}<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; };</script></body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                            }}
+                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                            title="Print official report"
+                          >
+                            <Printer className="w-3 h-3 text-blue-600" />
+                            <span>Print</span>
+                          </Button>
+
+                          {/* 5. Create New Version */}
+                          {!report.isUploaded && (
                             <Button
                               type="button"
-                              variant="primary"
+                              variant="outline"
                               size="sm"
-                              onClick={() => handleSendReportToSho(report)}
-                              disabled={sendingReportToSho}
-                              className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                              title="Send Enquiry Report to Station House Officer (SHO) for Review & Approval"
+                              onClick={() => {
+                                const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
+                                handleOpenRecommendationModal(rec, report);
+                              }}
+                              className="text-[11px] h-7 px-2.5 gap-1 border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 cursor-pointer font-semibold"
+                              title="Create new version based on this report"
                             >
-                              <Send className="w-3 h-3" />
-                              <span>{sendingReportToSho ? "Sending..." : "Send to SHO ID"}</span>
+                              <Plus className="w-3 h-3 text-purple-600" />
+                              <span>New Version</span>
                             </Button>
-                          ) : (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
-                              <Check className="w-3 h-3 text-blue-600" />
-                              <span>Sent to SHO ID</span>
-                            </span>
-                          )
-                        )}
+                          )}
 
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteReport(report.id)}
-                          className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
-                          title="Delete report"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          {/* Send to SHO button (if applicable) */}
+                          {!isMhc && (report.selectedOutcome === "Complete" || report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED" || report.recommendationType === "FIR") && (
+                            !complaint.isSentToSho ? (
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleSendReportToSho(report)}
+                                disabled={sendingReportToSho}
+                                className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                                title="Send Enquiry Report to SHO for Review & Approval"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>{sendingReportToSho ? "Sending..." : "Send to SHO"}</span>
+                              </Button>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
+                                <Check className="w-3 h-3 text-blue-600" />
+                                <span>Sent to SHO</span>
+                              </span>
+                            )
+                          )}
+
+                          {/* Delete Report */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteReport(report.id)}
+                            className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                            title="Delete report"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="border-slate-200 border-dashed bg-slate-50/50">
@@ -5026,6 +5167,23 @@ Certified official record copy.`;
         complaint={complaint}
         isOpen={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
+      />
+
+      {/* Official Recommendation Based Report / Draft Generator Modal */}
+      <RecommendationReportModal
+        isOpen={recommendationModalOpen}
+        onClose={() => {
+          setRecommendationModalOpen(false);
+          setEditingReportItem(null);
+        }}
+        complaint={complaint}
+        currentUser={currentUser}
+        existingReport={editingReportItem}
+        initialRecommendation={recommendationModalRecType}
+        onReportSaved={async (updated) => {
+          setComplaint(updated);
+          await loadComplaint();
+        }}
       />
 
 

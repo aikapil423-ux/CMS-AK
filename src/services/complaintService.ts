@@ -1503,43 +1503,77 @@ export const ComplaintService = {
 
   async addComplaintReport(
     complaintId: string,
-    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string }
+    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string },
+    options?: { isNewVersion?: boolean }
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const existingReports = complaintsStore[index].reports || [];
-    const versionNumber = existingReports.length + 1;
+    const nowIso = new Date().toISOString();
+    const existingIndex = report.id ? existingReports.findIndex((r) => r.id === report.id) : -1;
 
-    const newReport: ComplaintReportItem = {
-      id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      complaintId: complaintsStore[index].id,
-      versionNumber,
-      title: report.title,
-      reportType: report.reportType,
-      reportTypeLabel: report.reportTypeLabel,
-      dispatchNo: report.dispatchNo,
-      generatedDate: report.generatedDate || new Date().toISOString(),
-      officerName: report.officerName,
-      officerRank: report.officerRank,
-      officerPno: report.officerPno,
-      conclusionSummary: report.conclusionSummary,
-      content: report.content,
-      fileName: report.fileName,
-      fileSize: report.fileSize,
-      fileUrl: report.fileUrl,
-      dataUrl: report.dataUrl,
-      fileFormat: report.fileFormat,
-      isUploaded: report.isUploaded,
-      createdAt: report.createdAt || new Date().toISOString(),
-      recommendationType: report.recommendationType,
-      isFirRecommended: report.isFirRecommended,
-      selectedOutcome: report.selectedOutcome,
-      analysisClassification: report.analysisClassification,
-      analysisRationale: report.analysisRationale,
-    };
+    let targetReport: ComplaintReportItem;
 
-    complaintsStore[index].reports = [newReport, ...existingReports];
+    if (existingIndex !== -1 && !options?.isNewVersion) {
+      // Update existing report in-place
+      const prev = existingReports[existingIndex];
+      targetReport = {
+        ...prev,
+        ...report,
+        id: prev.id,
+        complaintId: complaintsStore[index].id,
+        versionNumber: prev.versionNumber || 1,
+        title: report.title || prev.title,
+        content: report.content !== undefined ? report.content : prev.content,
+        contentHtml: report.contentHtml !== undefined ? report.contentHtml : prev.contentHtml,
+        status: report.status || prev.status || "Saved in Complaint",
+        lastModifiedBy: report.lastModifiedBy || report.officerName || prev.lastModifiedBy,
+        updatedAt: nowIso,
+        recommendationType: report.recommendationType || prev.recommendationType,
+      };
+      existingReports[existingIndex] = targetReport;
+      complaintsStore[index].reports = [...existingReports];
+    } else {
+      // Create new report or new version
+      const maxVer = existingReports.reduce((max, r) => Math.max(max, r.versionNumber || 1), 0);
+      const versionNumber = options?.isNewVersion ? maxVer + 1 : (report.versionNumber || maxVer + 1);
+
+      targetReport = {
+        id: (options?.isNewVersion ? null : report.id) || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        complaintId: complaintsStore[index].id,
+        versionNumber,
+        title: report.title,
+        reportType: report.reportType || "RECOMMENDATION_REPORT",
+        reportTypeLabel: report.reportTypeLabel || "Enquiry Report",
+        dispatchNo: report.dispatchNo,
+        generatedDate: report.generatedDate || nowIso,
+        officerName: report.officerName || "Enquiry Officer",
+        officerRank: report.officerRank,
+        officerPno: report.officerPno,
+        conclusionSummary: report.conclusionSummary,
+        content: report.content,
+        contentHtml: report.contentHtml,
+        fileName: report.fileName,
+        fileSize: report.fileSize,
+        fileUrl: report.fileUrl,
+        dataUrl: report.dataUrl,
+        fileFormat: report.fileFormat || "TXT",
+        isUploaded: report.isUploaded || false,
+        createdAt: report.createdAt || nowIso,
+        updatedAt: nowIso,
+        createdBy: report.createdBy || report.officerName,
+        lastModifiedBy: report.lastModifiedBy || report.officerName,
+        status: report.status || "Saved in Complaint",
+        recommendationType: report.recommendationType,
+        isFirRecommended: report.isFirRecommended,
+        selectedOutcome: report.selectedOutcome,
+        analysisClassification: report.analysisClassification,
+        analysisRationale: report.analysisRationale,
+      };
+
+      complaintsStore[index].reports = [targetReport, ...existingReports];
+    }
 
     if (report.isFirRecommended) {
       complaintsStore[index].isRecommendedForFir = true;
@@ -1560,7 +1594,7 @@ export const ComplaintService = {
       }
     }
 
-    complaintsStore[index].updatedAt = new Date().toISOString();
+    complaintsStore[index].updatedAt = nowIso;
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 

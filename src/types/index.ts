@@ -407,7 +407,23 @@ export interface ComplaintReportItem {
   fileFormat?: string;
   isUploaded?: boolean;
   createdAt?: string;
-  recommendationType?: 'FIR_RECOMMENDED' | 'JAMINI_LAND_DISPUTE' | 'DIWANI_CIVIL_MONEY' | 'RAJINAMA_COMPROMISE' | 'NIVARAK_PREVENTIVE' | 'NO_COGNIZABLE_OFFENCE';
+  updatedAt?: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  status?: 'Draft' | 'Saved' | 'Finalized' | 'Saved in Complaint';
+  recommendationType?:
+    | 'GAMINI'
+    | 'DIWANI'
+    | 'NCR'
+    | 'FIR'
+    | 'NIVARAN'
+    | 'RAZINAMA'
+    | 'FIR_RECOMMENDED'
+    | 'JAMINI_LAND_DISPUTE'
+    | 'DIWANI_CIVIL_MONEY'
+    | 'RAJINAMA_COMPROMISE'
+    | 'NIVARAK_PREVENTIVE'
+    | 'NO_COGNIZABLE_OFFENCE';
   isFirRecommended?: boolean;
   selectedOutcome?: EOOutcome;
   sentToSho?: boolean;

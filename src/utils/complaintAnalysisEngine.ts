@@ -6,7 +6,13 @@ export type EnquiryClassificationType =
   | "DIWANI_CIVIL_MONEY"
   | "RAJINAMA_COMPROMISE"
   | "NIVARAK_PREVENTIVE"
-  | "NO_COGNIZABLE_OFFENCE";
+  | "NO_COGNIZABLE_OFFENCE"
+  | "GAMINI"
+  | "DIWANI"
+  | "NCR"
+  | "FIR"
+  | "NIVARAN"
+  | "RAZINAMA";
 
 export interface ComplaintAnalysisResult {
   classification: EnquiryClassificationType;
@@ -256,7 +262,8 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       : "शिकायत विवरण व प्राथमिक कथनों";
 
   // Build Results
-  switch (classification) {
+  switch (classification as EnquiryClassificationType) {
+    case "FIR":
     case "FIR_RECOMMENDED": {
       const sections =
         cat === "PHYSICAL_ASSAULT_AFFRAY"
@@ -303,6 +310,7 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
+    case "GAMINI":
     case "JAMINI_LAND_DISPUTE": {
       return {
         classification: "JAMINI_LAND_DISPUTE",
@@ -339,6 +347,7 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
+    case "DIWANI":
     case "DIWANI_CIVIL_MONEY": {
       return {
         classification: "DIWANI_CIVIL_MONEY",
@@ -375,6 +384,7 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
+    case "RAZINAMA":
     case "RAJINAMA_COMPROMISE": {
       return {
         classification: "RAJINAMA_COMPROMISE",
@@ -411,6 +421,7 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
+    case "NIVARAN":
     case "NIVARAK_PREVENTIVE": {
       return {
         classification: "NIVARAK_PREVENTIVE",
@@ -447,6 +458,7 @@ export function analyzeComplaintForEnquiry(complaint: ComplaintItem): ComplaintA
       };
     }
 
+    case "NCR":
     case "NO_COGNIZABLE_OFFENCE":
     default: {
       return {

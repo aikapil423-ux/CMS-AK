@@ -1353,12 +1353,12 @@ function EnquiryDraftsContent() {
                   onChange={(e) => handleChangeClassification(e.target.value as EnquiryClassificationType)}
                   className="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer"
                 >
-                  <option value="FIR_RECOMMENDED">🚨 FIR Recommended (संज्ञेय अपराध - FIR की सिफारिश)</option>
-                  <option value="RAJINAMA_COMPROMISE">🤝 Rajinama / Compromise (राजीनामा / आपसी समझौता)</option>
-                  <option value="JAMINI_LAND_DISPUTE">🌾 Jamini / Land Dispute (ज़मीनी विवाद - राजस्व)</option>
-                  <option value="DIWANI_CIVIL_MONEY">💼 Diwani / Money Transaction (दीवानी लेन-देन)</option>
-                  <option value="NIVARAK_PREVENTIVE">🛡️ Nivarak / Preventive (निवारक BNSS 126/170)</option>
-                  <option value="NO_COGNIZABLE_OFFENCE">📁 No Cognizable Offence (कोई अपराध नहीं - दाखिल दफ्तर)</option>
+                  <option value="GAMINI">1. Gamini (Land &amp; Boundary Dispute / राजस्व ज़मीनी विवाद)</option>
+                  <option value="DIWANI">2. Diwani (Civil &amp; Monetary Dispute / दीवानी लेन-देन)</option>
+                  <option value="NCR">3. NCR (Non-Cognizable Report u/s 174 BNSS / असंज्ञेय रिपोर्ट)</option>
+                  <option value="FIR">4. FIR (Cognizable Offence - Regular FIR / संज्ञेय अपराध)</option>
+                  <option value="NIVARAN">5. Nivaran (Preventive Action u/s 126/170 BNSS / निवारक निस्तारण)</option>
+                  <option value="RAZINAMA">6. Razinama (Mutual Compromise &amp; Accord / राजीनामा)</option>
                 </select>
               </div>
             </div>
