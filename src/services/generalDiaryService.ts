@@ -538,6 +538,33 @@ function saveTypesToStorage(types: GDEntryTypeConfig[]) {
 let memoryRecordsStore: GeneralDiaryRecord[] = loadRecordsFromStorage();
 let memoryTypesStore: GDEntryTypeConfig[] = loadTypesFromStorage();
 
+// -------------------------------------------------------------
+// Backend API helpers — the authoritative GD register lives on the
+// server (SQLite). GD numbers & date/time are assigned server-side.
+// Every call falls back to the local store if the backend is down.
+// -------------------------------------------------------------
+async function gdApiPost<T = any>(body: Record<string, unknown>): Promise<T> {
+  const res = await fetch("/api/general-diary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.error || `GD API error (${res.status})`);
+  }
+  return json as T;
+}
+
+async function gdApiGet<T = any>(queryString: string): Promise<T> {
+  const res = await fetch(`/api/general-diary${queryString}`, { cache: "no-store" });
+  const json = await res.json();
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.error || `GD API error (${res.status})`);
+  }
+  return json as T;
+}
+
 export const GeneralDiaryService = {
   // Synchronous helpers for UI components
   getTypes(): GDEntryTypeConfig[] {
@@ -550,6 +577,30 @@ export const GeneralDiaryService = {
     return memoryRecordsStore.find((r) => r.id === id);
   },
 
+  // Draft lookup against the server register (falls back to local store)
+  async getDraftByIdAsync(id: string): Promise<GeneralDiaryRecord | undefined> {
+    try {
+      const json = await gdApiGet<{ record: GeneralDiaryRecord | null }>(
+        `?action=BY_ID&id=${encodeURIComponent(id)}`
+      );
+      return json.record || undefined;
+    } catch {
+      return this.getDraftById(id);
+    }
+  },
+
+  // Server clock + next GD number (dd/mm/yyyy + 24h HH:mm) for the read-only form
+  async getServerNow(): Promise<{
+    serverDateDisplay: string;
+    serverTimeDisplay: string;
+    serverDateISO: string;
+    nextSequence: number;
+    nextGdNumber: string;
+  }> {
+    const json = await gdApiGet<{ data: any }>("?action=SERVER_NOW");
+    return json.data;
+  },
+
   // -------------------------------------------------------------
   // 1. Core Server-side Paginated Search & Multi-criteria Filter
   // -------------------------------------------------------------
@@ -558,6 +609,33 @@ export const GeneralDiaryService = {
     overridePage?: number,
     overridePageSize?: number
   ): Promise<GDPaginatedResponse> {
+    // Backend-first: authoritative search over the persisted server register
+    try {
+      const params = new URLSearchParams();
+      const mapped: Record<string, string | undefined> = {
+        gdNumber: filter.gdNumber,
+        startDate: filter.startDate,
+        endDate: filter.endDate,
+        officer: filter.officerQuery || filter.officerName,
+        person: filter.personName,
+        fir: filter.firNumber,
+        complaint: filter.complaintNumber,
+        vehicle: filter.vehicleNumber,
+        type: filter.typeCode,
+        status: filter.status && filter.status !== "ALL" ? filter.status : undefined,
+        isLocked: filter.isLocked !== undefined ? String(filter.isLocked) : undefined,
+        q: filter.keyword,
+        page: String(Math.max(1, overridePage || filter.page || 1)),
+        pageSize: String(Math.max(1, overridePageSize || filter.pageSize || 15)),
+      };
+      Object.entries(mapped).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") params.set(key, value);
+      });
+      const json = await gdApiGet<{ data: GDPaginatedResponse }>(`?${params.toString()}`);
+      return json.data;
+    } catch {
+      // Backend unreachable — fall back to the local in-memory register
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     let list = [...memoryRecordsStore];
 
@@ -693,6 +771,14 @@ export const GeneralDiaryService = {
   // 2. Fetch Single GD Record by ID or Number
   // -------------------------------------------------------------
   async getRecordById(idOrNumber: string): Promise<GeneralDiaryRecord | undefined> {
+    try {
+      const json = await gdApiGet<{ record: GeneralDiaryRecord | null }>(
+        `?action=BY_ID&id=${encodeURIComponent(idOrNumber)}`
+      );
+      return json.record || undefined;
+    } catch {
+      // fall back to local register
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     return memoryRecordsStore.find(
       (r) => r.id === idOrNumber || r.gdNumber.toLowerCase() === idOrNumber.toLowerCase()
@@ -731,6 +817,27 @@ export const GeneralDiaryService = {
     district?: string;
     relatedRecords?: GDRelatedRecords;
   }): Promise<GeneralDiaryRecord> {
+    // Backend-first: persist the draft on the server (searchable later)
+    try {
+      const json = await gdApiPost<{ draft: GeneralDiaryRecord }>({
+        action: "SAVE_DRAFT",
+        id: entry.id,
+        typeCode: entry.typeCode,
+        category: entry.category,
+        typeDisplay: entry.typeDisplay,
+        typeDisplayHi: entry.typeDisplayHi,
+        subject: entry.subject,
+        narrative: entry.narrative,
+        entryForOfficer: entry.entryForOfficer,
+        actualAuthor: entry.actualAuthor,
+        policeStation: entry.policeStation,
+        district: entry.district,
+        relatedRecords: entry.relatedRecords,
+      });
+      return json.draft;
+    } catch {
+      // Backend unreachable — fall back to local draft store
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const typeDef = memoryTypesStore.find((t) => t.code === entry.typeCode) || memoryTypesStore[0];
 
@@ -832,6 +939,13 @@ export const GeneralDiaryService = {
   // 5. Delete Draft Entry (Only DRAFT or SUGGESTED; Locked blocked)
   // -------------------------------------------------------------
   async deleteDraft(id: string): Promise<boolean> {
+    // Backend-first: delete on the server register
+    try {
+      const json = await gdApiPost<{ success: boolean }>({ action: "DELETE_DRAFT", id });
+      return json.success;
+    } catch {
+      // fall back to local deletion
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const target = memoryRecordsStore.find((r) => r.id === id);
     if (!target) return false;
@@ -851,6 +965,20 @@ export const GeneralDiaryService = {
     verifier: GDOfficerParticulars,
     verificationRemarks?: string
   ): Promise<GeneralDiaryRecord> {
+    // Backend-first: server assigns the atomic per-day GD number
+    if (typeof idOrData === "string") {
+      try {
+        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+          action: "VERIFY_AND_LOCK",
+          id: idOrData,
+          verifier,
+          remarks: verificationRemarks,
+        });
+        return json.record;
+      } catch {
+        // fall back to local lock flow
+      }
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const now = new Date();
     const nowIso = now.toISOString();
@@ -1168,6 +1296,27 @@ export const GeneralDiaryService = {
   ): Promise<GeneralDiaryRecord> {
     if (typeof entryOrSubject === "object") {
       const payload = entryOrSubject;
+      // Backend-first: server stamps date/time and assigns the unique GD number
+      try {
+        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+          action: "CREATE_LOCKED",
+          typeCode: payload.typeCode,
+          category: payload.category,
+          typeDisplay: payload.typeDisplay,
+          typeDisplayHi: payload.typeDisplayHi,
+          subject: payload.subject,
+          narrative: payload.narrative,
+          entryForOfficer: payload.entryForOfficer,
+          actualAuthor: payload.actualAuthor,
+          policeStation: payload.policeStation,
+          district: payload.district,
+          source: payload.source,
+          relatedRecords: payload.relatedRecords,
+        });
+        return json.record;
+      } catch {
+        // Backend unreachable — fall back to the local register flow
+      }
       const typeDef = memoryTypesStore.find((t) => t.code === payload.typeCode) || memoryTypesStore[0];
       const author: GDOfficerParticulars = payload.actualAuthor || {
         name: "HC Devinder Kumar",

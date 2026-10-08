@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { GDRecordModal } from "@/components/general-diary/GDRecordModal";
 import { GDVerificationModal } from "@/components/general-diary/GDVerificationModal";
+import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS" | "AUDIT_TRAIL";
 
@@ -635,6 +636,13 @@ function GeneralDiaryContent() {
           }}
         />
       )}
+
+      {/* Print Daily Register Modal (print preview + window.print) */}
+      <GDPrintModal
+        isOpen={printDailyRegisterOpen}
+        onClose={() => setPrintDailyRegisterOpen(false)}
+        initialDate={selectedPrintDate}
+      />
 
       {/* Day Close (Bandi) Confirmation Modal */}
       {dayCloseConfirmOpen && (

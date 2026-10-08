@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -107,11 +107,11 @@ function NewGDEntryContent() {
   const [customOfficerName, setCustomOfficerName] = useState("");
   const [selectedType, setSelectedType] = useState<string>(preselectedType || "AAGAZ_ROZNAMCHA");
 
-  // Date & Time
-  const [activityDate, setActivityDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [activityTime, setActivityTime] = useState(() =>
-    new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
-  );
+  // Date & Time — SERVER-OWNED (read-only; CCTNS dd/mm/yyyy + HH:mm 24-hour)
+  const [serverDateDisplay, setServerDateDisplay] = useState("--/--/----");
+  const [serverTimeDisplay, setServerTimeDisplay] = useState("--:--");
+  const [nextGdNumber, setNextGdNumber] = useState<string>("GD-…");
+  const suppressAutoTemplateRef = useRef(false);
 
   // Subject & Brief Narrative
   const [subject, setSubject] = useState("");
@@ -171,6 +171,22 @@ function NewGDEntryContent() {
     };
     window.addEventListener("cms-dropdowns-updated", handleUpdate);
     return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
+  }, []);
+
+  // Fetch SERVER date/time + next GD number (server-owned, never editable)
+  useEffect(() => {
+    let alive = true;
+    GeneralDiaryService.getServerNow()
+      .then((n) => {
+        if (!alive) return;
+        setServerDateDisplay(n.serverDateDisplay);
+        setServerTimeDisplay(n.serverTimeDisplay);
+        setNextGdNumber(n.nextGdNumber);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // Get active officer
@@ -327,29 +343,39 @@ function NewGDEntryContent() {
     }
   };
 
-  // Whenever type changes, load default template
+  // Whenever type changes, load default template (skipped right after
+  // Clear Form, and while editing an existing draft so its text is kept)
   useEffect(() => {
+    if (editDraftId) return;
+    if (suppressAutoTemplateRef.current) {
+      suppressAutoTemplateRef.current = false;
+      return;
+    }
     applyTemplateForType(selectedType, currentOfficer.name);
-  }, [selectedType, currentOfficer.name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedType, currentOfficer.name, editDraftId]);
 
-  // Load draft if requested
+  // Load draft if requested (from the server register, local fallback)
   useEffect(() => {
-    if (editDraftId) {
-      const draft = GeneralDiaryService.getDraftById(editDraftId);
-      if (draft) {
-        setSelectedType(draft.typeCode);
-        setSubject(draft.subject);
-        setNarrative(draft.narrative);
-        if (draft.entryForOfficer?.name) {
-          const match = stationOfficers.find((o) => o.name === draft.entryForOfficer.name);
-          if (match) setSelectedOfficerId(match.id);
-          else {
-            setSelectedOfficerId("custom");
-            setCustomOfficerName(draft.entryForOfficer.name);
-          }
+    if (!editDraftId) return;
+    let alive = true;
+    GeneralDiaryService.getDraftByIdAsync(editDraftId).then((draft) => {
+      if (!alive || !draft) return;
+      setSelectedType(draft.typeCode);
+      setSubject(draft.subject);
+      setNarrative(draft.narrative);
+      if (draft.entryForOfficer?.name) {
+        const match = stationOfficers.find((o) => o.name === draft.entryForOfficer.name);
+        if (match) setSelectedOfficerId(match.id);
+        else {
+          setSelectedOfficerId("custom");
+          setCustomOfficerName(draft.entryForOfficer.name);
         }
       }
-    }
+    });
+    return () => {
+      alive = false;
+    };
   }, [editDraftId, stationOfficers]);
 
   // Submit and Lock GD Entry
@@ -381,9 +407,7 @@ function NewGDEntryContent() {
         pno: currentUser.pno || "05192834",
       };
 
-      const fullActivityDateTime = `${activityDate} ${activityTime}`;
-
-      // Save directly as locked entry in the immutable register
+      // Save directly as locked entry — GD number, date & time are SERVER-assigned
       const newRecord = await GeneralDiaryService.addEntry({
         typeCode: selectedType,
         category: typeConfig?.category || "ROUTINE_ADMINISTRATION",
@@ -391,7 +415,6 @@ function NewGDEntryContent() {
         typeDisplayHi: typeConfig?.nameEn || selectedType,
         subject: subject.trim(),
         narrative: narrative.trim(),
-        activityDateTime: fullActivityDateTime,
         entryForOfficer: officerData,
         actualAuthor: authorData,
         policeStation: "PS City Thanesar",
@@ -432,7 +455,6 @@ function NewGDEntryContent() {
         typeDisplay: typeConfig?.nameEn || selectedType,
         subject: subject.trim(),
         narrative: narrative.trim(),
-        activityDateTime: `${activityDate} ${activityTime}`,
         entryForOfficer: currentOfficer,
         policeStation: "PS City Thanesar",
       });
@@ -446,12 +468,21 @@ function NewGDEntryContent() {
     }
   };
 
-  // Reset form
+  // Clear Form — truly clears all fields (no template re-fill afterwards)
   const handleReset = () => {
+    suppressAutoTemplateRef.current = true;
+    if (selectedType === "AAGAZ_ROZNAMCHA") {
+      // Type already at default: the template effect will not refire,
+      // so consume the suppression immediately
+      suppressAutoTemplateRef.current = false;
+    }
     setSelectedOfficerId("usr_si_malkeet");
+    setCustomOfficerName("");
     setSelectedType("AAGAZ_ROZNAMCHA");
-    applyTemplateForType("AAGAZ_ROZNAMCHA", "SI Malkeet");
+    setSubject("");
+    setNarrative("");
     setError(null);
+    setSuccessMessage(null);
   };
 
   // Common Quick Types
@@ -480,6 +511,9 @@ function NewGDEntryContent() {
         <div className="flex items-center gap-2">
           <span className="text-xs bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full border border-blue-200">
             PS City Thanesar
+          </span>
+          <span className="text-xs bg-indigo-50 text-indigo-700 font-mono font-bold px-2.5 py-1 rounded-full border border-indigo-200">
+            Next GD No: {nextGdNumber}
           </span>
           <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
             <Lock className="w-3 h-3" />
@@ -602,7 +636,7 @@ function NewGDEntryContent() {
             </div>
           </div>
 
-          {/* Date & Time Row */}
+          {/* Date & Time Row — SERVER-OWNED (read-only, CCTNS format) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -610,11 +644,15 @@ function NewGDEntryContent() {
                 <span>Date *</span>
               </label>
               <input
-                type="date"
-                value={activityDate}
-                onChange={(e) => setActivityDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
+                type="text"
+                value={serverDateDisplay}
+                readOnly
+                disabled
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
               />
+              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Server date — not editable (dd/mm/yyyy)
+              </span>
             </div>
 
             <div className="space-y-1.5">
@@ -624,11 +662,14 @@ function NewGDEntryContent() {
               </label>
               <input
                 type="text"
-                value={activityTime}
-                onChange={(e) => setActivityTime(e.target.value)}
-                placeholder="12:00 PM"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
+                value={serverTimeDisplay}
+                readOnly
+                disabled
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
               />
+              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Server time — not editable (24-hour); stamped on save
+              </span>
             </div>
           </div>
 
