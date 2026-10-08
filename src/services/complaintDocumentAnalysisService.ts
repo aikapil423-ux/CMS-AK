@@ -282,6 +282,17 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
         });
       }
     });
+  } else if ((complaint as any).accusedName && String((complaint as any).accusedName).trim().length > 0) {
+    identifiedPersons.push({
+      id: "p_accused_root",
+      name: (complaint as any).accusedName,
+      role: "Respondent / Accused",
+      fatherOrSpouse: (complaint as any).accusedFather || (complaint as any).accusedFatherName,
+      phone: (complaint as any).accusedPhone || (complaint as any).accusedMobile,
+      address: (complaint as any).accusedAddress,
+      source: "Overview",
+      details: "Named opposite party in complaint intake registration.",
+    });
   } else {
     missingInformationFlags.push("No named opposite party / accused specified in complaint record.");
   }

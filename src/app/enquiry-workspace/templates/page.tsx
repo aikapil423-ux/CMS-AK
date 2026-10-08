@@ -559,6 +559,9 @@ function NoticeTemplatesContent() {
         noticeeAddress: "",
         noticeePhone: "",
         noticeeRole: "",
+        permanentAddress: "",
+        currentAddress: "",
+        mobileNo: "",
       }));
       return;
     }
@@ -569,15 +572,56 @@ function NoticeTemplatesContent() {
     else if (person.role === "Witness") roleDisplay = "गवाह / साक्षी / Witness";
     else if (person.role) roleDisplay = person.role;
 
+    // 1. Update form data with comprehensive person fields
     setFormData((prev) => ({
       ...prev,
-      noticeeName: person.name,
+      noticeeName: person.name || "",
       noticeeFather: person.fatherOrSpouse || "",
       noticeeAge: person.age !== undefined && person.age !== null ? String(person.age) : (prev.noticeeAge || ""),
       noticeeAddress: person.address || "",
       noticeePhone: person.phone || "",
       noticeeRole: roleDisplay,
+      permanentAddress: person.address || "",
+      currentAddress: person.address || "",
+      mobileNo: person.phone || "",
+      vsName: person.name || prev.vsName,
     }));
+
+    // 2. Update CDR target row with selected person's contact and identity
+    if (person.phone || person.name) {
+      setCdrTargetRows((prev) => {
+        if (!prev || prev.length === 0) {
+          return [
+            {
+              id: "cdr_1",
+              phone: person.phone || "",
+              periodFrom: new Date(Date.now() - 30 * 86400000).toLocaleDateString("hi-IN"),
+              periodTo: new Date().toLocaleDateString("hi-IN"),
+              reason: `Statement and evidence verification of ${person.name} (${roleDisplay}) in Complaint ${complaint?.complaintNumber || ""}`,
+            },
+          ];
+        }
+        const updated = [...prev];
+        updated[0] = {
+          ...updated[0],
+          phone: person.phone || updated[0].phone,
+          reason: `Statement and evidence verification of ${person.name} (${roleDisplay}) in Complaint ${complaint?.complaintNumber || ""}`,
+        };
+        return updated;
+      });
+    }
+
+    // 3. Update NATGRID suspect row
+    setNatgridRows((prev) =>
+      prev.map((r) =>
+        r.id === "ng_8"
+          ? {
+              ...r,
+              value: `Full Name: ${person.name}, Father: ${person.fatherOrSpouse || "—"}, Address: ${person.address || "—"}, Mobile: ${person.phone || "—"}, Role: ${roleDisplay}`,
+            }
+          : r
+      )
+    );
   };
 
   // Load all complaints for picker
@@ -1826,6 +1870,79 @@ function NoticeTemplatesContent() {
                 </div>
               </div>
 
+              {/* 4A. नोटिस प्राप्तकर्ता विवरण (सेवा में / प्रति) - Auto-updates dynamically when person is selected */}
+              <div className="bg-slate-50/90 border border-slate-300 rounded-lg p-3 my-2 text-xs sm:text-[13px] space-y-2 font-sans">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-200">
+                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-purple-600" />
+                    <span>सेवा में / प्रति (Notice Recipient):</span>
+                  </span>
+                  {formData.noticeeRole && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                      {formData.noticeeRole}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-700 whitespace-nowrap">श्री/श्रीमती:</span>
+                    <input
+                      type="text"
+                      value={formData.noticeeName || ""}
+                      onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
+                      placeholder="नाम दर्ज करें"
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-700 whitespace-nowrap">सुपुत्र/पत्नी/आत्मज:</span>
+                    <input
+                      type="text"
+                      value={formData.noticeeFather || ""}
+                      onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
+                      placeholder="पिता/पति का नाम"
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-700 whitespace-nowrap">आयु:</span>
+                    <input
+                      type="text"
+                      value={formData.noticeeAge || ""}
+                      onChange={(e) => handleFieldChange("noticeeAge", e.target.value)}
+                      placeholder="वर्ष"
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-16 text-center"
+                    />
+                    <span className="text-slate-500 text-[11px]">वर्ष</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 sm:col-span-2">
+                    <span className="font-bold text-slate-700 whitespace-nowrap">निवास स्थान (पता):</span>
+                    <input
+                      type="text"
+                      value={formData.noticeeAddress || ""}
+                      onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
+                      placeholder="पूरा पता"
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-700 whitespace-nowrap">मोबाईल:</span>
+                    <input
+                      type="text"
+                      value={formData.noticeePhone || ""}
+                      onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
+                      placeholder="मोबाईल नं."
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* 5. पैरा 1: परिवादी एवं शिकायत विवरण */}
               <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900" style={{ textIndent: "40px" }}>
                 <span>आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी </span>
@@ -1883,10 +2000,41 @@ function NoticeTemplatesContent() {
                   type="text"
                   value={formData.noticeeName || ""}
                   onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
-                  placeholder="....................................................................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[320px] text-center inline-block"
+                  placeholder="..................................."
+                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[180px] text-center inline-block"
                   style={{ textIndent: 0 }}
                 />
+                <span> आत्मज/पत्नी </span>
+                <input
+                  type="text"
+                  value={formData.noticeeFather || ""}
+                  onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
+                  placeholder="..................................."
+                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[160px] text-center inline-block"
+                  style={{ textIndent: 0 }}
+                />
+                <span> वासी </span>
+                <input
+                  type="text"
+                  value={formData.noticeeAddress || ""}
+                  onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
+                  placeholder="...................................................."
+                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[240px] text-center inline-block"
+                  style={{ textIndent: 0 }}
+                />
+                {formData.noticeePhone && (
+                  <>
+                    <span> (मोबाईल: </span>
+                    <input
+                      type="text"
+                      value={formData.noticeePhone}
+                      onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[110px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span>) </span>
+                  </>
+                )}
                 <span> को निर्देश दिये जाते है कि आप दिनांक </span>
                 <input
                   type="text"
