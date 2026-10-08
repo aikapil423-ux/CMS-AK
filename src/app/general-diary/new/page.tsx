@@ -341,10 +341,8 @@ function NewGDEntryContent() {
         break;
 
       default:
-        setSubject("General Police Station Entry");
-        setNarrative(
-          `At this time, general entry recorded in General Diary regarding station routine administration and police procedures.`
-        );
+        // No confirmed CCTNS template for this type — leave Subject and
+        // GD Brief EMPTY for the officer to fill in themselves.
         break;
     }
   };

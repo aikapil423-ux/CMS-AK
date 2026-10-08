@@ -90,6 +90,10 @@ export interface GeneralDiaryRecord {
 
   // Audit trail
   auditTrail: GDAuditLog[];
+
+  // Internal server sort keys (never rendered in UI)
+  _sortGdDate?: string;  // yyyy-mm-dd of the GD day (immutable numbering day)
+  _sortEntryMs?: number; // server entryDateTime epoch ms
 }
 
 export interface GDTemplateVariable {

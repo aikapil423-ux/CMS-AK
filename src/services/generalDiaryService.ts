@@ -734,15 +734,23 @@ export const GeneralDiaryService = {
 
     // Sort order:
     // 1. Pending Suggestions & Drafts first if in draft view
-    // 2. Otherwise sort by date/sequence descending
+    // 2. Otherwise locked entries in GD-number order (per-day sequence)
+    const localDateKey = (r: GeneralDiaryRecord): string => {
+      const raw = (r.activityDateTime || "").split(" ")[0];
+      if (/^\d{4}-/.test(raw)) return raw; // yyyy-mm-dd
+      const parts = raw.split("/");
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; // dd/mm/yyyy -> yyyy-mm-dd
+      }
+      return raw;
+    };
     list.sort((a, b) => {
       if (a.status === "SUGGESTED" && b.status !== "SUGGESTED") return -1;
       if (b.status === "SUGGESTED" && a.status !== "SUGGESTED") return 1;
-      if (a.status === "DRAFT" && b.status === "LOCKED") return -1;
-      if (b.status === "DRAFT" && a.status === "LOCKED") return 1;
-
-      const dateComp = b.activityDateTime.localeCompare(a.activityDateTime);
-      if (dateComp !== 0) return dateComp;
+      if (a.status === "DRAFT" && b.status !== "DRAFT") return -1;
+      if (b.status === "DRAFT" && a.status !== "DRAFT") return 1;
+      const dayComp = localDateKey(b).localeCompare(localDateKey(a));
+      if (dayComp !== 0) return dayComp;
       return b.sequencePerDay - a.sequencePerDay;
     });
 

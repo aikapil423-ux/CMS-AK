@@ -370,14 +370,14 @@ function GeneralDiaryContent() {
                         isSuggested ? "bg-purple-50/30" : isDraft ? "bg-amber-50/30" : ""
                       }`}
                     >
-                      {/* 1. GD No */}
+                      {/* 1. GD No — drafts/suggestions have NO number yet */}
                       <td className="py-3.5 px-3.5 align-top">
                         <div className="space-y-0.5">
                           <span className="font-mono font-black text-sm text-blue-950 block">
-                            {rec.sequencePerDay || 1}
+                            {rec.isLocked ? rec.sequencePerDay : "—"}
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono block">
-                            {rec.gdNumber}
+                            {rec.isLocked ? rec.gdNumber : "No GD No. (not added)"}
                           </span>
                         </div>
                       </td>

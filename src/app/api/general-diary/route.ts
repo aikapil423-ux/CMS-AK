@@ -87,6 +87,10 @@ function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
     verifiedBy: parseJson<GDOfficerParticulars | null>(row.verifiedByJson, null) ?? undefined,
     relatedRecords: parseJson<GDRelatedRecords>(row.relatedRecordsJson, {}),
     auditTrail: parseJson<GDAuditLog[]>(row.auditTrailJson, []),
+    // Internal sort keys — the register is ordered by GD NUMBER, never by
+    // creation time (an old draft added later must take its new sequence slot)
+    _sortGdDate: formatGDDateKey(new Date(row.gdDate)),
+    _sortEntryMs: new Date(row.entryDateTime).getTime(),
   };
 }
 
@@ -601,16 +605,19 @@ export async function GET(req: NextRequest) {
     };
     void todayKey;
 
-    // Pending suggestions & drafts first, then newest first
+    // Pending suggestions & drafts first (newest first);
+    // LOCKED register entries are ALWAYS in immutable GD-number order —
+    // never reordered by creation time.
     list.sort((a, b) => {
       if (a.status === "SUGGESTED" && b.status !== "SUGGESTED") return -1;
       if (b.status === "SUGGESTED" && a.status !== "SUGGESTED") return 1;
-      if (a.status === "DRAFT" && b.status === "LOCKED") return -1;
-      if (b.status === "DRAFT" && a.status === "LOCKED") return 1;
-      const dateComp = (b.officialCreationTimestamp || "").localeCompare(
-        a.officialCreationTimestamp || ""
-      );
-      if (dateComp !== 0) return dateComp;
+      if (a.status === "DRAFT" && b.status !== "DRAFT") return -1;
+      if (b.status === "DRAFT" && a.status !== "DRAFT") return 1;
+      if (a.status !== "LOCKED" && b.status !== "LOCKED") {
+        return (b._sortEntryMs || 0) - (a._sortEntryMs || 0);
+      }
+      const dayComp = (b._sortGdDate || "").localeCompare(a._sortGdDate || "");
+      if (dayComp !== 0) return dayComp;
       return b.sequencePerDay - a.sequencePerDay;
     });
 
