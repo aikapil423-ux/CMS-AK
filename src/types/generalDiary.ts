@@ -142,7 +142,7 @@ export interface GDSearchFilter {
   complaintNumber?: string;
   vehicleNumber?: string;
   typeCode?: string;
-  status?: GDStatus | "ALL";
+  status?: GDStatus | "ALL" | "SUGGESTED,DRAFT";
   isLocked?: boolean;
   keyword?: string;
   page?: number;

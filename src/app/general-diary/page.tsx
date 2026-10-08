@@ -97,7 +97,8 @@ function GeneralDiaryContent() {
     if (activeTab === "REGISTER") {
       filter.isLocked = true;
     } else if (activeTab === "SUGGESTIONS_DRAFTS") {
-      filter.status = "SUGGESTED";
+      // Tab shows both auto-suggestions and saved drafts
+      filter.status = "SUGGESTED,DRAFT";
     }
 
     try {

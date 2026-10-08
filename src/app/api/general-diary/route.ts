@@ -504,7 +504,15 @@ export async function GET(req: NextRequest) {
     // DB-level coarse filters (exact/structured fields)
     const where: Prisma.GDRecordWhereInput = {};
     if (filter.typeCode && filter.typeCode !== "ALL") where.typeCode = filter.typeCode;
-    if (filter.status && filter.status !== "ALL") where.status = filter.status;
+    if (filter.status && filter.status !== "ALL") {
+      // Support comma-separated statuses (e.g. "SUGGESTED,DRAFT" tab view)
+      const statuses = filter.status
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (statuses.length === 1) where.status = statuses[0];
+      else if (statuses.length > 1) where.status = { in: statuses };
+    }
     if (filter.isLocked !== null && filter.isLocked !== undefined && filter.isLocked !== "") {
       where.isLocked = filter.isLocked === "true";
     }
