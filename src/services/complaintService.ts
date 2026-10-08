@@ -2205,6 +2205,43 @@ export const ComplaintService = {
       console.warn("Could not log FIR to GD:", gdErr);
     }
 
+    // Synchronize to FIR Module Store
+    try {
+      const { firService } = await import("./firService");
+      const existing = firService.getFirBySourceComplaintId(complaint.id);
+      if (!existing) {
+        firService.registerFir({
+          sourceComplaintId: complaint.id,
+          sourceComplaintNumber: complaint.complaintNumber,
+          firNumber,
+          firDate: dateStr,
+          policeStation: complaint.policeStation,
+          district: complaint.district,
+          state: "Haryana",
+          category: complaint.category,
+          categoryDisplay: complaint.categoryDisplay,
+          priority: complaint.priority,
+          actsAndSections: sections,
+          incidentDateFrom: complaint.incidentDate || dateStr,
+          incidentPlace: complaint.incidentPlace,
+          complainantName: complaint.complainantName,
+          complainantMobile: complaint.complainantMobile,
+          complainantAddress: complaint.complainantAddress,
+          complainantCity: complaint.complainantCity,
+          complainantDistrict: complaint.complainantDistrict,
+          incidentDetails: complaint.incidentDetails,
+          registeredBy: officerName,
+          assignedIoId: complaint.assignedEoId,
+          assignedIoName: complaint.assignedEoName,
+          assignedIoRank: complaint.assignedEoRank,
+          assignedIoBeltNumber: complaint.assignedEoBeltNumber,
+          assignedIoPhone: complaint.assignedEoPhone,
+        });
+      }
+    } catch (firSyncErr) {
+      console.warn("Could not sync to FIR store:", firSyncErr);
+    }
+
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 

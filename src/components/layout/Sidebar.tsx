@@ -50,25 +50,32 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha, Complaints, and Management
+  // Toggle slide bar states for Roznamcha, Complaints, FIR, and Management
   const [roznamchaOpen, setRoznamchaOpen] = useState(true);
   const [complaintsOpen, setComplaintsOpen] = useState(true);
+  const [firOpen, setFirOpen] = useState(true);
   const [managementOpen, setManagementOpen] = useState(true);
 
   // Detect active module
   const isRoznamchaPath = pathname.startsWith("/general-diary");
-  const isComplaintsPath = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+  const isFirPath = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
+  const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS">("COMPLAINTS");
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR">("COMPLAINTS");
 
   useEffect(() => {
     if (isRoznamchaPath) {
       setActiveModule("ROZNAMCHA");
       try {
         window.localStorage.setItem("cms_active_module", "ROZNAMCHA");
+      } catch {}
+    } else if (isFirPath) {
+      setActiveModule("FIR");
+      try {
+        window.localStorage.setItem("cms_active_module", "FIR");
       } catch {}
     } else if (isComplaintsPath) {
       setActiveModule("COMPLAINTS");
@@ -78,16 +85,17 @@ export function Sidebar() {
     } else {
       try {
         const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS") {
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR") {
           setActiveModule(saved);
         }
       } catch {}
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath]);
+  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath]);
 
   // Determine which module to display in the toggle slide bar
-  const showRoznamcha = isRoznamchaPath || (!isComplaintsPath && activeModule === "ROZNAMCHA");
-  const showComplaints = isComplaintsPath || (!isRoznamchaPath && activeModule === "COMPLAINTS");
+  const showRoznamcha = isRoznamchaPath || (!isComplaintsPath && !isFirPath && activeModule === "ROZNAMCHA");
+  const showComplaints = isComplaintsPath || (!isRoznamchaPath && !isFirPath && activeModule === "COMPLAINTS");
+  const showFir = isFirPath || (!isRoznamchaPath && !isComplaintsPath && activeModule === "FIR");
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
@@ -101,10 +109,18 @@ export function Sidebar() {
     { name: "Station Diary Opening", href: "/general-diary?type=AAGAZ_ROZNAMCHA", icon: Clock },
   ];
 
-  // COMPLAINTS NAVIGATION ITEMS (Cleaned: Hidden Register New Complaint, Disposed Complaints, Draft reports/NCR, Notice templates, CM Window, Under approval queue)
+  // COMPLAINTS NAVIGATION ITEMS
   const complaintNavItems: NavItem[] = [
-    { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "6 Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "Active", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
+    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  ];
+
+  // FIR NAVIGATION ITEMS (Complete Parity with Complaints module)
+  const firNavItems: NavItem[] = [
+    { name: "FIR Register", href: "/fir", icon: Scale, badge: "CCTNS", badgeColor: "bg-red-50 text-red-700 border-red-200" },
+    { name: "Register FIR", href: "/fir/register", icon: PlusCircle, badge: "u/s 173 BNSS", badgeColor: "bg-amber-50 text-amber-800 border-amber-300" },
+    { name: "Investigation Workspace", href: "/fir-workspace", icon: UserCheck },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   ];
 
@@ -323,6 +339,85 @@ export function Sidebar() {
                           className={cn(
                             "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
                             item.badgeColor || "bg-blue-50 text-blue-700 border-blue-200"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* 2.5. FIR TOGGLE SLIDE BAR (Only visible if FIR is open/active) */}
+        {showFir && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setFirOpen(!firOpen)}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                isExpanded ? "justify-between hover:bg-slate-100" : "justify-center hover:bg-slate-100",
+                isFirPath ? "bg-red-50/70" : ""
+              )}
+              title="Toggle FIR Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Scale className="w-4 h-4 text-red-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
+                    FIR (First Info Report)
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {firOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </span>
+              )}
+            </button>
+
+            {firOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {firNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-lg text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-3 py-2"
+                          : "justify-center p-2.5",
+                        isActive
+                          ? "bg-red-50 text-red-700 font-bold border-l-3 border-red-600 shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-red-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-4 h-4 shrink-0",
+                            isActive ? "text-red-600" : "text-slate-400 group-hover:text-red-600"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-red-50 text-red-700 border-red-200"
                           )}
                         >
                           {item.badge}

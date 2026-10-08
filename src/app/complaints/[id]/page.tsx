@@ -2052,20 +2052,19 @@ Certified official record copy.`;
             </p>
           </div>
 
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            onClick={() => {
-              setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
-              setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
-              setFirModalOpen(true);
-            }}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
-          >
-            <Scale className="w-4 h-4" />
-            <span>Register FIR (प्राथमिकी दर्ज करें)</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href={`/fir/register?complaintId=${complaint.id}`}>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
+              >
+                <Scale className="w-4 h-4" />
+                <span>Register FIR in FIR Module</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
 
@@ -2083,6 +2082,17 @@ Certified official record copy.`;
               </p>
             </div>
           </div>
+          <Link href="/fir">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-emerald-300 text-emerald-800 bg-white hover:bg-emerald-100 text-xs font-bold gap-1.5"
+            >
+              <Scale className="w-3.5 h-3.5 text-emerald-600" />
+              <span>View FIR in Register</span>
+              <ArrowRight className="w-3 h-3" />
+            </Button>
+          </Link>
         </div>
       )}
 

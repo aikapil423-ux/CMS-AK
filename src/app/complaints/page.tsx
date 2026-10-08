@@ -1487,14 +1487,29 @@ function ComplaintListContent() {
 
                             {/* Direct FIR for SHO account: Show "Register FIR" button */}
                             {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleOpenFirRegisterModal(c)}
-                                className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
-                              >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Register FIR</span>
-                              </Button>
+                              <Link href={`/fir/register?complaintId=${c.id}`} className="w-full">
+                                <Button
+                                  size="sm"
+                                  className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
+                                >
+                                  <Scale className="w-3.5 h-3.5" />
+                                  <span>Register FIR</span>
+                                </Button>
+                              </Link>
+                            )}
+
+                            {/* If FIR registered, show link to FIR Register */}
+                            {(c.isFirRegistered || c.firNumber) && (
+                              <Link href="/fir" className="w-full">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-[11px] font-bold gap-1 justify-center border-red-300 text-red-700 hover:bg-red-50 cursor-pointer shadow-2xs"
+                                >
+                                  <Scale className="w-3.5 h-3.5" />
+                                  <span>FIR: {c.firNumber || "Registered"}</span>
+                                </Button>
+                              </Link>
                             )}
 
                             {/* EO: If Report prepared with Complete or FIR Recommend and not yet sent */}
