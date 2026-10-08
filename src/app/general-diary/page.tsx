@@ -11,7 +11,6 @@ import {
   Printer,
   PlusCircle,
   Sparkles,
-  History,
   ChevronLeft,
   ChevronRight,
   Trash2,
@@ -31,14 +30,15 @@ import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { GDRecordModal } from "@/components/general-diary/GDRecordModal";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 
-type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS" | "AUDIT_TRAIL";
+type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
 
 function GeneralDiaryContent() {
   const router = useRouter();
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "ALL";
-  const initialTab = (searchParams.get("tab") as ActiveTab) || "REGISTER";
+  const tabParam = searchParams.get("tab") as ActiveTab | null;
+  const initialTab = tabParam === "SUGGESTIONS_DRAFTS" ? "SUGGESTIONS_DRAFTS" : "REGISTER";
 
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
@@ -180,9 +180,6 @@ function GeneralDiaryContent() {
               PPR 1934 Rule 22.48
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Complete electronic register for Haryana Police Stations &amp; Chowkies. Immutable, sequential, and court-admissible.
-          </p>
         </div>
 
         {/* Top Action Buttons */}
@@ -258,22 +255,6 @@ function GeneralDiaryContent() {
               {paginatedData.suggestedCount + paginatedData.draftCount}
             </span>
           )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("AUDIT_TRAIL");
-            setPage(1);
-          }}
-          className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "AUDIT_TRAIL"
-              ? "border-emerald-700 text-emerald-950 font-black bg-emerald-50/40"
-              : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-          }`}
-        >
-          <History className="w-4 h-4 text-emerald-600" />
-          <span>Verification &amp; Audit Trail</span>
         </button>
       </div>
 
