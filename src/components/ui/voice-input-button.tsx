@@ -25,6 +25,9 @@ export function VoiceInputButton({
   const [unsupported, setUnsupported] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  // Deduplication guard — Chrome can re-emit the same final transcript
+  // multiple times through onresult; without this, text gets appended twice+
+  const lastTranscriptRef = useRef<string>("");
 
   useEffect(() => {
     const SpeechRecognition =
@@ -86,6 +89,18 @@ export function VoiceInputButton({
       return;
     }
 
+    // Kill any previous instance first — a leftover live instance would
+    // emit its result AGAIN on top of the new one (duplicate words bug)
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {
+        // ignore
+      }
+      recognitionRef.current = null;
+    }
+    lastTranscriptRef.current = "";
+
     try {
       const recognition = new SpeechRecognition();
       recognitionRef.current = recognition;
@@ -100,15 +115,24 @@ export function VoiceInputButton({
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results?.[0]?.[0]?.transcript;
-        if (transcript) {
-          const cleanTranscript = transcript.trim();
-          // Smart append or replace
-          if (currentValue && currentValue.trim().length > 0) {
-            onTranscript(`${currentValue.trim()} ${cleanTranscript}`);
-          } else {
-            onTranscript(cleanTranscript);
-          }
+        // Process ONLY the newest result and ONLY when it is final.
+        // Non-final / provisional fires must be ignored or the same words
+        // get appended more than once.
+        const result =
+          event.results?.[event.resultIndex] ?? event.results?.[0];
+        if (!result || !result.isFinal) return;
+        const transcript = result[0]?.transcript;
+        if (!transcript) return;
+        const cleanTranscript = transcript.trim();
+        if (!cleanTranscript) return;
+        // Same final transcript re-emitted? Skip it.
+        if (cleanTranscript === lastTranscriptRef.current) return;
+        lastTranscriptRef.current = cleanTranscript;
+        // Smart append or replace
+        if (currentValue && currentValue.trim().length > 0) {
+          onTranscript(`${currentValue.trim()} ${cleanTranscript}`);
+        } else {
+          onTranscript(cleanTranscript);
         }
       };
 
