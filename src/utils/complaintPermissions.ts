@@ -50,14 +50,16 @@ export function isComplaintAssignedToEo(complaint: ComplaintItem): boolean {
 export function isUserAssignedEo(user: AuthUserContext, complaint: ComplaintItem): boolean {
   if (!isComplaintAssignedToEo(complaint)) return false;
 
-  if (complaint.assignedEoId && complaint.assignedEoId === user.id) return true;
+  if (complaint.assignedEoId && (complaint.assignedEoId === user.id || complaint.assignedEoId === user.pno)) return true;
   if (complaint.assignedEoPno && user.pno && complaint.assignedEoPno === user.pno) return true;
-  if (
-    complaint.assignedEoName &&
-    user.name &&
-    complaint.assignedEoName.toLowerCase().trim() === user.name.toLowerCase().trim()
-  ) {
-    return true;
+
+  if (complaint.assignedEoName && user.name) {
+    const cName = complaint.assignedEoName.toLowerCase().replace(/^(si|asi|hc|insp|inspector|sub-inspector)\.?\s+/i, "").trim();
+    const uName = user.name.toLowerCase().replace(/^(si|asi|hc|insp|inspector|sub-inspector)\.?\s+/i, "").trim();
+    if (cName === uName) return true;
+    if (user.role === "ENQUIRY_OFFICER" && (cName.includes(uName) || uName.includes(cName))) {
+      return true;
+    }
   }
   return false;
 }
@@ -235,9 +237,16 @@ export function canTransferJustification(user: AuthUserContext, complaint: Compl
 
 /**
  * 8. Can Create SHO's Own Report (Separate from EO's report)
- * When complaint workflow is with SHO or review stage.
+ * When complaint is assigned to EO, SHO/Superiors cannot generate reports; only EO can.
+ * Only when unassigned or review stage can SHO create supervisory reports.
  */
 export function canCreateShoReport(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  if (isComplaintAssignedToEo(complaint)) {
+    return {
+      allowed: false,
+      reason: "Access Denied: Complaint is currently assigned to Enquiry Officer. Only the assigned EO can generate reports.",
+    };
+  }
   if (isShoOrSuperior(user.role)) {
     return { allowed: true };
   }

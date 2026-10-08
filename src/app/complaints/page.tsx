@@ -41,6 +41,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem, OfficerNotification, getMainComplaintStatus } from "@/types";
+import { isUserAssignedEo } from "@/utils/complaintPermissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
@@ -1512,8 +1513,8 @@ function ComplaintListContent() {
                               </Link>
                             )}
 
-                            {/* EO: If Report prepared with Complete or FIR Recommend and not yet sent */}
-                            {isEo && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
+                            {/* EO: If Report prepared with Complete or FIR Recommend and not yet sent - strictly only assigned EO */}
+                            {isUserAssignedEo(currentUser, c) && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
                               <Button
                                 size="sm"
                                 onClick={() => setEoSendToShoModalComplaint(c)}
@@ -1784,8 +1785,8 @@ function ComplaintListContent() {
                       </div>
                     )}
 
-                    {/* Additional action buttons on mobile */}
-                    {isEo && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
+                    {/* Additional action buttons on mobile - strictly only assigned EO */}
+                    {isUserAssignedEo(currentUser, c) && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
                       <Button
                         size="sm"
                         onClick={() => setEoSendToShoModalComplaint(c)}

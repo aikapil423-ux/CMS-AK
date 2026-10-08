@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem, EOOutcome, LegalAnalysisReport } from "@/types";
+import { isUserAssignedEo } from "@/utils/complaintPermissions";
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { LegalAssistantService } from "@/services/legalAssistantService";
 import {
@@ -763,9 +764,15 @@ function EnquiryDraftsContent() {
     applyComplaintWithAnalysis(complaint, activeFormat, newClass, editingReportId, isNewVersionMode);
   };
 
+  const isAssignedEo = complaint ? isUserAssignedEo(currentUser, complaint) : false;
+
   // Open Send to SHO Modal
   const handleSendToSho = () => {
     if (!complaint) return;
+    if (!isAssignedEo) {
+      alert("Access Denied: Only the assigned Enquiry Officer can send the enquiry report to SHO.");
+      return;
+    }
     setEoSendModalOpen(true);
   };
 
@@ -775,6 +782,10 @@ function EnquiryDraftsContent() {
     remarks: string;
   }) => {
     if (!complaint) return;
+    if (!isAssignedEo) {
+      alert("Access Denied: Only the assigned Enquiry Officer can submit reports to SHO.");
+      return;
+    }
     setSendingToSho(true);
     try {
       const displayCat =
@@ -1629,8 +1640,8 @@ function EnquiryDraftsContent() {
               )}
             </Button>
 
-            {/* Send to SHO Button with 3-Option Category Selection Dialog */}
-            {complaint && !complaint.isSentToSho && (
+            {/* Send to SHO Button with 3-Option Category Selection Dialog - strictly only assigned EO */}
+            {complaint && isAssignedEo && !complaint.isSentToSho && (
               <Button
                 type="button"
                 onClick={handleSendToSho}
@@ -1698,8 +1709,8 @@ function EnquiryDraftsContent() {
               )}
             </div>
 
-            {/* If FIR is recommended: Prompt to Send to SHO */}
-            {((selectedClassification || analysisResult.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+            {/* If FIR is recommended: Prompt to Send to SHO - strictly only assigned EO */}
+            {isAssignedEo && !complaint.isSentToSho && ((selectedClassification || analysisResult.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
               <div className="pt-2 border-t border-red-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs bg-red-100/50 p-2.5 rounded-lg">
                 <div className="flex items-center gap-2 text-red-950 font-semibold">
                   <Scale className="w-4 h-4 text-red-600 shrink-0" />
@@ -2396,7 +2407,7 @@ function EnquiryDraftsContent() {
               )}
             </Button>
 
-            {complaint && ((selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+            {complaint && isAssignedEo && !complaint.isSentToSho && ((selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
               <Button
                 type="button"
                 onClick={handleSendToSho}

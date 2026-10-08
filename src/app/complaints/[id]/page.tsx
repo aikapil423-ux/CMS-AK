@@ -693,10 +693,14 @@ export default function ComplaintProfilePage() {
   const isUnassigned = (!complaint?.assignedEoName || complaint?.status === "REGISTERED") && !isDirectFirCase;
 
   // Centralized Permissions
+  const isComplaintAssigned = complaint ? isComplaintAssignedToEo(complaint) : false;
   const docCreationPerm = complaint ? canCreateDocument(currentUser, complaint) : { allowed: false };
   const canUploadDocument = docCreationPerm.allowed;
   const canGenerateDocument = docCreationPerm.allowed;
-  const canGenerateReport = docCreationPerm.allowed;
+  // When complaint is assigned to an EO, only the assigned EO can generate reports
+  const canGenerateReport = isComplaintAssigned
+    ? isAssignedEo
+    : (docCreationPerm.allowed || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false));
 
   const canAssign = complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
   const canAskProgress = complaint ? canAskProgressReport(currentUser, complaint).allowed && !isDirectFirCase : false;
@@ -1087,6 +1091,10 @@ export default function ComplaintProfilePage() {
 
   // Trigger EO Send to SHO Modal
   const handleOpenEoSendToShoModal = (report?: ComplaintReportItem) => {
+    if (!isAssignedEo) {
+      alert("Access Denied: Only the assigned Enquiry Officer can send the enquiry report to SHO.");
+      return;
+    }
     setSelectedReportForSho(report);
     setEoSendToShoModalOpen(true);
   };
@@ -1097,6 +1105,10 @@ export default function ComplaintProfilePage() {
     remarks: string;
   }) => {
     if (!complaint) return;
+    if (!isAssignedEo) {
+      alert("Access Denied: Only the assigned Enquiry Officer can submit reports to SHO.");
+      return;
+    }
     setSendingReportToSho(true);
     try {
       const displayCat =
@@ -2319,7 +2331,7 @@ Certified official record copy.`;
                 </button>
               )}
 
-              {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+              {canGenerateReport && (
                 <button
                   type="button"
                   onClick={() => {
@@ -3223,7 +3235,7 @@ Certified official record copy.`;
                   </Button>
                 )}
 
-                {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+                {canGenerateReport && (
                   <div className="relative" ref={generateReportDropdownRef}>
                     <div className="inline-flex rounded-lg shadow-xs">
                       <Button
@@ -3522,8 +3534,8 @@ Certified official record copy.`;
                             </Button>
                           )}
 
-                          {/* Send to SHO button (if applicable) */}
-                          {!isMhc && !complaint.isSentToSho && (
+                          {/* Send to SHO button (Strictly only visible to assigned EO) */}
+                          {isAssignedEo && !complaint.isSentToSho && (
                             <Button
                               type="button"
                               variant="primary"
@@ -3576,7 +3588,7 @@ Certified official record copy.`;
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-2 pt-2">
-                    {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+                    {canGenerateReport && (
                       <Button
                         size="sm"
                         variant="primary"
