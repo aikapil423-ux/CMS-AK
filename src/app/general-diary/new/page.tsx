@@ -106,7 +106,7 @@ function NewGDEntryContent() {
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
   const [selectedOfficerId, setSelectedOfficerId] = useState<string>("usr_si_malkeet");
   const [customOfficerName, setCustomOfficerName] = useState("");
-  const [selectedType, setSelectedType] = useState<string>(preselectedType || "OPENING_OF_GD");
+  const [selectedType, setSelectedType] = useState<string>(preselectedType || "");
 
   // Date & Time — SERVER-OWNED (read-only; CCTNS dd/mm/yyyy + HH:mm 24-hour)
   const [serverDateDisplay, setServerDateDisplay] = useState("--/--/----");
@@ -349,14 +349,15 @@ function NewGDEntryContent() {
     }
   };
 
-  // Whenever type changes, load default template (skipped right after
-  // Clear Form, and while editing an existing draft so its text is kept)
+  // Whenever type changes, load default template (skipped while no type is
+  // chosen yet, right after Clear Form, and while editing an existing draft)
   useEffect(() => {
-    if (editDraftId) return;
     if (suppressAutoTemplateRef.current) {
       suppressAutoTemplateRef.current = false;
       return;
     }
+    if (!selectedType) return;
+    if (editDraftId) return;
     applyTemplateForType(selectedType, currentOfficer.name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedType, currentOfficer.name, editDraftId]);
@@ -387,6 +388,10 @@ function NewGDEntryContent() {
   // Submit and Lock GD Entry
   const handleSaveAndLock = async () => {
     setError(null);
+    if (!selectedType) {
+      setError("Please select the GD Type first.");
+      return;
+    }
     if (!subject.trim()) {
       setError("Please enter the Subject for this General Diary entry.");
       return;
@@ -477,31 +482,38 @@ function NewGDEntryContent() {
   // Clear Form — truly clears all fields (no template re-fill afterwards)
   const handleReset = () => {
     suppressAutoTemplateRef.current = true;
-    if (selectedType === "OPENING_OF_GD") {
-      // Type already at default: the template effect will not refire,
+    if (!selectedType) {
+      // Type already empty: the template effect will not refire,
       // so consume the suppression immediately
       suppressAutoTemplateRef.current = false;
     }
     setSelectedOfficerId("usr_si_malkeet");
     setCustomOfficerName("");
-    setSelectedType("OPENING_OF_GD");
+    setSelectedType("");
+    setTypeSearchQuery("");
+    setTypeDropdownOpen(false);
     setSubject("");
     setNarrative("");
     setError(null);
     setSuccessMessage(null);
   };
 
-  // Common Quick Types (official Haryana CCTNS GD types)
-  const commonTypes = [
-    { code: "OPENING_OF_GD", label: "Opening of GD", emoji: "🌅" },
-    { code: "ROLL_CALL", label: "Roll Call", emoji: "📋" },
-    { code: "DEPARTURE", label: "Departure", emoji: "🚶‍♂️" },
-    { code: "ARRIVAL_RETURN", label: "Arrival/Return", emoji: "🏠" },
-    { code: "NAKABANDI", label: "Nakabandi", emoji: "🚧" },
-    { code: "MISSING_PERSON", label: "Missing Person", emoji: "🔎" },
-    { code: "CRIMINAL_CASE", label: "Criminal Case", emoji: "⚖️" },
-    { code: "CLOSE_OF_GD", label: "Close of GD", emoji: "🌙" },
-  ];
+  // Searchable GD Type dropdown (official CCTNS list — user must select first)
+  const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
+  const [typeSearchQuery, setTypeSearchQuery] = useState("");
+
+  const filteredTypes = useMemo(() => {
+    const q = typeSearchQuery.trim().toLowerCase();
+    if (!q) return types;
+    return types.filter(
+      (t) => t.nameEn.toLowerCase().includes(q) || t.code.toLowerCase().includes(q)
+    );
+  }, [types, typeSearchQuery]);
+
+  const selectedTypeLabel = useMemo(
+    () => types.find((t) => t.code === selectedType)?.nameEn || "",
+    [types, selectedType]
+  );
 
   return (
     <div className="p-3 sm:p-6 max-w-4xl mx-auto space-y-5">
@@ -564,33 +576,6 @@ function NewGDEntryContent() {
             </div>
           )}
 
-          {/* Quick Select Buttons (Child-Friendly Activity Chips) */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 block uppercase tracking-wider">
-              Quick Select Common Activity:
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {commonTypes.map((item) => {
-                const isSelected = selectedType === item.code;
-                return (
-                  <button
-                    key={item.code}
-                    type="button"
-                    onClick={() => setSelectedType(item.code)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#0b192c] text-white shadow-sm ring-2 ring-blue-500"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                    }`}
-                  >
-                    <span>{item.emoji}</span>
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
             {/* 1. Entry for Officer */}
             <div className="space-y-1.5">
@@ -622,23 +607,72 @@ function NewGDEntryContent() {
               )}
             </div>
 
-            {/* 2. GD Type */}
-            <div className="space-y-1.5">
+            {/* 2. GD Type — searchable select (user must choose first) */}
+            <div className="space-y-1.5 relative">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-blue-600" />
                 <span>GD Type – Select *</span>
+                {!selectedType && (
+                  <span className="text-[11px] font-semibold text-amber-700">
+                    (select type first)
+                  </span>
+                )}
               </label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
-              >
-                {types.map((t) => (
-                  <option key={t.code} value={t.code}>
-                    {t.nameEn}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={typeDropdownOpen ? typeSearchQuery : selectedTypeLabel}
+                onChange={(e) => {
+                  setTypeSearchQuery(e.target.value);
+                  setTypeDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  setTypeDropdownOpen(true);
+                  setTypeSearchQuery("");
+                }}
+                onBlur={() => {
+                  window.setTimeout(() => setTypeDropdownOpen(false), 150);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setTypeDropdownOpen(false);
+                }}
+                placeholder="Type to search from official CCTNS list…"
+                className={`w-full px-3 py-2.5 border rounded-lg text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-[#0b192c] ${
+                  selectedType
+                    ? "bg-slate-50 border-slate-300 text-slate-900"
+                    : "bg-amber-50 border-amber-300 text-slate-600"
+                }`}
+              />
+              {typeDropdownOpen && (
+                <div
+                  className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-slate-300 rounded-lg shadow-lg"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  {filteredTypes.length === 0 ? (
+                    <p className="px-3 py-2.5 text-xs text-slate-500">
+                      No GD type matches &quot;{typeSearchQuery}&quot;
+                    </p>
+                  ) : (
+                    filteredTypes.map((t) => (
+                      <button
+                        key={t.code}
+                        type="button"
+                        onClick={() => {
+                          setSelectedType(t.code);
+                          setTypeDropdownOpen(false);
+                          setTypeSearchQuery("");
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer ${
+                          t.code === selectedType
+                            ? "bg-blue-50 font-bold text-blue-900"
+                            : "text-slate-800 hover:bg-slate-100"
+                        }`}
+                      >
+                        {t.nameEn}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
