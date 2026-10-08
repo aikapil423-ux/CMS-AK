@@ -14,9 +14,6 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
-  Clock,
-  Car,
-  Package,
   CheckCircle2,
   Flame,
   LayoutGrid,
@@ -93,12 +90,7 @@ export function Sidebar() {
   const roznamchaNavItems: NavItem[] = [
     { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
     { name: "Add New GD Entry", href: "/general-diary/new", icon: PlusCircle },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "Departure & Return", href: "/general-diary?type=DEPARTURE", icon: Clock },
-    { name: "Patrol & Night Vigilance", href: "/general-diary?type=PATROLLING", icon: Car },
-    { name: "Malkhana & Property", href: "/general-diary?type=PROPERTY_DEPOSITED_IN_MALKHANA", icon: Package },
-    { name: "Station Diary Opening", href: "/general-diary?type=OPENING_OF_GD", icon: Clock },
   ];
 
   // COMPLAINTS NAVIGATION ITEMS (Cleaned: Hidden Register New Complaint, Disposed Complaints, Draft reports/NCR, Notice templates, CM Window, Under approval queue)
