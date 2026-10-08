@@ -603,23 +603,22 @@ function NewGDEntryContent() {
               )}
             </div>
 
-            {/* Date & Time — SERVER-OWNED (read-only; stacked right block, CCTNS form) */}
+            {/* Date & Time — SERVER-OWNED (read-only; dd/mm/yyyy | hh:mm side-by-side) */}
             <div className="space-y-2">
-              <input
-                type="text"
-                value={serverDateDisplay}
-                readOnly
-                disabled
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
-              />
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-800 whitespace-nowrap">Time-</span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={serverDateDisplay}
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
+                />
                 <input
                   type="text"
                   value={serverTimeDisplay}
                   readOnly
                   disabled
-                  className="flex-1 px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
+                  className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
                 />
               </div>
               <span className="text-[11px] text-slate-500 flex items-center gap-1">
