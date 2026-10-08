@@ -92,10 +92,13 @@ export function Sidebar() {
     }
   }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath]);
 
-  // Determine which module to display in the toggle slide bar
-  const showRoznamcha = isRoznamchaPath || (!isComplaintsPath && !isFirPath && activeModule === "ROZNAMCHA");
-  const showComplaints = isComplaintsPath || (!isRoznamchaPath && !isFirPath && activeModule === "COMPLAINTS");
-  const showFir = isFirPath || (!isRoznamchaPath && !isComplaintsPath && activeModule === "FIR");
+  // Check if user is on portal home page (Select Operational Module)
+  const isPortalHome = pathname === "/";
+
+  // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
+  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && activeModule === "ROZNAMCHA"));
+  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && activeModule === "COMPLAINTS"));
+  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && activeModule === "FIR"));
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [

@@ -13,11 +13,13 @@ import {
   Lock,
   ChevronRight,
   Users,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useModule } from "@/context/ModuleContext";
 import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
+import { firService } from "@/services/firService";
 import { Button } from "@/components/ui/button";
 
 export default function PostLoginPortalPage() {
@@ -27,6 +29,7 @@ export default function PostLoginPortalPage() {
 
   const [complaintCount, setComplaintCount] = useState(6);
   const [gdCount, setGdCount] = useState(4);
+  const [firCount, setFirCount] = useState(3);
 
   useEffect(() => {
     async function loadStats() {
@@ -37,6 +40,8 @@ export default function PostLoginPortalPage() {
         ]);
         setComplaintCount(complaints.length);
         setGdCount(gdEntries.length);
+        const firs = firService.getAllFirs();
+        setFirCount(firs.length);
       } catch (e) {
         // Fallback
       }
@@ -54,8 +59,13 @@ export default function PostLoginPortalPage() {
     router.push("/complaints");
   };
 
+  const handleSelectFir = () => {
+    switchToModule("FIR");
+    router.push("/fir");
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6 py-4 sm:py-8 animate-in fade-in-50 text-slate-800">
+    <div className="max-w-6xl mx-auto space-y-6 py-4 sm:py-8 animate-in fade-in-50 text-slate-800">
       {/* Title & Instructions */}
       <div className="px-1 text-center sm:text-left">
         <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
@@ -74,12 +84,12 @@ export default function PostLoginPortalPage() {
         </p>
       </div>
 
-      {/* EXACTLY TWO CLEAN WHITE & BLUE PRIMARY MODULE CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pt-1">
+      {/* THREE PRIMARY OPERATIONAL MODULE CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 pt-1">
         {/* TAB 1: ROZNAMCHA GD (GENERAL DIARY) */}
         <div
           onClick={handleSelectRoznamcha}
-          className="cursor-pointer bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-500 p-6 sm:p-7 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between relative overflow-hidden"
+          className="cursor-pointer bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-500 p-6 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between relative overflow-hidden"
         >
           {/* Top subtle blue accent line */}
           <div className="absolute top-0 right-0 left-0 h-1 bg-blue-600"></div>
@@ -90,15 +100,15 @@ export default function PostLoginPortalPage() {
                 <BookOpen className="w-6 h-6" />
               </div>
               <span className="font-mono text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
-                PPR Chapter XXII
+                PPR Ch. XXII
               </span>
             </div>
 
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
                 Roznamcha GD (General Diary)
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 Daily 24-hour official station diary. Maintain chronological occurrence entries, shift turnovers, sentry reliefs, patrol movements, and malkhana property records.
               </p>
             </div>
@@ -107,7 +117,7 @@ export default function PostLoginPortalPage() {
             <div className="pt-1 flex flex-wrap gap-2 text-xs">
               <span className="bg-slate-50 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-medium flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-600" />
-                {gdCount} Entries Recorded Today
+                {gdCount} Entries Today
               </span>
               <span className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-200 text-xs font-semibold flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-emerald-600" />
@@ -118,14 +128,14 @@ export default function PostLoginPortalPage() {
 
           {/* Action Button: Police Blue */}
           <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">Daily Station Ledger</span>
+            <span className="text-xs text-slate-500 font-medium">Station Ledger</span>
             <Button
               variant="primary"
               size="md"
               onClick={handleSelectRoznamcha}
               className="text-xs font-bold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white group-hover:translate-x-0.5 transition-transform"
             >
-              <span>Open Roznamcha GD</span>
+              <span>Open Roznamcha</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -134,7 +144,7 @@ export default function PostLoginPortalPage() {
         {/* TAB 2: COMPLAINT MANAGEMENT */}
         <div
           onClick={handleSelectComplaints}
-          className="cursor-pointer bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-500 p-6 sm:p-7 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between relative overflow-hidden"
+          className="cursor-pointer bg-white rounded-2xl border-2 border-slate-200 hover:border-blue-800 p-6 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between relative overflow-hidden"
         >
           {/* Top subtle blue accent line */}
           <div className="absolute top-0 right-0 left-0 h-1 bg-blue-800"></div>
@@ -145,16 +155,16 @@ export default function PostLoginPortalPage() {
                 <FileText className="w-6 h-6" />
               </div>
               <span className="font-mono text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
-                BNSS Section 173(3)
+                Sec 173(3) BNSS
               </span>
             </div>
 
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
                 Complaint Management
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
-                Citizen intake desk, walk-in applications, CM Window petitions, enquiry officer (EO) assignment, preliminary verification, and final disposal records.
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                Citizen intake desk, walk-in applications, CM Window petitions, enquiry officer (EO) assignment, preliminary spot verification, and resolution.
               </p>
             </div>
 
@@ -166,21 +176,76 @@ export default function PostLoginPortalPage() {
               </span>
               <span className="bg-amber-50 text-amber-900 px-2.5 py-1 rounded-lg border border-amber-200 text-xs font-semibold flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-amber-600" />
-                Under Station Enquiry
+                Under Enquiry
               </span>
             </div>
           </div>
 
-          {/* Action Button: Red Accent Button for Complaint actions */}
+          {/* Action Button: Complaints Blue */}
           <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">Petitions & Verification</span>
+            <span className="text-xs text-slate-500 font-medium">Petitions &amp; Enquiry</span>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSelectComplaints}
+              className="text-xs font-bold gap-1.5 bg-blue-700 hover:bg-blue-800 text-white group-hover:translate-x-0.5 transition-transform"
+            >
+              <span>Open Complaints</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* TAB 3: FIR (FIRST INFORMATION REPORT) */}
+        <div
+          onClick={handleSelectFir}
+          className="cursor-pointer bg-white rounded-2xl border-2 border-slate-200 hover:border-red-500 p-6 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between relative overflow-hidden"
+        >
+          {/* Top subtle red accent line */}
+          <div className="absolute top-0 right-0 left-0 h-1 bg-red-600"></div>
+
+          <div className="space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-xl group-hover:bg-red-600 group-hover:text-white transition-colors border border-red-100">
+                <Scale className="w-6 h-6" />
+              </div>
+              <span className="font-mono text-[11px] font-semibold text-red-800 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                Sec 173 BNSS
+              </span>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-red-700 transition-colors">
+                FIR (First Info Report)
+              </h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                Statutory cognizable crime register under BNS 2023. Register FIRs, assign Investigating Officers (IO), record Zimni case diaries, and submit final reports.
+              </p>
+            </div>
+
+            {/* Status Pills */}
+            <div className="pt-1 flex flex-wrap gap-2 text-xs">
+              <span className="bg-slate-50 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-medium flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-red-600" />
+                {firCount} Registered FIRs
+              </span>
+              <span className="bg-red-50 text-red-900 px-2.5 py-1 rounded-lg border border-red-200 text-xs font-semibold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-red-600" />
+                Under Investigation
+              </span>
+            </div>
+          </div>
+
+          {/* Action Button: Red Crime / Statutory Color */}
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-medium">Crime Investigation</span>
             <Button
               variant="danger"
               size="md"
-              onClick={handleSelectComplaints}
+              onClick={handleSelectFir}
               className="text-xs font-bold gap-1.5 bg-red-600 hover:bg-red-700 text-white group-hover:translate-x-0.5 transition-transform"
             >
-              <span>Open Complaints</span>
+              <span>Open FIR Register</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>

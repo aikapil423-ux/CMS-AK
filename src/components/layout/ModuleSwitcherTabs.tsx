@@ -15,7 +15,7 @@ export function ModuleSwitcherTabs({ className, variant = "header" }: ModuleSwit
 
   if (variant === "dashboard") {
     return (
-      <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3.5", className)}>
+      <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-3.5", className)}>
         {/* Roznamcha GD Primary Tab Card */}
         <button
           onClick={() => switchToModule("ROZNAMCHA")}
