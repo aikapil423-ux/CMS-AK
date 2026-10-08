@@ -332,7 +332,7 @@ function GeneralDiaryContent() {
                   <th className="py-3 px-3.5 w-24">GD No</th>
                   <th className="py-3 px-3.5 w-44">Entry for officer</th>
                   <th className="py-3 px-3 w-32">GD Type</th>
-                  <th className="py-3 px-3 w-40">Subject</th>
+                  <th className="py-3 px-3 w-56 min-w-[14rem] max-w-[16rem]">Subject</th>
                   <th className="py-3 px-3 w-44">Date &amp; time</th>
                   <th className="py-3 px-3.5">Brief description</th>
                   <th className="py-3 px-3 w-24 text-right">Actions</th>
@@ -382,9 +382,9 @@ function GeneralDiaryContent() {
                         </span>
                       </td>
 
-                      {/* 4. Subject */}
-                      <td className="py-3.5 px-3 align-top">
-                        <p className="font-bold text-slate-950 text-xs">
+                      {/* 4. Subject — fixed-width, max 2 lines */}
+                      <td className="py-3.5 px-3 align-top w-56 min-w-[14rem] max-w-[16rem]">
+                        <p className="font-bold text-slate-950 text-xs line-clamp-2 break-words max-w-[16rem]">
                           {rec.subject}
                         </p>
                       </td>
