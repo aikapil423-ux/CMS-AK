@@ -10,8 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   User,
-  Clock,
-  Calendar,
   Save,
   RotateCcw,
   Sparkles,
@@ -605,8 +603,33 @@ function NewGDEntryContent() {
               )}
             </div>
 
-            {/* 2. GD Type — searchable select (user must choose first) */}
-            <div className="space-y-1.5 relative">
+            {/* Date & Time — SERVER-OWNED (read-only; stacked right block, CCTNS form) */}
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={serverDateDisplay}
+                readOnly
+                disabled
+                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-800 whitespace-nowrap">Time-</span>
+                <input
+                  type="text"
+                  value={serverTimeDisplay}
+                  readOnly
+                  disabled
+                  className="flex-1 px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
+                />
+              </div>
+              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Server date &amp; time — not editable (dd/mm/yyyy, 24-hour)
+              </span>
+            </div>
+          </div>
+
+          {/* 2. GD Type — searchable select, full width (user must choose first) */}
+          <div className="space-y-1.5 relative">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-blue-600" />
                 <span>GD Type – Select *</span>
@@ -672,44 +695,6 @@ function NewGDEntryContent() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Date & Time Row — SERVER-OWNED (read-only, CCTNS format) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-600" />
-                <span>Date *</span>
-              </label>
-              <input
-                type="text"
-                value={serverDateDisplay}
-                readOnly
-                disabled
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
-              />
-              <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> Server date — not editable (dd/mm/yyyy)
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-600" />
-                <span>Time *</span>
-              </label>
-              <input
-                type="text"
-                value={serverTimeDisplay}
-                readOnly
-                disabled
-                className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono text-slate-700 cursor-not-allowed"
-              />
-              <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> Server time — not editable (24-hour); stamped on save
-              </span>
-            </div>
-          </div>
 
           {/* 3. Subject */}
           <div className="space-y-1.5 pt-2 border-t border-slate-100">
