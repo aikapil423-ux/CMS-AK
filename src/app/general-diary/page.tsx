@@ -184,17 +184,6 @@ function GeneralDiaryContent() {
 
         {/* Top Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setPrintDailyRegisterOpen(true)}
-            className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-700" />
-            <span>Print Register</span>
-          </Button>
-
           <Link href="/general-diary/new">
             <Button
               type="button"
@@ -205,6 +194,17 @@ function GeneralDiaryContent() {
               <span>+ Add New GD</span>
             </Button>
           </Link>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPrintDailyRegisterOpen(true)}
+            className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-700" />
+            <span>Print Register</span>
+          </Button>
         </div>
       </div>
 
@@ -326,13 +326,13 @@ function GeneralDiaryContent() {
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-            <table className="w-full text-xs text-left">
+            <table className="w-full table-fixed text-xs text-left">
               <thead className="bg-[#0b192c] text-white uppercase text-[11px] tracking-wider font-sans">
                 <tr>
                   <th className="py-3 px-3.5 w-24">GD No</th>
                   <th className="py-3 px-3.5 w-44">Entry for officer</th>
                   <th className="py-3 px-3 w-32">GD Type</th>
-                  <th className="py-3 px-3 w-56 min-w-[14rem] max-w-[16rem]">Subject</th>
+                  <th className="py-3 px-3 w-32">Subject</th>
                   <th className="py-3 px-3 w-44">Date &amp; time</th>
                   <th className="py-3 px-3.5">Brief description</th>
                   <th className="py-3 px-3 w-24 text-right">Actions</th>
@@ -383,8 +383,8 @@ function GeneralDiaryContent() {
                       </td>
 
                       {/* 4. Subject — fixed-width, max 2 lines */}
-                      <td className="py-3.5 px-3 align-top w-56 min-w-[14rem] max-w-[16rem]">
-                        <p className="font-bold text-slate-950 text-xs line-clamp-2 break-words max-w-[16rem]">
+                      <td className="py-3.5 px-3 align-top w-32 overflow-hidden">
+                        <p className="font-bold text-slate-950 text-xs line-clamp-2 break-all">
                           {rec.subject}
                         </p>
                       </td>
@@ -407,7 +407,7 @@ function GeneralDiaryContent() {
 
                       {/* 6. Brief description */}
                       <td className="py-3.5 px-3.5 align-top">
-                        <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
+                        <p className="text-slate-700 text-xs leading-relaxed line-clamp-3 break-words">
                           {rec.narrative}
                         </p>
                       </td>
