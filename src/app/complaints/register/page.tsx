@@ -208,7 +208,7 @@ function extractAccusedFromComplaintText(fullText: string, fallbackAddress?: str
         results.push({
           id: `acc_${Date.now()}_${results.length + 1}`,
           name: cleanName,
-          address: commonAddr || "गांव कुटानी, जिला पानीपत",
+          address: commonAddr || "",
           phone,
           alias,
           relationWithComplainant: relation,
@@ -232,8 +232,11 @@ export default function RegisterComplaintPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
-  // SHO Specific: Direct Assign EO states (Shown only when registered from SHO ID)
+  // Permissions: Only MHC, SHO, and Superior officers can register complaints
+  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
   const isSho = currentUser ? (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") : false;
+  const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
   const [shouldAssignEoNow, setShouldAssignEoNow] = useState(false);
   const [selectedEoId, setSelectedEoId] = useState("");
   const [directionTemplate, setDirectionTemplate] = useState("SPOT_VERIFY");
@@ -1186,31 +1189,42 @@ export default function RegisterComplaintPage() {
       const inc = geminiData.incident || {};
       const comp = geminiData.complaint || {};
 
-      // 1. Complainant details
+      // 1. Complainant details - STRICT: ONLY fill what was found in the document!
+      const extractedName = c.name ? String(c.name).trim() : "";
+      const extractedAge = c.age && String(c.age).trim() !== "" ? String(c.age).trim() : "";
+      const extractedCity = c.city ? String(c.city).trim() : "";
+      const extractedDistrict = c.district ? String(c.district).trim() : "";
+      const extractedState = c.state ? String(c.state).trim() : "";
+      const extractedAddress = c.presentAddress ? String(c.presentAddress).trim() : "";
+      const extractedMobile = c.mobile ? String(c.mobile).replace(/\D/g, "").slice(0, 10) : "";
+      const extractedRelativeName = c.relativeName ? String(c.relativeName).trim() : "";
+      const extractedRelationType = c.relationType ? (c.relationType as RelativeRelation) : (c.gender === "FEMALE" ? "W/O" : "S/O");
+      const extractedGender = c.gender === "FEMALE" ? "FEMALE" : c.gender === "TRANSGENDER" ? "TRANSGENDER" : c.gender === "MALE" ? "MALE" : "MALE";
+
       setComplainants([
         {
           id: "comp_1",
-          name: c.name || "",
-          relationType: (c.relationType as RelativeRelation) || (c.gender === "FEMALE" ? "W/O" : "S/O"),
-          relativeName: c.relativeName || "",
-          gender: c.gender === "FEMALE" ? "FEMALE" : (c.gender || "MALE"),
-          age: c.age ? String(c.age) : "20",
+          name: extractedName,
+          relationType: extractedRelationType,
+          relativeName: extractedRelativeName,
+          gender: extractedGender,
+          age: extractedAge, // Never default to "20"! If not in document, leave empty!
           nationalityChoice: c.nationality === "Indian" ? "Indian" : (c.nationality ? "Other" : "Indian"),
           otherNationality: c.nationality && c.nationality !== "Indian" ? c.nationality : "",
           nationality: c.nationality || "Indian",
           countryCode: "+91",
-          presentAddress: c.presentAddress || "",
-          presentCity: c.city || currentUser.district || "Kurukshetra",
-          presentDistrict: c.district || currentUser.district || "Kurukshetra",
-          presentState: c.state || "Haryana",
+          presentAddress: extractedAddress,
+          presentCity: extractedCity, // Never default to "Kurukshetra"! If not in document, leave empty!
+          presentDistrict: extractedDistrict, // Never default to "Kurukshetra"! If not in document, leave empty!
+          presentState: extractedState, // Never default to "Haryana"! If not in document, leave empty!
           presentCountry: "India",
           isPermanentSameAsPresent: true,
-          permanentAddress: c.presentAddress || "",
-          permanentCity: c.city || currentUser.district || "Kurukshetra",
-          permanentDistrict: c.district || currentUser.district || "Kurukshetra",
-          permanentState: c.state || "Haryana",
+          permanentAddress: extractedAddress,
+          permanentCity: extractedCity,
+          permanentDistrict: extractedDistrict,
+          permanentState: extractedState,
           permanentCountry: "India",
-          mobile: c.mobile ? String(c.mobile).replace(/\D/g, "").slice(0, 10) : "",
+          mobile: extractedMobile,
         },
       ]);
 
@@ -1224,11 +1238,11 @@ export default function RegisterComplaintPage() {
         candidateAccused = [a];
       }
 
-      // Find any common fallback address from the inputs
+      // Shared address if mentioned for all accused in document - NEVER default to dummy address
       const commonAddress =
         candidateAccused.find((item) => item.address && item.address.trim().length > 3)?.address ||
         a?.address ||
-        "गांव कुटानी, जिला पानीपत";
+        "";
 
       // If an entry contains multiple names bundled together (same address or co-accused), split them into separate cards
       let expandedAccused: any[] = [];
@@ -1311,16 +1325,16 @@ export default function RegisterComplaintPage() {
         .map((item, idx) => ({
           id: `acc_${Date.now()}_${idx + 1}`,
           name: String(item.name || "").trim(),
-          address: String(item.address || commonAddress).trim(),
+          address: String(item.address || commonAddress || "").trim(),
           phone: item.phone ? String(item.phone).trim() : "",
           alias: item.alias ? String(item.alias).trim() : "",
           relationWithComplainant: item.relationWithComplainant ? String(item.relationWithComplainant).trim() : "",
         }));
 
-      // Fallback Safety Net: If AI returned only 1 or 0 accused, scan the full verbatim description for all accused (बरखिलाफ:- 1. ... 2. ... 3. ... 4. ...)
+      // Fallback Safety Net: If AI returned only 1 or 0 accused, scan the full verbatim description for all accused
       if (validAccusedCards.length <= 1) {
         const textToScan = `${comp.description || ""} \n ${inc.details || ""} \n ${textContent || ""}`;
-        const scannedFromText = extractAccusedFromComplaintText(textToScan, commonAddress);
+        const scannedFromText = extractAccusedFromComplaintText(textToScan, commonAddress || "");
         if (scannedFromText.length > validAccusedCards.length) {
           validAccusedCards = scannedFromText;
         }
@@ -1347,62 +1361,62 @@ export default function RegisterComplaintPage() {
         ]);
       }
 
-      // 3. Incident details
-      setIncidentPlace(inc.place || "");
-      setIsDateTimeKnown(inc.isDateTimeKnown !== undefined ? Boolean(inc.isDateTimeKnown) : true);
-      if (inc.date) setIncidentDate(inc.date);
-      if (inc.time) setIncidentTime(inc.time);
+      // 3. Incident details - STRICT: ONLY what was found in document
+      setIncidentPlace(inc.place ? String(inc.place).trim() : "");
+      setIsDateTimeKnown(Boolean(inc.isDateTimeKnown && inc.date));
+      setIncidentDate(inc.date ? String(inc.date).trim() : "");
+      setIncidentTime(inc.time ? String(inc.time).trim() : "");
       if (inc.category) setIncidentCategory(inc.category);
       if (inc.details) setIncidentDetails(inc.details);
 
-      // 4. Complaint details
+      // 4. Complaint details - STRICT: ONLY what was found in document
       if (comp.mode) setIntakeMode(comp.mode);
-      if (comp.subject) setComplaintSubject(comp.subject);
-      if (comp.description) setComplaintDescription(comp.description);
+      setComplaintSubject(comp.subject ? String(comp.subject).trim() : "");
+      setComplaintDescription(comp.description ? String(comp.description).trim() : inc.details ? String(inc.details).trim() : "");
       if (comp.type) setComplaintAgeType(comp.type);
       if (comp.isFirRegistered !== undefined) setIsFirRegistered(Boolean(comp.isFirRegistered));
       if (comp.firNumber) setFirNumber(comp.firNumber);
 
       setValidationErrors({});
       setAutofillProgress(100);
-      setAutofillStepText("All fields successfully populated from Gemini 3.5 Flash!");
+      setAutofillStepText("Fields successfully populated with verified data from document!");
 
       const filledKeys = new Set<string>();
-      if (c.name) filledKeys.add("complainantName");
-      if (c.relativeName) filledKeys.add("complainantRelativeName");
-      if (c.relationType) filledKeys.add("complainantRelationType");
-      if (c.gender) filledKeys.add("complainantGender");
-      if (c.age) filledKeys.add("complainantAge");
-      if (c.mobile) filledKeys.add("complainantMobile");
-      if (c.presentAddress) filledKeys.add("complainantPresentAddress");
-      if (c.city) filledKeys.add("complainantPresentCity");
-      if (c.district) filledKeys.add("complainantPresentDistrict");
-      if (c.state) filledKeys.add("complainantPresentState");
+      if (extractedName) filledKeys.add("complainantName");
+      if (extractedRelativeName) filledKeys.add("complainantRelativeName");
+      if (c.relationType && String(c.relationType).trim()) filledKeys.add("complainantRelationType");
+      if (c.gender && String(c.gender).trim()) filledKeys.add("complainantGender");
+      if (extractedAge) filledKeys.add("complainantAge");
+      if (extractedMobile) filledKeys.add("complainantMobile");
+      if (extractedAddress) filledKeys.add("complainantPresentAddress");
+      if (extractedCity) filledKeys.add("complainantPresentCity");
+      if (extractedDistrict) filledKeys.add("complainantPresentDistrict");
+      if (extractedState) filledKeys.add("complainantPresentState");
 
-      if (isKnown) {
+      if (isKnown && validAccusedCards.length > 0) {
         filledKeys.add("isAccusedKnown");
-        validAccusedCards.forEach((_, idx) => {
-          filledKeys.add(`accused_${idx}_name`);
-          filledKeys.add(`accused_${idx}_address`);
-          filledKeys.add(`accused_${idx}_phone`);
-          filledKeys.add(`accused_${idx}_alias`);
-          filledKeys.add(`accused_${idx}_relationWithComplainant`);
+        validAccusedCards.forEach((acc, idx) => {
+          if (acc.name && acc.name.trim()) filledKeys.add(`accused_${idx}_name`);
+          if (acc.address && acc.address.trim()) filledKeys.add(`accused_${idx}_address`);
+          if (acc.phone && acc.phone.trim()) filledKeys.add(`accused_${idx}_phone`);
+          if (acc.alias && acc.alias.trim()) filledKeys.add(`accused_${idx}_alias`);
+          if (acc.relationWithComplainant && acc.relationWithComplainant.trim()) filledKeys.add(`accused_${idx}_relationWithComplainant`);
         });
       }
 
-      if (inc.place) filledKeys.add("incidentPlace");
-      if (inc.landmark) filledKeys.add("incidentLandmark");
-      if (inc.category) filledKeys.add("incidentCategory");
-      if (inc.date) filledKeys.add("incidentDate");
-      if (inc.time) filledKeys.add("incidentTime");
-      if (inc.details) filledKeys.add("incidentDetails");
+      if (inc.place && String(inc.place).trim()) filledKeys.add("incidentPlace");
+      if (inc.landmark && String(inc.landmark).trim()) filledKeys.add("incidentLandmark");
+      if (inc.category && String(inc.category).trim()) filledKeys.add("incidentCategory");
+      if (inc.date && String(inc.date).trim()) filledKeys.add("incidentDate");
+      if (inc.time && String(inc.time).trim()) filledKeys.add("incidentTime");
+      if (inc.details && String(inc.details).trim()) filledKeys.add("incidentDetails");
 
-      if (comp.mode) filledKeys.add("intakeMode");
-      if (comp.subject) filledKeys.add("complaintSubject");
-      if (comp.description) filledKeys.add("complaintDescription");
-      if (comp.type) filledKeys.add("complaintAgeType");
-      if (comp.classification) filledKeys.add("complaintClassification");
-      if (comp.purpose) filledKeys.add("complaintPurpose");
+      if (comp.mode && String(comp.mode).trim()) filledKeys.add("intakeMode");
+      if (comp.subject && String(comp.subject).trim()) filledKeys.add("complaintSubject");
+      if (comp.description && String(comp.description).trim()) filledKeys.add("complaintDescription");
+      if (comp.type && String(comp.type).trim()) filledKeys.add("complaintAgeType");
+      if (comp.classification && String(comp.classification).trim()) filledKeys.add("complaintClassification");
+      if (comp.purpose && String(comp.purpose).trim()) filledKeys.add("complaintPurpose");
 
       setAutofilledFieldKeys(filledKeys);
 
@@ -1410,390 +1424,172 @@ export default function RegisterComplaintPage() {
       setAutofillSuccessNotice({
         fileName: classifiedName,
         category,
-        typeLabel: `${verifiedTitle} • Gemini 3.5 Flash Verified`,
+        typeLabel: `${verifiedTitle} • AI Verified`,
         dataUrl,
-        complainantName: c.name || "Complainant",
-        complainantRelative: `${c.relationType || "S/O"} ${c.relativeName || ""}`,
-        complainantMobile: c.mobile || "",
-        accusedInfo: isKnown ? `${a.name} (${a.address || ""})` : "Unidentified Suspect(s)",
-        incidentPlace: inc.place || "Spot recorded",
+        complainantName: extractedName || "Not Mentioned in Document",
+        complainantRelative: extractedRelativeName ? `${extractedRelationType} ${extractedRelativeName}` : "Not Mentioned",
+        complainantMobile: extractedMobile || "Not Mentioned",
+        accusedInfo: isKnown && validAccusedCards.length > 0 ? `${validAccusedCards[0].name}${validAccusedCards[0].address ? " (" + validAccusedCards[0].address + ")" : ""}` : "Unidentified Suspect(s)",
+        incidentPlace: inc.place ? String(inc.place).trim() : "Not Specified",
         categoryName: (inc.category || "GENERAL").replace(/_/g, " "),
-        subject: comp.subject || "Verified Police Complaint",
+        subject: comp.subject ? String(comp.subject).trim() : "Extracted Complaint",
       });
 
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     } catch (err: any) {
-      console.warn("Gemini AI API Error, falling back to local extractor:", err);
-      // Fallback: Populate form using local pattern matching and entity parser so user is never blocked
-      try {
-        applyExtractedComplaintData(file.name, category, dataUrl, typeLabel, textContent);
-        setAutofillProgress(100);
-        setAutofillStepText("Fields extracted and verified via station pattern parser!");
-      } catch (localErr) {
-        console.error("Local extraction fallback failed:", localErr);
-        alert(`Document Processing Notice: ${err?.message || "AI service busy"}. Please verify extracted fields.`);
+      console.warn("Gemini AI API Error:", err);
+      // STRICT: Never fabricate fake names or addresses when document processing fails!
+      if (textContent && textContent.trim().length > 20) {
+        extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel);
+      } else {
+        alert(`Document Processing Notice: ${err?.message || "Could not extract fields from document"}. Please enter complaint details manually.`);
       }
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     }
   };
 
-  // Comprehensive entity extraction & form populating
-  const applyExtractedComplaintData = (
+  // Strictly extract ONLY what is found in document text without inventing any fake data
+  const extractStrictDataFromText = (
+    textContent: string,
     fileName: string,
     category: string,
     dataUrl?: string,
-    typeLabel?: string,
-    textContent?: string
+    typeLabel?: string
   ) => {
-    const lowerName = fileName.toLowerCase();
-    const lowerText = (textContent || "").toLowerCase();
-    const full = `${lowerName} ${lowerText}`;
+    // 1. Mobile number: match 10-digit Indian mobile
+    const mobMatch = textContent.match(/(?:मो[0o०\.]*\s*नं[0o०\.]*|mob|phone|mobile)?\s*[:\-]?\s*([6-9]\d{9})/i);
+    const extractedMobile = mobMatch ? mobMatch[1] : "";
 
-    const isAudio = category === "audio";
-    const isImage = category === "image";
-    const isPdf = category === "document" || fileName.endsWith(".pdf");
-
-    // Template variables
-    let compName = "Rameshwar Dass";
-    let compRelation: RelativeRelation = "S/O";
-    let compRelative = "Sh. Balwant Rai";
-    let compGender: "MALE" | "FEMALE" | "TRANSGENDER" = "MALE";
-    let compAge = "48";
-    let compMobile = "9812055441";
-    let compAddress = "House No. 89, Gali No. 4, Mohan Nagar";
-    let compCity = "Kurukshetra";
-    let compDistrict = currentUser.district || "Kurukshetra";
-    let compState = "Haryana";
-
-    let accKnown = true;
-    let accName = "Vikas Aggarwal";
-    let accAddress = "Shop No. 12, Old Grain Market, Thanesar";
-
-    let incPlace = "Near New Bus Stand Chowk, Thanesar";
-    let incDate = new Date(Date.now() - 2 * 86400000).toISOString().split("T")[0];
-    let incTime = "14:30";
-    let incCategory:
-      | "CYBER_CRIME"
-      | "PROPERTY_THEFT_BURGLARY"
-      | "FINANCIAL_FRAUD_CHEATING"
-      | "LAND_PROPERTY_DISPUTE"
-      | "PHYSICAL_ASSAULT_AFFRAY"
-      | "DOMESTIC_VIOLENCE_DOWRY"
-      | "PUBLIC_NUISANCE"
-      | "MISSING_PERSON"
-      | "NARCOTICS_DRUGS_INFO"
-      | "HARASSMENT_STALKING"
-      | "OTHER_GENERAL" = "FINANCIAL_FRAUD_CHEATING";
-    let incDetails = "";
-    let sub = "";
-    let desc = "";
-    let mode: "WALK_IN_STATION" | "WRITTEN_POST" | "ONLINE_PORTAL" | "DIAL_112_TRANSFER" = "WALK_IN_STATION";
-
-    // 1. Theft / Stolen Vehicle or Belongings
-    if (full.includes("theft") || full.includes("stolen") || full.includes("chori") || full.includes("bike") || full.includes("motorcycle") || full.includes("vehicle") || full.includes("purse")) {
-      compName = "Sunil Kumar";
-      compRelation = "S/O";
-      compRelative = "Sh. Om Prakash";
-      compGender = "MALE";
-      compAge = "34";
-      compMobile = "9812456789";
-      compAddress = "House No. 112, Gali No. 3, Shivaji Nagar";
-      compCity = "Thanesar";
-      accKnown = false;
-      accName = "";
-      accAddress = "";
-      incPlace = "Opposite Main Grain Market Parking Area, Thanesar";
-      incTime = "18:45";
-      incCategory = "PROPERTY_THEFT_BURGLARY";
-      incDetails = `Complainant parked two-wheeler / personal vehicle outside market premises with steering lock engaged. Upon returning approximately 45 minutes later, vehicle was discovered missing. Local inquiries and nearby merchant CCTV cameras reveal an unidentified suspect tampering with ignition and fleeing towards Pipli Road.`;
-      sub = "Complaint regarding theft of motor vehicle from market parking area";
-      desc = "Report of vehicle theft outside Grain Market by unidentified suspects";
-      mode = isAudio ? "DIAL_112_TRANSFER" : isImage ? "WALK_IN_STATION" : "WRITTEN_POST";
-    }
-    // 2. Cyber Crime / Online UPI / OTP Scam
-    else if (full.includes("cyber") || full.includes("online") || full.includes("upi") || full.includes("bank") || full.includes("otp") || full.includes("phish") || full.includes("telegram") || full.includes("apk")) {
-      compName = "Rohit Verma";
-      compRelation = "S/O";
-      compRelative = "Sh. Jagdish Chander";
-      compGender = "MALE";
-      compAge = "29";
-      compMobile = "9896012345";
-      compAddress = "Flat No. 402, Royal City Apartments, Sector 7";
-      compCity = "Kurukshetra";
-      accKnown = true;
-      accName = "Cyber Fraudster (Account Beneficiary: Alok Kumar)";
-      accAddress = "Beneficiary A/C in Yes Bank, IFSC: YESB0000124 (Mobile: 9876543210)";
-      incPlace = "Online / Cyber Banking Portal, Kurukshetra";
-      incTime = "12:15";
-      incCategory = "CYBER_CRIME";
-      incDetails = `Complainant received a phone call pretending to be electricity board desk warning of urgent power disconnection. Victim was instructed to download remote assistance APK and pay Rs 10 verification charge. Immediately thereafter, Rs 48,500/- and Rs 25,000/- were siphoned off without consent to fraudulent beneficiary accounts.`;
-      sub = "Complaint regarding online cyber financial fraud and unauthorized bank debit";
-      desc = "Cyber financial fraud via fake utility bill disconnection call and APK installation";
-      mode = "ONLINE_PORTAL";
-    }
-    // 3. Land / Property / Khasra Encroachment
-    else if (full.includes("land") || full.includes("property") || full.includes("khasra") || full.includes("plot") || full.includes("boundary") || full.includes("kabza") || full.includes("encroach")) {
-      compName = "Kuldeep Singh";
-      compRelation = "S/O";
-      compRelative = "Gurcharan Singh";
-      compGender = "MALE";
-      compAge = "46";
-      compMobile = "9896123450";
-      compAddress = "Kila No. 24, Village Jyotisar";
-      compCity = "Thanesar";
-      accKnown = true;
-      accName = "Surinder Pal @ Billu Pehalwan";
-      accAddress = "Adjoining Agricultural Khasra, Village Jyotisar";
-      incPlace = "Agricultural Field Boundary, Village Jyotisar";
-      incTime = "09:30";
-      incCategory = "LAND_PROPERTY_DISPUTE";
-      incDetails = `Accused forcibly attempted to dismantle concrete boundary demarcation pillars (Burjis) lawfully fixed by Halqa Patwari. When complainant objected, accused and associates threatened physical harm with agricultural tools and claimed unlawful ownership over Khasra parcel.`;
-      sub = "Complaint regarding illegal boundary encroachment in agricultural field Khasra";
-      desc = "Encroachment and boundary demolition dispute in agricultural land Khasra";
-      mode = "WALK_IN_STATION";
-    }
-    // 4. Physical Assault / Brawl / Criminal Intimidation
-    else if (full.includes("assault") || full.includes("fight") || full.includes("maarpeet") || full.includes("beaten") || full.includes("hurt") || full.includes("injury") || full.includes("lathi")) {
-      compName = "Manoj Kumar";
-      compRelation = "S/O";
-      compRelative = "Sh. Dharam Pal";
-      compGender = "MALE";
-      compAge = "36";
-      compMobile = "9812398765";
-      compAddress = "Village Pipli, Main Basti";
-      compCity = "Thanesar";
-      accKnown = true;
-      accName = "Sanjay Kumar @ Sanju";
-      accAddress = "Ward 4, Village Pipli";
-      incPlace = "Near Old Panchayat Bhawan, Village Pipli";
-      incTime = "20:45";
-      incCategory = "PHYSICAL_ASSAULT_AFFRAY";
-      incDetails = `Accused intercepted complainant on the public street over prior personal dispute. After hurling verbal abuses, accused attacked complainant with a wooden stick (lathi), inflicting injuries on left arm and back. Nearby residents intervened, whereupon accused issued death threats before fleeing.`;
-      sub = "Complaint regarding physical assault, voluntary hurt, and criminal intimidation";
-      desc = "Assault and intimidation using wooden weapon over previous dispute";
-      mode = "WALK_IN_STATION";
-    }
-    // 5. Harassment / Stalking
-    else if (full.includes("harass") || full.includes("stalk") || full.includes("threat") || full.includes("chedchad") || full.includes("eve")) {
-      compName = "Pooja Sharma";
-      compRelation = "D/O";
-      compRelative = "Sh. Satish Sharma";
-      compGender = "FEMALE";
-      compAge = "26";
-      compMobile = "9896554433";
-      compAddress = "House No. 78, Model Town";
-      compCity = "Kurukshetra";
-      accKnown = true;
-      accName = "Deepak Saini";
-      accAddress = "Near Railway Crossing, Thanesar";
-      incPlace = "Model Town Market Road, Kurukshetra";
-      incTime = "17:15";
-      incCategory = "HARASSMENT_STALKING";
-      incDetails = `Accused has been repeatedly following complainant on a motorcycle while returning home from workplace, passing objectionable comments, and placing unsolicited phone calls despite clear warnings to stop. Complainant fears for safety and seeks prompt intervention.`;
-      sub = "Complaint regarding continuous stalking and street harassment";
-      desc = "Persistent stalking and obscene remarks on public transit route";
-      mode = "WALK_IN_STATION";
-    }
-    // 6. Audio Recording Specific Default
-    else if (isAudio) {
-      compName = "Rajender Prasad";
-      compRelation = "S/O";
-      compRelative = "Sh. Babu Ram";
-      compGender = "MALE";
-      compAge = "51";
-      compMobile = "9416233445";
-      compAddress = "House No. 56, Ward No. 2, Ladwa Road";
-      compCity = "Shahabad";
-      accKnown = true;
-      accName = "Naresh Kumar";
-      accAddress = "Shop No. 5, Main Bazar, Shahabad";
-      incPlace = "Main Bazar Chowk, Shahabad";
-      incTime = "15:30";
-      incCategory = "PUBLIC_NUISANCE";
-      incDetails = `Citizen oral audio statement recorded via police helpline: Accused shopkeeper repeatedly obstructs common passage in market, dumps construction debris in front of complainant's residence, and engaged in heated public brawl with abusive language and threats of violence.`;
-      sub = "Citizen voice complaint regarding public nuisance, market passage obstruction, and altercation";
-      desc = "Audio recorded citizen grievance regarding market pathway blockage and aggressive altercation";
-      mode = "DIAL_112_TRANSFER";
-    }
-    // 7. Handwritten Citizen Application Specific Default
-    else if (isImage) {
-      compName = "Rameshwar Dass";
-      compRelation = "S/O";
-      compRelative = "Sh. Balwant Rai";
-      compGender = "MALE";
-      compAge = "54";
-      compMobile = "9812055441";
-      compAddress = "House No. 89, Gali No. 4, Mohan Nagar";
-      compCity = "Kurukshetra";
-      accKnown = false;
-      accName = "";
-      accAddress = "";
-      incPlace = "Near New Bus Stand Chowk, Thanesar";
-      incTime = "10:30";
-      incCategory = "OTHER_GENERAL";
-      incDetails = `Handwritten citizen application in Hindi: While commuting by public bus, a dark leather briefcase containing original registered sale deed documents of residential plot (Khasra No. 12/4), original Aadhaar card, and bank checkbook was misplaced or stolen. Immediate police intake requested to prevent misuse.`;
-      sub = "Handwritten application regarding loss/theft of briefcase with original property registry";
-      desc = "Handwritten application reporting loss of briefcase with original registry documents";
-      mode = "WALK_IN_STATION";
-    }
-    // 8. Scanned Formal Police Complaint PDF / Financial Cheating Default
-    else {
-      compName = "Amit Sharma";
-      compRelation = "S/O";
-      compRelative = "Late Ram Prasad Sharma";
-      compGender = "MALE";
-      compAge = "41";
-      compMobile = "9812498210";
-      compAddress = "House No. 142, Ward 7, Sector 3 Urban Estate";
-      compCity = "Kurukshetra";
-      accKnown = true;
-      accName = "Vikas Aggarwal";
-      accAddress = "Shop No. 12, Old Grain Market, Thanesar";
-      incPlace = "Sector 3 Commercial Market, Kurukshetra";
-      incTime = "14:30";
-      incCategory = "FINANCIAL_FRAUD_CHEATING";
-      incDetails = `Citizen submitted formal petition: Accused induced complainant to invest Rs 4,50,000/- with false guarantee of high yield dealership in government supplies. Forged stamped receipts were provided and subsequent cheques bounced due to account blockage. Accused is actively evading contact.`;
-      sub = "Complaint regarding financial cheating and fake dealership scheme";
-      desc = "Cheating and financial inducement under false guarantee of dealership";
-      mode = isPdf ? "WRITTEN_POST" : "WALK_IN_STATION";
+    // 2. Complainant Name
+    let extractedName = "";
+    const nameMatch = textContent.match(/(?:प्रार्थी|प्रार्थिया|complainant|applicant|दरखास्त\s*गुजार)[\s:]+([^\n,]+)/i);
+    if (nameMatch && nameMatch[1]) {
+      extractedName = nameMatch[1].replace(/(?:पुत्र|पुत्री|पत्नी|s\/o|d\/o|w\/o).*$/i, "").trim();
     }
 
-    // Now populate all states into the form (Every field is editable)
+    // 3. Relative Name
+    let extractedRelative = "";
+    let extractedRelation: RelativeRelation = "S/O";
+    const relMatch = textContent.match(/(?:पुत्र|s\/o)[\s:]+([^\n,]+)/i);
+    const relWMatch = textContent.match(/(?:पत्नी|w\/o)[\s:]+([^\n,]+)/i);
+    const relDMatch = textContent.match(/(?:पुत्री|d\/o)[\s:]+([^\n,]+)/i);
+    if (relMatch && relMatch[1]) {
+      extractedRelative = relMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
+      extractedRelation = "S/O";
+    } else if (relWMatch && relWMatch[1]) {
+      extractedRelative = relWMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
+      extractedRelation = "W/O";
+    } else if (relDMatch && relDMatch[1]) {
+      extractedRelative = relDMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
+      extractedRelation = "D/O";
+    }
+
+    // 4. Address
+    let extractedAddr = "";
+    const addrMatch = textContent.match(/(?:निवासी|r\/o|address)[\s:]+([^\n]+)/i);
+    if (addrMatch && addrMatch[1]) {
+      extractedAddr = addrMatch[1].replace(/[।.]*$/, "").trim();
+    }
+
+    // 5. Subject
+    let extractedSub = "";
+    const subMatch = textContent.match(/(?:विषय|subject)[\s:]+([^\n]+)/i);
+    if (subMatch && subMatch[1]) {
+      extractedSub = subMatch[1].trim();
+    }
+
+    // 6. Accused list strictly from text
+    const extractedAccused = extractAccusedFromComplaintText(textContent, "");
+
+    // ONLY set fields if found in text
     setComplainants([
       {
         id: "comp_1",
-        name: compName,
-        relationType: compRelation,
-        relativeName: compRelative,
-        gender: compGender,
-        age: compAge,
+        name: extractedName,
+        relationType: extractedRelation,
+        relativeName: extractedRelative,
+        gender: extractedRelation === "W/O" || extractedRelation === "D/O" ? "FEMALE" : "MALE",
+        age: "",
         nationalityChoice: "Indian",
         otherNationality: "",
         nationality: "Indian",
         countryCode: "+91",
-        presentAddress: compAddress,
-        presentCity: compCity,
-        presentDistrict: compDistrict,
-        presentState: compState,
+        presentAddress: extractedAddr,
+        presentCity: "",
+        presentDistrict: "",
+        presentState: "",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
-        permanentAddress: compAddress,
-        permanentCity: compCity,
-        permanentDistrict: compDistrict,
-        permanentState: compState,
+        permanentAddress: extractedAddr,
+        permanentCity: "",
+        permanentDistrict: "",
+        permanentState: "",
         permanentCountry: "India",
-        mobile: compMobile,
+        mobile: extractedMobile,
       },
     ]);
 
-    setIsAccusedKnown(accKnown);
-    if (accKnown && accName) {
+    const isKnown = extractedAccused.length > 0;
+    setIsAccusedKnown(isKnown);
+    if (isKnown) {
+      setAccusedList(extractedAccused);
+    } else {
       setAccusedList([
         {
           id: "acc_1",
-          name: accName,
-          address: accAddress,
+          name: "",
+          address: "",
+          phone: "",
+          alias: "",
+          relationWithComplainant: "",
         },
       ]);
-    } else {
-      setAccusedList([]);
     }
 
-    setIncidentPlace(incPlace);
-    setIsDateTimeKnown(true);
-    setIncidentDate(incDate);
-    setIncidentTime(incTime);
-    setIncidentCategory(incCategory);
-    setIncidentDetails(incDetails);
+    setIncidentDetails(textContent);
+    setComplaintDescription(textContent);
+    setComplaintSubject(extractedSub);
 
-    setIntakeMode(mode);
-    setComplaintSubject(sub);
-    setComplaintDescription(desc);
-    setIsFirRegistered(false);
-    setComplaintAgeType("FRESH");
-    setComplaintClassification("COGNIZABLE_OFFENCE");
-    setComplaintPurpose("PRELIMINARY_ENQUIRY_BNSS_173");
-
-    // Clear validation errors
-    setValidationErrors({});
-
-    const localFilledKeys = new Set<string>([
-      "complainantName",
-      "complainantRelativeName",
-      "complainantRelationType",
-      "complainantGender",
-      "complainantAge",
-      "complainantMobile",
-      "complainantPresentAddress",
-      "complainantPresentCity",
-      "complainantPresentDistrict",
-      "complainantPresentState",
-      "incidentPlace",
-      "incidentCategory",
-      "incidentDate",
-      "incidentTime",
-      "incidentDetails",
-      "complaintSubject",
-      "complaintDescription",
-      "intakeMode",
-      "complaintAgeType",
-      "complaintClassification",
-      "complaintPurpose",
-    ]);
-    if (accKnown) {
-      localFilledKeys.add("isAccusedKnown");
-      localFilledKeys.add("accused_0_name");
-      localFilledKeys.add("accused_0_address");
-      localFilledKeys.add("accused_0_phone");
-      localFilledKeys.add("accused_0_alias");
+    const filledKeys = new Set<string>();
+    if (extractedName) filledKeys.add("complainantName");
+    if (extractedRelative) filledKeys.add("complainantRelativeName");
+    if (extractedAddr) filledKeys.add("complainantPresentAddress");
+    if (extractedMobile) filledKeys.add("complainantMobile");
+    if (extractedSub) filledKeys.add("complaintSubject");
+    if (textContent) {
+      filledKeys.add("complaintDescription");
+      filledKeys.add("incidentDetails");
     }
-    setAutofilledFieldKeys(localFilledKeys);
+    if (isKnown) {
+      filledKeys.add("isAccusedKnown");
+      extractedAccused.forEach((acc, idx) => {
+        if (acc.name) filledKeys.add(`accused_${idx}_name`);
+        if (acc.address) filledKeys.add(`accused_${idx}_address`);
+        if (acc.phone) filledKeys.add(`accused_${idx}_phone`);
+      });
+    }
+    setAutofilledFieldKeys(filledKeys);
+    setAutofillProgress(100);
+    setAutofillStepText("Fields extracted strictly from verified document text without fabrication!");
 
-    // Set success banner notice
+    // Set success banner notice - strictly truthful, explicit Not Mentioned
     setAutofillSuccessNotice({
       fileName,
       category,
-      typeLabel: typeLabel || "Uploaded Document",
+      typeLabel: typeLabel || "Verified Document",
       dataUrl,
-      complainantName: compName,
-      complainantRelative: `${compRelation} ${compRelative}`,
-      complainantMobile: compMobile,
-      accusedInfo: accKnown ? `${accName} (${accAddress})` : "Unidentified Suspect(s)",
-      incidentPlace: incPlace,
-      categoryName: incCategory.replace(/_/g, " "),
-      subject: sub,
+      complainantName: extractedName || "Not Mentioned in Document",
+      complainantRelative: extractedRelative ? `${extractedRelation} ${extractedRelative}` : "Not Mentioned in Document",
+      complainantMobile: extractedMobile || "Not Mentioned in Document",
+      accusedInfo: isKnown && extractedAccused.length > 0 ? `${extractedAccused[0].name}${extractedAccused[0].address ? " (" + extractedAccused[0].address + ")" : ""}` : "Unidentified Suspect(s)",
+      incidentPlace: "Not Specified in Document",
+      categoryName: category.replace(/_/g, " "),
+      subject: extractedSub || "Extracted Complaint",
     });
   };
 
-  // Helper for preset demo drafts
-  const applySampleDraft = (type: "fraud" | "land" | "assault" | "theft" | "audio" | "handwritten", sampleFileName: string) => {
-    let cat = "document";
-    let label = "Scanned Formal Document (PDF)";
-    if (type === "audio") {
-      cat = "audio";
-      label = "Citizen Voice Recording (Audio)";
-    } else if (type === "handwritten") {
-      cat = "image";
-      label = "Handwritten Application (Photo)";
-    }
-
-    // Seal demo attachment into evidence
-    const attachedDoc: ComplaintEvidenceAttachment = {
-      id: `ev_demo_${Date.now()}`,
-      name: sampleFileName,
-      size: 450 * 1024,
-      type: cat === "image" ? "image/jpeg" : cat === "audio" ? "audio/mpeg" : "application/pdf",
-      category: cat as any,
-      dataUrl: "",
-      uploadedAt: new Date().toISOString(),
-      description: `Sample ${label} pre-fill template`,
-    };
-    setAttachments((prev) => [attachedDoc, ...prev.filter((a) => a.name !== sampleFileName)]);
-
-    applyExtractedComplaintData(sampleFileName, cat, "", label);
-  };
 
   // Run Intelligence Check locally without external model by checking specific filled fields in register complaint form
   const handleRunIntelCheck = (tab: "all" | "cross" | "repeat" | "linked" | "fir" = "all") => {
@@ -2334,6 +2130,29 @@ export default function RegisterComplaintPage() {
           isOpen={showReceiptModal}
           onClose={() => setShowReceiptModal(false)}
         />
+      </div>
+    );
+  }
+
+  // Access Guard: Only MHC, SHO, and Superior officers can register complaints
+  if (!canRegisterComplaint) {
+    return (
+      <div className="max-w-2xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-inner">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Access Restricted</h2>
+        <p className="text-sm text-slate-600 leading-relaxed">
+          Complaint registration is restricted to Station MHC, SHO, and Supervisory officers.
+          As an Enquiry Officer ({currentUser?.name}), your role is to conduct enquiry and submit enquiry reports on assigned cases.
+        </p>
+        <div className="pt-2">
+          <Link href="/complaints">
+            <Button variant="primary" className="bg-[#0b192c] hover:bg-slate-800 text-white cursor-pointer">
+              Return to Complaints Register
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }

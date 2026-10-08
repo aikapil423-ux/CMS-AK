@@ -52,17 +52,7 @@
     "policeStation": "PS City Thanesar",
     "district": "Kurukshetra",
     "registeredBy": "Sub-Inspector Vikram Singh",
-    "attachments": [
-      {
-        "id": "ev_draft_1791307098346",
-        "name": "Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf",
-        "size": 1770684,
-        "type": "application/pdf",
-        "category": "document",
-        "uploadedAt": "2026-10-06T17:18:18.346Z",
-        "description": "शिकायत प्रार्थना पत्र मारपीट व धमकी के संबंध में अशोक कुमार बनाम टिनकू फौजी (Auto-classified by Gemini 3.5 Flash: COMPLAINT 13.pdf -> Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf)"
-      }
-    ],
+    "attachments": [],
     "documents": [
       {
         "id": "doc_1791307159991_yfv7",
@@ -73,16 +63,6 @@
         "uploadedAt": "2026-10-06T17:19:19.991Z",
         "fileSize": "8.7 KB",
         "description": "Official Citizen Complaint Verification & Intake Proforma saved upon registration"
-      },
-      {
-        "id": "doc_ev_draft_1791307098346",
-        "complaintId": "",
-        "fileName": "Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf",
-        "fileCategory": "DOCUMENT",
-        "uploadedBy": "Sub-Inspector Vikram Singh",
-        "uploadedAt": "2026-10-06T17:18:18.346Z",
-        "fileSize": "1729.2 KB",
-        "description": "शिकायत प्रार्थना पत्र मारपीट व धमकी के संबंध में अशोक कुमार बनाम टिनकू फौजी (Auto-classified by Gemini 3.5 Flash: COMPLAINT 13.pdf -> Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf)"
       }
     ],
     "daysPending": 0,
@@ -91,8 +71,17 @@
     "mhcBeltNumber": "930/KKR",
     "mhcPhone": "9813098765",
     "createdAt": "2026-10-06T17:19:19.981Z",
-    "updatedAt": "2026-10-07T08:05:44.610Z",
+    "updatedAt": "2026-10-07T11:31:12.626Z",
     "timeline": [
+      {
+        "id": "tl_1791372641184_7s85",
+        "complaintId": "cmp_1791307159981",
+        "title": "Document Record Deleted",
+        "description": "Document record \"Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf\" removed by Inspector Rajesh Kumar.",
+        "category": "DOCUMENT",
+        "officerName": "Inspector Rajesh Kumar",
+        "timestamp": "2026-10-07T11:30:41.184Z"
+      },
       {
         "id": "tl_1791360344615_kebp",
         "complaintId": "cmp_1791307159981",
@@ -193,81 +182,6 @@
     "targetResolutionDate": "2026-10-20",
     "reports": [
       {
-        "id": "rep_1791354910563_by07",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 5,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:10.563Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791354910340_ps4f",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 4,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:10.340Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791354909457_dyyo",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 3,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "ncr_174",
-        "reportTypeLabel": "4. Non-Cognizable Offence Report (NCR u/s 174 BNSS)",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "04291882",
-        "conclusionSummary": "Enquiry conducted. Cognizable elements substantiated. Matter transferred from NCR to regular FIR registration docket under orders of SHO.",
-        "content": "✕\n✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "6 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T06:35:09.457Z",
-        "recommendationType": "RAJINAMA_COMPROMISE",
-        "isFirRecommended": false,
-        "selectedOutcome": "Complete",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
         "id": "rep_1791354907343_tpsu",
         "complaintId": "cmp_1791307159981",
         "versionNumber": 2,
@@ -291,34 +205,6 @@
         "selectedOutcome": "Complete",
         "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
         "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।"
-      },
-      {
-        "id": "rep_1791349385603_esdd",
-        "complaintId": "cmp_1791307159981",
-        "versionNumber": 1,
-        "title": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487",
-        "reportType": "standard_4row",
-        "reportTypeLabel": "1. Standard 4-Row Enquiry Report",
-        "dispatchNo": "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026",
-        "generatedDate": "2026-10-07",
-        "officerName": "(SI Vikram Singh)",
-        "officerRank": "SI",
-        "officerPno": "07182930",
-        "conclusionSummary": "FINAL REPORT & FINDINGS (COGNIZABLE OFFENCE SUBSTANTIATED):\nRespected Sir, the preliminary enquiry into Complaint No. HAR-KKR-2026-CMP-00487 lodged by अशोक कुमार was conducted by me. Statements of com",
-        "content": "✕\n✕\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n\n\n\t\nVoice Input\n+ QUICK ROWS:\n+ Witness Statements\n+ Spot Panchnama\n+ Settlement Agreement\n+ Documentary Evidence\n+ Custom Row\n✕",
-        "fileName": "ENQUIRY_REPORT_ON_COMPLAINT_NO._HAR-KKR-2026-CMP-00487_DATED_07.10.2026.html",
-        "fileSize": "7 KB",
-        "fileFormat": "HTML",
-        "isUploaded": false,
-        "createdAt": "2026-10-07T05:03:05.603Z",
-        "recommendationType": "FIR_RECOMMENDED",
-        "isFirRecommended": true,
-        "selectedOutcome": "FIR Recommend",
-        "analysisClassification": "संज्ञेय अपराध - एफआईआर की सिफारिश",
-        "analysisRationale": "शिकायत के तथ्यों, घटना स्थल के निरीक्षण एवं संलग्न दस्तावेज संलग्न (Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html (INTAKE VERIFICATION PROFORMA), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (DOCUMENT), Shikayat_Marpeet_Tinku_Fauji_v_Ashok_Kumar.pdf (document)) के अवलोकन से संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रमाणित पाया गया है। मामले में नियमित प्राथमिकी (FIR) दर्ज कर वैधानिक अनुसंधान की सिफारिश की जाती है।",
-        "sentToSho": true,
-        "sentToShoAt": "2026-10-07T05:03:08.075Z",
-        "sentToShoBy": "(SI Vikram Singh)"
       }
     ],
     "workflowState": "CORRECTION_REQUIRED",
@@ -495,7 +381,316 @@
     "rejectionCount": 1,
     "rejectionReason": "jnj",
     "rejectionAt": "2026-10-07T08:05:44.610Z",
-    "rejectionBy": "Inspector Rajesh Kumar"
+    "rejectionBy": "Inspector Rajesh Kumar",
+    "legalAnalysis": {
+      "complaintId": "cmp_1791307159981",
+      "complaintNumber": "HAR-KKR-2026-CMP-00487",
+      "analyzedAt": "2026-10-07T11:31:12.625Z",
+      "summary": "Complaints Docket HAR-KKR-2026-CMP-00487 comprehensively evaluated across Incident Facts and 2 attached documents. Identified 5 primary cognizable offence(s), 4 corroborating provision(s), and mandatory BNSS 173(3) / BSA 63 statutory procedures.",
+      "scannedFactsCount": 471,
+      "scannedDocumentsCount": 2,
+      "scannedEvidenceSummary": {
+        "documentsFound": [
+          "Intake_Verification_Proforma_HAR-KKR-2026-CMP-00487.html [INTAKE VERIFICATION PROFORMA]",
+          "ENQUIRY REPORT ON COMPLAINT NO. HAR-KKR-2026-CMP-00487 DATED 07.10.2026 - HAR-KKR-2026-CMP-00487 [REPORT]"
+        ],
+        "keyAllegationsIdentified": [
+          "Fraudulent monetary inducement & job racket allegation",
+          "Physical assault causing grievous hurt (fracture) on victim",
+          "Criminal intimidation with threat to life",
+          "Intentional insult and public peace provocation",
+          "Joint concerted action by multiple associates in common intention"
+        ],
+        "accusedIdentified": [
+          "टिनकू फौजी (पुत्र रामफल)"
+        ],
+        "injuriesOrLossNoted": [
+          "Financial loss quantified:  06",
+          "Physical injury: Fracture of left hand finger confirmed via Civil Hospital X-ray"
+        ]
+      },
+      "suggestedSections": [
+        {
+          "id": "sug_kb_bns_318_4_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 318(4)",
+          "sectionTitle": "Cheating and dishonestly inducing delivery of property",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 95,
+          "description": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security.",
+          "verbatimSnippet": "Section 318(4) BNS: Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, or anything which is signed or sealed, and which is capable of being converted into a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and mandatory fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "शिकायत विवरण के अनुसार अभियुक्त ने प्रार्थी को झूठा आश्वासन देकर धोखा दिया और बेईमानी से  06 की संपत्ति/राशि अपने खाते में अथवा नकद प्राप्त की। भारतीय न्याय संहिता, 2023 की धारा 318(4) के सभी आवश्यक तत्व (Deceitful inducement + Delivery of valuable property) स्पष्ट रूप से प्रमाणित होते हैं।",
+          "evidenceProof": [
+            "Complainant sworn allegation regarding transfer of funds based on false representation",
+            "Transaction references or monetary inducement stated in Incident Facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_316_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 316(2)",
+          "sectionTitle": "Criminal breach of trust",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 93,
+          "description": "Whoever, being in any manner entrusted with property, or with any dominion over property, dishonestly misappropriates or converts to his own use that property.",
+          "verbatimSnippet": "Section 316(2) BNS: Whoever commits criminal breach of trust shall be punished with imprisonment of either description for a term which may extend to five years, or with fine, or with both.",
+          "punishment": "Imprisonment up to 5 years, or fine, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "प्रार्थी द्वारा अभियुक्त को विश्वास में देकर सौंपी गई धनराशि अथवा अमानत को अभियुक्त ने बेईमानी से हड़प लिया तथा मांगने पर वापस करने से इनकार किया। BNS की धारा 316(2) (आपराधिक विश्वासघात) लागू होती है।",
+          "evidenceProof": [
+            "Entrustment of funds / property mentioned in complaint narrative",
+            "Failure or refusal by accused to account for entrusted property"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_115_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 115(2)",
+          "sectionTitle": "Voluntarily causing hurt",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "verbatimSnippet": "Section 115(2) BNS: Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 1 year, or fine up to ₹10,000, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Substantive Bodily Offence",
+          "reason": "घटना विवरण से स्पष्ट है कि अभियुक्त ने प्रार्थी पर शारीरिक हमला करके उसे चोट पहुंचाई तथा शारीरिक पीड़ा पहुंचाई। BNS की धारा 115(2) (स्वेच्छापूर्वक उपहति कारित करना) लागू होती है।",
+          "evidenceProof": [
+            "Physical assault and injury description in incident facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_117_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 117(2)",
+          "sectionTitle": "Voluntarily causing grievous hurt (Fracture / Severe Bodily Injury)",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes grievous hurt shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "verbatimSnippet": "Section 117(2) BNS: Whoever, except in the case provided for by sub-section (1) of section 122, voluntarily causes grievous hurt, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Cognizable Bodily Offence",
+          "reason": "घटना विवरण एवं मेडिकल एक्स-रे जांच के अनुसार प्रार्थी की अंगुली/हड्डी में फ्रैक्चर पाया गया है, जो BNS की धारा 116 के अंतर्गत 'घोर उपहति' (Grievous Hurt) की परिभाषा में आता है। अतः BNS धारा 117(2) सीधे तौर पर आकर्षित होती है।",
+          "evidenceProof": [
+            "Hospital X-ray report noting bone fracture",
+            "Medical officer findings recorded in Civil Hospital docket"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_118_1_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 118(1)",
+          "sectionTitle": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death.",
+          "verbatimSnippet": "Section 118(1) BNS: Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death... shall be punished with imprisonment of either description for a term which may extend to three years, or with fine which may extend to twenty thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 3 years, or fine up to ₹20,000, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Weapon-Assault Cognizable Offence",
+          "reason": "हमले के दौरान अभियुक्त द्वारा लोहे की पाइप अथवा घातक हथियार का इस्तेमाल कर प्रार्थी के सिर/शरीर पर जानलेवा प्रहार किया गया। BNS की धारा 118(1) (खतरनाक हथियारों द्वारा चोट पहुंचाना) स्पष्ट रूप से बनती है।",
+          "evidenceProof": [
+            "Allegation of using iron pipe / blunt impact weapon",
+            "Spot verification report noting impact weapon"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_336_3_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 336(3)",
+          "sectionTitle": "Forgery for purpose of cheating",
+          "chapter": "Chapter XVIII - Of Offences Relating to Documents (Sec 335 - 350)",
+          "pageNumber": 101,
+          "description": "Whoever commits forgery, intending that the document or electronic record forged shall be used for the purpose of cheating.",
+          "verbatimSnippet": "Section 336(3) BNS: Whoever commits forgery, intending that the document or electronic record forged shall be used for the purpose of cheating, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Corroborating Document Offence",
+          "reason": "शिकायत विवरण एवं संलग्न दस्तावेजों के अनुसार अभियुक्त ने धोखाधड़ी को अंजाम देने के लिए फर्जी/कूटरचित दस्तावेज (जैसे कि जाली नियुक्ति पत्र, जाली विभागीय मुहर अथवा फर्जी पत्र) तैयार किया था। BNS की धारा 336(3) (धोखाधड़ी के प्रयोजन से कूटरचना) आकर्षित होती है।",
+          "evidenceProof": [
+            "Allegation of fabricated/forged documents with fake departmental stamps"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_351_2_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 351(2)",
+          "sectionTitle": "Criminal intimidation (Threat of injury to person/property)",
+          "chapter": "Chapter XIX - Of Criminal Intimidation, Insult & Annoyance (Sec 351 - 356)",
+          "pageNumber": 106,
+          "description": "Whoever commits the offence of criminal intimidation shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both.",
+          "verbatimSnippet": "Section 351(2) BNS: Whoever commits the offence of criminal intimidation shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both; and if threat be to cause death or grievous hurt, with imprisonment up to seven years under Section 351(3).",
+          "punishment": "Imprisonment up to 2 years, or fine, or both (Up to 7 years if death threat under 351(3))",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Intimidation Offence",
+          "reason": "अभियुक्त द्वारा प्रार्थी को जान से मारने की सीधी धमकी दी गई तथा भयभीत किया गया। BNS की धारा 351(2) (आपराधिक अभित्रास / Criminal Intimidation) लागू होती है। यदि धमकी जान से मारने की है, तो 351(3) के अंतर्गत 7 वर्ष तक कारावास का प्रावधान है।",
+          "evidenceProof": [
+            "Threat statement specifically quoted in complainant allegations",
+            "Witness statements corroborating oral threats"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_352_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 352",
+          "sectionTitle": "Intentional insult with intent to provoke breach of peace",
+          "chapter": "Chapter XIX - Of Criminal Intimidation, Insult & Annoyance (Sec 351 - 356)",
+          "pageNumber": 106,
+          "description": "Whoever intentionally insults, and thereby gives provocation to any person, intending or knowing it to be likely that such provocation will cause him to break the public peace.",
+          "verbatimSnippet": "Section 352 BNS: Whoever intentionally insults, and thereby gives provocation to any person, intending or knowing it to be likely that such provocation will cause him to break the public peace, or to commit any other offence, shall be punished with imprisonment of either description for a term which may extend to two years, or with fine, or with both.",
+          "punishment": "Imprisonment up to 2 years, or fine, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Public Peace Offence",
+          "reason": "अभियुक्त ने सार्वजनिक स्थान पर प्रार्थी को अकारण गालियां दीं तथा शांति भंग करने के इरादे से उत्तेजित किया। BNS की धारा 352 (शांति भंग कराने के आशय से जानबूझकर अपमान) आकर्षित होती है।",
+          "evidenceProof": [
+            "Verbatim abusive words recorded in intake proforma",
+            "Eye-witness verification of public altercation"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_3_5_1791372672625",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 3(5)",
+          "sectionTitle": "Joint criminal liability - Common intention",
+          "chapter": "Chapter I - Preliminary & General Explanations (Sec 1 - 3)",
+          "pageNumber": 17,
+          "description": "When a criminal act is done by several persons in furtherance of the common intention of all, each of such persons is liable for that act in the same manner as if it were done by him alone.",
+          "verbatimSnippet": "Section 3(5) BNS: When a criminal act is done by several persons in furtherance of the common intention of all, each of such persons is liable for that act in the same manner as if it were done by him alone.",
+          "punishment": "Co-extensive liability with main perpetrators",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Same as substantive offence",
+          "recommendationType": "CORROBORATING_OFFENCE",
+          "recommendationTypeLabel": "Vicarious Liability Rule",
+          "reason": "घटना में मुख्य आरोपी के साथ अन्य कई व्यक्ति (10-12 लोग) सामान्य आशय की पूर्ति में शामिल थे तथा समझौते के नाम पर दबाव बनाया। BNS की धारा 3(5) (साझा आशय / Common Intention) के तहत सभी सह-अभियुक्तों का संयुक्त दायित्व बनता है।",
+          "evidenceProof": [
+            "Multiple accused persons listed in Accused docket",
+            "Joint presence and concerted coercion described in allegations"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_173_3_1791372672625",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 173(3)",
+          "sectionTitle": "Preliminary Enquiry (14 Days Window Prior to FIR)",
+          "chapter": "Chapter XII - Information to Police & Powers to Investigate (Sec 173 - 196)",
+          "pageNumber": 67,
+          "description": "On receipt of information relating to commission of cognizable offence punishable with 3 to 7 years, officer in charge of police station may conduct preliminary enquiry within 14 days with prior permission of DSP.",
+          "verbatimSnippet": "Section 173(3) BNSS: On receipt of information relating to the commission of any cognizable offence, which is made punishable for three years or more but less than seven years, the officer in charge of the police station may with the prior permission from an officer not below the rank of Deputy Superintendent of Police, considering the nature and gravity of the offence— (i) proceed to conduct preliminary enquiry to ascertain whether there exists a prima facie case for proceeding in the matter, which shall be completed within a period of fourteen days; or (ii) proceed with investigation when there exists a prima facie case.",
+          "punishment": "Statutory Procedural Mandate (14-day completion binding on Police)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Statutory Police Investigation Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।",
+          "evidenceProof": [
+            "BNSS 173(3) enquiry docket open for Station PS City Thanesar",
+            "Mandatory supervisory directions issued by SHO to Enquiry Officer"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bnss_35_3_1791372672625",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 35(3)",
+          "sectionTitle": "Mandatory Notice of Appearance to Suspect Instead of Arrest",
+          "chapter": "Chapter V - Arrest of Persons (Sec 35 - 62)",
+          "pageNumber": 27,
+          "description": "The police officer shall, in all cases where arrest of a person is not required, issue a notice directing the person against whom a reasonable complaint has been made, to appear before him.",
+          "verbatimSnippet": "Section 35(3) BNSS: The police officer shall, in all cases where the arrest of a person is not required under sub-section (1), issue a notice directing the person against whom a reasonable complaint has been made, or credible information has been received, or a reasonable suspicion exists that he has committed a cognizable offence, to appear before him or at such other place as may be specified in the notice.",
+          "punishment": "Procedural Compliance (Protection against arbitrary arrest)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Investigating Officer Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।",
+          "evidenceProof": [
+            "Accused profile: टिनकू फौजी",
+            "Required Section 35(3) Appearance Proforma in Documents Tab"
+          ],
+          "confidenceScore": 88
+        }
+      ],
+      "investigativeStepsRecommended": [
+        "Notice under Section 35(3) BNSS to named accused (टिनकू फौजी (पुत्र रामफल)) for recording formal defense explanation.",
+        "Preservation & Digital Certification under Section 63(4) BSA of all attached evidence files (2 items).",
+        "Verification of hospital MLR records and obtaining formal doctor opinion regarding nature of injury.",
+        "Completion of Section 173(3) BNSS preliminary spot verification report within statutory 14-day timeline."
+      ]
+    }
   },
   {
     "id": "cmp_001",
@@ -736,7 +931,117 @@
     "daysPending": 7,
     "targetResolutionDate": "2026-10-10",
     "createdAt": "2026-09-26T10:00:00Z",
-    "updatedAt": "2026-10-02T14:45:00Z"
+    "updatedAt": "2026-10-07T11:45:45.423Z",
+    "investigationSummary": {
+      "id": "sum_1791373537103_al7jf",
+      "complaintId": "cmp_002",
+      "complaintNumber": "HAR-KKR-2026-CMP-00483",
+      "generatedAt": "2026-10-07T11:45:37.101Z",
+      "updatedAt": "2026-10-07T11:45:37.101Z",
+      "version": 1,
+      "generatedBy": "Gemini AI (gemini-3.5-flash-lite) & CMS Intelligence",
+      "caseSynopsis": "शिकायतकर्ता बलदेव सिंह, निवासी गाँव मिर्ज़ापुर, कुरुक्षेत्र द्वारा कृषि भूमि खसरा नंबर 14//8 पर बाउंड्री वॉल के निर्माण और साझा पानी का रास्ता रोकने को लेकर जोगिंदर सिंह के विरुद्ध मौखिक गाली-गलौज और धमकियों के संबंध में शिकायत दर्ज कराई गई है। वर्तमान में इस मामले की स्थिति रिपोर्ट सबमिट (REPORT_SUBMITTED) है और मामले के जाँच अधिकारी (EO) एएसआई रमेश चंद्र हैं।",
+      "currentStage": "REPORT_SUBMITTED",
+      "progressPercentage": 33,
+      "workDoneSummary": "रिकॉर्ड के अनुसार शिकायत का पंजीकरण किया गया है तथा जाँच अधिकारी एएसआई रमेश चंद्र द्वारा मामले की प्रारंभिक जाँच पूरी कर वर्तमान स्थिति 'रिपोर्ट सबमिट' (REPORT_SUBMITTED) दिखाई गई है। इसके अलावा संलग्न दस्तावेजों या गवाहों/बयानों का कोई अन्य विवरण रिकॉर्ड में उल्लेख नहीं (Not Found on Record) है।",
+      "completedActions": [
+        {
+          "id": "comp_act_1",
+          "category": "OVERVIEW",
+          "categoryLabel": "Registration & GD Entry",
+          "title": "Complaint Registration & General Diary Entry",
+          "detail": "Complaint #HAR-KKR-2026-CMP-00483 registered via WALK_IN_STATION under category Land / Boundary Dispute. Verbatim allegations and complainant details recorded.",
+          "status": "COMPLETED",
+          "completedAt": "2026-09-26T10:00:00Z",
+          "officerResponsible": "ASI Surender Pal"
+        },
+        {
+          "id": "comp_act_2",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Enquiry Officer Assignment",
+          "title": "Enquiry Officer Deputed & Briefed",
+          "detail": "Deputed ASI ASI Ramesh Chander (Belt N/A) for preliminary inquiry with specific mandate: Conduct spot verification & verify party claims under BNSS 173(3).",
+          "status": "COMPLETED",
+          "completedAt": "2026-09-26T11:00:00Z",
+          "officerResponsible": "SHO / Station Officer"
+        }
+      ],
+      "scannedOverviewHighlights": [
+        "Complainant: Baldev Singh  • Mobile: 9466088211",
+        "Address: Village Mirzapur, Post Office Thanesar, Kurukshetra, Kurukshetra",
+        "Accused / Suspects: Not Found / Unidentified Suspect(s) (नामजद नहीं) (No individual named in document)",
+        "Incident Classification: Land / Boundary Dispute • Location: Agricultural Land, Khasra No. 14//8, Village Mirzapur • Date: 2026-09-25",
+        "Assigned Enquiry Officer: ASI ASI Ramesh Chander (Belt N/A)",
+        "Inquiry Age: 7 day(s) elapsed under Police Station PS City Thanesar"
+      ],
+      "scannedDocumentsHighlights": [
+        {
+          "name": "No External Files Attached Yet",
+          "type": "Pending File Submission",
+          "status": "Pending",
+          "summary": "Citizen application narrative is recorded on docket. Physical evidence/bills/MLR yet to be submitted."
+        }
+      ],
+      "scannedHistoryMilestones": [],
+      "pendingWorkSummary": "दस्तावेज़ / रिकॉर्ड में उल्लेख नहीं (Not Found on Record)।",
+      "pendingActions": [
+        {
+          "id": "pend_act_2",
+          "category": "DOCUMENTS",
+          "categoryLabel": "Evidence Collection",
+          "title": "Collect Corroborative Documents / Physical Proof",
+          "detail": "Complainant has not attached external financial or medical documents. Obtain relevant receipts, bank records, MLR, or chat logs.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_3",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Preliminary Spot Visit",
+          "title": "Conduct Spot Verification under BNSS 173(3)",
+          "detail": "Enquiry Officer must visit the scene of occurrence, inspect landmarks, and record observations in the case diary.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_4",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Witness Examination",
+          "title": "Record Statements of Independent Witnesses",
+          "detail": "Examine independent neighborhood witnesses, spot witnesses, or family members to corroborate allegations.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        },
+        {
+          "id": "pend_act_6",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Final Enquiry Report",
+          "title": "Draft & Submit Final Preliminary Inquiry Report",
+          "detail": "Compile all findings, statements, and evidence into final inquiry report recommending FIR registration, compromise, or closure.",
+          "status": "PENDING",
+          "officerResponsible": "ASI Ramesh Chander"
+        }
+      ],
+      "urgentDeadlines": [
+        "⏳ BNSS धारा 173(3) प्रारंभिक जांच समय-सीमा: 14 दिनों में से 7 दिन शेष हैं।"
+      ],
+      "recommendedEoActions": [
+        "घटनास्थल का मौका मुआयना (Spot Inspection) कर पंचनामा / नक्शा मौका तैयार करें।",
+        "आरोपी पक्ष को धारा 35(3) BNSS के तहत नोटिस तामील कराकर उनका लिखित स्पष्टीकरण प्राप्त करें।",
+        "शिकायत से जुड़े स्वतंत्र गवाहों व पड़ोसियों के बयान धारा 180 BNSS के तहत लिपिबद्ध करें।",
+        "बैंक/तकनीकी/मेडिकल साक्ष्यों का संबंधित संस्थान से आधिकारिक सत्यापन कराएं।"
+      ],
+      "recommendedShoDirections": [
+        "जांच अधिकारी को समयबद्ध (48 घंटे में) प्रगति रिपोर्ट प्रस्तुत करने के निर्देश दें।",
+        "यदि संज्ञेय अपराध (Cognizable Offence) स्पष्ट प्रमाणित होता है तो विलंब न करते हुए FIR दर्ज कराएं।",
+        "पारस्परिक विवाद अथवा दीवानी प्रकृति के मामलों में निष्पक्ष समझौता अथवा धारा 173 BNSS के तहत निस्तारण सुनिश्चित करें।"
+      ],
+      "evidenceStrength": "PRELIMINARY",
+      "primaFacieObservation": "यह मामला प्रथम दृष्टया कृषि भूमि की सीमा और साझा पानी के रास्ते के विवाद (Land / Boundary Dispute) से संबंधित प्रतीत होता है, जो कि दीवानी प्रकृति (Civil Dispute) का मामला है। मौखिक गाली-गलौज और धमकियों के संबंध में बीएनएस 2023 के तहत संज्ञेय अपराध के आवश्यक तथ्यात्मक साक्ष्य उपलब्ध होने या न होने की पुष्टि जाँच रिपोर्ट के विस्तृत अवलोकन के अधीन है।",
+      "suggestedOutcome": "FURTHER_ENQUIRY",
+      "suggestedOutcomeReason": "आरोपों की प्रकृति (Land / Boundary Dispute) तथा उपलब्ध साक्ष्यों के आधार पर अग्रिम गवाहों के बयान व आरोपी के पक्ष का परीक्षण आवश्यक है।",
+      "newItemsDetectedSinceLastUpdate": []
+    }
   },
   {
     "id": "cmp_003",
@@ -778,7 +1083,7 @@
     "daysPending": 2,
     "targetResolutionDate": "2026-10-05",
     "createdAt": "2026-10-01T21:00:00Z",
-    "updatedAt": "2026-10-06T10:18:06.756Z",
+    "updatedAt": "2026-10-07T10:46:58.559Z",
     "reports": [
       {
         "id": "rep_1791281857796_ct0d",
@@ -797,7 +1102,341 @@
         "isUploaded": false,
         "createdAt": "2026-10-06T10:17:37.796Z"
       }
-    ]
+    ],
+    "documents": [
+      {
+        "id": "doc_1791361540498_szlt",
+        "complaintId": "cmp_003",
+        "fileName": "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+        "fileCategory": "NOTICE",
+        "uploadedBy": "Sub-Inspector Vikram Singh",
+        "uploadedAt": "2026-10-07T08:25:40.498Z",
+        "fileSize": "11 KB",
+        "fileUrl": "data:text/html;charset=utf-8,%3C!DOCTYPE%20html%3E%0A%3Chtml%20lang%3D%22hi%22%3E%0A%3Chead%3E%0A%20%20%3Cmeta%20charset%3D%22UTF-8%22%3E%0A%20%20%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1.0%22%3E%0A%20%20%3Ctitle%3E%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%20-%20%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%3C%2Ftitle%3E%0A%20%20%3Cstyle%3E%0A%20%20%20%20%0A%20%20%40page%20%7B%0A%20%20%20%20size%3A%20A4%3B%0A%20%20%20%20margin%3A%2015mm%2015mm%2015mm%2015mm%3B%0A%20%20%7D%0A%20%20*%20%7B%0A%20%20%20%20box-sizing%3A%20border-box%3B%0A%20%20%20%20-webkit-print-color-adjust%3A%20exact%20!important%3B%0A%20%20%20%20print-color-adjust%3A%20exact%20!important%3B%0A%20%20%7D%0A%20%20body%20%7B%0A%20%20%20%20font-family%3A%20-apple-system%2C%20BlinkMacSystemFont%2C%20%22Segoe%20UI%22%2C%20Roboto%2C%20Helvetica%2C%20Arial%2C%20sans-serif%3B%0A%20%20%20%20color%3A%20%230f172a%3B%0A%20%20%20%20background-color%3A%20%23ffffff%3B%0A%20%20%20%20line-height%3A%201.5%3B%0A%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%20%20padding%3A%2024px%3B%0A%20%20%7D%0A%20%20.doc-sheet%20%7B%0A%20%20%20%20max-width%3A%20820px%3B%0A%20%20%20%20margin%3A%200%20auto%3B%0A%20%20%20%20background%3A%20%23ffffff%3B%0A%20%20%20%20border%3A%202px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%2012px%3B%0A%20%20%20%20padding%3A%2036px%2044px%3B%0A%20%20%20%20box-shadow%3A%200%204px%2020px%20rgba(0%2C%200%2C%200%2C%200.06)%3B%0A%20%20%7D%0A%20%20%40media%20print%20%7B%0A%20%20%20%20body%20%7B%0A%20%20%20%20%20%20padding%3A%200%3B%0A%20%20%20%20%20%20background%3A%20none%3B%0A%20%20%20%20%7D%0A%20%20%20%20.doc-sheet%20%7B%0A%20%20%20%20%20%20border%3A%20none%20!important%3B%0A%20%20%20%20%20%20border-radius%3A%200%20!important%3B%0A%20%20%20%20%20%20padding%3A%200%20!important%3B%0A%20%20%20%20%20%20box-shadow%3A%20none%20!important%3B%0A%20%20%20%20%20%20max-width%3A%20100%25%20!important%3B%0A%20%20%20%20%7D%0A%20%20%20%20.no-print%20%7B%0A%20%20%20%20%20%20display%3A%20none%20!important%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%20%20.header-seal%20%7B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20border-bottom%3A%202.5px%20solid%20%230b192c%3B%0A%20%20%20%20padding-bottom%3A%2014px%3B%0A%20%20%20%20margin-bottom%3A%2016px%3B%0A%20%20%7D%0A%20%20.police-title%20%7B%0A%20%20%20%20font-size%3A%2015pt%3B%0A%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20letter-spacing%3A%202.5px%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.state-title%20%7B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20letter-spacing%3A%201.5px%3B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20margin%3A%202px%200%206px%200%3B%0A%20%20%7D%0A%20%20.station-title%20%7B%0A%20%20%20%20font-size%3A%2012pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.doc-title-block%20%7B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20margin%3A%2016px%200%2020px%200%3B%0A%20%20%7D%0A%20%20.doc-main-title%20%7B%0A%20%20%20%20font-size%3A%2012pt%3B%0A%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20text-decoration%3A%20underline%3B%0A%20%20%20%20text-underline-offset%3A%204px%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin%3A%200%200%204px%200%3B%0A%20%20%7D%0A%20%20.doc-sub-title%20%7B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%231e293b%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.meta-grid%20%7B%0A%20%20%20%20display%3A%20grid%3B%0A%20%20%20%20grid-template-columns%3A%201fr%201fr%3B%0A%20%20%20%20gap%3A%208px%2016px%3B%0A%20%20%20%20background-color%3A%20%23f8fafc%3B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20padding%3A%2010px%2014px%3B%0A%20%20%20%20margin-bottom%3A%2018px%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.meta-item%20strong%20%7B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20display%3A%20inline-block%3B%0A%20%20%20%20min-width%3A%2095px%3B%0A%20%20%7D%0A%20%20.meta-item%20span%20%7B%0A%20%20%20%20font-family%3A%20ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%7D%0A%20%20.party-grid%20%7B%0A%20%20%20%20display%3A%20grid%3B%0A%20%20%20%20grid-template-columns%3A%201fr%201fr%3B%0A%20%20%20%20gap%3A%2014px%3B%0A%20%20%20%20margin-bottom%3A%2018px%3B%0A%20%20%7D%0A%20%20.party-box%20%7B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20padding%3A%2010px%2014px%3B%0A%20%20%20%20background-color%3A%20%23ffffff%3B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%7D%0A%20%20.party-header%20%7B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20border-bottom%3A%201px%20solid%20%23e2e8f0%3B%0A%20%20%20%20padding-bottom%3A%204px%3B%0A%20%20%20%20margin-bottom%3A%208px%3B%0A%20%20%7D%0A%20%20.party-header.complainant%20%7B%0A%20%20%20%20color%3A%20%231d4ed8%3B%0A%20%20%7D%0A%20%20.party-header.accused%20%7B%0A%20%20%20%20color%3A%20%23b91c1c%3B%0A%20%20%7D%0A%20%20.party-field%20%7B%0A%20%20%20%20margin-bottom%3A%204px%3B%0A%20%20%7D%0A%20%20.party-field%20strong%20%7B%0A%20%20%20%20color%3A%20%2364748b%3B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%7D%0A%20%20.section-block%20%7B%0A%20%20%20%20margin-bottom%3A%2014px%3B%0A%20%20%7D%0A%20%20.section-label%20%7B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20margin-bottom%3A%204px%3B%0A%20%20%7D%0A%20%20.section-content%20%7B%0A%20%20%20%20background-color%3A%20%23f8fafc%3B%0A%20%20%20%20border%3A%201px%20solid%20%23e2e8f0%3B%0A%20%20%20%20border-radius%3A%206px%3B%0A%20%20%20%20padding%3A%209px%2012px%3B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%20%20white-space%3A%20pre-wrap%3B%0A%20%20%20%20line-height%3A%201.6%3B%0A%20%20%20%20color%3A%20%231e293b%3B%0A%20%20%7D%0A%20%20.section-content.highlight%20%7B%0A%20%20%20%20background-color%3A%20%23fffbeb%3B%0A%20%20%20%20border-color%3A%20%23fde68a%3B%0A%20%20%20%20color%3A%20%2378350f%3B%0A%20%20%20%20font-weight%3A%20600%3B%0A%20%20%7D%0A%20%20.section-content.danger%20%7B%0A%20%20%20%20background-color%3A%20%23fef2f2%3B%0A%20%20%20%20border-color%3A%20%23fecaca%3B%0A%20%20%20%20color%3A%20%23991b1b%3B%0A%20%20%7D%0A%20%20.signatures-row%20%7B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20justify-content%3A%20space-between%3B%0A%20%20%20%20align-items%3A%20flex-end%3B%0A%20%20%20%20margin-top%3A%2026px%3B%0A%20%20%20%20padding-top%3A%2016px%3B%0A%20%20%20%20border-top%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%7D%0A%20%20.seal-box%20%7B%0A%20%20%20%20width%3A%20140px%3B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%7D%0A%20%20.seal-stamp%20%7B%0A%20%20%20%20height%3A%2060px%3B%0A%20%20%20%20border%3A%201.5px%20dashed%20%2394a3b8%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20align-items%3A%20center%3B%0A%20%20%20%20justify-content%3A%20center%3B%0A%20%20%20%20font-size%3A%207.5pt%3B%0A%20%20%20%20color%3A%20%2394a3b8%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%7D%0A%20%20.seal-label%20%7B%0A%20%20%20%20margin-top%3A%204px%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%2364748b%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%7D%0A%20%20.officer-block%20%7B%0A%20%20%20%20text-align%3A%20right%3B%0A%20%20%20%20width%3A%20250px%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.officer-block%20.officer-name%20%7B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20font-size%3A%2010pt%3B%0A%20%20%7D%0A%20%20.officer-block%20.officer-role%20%7B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%7D%0A%20%20.sho-endorsement%20%7B%0A%20%20%20%20margin-top%3A%2022px%3B%0A%20%20%20%20padding-top%3A%2014px%3B%0A%20%20%20%20border-top%3A%202px%20solid%20%23cbd5e1%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.sho-header%20%7B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20justify-content%3A%20space-between%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin-bottom%3A%206px%3B%0A%20%20%7D%0A%20%20.sho-text%20%7B%0A%20%20%20%20font-style%3A%20italic%3B%0A%20%20%20%20color%3A%20%23334155%3B%0A%20%20%20%20margin-bottom%3A%2012px%3B%0A%20%20%20%20line-height%3A%201.5%3B%0A%20%20%7D%0A%20%20.sho-sign%20%7B%0A%20%20%20%20text-align%3A%20right%3B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%7D%0A%20%20.badge-tag%20%7B%0A%20%20%20%20display%3A%20inline-block%3B%0A%20%20%20%20padding%3A%202px%208px%3B%0A%20%20%20%20border-radius%3A%204px%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20background-color%3A%20%23f1f5f9%3B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20color%3A%20%23334155%3B%0A%20%20%7D%0A%0A%20%20%20%20body%20%7B%0A%20%20%20%20%20%20font-family%3A%20'Nirmala%20UI'%2C%20'Mangal'%2C%20'Arial%20Unicode%20MS'%2C%20sans-serif%3B%0A%20%20%20%20%20%20margin%3A%200%3B%0A%20%20%20%20%20%20padding%3A%2024px%3B%0A%20%20%20%20%20%20color%3A%20%23000%3B%0A%20%20%20%20%20%20background%3A%20%23fff%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%20%20line-height%3A%201.7%3B%0A%20%20%20%20%20%20%0A%20%20%20%20%7D%0A%20%20%20%20.doc-sheet%20%7B%0A%20%20%20%20%20%20max-width%3A%20820px%3B%0A%20%20%20%20%20%20margin%3A%200%20auto%3B%0A%20%20%20%20%20%20padding%3A%2040px%2048px%3B%0A%20%20%20%20%20%20background%3A%20%23fff%3B%0A%20%20%20%20%20%20border%3A%202px%20solid%20%23000%3B%0A%20%20%20%20%7D%0A%20%20%20%20.top-header%20%7B%0A%20%20%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20%20%20margin-bottom%3A%2024px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.main-title%20%7B%0A%20%20%20%20%20%20font-size%3A%2017pt%3B%0A%20%20%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20%20%20text-decoration%3A%20underline%3B%0A%20%20%20%20%20%20text-underline-offset%3A%204px%3B%0A%20%20%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.sub-title%20%7B%0A%20%20%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20%20%20font-size%3A%2014pt%3B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%20%20margin%3A%2022px%200%2022px%200%3B%0A%20%20%20%20%7D%0A%20%20%20%20.body-para%20%7B%0A%20%20%20%20%20%20text-indent%3A%2048px%3B%0A%20%20%20%20%20%20text-align%3A%20justify%3B%0A%20%20%20%20%20%20margin%3A%2018px%200%3B%0A%20%20%20%20%20%20line-height%3A%201.8%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%7D%0A%20%20%20%20.dotted-fill%20%7B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%20%20padding%3A%200%204px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.annexure-line%20%7B%0A%20%20%20%20%20%20margin%3A%2024px%200%2036px%200%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%7D%0A%20%20%20%20.bottom-table%20%7B%0A%20%20%20%20%20%20width%3A%20100%25%3B%0A%20%20%20%20%20%20border-collapse%3A%20collapse%3B%0A%20%20%20%20%20%20margin-top%3A%2036px%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%7D%0A%20%20%20%20.bottom-table%20td%20%7B%0A%20%20%20%20%20%20vertical-align%3A%20top%3B%0A%20%20%20%20%7D%0A%20%20%20%20%40media%20print%20%7B%0A%20%20%20%20%20%20body%20%7B%20padding%3A%200%3B%20%7D%0A%20%20%20%20%20%20.doc-sheet%20%7B%20border%3A%20none%20!important%3B%20box-shadow%3A%20none%20!important%3B%20padding%3A%2015mm%2020mm%3B%20%7D%0A%20%20%20%20%7D%0A%20%20%3C%2Fstyle%3E%0A%3C%2Fhead%3E%0A%3Cbody%3E%0A%20%20%3Cdiv%20class%3D%22doc-sheet%22%3E%0A%20%20%20%20%3C!--%20%E0%A4%B6%E0%A5%80%E0%A4%B0%E0%A5%8D%E0%A4%B7%20%E0%A4%B9%E0%A5%87%E0%A4%A1%E0%A4%BF%E0%A4%82%E0%A4%97%3A%20%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%20(%E0%A4%95%E0%A5%87%E0%A4%82%E0%A4%A6%E0%A5%8D%E0%A4%B0%E0%A4%BF%E0%A4%A4%2C%20%E0%A4%B0%E0%A5%87%E0%A4%96%E0%A4%BE%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4)%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22top-header%22%3E%0A%20%20%20%20%20%20%3Cspan%20class%3D%22main-title%22%3E%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%3C%2Fspan%3E%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%9C%E0%A4%BF%E0%A4%B2%E0%A4%BE%20%E0%A4%85%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%BE%E0%A4%B2%E0%A4%BE%E0%A5%A4%20%E0%A4%AA%E0%A4%82%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%20--%3E%0A%20%20%20%20%3Ctable%20style%3D%22width%3A%20100%25%3B%20border-collapse%3A%20collapse%3B%20margin-bottom%3A%2018px%3B%20font-size%3A%2012pt%3B%20font-weight%3A%20bold%3B%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2060%25%3B%20text-align%3A%20left%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2040%25%3B%20text-align%3A%20right%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%9C%E0%A4%BF%E0%A4%B2%E0%A4%BE%20Kurukshetra%E0%A5%A4%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AE%E0%A5%81%E0%A4%96%E0%A5%8D%E0%A4%AF%20%E0%A4%B6%E0%A5%80%E0%A4%B0%E0%A5%8D%E0%A4%B7%E0%A4%95%3A%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22sub-title%22%3E%0A%20%20%20%20%20%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%95%E0%A5%8D%E0%A4%B0%E0%A4%AE%E0%A4%BE%E0%A4%82%E0%A4%95%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20--%3E%0A%20%20%20%20%3Ctable%20style%3D%22width%3A%20100%25%3B%20border-collapse%3A%20collapse%3B%20margin-bottom%3A%2018px%3B%20font-size%3A%2011.5pt%3B%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2050%25%3B%20text-align%3A%20left%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%95%E0%A5%8D%E0%A4%B0%E0%A4%AE%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E..................%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2050%25%3B%20text-align%3A%20left%3B%20padding-left%3A%2020px%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E7%2F10%2F2026%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%201%3A%20%E0%A4%AA%E0%A4%B0%E0%A4%BF%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A5%80%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%A4%E0%A4%BF%20%E0%A4%B5%E0%A4%BF%E0%A4%B5%E0%A4%B0%E0%A4%A3%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%87%E0%A4%B8%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%BF%E0%A4%A4%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A4%BE%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%AA%E0%A4%B0%E0%A4%BF%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A5%80%20%3Cspan%20class%3D%22dotted-fill%22%3EMohit%20Verma%3C%2Fspan%3E%20%E0%A4%B5%E0%A4%BE%E0%A4%B8%E0%A5%80%20%3Cspan%20class%3D%22dotted-fill%22%3EShop%20No.%2012%2C%20Main%20Bazaar%2C%20Thanesar%3C%2Fspan%3E%20%E0%A4%B8%E0%A5%87%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%B8%E0%A4%82%E0%A4%96%E0%A5%8D%E0%A4%AF%E0%A4%BE%20%3Cspan%20class%3D%22dotted-fill%22%3EHAR-KKR-2026-CMP-00484%3C%2Fspan%3E%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E2026-10-01%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%A4%20%E0%A4%B9%E0%A5%81%E0%A4%88%20%E0%A4%B9%E0%A5%88%E0%A5%A4%20(%E0%A4%9B%E0%A4%BE%E0%A4%AF%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%20%E0%A4%B8%E0%A4%BE%E0%A4%A5%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%20%E0%A4%B9%E0%A5%88)%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%202%3A%20%E0%A4%89%E0%A4%AA%E0%A4%B8%E0%A5%8D%E0%A4%A5%E0%A4%BF%E0%A4%A4%E0%A4%BF%20%E0%A4%A8%E0%A4%BF%E0%A4%B0%E0%A5%8D%E0%A4%A6%E0%A5%87%E0%A4%B6%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%87%E0%A4%B8%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A5%87%20%E0%A4%86%E0%A4%AA%20%3Cspan%20class%3D%22dotted-fill%22%3EVikas%20alias%20Vicky%20%E0%A4%B5%E0%A4%BE%E0%A4%B8%E0%A5%80%20Near%20Old%20Bus%20Stand%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A8%E0%A4%BF%E0%A4%B0%E0%A5%8D%E0%A4%A6%E0%A5%87%E0%A4%B6%20%E0%A4%A6%E0%A4%BF%E0%A4%AF%E0%A5%87%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A5%87%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%86%E0%A4%AA%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E.............................%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%B8%E0%A4%AE%E0%A4%AF%20%3Cspan%20class%3D%22dotted-fill%22%3E11%3A00%20AM%3C%2Fspan%3E%20%E0%A4%AA%E0%A4%B0%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%B0%E0%A4%AE%E0%A5%8D%E0%A4%AD%E0%A4%BF%E0%A4%95%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%B8%E0%A4%AD%E0%A5%80%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%B8%E0%A4%82%E0%A4%97%E0%A4%BF%E0%A4%95%20%E0%A4%A6%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B5%E0%A5%87%E0%A4%9C%E0%A5%8B%2C%20%E0%A4%B8%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A5%8B%E0%A4%82%20%E0%A4%94%E0%A4%B0%20%E0%A4%B0%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%A1%20%E0%A4%B8%E0%A4%B9%E0%A4%BF%E0%A4%A4%20%E0%A4%B5%E0%A5%8D%E0%A4%AF%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%E0%A4%97%E0%A4%A4%20%E0%A4%A4%E0%A5%8C%E0%A4%B0%20%E0%A4%AA%E0%A4%B0%20%E0%A4%AF%E0%A4%BE%20%E0%A4%85%E0%A4%AA%E0%A4%A8%E0%A5%87%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%E0%A4%A8%E0%A4%BF%E0%A4%A7%E0%A4%BF%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%B6%E0%A4%BE%E0%A4%AE%E0%A4%BF%E0%A4%B2%20%E0%A4%B9%E0%A5%8B%E0%A4%B5%E0%A5%87%E0%A4%82%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%203%3A%20%E0%A4%B5%E0%A5%80%E0%A4%A1%E0%A4%BF%E0%A4%AF%E0%A5%8B%20%E0%A4%95%E0%A5%89%E0%A4%A8%E0%A5%8D%E0%A4%AB%E0%A5%8D%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A4%B8%E0%A4%BF%E0%A4%82%E0%A4%97%20%E0%A4%95%E0%A4%BE%20%E0%A4%B5%E0%A4%BF%E0%A4%95%E0%A4%B2%E0%A5%8D%E0%A4%AA%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%AF%E0%A4%A6%E0%A4%BF%20%E0%A4%86%E0%A4%AA%20%E0%A4%85%E0%A4%AA%E0%A4%A8%E0%A5%80%20%E0%A4%89%E0%A4%AA%E0%A4%B8%E0%A5%8D%E0%A4%A5%E0%A4%BF%E0%A4%A4%E0%A4%BF%20%E0%A4%95%E0%A5%8B%20%E0%A4%B5%E0%A5%80%E0%A4%A1%E0%A4%BF%E0%A4%AF%E0%A5%8B%20%E0%A4%95%E0%A4%BE%E0%A4%A8%E0%A5%8D%E0%A4%AB%E0%A5%8D%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%9A%E0%A4%BE%E0%A4%B9%E0%A4%A4%E0%A5%87%20%E0%A4%B9%E0%A5%88%20%E0%A4%A4%E0%A5%8B%20%E0%A4%87%E0%A4%B8%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%95%E0%A5%80%20%E0%A4%88.%E0%A4%AE%E0%A5%87%E0%A4%B2%20%E0%A4%86%E0%A4%88.%E0%A4%A1%E0%A5%80.%20%3Cspan%20class%3D%22dotted-fill%22%3Esho.cityambala-hry%40nic.in%3C%2Fspan%3E%20%E0%A4%AA%E0%A4%B0%20%E0%A4%B2%E0%A4%BF%E0%A4%96%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%BF%E0%A4%B5%E0%A5%87%E0%A4%A6%E0%A4%A8%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E.............................%3C%2Fspan%3E%20%E0%A4%B8%E0%A5%87%20%E0%A4%AA%E0%A4%B9%E0%A4%B2%E0%A5%87%20%E0%A4%AD%E0%A5%87%E0%A4%9C%E0%A4%A8%E0%A4%BE%20%E0%A4%B8%E0%A5%81%E0%A4%A8%E0%A4%BF%E0%A4%B6%E0%A5%8D%E0%A4%9A%E0%A4%BF%E0%A4%A4%20%E0%A4%95%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%204%3A%20%E0%A4%B5%E0%A5%88%E0%A4%A7%E0%A4%BE%E0%A4%A8%E0%A4%BF%E0%A4%95%20%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A4%B7%E0%A5%8D%E0%A4%9F%E0%A5%80%E0%A4%95%E0%A4%B0%E0%A4%A3%20(%E0%A4%8F%E0%A4%AB%E0%A4%86%E0%A4%88%E0%A4%86%E0%A4%B0%20%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%2F%20%E0%A4%97%E0%A4%BF%E0%A4%B0%E0%A4%AB%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82)%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%87%E0%A4%B8%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%AF%E0%A4%B9%20%E0%A4%AD%E0%A5%80%20%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A4%B7%E0%A5%8D%E0%A4%9F%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A4%BE%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%AF%E0%A4%B9%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%E0%A4%B5%E0%A4%B2%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%9C%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%97%E0%A4%AF%E0%A4%BE%20%E0%A4%B9%E0%A5%88%E0%A5%A4%20%E0%A4%85%E0%A4%AD%E0%A5%80%20%E0%A4%A4%E0%A4%95%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%87%20%E0%A4%B5%E0%A4%BF%E0%A4%B0%E0%A5%81%E0%A4%A6%E0%A5%8D%E0%A4%A7%20%E0%A4%95%E0%A5%8B%E0%A4%88%20%E0%A4%AD%E0%A5%80%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A5%E0%A4%AE%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE%20%E0%A4%B0%E0%A4%BF%E0%A4%AA%E0%A5%8B%E0%A4%B0%E0%A5%8D%E0%A4%9F%20%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%E0%A4%95%E0%A5%80%20%E0%A4%97%E0%A4%88%20%E0%A4%B9%E0%A5%88%20%E0%A4%94%E0%A4%B0%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%A6%E0%A5%8C%E0%A4%B0%E0%A4%BE%E0%A4%A8%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%97%E0%A4%BF%E0%A4%B0%E0%A4%AB%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B0%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%AF%E0%A5%87%E0%A4%97%E0%A4%BE%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%E0%A4%95%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22annexure-line%22%3E%0A%20%20%20%20%20%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%20%3A-%20%26nbsp%3B%26nbsp%3B%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9B%E0%A4%BE%E0%A4%AF%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%E0%A5%A4%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%B9%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A4%B0%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%AE%E0%A5%8B%E0%A4%B9%E0%A4%B0%20%E0%A4%A4%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%95%E0%A4%BE%20--%3E%0A%20%20%20%20%3Ctable%20class%3D%22bottom-table%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2045%25%3B%20vertical-align%3A%20top%3B%20padding-top%3A%2010px%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%3Cb%3E%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%95%E0%A5%80%20%E0%A4%AE%E0%A5%8B%E0%A4%B9%E0%A4%B0%3C%2Fb%3E%0A%20%20%20%20%20%20%20%20%20%20%3Cdiv%20style%3D%22margin-top%3A%2060px%3B%20color%3A%20%2394a3b8%3B%20font-size%3A%209pt%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%26nbsp%3B%0A%20%20%20%20%20%20%20%20%20%20%3C%2Fdiv%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2055%25%3B%20vertical-align%3A%20top%3B%20line-height%3A%202.1%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%85%E0%A4%A7%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%95%E0%A5%87%20%E0%A4%B9%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A4%B0%20%3Cspan%20class%3D%22dotted-fill%22%3E.................................%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A8%E0%A4%BE%E0%A4%AE%20%E0%A4%B5%20%E0%A4%AA%E0%A4%A6%20%3Cspan%20class%3D%22dotted-fill%22%3E%E0%A4%B8%E0%A5%81%E0%A4%B0%E0%A5%87%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%8D%E0%A4%B0%20%E0%A4%AA%E0%A4%BE%E0%A4%B2%20%2C%20%E0%A4%B8%E0%A4%AC-%E0%A4%87%E0%A4%82%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A5%87%E0%A4%95%E0%A5%8D%E0%A4%9F%E0%A4%B0%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%AE%E0%A5%8B%E0%A4%AC%E0%A4%BE%E0%A4%88%E0%A4%B2%20%E0%A4%A8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%B0%20%3Cspan%20class%3D%22dotted-fill%22%3E9812034567%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%88.%E0%A4%AE%E0%A5%87%E0%A4%B2%20%E0%A4%86%E0%A4%88.%E0%A4%A1%E0%A5%80.%20%3Cspan%20class%3D%22dotted-fill%22%3Eio.ambala-hry%40nic.in%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%20%20%3C%2Fdiv%3E%0A%3C%2Fbody%3E%0A%3C%2Fhtml%3E",
+        "dataUrl": "data:text/html;charset=utf-8,%3C!DOCTYPE%20html%3E%0A%3Chtml%20lang%3D%22hi%22%3E%0A%3Chead%3E%0A%20%20%3Cmeta%20charset%3D%22UTF-8%22%3E%0A%20%20%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1.0%22%3E%0A%20%20%3Ctitle%3E%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%20-%20%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%3C%2Ftitle%3E%0A%20%20%3Cstyle%3E%0A%20%20%20%20%0A%20%20%40page%20%7B%0A%20%20%20%20size%3A%20A4%3B%0A%20%20%20%20margin%3A%2015mm%2015mm%2015mm%2015mm%3B%0A%20%20%7D%0A%20%20*%20%7B%0A%20%20%20%20box-sizing%3A%20border-box%3B%0A%20%20%20%20-webkit-print-color-adjust%3A%20exact%20!important%3B%0A%20%20%20%20print-color-adjust%3A%20exact%20!important%3B%0A%20%20%7D%0A%20%20body%20%7B%0A%20%20%20%20font-family%3A%20-apple-system%2C%20BlinkMacSystemFont%2C%20%22Segoe%20UI%22%2C%20Roboto%2C%20Helvetica%2C%20Arial%2C%20sans-serif%3B%0A%20%20%20%20color%3A%20%230f172a%3B%0A%20%20%20%20background-color%3A%20%23ffffff%3B%0A%20%20%20%20line-height%3A%201.5%3B%0A%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%20%20padding%3A%2024px%3B%0A%20%20%7D%0A%20%20.doc-sheet%20%7B%0A%20%20%20%20max-width%3A%20820px%3B%0A%20%20%20%20margin%3A%200%20auto%3B%0A%20%20%20%20background%3A%20%23ffffff%3B%0A%20%20%20%20border%3A%202px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%2012px%3B%0A%20%20%20%20padding%3A%2036px%2044px%3B%0A%20%20%20%20box-shadow%3A%200%204px%2020px%20rgba(0%2C%200%2C%200%2C%200.06)%3B%0A%20%20%7D%0A%20%20%40media%20print%20%7B%0A%20%20%20%20body%20%7B%0A%20%20%20%20%20%20padding%3A%200%3B%0A%20%20%20%20%20%20background%3A%20none%3B%0A%20%20%20%20%7D%0A%20%20%20%20.doc-sheet%20%7B%0A%20%20%20%20%20%20border%3A%20none%20!important%3B%0A%20%20%20%20%20%20border-radius%3A%200%20!important%3B%0A%20%20%20%20%20%20padding%3A%200%20!important%3B%0A%20%20%20%20%20%20box-shadow%3A%20none%20!important%3B%0A%20%20%20%20%20%20max-width%3A%20100%25%20!important%3B%0A%20%20%20%20%7D%0A%20%20%20%20.no-print%20%7B%0A%20%20%20%20%20%20display%3A%20none%20!important%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%20%20.header-seal%20%7B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20border-bottom%3A%202.5px%20solid%20%230b192c%3B%0A%20%20%20%20padding-bottom%3A%2014px%3B%0A%20%20%20%20margin-bottom%3A%2016px%3B%0A%20%20%7D%0A%20%20.police-title%20%7B%0A%20%20%20%20font-size%3A%2015pt%3B%0A%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20letter-spacing%3A%202.5px%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.state-title%20%7B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20letter-spacing%3A%201.5px%3B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20margin%3A%202px%200%206px%200%3B%0A%20%20%7D%0A%20%20.station-title%20%7B%0A%20%20%20%20font-size%3A%2012pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.doc-title-block%20%7B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20margin%3A%2016px%200%2020px%200%3B%0A%20%20%7D%0A%20%20.doc-main-title%20%7B%0A%20%20%20%20font-size%3A%2012pt%3B%0A%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20text-decoration%3A%20underline%3B%0A%20%20%20%20text-underline-offset%3A%204px%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin%3A%200%200%204px%200%3B%0A%20%20%7D%0A%20%20.doc-sub-title%20%7B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%231e293b%3B%0A%20%20%20%20margin%3A%200%3B%0A%20%20%7D%0A%20%20.meta-grid%20%7B%0A%20%20%20%20display%3A%20grid%3B%0A%20%20%20%20grid-template-columns%3A%201fr%201fr%3B%0A%20%20%20%20gap%3A%208px%2016px%3B%0A%20%20%20%20background-color%3A%20%23f8fafc%3B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20padding%3A%2010px%2014px%3B%0A%20%20%20%20margin-bottom%3A%2018px%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.meta-item%20strong%20%7B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20display%3A%20inline-block%3B%0A%20%20%20%20min-width%3A%2095px%3B%0A%20%20%7D%0A%20%20.meta-item%20span%20%7B%0A%20%20%20%20font-family%3A%20ui-monospace%2C%20SFMono-Regular%2C%20Menlo%2C%20Monaco%2C%20Consolas%2C%20monospace%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%7D%0A%20%20.party-grid%20%7B%0A%20%20%20%20display%3A%20grid%3B%0A%20%20%20%20grid-template-columns%3A%201fr%201fr%3B%0A%20%20%20%20gap%3A%2014px%3B%0A%20%20%20%20margin-bottom%3A%2018px%3B%0A%20%20%7D%0A%20%20.party-box%20%7B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20padding%3A%2010px%2014px%3B%0A%20%20%20%20background-color%3A%20%23ffffff%3B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%7D%0A%20%20.party-header%20%7B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20border-bottom%3A%201px%20solid%20%23e2e8f0%3B%0A%20%20%20%20padding-bottom%3A%204px%3B%0A%20%20%20%20margin-bottom%3A%208px%3B%0A%20%20%7D%0A%20%20.party-header.complainant%20%7B%0A%20%20%20%20color%3A%20%231d4ed8%3B%0A%20%20%7D%0A%20%20.party-header.accused%20%7B%0A%20%20%20%20color%3A%20%23b91c1c%3B%0A%20%20%7D%0A%20%20.party-field%20%7B%0A%20%20%20%20margin-bottom%3A%204px%3B%0A%20%20%7D%0A%20%20.party-field%20strong%20%7B%0A%20%20%20%20color%3A%20%2364748b%3B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%7D%0A%20%20.section-block%20%7B%0A%20%20%20%20margin-bottom%3A%2014px%3B%0A%20%20%7D%0A%20%20.section-label%20%7B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20color%3A%20%23475569%3B%0A%20%20%20%20margin-bottom%3A%204px%3B%0A%20%20%7D%0A%20%20.section-content%20%7B%0A%20%20%20%20background-color%3A%20%23f8fafc%3B%0A%20%20%20%20border%3A%201px%20solid%20%23e2e8f0%3B%0A%20%20%20%20border-radius%3A%206px%3B%0A%20%20%20%20padding%3A%209px%2012px%3B%0A%20%20%20%20font-size%3A%209.5pt%3B%0A%20%20%20%20white-space%3A%20pre-wrap%3B%0A%20%20%20%20line-height%3A%201.6%3B%0A%20%20%20%20color%3A%20%231e293b%3B%0A%20%20%7D%0A%20%20.section-content.highlight%20%7B%0A%20%20%20%20background-color%3A%20%23fffbeb%3B%0A%20%20%20%20border-color%3A%20%23fde68a%3B%0A%20%20%20%20color%3A%20%2378350f%3B%0A%20%20%20%20font-weight%3A%20600%3B%0A%20%20%7D%0A%20%20.section-content.danger%20%7B%0A%20%20%20%20background-color%3A%20%23fef2f2%3B%0A%20%20%20%20border-color%3A%20%23fecaca%3B%0A%20%20%20%20color%3A%20%23991b1b%3B%0A%20%20%7D%0A%20%20.signatures-row%20%7B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20justify-content%3A%20space-between%3B%0A%20%20%20%20align-items%3A%20flex-end%3B%0A%20%20%20%20margin-top%3A%2026px%3B%0A%20%20%20%20padding-top%3A%2016px%3B%0A%20%20%20%20border-top%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%7D%0A%20%20.seal-box%20%7B%0A%20%20%20%20width%3A%20140px%3B%0A%20%20%20%20text-align%3A%20center%3B%0A%20%20%7D%0A%20%20.seal-stamp%20%7B%0A%20%20%20%20height%3A%2060px%3B%0A%20%20%20%20border%3A%201.5px%20dashed%20%2394a3b8%3B%0A%20%20%20%20border-radius%3A%208px%3B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20align-items%3A%20center%3B%0A%20%20%20%20justify-content%3A%20center%3B%0A%20%20%20%20font-size%3A%207.5pt%3B%0A%20%20%20%20color%3A%20%2394a3b8%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%7D%0A%20%20.seal-label%20%7B%0A%20%20%20%20margin-top%3A%204px%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%2364748b%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%7D%0A%20%20.officer-block%20%7B%0A%20%20%20%20text-align%3A%20right%3B%0A%20%20%20%20width%3A%20250px%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.officer-block%20.officer-name%20%7B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20font-size%3A%2010pt%3B%0A%20%20%7D%0A%20%20.officer-block%20.officer-role%20%7B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%7D%0A%20%20.sho-endorsement%20%7B%0A%20%20%20%20margin-top%3A%2022px%3B%0A%20%20%20%20padding-top%3A%2014px%3B%0A%20%20%20%20border-top%3A%202px%20solid%20%23cbd5e1%3B%0A%20%20%20%20font-size%3A%209pt%3B%0A%20%20%7D%0A%20%20.sho-header%20%7B%0A%20%20%20%20display%3A%20flex%3B%0A%20%20%20%20justify-content%3A%20space-between%3B%0A%20%20%20%20font-weight%3A%20800%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20color%3A%20%230b192c%3B%0A%20%20%20%20margin-bottom%3A%206px%3B%0A%20%20%7D%0A%20%20.sho-text%20%7B%0A%20%20%20%20font-style%3A%20italic%3B%0A%20%20%20%20color%3A%20%23334155%3B%0A%20%20%20%20margin-bottom%3A%2012px%3B%0A%20%20%20%20line-height%3A%201.5%3B%0A%20%20%7D%0A%20%20.sho-sign%20%7B%0A%20%20%20%20text-align%3A%20right%3B%0A%20%20%20%20font-size%3A%208.5pt%3B%0A%20%20%7D%0A%20%20.badge-tag%20%7B%0A%20%20%20%20display%3A%20inline-block%3B%0A%20%20%20%20padding%3A%202px%208px%3B%0A%20%20%20%20border-radius%3A%204px%3B%0A%20%20%20%20font-size%3A%208pt%3B%0A%20%20%20%20font-weight%3A%20700%3B%0A%20%20%20%20text-transform%3A%20uppercase%3B%0A%20%20%20%20background-color%3A%20%23f1f5f9%3B%0A%20%20%20%20border%3A%201px%20solid%20%23cbd5e1%3B%0A%20%20%20%20color%3A%20%23334155%3B%0A%20%20%7D%0A%0A%20%20%20%20body%20%7B%0A%20%20%20%20%20%20font-family%3A%20'Nirmala%20UI'%2C%20'Mangal'%2C%20'Arial%20Unicode%20MS'%2C%20sans-serif%3B%0A%20%20%20%20%20%20margin%3A%200%3B%0A%20%20%20%20%20%20padding%3A%2024px%3B%0A%20%20%20%20%20%20color%3A%20%23000%3B%0A%20%20%20%20%20%20background%3A%20%23fff%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%20%20line-height%3A%201.7%3B%0A%20%20%20%20%20%20%0A%20%20%20%20%7D%0A%20%20%20%20.doc-sheet%20%7B%0A%20%20%20%20%20%20max-width%3A%20820px%3B%0A%20%20%20%20%20%20margin%3A%200%20auto%3B%0A%20%20%20%20%20%20padding%3A%2040px%2048px%3B%0A%20%20%20%20%20%20background%3A%20%23fff%3B%0A%20%20%20%20%20%20border%3A%202px%20solid%20%23000%3B%0A%20%20%20%20%7D%0A%20%20%20%20.top-header%20%7B%0A%20%20%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20%20%20margin-bottom%3A%2024px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.main-title%20%7B%0A%20%20%20%20%20%20font-size%3A%2017pt%3B%0A%20%20%20%20%20%20font-weight%3A%20900%3B%0A%20%20%20%20%20%20text-decoration%3A%20underline%3B%0A%20%20%20%20%20%20text-underline-offset%3A%204px%3B%0A%20%20%20%20%20%20letter-spacing%3A%200.5px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.sub-title%20%7B%0A%20%20%20%20%20%20text-align%3A%20center%3B%0A%20%20%20%20%20%20font-size%3A%2014pt%3B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%20%20margin%3A%2022px%200%2022px%200%3B%0A%20%20%20%20%7D%0A%20%20%20%20.body-para%20%7B%0A%20%20%20%20%20%20text-indent%3A%2048px%3B%0A%20%20%20%20%20%20text-align%3A%20justify%3B%0A%20%20%20%20%20%20margin%3A%2018px%200%3B%0A%20%20%20%20%20%20line-height%3A%201.8%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%7D%0A%20%20%20%20.dotted-fill%20%7B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%20%20padding%3A%200%204px%3B%0A%20%20%20%20%7D%0A%20%20%20%20.annexure-line%20%7B%0A%20%20%20%20%20%20margin%3A%2024px%200%2036px%200%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%20%20font-weight%3A%20bold%3B%0A%20%20%20%20%7D%0A%20%20%20%20.bottom-table%20%7B%0A%20%20%20%20%20%20width%3A%20100%25%3B%0A%20%20%20%20%20%20border-collapse%3A%20collapse%3B%0A%20%20%20%20%20%20margin-top%3A%2036px%3B%0A%20%20%20%20%20%20font-size%3A%2011.5pt%3B%0A%20%20%20%20%7D%0A%20%20%20%20.bottom-table%20td%20%7B%0A%20%20%20%20%20%20vertical-align%3A%20top%3B%0A%20%20%20%20%7D%0A%20%20%20%20%40media%20print%20%7B%0A%20%20%20%20%20%20body%20%7B%20padding%3A%200%3B%20%7D%0A%20%20%20%20%20%20.doc-sheet%20%7B%20border%3A%20none%20!important%3B%20box-shadow%3A%20none%20!important%3B%20padding%3A%2015mm%2020mm%3B%20%7D%0A%20%20%20%20%7D%0A%20%20%3C%2Fstyle%3E%0A%3C%2Fhead%3E%0A%3Cbody%3E%0A%20%20%3Cdiv%20class%3D%22doc-sheet%22%3E%0A%20%20%20%20%3C!--%20%E0%A4%B6%E0%A5%80%E0%A4%B0%E0%A5%8D%E0%A4%B7%20%E0%A4%B9%E0%A5%87%E0%A4%A1%E0%A4%BF%E0%A4%82%E0%A4%97%3A%20%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%20(%E0%A4%95%E0%A5%87%E0%A4%82%E0%A4%A6%E0%A5%8D%E0%A4%B0%E0%A4%BF%E0%A4%A4%2C%20%E0%A4%B0%E0%A5%87%E0%A4%96%E0%A4%BE%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4)%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22top-header%22%3E%0A%20%20%20%20%20%20%3Cspan%20class%3D%22main-title%22%3E%E0%A4%B9%E0%A4%B0%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%A3%E0%A4%BE%20%E0%A4%AA%E0%A5%81%E0%A4%B2%E0%A4%BF%E0%A4%B8%3C%2Fspan%3E%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%9C%E0%A4%BF%E0%A4%B2%E0%A4%BE%20%E0%A4%85%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%BE%E0%A4%B2%E0%A4%BE%E0%A5%A4%20%E0%A4%AA%E0%A4%82%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%20--%3E%0A%20%20%20%20%3Ctable%20style%3D%22width%3A%20100%25%3B%20border-collapse%3A%20collapse%3B%20margin-bottom%3A%2018px%3B%20font-size%3A%2012pt%3B%20font-weight%3A%20bold%3B%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2060%25%3B%20text-align%3A%20left%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2040%25%3B%20text-align%3A%20right%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%9C%E0%A4%BF%E0%A4%B2%E0%A4%BE%20Kurukshetra%E0%A5%A4%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AE%E0%A5%81%E0%A4%96%E0%A5%8D%E0%A4%AF%20%E0%A4%B6%E0%A5%80%E0%A4%B0%E0%A5%8D%E0%A4%B7%E0%A4%95%3A%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22sub-title%22%3E%0A%20%20%20%20%20%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE-%E0%A4%AA%E0%A4%A4%E0%A5%8D%E0%A4%B0%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%95%E0%A5%8D%E0%A4%B0%E0%A4%AE%E0%A4%BE%E0%A4%82%E0%A4%95%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20--%3E%0A%20%20%20%20%3Ctable%20style%3D%22width%3A%20100%25%3B%20border-collapse%3A%20collapse%3B%20margin-bottom%3A%2018px%3B%20font-size%3A%2011.5pt%3B%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2050%25%3B%20text-align%3A%20left%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%95%E0%A5%8D%E0%A4%B0%E0%A4%AE%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E..................%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2050%25%3B%20text-align%3A%20left%3B%20padding-left%3A%2020px%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E7%2F10%2F2026%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%201%3A%20%E0%A4%AA%E0%A4%B0%E0%A4%BF%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A5%80%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%A4%E0%A4%BF%20%E0%A4%B5%E0%A4%BF%E0%A4%B5%E0%A4%B0%E0%A4%A3%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%87%E0%A4%B8%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%BF%E0%A4%A4%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A4%BE%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%AA%E0%A4%B0%E0%A4%BF%E0%A4%B5%E0%A4%BE%E0%A4%A6%E0%A5%80%20%3Cspan%20class%3D%22dotted-fill%22%3EMohit%20Verma%3C%2Fspan%3E%20%E0%A4%B5%E0%A4%BE%E0%A4%B8%E0%A5%80%20%3Cspan%20class%3D%22dotted-fill%22%3EShop%20No.%2012%2C%20Main%20Bazaar%2C%20Thanesar%3C%2Fspan%3E%20%E0%A4%B8%E0%A5%87%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%B8%E0%A4%82%E0%A4%96%E0%A5%8D%E0%A4%AF%E0%A4%BE%20%3Cspan%20class%3D%22dotted-fill%22%3EHAR-KKR-2026-CMP-00484%3C%2Fspan%3E%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E2026-10-01%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%A4%20%E0%A4%B9%E0%A5%81%E0%A4%88%20%E0%A4%B9%E0%A5%88%E0%A5%A4%20(%E0%A4%9B%E0%A4%BE%E0%A4%AF%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%20%E0%A4%B8%E0%A4%BE%E0%A4%A5%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%20%E0%A4%B9%E0%A5%88)%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%202%3A%20%E0%A4%89%E0%A4%AA%E0%A4%B8%E0%A5%8D%E0%A4%A5%E0%A4%BF%E0%A4%A4%E0%A4%BF%20%E0%A4%A8%E0%A4%BF%E0%A4%B0%E0%A5%8D%E0%A4%A6%E0%A5%87%E0%A4%B6%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%87%E0%A4%B8%E0%A4%B2%E0%A4%BF%E0%A4%AF%E0%A5%87%20%E0%A4%86%E0%A4%AA%20%3Cspan%20class%3D%22dotted-fill%22%3EVikas%20alias%20Vicky%20%E0%A4%B5%E0%A4%BE%E0%A4%B8%E0%A5%80%20Near%20Old%20Bus%20Stand%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A8%E0%A4%BF%E0%A4%B0%E0%A5%8D%E0%A4%A6%E0%A5%87%E0%A4%B6%20%E0%A4%A6%E0%A4%BF%E0%A4%AF%E0%A5%87%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A5%87%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%86%E0%A4%AA%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E.............................%3C%2Fspan%3E%20%E0%A4%95%E0%A5%8B%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%B8%E0%A4%AE%E0%A4%AF%20%3Cspan%20class%3D%22dotted-fill%22%3E11%3A00%20AM%3C%2Fspan%3E%20%E0%A4%AA%E0%A4%B0%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%B0%E0%A4%AE%E0%A5%8D%E0%A4%AD%E0%A4%BF%E0%A4%95%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%B8%E0%A4%AD%E0%A5%80%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%BE%E0%A4%B8%E0%A4%82%E0%A4%97%E0%A4%BF%E0%A4%95%20%E0%A4%A6%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B5%E0%A5%87%E0%A4%9C%E0%A5%8B%2C%20%E0%A4%B8%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A5%8D%E0%A4%AF%E0%A5%8B%E0%A4%82%20%E0%A4%94%E0%A4%B0%20%E0%A4%B0%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%B0%E0%A5%8D%E0%A4%A1%20%E0%A4%B8%E0%A4%B9%E0%A4%BF%E0%A4%A4%20%E0%A4%B5%E0%A5%8D%E0%A4%AF%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%E0%A4%97%E0%A4%A4%20%E0%A4%A4%E0%A5%8C%E0%A4%B0%20%E0%A4%AA%E0%A4%B0%20%E0%A4%AF%E0%A4%BE%20%E0%A4%85%E0%A4%AA%E0%A4%A8%E0%A5%87%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%E0%A4%A8%E0%A4%BF%E0%A4%A7%E0%A4%BF%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%B6%E0%A4%BE%E0%A4%AE%E0%A4%BF%E0%A4%B2%20%E0%A4%B9%E0%A5%8B%E0%A4%B5%E0%A5%87%E0%A4%82%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%203%3A%20%E0%A4%B5%E0%A5%80%E0%A4%A1%E0%A4%BF%E0%A4%AF%E0%A5%8B%20%E0%A4%95%E0%A5%89%E0%A4%A8%E0%A5%8D%E0%A4%AB%E0%A5%8D%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A4%B8%E0%A4%BF%E0%A4%82%E0%A4%97%20%E0%A4%95%E0%A4%BE%20%E0%A4%B5%E0%A4%BF%E0%A4%95%E0%A4%B2%E0%A5%8D%E0%A4%AA%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%AF%E0%A4%A6%E0%A4%BF%20%E0%A4%86%E0%A4%AA%20%E0%A4%85%E0%A4%AA%E0%A4%A8%E0%A5%80%20%E0%A4%89%E0%A4%AA%E0%A4%B8%E0%A5%8D%E0%A4%A5%E0%A4%BF%E0%A4%A4%E0%A4%BF%20%E0%A4%95%E0%A5%8B%20%E0%A4%B5%E0%A5%80%E0%A4%A1%E0%A4%BF%E0%A4%AF%E0%A5%8B%20%E0%A4%95%E0%A4%BE%E0%A4%A8%E0%A5%8D%E0%A4%AB%E0%A5%8D%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%AE%E0%A4%BE%E0%A4%A7%E0%A5%8D%E0%A4%AF%E0%A4%AE%20%E0%A4%B8%E0%A5%87%20%E0%A4%9A%E0%A4%BE%E0%A4%B9%E0%A4%A4%E0%A5%87%20%E0%A4%B9%E0%A5%88%20%E0%A4%A4%E0%A5%8B%20%E0%A4%87%E0%A4%B8%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%95%E0%A5%80%20%E0%A4%88.%E0%A4%AE%E0%A5%87%E0%A4%B2%20%E0%A4%86%E0%A4%88.%E0%A4%A1%E0%A5%80.%20%3Cspan%20class%3D%22dotted-fill%22%3Esho.cityambala-hry%40nic.in%3C%2Fspan%3E%20%E0%A4%AA%E0%A4%B0%20%E0%A4%B2%E0%A4%BF%E0%A4%96%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%BF%E0%A4%B5%E0%A5%87%E0%A4%A6%E0%A4%A8%20%E0%A4%A6%E0%A4%BF%E0%A4%A8%E0%A4%BE%E0%A4%82%E0%A4%95%20%3Cspan%20class%3D%22dotted-fill%22%3E.............................%3C%2Fspan%3E%20%E0%A4%B8%E0%A5%87%20%E0%A4%AA%E0%A4%B9%E0%A4%B2%E0%A5%87%20%E0%A4%AD%E0%A5%87%E0%A4%9C%E0%A4%A8%E0%A4%BE%20%E0%A4%B8%E0%A5%81%E0%A4%A8%E0%A4%BF%E0%A4%B6%E0%A5%8D%E0%A4%9A%E0%A4%BF%E0%A4%A4%20%E0%A4%95%E0%A4%B0%E0%A5%87%E0%A4%82%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%AA%E0%A5%88%E0%A4%B0%E0%A4%BE%204%3A%20%E0%A4%B5%E0%A5%88%E0%A4%A7%E0%A4%BE%E0%A4%A8%E0%A4%BF%E0%A4%95%20%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A4%B7%E0%A5%8D%E0%A4%9F%E0%A5%80%E0%A4%95%E0%A4%B0%E0%A4%A3%20(%E0%A4%8F%E0%A4%AB%E0%A4%86%E0%A4%88%E0%A4%86%E0%A4%B0%20%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%2F%20%E0%A4%97%E0%A4%BF%E0%A4%B0%E0%A4%AB%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82)%20--%3E%0A%20%20%20%20%3Cp%20class%3D%22body-para%22%3E%0A%20%20%20%20%20%20%E0%A4%87%E0%A4%B8%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%AF%E0%A4%B9%20%E0%A4%AD%E0%A5%80%20%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A4%B7%E0%A5%8D%E0%A4%9F%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%A4%E0%A4%BE%20%E0%A4%B9%E0%A5%88%20%E0%A4%95%E0%A4%BF%20%E0%A4%AF%E0%A4%B9%20%E0%A4%A8%E0%A5%8B%E0%A4%9F%E0%A4%BF%E0%A4%B8%20%E0%A4%95%E0%A5%87%E0%A4%B5%E0%A4%B2%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%B8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%A8%E0%A5%8D%E0%A4%A7%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%9C%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%97%E0%A4%AF%E0%A4%BE%20%E0%A4%B9%E0%A5%88%E0%A5%A4%20%E0%A4%85%E0%A4%AD%E0%A5%80%20%E0%A4%A4%E0%A4%95%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%87%20%E0%A4%B5%E0%A4%BF%E0%A4%B0%E0%A5%81%E0%A4%A6%E0%A5%8D%E0%A4%A7%20%E0%A4%95%E0%A5%8B%E0%A4%88%20%E0%A4%AD%E0%A5%80%20%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A5%E0%A4%AE%20%E0%A4%B8%E0%A5%82%E0%A4%9A%E0%A4%A8%E0%A4%BE%20%E0%A4%B0%E0%A4%BF%E0%A4%AA%E0%A5%8B%E0%A4%B0%E0%A5%8D%E0%A4%9F%20%E0%A4%85%E0%A4%82%E0%A4%95%E0%A4%BF%E0%A4%A4%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%E0%A4%95%E0%A5%80%20%E0%A4%97%E0%A4%88%20%E0%A4%B9%E0%A5%88%20%E0%A4%94%E0%A4%B0%20%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%95%E0%A5%87%20%E0%A4%A6%E0%A5%8C%E0%A4%B0%E0%A4%BE%E0%A4%A8%20%E0%A4%86%E0%A4%AA%E0%A4%95%E0%A5%8B%20%E0%A4%97%E0%A4%BF%E0%A4%B0%E0%A4%AB%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%B0%20%E0%A4%A8%E0%A4%B9%E0%A5%80%E0%A4%82%20%E0%A4%95%E0%A4%BF%E0%A4%AF%E0%A4%BE%20%E0%A4%9C%E0%A4%BE%E0%A4%AF%E0%A5%87%E0%A4%97%E0%A4%BE%E0%A5%A4%0A%20%20%20%20%3C%2Fp%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%E0%A4%95%20--%3E%0A%20%20%20%20%3Cdiv%20class%3D%22annexure-line%22%3E%0A%20%20%20%20%20%20%E0%A4%B8%E0%A4%82%E0%A4%B2%E0%A4%97%E0%A5%8D%E0%A4%A8%20%3A-%20%26nbsp%3B%26nbsp%3B%E0%A4%B6%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%AF%E0%A4%A4%20%E0%A4%95%E0%A5%80%20%E0%A4%9B%E0%A4%BE%E0%A4%AF%E0%A4%BE%E0%A4%AA%E0%A5%8D%E0%A4%B0%E0%A4%A4%E0%A4%BF%E0%A5%A4%0A%20%20%20%20%3C%2Fdiv%3E%0A%0A%20%20%20%20%3C!--%20%E0%A4%B9%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A4%B0%20%E0%A4%8F%E0%A4%B5%E0%A4%82%20%E0%A4%AE%E0%A5%8B%E0%A4%B9%E0%A4%B0%20%E0%A4%A4%E0%A4%BE%E0%A4%B2%E0%A4%BF%E0%A4%95%E0%A4%BE%20--%3E%0A%20%20%20%20%3Ctable%20class%3D%22bottom-table%22%3E%0A%20%20%20%20%20%20%3Ctr%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2045%25%3B%20vertical-align%3A%20top%3B%20padding-top%3A%2010px%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%3Cb%3E%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%E0%A4%95%E0%A5%80%20%E0%A4%AE%E0%A5%8B%E0%A4%B9%E0%A4%B0%3C%2Fb%3E%0A%20%20%20%20%20%20%20%20%20%20%3Cdiv%20style%3D%22margin-top%3A%2060px%3B%20color%3A%20%2394a3b8%3B%20font-size%3A%209pt%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%20%20%26nbsp%3B%0A%20%20%20%20%20%20%20%20%20%20%3C%2Fdiv%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%20%20%3Ctd%20style%3D%22width%3A%2055%25%3B%20vertical-align%3A%20top%3B%20line-height%3A%202.1%3B%22%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%9C%E0%A4%BE%E0%A4%82%E0%A4%9A%20%E0%A4%85%E0%A4%A7%E0%A4%BF%E0%A4%95%E0%A4%BE%E0%A4%B0%E0%A5%80%20%E0%A4%95%E0%A5%87%20%E0%A4%B9%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%BE%E0%A4%95%E0%A5%8D%E0%A4%B7%E0%A4%B0%20%3Cspan%20class%3D%22dotted-fill%22%3E.................................%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A8%E0%A4%BE%E0%A4%AE%20%E0%A4%B5%20%E0%A4%AA%E0%A4%A6%20%3Cspan%20class%3D%22dotted-fill%22%3E%E0%A4%B8%E0%A5%81%E0%A4%B0%E0%A5%87%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%8D%E0%A4%B0%20%E0%A4%AA%E0%A4%BE%E0%A4%B2%20%2C%20%E0%A4%B8%E0%A4%AC-%E0%A4%87%E0%A4%82%E0%A4%B8%E0%A5%8D%E0%A4%AA%E0%A5%87%E0%A4%95%E0%A5%8D%E0%A4%9F%E0%A4%B0%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%A5%E0%A4%BE%E0%A4%A8%E0%A4%BE%2F%E0%A4%AF%E0%A5%82%E0%A4%A8%E0%A4%BF%E0%A4%9F%20%3Cspan%20class%3D%22dotted-fill%22%3EPS%20City%20Thanesar%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%AE%E0%A5%8B%E0%A4%AC%E0%A4%BE%E0%A4%88%E0%A4%B2%20%E0%A4%A8%E0%A4%AE%E0%A5%8D%E0%A4%AC%E0%A4%B0%20%3Cspan%20class%3D%22dotted-fill%22%3E9812034567%3C%2Fspan%3E%3Cbr%2F%3E%0A%20%20%20%20%20%20%20%20%20%20%E0%A4%88.%E0%A4%AE%E0%A5%87%E0%A4%B2%20%E0%A4%86%E0%A4%88.%E0%A4%A1%E0%A5%80.%20%3Cspan%20class%3D%22dotted-fill%22%3Eio.ambala-hry%40nic.in%3C%2Fspan%3E%0A%20%20%20%20%20%20%20%20%3C%2Ftd%3E%0A%20%20%20%20%20%20%3C%2Ftr%3E%0A%20%20%20%20%3C%2Ftable%3E%0A%20%20%3C%2Fdiv%3E%0A%3C%2Fbody%3E%0A%3C%2Fhtml%3E",
+        "contentHtml": "<!DOCTYPE html>\n<html lang=\"hi\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>सूचना-पत्र - हरियाणा पुलिस</title>\n  <style>\n    \n  @page {\n    size: A4;\n    margin: 15mm 15mm 15mm 15mm;\n  }\n  * {\n    box-sizing: border-box;\n    -webkit-print-color-adjust: exact !important;\n    print-color-adjust: exact !important;\n  }\n  body {\n    font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif;\n    color: #0f172a;\n    background-color: #ffffff;\n    line-height: 1.5;\n    font-size: 11.5pt;\n    margin: 0;\n    padding: 24px;\n  }\n  .doc-sheet {\n    max-width: 820px;\n    margin: 0 auto;\n    background: #ffffff;\n    border: 2px solid #cbd5e1;\n    border-radius: 12px;\n    padding: 36px 44px;\n    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);\n  }\n  @media print {\n    body {\n      padding: 0;\n      background: none;\n    }\n    .doc-sheet {\n      border: none !important;\n      border-radius: 0 !important;\n      padding: 0 !important;\n      box-shadow: none !important;\n      max-width: 100% !important;\n    }\n    .no-print {\n      display: none !important;\n    }\n  }\n  .header-seal {\n    text-align: center;\n    border-bottom: 2.5px solid #0b192c;\n    padding-bottom: 14px;\n    margin-bottom: 16px;\n  }\n  .police-title {\n    font-size: 15pt;\n    font-weight: 900;\n    letter-spacing: 2.5px;\n    color: #0b192c;\n    text-transform: uppercase;\n    margin: 0;\n  }\n  .state-title {\n    font-size: 9pt;\n    font-weight: 700;\n    letter-spacing: 1.5px;\n    color: #475569;\n    text-transform: uppercase;\n    margin: 2px 0 6px 0;\n  }\n  .station-title {\n    font-size: 12pt;\n    font-weight: 800;\n    text-transform: uppercase;\n    color: #0b192c;\n    margin: 0;\n  }\n  .doc-title-block {\n    text-align: center;\n    margin: 16px 0 20px 0;\n  }\n  .doc-main-title {\n    font-size: 12pt;\n    font-weight: 900;\n    text-transform: uppercase;\n    letter-spacing: 0.5px;\n    text-decoration: underline;\n    text-underline-offset: 4px;\n    color: #0b192c;\n    margin: 0 0 4px 0;\n  }\n  .doc-sub-title {\n    font-size: 9.5pt;\n    font-weight: 700;\n    color: #1e293b;\n    margin: 0;\n  }\n  .meta-grid {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 8px 16px;\n    background-color: #f8fafc;\n    border: 1px solid #cbd5e1;\n    border-radius: 8px;\n    padding: 10px 14px;\n    margin-bottom: 18px;\n    font-size: 9pt;\n  }\n  .meta-item strong {\n    color: #475569;\n    text-transform: uppercase;\n    font-size: 8pt;\n    display: inline-block;\n    min-width: 95px;\n  }\n  .meta-item span {\n    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n    font-weight: 700;\n    color: #0b192c;\n  }\n  .party-grid {\n    display: grid;\n    grid-template-columns: 1fr 1fr;\n    gap: 14px;\n    margin-bottom: 18px;\n  }\n  .party-box {\n    border: 1px solid #cbd5e1;\n    border-radius: 8px;\n    padding: 10px 14px;\n    background-color: #ffffff;\n    font-size: 9.5pt;\n  }\n  .party-header {\n    font-size: 8.5pt;\n    font-weight: 800;\n    text-transform: uppercase;\n    letter-spacing: 0.5px;\n    border-bottom: 1px solid #e2e8f0;\n    padding-bottom: 4px;\n    margin-bottom: 8px;\n  }\n  .party-header.complainant {\n    color: #1d4ed8;\n  }\n  .party-header.accused {\n    color: #b91c1c;\n  }\n  .party-field {\n    margin-bottom: 4px;\n  }\n  .party-field strong {\n    color: #64748b;\n    font-size: 8.5pt;\n  }\n  .section-block {\n    margin-bottom: 14px;\n  }\n  .section-label {\n    font-size: 8.5pt;\n    font-weight: 800;\n    text-transform: uppercase;\n    letter-spacing: 0.5px;\n    color: #475569;\n    margin-bottom: 4px;\n  }\n  .section-content {\n    background-color: #f8fafc;\n    border: 1px solid #e2e8f0;\n    border-radius: 6px;\n    padding: 9px 12px;\n    font-size: 9.5pt;\n    white-space: pre-wrap;\n    line-height: 1.6;\n    color: #1e293b;\n  }\n  .section-content.highlight {\n    background-color: #fffbeb;\n    border-color: #fde68a;\n    color: #78350f;\n    font-weight: 600;\n  }\n  .section-content.danger {\n    background-color: #fef2f2;\n    border-color: #fecaca;\n    color: #991b1b;\n  }\n  .signatures-row {\n    display: flex;\n    justify-content: space-between;\n    align-items: flex-end;\n    margin-top: 26px;\n    padding-top: 16px;\n    border-top: 1px solid #cbd5e1;\n  }\n  .seal-box {\n    width: 140px;\n    text-align: center;\n  }\n  .seal-stamp {\n    height: 60px;\n    border: 1.5px dashed #94a3b8;\n    border-radius: 8px;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    font-size: 7.5pt;\n    color: #94a3b8;\n    text-transform: uppercase;\n    letter-spacing: 0.5px;\n  }\n  .seal-label {\n    margin-top: 4px;\n    font-size: 8pt;\n    font-weight: 700;\n    color: #64748b;\n    text-transform: uppercase;\n  }\n  .officer-block {\n    text-align: right;\n    width: 250px;\n    font-size: 9pt;\n  }\n  .officer-block .officer-name {\n    font-weight: 800;\n    color: #0b192c;\n    font-size: 10pt;\n  }\n  .officer-block .officer-role {\n    font-size: 8pt;\n    font-weight: 700;\n    color: #0b192c;\n    text-transform: uppercase;\n  }\n  .sho-endorsement {\n    margin-top: 22px;\n    padding-top: 14px;\n    border-top: 2px solid #cbd5e1;\n    font-size: 9pt;\n  }\n  .sho-header {\n    display: flex;\n    justify-content: space-between;\n    font-weight: 800;\n    text-transform: uppercase;\n    color: #0b192c;\n    margin-bottom: 6px;\n  }\n  .sho-text {\n    font-style: italic;\n    color: #334155;\n    margin-bottom: 12px;\n    line-height: 1.5;\n  }\n  .sho-sign {\n    text-align: right;\n    font-size: 8.5pt;\n  }\n  .badge-tag {\n    display: inline-block;\n    padding: 2px 8px;\n    border-radius: 4px;\n    font-size: 8pt;\n    font-weight: 700;\n    text-transform: uppercase;\n    background-color: #f1f5f9;\n    border: 1px solid #cbd5e1;\n    color: #334155;\n  }\n\n    body {\n      font-family: 'Nirmala UI', 'Mangal', 'Arial Unicode MS', sans-serif;\n      margin: 0;\n      padding: 24px;\n      color: #000;\n      background: #fff;\n      font-size: 11.5pt;\n      line-height: 1.7;\n      \n    }\n    .doc-sheet {\n      max-width: 820px;\n      margin: 0 auto;\n      padding: 40px 48px;\n      background: #fff;\n      border: 2px solid #000;\n    }\n    .top-header {\n      text-align: center;\n      margin-bottom: 24px;\n    }\n    .main-title {\n      font-size: 17pt;\n      font-weight: 900;\n      text-decoration: underline;\n      text-underline-offset: 4px;\n      letter-spacing: 0.5px;\n    }\n    .sub-title {\n      text-align: center;\n      font-size: 14pt;\n      font-weight: bold;\n      margin: 22px 0 22px 0;\n    }\n    .body-para {\n      text-indent: 48px;\n      text-align: justify;\n      margin: 18px 0;\n      line-height: 1.8;\n      font-size: 11.5pt;\n    }\n    .dotted-fill {\n      font-weight: bold;\n      padding: 0 4px;\n    }\n    .annexure-line {\n      margin: 24px 0 36px 0;\n      font-size: 11.5pt;\n      font-weight: bold;\n    }\n    .bottom-table {\n      width: 100%;\n      border-collapse: collapse;\n      margin-top: 36px;\n      font-size: 11.5pt;\n    }\n    .bottom-table td {\n      vertical-align: top;\n    }\n    @media print {\n      body { padding: 0; }\n      .doc-sheet { border: none !important; box-shadow: none !important; padding: 15mm 20mm; }\n    }\n  </style>\n</head>\n<body>\n  <div class=\"doc-sheet\">\n    <!-- शीर्ष हेडिंग: हरियाणा पुलिस (केंद्रित, रेखांकित) -->\n    <div class=\"top-header\">\n      <span class=\"main-title\">हरियाणा पुलिस</span>\n    </div>\n\n    <!-- थाना/यूनिट एवं जिला अम्बाला। पंक्ति -->\n    <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12pt; font-weight: bold;\">\n      <tr>\n        <td style=\"width: 60%; text-align: left;\">\n          थाना/यूनिट <span class=\"dotted-fill\">PS City Thanesar</span>\n        </td>\n        <td style=\"width: 40%; text-align: right;\">\n          जिला Kurukshetra।\n        </td>\n      </tr>\n    </table>\n\n    <!-- मुख्य शीर्षक: सूचना-पत्र -->\n    <div class=\"sub-title\">\n      सूचना-पत्र\n    </div>\n\n    <!-- क्रमांक एवं दिनांक -->\n    <table style=\"width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 11.5pt;\">\n      <tr>\n        <td style=\"width: 50%; text-align: left;\">\n          क्रमांक <span class=\"dotted-fill\">..................</span>\n        </td>\n        <td style=\"width: 50%; text-align: left; padding-left: 20px;\">\n          दिनांक <span class=\"dotted-fill\">7/10/2026</span>\n        </td>\n      </tr>\n    </table>\n\n    <!-- पैरा 1: परिवादी एवं शिकायत प्राप्ति विवरण -->\n    <p class=\"body-para\">\n      आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी <span class=\"dotted-fill\">Mohit Verma</span> वासी <span class=\"dotted-fill\">Shop No. 12, Main Bazaar, Thanesar</span> से शिकायत संख्या <span class=\"dotted-fill\">HAR-KKR-2026-CMP-00484</span> दिनांक <span class=\"dotted-fill\">2026-10-01</span> को थाना/यूनिट <span class=\"dotted-fill\">PS City Thanesar</span> में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)\n    </p>\n\n    <!-- पैरा 2: उपस्थिति निर्देश -->\n    <p class=\"body-para\">\n      इसलिये आप <span class=\"dotted-fill\">Vikas alias Vicky वासी Near Old Bus Stand</span> को निर्देश दिये जाते है कि आप दिनांक <span class=\"dotted-fill\">.............................</span> को थाना/यूनिट <span class=\"dotted-fill\">PS City Thanesar</span> में समय <span class=\"dotted-fill\">11:00 AM</span> पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।\n    </p>\n\n    <!-- पैरा 3: वीडियो कॉन्फ्रेंसिंग का विकल्प -->\n    <p class=\"body-para\">\n      शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. <span class=\"dotted-fill\">sho.cityambala-hry@nic.in</span> पर लिखित निवेदन दिनांक <span class=\"dotted-fill\">.............................</span> से पहले भेजना सुनिश्चित करें।\n    </p>\n\n    <!-- पैरा 4: वैधानिक स्पष्टीकरण (एफआईआर अंकित नहीं / गिरफ्तारी नहीं) -->\n    <p class=\"body-para\">\n      इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।\n    </p>\n\n    <!-- संलग्नक -->\n    <div class=\"annexure-line\">\n      संलग्न :- &nbsp;&nbsp;शिकायत की छायाप्रति।\n    </div>\n\n    <!-- हस्ताक्षर एवं मोहर तालिका -->\n    <table class=\"bottom-table\">\n      <tr>\n        <td style=\"width: 45%; vertical-align: top; padding-top: 10px;\">\n          <b>थाना/यूनिट की मोहर</b>\n          <div style=\"margin-top: 60px; color: #94a3b8; font-size: 9pt;\">\n            &nbsp;\n          </div>\n        </td>\n        <td style=\"width: 55%; vertical-align: top; line-height: 2.1;\">\n          जांच अधिकारी के हस्ताक्षर <span class=\"dotted-fill\">.................................</span><br/>\n          नाम व पद <span class=\"dotted-fill\">सुरेन्द्र पाल , सब-इंस्पेक्टर</span><br/>\n          थाना/यूनिट <span class=\"dotted-fill\">PS City Thanesar</span><br/>\n          मोबाईल नम्बर <span class=\"dotted-fill\">9812034567</span><br/>\n          ई.मेल आई.डी. <span class=\"dotted-fill\">io.ambala-hry@nic.in</span>\n        </td>\n      </tr>\n    </table>\n  </div>\n</body>\n</html>"
+      }
+    ],
+    "timeline": [
+      {
+        "id": "tl_1791361540498_jkuc",
+        "complaintId": "cmp_003",
+        "title": "Official Document Uploaded: 1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+        "description": "Category: NOTICE • Size: 11 KB",
+        "category": "DOCUMENT",
+        "officerName": "Sub-Inspector Vikram Singh",
+        "timestamp": "2026-10-07T08:25:40.498Z",
+        "documentName": "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html"
+      }
+    ],
+    "investigationSummary": {
+      "id": "sum_1791369875608_duocy",
+      "complaintId": "cmp_003",
+      "complaintNumber": "HAR-KKR-2026-CMP-00484",
+      "generatedAt": "2026-10-07T10:44:35.607Z",
+      "updatedAt": "2026-10-07T10:44:35.607Z",
+      "version": 1,
+      "generatedBy": "Gemini AI (gemini-3.5-flash-lite) & CMS Intelligence",
+      "caseSynopsis": "दिनांक 01-10-2026 को रेलवे रोड चौक, थानेसर पर पार्किंग के विवाद को लेकर मोहित वर्मा (दुकानदार) के साथ विकास उर्फ विक्की व तीन अन्य अज्ञात साथियों द्वारा लोहे की रॉड से मारपीट कर गंभीर चोट पहुँचाने का मामला सामने आया है। एलएनजेपी सिविल अस्पताल की एमएलआर रिपोर्ट में बाएं हाथ पर फ्रैक्चर की पुष्टि हुई है, जिस पर एसआई विक्रम सिंह द्वारा प्रारंभिक जांच पूरी कर एफआईआर दर्ज करने की अनुशंसा की गई है।",
+      "currentStage": "RECOMMENDED_FOR_FIR",
+      "progressPercentage": 57,
+      "workDoneSummary": "शिकायतकर्ता मोहित वर्मा के बयानों का सत्यापन किया गया है, एलएनजेपी सिविल अस्पताल से एमएलआर (मेडिकल लीगल रिपोर्ट) प्राप्त कर ली गई है जिसमें फ्रैक्चर की पुष्टि हुई है, और आरोपी विकास उर्फ विक्की के विरुद्ध हरियाणा पुलिस उपस्थिति नोटिस (सूचना-पत्र) जारी कर दिया गया है।",
+      "completedActions": [
+        {
+          "id": "comp_act_1",
+          "category": "OVERVIEW",
+          "categoryLabel": "Registration & GD Entry",
+          "title": "Complaint Registration & General Diary Entry",
+          "detail": "Complaint #HAR-KKR-2026-CMP-00484 registered via EMERGENCY_112 under category Physical Assault / Affray. Verbatim allegations and complainant details recorded.",
+          "status": "COMPLETED",
+          "completedAt": "2026-10-01T21:00:00Z",
+          "officerResponsible": "ASI Surender Pal"
+        },
+        {
+          "id": "comp_act_2",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Enquiry Officer Assignment",
+          "title": "Enquiry Officer Deputed & Briefed",
+          "detail": "Deputed SI SI Vikram Singh (Belt N/A) for preliminary inquiry with specific mandate: Conduct spot verification & verify party claims under BNSS 173(3).",
+          "status": "COMPLETED",
+          "completedAt": "2026-10-01T21:30:00Z",
+          "officerResponsible": "SHO / Station Officer"
+        },
+        {
+          "id": "comp_act_6",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Notice to Accused",
+          "title": "Section 35(3) BNSS Notice Issued to Suspect",
+          "detail": "Mandatory statutory appearance notice served on named suspect(s) requiring formal reply.",
+          "status": "COMPLETED",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "comp_act_7",
+          "category": "LEGAL_PROCEDURE",
+          "categoryLabel": "Inquiry Report Submission",
+          "title": "Formal Preliminary Enquiry Report Drafted",
+          "detail": "1 report(s) drafted on docket with prima facie findings and recommendations.",
+          "status": "COMPLETED",
+          "officerResponsible": "SI Vikram Singh"
+        }
+      ],
+      "scannedOverviewHighlights": [
+        "Complainant: Mohit Verma  • Mobile: 9812977431",
+        "Address: Shop No. 12, Main Bazaar, Thanesar, Kurukshetra, Kurukshetra",
+        "Accused / Suspects: Unknown / Unidentified Suspect(s) (2 individual(s) named)",
+        "Incident Classification: Physical Assault / Affray at Railway Road Chowk, Thanesar (Date: 2026-10-01)",
+        "Assigned Enquiry Officer: SI SI Vikram Singh (Belt N/A)",
+        "Days in Inquiry: 2 day(s) elapsed under Police Station PS City Thanesar"
+      ],
+      "scannedDocumentsHighlights": [
+        {
+          "name": "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+          "type": "NOTICE",
+          "status": "On File",
+          "summary": "Case diary procedural document on police docket"
+        }
+      ],
+      "scannedHistoryMilestones": [
+        {
+          "date": "2026-10-07",
+          "action": "Official Document Uploaded: 1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html",
+          "officer": "Sub-Inspector Vikram Singh",
+          "details": "Category: NOTICE • Size: 11 KB"
+        }
+      ],
+      "pendingWorkSummary": "संबंधित थाने में औपचारिक एफआईआर (भारतीय न्याय संहिता 2023 की धाराओं के तहत) दर्ज करना शेष है; इसके अतिरिक्त तीन अज्ञात आरोपियों की पहचान व गिरफ्तारी, लोहे की रॉड (हथियार) की बरामदगी, तथा चश्मदीद गवाहों के विस्तृत बयान दर्ज किए जाने बाकी हैं।",
+      "pendingActions": [
+        {
+          "id": "pend_act_2",
+          "category": "DOCUMENTS",
+          "categoryLabel": "Evidence Collection",
+          "title": "Collect Corroborative Documents / Physical Proof",
+          "detail": "Complainant has not attached external financial or medical documents. Obtain relevant receipts, bank records, MLR, or chat logs.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "pend_act_3",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Preliminary Spot Visit",
+          "title": "Conduct Spot Verification under BNSS 173(3)",
+          "detail": "Enquiry Officer must visit the scene of occurrence, inspect landmarks, and record observations in the case diary.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        },
+        {
+          "id": "pend_act_4",
+          "category": "FIELD_ACTION",
+          "categoryLabel": "Witness Examination",
+          "title": "Record Statements of Independent Witnesses",
+          "detail": "Examine independent neighborhood witnesses, spot witnesses, or family members to corroborate allegations.",
+          "status": "PENDING",
+          "officerResponsible": "SI Vikram Singh"
+        }
+      ],
+      "urgentDeadlines": [
+        "⏳ BNSS धारा 173(3) प्रारंभिक जांच समय-सीमा: 14 दिनों में से 12 दिन शेष हैं।"
+      ],
+      "recommendedEoActions": [
+        "घटनास्थल का मौका मुआयना (Spot Inspection) कर पंचनामा / नक्शा मौका तैयार करें।",
+        "आरोपी पक्ष को धारा 35(3) BNSS के तहत नोटिस तामील कराकर उनका लिखित स्पष्टीकरण प्राप्त करें।",
+        "शिकायत से जुड़े स्वतंत्र गवाहों व पड़ोसियों के बयान धारा 180 BNSS के तहत लिपिबद्ध करें।",
+        "बैंक/तकनीकी/मेडिकल साक्ष्यों का संबंधित संस्थान से आधिकारिक सत्यापन कराएं।"
+      ],
+      "recommendedShoDirections": [
+        "जांच अधिकारी को समयबद्ध (48 घंटे में) प्रगति रिपोर्ट प्रस्तुत करने के निर्देश दें।",
+        "यदि संज्ञेय अपराध (Cognizable Offence) स्पष्ट प्रमाणित होता है तो विलंब न करते हुए FIR दर्ज कराएं।",
+        "पारस्परिक विवाद अथवा दीवानी प्रकृति के मामलों में निष्पक्ष समझौता अथवा धारा 173 BNSS के तहत निस्तारण सुनिश्चित करें।"
+      ],
+      "evidenceStrength": "MODERATE",
+      "primaFacieObservation": "प्रस्तुत मामले में प्रथम दृष्टया भारतीय न्याय संहिता (BNS) 2023 की संज्ञेय अपराध (Cognizable Offence) से संबंधित धाराओं जैसे कि स्वेच्छा से चोट पहुँचाना, खतरनाक हथियारों से हमला करना और दंगा करने (Affray) का मामला बनता है, और यह कोई मात्र दीवानी विवाद (Civil Dispute) नहीं है।",
+      "suggestedOutcome": "FURTHER_ENQUIRY",
+      "suggestedOutcomeReason": "आरोपों की प्रकृति (Physical Assault / Affray) तथा उपलब्ध साक्ष्यों के आधार पर अग्रिम गवाहों के बयान व आरोपी के पक्ष का परीक्षण आवश्यक है।",
+      "newItemsDetectedSinceLastUpdate": []
+    },
+    "legalAnalysis": {
+      "complaintId": "cmp_003",
+      "complaintNumber": "HAR-KKR-2026-CMP-00484",
+      "analyzedAt": "2026-10-07T10:46:58.559Z",
+      "summary": "Complaints Docket HAR-KKR-2026-CMP-00484 comprehensively evaluated across Incident Facts and 2 attached documents. Identified 4 primary cognizable offence(s), 0 corroborating provision(s), and mandatory BNSS 173(3) / BSA 63 statutory procedures.",
+      "scannedFactsCount": 25,
+      "scannedDocumentsCount": 2,
+      "scannedEvidenceSummary": {
+        "documentsFound": [
+          "1. Haryana Police Appearance Notice (सूचना-पत्र) - Vikas alias Vicky.html [NOTICE]",
+          "2. Financial Fraud - HAR-KKR-2026-CMP-00482 [REPORT]"
+        ],
+        "keyAllegationsIdentified": [
+          "Fraudulent monetary inducement & job racket allegation",
+          "Physical assault causing grievous hurt (fracture) on victim"
+        ],
+        "accusedIdentified": [
+          "Vikas alias Vicky",
+          "3 Unidentified accomplices"
+        ],
+        "injuriesOrLossNoted": [
+          "Physical injury: Fracture of left hand finger confirmed via Civil Hospital X-ray"
+        ]
+      },
+      "suggestedSections": [
+        {
+          "id": "sug_kb_bns_318_4_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 318(4)",
+          "sectionTitle": "Cheating and dishonestly inducing delivery of property",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 95,
+          "description": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security.",
+          "verbatimSnippet": "Section 318(4) BNS: Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, or anything which is signed or sealed, and which is capable of being converted into a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and mandatory fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "शिकायत विवरण के अनुसार अभियुक्त ने प्रार्थी को झूठा आश्वासन देकर धोखा दिया और बेईमानी से funds की संपत्ति/राशि अपने खाते में अथवा नकद प्राप्त की। भारतीय न्याय संहिता, 2023 की धारा 318(4) के सभी आवश्यक तत्व (Deceitful inducement + Delivery of valuable property) स्पष्ट रूप से प्रमाणित होते हैं।",
+          "evidenceProof": [
+            "Complainant sworn allegation regarding transfer of funds based on false representation",
+            "Transaction references or monetary inducement stated in Incident Facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_115_2_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 115(2)",
+          "sectionTitle": "Voluntarily causing hurt",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "verbatimSnippet": "Section 115(2) BNS: Whoever voluntarily causes hurt shall be punished with imprisonment of either description for a term which may extend to one year, or with fine which may extend to ten thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 1 year, or fine up to ₹10,000, or both",
+          "cognizable": "Non-cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Substantive Bodily Offence",
+          "reason": "घटना विवरण से स्पष्ट है कि अभियुक्त ने प्रार्थी पर शारीरिक हमला करके उसे चोट पहुंचाई तथा शारीरिक पीड़ा पहुंचाई। BNS की धारा 115(2) (स्वेच्छापूर्वक उपहति कारित करना) लागू होती है।",
+          "evidenceProof": [
+            "Physical assault and injury description in incident facts"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bns_117_2_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 117(2)",
+          "sectionTitle": "Voluntarily causing grievous hurt (Fracture / Severe Bodily Injury)",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes grievous hurt shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "verbatimSnippet": "Section 117(2) BNS: Whoever, except in the case provided for by sub-section (1) of section 122, voluntarily causes grievous hurt, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Cognizable Bodily Offence",
+          "reason": "घटना विवरण एवं मेडिकल एक्स-रे जांच के अनुसार प्रार्थी की अंगुली/हड्डी में फ्रैक्चर पाया गया है, जो BNS की धारा 116 के अंतर्गत 'घोर उपहति' (Grievous Hurt) की परिभाषा में आता है। अतः BNS धारा 117(2) सीधे तौर पर आकर्षित होती है।",
+          "evidenceProof": [
+            "Hospital X-ray report noting bone fracture",
+            "Medical officer findings recorded in Civil Hospital docket"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bns_118_1_1791370018558",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 118(1)",
+          "sectionTitle": "Voluntarily causing hurt or grievous hurt by dangerous weapons or means",
+          "chapter": "Chapter VI - Of Offences Affecting the Human Body (Sec 100 - 146)",
+          "pageNumber": 51,
+          "description": "Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death.",
+          "verbatimSnippet": "Section 118(1) BNS: Whoever voluntarily causes hurt by means of any instrument for shooting, stabbing or cutting, or any instrument which, used as a weapon of offence, is likely to cause death... shall be punished with imprisonment of either description for a term which may extend to three years, or with fine which may extend to twenty thousand rupees, or with both.",
+          "punishment": "Imprisonment up to 3 years, or fine up to ₹20,000, or both",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Any Magistrate",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Weapon-Assault Cognizable Offence",
+          "reason": "हमले के दौरान अभियुक्त द्वारा लोहे की पाइप अथवा घातक हथियार का इस्तेमाल कर प्रार्थी के सिर/शरीर पर जानलेवा प्रहार किया गया। BNS की धारा 118(1) (खतरनाक हथियारों द्वारा चोट पहुंचाना) स्पष्ट रूप से बनती है।",
+          "evidenceProof": [
+            "Allegation of using iron pipe / blunt impact weapon",
+            "Spot verification report noting impact weapon"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_173_3_1791370018558",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 173(3)",
+          "sectionTitle": "Preliminary Enquiry (14 Days Window Prior to FIR)",
+          "chapter": "Chapter XII - Information to Police & Powers to Investigate (Sec 173 - 196)",
+          "pageNumber": 67,
+          "description": "On receipt of information relating to commission of cognizable offence punishable with 3 to 7 years, officer in charge of police station may conduct preliminary enquiry within 14 days with prior permission of DSP.",
+          "verbatimSnippet": "Section 173(3) BNSS: On receipt of information relating to the commission of any cognizable offence, which is made punishable for three years or more but less than seven years, the officer in charge of the police station may with the prior permission from an officer not below the rank of Deputy Superintendent of Police, considering the nature and gravity of the offence— (i) proceed to conduct preliminary enquiry to ascertain whether there exists a prima facie case for proceeding in the matter, which shall be completed within a period of fourteen days; or (ii) proceed with investigation when there exists a prima facie case.",
+          "punishment": "Statutory Procedural Mandate (14-day completion binding on Police)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Statutory Police Investigation Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।",
+          "evidenceProof": [
+            "BNSS 173(3) enquiry docket open for Station PS City Thanesar",
+            "Mandatory supervisory directions issued by SHO to Enquiry Officer"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_35_3_1791370018558",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 35(3)",
+          "sectionTitle": "Mandatory Notice of Appearance to Suspect Instead of Arrest",
+          "chapter": "Chapter V - Arrest of Persons (Sec 35 - 62)",
+          "pageNumber": 27,
+          "description": "The police officer shall, in all cases where arrest of a person is not required, issue a notice directing the person against whom a reasonable complaint has been made, to appear before him.",
+          "verbatimSnippet": "Section 35(3) BNSS: The police officer shall, in all cases where the arrest of a person is not required under sub-section (1), issue a notice directing the person against whom a reasonable complaint has been made, or credible information has been received, or a reasonable suspicion exists that he has committed a cognizable offence, to appear before him or at such other place as may be specified in the notice.",
+          "punishment": "Procedural Compliance (Protection against arbitrary arrest)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Investigating Officer Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।",
+          "evidenceProof": [
+            "Accused profile: Vikas alias Vicky",
+            "Required Section 35(3) Appearance Proforma in Documents Tab"
+          ],
+          "confidenceScore": 96
+        }
+      ],
+      "investigativeStepsRecommended": [
+        "Notice under Section 35(3) BNSS to named accused (Vikas alias Vicky, 3 Unidentified accomplices) for recording formal defense explanation.",
+        "Preservation & Digital Certification under Section 63(4) BSA of all attached evidence files (2 items).",
+        "Verification of hospital MLR records and obtaining formal doctor opinion regarding nature of injury.",
+        "Completion of Section 173(3) BNSS preliminary spot verification report within statutory 14-day timeline."
+      ]
+    }
   },
   {
     "id": "cmp_004",
@@ -841,7 +1480,136 @@
     "daysPending": 1,
     "targetResolutionDate": "2026-10-17",
     "createdAt": "2026-10-02T10:15:00Z",
-    "updatedAt": "2026-10-02T11:00:00Z"
+    "updatedAt": "2026-10-07T10:14:20.821Z",
+    "legalAnalysis": {
+      "complaintId": "cmp_004",
+      "complaintNumber": "HAR-KKR-2026-CMP-00485",
+      "analyzedAt": "2026-10-07T10:14:20.820Z",
+      "summary": "Complaints Docket HAR-KKR-2026-CMP-00485 comprehensively evaluated across Incident Facts and 0 attached documents. Identified 2 primary cognizable offence(s), 0 corroborating provision(s), and mandatory BNSS 173(3) / BSA 63 statutory procedures.",
+      "scannedFactsCount": 20,
+      "scannedDocumentsCount": 0,
+      "scannedEvidenceSummary": {
+        "documentsFound": [],
+        "keyAllegationsIdentified": [
+          "Matrimonial cruelty & harassment for unlawful property demand"
+        ],
+        "accusedIdentified": [
+          "Deepak Kumar",
+          "Kanta Devi"
+        ],
+        "injuriesOrLossNoted": [
+          "Financial loss quantified: Rs. 3"
+        ]
+      },
+      "suggestedSections": [
+        {
+          "id": "sug_kb_bns_318_4_1791368060819",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 318(4)",
+          "sectionTitle": "Cheating and dishonestly inducing delivery of property",
+          "chapter": "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+          "pageNumber": 95,
+          "description": "Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security.",
+          "verbatimSnippet": "Section 318(4) BNS: Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, or anything which is signed or sealed, and which is capable of being converted into a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 7 years, and mandatory fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Substantive Offence",
+          "reason": "शिकायत विवरण के अनुसार अभियुक्त ने प्रार्थी को झूठा आश्वासन देकर धोखा दिया और बेईमानी से Rs. 3 की संपत्ति/राशि अपने खाते में अथवा नकद प्राप्त की। भारतीय न्याय संहिता, 2023 की धारा 318(4) के सभी आवश्यक तत्व (Deceitful inducement + Delivery of valuable property) स्पष्ट रूप से प्रमाणित होते हैं।",
+          "evidenceProof": [
+            "Complainant sworn allegation regarding transfer of funds based on false representation",
+            "Transaction references or monetary inducement stated in Incident Facts"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bns_85_1791368060820",
+          "actId": "act_bns_2023",
+          "actTitle": "The Bharatiya Nyaya Sanhita, 2023",
+          "actShortName": "BNS, 2023",
+          "actFileName": "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+          "sectionNumber": "Section 85",
+          "sectionTitle": "Husband or relative of husband subjecting woman to cruelty",
+          "chapter": "Chapter V - Of Offences Against Woman and Child (Sec 63 - 99)",
+          "pageNumber": 42,
+          "description": "Whoever, being the husband or the relative of the husband of a woman, subjects such woman to cruelty shall be punished with imprisonment for a term which may extend to three years and shall also be liable to fine.",
+          "verbatimSnippet": "Section 85 BNS: Whoever, being the husband or the relative of the husband of a woman, subjects such woman to cruelty shall be punished with imprisonment for a term which may extend to three years and shall also be liable to fine.",
+          "punishment": "Imprisonment up to 3 years, and fine",
+          "cognizable": "Cognizable",
+          "bailable": "Non-bailable",
+          "triableBy": "Magistrate of first class",
+          "recommendationType": "PRIMARY_OFFENCE",
+          "recommendationTypeLabel": "Primary Cognizable Women Desk Offence",
+          "reason": "शिकायत में विवाहिता को ससुराल पक्ष अथवा पति द्वारा दहेज मांग अथवा घरेलू प्रताड़ना के आधार पर मानसिक/शारीरिक रूप से प्रताड़ित करने का आरोप है। BNS की धारा 85 (विवाहिता के प्रति क्रूरता) आकर्षित होती है।",
+          "evidenceProof": [
+            "Marriage certificate or wedding photographs",
+            "List of dowry articles / Stridhan claims in documents"
+          ],
+          "confidenceScore": 96
+        },
+        {
+          "id": "sug_kb_bnss_173_3_1791368060820",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 173(3)",
+          "sectionTitle": "Preliminary Enquiry (14 Days Window Prior to FIR)",
+          "chapter": "Chapter XII - Information to Police & Powers to Investigate (Sec 173 - 196)",
+          "pageNumber": 67,
+          "description": "On receipt of information relating to commission of cognizable offence punishable with 3 to 7 years, officer in charge of police station may conduct preliminary enquiry within 14 days with prior permission of DSP.",
+          "verbatimSnippet": "Section 173(3) BNSS: On receipt of information relating to the commission of any cognizable offence, which is made punishable for three years or more but less than seven years, the officer in charge of the police station may with the prior permission from an officer not below the rank of Deputy Superintendent of Police, considering the nature and gravity of the offence— (i) proceed to conduct preliminary enquiry to ascertain whether there exists a prima facie case for proceeding in the matter, which shall be completed within a period of fourteen days; or (ii) proceed with investigation when there exists a prima facie case.",
+          "punishment": "Statutory Procedural Mandate (14-day completion binding on Police)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Statutory Police Investigation Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।",
+          "evidenceProof": [
+            "BNSS 173(3) enquiry docket open for Station PS City Thanesar",
+            "Mandatory supervisory directions issued by SHO to Enquiry Officer"
+          ],
+          "confidenceScore": 88
+        },
+        {
+          "id": "sug_kb_bnss_35_3_1791368060820",
+          "actId": "act_bnss_2023",
+          "actTitle": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+          "actShortName": "BNSS, 2023",
+          "actFileName": "The_Bharatiya_Nagarik_Suraksha_Sanhita_2023.pdf",
+          "sectionNumber": "Section 35(3)",
+          "sectionTitle": "Mandatory Notice of Appearance to Suspect Instead of Arrest",
+          "chapter": "Chapter V - Arrest of Persons (Sec 35 - 62)",
+          "pageNumber": 27,
+          "description": "The police officer shall, in all cases where arrest of a person is not required, issue a notice directing the person against whom a reasonable complaint has been made, to appear before him.",
+          "verbatimSnippet": "Section 35(3) BNSS: The police officer shall, in all cases where the arrest of a person is not required under sub-section (1), issue a notice directing the person against whom a reasonable complaint has been made, or credible information has been received, or a reasonable suspicion exists that he has committed a cognizable offence, to appear before him or at such other place as may be specified in the notice.",
+          "punishment": "Procedural Compliance (Protection against arbitrary arrest)",
+          "cognizable": "Cognizable",
+          "bailable": "Bailable",
+          "triableBy": "Investigating Officer Mandate",
+          "recommendationType": "PROCEDURAL_MANDATE",
+          "recommendationTypeLabel": "Mandatory Procedural Provision",
+          "reason": "अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।",
+          "evidenceProof": [
+            "Accused profile: Deepak Kumar",
+            "Required Section 35(3) Appearance Proforma in Documents Tab"
+          ],
+          "confidenceScore": 88
+        }
+      ],
+      "investigativeStepsRecommended": [
+        "Notice under Section 35(3) BNSS to named accused (Deepak Kumar, Kanta Devi) for recording formal defense explanation.",
+        "Preservation & Digital Certification under Section 63(4) BSA of all attached evidence files (0 items).",
+        "Verification of hospital MLR records and obtaining formal doctor opinion regarding nature of injury.",
+        "Completion of Section 173(3) BNSS preliminary spot verification report within statutory 14-day timeline."
+      ]
+    }
   },
   {
     "id": "cmp_005",

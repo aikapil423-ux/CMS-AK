@@ -31,6 +31,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
 
+  // Only MHC, SHO, and Superior officers can register complaints (EOs cannot register complaints)
+  const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
+  const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
+  const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row antialiased text-slate-800">
       {/* Desktop Collapsible Hover Sidebar */}
@@ -87,9 +93,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
-            {isComplaints && (
+            {isComplaints && canRegisterComplaint && (
               <Link href="/complaints/register">
-                <Button size="sm" variant="danger" className="gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white">
+                <Button size="sm" variant="danger" className="gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
                   Register Complaint
                 </Button>

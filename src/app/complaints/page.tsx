@@ -36,6 +36,7 @@ import {
   Scale,
   SlidersHorizontal,
   Columns3,
+  PlusCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -47,6 +48,8 @@ import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
+import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
+import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
 
 type ComplaintSortField =
   | "complaintNumber"
@@ -151,9 +154,11 @@ function ComplaintListContent() {
 
   const isAllSelected = selectedStatuses.length === ALL_STATUS_KEYS.length;
 
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
-  const isSho = currentUser.role === "SHO" || currentUser.role === "DSP_SUBDIV" || currentUser.id === "usr_sho_1";
-  const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "SP_DISTRICT");
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isSho = currentUser.role === "SHO" || currentUser.id === "usr_sho_1";
+  const isSuperior = currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN";
+  const isEo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
   const eoFilterParam = isEo ? (currentUser.pno || currentUser.name) : undefined;
 
   // Column Selection Checkboxes state
@@ -382,7 +387,7 @@ function ComplaintListContent() {
     }
   };
 
-  const handleShoApprove = async () => {
+  const handleShoApprove = async (payload?: { finalCategory: SHOCategoryOption; remarks: string }) => {
     if (!shoApproveModalComplaint) return;
     setIsApproving(true);
     try {
@@ -390,7 +395,8 @@ function ComplaintListContent() {
         shoApproveModalComplaint.id,
         currentUser.name,
         currentUser.pno || "04291882",
-        shoApproveRemarks
+        payload?.remarks ?? shoApproveRemarks,
+        payload?.finalCategory
       );
       setShoApproveModalComplaint(null);
       setShoApproveRemarks("");
@@ -484,7 +490,7 @@ function ComplaintListContent() {
     }
   };
 
-  const handleEoSendToShoSubmit = async () => {
+  const handleEoSendToShoSubmit = async (payload?: { recommendedCategory: EOCategoryOption; remarks: string }) => {
     if (!eoSendToShoModalComplaint) return;
     setIsSendingToSho(true);
     try {
@@ -492,7 +498,12 @@ function ComplaintListContent() {
         eoSendToShoModalComplaint.id,
         currentUser.name,
         currentUser.pno || "04291882",
-        eoSendRemarks
+        payload?.remarks ?? eoSendRemarks,
+        {
+          recommendedCategory: payload?.recommendedCategory,
+          eoId: currentUser.id,
+          reportTitle: eoSendToShoModalComplaint.reports?.[0]?.title || "Enquiry Report",
+        }
       );
       setEoSendToShoModalComplaint(null);
       setEoSendRemarks("");
@@ -1023,19 +1034,17 @@ function ComplaintListContent() {
               </select>
             </div>
 
-            {/* Legal Category Filter */}
+            {/* Category Filter: All Categories | NCR | FIR Recommend | Closure */}
             <div>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="w-full h-10 px-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium"
               >
-                <option value="ALL">All Legal Categories</option>
-                <option value="CYBER_CRIME">Cyber Crime</option>
-                <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud</option>
-                <option value="LAND_PROPERTY_DISPUTE">Land Dispute</option>
-                <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault</option>
-                <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Dispute</option>
+                <option value="ALL">All Categories</option>
+                <option value="NCR">NCR</option>
+                <option value="FIR_RECOMMEND">FIR Recommend</option>
+                <option value="CLOSURE">Closure</option>
               </select>
             </div>
           </div>
@@ -1396,71 +1405,23 @@ function ComplaintListContent() {
                               </span>
                             </div>
                           ) : c.assignedEoName ? (
-                            <div className="space-y-1">
-                              <div>
-                                <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
-                                <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
-                              </div>
-                              {isSho && !isMhc && (
-                                <div className="relative inline-block mt-0.5" data-assign-dropdown>
-                                  <button
-                                    type="button"
-                                    onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
-                                    className="text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                                    title="Reassign to another Enquiry Officer"
-                                  >
-                                    <UserCheck className="w-3 h-3 text-amber-700" />
-                                    <span>Reassign EO ▾</span>
-                                  </button>
-                                  {assignDropdownComplaintId === c.id && (
-                                    <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
-                                      <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                                        <span>Select EO / IO</span>
-                                        <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
-                                      </div>
-                                      <div className="max-h-56 overflow-y-auto py-0.5">
-                                        {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                                          const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
-                                          const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
-                                          return (
-                                            <button
-                                              key={eo.id}
-                                              type="button"
-                                              disabled={isQuickAssigning}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleQuickAssignEO(c.id, eo);
-                                              }}
-                                              className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
-                                                isSelected
-                                                  ? "bg-blue-50 text-blue-900 font-bold"
-                                                  : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                              }`}
-                                            >
-                                              <span className="truncate">{label}</span>
-                                              {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                            <div className="space-y-0.5">
+                              <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
+                              <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
                             </div>
                           ) : (
                             <div className="space-y-1">
                               <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
                                 Not Assigned
                               </span>
-                              {isSho && !isMhc && (
-                                <div className="relative inline-block" data-assign-dropdown>
+                              {isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTERED" && c.workflowState !== "FIR_REGISTERED" && (
+                                <div className="relative inline-block mt-1" data-assign-dropdown>
                                   <button
                                     type="button"
                                     onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
-                                    className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer bg-blue-50 px-2 py-0.5 rounded border border-blue-200 shadow-2xs"
+                                    className="text-xs font-bold text-white bg-[#0b192c] hover:bg-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                                   >
-                                    <UserCheck className="w-3 h-3 text-blue-700" />
+                                    <UserCheck className="w-3.5 h-3.5 text-amber-300" />
                                     <span>Assign EO ▾</span>
                                   </button>
                                   {assignDropdownComplaintId === c.id && (
@@ -1481,7 +1442,7 @@ function ComplaintListContent() {
                                                 e.stopPropagation();
                                                 handleQuickAssignEO(c.id, eo);
                                               }}
-                                              className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center justify-between cursor-pointer"
+                                              className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition-colors flex items-center justify-between cursor-pointer"
                                             >
                                               <span className="truncate">{label}</span>
                                             </button>
@@ -1523,54 +1484,6 @@ function ComplaintListContent() {
                                 <Eye className="w-3.5 h-3.5" /> View Profile
                               </Button>
                             </Link>
-
-                            {/* SHO Quick Assign / Reassign EO Dropdown (No dialogue box, rank & name only) */}
-                            {!c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && isSho && !isMhc && (
-                              <div className="relative w-full" data-assign-dropdown>
-                                <Button
-                                  size="sm"
-                                  variant="primary"
-                                  onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
-                                  className="w-full text-xs font-bold gap-1 justify-center bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer shadow-2xs"
-                                >
-                                  <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                                  <span>{c.assignedEoName ? "Reassign EO ▾" : "Assign EO ▾"}</span>
-                                </Button>
-                                {assignDropdownComplaintId === c.id && (
-                                  <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
-                                    <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                                      <span>Select EO / IO</span>
-                                      <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
-                                    </div>
-                                    <div className="max-h-56 overflow-y-auto py-0.5">
-                                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                                        const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
-                                        const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
-                                        return (
-                                          <button
-                                            key={eo.id}
-                                            type="button"
-                                            disabled={isQuickAssigning}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleQuickAssignEO(c.id, eo);
-                                            }}
-                                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
-                                              isSelected
-                                                ? "bg-blue-50 text-blue-900 font-bold"
-                                                : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                            }`}
-                                          >
-                                            <span className="truncate">{label}</span>
-                                            {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
 
                             {/* Direct FIR for SHO account: Show "Register FIR" button */}
                             {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
@@ -1649,7 +1562,12 @@ function ComplaintListContent() {
                             )}
 
                             {/* SHO: Regular FIR Registration when recommended & approved */}
-                            {isSho && !isMhc && (c.isFirApprovedBySho || c.workflowState === "FIR_REGISTRATION_PENDING") && !c.isFirRegistered && !c.directSendToFir && (
+                            {isSho && !isMhc && (
+                              c.isFirApprovedBySho ||
+                              c.workflowState === "FIR_REGISTRATION_PENDING" ||
+                              c.finalCategory === "FIR Recommend" ||
+                              c.status === "FIR Recommend"
+                            ) && !c.isFirRegistered && !c.directSendToFir && (
                               <Button
                                 size="sm"
                                 onClick={() => handleOpenFirRegisterModal(c)}
@@ -1771,49 +1689,6 @@ function ComplaintListContent() {
                           >
                             <Printer className="w-3.5 h-3.5 text-emerald-700" /> Receipt
                           </Button>
-                          {isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && (
-                            <div className="relative w-full" data-assign-dropdown>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
-                                className="w-full text-xs font-bold gap-1 text-slate-700 border-slate-300 hover:bg-slate-100"
-                              >
-                                <UserCheck className="w-3.5 h-3.5 text-slate-600" /> Reassign EO ▾
-                              </Button>
-                              {assignDropdownComplaintId === c.id && (
-                                <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
-                                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                                    <span>Select EO / IO</span>
-                                    <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
-                                  </div>
-                                  <div className="max-h-56 overflow-y-auto py-0.5">
-                                    {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                                      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
-                                      const isSelected = c.assignedEoId === eo.id || c.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
-                                      return (
-                                        <button
-                                          key={eo.id}
-                                          type="button"
-                                          disabled={isQuickAssigning}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleQuickAssignEO(c.id, eo);
-                                          }}
-                                          className={`w-full text-left px-3 py-2 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
-                                            isSelected ? "bg-blue-50 text-blue-900 font-bold" : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                          }`}
-                                        >
-                                          <span className="truncate">{label}</span>
-                                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </>
                       ) : (
                         isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTER" && c.workflowState !== "FIR_REGISTER" && (
@@ -1933,7 +1808,12 @@ function ComplaintListContent() {
                       </div>
                     )}
 
-                    {isSho && !isMhc && (c.isFirApprovedBySho || c.workflowState === "FIR_REGISTRATION_PENDING") && !c.isFirRegistered && !c.directSendToFir && (
+                    {isSho && !isMhc && (
+                      c.isFirApprovedBySho ||
+                      c.workflowState === "FIR_REGISTRATION_PENDING" ||
+                      c.finalCategory === "FIR Recommend" ||
+                      c.status === "FIR Recommend"
+                    ) && !c.isFirRegistered && !c.directSendToFir && (
                       <Button
                         size="sm"
                         onClick={() => handleOpenFirRegisterModal(c)}
@@ -2275,73 +2155,14 @@ function ComplaintListContent() {
 
       {/* SHO Assign EO Modal removed: SHO uses instant inline dropdown showing Rank & Name only (no dialogue box) */}
 
-      {/* SHO Approve Modal */}
-      {shoApproveModalComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
-            <div className="p-4 bg-emerald-600 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                <h3 className="font-bold text-sm">SHO Report Approval</h3>
-              </div>
-              <button onClick={() => setShoApproveModalComplaint(null)} className="text-white hover:opacity-80">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                <p><strong>Complaint No:</strong> {shoApproveModalComplaint.complaintNumber}</p>
-                <p><strong>Complainant:</strong> {shoApproveModalComplaint.complainantName}</p>
-                <p><strong>Enquiry Officer:</strong> {shoApproveModalComplaint.assignedEoName}</p>
-                <p><strong>EO Outcome:</strong> <span className="font-bold text-blue-700">{shoApproveModalComplaint.eoOutcome || "Complete"}</span></p>
-              </div>
-
-              {shoApproveModalComplaint.eoOutcome === "FIR Recommend" ? (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 space-y-1">
-                  <p className="font-bold text-sm">FIR Recommendation Approval</p>
-                  <p className="text-xs">
-                    Approving this report will sanction the EO&apos;s recommendation to register a regular FIR. You can subsequently click &quot;Register FIR&quot; to formally assign an FIR Number and register the criminal case.
-                  </p>
-                </div>
-              ) : (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 space-y-1">
-                  <p className="font-bold text-sm">Enquiry Closure Approval</p>
-                  <p className="text-xs">
-                    Approving this report will formally close the preliminary enquiry as Complete.
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  SHO Supervisory Remarks / Directions (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={shoApproveRemarks}
-                  onChange={(e) => setShoApproveRemarks(e.target.value)}
-                  placeholder="Enter supervisory remarks, observations or concurrence notes..."
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
-                />
-              </div>
-            </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShoApproveModalComplaint(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleShoApprove}
-                disabled={isApproving}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-              >
-                {isApproving ? "Approving..." : "Confirm & Approve Report"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SHO Approve Modal with 3 Categories */}
+      <ShoApproveCategoryModal
+        complaint={shoApproveModalComplaint}
+        isOpen={Boolean(shoApproveModalComplaint)}
+        onClose={() => setShoApproveModalComplaint(null)}
+        onSubmit={handleShoApprove}
+        isLoading={isApproving}
+      />
 
       {/* SHO Re-Enquiry Modal */}
       {shoReEnquiryModalComplaint && (
@@ -2528,59 +2349,14 @@ function ComplaintListContent() {
         </div>
       )}
 
-      {/* EO Send to SHO Modal */}
-      {eoSendToShoModalComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
-            <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Send className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-sm">Send Report to SHO ID</h3>
-              </div>
-              <button onClick={() => setEoSendToShoModalComplaint(null)} className="text-white hover:opacity-80">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                <p><strong>Complaint No:</strong> {eoSendToShoModalComplaint.complaintNumber}</p>
-                <p><strong>Complainant:</strong> {eoSendToShoModalComplaint.complainantName}</p>
-                <p><strong>Outcome Selected:</strong> <span className="font-bold text-blue-700">{eoSendToShoModalComplaint.eoOutcome || "Complete"}</span></p>
-                <p className="text-slate-600 text-[11px] pt-1">
-                  Once sent, this complaint will be dispatched to the Station House Officer (SHO) for formal review and decision, and will move out of your active daily queue until approved or returned for re-enquiry.
-                </p>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Remarks / Submission Note for SHO (Optional)
-                </label>
-                <textarea
-                  rows={3}
-                  value={eoSendRemarks}
-                  onChange={(e) => setEoSendRemarks(e.target.value)}
-                  placeholder="Enquiry completed as per directions. Submitted for approval..."
-                  className="w-full p-2.5 border border-slate-300 rounded-lg text-xs"
-                />
-              </div>
-            </div>
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setEoSendToShoModalComplaint(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleEoSendToShoSubmit}
-                disabled={isSendingToSho}
-                className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold"
-              >
-                {isSendingToSho ? "Sending..." : "Dispatch to SHO ID"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* EO Send to SHO Modal with 3 Categories */}
+      <EoSendingToShoModal
+        complaint={eoSendToShoModalComplaint}
+        isOpen={Boolean(eoSendToShoModalComplaint)}
+        onClose={() => setEoSendToShoModalComplaint(null)}
+        onSubmit={handleEoSendToShoSubmit}
+        isLoading={isSendingToSho}
+      />
 
       {/* Official Receipt of Registered Complaints Modal */}
       <ComplaintReceiptModal

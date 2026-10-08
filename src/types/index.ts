@@ -43,8 +43,11 @@ export type MainComplaintStatus =
   | 'Pending'
   | 'Complete'
   | 'FIR Register'
+  | 'FIR Recommend'
   | 'FIR Registered'
   | 'Correction Required';
+
+export type FinalRecommendationCategory = 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE';
 
 export type WorkflowState =
   | 'NOT_ASSIGNED'
@@ -54,6 +57,7 @@ export type WorkflowState =
   | 'RE_ENQUIRY'
   | 'CORRECTION_REQUIRED'
   | 'FIR_RECOMMENDED'
+  | 'FIR_RECOMMEND'
   | 'FIR_REGISTER'
   | 'FIR_REGISTRATION_PENDING'
   | 'FIR_REGISTERED'
@@ -65,9 +69,16 @@ export type ComplaintStatus =
   | 'NOT_ASSIGNED'
   | 'PENDING'
   | 'COMPLETE'
+  | 'Complete'
+  | 'Pending'
+  | 'FIR_RECOMMEND'
+  | 'FIR Recommend'
   | 'FIR_REGISTER'
+  | 'FIR Register'
   | 'FIR_REGISTERED'
+  | 'FIR Registered'
   | 'CORRECTION_REQUIRED'
+  | 'Correction Required'
   | 'REGISTERED'
   | 'ASSIGNED_TO_EO'
   | 'ENQUIRY_IN_PROGRESS'
@@ -91,6 +102,7 @@ export function getMainComplaintStatus(
     eoOutcome?: string;
     directSendToFir?: boolean;
     shoDecision?: string;
+    finalCategory?: string;
   },
   viewerRole?: string
 ): MainComplaintStatus {
@@ -113,7 +125,19 @@ export function getMainComplaintStatus(
     return "FIR Register";
   }
 
-  // 3. SHO Rejection / Correction Required
+  // 3. SHO Approved FIR Recommend (remains in FIR registration workflow, NOT marked Complete)
+  if (
+    complaint.finalCategory === "FIR Recommend" ||
+    complaint.finalCategory === "FIR_RECOMMEND" ||
+    complaint.status === "FIR Recommend" ||
+    complaint.status === "FIR_RECOMMEND" ||
+    complaint.workflowState === "FIR_REGISTRATION_PENDING" ||
+    complaint.workflowState === "FIR_RECOMMENDED"
+  ) {
+    return "FIR Recommend";
+  }
+
+  // 4. SHO Rejection / Correction Required
   if (
     complaint.workflowState === "CORRECTION_REQUIRED" ||
     complaint.status === "CORRECTION_REQUIRED" ||
@@ -135,6 +159,9 @@ export function getMainComplaintStatus(
     complaint.status === "COMPLETE" ||
     complaint.workflowState === "COMPLETE" ||
     complaint.eoOutcome === "Complete" ||
+    complaint.finalCategory === "NCR" ||
+    complaint.finalCategory === "Closure" ||
+    complaint.finalCategory === "CLOSURE" ||
     complaint.status === "DISPOSED_MUTUAL_ACCORD" ||
     complaint.status === "DISPOSED_CIVIL_NATURE"
   ) {
@@ -322,6 +349,12 @@ export interface ComplaintItem {
   progressReportRemarks?: string;
   progressReportRequestedBy?: string;
 
+  // AI & Statutory Legal Assistant Analysis
+  legalAnalysis?: LegalAnalysisReport;
+
+  // AI & Investigation Case Summary (Overview, Documents & History)
+  investigationSummary?: InvestigationSummaryReport;
+
   // Direct Send to FIR
   directSendToFir?: boolean;
   directSendToFirChoice?: 'YES' | 'NO';
@@ -345,6 +378,21 @@ export interface ComplaintItem {
   reEnquiryRemarks?: string;
   reEnquiryAt?: string;
   reEnquiryBy?: string;
+  // EO Recommendation before sending to SHO (NCR | FIR Recommend | Closure)
+  eoRecommendedCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
+  eoRecommendedBy?: string;
+  eoRecommendedById?: string;
+  eoRecommendedAt?: string;
+  eoRecommendedReportTitle?: string;
+  eoRecommendedRemarks?: string;
+
+  // SHO Final Decision & Category
+  shoFinalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
+  finalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | 'FIR Recommend' | 'Closure' | string;
+  finalStatus?: string;
+  shoApprovedBy?: string;
+  shoApprovedAt?: string;
+
   shoActionRequired?: boolean;
   auditTrail?: ComplaintAuditRecord[];
   
@@ -401,7 +449,23 @@ export interface ComplaintReportItem {
   fileFormat?: string;
   isUploaded?: boolean;
   createdAt?: string;
-  recommendationType?: 'FIR_RECOMMENDED' | 'JAMINI_LAND_DISPUTE' | 'DIWANI_CIVIL_MONEY' | 'RAJINAMA_COMPROMISE' | 'NIVARAK_PREVENTIVE' | 'NO_COGNIZABLE_OFFENCE';
+  updatedAt?: string;
+  createdBy?: string;
+  lastModifiedBy?: string;
+  status?: 'Draft' | 'Saved' | 'Finalized' | 'Saved in Complaint';
+  recommendationType?:
+    | 'GAMINI'
+    | 'DIWANI'
+    | 'NCR'
+    | 'FIR'
+    | 'NIVARAN'
+    | 'RAZINAMA'
+    | 'FIR_RECOMMENDED'
+    | 'JAMINI_LAND_DISPUTE'
+    | 'DIWANI_CIVIL_MONEY'
+    | 'RAJINAMA_COMPROMISE'
+    | 'NIVARAK_PREVENTIVE'
+    | 'NO_COGNIZABLE_OFFENCE';
   isFirRecommended?: boolean;
   selectedOutcome?: EOOutcome;
   sentToSho?: boolean;
@@ -838,5 +902,106 @@ export interface LegalActItem {
     sectionsRange: string;
   }[];
   keySections: LegalSectionItem[];
+}
+
+export interface LegalSuggestionItem {
+  id: string;
+  actId: string;
+  actTitle: string;
+  actShortName: string;
+  actFileName?: string;
+  sectionNumber: string;
+  sectionTitle: string;
+  chapter: string;
+  pageNumber: number | string;
+  description: string;
+  verbatimSnippet?: string;
+  punishment?: string;
+  cognizable?: 'Cognizable' | 'Non-cognizable';
+  bailable?: 'Bailable' | 'Non-bailable';
+  triableBy?: string;
+  recommendationType: 'PRIMARY_OFFENCE' | 'CORROBORATING_OFFENCE' | 'PROCEDURAL_MANDATE' | 'EVIDENTIARY_RULE';
+  recommendationTypeLabel: string;
+  reason: string;
+  evidenceProof: string[];
+  confidenceScore: number;
+}
+
+export interface LegalAnalysisReport {
+  complaintId: string;
+  complaintNumber: string;
+  analyzedAt: string;
+  summary: string;
+  scannedFactsCount: number;
+  scannedDocumentsCount: number;
+  scannedEvidenceSummary: {
+    documentsFound: string[];
+    keyAllegationsIdentified: string[];
+    accusedIdentified: string[];
+    injuriesOrLossNoted: string[];
+  };
+  suggestedSections: LegalSuggestionItem[];
+  investigativeStepsRecommended: string[];
+}
+
+export interface InvestigationSummaryActionItem {
+  id: string;
+  category: 'OVERVIEW' | 'DOCUMENTS' | 'HISTORY' | 'FIELD_ACTION' | 'LEGAL_PROCEDURE';
+  categoryLabel: string;
+  title: string;
+  detail: string;
+  status: 'COMPLETED' | 'PENDING' | 'CRITICAL';
+  completedAt?: string;
+  officerResponsible?: string;
+  remarks?: string;
+}
+
+export interface InvestigationSummaryReport {
+  id: string;
+  complaintId: string;
+  complaintNumber: string;
+  generatedAt: string;
+  updatedAt: string;
+  version: number;
+  generatedBy: string;
+
+  // Executive Synopsis & Standing
+  caseSynopsis: string;
+  currentStage: string;
+  progressPercentage: number; // e.g. 65%
+
+  // Work Done So Far (कितना काम हुआ है अब तक)
+  workDoneSummary: string;
+  completedActions: InvestigationSummaryActionItem[];
+  scannedOverviewHighlights: string[];
+  scannedDocumentsHighlights: {
+    name: string;
+    type: string;
+    status: string;
+    summary: string;
+  }[];
+  scannedHistoryMilestones: {
+    date: string;
+    action: string;
+    officer: string;
+    details: string;
+  }[];
+
+  // Pending Work & Next Steps (क्या बाकी है)
+  pendingWorkSummary: string;
+  pendingActions: InvestigationSummaryActionItem[];
+  urgentDeadlines: string[];
+  recommendedEoActions: string[];
+  recommendedShoDirections: string[];
+
+  // Evidence & Risk Evaluation
+  evidenceStrength: 'STRONG' | 'MODERATE' | 'PRELIMINARY' | 'INSUFFICIENT';
+  primaFacieObservation: string;
+  suggestedOutcome: 'REGISTER_FIR' | 'FURTHER_ENQUIRY' | 'MUTUAL_SETTLEMENT' | 'NON_COGNIZABLE_NCR' | 'CLOSURE_REPORT';
+  suggestedOutcomeReason: string;
+
+  // Change Log / Update Track (for when update summary is triggered)
+  lastUpdateNotes?: string;
+  newItemsDetectedSinceLastUpdate?: string[];
 }
 

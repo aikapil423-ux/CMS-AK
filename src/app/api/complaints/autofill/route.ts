@@ -19,10 +19,21 @@ export async function POST(req: NextRequest) {
     let contents: any[] = [];
     const prompt = `You are an elite Law Enforcement Document Analyzer & Evidence Classifier for Indian Police (CMS Haryana / BNSS 2023 / IPC).
 
+STRICT ANTI-HALLUCINATION / NO-FABRICATION RULE (दस्तावेज़ में जो है केवल वही भरें, खुद से कुछ न बनाएं):
+- MANDATORY USER INSTRUCTION: "jb upload and autofill form me prcoss krne ke baad vhi field fill kre jo document me mile khud se data bna kr fill na kre agr document me na mila hai to"
+- You must strictly extract ONLY information that is ACTUALLY and EXPLICITLY present in the uploaded document.
+- ABSOLUTELY DO NOT INVENT, FABRICATE, ASSUME, GUESS, OR HALLUCINATE ANY DATA UNDER ANY CIRCUMSTANCE!
+- If ANY field is NOT mentioned in the document (for instance, complainant age, relative name, mobile number, address, city, district, state, accused name, accused address, phone, incident date, time, place), you MUST return an EMPTY STRING "" (or empty array [] or null).
+- NEVER use dummy, sample, or fabricated data (e.g. do NOT fill "20" or "35" if age is not in document; do NOT fill "9812345678" if phone is not in document; do NOT fill "Kurukshetra", "Thanesar", "Haryana" or "गांव कुटानी" if not explicitly in document).
+- If an accused has no address mentioned in the document, return "address": "".
+- If incident date is not mentioned, return "date": "" and "isDateTimeKnown": false.
+- If incident time is not mentioned, return "time": "".
+- If incident place is not mentioned, return "place": "".
+
 TASK 0: LANGUAGE FIDELITY (जैसी शिकायत है हू-ब-हू उसी भाषा में रखें)
 - STRICT USER REQUIREMENT: "jese hai complaint vese language me rhe".
 - If the uploaded document is in Hindi (देवनागरी लिपि), ALL extracted textual fields (Complainant Name, Relative Name, Address, Accused Names, Subject, Description, Incident Details) MUST REMAIN 100% IN HINDI.
-- ABSOLUTELY DO NOT TRANSLATE Hindi text into English! (e.g., keep "काजल", NOT "Kajal"; keep "दरखास्त बराये...", NOT English translation; keep "गांव कुटानी, जिला पानीपत", NOT "Village Kutani...").
+- ABSOLUTELY DO NOT TRANSLATE Hindi text into English! (e.g., keep "काजल", NOT "Kajal"; keep "दरखास्त बराये...", NOT English translation).
 - Keep the original wording, phrasing, and Devanagari script intact.
 
 TASK 1: CLASSIFY & RENAME DOCUMENT (CRITICAL)
@@ -38,82 +49,67 @@ TASK 2: 100% EXACT WORD-BY-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (ABSOLUTE
 - The user's exact instruction: "sthe me complaint details me descripation me jo bhi document upload hua hai vo word by word likha jaaye usme kam na ho baaki filled shi fill hui thi".
 - Also mirror this exact full narrative in "incident.details".
 
-TASK 3: EXTRACT ALL COMPLAINT REGISTER FIELDS
+TASK 3: EXTRACT ONLY DOCUMENT-PROVEN FIELDS (NO INVENTED DATA)
 Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. Keep fields in the original language of the document (Hindi in Hindi):
 1. Complainant Details:
-   - Full Name (in original language, e.g. "काजल")
-   - Relation (must be one of: "S/O", "D/O", "W/O", "C/O")
-   - Relative Name (father / husband name in original language, e.g. "रोमी उर्फ सत्यम" or "दिलबाग सिंह")
-   - Gender ("MALE", "FEMALE", or "TRANSGENDER")
-   - Age (number as string, e.g. "20" from DOB 29/08/2005 on Aadhaar card)
-   - Mobile Number (10 digits, e.g. "8168270722" or "9050258485")
-   - Present Address (House / Street / Locality in original language, e.g. "गांव महावटी, तहसील समालखा, जिला पानीपत")
-   - City / Village (e.g. "महावटी")
-   - District (e.g. "पानीपत" / "Panipat")
-   - State (e.g. "हरियाणा" / "Haryana")
+   - Full Name (in original language, e.g. "काजल" - ONLY if present in document, else "")
+   - Relation (one of: "S/O", "D/O", "W/O", "C/O" - ONLY if mentioned, else "")
+   - Relative Name (father / husband name in original language - ONLY if mentioned, else "")
+   - Gender ("MALE", "FEMALE", or "TRANSGENDER" - ONLY if determined from document, else "")
+   - Age (number as string - ONLY if explicitly written in document, else "")
+   - Mobile Number (10 digits - ONLY if present in document, else "")
+   - Present Address (House / Street / Locality in original language - ONLY if in document, else "")
+   - City / Village (ONLY if in document, else "")
+   - District (ONLY if in document, else "")
+   - State (ONLY if in document, else "")
    - Nationality ("Indian" or other)
 2. Accused / Suspect Details (CRITICAL - EXTRACT EVERY ACCUSED PERSON INTO A SEPARATE CARD):
    - In Indian police complaints under "विषय: ... बरखिलाफ:-", "विरुद्ध:-", "आरोपीगण:-", or numbered list (1., 2., 3., 4., etc.), inspect all named accused.
-   - For example:
-     1. रोमी उर्फ सत्यम पुत्र सुरेन्द्र सिंह (पति) मो0 नं0 9485636036
-     2. सुरेन्द्र सिंह पुत्र श्री हुकम चन्द (ससुर) मो0 नं0 8397816075
-     3. नीलम पत्नी सुरेन्द्र (सास) मो0 नं0 9499408983
-     4. सोनिया पुत्री सुरेन्द्र (ननंद)
-     सभी निवासीगण गांव कुटानी, जिला पानीपत
-   - YOU MUST CREATE 4 SEPARATE OBJECTS in "accusedList" for the 4 individuals above!
-   - NEVER combine multiple accused into 1 card! NEVER return only 1 accused when multiple are listed!
-   - If a shared address is mentioned ("सभी निवासीगण गांव कुटानी, जिला पानीपत"), copy that full address to EVERY accused card.
+   - YOU MUST CREATE SEPARATE OBJECTS in "accusedList" for each individual accused person mentioned.
    - For EACH accused person:
-     * name: Individual's name only (e.g. "रोमी उर्फ सत्यम" or "सुरेन्द्र सिंह" or "नीलम" or "सोनिया")
-     * address: Address of this individual (e.g. "गांव कुटानी, जिला पानीपत")
-     * phone: Mobile number if mentioned (e.g. "9485636036", "8397816075", "9499408983")
-     * alias: Role / Alias / Parentage (e.g. "पति", "ससुर", "सास", "ननंद")
-     * relationWithComplainant: Relation with complainant (e.g. "पति", "ससुर", "सास", "ननंद")
-   - isAccusedKnown: true if one or more accused are identified/named, false if unidentified/unknown.
+     * name: Individual's name only (from document)
+     * address: Address of this individual (from document, else "")
+     * phone: Mobile number if mentioned (else "")
+     * alias: Role / Alias / Parentage if mentioned (else "")
+     * relationWithComplainant: Relation with complainant if mentioned (else "")
+   - isAccusedKnown: true if one or more accused are identified/named in document, false if unidentified/unknown.
 3. Incident Details:
-   - Place of Incident (specific location or landmark)
-   - Date of Incident (YYYY-MM-DD if known)
-   - Time of Incident (HH:MM if known)
-   - isDateTimeKnown (boolean)
+   - Place of Incident (from document, else "")
+   - Date of Incident (YYYY-MM-DD from document, else "")
+   - Time of Incident (HH:MM from document, else "")
+   - isDateTimeKnown (boolean: true if date/time present in document, false otherwise)
    - Class of Incident (must strictly match one of: "FINANCIAL_FRAUD_CHEATING", "CYBER_CRIME", "LAND_PROPERTY_DISPUTE", "PHYSICAL_ASSAULT_AFFRAY", "PROPERTY_THEFT_BURGLARY", "DOMESTIC_VIOLENCE_DOWRY", "PUBLIC_NUISANCE", "MISSING_PERSON", "NARCOTICS_DRUGS_INFO", "HARASSMENT_STALKING", "OTHER_GENERAL")
-   - Facts of Details / Detailed Allegations: Complete word-to-word verbatim incident narrative.
+   - Facts of Details / Detailed Allegations: Complete word-to-word verbatim incident narrative from document.
 4. Complaint Details:
    - Mode of Intake (one of: "WALK_IN_STATION", "CM_WINDOW_HARYANA", "CITIZEN_PORTAL_HARPATH", "EMERGENCY_112", "SP_OFFICE_REFERENCE", "POSTAL_APPLICATION", "WOMEN_HELPDESK")
-   - Subject (Precise legal subject line for the complaint)
+   - Subject (Precise legal subject line from document)
    - Description (MANDATORY: 100% complete exact word-by-word verbatim transcript of the entire application/document without any reduction or omission)
    - Type of Complaint ("FRESH" or "OLD")
    - Is FIR Registered (boolean: false unless expressly mentions FIR already registered)
-   - FIR Number (if registered, else empty)
+   - FIR Number (if registered, else "")
 
 Return ONLY a valid, parseable JSON object matching this schema without markdown code blocks, backticks, or other text:
 {
   "classifiedDocumentName": "Standardized_Document_Name.ext",
   "verifiedDocumentTitle": "Verified document description",
   "complainant": {
-    "name": "Full Name",
-    "relationType": "S/O",
-    "relativeName": "Father / Husband Name",
-    "gender": "MALE",
-    "age": "35",
-    "mobile": "9812345678",
-    "presentAddress": "Address details",
-    "city": "Thanesar",
-    "district": "Kurukshetra",
-    "state": "Haryana",
+    "name": "",
+    "relationType": "",
+    "relativeName": "",
+    "gender": "",
+    "age": "",
+    "mobile": "",
+    "presentAddress": "",
+    "city": "",
+    "district": "",
+    "state": "",
     "nationality": "Indian"
   },
   "isAccusedKnown": true,
   "accusedList": [
     {
-      "name": "Full Name of Accused 1 (Single individual)",
-      "address": "Address or location of Accused 1",
-      "phone": "",
-      "alias": "",
-      "relationWithComplainant": ""
-    },
-    {
-      "name": "Full Name of Accused 2 (Single individual)",
-      "address": "Address or location of Accused 2",
+      "name": "",
+      "address": "",
       "phone": "",
       "alias": "",
       "relationWithComplainant": ""
@@ -121,21 +117,21 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
   ],
   "accused": {
     "isKnown": true,
-    "name": "Primary Accused Name",
-    "address": "Primary Accused Address"
+    "name": "",
+    "address": ""
   },
   "incident": {
-    "place": "Incident Location",
-    "date": "2026-03-20",
-    "time": "14:30",
-    "isDateTimeKnown": true,
-    "category": "FINANCIAL_FRAUD_CHEATING",
-    "details": "Verbatim word-to-word text of the incident narration from document..."
+    "place": "",
+    "date": "",
+    "time": "",
+    "isDateTimeKnown": false,
+    "category": "OTHER_GENERAL",
+    "details": ""
   },
   "complaint": {
     "mode": "WALK_IN_STATION",
-    "subject": "Complaint regarding...",
-    "description": "Verbatim word-to-word exact text of the application / complaint from document...",
+    "subject": "",
+    "description": "",
     "type": "FRESH",
     "isFirRegistered": false,
     "firNumber": ""

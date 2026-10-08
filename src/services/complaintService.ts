@@ -21,6 +21,8 @@ import {
   EOOutcome,
   MainComplaintStatus,
   getMainComplaintStatus,
+  LegalAnalysisReport,
+  InvestigationSummaryReport,
 } from "@/types";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
@@ -206,6 +208,7 @@ export const ComplaintService = {
     statuses?: string[];
     priority?: string;
     category?: string;
+    finalCategory?: string;
     assignedEo?: string;
     viewerRole?: SystemRole | string;
     viewerStation?: string;
@@ -345,7 +348,41 @@ export const ComplaintService = {
     }
 
     if (filter?.category && filter.category !== "ALL") {
-      list = list.filter((c) => c.category === filter.category);
+      const catUpper = filter.category.toUpperCase().replace(/\s+/g, "_");
+      // Check if filtering by Recommendation Category: NCR, FIR Recommend, Closure
+      if (catUpper === "NCR") {
+        list = list.filter((c) => c.finalCategory === "NCR" || c.eoRecommendedCategory === "NCR" || (c.category as string) === "NCR");
+      } else if (catUpper === "FIR_RECOMMEND" || catUpper === "FIR_RECOMMENDED" || catUpper === "FIR") {
+        list = list.filter((c) =>
+          c.finalCategory === "FIR Recommend" ||
+          c.finalCategory === "FIR_RECOMMEND" ||
+          c.status === "FIR Recommend" ||
+          c.status === "FIR_RECOMMEND" ||
+          c.workflowState === "FIR_REGISTRATION_PENDING" ||
+          c.eoRecommendedCategory === "FIR_RECOMMEND" ||
+          (c.category as string) === "FIR_RECOMMEND"
+        );
+      } else if (catUpper === "CLOSURE") {
+        list = list.filter((c) =>
+          c.finalCategory === "Closure" ||
+          c.finalCategory === "CLOSURE" ||
+          c.eoRecommendedCategory === "CLOSURE" ||
+          (c.category as string) === "CLOSURE"
+        );
+      } else {
+        list = list.filter((c) => c.category === filter.category);
+      }
+    }
+
+    if (filter?.finalCategory && filter.finalCategory !== "ALL") {
+      const fUpper = filter.finalCategory.toUpperCase().replace(/\s+/g, "_");
+      if (fUpper === "NCR") {
+        list = list.filter((c) => c.finalCategory === "NCR");
+      } else if (fUpper === "FIR_RECOMMEND" || fUpper === "FIR_RECOMMENDED" || fUpper === "FIR") {
+        list = list.filter((c) => c.finalCategory === "FIR Recommend" || c.finalCategory === "FIR_RECOMMEND");
+      } else if (fUpper === "CLOSURE") {
+        list = list.filter((c) => c.finalCategory === "Closure" || c.finalCategory === "CLOSURE");
+      }
     }
 
     if (filter?.search) {
@@ -1501,43 +1538,77 @@ export const ComplaintService = {
 
   async addComplaintReport(
     complaintId: string,
-    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string }
+    report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string },
+    options?: { isNewVersion?: boolean }
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const existingReports = complaintsStore[index].reports || [];
-    const versionNumber = existingReports.length + 1;
+    const nowIso = new Date().toISOString();
+    const existingIndex = report.id ? existingReports.findIndex((r) => r.id === report.id) : -1;
 
-    const newReport: ComplaintReportItem = {
-      id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      complaintId: complaintsStore[index].id,
-      versionNumber,
-      title: report.title,
-      reportType: report.reportType,
-      reportTypeLabel: report.reportTypeLabel,
-      dispatchNo: report.dispatchNo,
-      generatedDate: report.generatedDate || new Date().toISOString(),
-      officerName: report.officerName,
-      officerRank: report.officerRank,
-      officerPno: report.officerPno,
-      conclusionSummary: report.conclusionSummary,
-      content: report.content,
-      fileName: report.fileName,
-      fileSize: report.fileSize,
-      fileUrl: report.fileUrl,
-      dataUrl: report.dataUrl,
-      fileFormat: report.fileFormat,
-      isUploaded: report.isUploaded,
-      createdAt: report.createdAt || new Date().toISOString(),
-      recommendationType: report.recommendationType,
-      isFirRecommended: report.isFirRecommended,
-      selectedOutcome: report.selectedOutcome,
-      analysisClassification: report.analysisClassification,
-      analysisRationale: report.analysisRationale,
-    };
+    let targetReport: ComplaintReportItem;
 
-    complaintsStore[index].reports = [newReport, ...existingReports];
+    if (existingIndex !== -1 && !options?.isNewVersion) {
+      // Update existing report in-place
+      const prev = existingReports[existingIndex];
+      targetReport = {
+        ...prev,
+        ...report,
+        id: prev.id,
+        complaintId: complaintsStore[index].id,
+        versionNumber: prev.versionNumber || 1,
+        title: report.title || prev.title,
+        content: report.content !== undefined ? report.content : prev.content,
+        contentHtml: report.contentHtml !== undefined ? report.contentHtml : prev.contentHtml,
+        status: report.status || prev.status || "Saved in Complaint",
+        lastModifiedBy: report.lastModifiedBy || report.officerName || prev.lastModifiedBy,
+        updatedAt: nowIso,
+        recommendationType: report.recommendationType || prev.recommendationType,
+      };
+      existingReports[existingIndex] = targetReport;
+      complaintsStore[index].reports = [...existingReports];
+    } else {
+      // Create new report or new version
+      const maxVer = existingReports.reduce((max, r) => Math.max(max, r.versionNumber || 1), 0);
+      const versionNumber = options?.isNewVersion ? maxVer + 1 : (report.versionNumber || maxVer + 1);
+
+      targetReport = {
+        id: (options?.isNewVersion ? null : report.id) || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        complaintId: complaintsStore[index].id,
+        versionNumber,
+        title: report.title,
+        reportType: report.reportType || "RECOMMENDATION_REPORT",
+        reportTypeLabel: report.reportTypeLabel || "Enquiry Report",
+        dispatchNo: report.dispatchNo,
+        generatedDate: report.generatedDate || nowIso,
+        officerName: report.officerName || "Enquiry Officer",
+        officerRank: report.officerRank,
+        officerPno: report.officerPno,
+        conclusionSummary: report.conclusionSummary,
+        content: report.content,
+        contentHtml: report.contentHtml,
+        fileName: report.fileName,
+        fileSize: report.fileSize,
+        fileUrl: report.fileUrl,
+        dataUrl: report.dataUrl,
+        fileFormat: report.fileFormat || "TXT",
+        isUploaded: report.isUploaded || false,
+        createdAt: report.createdAt || nowIso,
+        updatedAt: nowIso,
+        createdBy: report.createdBy || report.officerName,
+        lastModifiedBy: report.lastModifiedBy || report.officerName,
+        status: report.status || "Saved in Complaint",
+        recommendationType: report.recommendationType,
+        isFirRecommended: report.isFirRecommended,
+        selectedOutcome: report.selectedOutcome,
+        analysisClassification: report.analysisClassification,
+        analysisRationale: report.analysisRationale,
+      };
+
+      complaintsStore[index].reports = [targetReport, ...existingReports];
+    }
 
     if (report.isFirRecommended) {
       complaintsStore[index].isRecommendedForFir = true;
@@ -1558,7 +1629,7 @@ export const ComplaintService = {
       }
     }
 
-    complaintsStore[index].updatedAt = new Date().toISOString();
+    complaintsStore[index].updatedAt = nowIso;
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 
@@ -1706,13 +1777,26 @@ export const ComplaintService = {
     complaintId: string,
     officerName: string,
     officerPno: string = "04291882",
-    remarks?: string
+    remarks?: string,
+    options?: {
+      recommendedCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
+      eoId?: string;
+      reportTitle?: string;
+    }
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const complaint = complaintsStore[index];
     const nowIso = new Date().toISOString();
+
+    const recommendedCategory = options?.recommendedCategory || (complaint.eoOutcome === "FIR Recommend" ? "FIR_RECOMMEND" : "NCR");
+    const displayCategory =
+      recommendedCategory === "FIR_RECOMMEND"
+        ? "FIR Recommend"
+        : recommendedCategory === "CLOSURE"
+        ? "Closure"
+        : "NCR";
 
     const updatedReports = (complaint.reports || []).map((r, i) =>
       i === 0 ? { ...r, sentToSho: true, sentToShoAt: nowIso, sentToShoBy: officerName } : r
@@ -1724,6 +1808,12 @@ export const ComplaintService = {
       isSentToSho: true,
       sentToShoAt: nowIso,
       sentToShoBy: officerName,
+      eoRecommendedCategory: recommendedCategory,
+      eoRecommendedBy: officerName,
+      eoRecommendedById: options?.eoId || complaint.assignedEoId || officerPno,
+      eoRecommendedAt: nowIso,
+      eoRecommendedReportTitle: options?.reportTitle || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
+      eoRecommendedRemarks: remarks,
       shoActionRequired: true,
       workflowState: "SENT_TO_SHO",
       updatedAt: nowIso,
@@ -1732,18 +1822,24 @@ export const ComplaintService = {
     // Audit record
     this.addAuditRecord(complaint.id, {
       action: "SENT_TO_SHO",
-      actionLabel: "Report Sent to SHO for Decision",
+      actionLabel: `Report Sent to SHO (EO Recommendation: ${displayCategory})`,
       performedBy: officerName,
       userPno: officerPno,
       userRole: "ENQUIRY_OFFICER",
       timestamp: nowIso,
-      details: remarks || `EO submitted completed enquiry report and outcome (${complaint.eoOutcome || "Pending"}) to Station House Officer (SHO).`,
+      outcome: displayCategory,
+      details: remarks || `EO submitted completed enquiry report to SHO with recommendation: ${displayCategory}.`,
+      metadata: {
+        eoRecommendedCategory: recommendedCategory,
+        eoId: options?.eoId || complaint.assignedEoId,
+        reportTitle: options?.reportTitle,
+      },
     });
 
     // Timeline
     this.addTimelineEvent(complaint.id, {
-      title: "Enquiry Report Dispatched to SHO",
-      description: `Enquiry Officer ${officerName} submitted report to SHO for review and action. Remarks: ${remarks || "Awaiting SHO approval."}`,
+      title: `Enquiry Report Dispatched to SHO (Recommendation: ${displayCategory})`,
+      description: `Enquiry Officer ${officerName} submitted report to SHO for review. EO Recommendation: ${displayCategory}. Remarks: ${remarks || "Awaiting SHO approval."}`,
       category: "STATUS_CHANGE",
       officerName,
       timestamp: nowIso,
@@ -1757,7 +1853,7 @@ export const ComplaintService = {
       complaintId: complaint.id,
       complaintNumber: complaint.complaintNumber,
       title: `ACTION REQUIRED: Report Submitted (${complaint.complaintNumber})`,
-      message: `EO ${officerName} has submitted report with outcome "${complaint.eoOutcome || "Pending"}". Action required: Approve or Order Re-Enquiry.`,
+      message: `EO ${officerName} submitted report with recommendation "${displayCategory}". Action required: Review and select final category (NCR, FIR Recommend, Closure).`,
       createdAt: nowIso,
       priority: complaint.priority === "ROUTINE" ? "URGENT" : "CRITICAL",
     };
@@ -1778,58 +1874,80 @@ export const ComplaintService = {
     complaintId: string,
     shoName: string,
     shoPno: string = "04291882",
-    remarks?: string
+    remarks?: string,
+    finalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const complaint = complaintsStore[index];
     const nowIso = new Date().toISOString();
-    const isFirOutcome = complaint.eoOutcome === "FIR Recommend" || complaint.isRecommendedForFir;
+
+    // Determine final category selected by SHO
+    const chosenCategory = finalCategory || complaint.eoRecommendedCategory || (complaint.eoOutcome === "FIR Recommend" ? "FIR_RECOMMEND" : "NCR");
+    const isFir = chosenCategory === "FIR_RECOMMEND" || chosenCategory === "FIR Recommend";
+    const isClosure = chosenCategory === "CLOSURE" || chosenCategory === "Closure";
+    const isNcr = chosenCategory === "NCR";
+
+    const displayFinalCategory = isFir ? "FIR Recommend" : isClosure ? "Closure" : "NCR";
+    const displayFinalStatus = isFir ? "FIR Recommend" : "Complete";
 
     let nextWorkflowState: WorkflowState = "COMPLETE";
-    let nextStatus: ComplaintStatus = complaint.status;
+    let nextStatus: ComplaintStatus = "COMPLETE";
     let isFirApprovedBySho = false;
 
-    if (isFirOutcome) {
+    if (isFir) {
       nextWorkflowState = "FIR_REGISTRATION_PENDING";
-      nextStatus = "RECOMMENDED_FOR_FIR";
+      nextStatus = "FIR_RECOMMEND";
       isFirApprovedBySho = true;
     } else {
       nextWorkflowState = "COMPLETE";
       nextStatus = "COMPLETE";
+      isFirApprovedBySho = false;
     }
 
     complaintsStore[index] = {
       ...complaint,
       status: nextStatus,
       workflowState: nextWorkflowState,
+      shoFinalCategory: chosenCategory,
+      finalCategory: displayFinalCategory,
+      finalStatus: displayFinalStatus,
       shoDecision: "APPROVE",
       shoDecisionAt: nowIso,
       shoDecisionBy: shoName,
+      shoApprovedBy: shoName,
+      shoApprovedAt: nowIso,
       shoRemarks: remarks,
       isFirApprovedBySho,
       firApprovedAt: isFirApprovedBySho ? nowIso : undefined,
       firApprovedBy: isFirApprovedBySho ? shoName : undefined,
-      shoActionRequired: isFirOutcome,
+      shoActionRequired: isFir,
       updatedAt: nowIso,
     };
 
     // Audit record
     this.addAuditRecord(complaint.id, {
       action: "SHO_APPROVED",
-      actionLabel: isFirOutcome ? "SHO Approved FIR Recommendation" : "SHO Approved & Closed Enquiry",
+      actionLabel: `SHO Final Decision: ${displayFinalCategory} (Status: ${displayFinalStatus})`,
       performedBy: shoName,
       userPno: shoPno,
       userRole: "SHO",
       timestamp: nowIso,
-      details: remarks || (isFirOutcome ? "SHO concurred with EO findings and sanctioned regular FIR registration." : "SHO verified and approved complete enquiry report. Matter disposed/closed."),
+      outcome: displayFinalCategory,
+      details: remarks || `SHO approved case with authoritative final category: ${displayFinalCategory}. (EO recommendation was: ${complaint.eoRecommendedCategory || "Not specified"}).`,
+      metadata: {
+        shoFinalCategory: chosenCategory,
+        finalCategory: displayFinalCategory,
+        finalStatus: displayFinalStatus,
+        eoRecommendedCategory: complaint.eoRecommendedCategory,
+      },
     });
 
     // Timeline
     this.addTimelineEvent(complaint.id, {
-      title: isFirOutcome ? "SHO Sanctioned FIR Registration" : "Enquiry Report Approved by SHO",
-      description: `Station House Officer ${shoName} approved the enquiry findings. ${remarks ? `Remarks: ${remarks}` : ""}`,
+      title: `SHO Approved Final Category: ${displayFinalCategory}`,
+      description: `Station House Officer ${shoName} decided final category: ${displayFinalCategory}. Status set to: ${displayFinalStatus}. ${remarks ? `Remarks: ${remarks}` : ""}`,
       category: "STATUS_CHANGE",
       officerName: shoName,
       timestamp: nowIso,
@@ -1843,8 +1961,8 @@ export const ComplaintService = {
         recipientName: complaint.assignedEoName || "Enquiry Officer",
         complaintId: complaint.id,
         complaintNumber: complaint.complaintNumber,
-        title: `Report Approved: ${complaint.complaintNumber}`,
-        message: `SHO ${shoName} has approved your enquiry report (${complaint.eoOutcome}). ${remarks ? `Remarks: "${remarks}"` : ""}`,
+        title: `Report Decision: ${complaint.complaintNumber}`,
+        message: `SHO ${shoName} has approved case with final category "${displayFinalCategory}". ${remarks ? `Remarks: "${remarks}"` : ""}`,
         createdAt: nowIso,
         priority: "ROUTINE",
       };
@@ -2117,6 +2235,42 @@ export const ComplaintService = {
     complaintsStore[index] = {
       ...complaintsStore[index],
       reports: (complaintsStore[index].reports || []).filter((r) => r.id !== reportId),
+      updatedAt: new Date().toISOString(),
+    };
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    return complaintsStore[index];
+  },
+
+  async saveLegalAnalysis(
+    complaintId: string,
+    analysis: LegalAnalysisReport
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    complaintsStore[index] = {
+      ...complaintsStore[index],
+      legalAnalysis: analysis,
+      updatedAt: new Date().toISOString(),
+    };
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    return complaintsStore[index];
+  },
+
+  async saveInvestigationSummary(
+    complaintId: string,
+    summary: InvestigationSummaryReport
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    complaintsStore[index] = {
+      ...complaintsStore[index],
+      investigationSummary: summary,
       updatedAt: new Date().toISOString(),
     };
     saveComplaintsToStorage(complaintsStore);
