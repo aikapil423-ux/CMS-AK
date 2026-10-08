@@ -74,7 +74,7 @@ export default function FIRWorkspacePage() {
         </Link>
 
         {/* 2. Statutory Legal Notices */}
-        <Link href="/enquiry-workspace/templates" className="block group">
+        <Link href="/fir-workspace/templates" className="block group">
           <Card className="border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-purple-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
               <div className="flex items-start gap-3">
@@ -99,7 +99,7 @@ export default function FIRWorkspacePage() {
         </Link>
 
         {/* 3. Final Form (Chargesheet / Closure) */}
-        <Link href="/enquiry-workspace/drafts" className="block group">
+        <Link href="/fir-workspace/drafts" className="block group">
           <Card className="border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
               <div className="flex items-start gap-3">
