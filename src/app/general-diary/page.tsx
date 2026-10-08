@@ -132,7 +132,7 @@ function GeneralDiaryContent() {
       const nowTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
       const newRecord = await GeneralDiaryService.addEntry({
-        typeCode: "BANDI_ROZNAMCHA",
+        typeCode: "CLOSE_OF_GD",
         category: "ROUTINE_ADMINISTRATION",
         typeDisplay: "Closing",
         typeDisplayHi: "Closing",

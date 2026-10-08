@@ -13,7 +13,7 @@ import {
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
-const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v3";
+const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v4_cctns";
 const GD_TEMPLATES_STORAGE_KEY = "haryana_police_cms_gd_templates_v3";
 
 // Generate cryptographic-style verification audit hash
@@ -50,7 +50,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "AAGAZ_ROZNAMCHA",
+      typeCode: "OPENING_OF_GD",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Opening",
       typeDisplayHi: "Opening",
@@ -110,7 +110,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "SAFAI_THANA",
+      typeCode: "OTHERS",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Cleanliness",
       typeDisplayHi: "Cleanliness",
@@ -168,7 +168,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "STAFF_GINTI",
+      typeCode: "ROLL_CALL",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Roll Call",
       typeDisplayHi: "Roll Call",
@@ -226,7 +226,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "419/KKR",
         pno: "09384712",
       },
-      typeCode: "RAVANGI_OFFICER",
+      typeCode: "DEPARTURE",
       category: "DUTY_MOVEMENT",
       typeDisplay: "Departure",
       typeDisplayHi: "Departure",
@@ -287,7 +287,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "419/KKR",
         pno: "09384712",
       },
-      typeCode: "WAPSI_OFFICER",
+      typeCode: "ARRIVAL_RETURN",
       category: "DUTY_MOVEMENT",
       typeDisplay: "Arrival",
       typeDisplayHi: "Arrival",
@@ -408,7 +408,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "SYS/AUTO",
         pno: "00000000",
       },
-      typeCode: "COMPLAINT_INTAKE",
+      typeCode: "CITIZEN_INFORMATION_TIP_RECEIVED",
       category: "INVESTIGATION_PROCESS",
       typeDisplay: "Complaint Received / Disposal",
       typeDisplayHi: "प्राप्ति / निपटान शिकायत दरख्वास्त (PPR 22.48)",
@@ -1126,13 +1126,13 @@ export const GeneralDiaryService = {
     const nowIso = new Date().toISOString();
 
     const typeCodeMap: Record<string, string> = {
-      COMPLAINT_REGISTERED: "COMPLAINT_INTAKE",
-      FIR_LODGED: "FIR_REGISTRATION",
-      OFFICER_DISPATCHED: "RAVANGI_OFFICER",
-      MALKHANA_SEIZURE: "CASE_PROPERTY_DEPOSIT",
+      COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
+      FIR_LODGED: "CRIMINAL_CASE",
+      OFFICER_DISPATCHED: "DEPARTURE",
+      MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
     };
 
-    const typeCode = typeCodeMap[event.eventType] || "OTHER_MISCELLANEOUS";
+    const typeCode = typeCodeMap[event.eventType] || "OTHERS";
     const typeDef = memoryTypesStore.find((t) => t.code === typeCode) || memoryTypesStore[0];
 
     const suggestionRecord: GeneralDiaryRecord = {
@@ -1216,17 +1216,17 @@ export const GeneralDiaryService = {
     const targetDate = activityDateTime.split(" ")[0];
 
     // Check 1: Officer already has a departure on this day without return
-    if (typeCode === "RAVANGI_OFFICER") {
+    if (typeCode === "DEPARTURE") {
       const departures = memoryRecordsStore.filter(
         (r) =>
           r.entryForOfficer.pno === officerPno &&
-          r.typeCode === "RAVANGI_OFFICER" &&
+          r.typeCode === "DEPARTURE" &&
           r.activityDateTime.startsWith(targetDate)
       );
       const returns = memoryRecordsStore.filter(
         (r) =>
           r.entryForOfficer.pno === officerPno &&
-          r.typeCode === "WAPSI_OFFICER" &&
+          r.typeCode === "ARRIVAL_RETURN" &&
           r.activityDateTime.startsWith(targetDate)
       );
       if (departures.length > returns.length) {
@@ -1354,7 +1354,7 @@ export const GeneralDiaryService = {
         {
           subject: entryOrSubject,
           narrative: narrative || "",
-          typeCode: typeof entryType === "string" ? entryType : "OTHER_MISCELLANEOUS",
+          typeCode: typeof entryType === "string" ? entryType : "OTHERS",
           policeStation: station || "PS City Thanesar",
           relatedRecords: {
             complaintNumber: relatedComplaintNumber,

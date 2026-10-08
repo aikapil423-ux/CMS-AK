@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
+import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
 
 function NewGDEntryContent() {
   const router = useRouter();
@@ -105,7 +106,7 @@ function NewGDEntryContent() {
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
   const [selectedOfficerId, setSelectedOfficerId] = useState<string>("usr_si_malkeet");
   const [customOfficerName, setCustomOfficerName] = useState("");
-  const [selectedType, setSelectedType] = useState<string>(preselectedType || "AAGAZ_ROZNAMCHA");
+  const [selectedType, setSelectedType] = useState<string>(preselectedType || "OPENING_OF_GD");
 
   // Date & Time — SERVER-OWNED (read-only; CCTNS dd/mm/yyyy + HH:mm 24-hour)
   const [serverDateDisplay, setServerDateDisplay] = useState("--/--/----");
@@ -122,52 +123,37 @@ function NewGDEntryContent() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Load configured types (merged with Dropdown Manager)
+  // Official Haryana CCTNS GD types are ALWAYS shown; extra custom types
+  // added via the Dropdown Manager (Settings) are appended on top.
   useEffect(() => {
-    const loadedTypes = GeneralDiaryService.getTypes();
-    const dynamicGdTypes = DropdownManagerService.getItems("gd_types", true);
-
-    if (dynamicGdTypes && dynamicGdTypes.length > 0) {
-      const merged: GDEntryTypeConfig[] = dynamicGdTypes.map((d) => {
-        const found = loadedTypes.find((t) => t.code === d.code);
-        if (found) return { ...found, nameEn: d.label, nameHi: d.label };
-        return {
+    const appendCustom = (base: GDEntryTypeConfig[]) => {
+      const dynamicGdTypes = DropdownManagerService.getItems("gd_types", true);
+      if (!dynamicGdTypes || dynamicGdTypes.length === 0) return base;
+      const customs: GDEntryTypeConfig[] = dynamicGdTypes
+        .filter(
+          (d) =>
+            d.isActive &&
+            !base.some((t) => t.code === d.code) &&
+            !LEGACY_GD_TYPE_CODES.has(d.code)
+        )
+        .map((d) => ({
           code: d.code,
-          category: "ROUTINE_ADMINISTRATION",
+          category: "MISCELLANEOUS" as const,
           nameEn: d.label,
           nameHi: d.label,
           description: d.description || d.label,
-          isEnabled: d.isActive,
+          isEnabled: true,
           usedCount: 0,
           requiresOfficer: true,
           defaultTemplates: [],
-        };
-      });
-      setTypes(merged);
-    } else {
-      setTypes(loadedTypes);
-    }
+        }));
+      return [...base, ...customs];
+    };
+
+    setTypes(appendCustom(GeneralDiaryService.getTypes()));
 
     const handleUpdate = () => {
-      const updated = DropdownManagerService.getItems("gd_types", true);
-      if (updated && updated.length > 0) {
-        const merged: GDEntryTypeConfig[] = updated.map((d) => {
-          const found = loadedTypes.find((t) => t.code === d.code);
-          if (found) return { ...found, nameEn: d.label, nameHi: d.label };
-          return {
-            code: d.code,
-            category: "ROUTINE_ADMINISTRATION",
-            nameEn: d.label,
-            nameHi: d.label,
-            description: d.description || d.label,
-            isEnabled: d.isActive,
-            usedCount: 0,
-            requiresOfficer: true,
-            defaultTemplates: [],
-          };
-        });
-        setTypes(merged);
-      }
+      setTypes(appendCustom(GeneralDiaryService.getTypes()));
     };
     window.addEventListener("cms-dropdowns-updated", handleUpdate);
     return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
@@ -215,6 +201,7 @@ function NewGDEntryContent() {
     const offName = officerName || "SI Malkeet";
 
     switch (typeCode) {
+      case "OPENING_OF_GD":
       case "AAGAZ_ROZNAMCHA":
         setSubject("Aagaz");
         setNarrative(
@@ -229,6 +216,7 @@ function NewGDEntryContent() {
         );
         break;
 
+      case "ROLL_CALL":
       case "STAFF_GINTI":
         setSubject("Ginti Staff");
         setNarrative(
@@ -236,6 +224,7 @@ function NewGDEntryContent() {
         );
         break;
 
+      case "DEPARTURE":
       case "RAVANGI_OFFICER":
         setSubject(`Ravangi - ${offName} for Investigation`);
         setNarrative(
@@ -243,6 +232,7 @@ function NewGDEntryContent() {
         );
         break;
 
+      case "ARRIVAL_RETURN":
       case "WAPSI_OFFICER":
         setSubject(`Wapsi - ${offName} from Duty`);
         setNarrative(
@@ -250,6 +240,7 @@ function NewGDEntryContent() {
         );
         break;
 
+      case "CLOSE_OF_GD":
       case "BANDI_ROZNAMCHA":
         setSubject("Bandi - 24-Hour Closure");
         setNarrative(
@@ -271,6 +262,7 @@ function NewGDEntryContent() {
         );
         break;
 
+      case "CRIMINAL_CASE":
       case "FIR_REGISTRATION":
         setSubject("FIR Registered - Criminal Case Lodged");
         setNarrative(
@@ -331,6 +323,20 @@ function NewGDEntryContent() {
         setSubject("Information Received - General Station Entry");
         setNarrative(
           `At this time, information received regarding local law and order development. Relevant entries noted for station record.`
+        );
+        break;
+
+      case "NAKABANDI":
+        setSubject("Nakabandi - Check Point Establishment");
+        setNarrative(
+          `At this time, nakabandi was established at a strategic point under the supervision of the duty officer. Vehicles and suspects were checked, identities verified against records, and the operation concluded without untoward incident.`
+        );
+        break;
+
+      case "MISSING_PERSON":
+        setSubject("Missing Person - Information Recorded");
+        setNarrative(
+          `At this time, information regarding a missing person was received and recorded. Description, last seen particulars, and photograph particulars were noted. Necessary action for tracing the missing person initiated.`
         );
         break;
 
@@ -471,30 +477,30 @@ function NewGDEntryContent() {
   // Clear Form — truly clears all fields (no template re-fill afterwards)
   const handleReset = () => {
     suppressAutoTemplateRef.current = true;
-    if (selectedType === "AAGAZ_ROZNAMCHA") {
+    if (selectedType === "OPENING_OF_GD") {
       // Type already at default: the template effect will not refire,
       // so consume the suppression immediately
       suppressAutoTemplateRef.current = false;
     }
     setSelectedOfficerId("usr_si_malkeet");
     setCustomOfficerName("");
-    setSelectedType("AAGAZ_ROZNAMCHA");
+    setSelectedType("OPENING_OF_GD");
     setSubject("");
     setNarrative("");
     setError(null);
     setSuccessMessage(null);
   };
 
-  // Common Quick Types
+  // Common Quick Types (official Haryana CCTNS GD types)
   const commonTypes = [
-    { code: "AAGAZ_ROZNAMCHA", label: "Opening (Aagaz)", emoji: "🌅" },
-    { code: "SAFAI_THANA", label: "Cleanliness (Safai)", emoji: "🧹" },
-    { code: "STAFF_GINTI", label: "Roll Call (Ginti)", emoji: "📋" },
-    { code: "RAVANGI_OFFICER", label: "Departure (Ravangi)", emoji: "🚶‍♂️" },
-    { code: "WAPSI_OFFICER", label: "Arrival (Wapsi)", emoji: "🏠" },
-    { code: "BANDI_ROZNAMCHA", label: "Closing (Bandi)", emoji: "🌙" },
-    { code: "COMPLAINT_RECEIVED", label: "Complaint Intake", emoji: "📝" },
-    { code: "FIR_REGISTRATION", label: "FIR Lodged", emoji: "⚖️" },
+    { code: "OPENING_OF_GD", label: "Opening of GD", emoji: "🌅" },
+    { code: "ROLL_CALL", label: "Roll Call", emoji: "📋" },
+    { code: "DEPARTURE", label: "Departure", emoji: "🚶‍♂️" },
+    { code: "ARRIVAL_RETURN", label: "Arrival/Return", emoji: "🏠" },
+    { code: "NAKABANDI", label: "Nakabandi", emoji: "🚧" },
+    { code: "MISSING_PERSON", label: "Missing Person", emoji: "🔎" },
+    { code: "CRIMINAL_CASE", label: "Criminal Case", emoji: "⚖️" },
+    { code: "CLOSE_OF_GD", label: "Close of GD", emoji: "🌙" },
   ];
 
   return (

@@ -129,7 +129,7 @@ async function getNextLockedSequence(gdDate: Date): Promise<{ sequence: number; 
 async function createLockedEntry(body: Record<string, unknown>): Promise<GeneralDiaryRecord> {
   const now = new Date();
   const gdDate = startOfDay(now);
-  const typeCode = String(body.typeCode || "OTHER_MISCELLANEOUS");
+  const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
   if (!subject) throw new Error("Subject is required for a General Diary entry.");
   const narrative = String(body.narrative || "");
@@ -229,7 +229,7 @@ async function createLockedEntry(body: Record<string, unknown>): Promise<General
 
 async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDiaryRecord> {
   const now = new Date();
-  const typeCode = String(body.typeCode || "OTHER_MISCELLANEOUS");
+  const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
   if (!subject) throw new Error("Please enter at least a Subject to save a draft.");
   const narrative = String(body.narrative || "");
@@ -397,13 +397,13 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
   const event = (body.event || body) as Record<string, unknown>;
   const officer = buildOfficer(event.officer, FALLBACK_OFFICER);
   const typeCodeMap: Record<string, string> = {
-    COMPLAINT_REGISTERED: "COMPLAINT_INTAKE",
-    FIR_LODGED: "FIR_REGISTRATION",
-    OFFICER_DISPATCHED: "RAVANGI_OFFICER",
-    MALKHANA_SEIZURE: "CASE_PROPERTY_DEPOSIT",
+    COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
+    FIR_LODGED: "CRIMINAL_CASE",
+    OFFICER_DISPATCHED: "DEPARTURE",
+    MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
   };
   const eventType = String(event.eventType || "");
-  const typeCode = typeCodeMap[eventType] || "OTHER_MISCELLANEOUS";
+  const typeCode = typeCodeMap[eventType] || "OTHERS";
 
   const row = await prisma.gDRecord.create({
     data: {

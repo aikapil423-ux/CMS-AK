@@ -29,7 +29,7 @@ export function GDTemplateModal({
   onSelectTemplate,
   onSaveCustomTemplate,
 }: GDTemplateModalProps) {
-  const [selectedType, setSelectedType] = useState<string>(types[0]?.code || "RAVANGI_OFFICER");
+  const [selectedType, setSelectedType] = useState<string>(types[0]?.code || "DEPARTURE");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
 
