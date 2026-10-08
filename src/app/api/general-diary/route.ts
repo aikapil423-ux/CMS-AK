@@ -505,38 +505,49 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
     const pageSize = Math.max(1, parseInt(searchParams.get("pageSize") || "15") || 15);
 
-    // DB-level coarse filters (exact/structured fields)
-    const where: Prisma.GDRecordWhereInput = {};
-    if (filter.typeCode && filter.typeCode !== "ALL") where.typeCode = filter.typeCode;
+    // Fetch ALL rows once — status counts are GLOBAL, so tab badges
+    // (e.g. the Register count) never change with the active tab.
+    const rows = await prisma.gDRecord.findMany({
+      orderBy: [{ entryDateTime: "desc" }, { sequencePerDay: "desc" }],
+      take: 5000,
+    });
+
+    let list = rows.map(mapRowToRecord);
+
+    const todayKey = formatGDDateKey(new Date());
+    const counts = {
+      todayCount: list.filter((r) => r.isLocked && r._sortGdDate === todayKey).length,
+      lockedCount: list.filter((r) => r.status === "LOCKED").length,
+      verifiedCount: list.filter((r) => r.status === "VERIFIED").length,
+      draftCount: list.filter((r) => r.status === "DRAFT").length,
+      suggestedCount: list.filter((r) => r.status === "SUGGESTED").length,
+    };
+
+    // Tab scope filters (in-memory; register scale is small)
+    if (filter.typeCode && filter.typeCode !== "ALL") {
+      list = list.filter((r) => r.typeCode === filter.typeCode);
+    }
     if (filter.status && filter.status !== "ALL") {
       // Support comma-separated statuses (e.g. "SUGGESTED,DRAFT" tab view)
       const statuses = filter.status
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      if (statuses.length === 1) where.status = statuses[0];
-      else if (statuses.length > 1) where.status = { in: statuses };
-    }
-    if (filter.isLocked !== null && filter.isLocked !== undefined && filter.isLocked !== "") {
-      where.isLocked = filter.isLocked === "true";
-    }
-    if (filter.startDate || filter.endDate) {
-      where.gdDate = {};
-      if (filter.startDate) where.gdDate.gte = startOfDay(new Date(filter.startDate));
-      if (filter.endDate) {
-        const end = startOfDay(new Date(filter.endDate));
-        end.setDate(end.getDate() + 1);
-        where.gdDate.lt = end;
+      if (statuses.length > 0) {
+        list = list.filter((r) => statuses.includes(r.status));
       }
     }
-
-    const rows = await prisma.gDRecord.findMany({
-      where,
-      orderBy: [{ entryDateTime: "desc" }, { sequencePerDay: "desc" }],
-      take: 5000,
-    });
-
-    let list = rows.map(mapRowToRecord);
+    if (filter.isLocked !== null && filter.isLocked !== undefined && filter.isLocked !== "") {
+      const wantLocked = filter.isLocked === "true";
+      list = list.filter((r) => r.isLocked === wantLocked);
+    }
+    // Date range — yyyy-mm-dd keys compare lexicographically
+    if (filter.startDate) {
+      list = list.filter((r) => (r._sortGdDate || "") >= filter.startDate);
+    }
+    if (filter.endDate) {
+      list = list.filter((r) => (r._sortGdDate || "") <= filter.endDate);
+    }
 
     // JS-level fine filters (case-insensitive across Hindi/English)
     if (filter.gdNumber) {
@@ -586,24 +597,6 @@ export async function GET(req: NextRequest) {
           (r.relatedRecords?.complaintNumber || "").toLowerCase().includes(q)
       );
     }
-
-    const todayKey = formatGDDateKey(new Date());
-    const todayStart = startOfDay(new Date());
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
-    const counts = {
-      todayCount: list.filter((r) => {
-        if (!r.isLocked) return false;
-        const d = new Date(r.officialCreationTimestamp);
-        return d >= todayStart && d < todayEnd;
-      }).length,
-      lockedCount: list.filter((r) => r.status === "LOCKED").length,
-      verifiedCount: list.filter((r) => r.status === "VERIFIED").length,
-      draftCount: list.filter((r) => r.status === "DRAFT").length,
-      suggestedCount: list.filter((r) => r.status === "SUGGESTED").length,
-    };
-    void todayKey;
 
     // Pending suggestions & drafts first (newest first);
     // LOCKED register entries are ALWAYS in immutable GD-number order —
