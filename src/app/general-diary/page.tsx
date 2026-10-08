@@ -6,23 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   Search,
-  Lock,
-  Calendar,
-  Clock,
   Eye,
   FileText,
   Printer,
   PlusCircle,
   Sparkles,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
   History,
   ChevronLeft,
   ChevronRight,
-  User,
-  RotateCcw,
-  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
@@ -84,8 +75,6 @@ function GeneralDiaryContent() {
   const [verifyingRecord, setVerifyingRecord] = useState<GeneralDiaryRecord | null>(null);
   const [printDailyRegisterOpen, setPrintDailyRegisterOpen] = useState(false);
   const [selectedPrintDate, setSelectedPrintDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [dayCloseConfirmOpen, setDayCloseConfirmOpen] = useState(false);
-  const [dayCloseSuccess, setDayCloseSuccess] = useState<string | null>(null);
 
   // Load types config
   useEffect(() => {
@@ -125,47 +114,6 @@ function GeneralDiaryContent() {
     fetchEntries();
   }, [page, pageSize, typeFilter, startDate, endDate, keyword, officerQuery, activeTab]);
 
-  // Handle Day Close (Bandi)
-  const handlePerformDayClose = async () => {
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const nowTime = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-
-      const newRecord = await GeneralDiaryService.addEntry({
-        typeCode: "CLOSE_OF_GD",
-        category: "ROUTINE_ADMINISTRATION",
-        typeDisplay: "Closing",
-        typeDisplayHi: "Closing",
-        subject: "Bandi - 24-Hour Closure of General Diary",
-        narrative: `At ${nowTime}, the General Diary for ${today} was formally closed and locked. All daily entries verified, weapon registers tallied, and hawalat lockup checked. Daily Register locked under Punjab Police Rule 22.49.`,
-        activityDateTime: `${today} ${nowTime}`,
-        entryForOfficer: {
-          name: currentUser.name || "HC Devinder Kumar",
-          rank: currentUser.rankDisplay || "Head Constable (MHC)",
-          beltNumber: "889/KKR",
-          pno: currentUser.pno || "05192834",
-        },
-        actualAuthor: {
-          name: currentUser.name || "HC Devinder Kumar",
-          rank: currentUser.rankDisplay || "Head Constable (MHC)",
-          beltNumber: "889/KKR",
-          pno: currentUser.pno || "05192834",
-        },
-        policeStation: "PS City Thanesar",
-        district: "Kurukshetra",
-        source: "MANUAL_ENTRY",
-        relatedRecords: {},
-      });
-
-      setDayCloseConfirmOpen(false);
-      setDayCloseSuccess(`Day Close entry #${newRecord.sequencePerDay} recorded. General Diary for today is locked!`);
-      await fetchEntries();
-      setTimeout(() => setDayCloseSuccess(null), 4000);
-    } catch (err: any) {
-      alert(err?.message || "Failed to close day diary.");
-    }
-  };
-
   // Reset Filters
   const handleResetFilters = () => {
     setKeyword("");
@@ -200,17 +148,6 @@ function GeneralDiaryContent() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setDayCloseConfirmOpen(true)}
-            className="text-xs font-bold gap-1.5 border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 cursor-pointer shadow-2xs"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-700" />
-            <span>🔒 Day Close (Bandi)</span>
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
             onClick={() => setPrintDailyRegisterOpen(true)}
             className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
           >
@@ -228,75 +165,6 @@ function GeneralDiaryContent() {
               <span>+ Add New GD</span>
             </Button>
           </Link>
-        </div>
-      </div>
-
-      {/* Day Close Success Alert */}
-      {dayCloseSuccess && (
-        <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm font-semibold animate-in fade-in-50">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{dayCloseSuccess}</span>
-        </div>
-      )}
-
-      {/* KPI Cards Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Today&apos;s Valid Entries</span>
-            <BookOpen className="w-4 h-4 text-blue-600" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 font-mono">
-            {paginatedData.todayCount}
-          </p>
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-            Active 24-hr Diary
-          </span>
-        </div>
-
-        <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Total Locked Entries</span>
-            <Lock className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-2xl font-black text-slate-900 font-mono">
-            {paginatedData.lockedCount}
-          </p>
-          <span className="text-[10px] text-slate-500">
-            Immutable (No delete / edit)
-          </span>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("SUGGESTIONS_DRAFTS")}
-          className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-xl shadow-2xs space-y-1 cursor-pointer hover:border-purple-400 transition-colors"
-        >
-          <div className="flex items-center justify-between text-xs text-purple-800 font-bold">
-            <span>Auto-Suggestions</span>
-            <Sparkles className="w-4 h-4 text-purple-600" />
-          </div>
-          <p className="text-2xl font-black text-purple-950 font-mono">
-            {paginatedData.suggestedCount}
-          </p>
-          <span className="text-[10px] text-purple-700 font-semibold underline">
-            Review &amp; Confirm &rarr;
-          </span>
-        </div>
-
-        <div
-          onClick={() => setActiveTab("SUGGESTIONS_DRAFTS")}
-          className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl shadow-2xs space-y-1 cursor-pointer hover:border-amber-400 transition-colors"
-        >
-          <div className="flex items-center justify-between text-xs text-amber-800 font-bold">
-            <span>Saved Drafts</span>
-            <FileText className="w-4 h-4 text-amber-600" />
-          </div>
-          <p className="text-2xl font-black text-amber-950 font-mono">
-            {paginatedData.draftCount}
-          </p>
-          <span className="text-[10px] text-amber-700">
-            Pending Finalization
-          </span>
         </div>
       </div>
 
@@ -643,52 +511,6 @@ function GeneralDiaryContent() {
         onClose={() => setPrintDailyRegisterOpen(false)}
         initialDate={selectedPrintDate}
       />
-
-      {/* Day Close (Bandi) Confirmation Modal */}
-      {dayCloseConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in-50">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">
-                  Day Close General Diary (Bandi)?
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Punjab Police Rule 22.49 24-hour cycle closure
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-700 leading-relaxed">
-              This action will record the formal <strong>Bandi Roznamcha (Day Close)</strong> entry and lock the diary page for the 24-hour cycle. Once locked, records are legally permanent and immutable.
-            </p>
-
-            <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setDayCloseConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={handlePerformDayClose}
-                className="bg-[#0b192c] text-white font-bold gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Confirm &amp; Lock Day Close</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
