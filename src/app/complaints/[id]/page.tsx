@@ -82,6 +82,8 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
+import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
+import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
 import {
   RecommendationReportType,
   RECOMMENDATION_OPTIONS_CONFIG,
@@ -526,6 +528,11 @@ export default function ComplaintProfilePage() {
   const [isShoRejecting, setIsShoRejecting] = useState(false);
   const [shoApproveRemarks, setShoApproveRemarks] = useState("");
   const [isShoApproving, setIsShoApproving] = useState(false);
+  const [shoApproveModalOpen, setShoApproveModalOpen] = useState(false);
+
+  // EO Send to SHO Modal State
+  const [eoSendToShoModalOpen, setEoSendToShoModalOpen] = useState(false);
+  const [selectedReportForSho, setSelectedReportForSho] = useState<ComplaintReportItem | undefined>(undefined);
 
   const handleUploadReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1036,19 +1043,41 @@ export default function ComplaintProfilePage() {
 
   const [sendingReportToSho, setSendingReportToSho] = useState(false);
 
-  // Send Report to SHO for Review & Action
-  const handleSendReportToSho = async (report?: ComplaintReportItem) => {
+  // Trigger EO Send to SHO Modal
+  const handleOpenEoSendToShoModal = (report?: ComplaintReportItem) => {
+    setSelectedReportForSho(report);
+    setEoSendToShoModalOpen(true);
+  };
+
+  // Submit EO Recommendation & Send to SHO
+  const handleEoSendToShoSubmit = async (data: {
+    recommendedCategory: EOCategoryOption;
+    remarks: string;
+  }) => {
     if (!complaint) return;
     setSendingReportToSho(true);
     try {
+      const displayCat =
+        data.recommendedCategory === "FIR_RECOMMEND"
+          ? "FIR Recommend"
+          : data.recommendedCategory === "CLOSURE"
+          ? "Closure"
+          : "NCR";
+
       const updated = await ComplaintService.sendReportToSho(
         complaint.id,
         currentUser.name || complaint.assignedEoName || "Enquiry Officer",
         currentUser.pno || "PNO-23841",
-        `Enquiry report "${report?.title || "Enquiry Report"}" submitted with outcome: ${complaint.eoOutcome || report?.selectedOutcome || "Complete"}. Submitted for SHO approval.`
+        data.remarks || `Enquiry report "${selectedReportForSho?.title || "Enquiry Report"}" submitted with EO recommendation: ${displayCat}. Forwarded for SHO decision.`,
+        {
+          recommendedCategory: data.recommendedCategory,
+          eoId: currentUser.id || complaint.assignedEoId,
+          reportTitle: selectedReportForSho?.title || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
+        }
       );
       setComplaint(updated);
-      alert(`शिकायत ${complaint.complaintNumber} की जांच रिपोर्ट SHO ID को भेज दी गई है। यह शिकायत अब SHO रिव्यू डेस्क पर उपलब्ध है।`);
+      setEoSendToShoModalOpen(false);
+      alert(`शिकायत ${complaint.complaintNumber} की जांच रिपोर्ट (${displayCat} सिफारिश सहित) SHO ID को भेज दी गई है। यह शिकायत अब SHO रिव्यू डेस्क पर उपलब्ध है।`);
       await loadComplaint();
       if (isAssignedEo) {
         router.push("/complaints");
@@ -1061,19 +1090,37 @@ export default function ComplaintProfilePage() {
     }
   };
 
-  const handleShoApproveAction = async () => {
+  // Trigger SHO Approve Category Modal
+  const handleOpenShoApproveModal = () => {
+    setShoApproveModalOpen(true);
+  };
+
+  // Submit SHO Authoritative Final Category Decision
+  const handleShoApproveSubmit = async (data: {
+    finalCategory: SHOCategoryOption;
+    remarks: string;
+  }) => {
     if (!complaint) return;
     setIsShoApproving(true);
     try {
+      const displayCat =
+        data.finalCategory === "FIR_RECOMMEND"
+          ? "FIR Recommend"
+          : data.finalCategory === "CLOSURE"
+          ? "Closure"
+          : "NCR";
+
       const updated = await ComplaintService.shoApprove(
         complaint.id,
         currentUser.name,
         currentUser.pno || "04291882",
-        shoApproveRemarks
+        data.remarks || shoApproveRemarks,
+        data.finalCategory
       );
       setComplaint(updated);
       setShoApproveRemarks("");
-      alert("Enquiry report has been approved.");
+      setShoApproveModalOpen(false);
+      alert(`Enquiry report approved with authoritative final category: ${displayCat}. Final status updated.`);
       await loadComplaint();
     } catch (err) {
       console.error(err);
@@ -1941,12 +1988,16 @@ Certified official record copy.`;
                 SHO Approval Required
               </span>
               <h3 className="font-bold text-sm text-blue-950">
-                Enquiry Report Ready for SHO Decision ({complaint.assignedEoName || "Enquiry Officer"})
+                Enquiry Report Ready for SHO Decision ({complaint.assignedEoName || complaint.eoRecommendedBy || "Enquiry Officer"})
               </h3>
             </div>
             <p className="text-xs text-blue-900 leading-relaxed">
-              Enquiry Outcome: <strong className="font-bold uppercase text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-300">{complaint.eoOutcome || "Complete"}</strong>.
-              Review the enquiry report below and decide: <strong>Approve</strong> or <strong>Reject</strong>.
+              EO Recommendation: <strong className="font-bold uppercase text-blue-900 bg-white px-2 py-0.5 rounded border border-blue-300">
+                {complaint.eoRecommendedCategory
+                  ? (complaint.eoRecommendedCategory === "FIR_RECOMMEND" ? "FIR Recommend" : complaint.eoRecommendedCategory === "CLOSURE" ? "Closure" : "NCR")
+                  : (complaint.eoOutcome || "Pending")}
+              </strong>.
+              Review the enquiry report below and decide: <strong>Approve (Choose Final Category)</strong> or <strong>Reject</strong>.
             </p>
           </div>
 
@@ -1955,7 +2006,7 @@ Certified official record copy.`;
               type="button"
               variant="primary"
               size="sm"
-              onClick={handleShoApproveAction}
+              onClick={handleOpenShoApproveModal}
               disabled={isShoApproving}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
             >
@@ -1980,7 +2031,12 @@ Certified official record copy.`;
       )}
 
       {/* 3. SHO ACTION BANNER: FIR REGISTRATION APPROVED */}
-      {isSho && !isMhc && (complaint.isFirApprovedBySho || complaint.workflowState === "FIR_REGISTRATION_PENDING") && !complaint.isFirRegistered && (
+      {isSho && !isMhc && (
+        complaint.isFirApprovedBySho ||
+        complaint.workflowState === "FIR_REGISTRATION_PENDING" ||
+        complaint.finalCategory === "FIR Recommend" ||
+        complaint.status === "FIR Recommend"
+      ) && !complaint.isFirRegistered && (
         <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -1992,7 +2048,7 @@ Certified official record copy.`;
               </h3>
             </div>
             <p className="text-xs text-red-800 leading-relaxed">
-              Enquiry findings and FIR recommendation have been approved by SHO. Click below to formally register FIR. Status remains <strong>Pending</strong> until FIR is registered.
+              Enquiry findings and FIR recommendation have been approved by SHO. Click below to formally register FIR. Status: <strong>FIR Recommend</strong>.
             </p>
           </div>
 
@@ -2485,6 +2541,85 @@ Certified official record copy.`;
                           <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-sans leading-relaxed">
                             {complaint.assignedDirections}
                           </div>
+                        </div>
+                      )}
+
+                      {/* EO Recommendation & SHO Final Decision Status Box */}
+                      {(complaint.eoRecommendedCategory || complaint.finalCategory || complaint.isSentToSho) && (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <h4 className="font-bold text-[11px] uppercase tracking-wider text-slate-700 border-b border-slate-200 pb-1 flex items-center justify-between">
+                            <span>Case Recommendation &amp; Decision</span>
+                            <span className="font-mono text-[10px] text-slate-500">
+                              {complaint.finalStatus || getMainComplaintStatus(complaint)}
+                            </span>
+                          </h4>
+
+                          {/* EO Recommendation */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">EO Recommendation:</span>
+                            <span className="font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                              {complaint.eoRecommendedCategory
+                                ? (complaint.eoRecommendedCategory === "FIR_RECOMMEND" ? "FIR Recommend" : complaint.eoRecommendedCategory === "CLOSURE" ? "Closure" : "NCR")
+                                : (complaint.eoOutcome || "Pending")}
+                            </span>
+                          </div>
+
+                          {/* SHO Final Decision */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">SHO Final Decision:</span>
+                            {complaint.shoDecision === "APPROVE" ? (
+                              <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                <span>Approved</span>
+                              </span>
+                            ) : complaint.shoDecision === "REJECT" ? (
+                              <span className="font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                Rejected
+                              </span>
+                            ) : complaint.isSentToSho ? (
+                              <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+                                Awaiting Decision
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">Enquiry Stage</span>
+                            )}
+                          </div>
+
+                          {/* Final Category */}
+                          {complaint.finalCategory && (
+                            <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200">
+                              <span className="text-slate-700 font-bold">Final Category:</span>
+                              <span className={`font-black px-2.5 py-0.5 rounded-full text-[11px] ${
+                                complaint.finalCategory === "FIR Recommend"
+                                  ? "bg-red-100 text-red-900 border border-red-300"
+                                  : complaint.finalCategory === "NCR"
+                                  ? "bg-blue-100 text-blue-900 border border-blue-300"
+                                  : "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                              }`}>
+                                {complaint.finalCategory}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Register FIR button in card if FIR Recommend */}
+                          {complaint.finalCategory === "FIR Recommend" && !complaint.isFirRegistered && isSho && (
+                            <div className="pt-1.5">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="primary"
+                                onClick={() => {
+                                  setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
+                                  setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
+                                  setFirModalOpen(true);
+                                }}
+                                className="w-full text-xs font-bold gap-1 bg-red-600 hover:bg-red-700 text-white shadow-xs justify-center"
+                              >
+                                <Scale className="w-3.5 h-3.5" />
+                                <span>Register FIR</span>
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -3314,26 +3449,25 @@ Certified official record copy.`;
                           )}
 
                           {/* Send to SHO button (if applicable) */}
-                          {!isMhc && (report.selectedOutcome === "Complete" || report.selectedOutcome === "FIR Recommend" || report.isFirRecommended || report.recommendationType === "FIR_RECOMMENDED" || report.recommendationType === "FIR") && (
-                            !complaint.isSentToSho ? (
-                              <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleSendReportToSho(report)}
-                                disabled={sendingReportToSho}
-                                className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                                title="Send Enquiry Report to SHO for Review & Approval"
-                              >
-                                <Send className="w-3 h-3" />
-                                <span>{sendingReportToSho ? "Sending..." : "Send to SHO"}</span>
-                              </Button>
-                            ) : (
-                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
-                                <Check className="w-3 h-3 text-blue-600" />
-                                <span>Sent to SHO</span>
-                              </span>
-                            )
+                          {!isMhc && !complaint.isSentToSho && (
+                            <Button
+                              type="button"
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleOpenEoSendToShoModal(report)}
+                              disabled={sendingReportToSho}
+                              className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                              title="Send Enquiry Report to SHO for Review & Approval"
+                            >
+                              <Send className="w-3 h-3" />
+                              <span>{sendingReportToSho ? "Sending..." : "Send to SHO"}</span>
+                            </Button>
+                          )}
+                          {complaint.isSentToSho && (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
+                              <Check className="w-3 h-3 text-blue-600" />
+                              <span>Sent to SHO</span>
+                            </span>
                           )}
 
                           {/* Delete Report */}
@@ -5572,6 +5706,24 @@ Certified official record copy.`;
           </div>
         </div>
       )}
+
+      {/* EO Send to SHO Modal */}
+      <EoSendingToShoModal
+        complaint={complaint}
+        isOpen={eoSendToShoModalOpen}
+        onClose={() => setEoSendToShoModalOpen(false)}
+        onSubmit={handleEoSendToShoSubmit}
+        isLoading={sendingReportToSho}
+      />
+
+      {/* SHO Approve Final Category Modal */}
+      <ShoApproveCategoryModal
+        complaint={complaint}
+        isOpen={shoApproveModalOpen}
+        onClose={() => setShoApproveModalOpen(false)}
+        onSubmit={handleShoApproveSubmit}
+        isLoading={isShoApproving}
+      />
     </div>
   );
 }

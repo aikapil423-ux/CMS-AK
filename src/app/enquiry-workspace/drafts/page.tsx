@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem, EOOutcome, LegalAnalysisReport } from "@/types";
+import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { LegalAssistantService } from "@/services/legalAssistantService";
 import {
   generateHaryanaPoliceProformaHtml,
@@ -630,6 +631,7 @@ function EnquiryDraftsContent() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
+  const [eoSendModalOpen, setEoSendModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const documentRef = useRef<HTMLDivElement>(null);
 
@@ -761,21 +763,40 @@ function EnquiryDraftsContent() {
     applyComplaintWithAnalysis(complaint, activeFormat, newClass, editingReportId, isNewVersionMode);
   };
 
-  // Forward Report to SHO ID for Review / Approval
-  const handleSendToSho = async () => {
+  // Open Send to SHO Modal
+  const handleSendToSho = () => {
+    if (!complaint) return;
+    setEoSendModalOpen(true);
+  };
+
+  // Submit EO Recommendation to SHO
+  const handleEoSendModalSubmit = async (data: {
+    recommendedCategory: EOCategoryOption;
+    remarks: string;
+  }) => {
     if (!complaint) return;
     setSendingToSho(true);
     try {
-      const outcome = (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended
-        ? "FIR Recommend"
-        : "Complete";
+      const displayCat =
+        data.recommendedCategory === "FIR_RECOMMEND"
+          ? "FIR Recommend"
+          : data.recommendedCategory === "CLOSURE"
+          ? "Closure"
+          : "NCR";
+
       await ComplaintService.sendReportToSho(
         complaint.id,
         officerName || currentUser.name || "Enquiry Officer",
         currentUser.pno || "PNO-23841",
-        `Enquiry report "${title}" submitted. Outcome: ${outcome}. Forwarded for SHO approval.`
+        data.remarks || `Enquiry report "${title}" submitted with EO recommendation: ${displayCat}. Forwarded for SHO decision.`,
+        {
+          recommendedCategory: data.recommendedCategory,
+          eoId: currentUser.id,
+          reportTitle: title || "Enquiry Report",
+        }
       );
-      alert(`शिकायत ${complaint.complaintNumber} सफलतापूर्वक SHO ID को भेज दी गई है। यह शिकायत अब आपकी EO पेंडिंग लिस्ट से हट गई है।`);
+      setEoSendModalOpen(false);
+      alert(`शिकायत ${complaint.complaintNumber} सफलतापूर्वक SHO ID को भेज दी गई है (${displayCat} सिफारिश सहित)।`);
       router.push("/complaints");
     } catch (err) {
       console.error("Failed to forward report to SHO:", err);
@@ -1608,19 +1629,19 @@ function EnquiryDraftsContent() {
               )}
             </Button>
 
-            {/* If FIR Recommended or saved with FIR recommendation, show Send to SHO ID Button */}
-            {complaint && ((selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+            {/* Send to SHO Button with 3-Option Category Selection Dialog */}
+            {complaint && !complaint.isSentToSho && (
               <Button
                 type="button"
                 onClick={handleSendToSho}
                 disabled={sendingToSho}
                 variant="primary"
                 size="sm"
-                className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white flex items-center gap-1.5 shadow-xs cursor-pointer animate-pulse"
-                title="Send Enquiry Report to Station House Officer (SHO) for FIR Registration"
+                className="text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
+                title="Send Enquiry Report to Station House Officer (SHO)"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>{sendingToSho ? "Sending to SHO..." : "Send to SHO ID (FIR हेतु)"}</span>
+                <Send className="w-3.5 h-3.5 text-amber-400" />
+                <span>{sendingToSho ? "Sending to SHO..." : "Send to SHO"}</span>
               </Button>
             )}
 
@@ -2578,6 +2599,15 @@ function EnquiryDraftsContent() {
             </div>
           </div>
         )}
+
+        {/* EO Send to SHO Modal */}
+        <EoSendingToShoModal
+          complaint={complaint}
+          isOpen={eoSendModalOpen}
+          onClose={() => setEoSendModalOpen(false)}
+          onSubmit={handleEoSendModalSubmit}
+          isLoading={sendingToSho}
+        />
       </div>
   );
 }

@@ -43,8 +43,11 @@ export type MainComplaintStatus =
   | 'Pending'
   | 'Complete'
   | 'FIR Register'
+  | 'FIR Recommend'
   | 'FIR Registered'
   | 'Correction Required';
+
+export type FinalRecommendationCategory = 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE';
 
 export type WorkflowState =
   | 'NOT_ASSIGNED'
@@ -54,6 +57,7 @@ export type WorkflowState =
   | 'RE_ENQUIRY'
   | 'CORRECTION_REQUIRED'
   | 'FIR_RECOMMENDED'
+  | 'FIR_RECOMMEND'
   | 'FIR_REGISTER'
   | 'FIR_REGISTRATION_PENDING'
   | 'FIR_REGISTERED'
@@ -65,9 +69,16 @@ export type ComplaintStatus =
   | 'NOT_ASSIGNED'
   | 'PENDING'
   | 'COMPLETE'
+  | 'Complete'
+  | 'Pending'
+  | 'FIR_RECOMMEND'
+  | 'FIR Recommend'
   | 'FIR_REGISTER'
+  | 'FIR Register'
   | 'FIR_REGISTERED'
+  | 'FIR Registered'
   | 'CORRECTION_REQUIRED'
+  | 'Correction Required'
   | 'REGISTERED'
   | 'ASSIGNED_TO_EO'
   | 'ENQUIRY_IN_PROGRESS'
@@ -91,6 +102,7 @@ export function getMainComplaintStatus(
     eoOutcome?: string;
     directSendToFir?: boolean;
     shoDecision?: string;
+    finalCategory?: string;
   },
   viewerRole?: string
 ): MainComplaintStatus {
@@ -113,7 +125,19 @@ export function getMainComplaintStatus(
     return "FIR Register";
   }
 
-  // 3. SHO Rejection / Correction Required
+  // 3. SHO Approved FIR Recommend (remains in FIR registration workflow, NOT marked Complete)
+  if (
+    complaint.finalCategory === "FIR Recommend" ||
+    complaint.finalCategory === "FIR_RECOMMEND" ||
+    complaint.status === "FIR Recommend" ||
+    complaint.status === "FIR_RECOMMEND" ||
+    complaint.workflowState === "FIR_REGISTRATION_PENDING" ||
+    complaint.workflowState === "FIR_RECOMMENDED"
+  ) {
+    return "FIR Recommend";
+  }
+
+  // 4. SHO Rejection / Correction Required
   if (
     complaint.workflowState === "CORRECTION_REQUIRED" ||
     complaint.status === "CORRECTION_REQUIRED" ||
@@ -135,6 +159,9 @@ export function getMainComplaintStatus(
     complaint.status === "COMPLETE" ||
     complaint.workflowState === "COMPLETE" ||
     complaint.eoOutcome === "Complete" ||
+    complaint.finalCategory === "NCR" ||
+    complaint.finalCategory === "Closure" ||
+    complaint.finalCategory === "CLOSURE" ||
     complaint.status === "DISPOSED_MUTUAL_ACCORD" ||
     complaint.status === "DISPOSED_CIVIL_NATURE"
   ) {
@@ -351,6 +378,21 @@ export interface ComplaintItem {
   reEnquiryRemarks?: string;
   reEnquiryAt?: string;
   reEnquiryBy?: string;
+  // EO Recommendation before sending to SHO (NCR | FIR Recommend | Closure)
+  eoRecommendedCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
+  eoRecommendedBy?: string;
+  eoRecommendedById?: string;
+  eoRecommendedAt?: string;
+  eoRecommendedReportTitle?: string;
+  eoRecommendedRemarks?: string;
+
+  // SHO Final Decision & Category
+  shoFinalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
+  finalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | 'FIR Recommend' | 'Closure' | string;
+  finalStatus?: string;
+  shoApprovedBy?: string;
+  shoApprovedAt?: string;
+
   shoActionRequired?: boolean;
   auditTrail?: ComplaintAuditRecord[];
   
