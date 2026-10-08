@@ -398,9 +398,60 @@ export interface ComplaintItem {
 
   shoActionRequired?: boolean;
   auditTrail?: ComplaintAuditRecord[];
+
+  // Current Complaint Owner & RBAC tracking
+  currentComplaintOwnerId?: string;
+  reassignmentHistory?: ReassignmentRecord[];
+  progressRequests?: ProgressRequestItem[];
+  transferJustifications?: TransferJustificationRecord[];
   
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReassignmentRecord {
+  id: string;
+  complaintId: string;
+  previousEoId: string;
+  previousEoName: string;
+  newEoId: string;
+  newEoName: string;
+  reassignedById: string;
+  reassignedByName: string;
+  reassignedByRole: string;
+  reassignedAt: string;
+  reason: string;
+  previousDirections?: string;
+  newDirections?: string;
+}
+
+export interface ProgressRequestItem {
+  id: string;
+  complaintId: string;
+  requestedById: string;
+  requestedByName: string;
+  requestedByRole: string;
+  requestedFromId: string;
+  requestedFromName: string;
+  requestedFromRole: string;
+  requestedAt: string;
+  requestMessage: string;
+  deadlineHours?: number;
+  eoResponse?: string;
+  respondedAt?: string;
+  status: 'REQUESTED' | 'RESPONDED' | 'CLOSED';
+}
+
+export interface TransferJustificationRecord {
+  id: string;
+  complaintId: string;
+  requestedById: string;
+  requestedByName: string;
+  requestedByRole: string;
+  targetUnitOrStation: string;
+  justificationReason: string;
+  timestamp: string;
+  status: 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 }
 
 export interface ComplaintAuditRecord {
@@ -413,6 +464,14 @@ export interface ComplaintAuditRecord {
     | 'REPORT_GENERATED'
     | 'REPORT_SAVED'
     | 'REPORT_UPLOADED'
+    | 'REPORT_DELETED'
+    | 'DOCUMENT_UPLOADED'
+    | 'DOCUMENT_DELETED'
+    | 'DOCUMENT_VIEWED'
+    | 'DOCUMENT_PREVIEWED'
+    | 'DOCUMENT_SUMMARY_GENERATED'
+    | 'PROGRESS_REPORT_REQUESTED'
+    | 'TRANSFER_JUSTIFICATION_SUBMITTED'
     | 'EO_OUTCOME_SELECTED'
     | 'SENT_TO_SHO'
     | 'SHO_APPROVED'
@@ -476,6 +535,16 @@ export interface ComplaintReportItem {
   analysisRationale?: string;
   sentToShoAt?: string;
   sentToShoBy?: string;
+
+  // Immutable Ownership & Transfer History
+  createdByUserId?: string;
+  createdByRole?: string;
+  createdByName?: string;
+  currentOwnerUserId?: string;
+  currentOwner?: string;
+  source?: 'UPLOADED' | 'GENERATED';
+  lastModifiedByUserId?: string;
+  transferHistory?: Array<{ fromUserId: string; toUserId: string; timestamp: string; action: string; remarks?: string }>;
 }
 
 export interface EnquiryNoteItem {
@@ -504,6 +573,20 @@ export interface ComplaintDocumentItem {
   contentHtml?: string;
   mimeType?: string;
   description?: string;
+
+  // Immutable Ownership & Transfer History
+  createdByUserId?: string;
+  createdByRole?: string;
+  createdByName?: string;
+  currentOwnerUserId?: string;
+  currentOwner?: string;
+  version?: number;
+  source?: 'UPLOADED' | 'GENERATED';
+  status?: string;
+  lastModifiedAt?: string;
+  lastModifiedByUserId?: string;
+  lastModifiedBy?: string;
+  transferHistory?: Array<{ fromUserId: string; toUserId: string; timestamp: string; action: string; remarks?: string }>;
 }
 
 export interface PoliceReportFormData {

@@ -17,6 +17,9 @@ import {
   ConfidentialDossierItem,
   ComplaintReportItem,
   ComplaintAuditRecord,
+  ReassignmentRecord,
+  ProgressRequestItem,
+  TransferJustificationRecord,
   WorkflowState,
   EOOutcome,
   MainComplaintStatus,
@@ -24,6 +27,17 @@ import {
   LegalAnalysisReport,
   InvestigationSummaryReport,
 } from "@/types";
+import {
+  canCreateDocument,
+  canDeleteDocument,
+  canEditDocument,
+  canReassignEO,
+  canAskProgressReport,
+  canTransferJustification,
+  canCreateShoReport,
+  isUserAssignedEo,
+  AuthUserContext,
+} from "@/utils/complaintPermissions";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
@@ -666,10 +680,23 @@ export const ComplaintService = {
     eoPno: string,
     assignedByName: string,
     directions: string = "Conduct preliminary spot verification & verify facts as per Section 173(3) BNSS.",
-    targetDays: number = 14
+    targetDays: number = 14,
+    user?: AuthUserContext
   ): Promise<{ complaint: ComplaintItem; notification: OfficerNotification }> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId);
     if (index === -1) throw new Error("Complaint not found");
+
+    const currentComplaint = complaintsStore[index];
+    if (user) {
+      const perm = canReassignEO(user, currentComplaint);
+      if (!perm.allowed) {
+        throw new Error(perm.reason || "Unauthorized to assign or reassign Enquiry Officer.");
+      }
+    }
+
+    const previousEoId = currentComplaint.assignedEoId;
+    const previousEoName = currentComplaint.assignedEoName;
+    const isReassignment = Boolean(previousEoId && previousEoId !== eoId);
 
     const eoRoster = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === eoId);
     const targetDate = new Date();
@@ -677,17 +704,17 @@ export const ComplaintService = {
     const nowIso = new Date().toISOString();
 
     const updated: ComplaintItem = {
-      ...complaintsStore[index],
+      ...currentComplaint,
       assignedEoId: eoId,
       assignedEoName: eoName,
       assignedEoRank: eoRank,
       assignedEoPno: eoPno,
       assignedEoBeltNumber: (eoRoster as any)?.beltNumber || eoPno,
       assignedEoPhone: (eoRoster as any)?.phone || "9812034567",
-      mhcName: complaintsStore[index].mhcName || assignedByName || "HC Devinder Kumar",
-      mhcRank: complaintsStore[index].mhcRank || "Head Constable (MHC)",
-      mhcBeltNumber: complaintsStore[index].mhcBeltNumber || "889/KKR",
-      mhcPhone: complaintsStore[index].mhcPhone || "9813098765",
+      mhcName: currentComplaint.mhcName || assignedByName || "HC Devinder Kumar",
+      mhcRank: currentComplaint.mhcRank || "Head Constable (MHC)",
+      mhcBeltNumber: currentComplaint.mhcBeltNumber || "889/KKR",
+      mhcPhone: currentComplaint.mhcPhone || "9813098765",
       assignedAt: nowIso,
       assignedDirections: directions,
       assignedRosterDuty: eoRoster?.rosterDuty || "Investigation Duty",
@@ -696,18 +723,43 @@ export const ComplaintService = {
       workflowState: "PENDING",
       isSentToSho: false,
       shoActionRequired: false,
+      currentComplaintOwnerId: eoId,
       updatedAt: nowIso,
     };
+
+    if (isReassignment && previousEoId) {
+      const reassignmentRecord: ReassignmentRecord = {
+        id: `reassign_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        complaintId: updated.id,
+        previousEoId,
+        previousEoName: previousEoName || "Previous EO",
+        newEoId: eoId,
+        newEoName: eoName,
+        reassignedById: user?.id || user?.pno || "SHO",
+        reassignedByName: user?.name || assignedByName,
+        reassignedByRole: user?.role || "SHO",
+        reassignedAt: nowIso,
+        reason: directions,
+        previousDirections: currentComplaint.assignedDirections,
+        newDirections: directions,
+      };
+      if (!updated.reassignmentHistory) updated.reassignmentHistory = [];
+      updated.reassignmentHistory.unshift(reassignmentRecord);
+    }
 
     const assignAudit: ComplaintAuditRecord = {
       id: `audit_${Date.now()}_assign`,
       complaintId: updated.id,
-      action: "EO_ASSIGNED",
-      actionLabel: `EO Assigned: ${eoName} (${eoRank})`,
-      performedBy: assignedByName,
-      userRole: "SHO",
+      action: isReassignment ? "EO_REASSIGNED" : "EO_ASSIGNED",
+      actionLabel: isReassignment
+        ? `EO Reassigned: ${previousEoName || "Previous EO"} ➔ ${eoName} (${eoRank})`
+        : `EO Assigned: ${eoName} (${eoRank})`,
+      performedBy: user?.name || assignedByName,
+      userRole: user?.role || "SHO",
       timestamp: nowIso,
-      details: `Enquiry Officer assigned: ${eoName}, PNO: ${eoPno}. Target: ${targetDays} days. Directions: "${directions}". Status changed to Pending.`,
+      details: isReassignment
+        ? `Case reassigned from ${previousEoName || "Previous EO"} to ${eoName} (PNO: ${eoPno}). Reason: "${directions}". All previously uploaded documents remain intact.`
+        : `Enquiry Officer assigned: ${eoName}, PNO: ${eoPno}. Target: ${targetDays} days. Directions: "${directions}". Status changed to Pending.`,
     };
 
     if (!updated.auditTrail) updated.auditTrail = [];
@@ -1099,10 +1151,26 @@ export const ComplaintService = {
       contentHtml?: string;
       description?: string;
       uploadedBy: string;
-    }
+      source?: 'UPLOADED' | 'GENERATED';
+      createdByUserId?: string;
+      createdByRole?: string;
+    },
+    user?: AuthUserContext
   ): Promise<ComplaintDocumentItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
+
+    if (user) {
+      const perm = canCreateDocument(user, complaintsStore[index]);
+      if (!perm.allowed) {
+        throw new Error(perm.reason || "Unauthorized to upload or generate documents for this complaint.");
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const createdByUserId = user?.id || user?.pno || doc.createdByUserId || doc.uploadedBy;
+    const createdByRole = user?.role || doc.createdByRole || (isUserAssignedEo(user || {}, complaintsStore[index]) ? "ENQUIRY_OFFICER" : "OFFICER");
+    const createdByName = user?.name || doc.uploadedBy;
 
     const newDoc: ComplaintDocumentItem = {
       id: `doc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1110,12 +1178,19 @@ export const ComplaintService = {
       fileName: doc.fileName,
       fileCategory: doc.fileCategory,
       uploadedBy: doc.uploadedBy,
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: nowIso,
       fileSize: doc.fileSize,
       fileUrl: doc.fileUrl || doc.dataUrl,
       dataUrl: doc.dataUrl || doc.fileUrl,
       contentHtml: doc.contentHtml,
       description: doc.description,
+      createdByUserId,
+      createdByRole: String(createdByRole),
+      createdByName,
+      currentOwnerUserId: createdByUserId,
+      source: doc.source || "UPLOADED",
+      status: "UPLOADED",
+      version: 1,
     };
 
     if (!complaintsStore[index].documents) {
@@ -1123,15 +1198,31 @@ export const ComplaintService = {
     }
     complaintsStore[index].documents!.unshift(newDoc);
 
+    const docAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_doc_up`,
+      complaintId: complaintsStore[index].id,
+      action: "DOCUMENT_UPLOADED",
+      actionLabel: `Document Uploaded: ${doc.fileName}`,
+      performedBy: createdByName,
+      userRole: String(createdByRole),
+      timestamp: nowIso,
+      details: `Official document "${doc.fileName}" (${doc.fileCategory}) uploaded/generated by ${createdByName} (${createdByRole}). Creator ID: ${createdByUserId}.`,
+    };
+    if (!complaintsStore[index].auditTrail) complaintsStore[index].auditTrail = [];
+    complaintsStore[index].auditTrail!.unshift(docAudit);
+
     // Add to timeline
     this.addTimelineEvent(complaintsStore[index].id, {
       title: `Official Document Uploaded: ${doc.fileName}`,
       description: `Category: ${doc.fileCategory} • Size: ${doc.fileSize}`,
       category: "DOCUMENT",
       officerName: doc.uploadedBy,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
       documentName: doc.fileName,
     });
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
 
     return newDoc;
   },
@@ -1297,19 +1388,59 @@ export const ComplaintService = {
     shoName: string,
     shoPno: string,
     remarks: string,
-    deadlineHours: number = 24
+    deadlineHours: number = 24,
+    user?: AuthUserContext
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const complaint = complaintsStore[index];
+    if (user) {
+      const perm = canAskProgressReport(user, complaint);
+      if (!perm.allowed) {
+        throw new Error(perm.reason || "Unauthorized to request progress report.");
+      }
+    }
+
     const now = new Date();
+    const requesterRole = user?.role || "SHO";
+    const requesterName = user?.name || shoName;
+    const requesterId = user?.id || shoPno;
+
+    const progressItem: ProgressRequestItem = {
+      id: `prog_req_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaint.id,
+      requestedById: requesterId,
+      requestedByName: requesterName,
+      requestedByRole: requesterRole,
+      requestedFromId: complaint.assignedEoId || complaint.assignedEoPno || "",
+      requestedFromName: complaint.assignedEoName || "Enquiry Officer",
+      requestedFromRole: "ENQUIRY_OFFICER",
+      requestedAt: now.toISOString(),
+      requestMessage: remarks,
+      deadlineHours,
+      status: "REQUESTED",
+    };
+
+    const progressAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_prog`,
+      complaintId: complaint.id,
+      action: "PROGRESS_REPORT_REQUESTED",
+      actionLabel: `Progress Report Requested by ${requesterName} (${requesterRole})`,
+      performedBy: requesterName,
+      userRole: requesterRole,
+      timestamp: now.toISOString(),
+      details: `Supervisory directive issued to EO ${complaint.assignedEoName || "Officer"} within ${deadlineHours}h. Instructions: "${remarks}".`,
+    };
+
     const updated: ComplaintItem = {
       ...complaint,
       progressReportRequested: true,
       progressReportRequestedAt: now.toISOString(),
       progressReportRemarks: remarks,
-      progressReportRequestedBy: shoName,
+      progressReportRequestedBy: requesterName,
+      progressRequests: [progressItem, ...(complaint.progressRequests || [])],
+      auditTrail: [progressAudit, ...(complaint.auditTrail || [])],
       updatedAt: now.toISOString(),
     };
 
@@ -1323,8 +1454,8 @@ export const ComplaintService = {
         recipientName: complaint.assignedEoName || "Assigned Enquiry Officer",
         complaintId: complaint.id,
         complaintNumber: complaint.complaintNumber,
-        title: `URGENT: SHO Demanded Progress Report (${complaint.complaintNumber})`,
-        message: `SHO ${shoName} has requested an urgent progress report within ${deadlineHours}h. Directive: "${remarks}"`,
+        title: `URGENT: Supervisory Progress Report Demanded (${complaint.complaintNumber})`,
+        message: `${requesterRole} ${requesterName} has requested an urgent progress report within ${deadlineHours}h. Directive: "${remarks}"`,
         directions: remarks,
         priority: "URGENT",
         createdAt: now.toISOString(),
@@ -1335,25 +1466,91 @@ export const ComplaintService = {
 
     // Add supervisory directive event into case timeline
     this.addTimelineEvent(complaint.id, {
-      title: `Supervisory Directive: SHO Demanded Progress Report`,
-      description: `SHO ${shoName} (PNO: ${shoPno}) ordered interim progress submission from EO ${complaint.assignedEoName || "Officer"} within ${deadlineHours} hours. Instructions: "${remarks}"`,
+      title: `Supervisory Directive: Progress Report Demanded`,
+      description: `${requesterRole} ${requesterName} (PNO: ${shoPno}) ordered interim progress submission from EO ${complaint.assignedEoName || "Officer"} within ${deadlineHours} hours. Instructions: "${remarks}"`,
       category: "PROGRESS_REQUEST",
-      officerName: shoName,
-      officerRank: "Inspector / SHO",
+      officerName: requesterName,
+      officerRank: requesterRole,
       timestamp: now.toISOString(),
     });
 
     // Auto-record in Station General Diary
     const nowTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     await GeneralDiaryService.addEntry(
-      `SHO Directive: Progress Report Demanded - ${complaint.complaintNumber}`,
-      `At ${nowTime} hours, SHO ${shoName} issued formal supervisory directions to Enquiry Officer ${complaint.assignedEoName || "Officer"} for expedited enquiry report in ${complaint.complaintNumber}. Instructions: "${remarks}". Compliance window: ${deadlineHours} hours.`,
+      `Directive: Progress Report Demanded - ${complaint.complaintNumber}`,
+      `At ${nowTime} hours, ${requesterRole} ${requesterName} issued formal supervisory directions to Enquiry Officer ${complaint.assignedEoName || "Officer"} for expedited enquiry report in ${complaint.complaintNumber}. Instructions: "${remarks}". Compliance window: ${deadlineHours} hours.`,
       "PATROL_DEPARTURE_RETURN",
-      shoName,
+      requesterName,
       shoPno,
       complaint.policeStation,
       complaint.complaintNumber
     );
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    return updated;
+  },
+
+  async submitTransferJustification(
+    complaintId: string,
+    targetUnitOrStation: string,
+    justificationReason: string,
+    user: AuthUserContext
+  ): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const perm = canTransferJustification(user, complaintsStore[index]);
+    if (!perm.allowed) {
+      throw new Error(perm.reason || "Unauthorized to submit transfer justification.");
+    }
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+
+    const record: TransferJustificationRecord = {
+      id: `trans_just_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      complaintId: complaint.id,
+      requestedById: user.id || user.pno || "SHO",
+      requestedByName: user.name || "Supervisory Officer",
+      requestedByRole: user.role || "SHO",
+      targetUnitOrStation,
+      justificationReason,
+      timestamp: nowIso,
+      status: "SUBMITTED",
+    };
+
+    const auditRec: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_trans_just`,
+      complaintId: complaint.id,
+      action: "TRANSFER_JUSTIFICATION_SUBMITTED",
+      actionLabel: `Transfer Justification: ${targetUnitOrStation}`,
+      performedBy: user.name || "Supervisory Officer",
+      userRole: user.role || "SHO",
+      timestamp: nowIso,
+      details: `Formal supervisory transfer justification submitted for destination "${targetUnitOrStation}". Reason: "${justificationReason}".`,
+    };
+
+    const updated: ComplaintItem = {
+      ...complaint,
+      transferJustifications: [record, ...(complaint.transferJustifications || [])],
+      auditTrail: [auditRec, ...(complaint.auditTrail || [])],
+      updatedAt: nowIso,
+    };
+
+    this.addTimelineEvent(complaint.id, {
+      title: `Transfer Justification Submitted: ${targetUnitOrStation}`,
+      description: `Supervisory transfer justification filed by ${user.name || "Officer"} (${user.role || "Supervisory"}). Target Station/Unit: ${targetUnitOrStation}. Reason: "${justificationReason}".`,
+      category: "STATUS_CHANGE",
+      officerName: user.name || "Officer",
+      officerRank: user.rank || (user.role as string),
+      timestamp: nowIso,
+    });
+
+    complaintsStore[index] = updated;
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
 
     return updated;
   },
@@ -1413,13 +1610,23 @@ export const ComplaintService = {
   async deleteDocument(
     complaintId: string,
     docId: string,
-    officerName: string
+    officerName: string,
+    user?: AuthUserContext
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
     const cleanDocId = docId.replace(/^doc_att_/, "").replace(/^doc_/, "");
     const doc = (complaintsStore[index].documents || []).find((d) => d.id === docId || d.id === cleanDocId);
+
+    if (user && doc) {
+      const perm = canDeleteDocument(user, doc, complaintsStore[index]);
+      if (!perm.allowed) {
+        throw new Error(perm.reason || "Access Denied: Only the officer who uploaded or generated this document can delete it.");
+      }
+    }
+
+    const nowIso = new Date().toISOString();
     complaintsStore[index] = {
       ...complaintsStore[index],
       documents: (complaintsStore[index].documents || []).filter(
@@ -1428,18 +1635,32 @@ export const ComplaintService = {
       attachments: (complaintsStore[index].attachments || []).filter(
         (a) => a.id !== docId && a.id !== cleanDocId && `doc_${a.id}` !== docId
       ),
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     };
+
+    const deleteAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_doc_del`,
+      complaintId: complaintsStore[index].id,
+      action: "DOCUMENT_DELETED",
+      actionLabel: `Document Deleted: ${doc?.fileName || "Document"}`,
+      performedBy: user?.name || officerName,
+      userRole: user?.role || "OFFICER",
+      timestamp: nowIso,
+      details: `Document "${doc?.fileName || docId}" removed by ${user?.name || officerName}. Original creator: ${doc?.createdByName || doc?.uploadedBy || "Unknown"}.`,
+    };
+    if (!complaintsStore[index].auditTrail) complaintsStore[index].auditTrail = [];
+    complaintsStore[index].auditTrail!.unshift(deleteAudit);
 
     this.addTimelineEvent(complaintsStore[index].id, {
       title: `Document Record Deleted`,
       description: `Document record "${doc?.fileName || "Document"}" removed by ${officerName}.`,
       category: "DOCUMENT",
       officerName,
-      timestamp: new Date().toISOString(),
+      timestamp: nowIso,
     });
 
     saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
     return complaintsStore[index];
   },
 
@@ -1539,7 +1760,8 @@ export const ComplaintService = {
   async addComplaintReport(
     complaintId: string,
     report: Omit<ComplaintReportItem, "id" | "createdAt" | "complaintId"> & { id?: string; createdAt?: string; complaintId?: string },
-    options?: { isNewVersion?: boolean }
+    options?: { isNewVersion?: boolean },
+    user?: AuthUserContext
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
@@ -1547,6 +1769,21 @@ export const ComplaintService = {
     const existingReports = complaintsStore[index].reports || [];
     const nowIso = new Date().toISOString();
     const existingIndex = report.id ? existingReports.findIndex((r) => r.id === report.id) : -1;
+
+    if (user) {
+      if (existingIndex !== -1 && !options?.isNewVersion) {
+        const prev = existingReports[existingIndex];
+        const perm = canEditDocument(user, prev, complaintsStore[index]);
+        if (!perm.allowed) {
+          throw new Error(perm.reason || "Access Denied: Only the creator can edit this report.");
+        }
+      } else {
+        const perm = canCreateDocument(user, complaintsStore[index]);
+        if (!perm.allowed && !canCreateShoReport(user, complaintsStore[index]).allowed) {
+          throw new Error(perm.reason || "Unauthorized to create or upload reports for this complaint.");
+        }
+      }
+    }
 
     let targetReport: ComplaintReportItem;
 
@@ -1563,7 +1800,8 @@ export const ComplaintService = {
         content: report.content !== undefined ? report.content : prev.content,
         contentHtml: report.contentHtml !== undefined ? report.contentHtml : prev.contentHtml,
         status: report.status || prev.status || "Saved in Complaint",
-        lastModifiedBy: report.lastModifiedBy || report.officerName || prev.lastModifiedBy,
+        lastModifiedBy: user?.name || report.lastModifiedBy || report.officerName || prev.lastModifiedBy,
+        lastModifiedByUserId: user?.id || user?.pno,
         updatedAt: nowIso,
         recommendationType: report.recommendationType || prev.recommendationType,
       };
@@ -1573,6 +1811,10 @@ export const ComplaintService = {
       // Create new report or new version
       const maxVer = existingReports.reduce((max, r) => Math.max(max, r.versionNumber || 1), 0);
       const versionNumber = options?.isNewVersion ? maxVer + 1 : (report.versionNumber || maxVer + 1);
+
+      const createdByUserId = user?.id || user?.pno || report.createdByUserId || report.officerPno || report.officerName;
+      const createdByRole = user?.role || report.createdByRole || report.officerRank || "ENQUIRY_OFFICER";
+      const createdByName = user?.name || report.officerName || "Enquiry Officer";
 
       targetReport = {
         id: (options?.isNewVersion ? null : report.id) || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1597,8 +1839,12 @@ export const ComplaintService = {
         isUploaded: report.isUploaded || false,
         createdAt: report.createdAt || nowIso,
         updatedAt: nowIso,
-        createdBy: report.createdBy || report.officerName,
-        lastModifiedBy: report.lastModifiedBy || report.officerName,
+        createdBy: createdByName,
+        lastModifiedBy: createdByName,
+        createdByUserId,
+        createdByRole: String(createdByRole),
+        currentOwnerUserId: createdByUserId,
+        source: report.isUploaded ? "UPLOADED" : "GENERATED",
         status: report.status || "Saved in Complaint",
         recommendationType: report.recommendationType,
         isFirRecommended: report.isFirRecommended,
@@ -1630,6 +1876,20 @@ export const ComplaintService = {
     }
 
     complaintsStore[index].updatedAt = nowIso;
+
+    const repAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_rep`,
+      complaintId: complaintsStore[index].id,
+      action: report.isUploaded ? "REPORT_UPLOADED" : "REPORT_GENERATED",
+      actionLabel: `Report ${report.isUploaded ? "Uploaded" : "Generated"}: ${report.title}`,
+      performedBy: user?.name || report.officerName || "Enquiry Officer",
+      userRole: user?.role || report.officerRank || "ENQUIRY_OFFICER",
+      timestamp: nowIso,
+      details: `Enquiry Report "${report.title}" (${report.reportTypeLabel || "Enquiry Report"}) saved with version v${targetReport.versionNumber || 1}.`,
+    };
+    if (!complaintsStore[index].auditTrail) complaintsStore[index].auditTrail = [];
+    complaintsStore[index].auditTrail!.unshift(repAudit);
+
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 
@@ -1675,6 +1935,13 @@ export const ComplaintService = {
       fileFormat: report.fileFormat,
       isUploaded: report.isUploaded,
       createdAt: report.createdAt || nowIso,
+      createdBy: officerName,
+      lastModifiedBy: officerName,
+      createdByUserId: officerPno || officerName,
+      createdByRole: userRole || officerRank || "ENQUIRY_OFFICER",
+      createdByName: officerName,
+      currentOwnerUserId: officerPno || officerName,
+      source: report.isUploaded ? "UPLOADED" : "GENERATED",
       recommendationType: report.recommendationType,
       isFirRecommended: outcome === "FIR Recommend" || report.isFirRecommended,
       selectedOutcome: outcome,
@@ -2264,16 +2531,40 @@ export const ComplaintService = {
 
   async deleteComplaintReport(
     complaintId: string,
-    reportId: string
+    reportId: string,
+    user?: AuthUserContext
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
+    const report = (complaintsStore[index].reports || []).find((r) => r.id === reportId);
+    if (user && report) {
+      const perm = canDeleteDocument(user, report, complaintsStore[index]);
+      if (!perm.allowed) {
+        throw new Error(perm.reason || "Access Denied: Only the creator of this report can delete it.");
+      }
+    }
+
+    const nowIso = new Date().toISOString();
     complaintsStore[index] = {
       ...complaintsStore[index],
       reports: (complaintsStore[index].reports || []).filter((r) => r.id !== reportId),
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     };
+
+    const deleteAudit: ComplaintAuditRecord = {
+      id: `audit_${Date.now()}_rep_del`,
+      complaintId: complaintsStore[index].id,
+      action: "REPORT_DELETED",
+      actionLabel: `Report Deleted: ${report?.title || reportId}`,
+      performedBy: user?.name || "Officer",
+      userRole: user?.role || "OFFICER",
+      timestamp: nowIso,
+      details: `Report "${report?.title || reportId}" removed by ${user?.name || "Officer"}. Original creator: ${report?.createdByName || report?.createdBy || report?.officerName || "Unknown"}.`,
+    };
+    if (!complaintsStore[index].auditTrail) complaintsStore[index].auditTrail = [];
+    complaintsStore[index].auditTrail!.unshift(deleteAudit);
+
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 

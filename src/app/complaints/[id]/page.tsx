@@ -88,6 +88,20 @@ import {
   RecommendationReportType,
   RECOMMENDATION_OPTIONS_CONFIG,
 } from "@/services/recommendationReportService";
+import {
+  canViewComplaint,
+  canCreateDocument,
+  canEditDocument,
+  canDeleteDocument,
+  canReassignEO,
+  canAskProgressReport,
+  canTransferJustification,
+  canCreateShoReport,
+  isSuperiorToSho,
+  isShoOrSuperior,
+  isComplaintAssignedToEo,
+  isUserAssignedEo,
+} from "@/utils/complaintPermissions";
 
 type ActiveTab = "overview" | "documents" | "legal_assistant" | "summary" | "links" | "reports" | "history" | "confidential_dossier";
 
@@ -603,12 +617,21 @@ export default function ComplaintProfilePage() {
 
   const handleDeleteReport = async (reportId: string) => {
     if (!complaint) return;
+    const targetReport = (complaint.reports || []).find((r) => r.id === reportId);
+    if (targetReport) {
+      const perm = canDeleteDocument(currentUser, targetReport, complaint);
+      if (!perm.allowed) {
+        alert(perm.reason || "Access Denied: Only the creator of this report can delete it.");
+        return;
+      }
+    }
     if (!confirm("Are you sure you want to remove this report from the complaint docket?")) return;
     try {
-      await ComplaintService.deleteComplaintReport(complaint.id, reportId);
+      await ComplaintService.deleteComplaintReport(complaint.id, reportId, currentUser);
       await loadComplaint();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting report:", err);
+      alert(err.message || "Failed to delete report.");
     }
   };
 
@@ -660,24 +683,25 @@ export default function ComplaintProfilePage() {
 
   // Role & Permission Computations
   const isMhc = currentUser.role === "MHC_GD_INCHARGE";
-  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || currentUser.role === "DSP_SUBDIV") && !isMhc;
-  const isAssignedEo = Boolean(
-    complaint?.assignedEoName && (
-      (complaint.assignedEoPno && currentUser.pno === complaint.assignedEoPno) ||
-      (complaint.assignedEoId && currentUser.id === complaint.assignedEoId) ||
-      (currentUser.role === "ENQUIRY_OFFICER" && (
-        currentUser.name.toLowerCase().includes(complaint.assignedEoName.toLowerCase()) ||
-        complaint.assignedEoName.toLowerCase().includes(currentUser.name.toLowerCase())
-      ))
-    )
-  );
+  const isSuperior = isSuperiorToSho(currentUser.role);
+  const isShoOrSuper = isShoOrSuperior(currentUser.role);
+  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
+
+  const isAssignedEo = complaint ? isUserAssignedEo(currentUser, complaint) : false;
   const isEoPersona = currentUser.role === "ENQUIRY_OFFICER" || isAssignedEo;
   const isDirectFirCase = Boolean(complaint?.directSendToFir || complaint?.status === "FIR_REGISTER" || complaint?.workflowState === "FIR_REGISTER");
   const isUnassigned = (!complaint?.assignedEoName || complaint?.status === "REGISTERED") && !isDirectFirCase;
-  const canAssign = isSho && !isMhc && !isDirectFirCase;
-  const canAskProgress = isSho && !isUnassigned && !isDirectFirCase;
-  const canModifyCase = isAssignedEo; // Strictly EO only whom complaint is assigned!
-  const canUploadDocument = canModifyCase || isSho || currentUser.role === "SUPER_ADMIN" || currentUser.role === "DUTY_OFFICER";
+
+  // Centralized Permissions
+  const docCreationPerm = complaint ? canCreateDocument(currentUser, complaint) : { allowed: false };
+  const canUploadDocument = docCreationPerm.allowed;
+  const canGenerateDocument = docCreationPerm.allowed;
+  const canGenerateReport = docCreationPerm.allowed;
+
+  const canAssign = complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
+  const canAskProgress = complaint ? canAskProgressReport(currentUser, complaint).allowed && !isDirectFirCase : false;
+  const canTransferJustify = complaint ? canTransferJustification(currentUser, complaint).allowed : false;
+  const canModifyCase = isAssignedEo; // Strictly assigned EO has write/modification access
 
   const filteredDossierEntries = useMemo(() => {
     const list = complaint?.confidentialDossier || [];
@@ -760,7 +784,8 @@ export default function ComplaintProfilePage() {
         eo.pno,
         currentUser.name,
         assignedDirections,
-        targetDays
+        targetDays,
+        currentUser
       );
 
       setLastAssignedNotification(result.notification);
@@ -795,7 +820,10 @@ export default function ComplaintProfilePage() {
         eo.name,
         eo.rank,
         eo.pno,
-        currentUser.name || "SHO Civil Lines"
+        currentUser.name || "SHO Civil Lines",
+        "Conduct preliminary spot verification & verify facts as per Section 173(3) BNSS.",
+        14,
+        currentUser
       );
       setAssignEoDropdownOpen(false);
       setMoreActionsOpen(false);
@@ -963,45 +991,59 @@ export default function ComplaintProfilePage() {
 
     const finalName = docFileName || (docName ? (docName.includes(".") ? docName : `${docName}.pdf`) : "Official_Document.pdf");
 
-    await ComplaintService.addDocument(complaint.id, {
-      fileName: finalName,
-      fileCategory: docCategory,
-      fileSize: docFileSize || "98 KB",
-      fileUrl: docFileDataUrl,
-      description: docDesc,
-      uploadedBy: `${currentUser.name} (${currentUser.rankDisplay || "Inspector"})`,
-    });
+    try {
+      await ComplaintService.addDocument(
+        complaint.id,
+        {
+          fileName: finalName,
+          fileCategory: docCategory,
+          fileSize: docFileSize || "98 KB",
+          fileUrl: docFileDataUrl,
+          description: docDesc,
+          uploadedBy: `${currentUser.name} (${currentUser.rankDisplay || "Inspector"})`,
+        },
+        currentUser
+      );
 
-    setDocName("");
-    setDocDesc("");
-    setDocFileName("");
-    setDocFileSize("");
-    setDocFileDataUrl(undefined);
-    setDocumentModalOpen(false);
-    await loadComplaint();
-    setActiveTab("documents");
+      setDocName("");
+      setDocDesc("");
+      setDocFileName("");
+      setDocFileSize("");
+      setDocFileDataUrl(undefined);
+      setDocumentModalOpen(false);
+      await loadComplaint();
+      setActiveTab("documents");
+    } catch (err: any) {
+      alert(err.message || "Failed to upload document");
+    }
   };
 
-  // Transfer Submit
+  // Transfer Justification Submit (SHO & Superior Officers)
   const handleTransferSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!complaint) return;
 
-    if (!canModifyCase) {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) can transfer jurisdiction.`);
+    if (!canTransferJustify) {
+      alert("Access Denied: Transfer Justification is only available to SHO and Supervisory Officers.");
       return;
     }
 
-    await ComplaintService.transferComplaint(
-      complaint.id,
-      transferStation,
-      transferReason || "Jurisdictional transfer as occurrence falls in adjacent police station beat.",
-      currentUser.name
-    );
-
-    setTransferModalOpen(false);
-    await loadComplaint();
-    setActiveTab("history");
+    try {
+      const updated = await ComplaintService.submitTransferJustification(
+        complaint.id,
+        transferStation,
+        transferReason || "Jurisdictional transfer justification submitted as occurrence falls in adjacent police station beat.",
+        currentUser
+      );
+      setComplaint(updated);
+      setTransferModalOpen(false);
+      setTransferReason("");
+      alert(`Supervisory transfer justification for "${transferStation}" submitted successfully.`);
+      await loadComplaint();
+      setActiveTab("history");
+    } catch (err: any) {
+      alert(err.message || "Failed to submit transfer justification.");
+    }
   };
 
   // Link Complaint Submit
@@ -1207,12 +1249,12 @@ export default function ComplaintProfilePage() {
     setActiveTab("history");
   };
 
-  // SHO Request Progress Report Handler
+  // Supervisory Request Progress Report Handler (SHO & Superior Officers)
   const handleSendProgressRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!complaint) return;
-    if (currentUser.role !== "SHO" && currentUser.id !== "usr_sho_1") {
-      alert("Access Denied: Only Station House Officer (SHO) can demand case progress reports.");
+    if (!canAskProgress) {
+      alert("Access Denied: Only SHO or Supervisory Officers can demand case progress reports.");
       return;
     }
     setIsSubmittingProgress(true);
@@ -1222,7 +1264,8 @@ export default function ComplaintProfilePage() {
         currentUser.name,
         currentUser.pno || "04291882",
         progressRemarks,
-        progressDeadlineHours
+        progressDeadlineHours,
+        currentUser
       );
       setComplaint(updated);
       setProgressModalOpen(false);
@@ -1271,15 +1314,22 @@ export default function ComplaintProfilePage() {
 
   const handleDeleteDocument = async (docId: string) => {
     if (!complaint) return;
-    if (!canModifyCase && !isSho && currentUser.role !== "SUPER_ADMIN") {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) or SHO can delete documents.`);
-      return;
+    const cleanDocId = docId.replace(/^doc_att_/, "").replace(/^doc_/, "");
+    const targetDoc = (complaint.documents || []).find((d) => d.id === docId || d.id === cleanDocId);
+
+    if (targetDoc) {
+      const perm = canDeleteDocument(currentUser, targetDoc, complaint);
+      if (!perm.allowed) {
+        alert(perm.reason || "Access Denied: Only the officer who uploaded or generated this document can delete it.");
+        return;
+      }
     }
+
     if (!confirm("Are you sure you want to remove this document from the official repository?")) {
       return;
     }
     try {
-      const updated = await ComplaintService.deleteDocument(complaint.id, docId, currentUser.name);
+      const updated = await ComplaintService.deleteDocument(complaint.id, docId, currentUser.name, currentUser);
       setComplaint(updated);
     } catch (err: any) {
       alert(err.message || "Failed to delete document");
@@ -2254,31 +2304,35 @@ Certified official record copy.`;
                 <span className="font-semibold">Print Official Receipt</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setActiveTab("documents");
-                  setGenerateDocDropdownOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <ScrollText className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span className="font-semibold">Generate Notice / Doc</span>
-              </button>
+              {canGenerateDocument && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setActiveTab("documents");
+                    setGenerateDocDropdownOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ScrollText className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span className="font-semibold">Generate Notice / Doc</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setActiveTab("reports");
-                  setGenerateReportDropdownOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <FileCheck2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="font-semibold">Generate Enquiry Report</span>
-              </button>
+              {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setActiveTab("reports");
+                    setGenerateReportDropdownOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="font-semibold">Generate Enquiry Report</span>
+                </button>
+              )}
 
               {canUploadDocument && (
                 <button
@@ -2294,31 +2348,35 @@ Certified official record copy.`;
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setUploadReportModalOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="font-semibold">Upload Signed Report</span>
-              </button>
+              {canUploadDocument && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setUploadReportModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span className="font-semibold">Upload Signed Report</span>
+                </button>
+              )}
 
               <div className="border-t border-slate-100 my-1" />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setTransferModalOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span className="font-semibold">Transfer Jurisdiction</span>
-              </button>
+              {canTransferJustify && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreActionsOpen(false);
+                    setTransferModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="font-semibold">Transfer Justification</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -2821,59 +2879,61 @@ Certified official record copy.`;
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative" ref={generateDocDropdownRef}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setGenerateDocDropdownOpen(!generateDocDropdownOpen)}
-                    className="gap-1.5 text-xs font-semibold border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 cursor-pointer shadow-2xs"
-                  >
-                    <ScrollText className="w-3.5 h-3.5 text-purple-700" />
-                    <span>Generate Document</span>
-                    <ChevronDown className={`w-3 h-3 text-purple-600 transition-transform duration-200 ${generateDocDropdownOpen ? "rotate-180" : ""}`} />
-                  </Button>
+                {canGenerateDocument && (
+                  <div className="relative" ref={generateDocDropdownRef}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setGenerateDocDropdownOpen(!generateDocDropdownOpen)}
+                      className="gap-1.5 text-xs font-semibold border-purple-300 text-purple-800 bg-purple-50 hover:bg-purple-100 cursor-pointer shadow-2xs"
+                    >
+                      <ScrollText className="w-3.5 h-3.5 text-purple-700" />
+                      <span>Generate Document</span>
+                      <ChevronDown className={`w-3 h-3 text-purple-600 transition-transform duration-200 ${generateDocDropdownOpen ? "rotate-180" : ""}`} />
+                    </Button>
 
-                  {generateDocDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-84 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in-50 zoom-in-95">
-                      <div className="px-3 py-2 border-b border-slate-100">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
-                          Select Notice / Document Template
-                        </p>
-                        <p className="text-[10px] text-slate-500">
-                          Preloaded with Complaint {complaint.complaintNumber}
-                        </p>
+                    {generateDocDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-84 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-40 animate-in fade-in-50 zoom-in-95">
+                        <div className="px-3 py-2 border-b border-slate-100">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-purple-800">
+                            Select Notice / Document Template
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            Preloaded with Complaint {complaint.complaintNumber}
+                          </p>
+                        </div>
+                        <div className="py-1">
+                          {TEMPLATE_DROPDOWN_OPTIONS.map((tmpl) => {
+                            const IconComponent = tmpl.icon;
+                            return (
+                              <button
+                                key={tmpl.key}
+                                type="button"
+                                onClick={() => {
+                                  setGenerateDocDropdownOpen(false);
+                                  router.push(`/enquiry-workspace/templates?complaintId=${complaint.id}&template=${tmpl.key}`);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-purple-50 hover:text-purple-900 transition-colors flex items-center gap-2.5 group cursor-pointer"
+                              >
+                                <div className="p-1.5 rounded-md bg-purple-50 text-purple-700 group-hover:bg-purple-100 shrink-0">
+                                  <IconComponent className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-slate-800 group-hover:text-purple-950 truncate">
+                                    {tmpl.label}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 group-hover:text-purple-700 truncate">
+                                    {tmpl.desc}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="py-1">
-                        {TEMPLATE_DROPDOWN_OPTIONS.map((tmpl) => {
-                          const IconComponent = tmpl.icon;
-                          return (
-                            <button
-                              key={tmpl.key}
-                              type="button"
-                              onClick={() => {
-                                setGenerateDocDropdownOpen(false);
-                                router.push(`/enquiry-workspace/templates?complaintId=${complaint.id}&template=${tmpl.key}`);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-purple-50 hover:text-purple-900 transition-colors flex items-center gap-2.5 group cursor-pointer"
-                            >
-                              <div className="p-1.5 rounded-md bg-purple-50 text-purple-700 group-hover:bg-purple-100 shrink-0">
-                                <IconComponent className="w-3.5 h-3.5" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="font-bold text-slate-800 group-hover:text-purple-950 truncate">
-                                  {tmpl.label}
-                                </p>
-                                <p className="text-[10px] text-slate-400 group-hover:text-purple-700 truncate">
-                                  {tmpl.desc}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
                 {canUploadDocument && (
                   <Button
                     variant="primary"
@@ -2968,7 +3028,7 @@ Certified official record copy.`;
                                   <Download className="w-3.5 h-3.5 text-slate-600" />
                                   <span>Download</span>
                                 </button>
-                                {(isAssignedEo || isSho || currentUser.role === "SUPER_ADMIN") && (
+                                {complaint && canDeleteDocument(currentUser, doc, complaint).allowed && (
                                   <button
                                     onClick={() => handleDeleteDocument(doc.id)}
                                     className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
@@ -3151,98 +3211,102 @@ Certified official record copy.`;
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setUploadReportModalOpen(true)}
-                  className="gap-1.5 text-xs font-semibold border-slate-300 text-slate-800 bg-slate-50 hover:bg-slate-100 cursor-pointer shadow-2xs"
-                >
-                  <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Upload Report</span>
-                </Button>
+                {canUploadDocument && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setUploadReportModalOpen(true)}
+                    className="gap-1.5 text-xs font-semibold border-slate-300 text-slate-800 bg-slate-50 hover:bg-slate-100 cursor-pointer shadow-2xs"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Upload Report</span>
+                  </Button>
+                )}
 
-                <div className="relative" ref={generateReportDropdownRef}>
-                  <div className="inline-flex rounded-lg shadow-xs">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleNavigateToReportDraft("GAMINI")}
-                      className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white rounded-r-none cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Generate Report</span>
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setGenerateReportDropdownOpen(!generateReportDropdownOpen)}
-                      className="px-2 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white border-l border-slate-700 rounded-r-lg transition-colors cursor-pointer"
-                      title="Select Recommendation Report Type"
-                    >
-                      <ChevronDown className={`w-3.5 h-3.5 text-amber-300 transition-transform duration-200 ${generateReportDropdownOpen ? "rotate-180" : ""}`} />
-                    </button>
-                  </div>
-
-                  {generateReportDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 z-40 animate-in fade-in-50 zoom-in-95">
-                      <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                        <div>
-                          <p className="text-[11px] font-black uppercase tracking-wider text-amber-800 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                            <span>Select Recommendation Report (6 Types)</span>
-                          </p>
-                          <p className="text-[10px] text-slate-500">
-                            Preloaded with Complaint #{complaint.complaintNumber}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-mono bg-amber-50 text-amber-900 px-1.5 py-0.5 rounded border border-amber-200">
-                          Automatic Draft
-                        </span>
-                      </div>
-                      <div className="py-1.5 space-y-1">
-                        {REPORT_DROPDOWN_OPTIONS.map((cat) => {
-                          const IconComponent = cat.icon;
-                          return (
-                            <button
-                              key={cat.key}
-                              type="button"
-                              onClick={() => {
-                                handleNavigateToReportDraft(cat.key);
-                              }}
-                              className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50/80 transition-colors flex items-center gap-2.5 group cursor-pointer border border-transparent hover:border-amber-200"
-                            >
-                              <div className="p-2 rounded-lg bg-slate-100 text-slate-700 group-hover:bg-amber-100 group-hover:text-amber-800 shrink-0">
-                                <IconComponent className="w-4 h-4" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <p className="font-bold text-slate-800 group-hover:text-amber-950 truncate">
-                                    {cat.label}
-                                  </p>
-                                  <span className="text-[10px] font-mono text-slate-400 group-hover:text-amber-700 font-semibold">
-                                    Auto Draft
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-slate-500 group-hover:text-amber-800 truncate">
-                                  {cat.desc}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 px-2 flex items-center justify-between">
-                        <Link
-                          href={`/enquiry-workspace/drafts?complaintId=${complaint.id}`}
-                          className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
-                          onClick={() => setGenerateReportDropdownOpen(false)}
-                        >
-                          <span>Open Full Enquiry Workspace</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
+                {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+                  <div className="relative" ref={generateReportDropdownRef}>
+                    <div className="inline-flex rounded-lg shadow-xs">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleNavigateToReportDraft("GAMINI")}
+                        className="gap-1.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-900 text-white rounded-r-none cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Generate Report</span>
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setGenerateReportDropdownOpen(!generateReportDropdownOpen)}
+                        className="px-2 py-1.5 bg-[#0b192c] hover:bg-slate-900 text-white border-l border-slate-700 rounded-r-lg transition-colors cursor-pointer"
+                        title="Select Recommendation Report Type"
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 text-amber-300 transition-transform duration-200 ${generateReportDropdownOpen ? "rotate-180" : ""}`} />
+                      </button>
                     </div>
-                  )}
-                </div>
+
+                    {generateReportDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 z-40 animate-in fade-in-50 zoom-in-95">
+                        <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                          <div>
+                            <p className="text-[11px] font-black uppercase tracking-wider text-amber-800 flex items-center gap-1">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Select Recommendation Report (6 Types)</span>
+                            </p>
+                            <p className="text-[10px] text-slate-500">
+                              Preloaded with Complaint #{complaint.complaintNumber}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-mono bg-amber-50 text-amber-900 px-1.5 py-0.5 rounded border border-amber-200">
+                            Automatic Draft
+                          </span>
+                        </div>
+                        <div className="py-1.5 space-y-1">
+                          {REPORT_DROPDOWN_OPTIONS.map((cat) => {
+                            const IconComponent = cat.icon;
+                            return (
+                              <button
+                                key={cat.key}
+                                type="button"
+                                onClick={() => {
+                                  handleNavigateToReportDraft(cat.key);
+                                }}
+                                className="w-full text-left px-3 py-2 rounded-lg text-xs hover:bg-amber-50/80 transition-colors flex items-center gap-2.5 group cursor-pointer border border-transparent hover:border-amber-200"
+                              >
+                                <div className="p-2 rounded-lg bg-slate-100 text-slate-700 group-hover:bg-amber-100 group-hover:text-amber-800 shrink-0">
+                                  <IconComponent className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <p className="font-bold text-slate-800 group-hover:text-amber-950 truncate">
+                                      {cat.label}
+                                    </p>
+                                    <span className="text-[10px] font-mono text-slate-400 group-hover:text-amber-700 font-semibold">
+                                      Auto Draft
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 group-hover:text-amber-800 truncate">
+                                    {cat.desc}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="pt-2 border-t border-slate-100 px-2 flex items-center justify-between">
+                          <Link
+                            href={`/enquiry-workspace/drafts?complaintId=${complaint.id}`}
+                            className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium"
+                            onClick={() => setGenerateReportDropdownOpen(false)}
+                          >
+                            <span>Open Full Enquiry Workspace</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3363,7 +3427,7 @@ Certified official record copy.`;
                           </Button>
 
                           {/* 2. Edit (Re-opens in Draft Editor) */}
-                          {!report.isUploaded && (
+                          {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
                             <Button
                               type="button"
                               variant="outline"
@@ -3441,7 +3505,7 @@ Certified official record copy.`;
                           </Button>
 
                           {/* 5. Create New Version */}
-                          {!report.isUploaded && (
+                          {!report.isUploaded && canCreateDocument(currentUser, complaint).allowed && (
                             <Button
                               type="button"
                               variant="outline"
@@ -3481,16 +3545,18 @@ Certified official record copy.`;
                           )}
 
                           {/* Delete Report */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteReport(report.id)}
-                            className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
-                            title="Delete report"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteReport(report.id)}
+                              className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                              title="Delete report"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -3510,27 +3576,31 @@ Certified official record copy.`;
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                        setGenerateReportDropdownOpen(true);
-                      }}
-                      className="gap-1 text-xs font-bold bg-[#0b192c]"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Generate Report Now</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setUploadReportModalOpen(true)}
-                      className="gap-1 text-xs font-semibold"
-                    >
-                      <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Upload Signed File</span>
-                    </Button>
+                    {(canGenerateReport || (complaint && canCreateShoReport(currentUser, complaint).allowed)) && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={() => {
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                          setGenerateReportDropdownOpen(true);
+                        }}
+                        className="gap-1 text-xs font-bold bg-[#0b192c]"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Generate Report Now</span>
+                      </Button>
+                    )}
+                    {canUploadDocument && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setUploadReportModalOpen(true)}
+                        className="gap-1 text-xs font-semibold"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Upload Signed File</span>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -4308,18 +4378,23 @@ Certified official record copy.`;
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setTransferModalOpen(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                <ArrowRightLeft className="w-4 h-4 text-amber-600" />
-                <span>Transfer Complaint Jurisdiction</span>
-              </h3>
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <ArrowRightLeft className="w-4 h-4 text-amber-600" />
+                  <span>Supervisory Transfer Justification</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Formal supervisory transfer justification order under BNSS &amp; PPR regulations
+                </p>
+              </div>
               <button onClick={() => setTransferModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleTransferSubmit} className="space-y-3 text-xs">
+            <form onSubmit={handleTransferSubmit} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Destination Police Station *</label>
+                <label className="block font-semibold text-slate-700 mb-1">Target Police Station / Specialized Unit *</label>
                 <select
                   value={transferStation}
                   onChange={(e) => setTransferStation(e.target.value)}
@@ -4330,33 +4405,39 @@ Certified official record copy.`;
                   <option value="Krishna Gate Police Station">Krishna Gate Police Station</option>
                   <option value="Cyber Crime Police Station Kurukshetra">Cyber Crime Police Station Kurukshetra</option>
                   <option value="Women Police Station Kurukshetra">Women Police Station Kurukshetra</option>
+                  <option value="Economic Offences Wing (EOW)">Economic Offences Wing (EOW)</option>
+                  <option value="Anti-Corruption Bureau (ACB)">Anti-Corruption Bureau (ACB)</option>
                 </select>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700">Transfer Grounds / Order *</label>
+                  <label className="font-semibold text-slate-700">Formal Transfer Justification Reason *</label>
                   <VoiceInputButton
                     onTranscript={(txt) => setTransferReason((p) => (p ? p + " " + txt : txt))}
-                    fieldLabel="transfer grounds"
+                    fieldLabel="transfer justification grounds"
                   />
                 </div>
                 <textarea
-                  rows={3}
+                  rows={4}
                   required
                   value={transferReason}
                   onChange={(e) => setTransferReason(e.target.value)}
-                  placeholder="Enter reason for jurisdictional transfer..."
+                  placeholder="State the formal reasons and jurisdictional grounds warranting transfer of this enquiry..."
                   className="w-full rounded-lg border border-slate-300 p-2 text-slate-900"
                 />
+              </div>
+
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-amber-900 leading-relaxed text-[11px]">
+                This formal transfer justification will be recorded into the official case timeline and sealed audit trail under <strong>TRANSFER_JUSTIFICATION_SUBMITTED</strong>. All existing files remain intact.
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                 <Button variant="outline" size="sm" type="button" onClick={() => setTransferModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary" size="sm" type="submit" className="bg-amber-600 hover:bg-amber-700">
-                  Execute Transfer
+                <Button variant="primary" size="sm" type="submit" className="bg-amber-600 hover:bg-amber-700 font-bold">
+                  Submit Transfer Justification
                 </Button>
               </div>
             </form>
