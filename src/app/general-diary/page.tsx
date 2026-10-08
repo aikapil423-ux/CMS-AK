@@ -14,6 +14,7 @@ import {
   History,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
@@ -28,7 +29,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { GDRecordModal } from "@/components/general-diary/GDRecordModal";
-import { GDVerificationModal } from "@/components/general-diary/GDVerificationModal";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS" | "AUDIT_TRAIL";
@@ -71,10 +71,13 @@ function GeneralDiaryContent() {
   // Modals State
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
-  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
-  const [verifyingRecord, setVerifyingRecord] = useState<GeneralDiaryRecord | null>(null);
   const [printDailyRegisterOpen, setPrintDailyRegisterOpen] = useState(false);
   const [selectedPrintDate, setSelectedPrintDate] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // Draft/Suggestion row actions state
+  const [addingRecordId, setAddingRecordId] = useState<string | null>(null);
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
+  const [successFlash, setSuccessFlash] = useState<string | null>(null);
 
   // Load types config
   useEffect(() => {
@@ -114,6 +117,45 @@ function GeneralDiaryContent() {
   useEffect(() => {
     fetchEntries();
   }, [page, pageSize, typeFilter, startDate, endDate, keyword, officerQuery, activeTab]);
+
+  // Add a draft/suggestion to the official GD register —
+  // the server assigns the next unique GD number and locks it permanently
+  const handleAddToGd = async (rec: GeneralDiaryRecord) => {
+    setAddingRecordId(rec.id);
+    try {
+      const locked = await GeneralDiaryService.verifyAndLockEntry(
+        rec.id,
+        {
+          name: currentUser.name || "HC Devinder Kumar",
+          rank: currentUser.rankDisplay || "Head Constable (MHC)",
+          beltNumber: "889/KKR",
+          pno: currentUser.pno || "05192834",
+        },
+        "Added to General Diary from draft/suggestion"
+      );
+      setSuccessFlash(`Added to General Diary as ${locked.gdNumber}.`);
+      await fetchEntries();
+      setTimeout(() => setSuccessFlash(null), 4000);
+    } catch (err: any) {
+      alert(err?.message || "Failed to add entry to General Diary.");
+    } finally {
+      setAddingRecordId(null);
+    }
+  };
+
+  // Delete a draft/suggestion permanently (locked entries are never deletable)
+  const handleDeleteDraftRow = async (rec: GeneralDiaryRecord) => {
+    if (!window.confirm(`Delete "${rec.subject}"? This action cannot be undone.`)) return;
+    setDeletingRecordId(rec.id);
+    try {
+      await GeneralDiaryService.deleteDraft(rec.id);
+      await fetchEntries();
+    } catch (err: any) {
+      alert(err?.message || "Failed to delete draft.");
+    } finally {
+      setDeletingRecordId(null);
+    }
+  };
 
   // Reset Filters
   const handleResetFilters = () => {
@@ -168,6 +210,13 @@ function GeneralDiaryContent() {
           </Link>
         </div>
       </div>
+
+      {/* Success flash for row actions (Add to GD etc.) */}
+      {successFlash && (
+        <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm font-semibold animate-in fade-in-50">
+          <span>{successFlash}</span>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="flex border-b border-slate-200 text-xs sm:text-sm font-semibold gap-1">
@@ -384,29 +433,42 @@ function GeneralDiaryContent() {
 
                       {/* 7. Actions */}
                       <td className="py-3.5 px-3 align-top text-right">
-                        {isSuggested ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              setVerifyingRecord(rec);
-                              setVerifyModalOpen(true);
-                            }}
-                            className="bg-purple-700 hover:bg-purple-800 text-white text-[11px] font-bold px-2.5 py-1"
-                          >
-                            Confirm
-                          </Button>
-                        ) : isDraft ? (
-                          <Link href={`/general-diary/new?editDraft=${rec.id}`}>
+                        {isSuggested || isDraft ? (
+                          <div className="inline-flex flex-col items-stretch gap-1.5 min-w-[140px]">
                             <Button
                               type="button"
                               size="sm"
-                              variant="outline"
-                              className="text-[11px] font-bold px-2 py-1"
+                              disabled={addingRecordId === rec.id}
+                              onClick={() => handleAddToGd(rec)}
+                              className="bg-[#0b192c] hover:bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1 gap-1 justify-center cursor-pointer"
                             >
-                              Edit
+                              <PlusCircle className="w-3 h-3" />
+                              <span>{addingRecordId === rec.id ? "Adding…" : "Add to GD"}</span>
                             </Button>
-                          </Link>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Link href={`/general-diary/new?editDraft=${rec.id}`}>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-[11px] font-bold px-2 py-1 cursor-pointer"
+                                >
+                                  Edit
+                                </Button>
+                              </Link>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={deletingRecordId === rec.id}
+                                onClick={() => handleDeleteDraftRow(rec)}
+                                className="text-[11px] font-bold px-2 py-1 text-red-700 border-red-300 hover:bg-red-50 gap-1 cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>{deletingRecordId === rec.id ? "…" : "Delete"}</span>
+                              </Button>
+                            </div>
+                          </div>
                         ) : (
                           <button
                             type="button"
@@ -469,39 +531,6 @@ function GeneralDiaryContent() {
           onClose={() => {
             setInspectModalOpen(false);
             setSelectedRecord(null);
-          }}
-        />
-      )}
-
-      {/* Verification Modal for Pending Suggestions */}
-      {verifyingRecord && (
-        <GDVerificationModal
-          record={verifyingRecord}
-          isOpen={verifyModalOpen}
-          onClose={() => {
-            setVerifyModalOpen(false);
-            setVerifyingRecord(null);
-          }}
-          verifier={{
-            name: currentUser.name || "HC Devinder Kumar",
-            rank: currentUser.rankDisplay || "Head Constable (MHC)",
-            beltNumber: "889/KKR",
-            pno: currentUser.pno || "05192834",
-          }}
-          onConfirmLock={async (remarks: string) => {
-            await GeneralDiaryService.verifyAndLockEntry(
-              verifyingRecord.id,
-              {
-                name: currentUser.name || "HC Devinder Kumar",
-                rank: currentUser.rankDisplay || "Head Constable (MHC)",
-                beltNumber: "889/KKR",
-                pno: currentUser.pno || "05192834",
-              },
-              remarks
-            );
-            setVerifyModalOpen(false);
-            setVerifyingRecord(null);
-            await fetchEntries();
           }}
         />
       )}
