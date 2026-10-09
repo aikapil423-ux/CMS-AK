@@ -74,7 +74,7 @@ export default function FIRWorkspacePage() {
         </Link>
 
         {/* 1. Case Diaries / Zimni */}
-        <Link href="/fir" className="block group">
+        <Link href="/fir-workspace/zimni" className="block group">
           <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
               <div className="flex items-start gap-3">

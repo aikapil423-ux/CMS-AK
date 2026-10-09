@@ -20,6 +20,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
   const isDrafts = pathname.includes("/fir-workspace/drafts");
   const isTemplates = pathname.includes("/fir-workspace/templates");
   const isBuilder = pathname.includes("/fir-workspace/builder");
+  const isZimni = pathname.includes("/fir-workspace/zimni");
 
   return (
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -62,10 +63,14 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
         </Link>
 
         <Link
-          href={`/fir${querySuffix}`}
-          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+          href={`/fir-workspace/zimni${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isZimni
+              ? "text-amber-950 bg-amber-50 border border-amber-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
         >
-          <ScrollText className="w-3.5 h-3.5 text-amber-600" />
+          <ScrollText className={`w-3.5 h-3.5 ${isZimni ? "text-amber-700" : "text-amber-600"}`} />
           <span>Case Diaries / Zimni</span>
         </Link>
       </div>
