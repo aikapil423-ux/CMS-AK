@@ -1465,7 +1465,7 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 overflow-visible relative z-30">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
@@ -1477,9 +1477,9 @@ function RegisterFIRForm() {
                   </span>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 space-y-4 text-xs">
+              <CardContent className="p-4 space-y-4 text-xs overflow-visible">
                 {/* Inline Acts and Sections Selection */}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end relative overflow-visible z-30">
                   <div className="md:col-span-5">
                     <label className="font-bold text-slate-700 block mb-1">Select Act</label>
                     <select
@@ -1502,13 +1502,16 @@ function RegisterFIRForm() {
                     </select>
                   </div>
 
-                  <div className="md:col-span-5 relative" ref={sectionDropdownRef}>
+                  <div className="md:col-span-5 relative z-40" ref={sectionDropdownRef}>
                     <div className="flex items-center justify-between mb-1">
                       <label className="font-bold text-slate-700 block">Select Section &amp; Sub Section</label>
                       {selectedSections.length > 0 && (
                         <button
                           type="button"
-                          onClick={() => setSelectedSections([])}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedSections([]);
+                          }}
                           className="text-[10px] text-red-600 hover:underline font-semibold"
                         >
                           Clear ({selectedSections.length})
@@ -1548,7 +1551,11 @@ function RegisterFIRForm() {
                     </div>
 
                     {isSectionDropdownOpen && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-300 rounded-lg shadow-xl z-50 p-2 space-y-2">
+                      <div
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute left-0 w-full sm:min-w-[420px] md:min-w-[480px] max-w-[calc(100vw-2.5rem)] top-full mt-1.5 bg-white border border-slate-300 rounded-xl shadow-2xl z-50 p-2.5 space-y-2.5"
+                      >
                         <div className="relative">
                           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
                           <input
@@ -1556,8 +1563,15 @@ function RegisterFIRForm() {
                             placeholder="Type to filter or add custom section..."
                             value={sectionSearchQuery}
                             onChange={(e) => setSectionSearchQuery(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full pl-8 pr-16 py-1.5 rounded border border-slate-300 text-xs font-mono"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                if (sectionSearchQuery.trim()) {
+                                  handleAddCustomSection(sectionSearchQuery);
+                                }
+                              }
+                            }}
+                            className="w-full pl-8 pr-16 py-1.5 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-[#0b192c]"
                           />
                           {sectionSearchQuery.trim() && (
                             <button
@@ -1566,7 +1580,7 @@ function RegisterFIRForm() {
                                 e.stopPropagation();
                                 handleAddCustomSection(sectionSearchQuery);
                               }}
-                              className="absolute right-1 top-1 px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold"
+                              className="absolute right-1 top-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold"
                             >
                               + Add
                             </button>
@@ -1586,7 +1600,7 @@ function RegisterFIRForm() {
                           });
 
                           return (
-                            <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded">
+                            <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
                               {filtered.length > 0 ? (
                                 filtered.map((sec) => {
                                   const isSelected = selectedSections.includes(sec.sectionNumber);
@@ -1597,9 +1611,9 @@ function RegisterFIRForm() {
                                         e.stopPropagation();
                                         handleToggleSection(sec.sectionNumber);
                                       }}
-                                      className={`p-1.5 flex items-center justify-between cursor-pointer text-xs transition-colors ${
+                                      className={`p-2 flex items-center justify-between cursor-pointer text-xs rounded-md transition-colors ${
                                         isSelected
-                                          ? "bg-blue-50 text-blue-950 font-semibold"
+                                          ? "bg-blue-50 text-blue-950 font-semibold border border-blue-200"
                                           : "hover:bg-slate-50 text-slate-700"
                                       }`}
                                     >
@@ -1636,14 +1650,17 @@ function RegisterFIRForm() {
                           );
                         })()}
 
-                        <div className="pt-1 flex items-center justify-between border-t border-slate-100 text-[11px]">
-                          <span className="text-slate-500 font-medium">
+                        <div className="pt-1.5 flex items-center justify-between border-t border-slate-100 text-[11px]">
+                          <span className="text-slate-600 font-medium">
                             {selectedSections.length} section(s) selected
                           </span>
                           <button
                             type="button"
-                            onClick={() => setIsSectionDropdownOpen(false)}
-                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-950 text-white text-[11px] font-bold"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsSectionDropdownOpen(false);
+                            }}
+                            className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold shadow-xs"
                           >
                             Done
                           </button>
