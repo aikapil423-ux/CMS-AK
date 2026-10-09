@@ -60,6 +60,8 @@ function SettingsPageContent() {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>("complaint_categories");
+  const [selectedModuleFilter, setSelectedModuleFilter] = useState<string>("All");
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const [items, setItems] = useState<DropdownItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -106,6 +108,21 @@ function SettingsPageContent() {
   const currentCategory = useMemo(() => {
     return DROPDOWN_CATEGORIES.find((c) => c.key === selectedCategoryKey) || DROPDOWN_CATEGORIES[0];
   }, [selectedCategoryKey]);
+
+  // Filtered Categories based on module and category search
+  const filteredCategories = useMemo(() => {
+    return DROPDOWN_CATEGORIES.filter((cat) => {
+      const matchesModule = selectedModuleFilter === "All" || cat.module === selectedModuleFilter;
+      if (!matchesModule) return false;
+      if (!categorySearchQuery.trim()) return true;
+      const q = categorySearchQuery.toLowerCase().trim();
+      return (
+        cat.name.toLowerCase().includes(q) ||
+        cat.description.toLowerCase().includes(q) ||
+        cat.usageLocation.toLowerCase().includes(q)
+      );
+    });
+  }, [selectedModuleFilter, categorySearchQuery]);
 
   // Filtered Items
   const filteredItems = useMemo(() => {
@@ -342,45 +359,104 @@ function SettingsPageContent() {
                   Select Dropdown
                 </span>
                 <span className="text-[10px] font-medium text-slate-400">
-                  10 Modules
+                  {filteredCategories.length} / {DROPDOWN_CATEGORIES.length} Dropdowns
                 </span>
               </div>
 
-              <div className="space-y-1.5 max-h-[620px] overflow-y-auto pr-1">
-                {DROPDOWN_CATEGORIES.map((cat) => {
-                  const isSelected = cat.key === selectedCategoryKey;
-                  const catCount = DropdownManagerService.getItems(cat.key).length;
-                  return (
-                    <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategoryKey(cat.key);
-                        setSearchQuery("");
-                      }}
-                      className={`w-full text-left p-3 rounded-xl transition-all border ${
-                        isSelected
-                          ? "bg-blue-50 border-blue-300 text-blue-900 shadow-2xs"
-                          : "bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 text-slate-700"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold">{cat.name}</span>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
-                            isSelected ? "bg-blue-200 text-blue-900" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {catCount}
+              {/* Module Filter Chips */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar">
+                {(["All", "Complaints", "FIR", "Roznamcha (GD)", "Common"] as const).map((mod) => (
+                  <button
+                    key={mod}
+                    type="button"
+                    onClick={() => setSelectedModuleFilter(mod)}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold whitespace-nowrap transition-colors ${
+                      selectedModuleFilter === mod
+                        ? "bg-[#0b192c] text-white shadow-2xs"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200/80"
+                    }`}
+                  >
+                    {mod}
+                  </button>
+                ))}
+              </div>
+
+              {/* Category Search Input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Filter dropdown category..."
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-blue-500 bg-slate-50/60"
+                />
+                {categorySearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearchQuery("")}
+                    className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1.5 max-h-[580px] overflow-y-auto pr-1">
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map((cat) => {
+                    const isSelected = cat.key === selectedCategoryKey;
+                    const catCount = DropdownManagerService.getItems(cat.key).length;
+                    const moduleColor =
+                      cat.module === "Complaints"
+                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                        : cat.module === "FIR"
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : cat.module === "Roznamcha (GD)"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-slate-100 text-slate-700 border-slate-200";
+
+                    return (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategoryKey(cat.key);
+                          setSearchQuery("");
+                        }}
+                        className={`w-full text-left p-3 rounded-xl transition-all border ${
+                          isSelected
+                            ? "bg-blue-50 border-blue-300 text-blue-900 shadow-2xs"
+                            : "bg-white hover:bg-slate-50 border-transparent hover:border-slate-200 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold">{cat.name}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded border font-semibold ${moduleColor}`}>
+                              {cat.module}
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                                isSelected ? "bg-blue-200 text-blue-900" : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {catCount}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-slate-500 line-clamp-1">{cat.description}</p>
+                        <span className="text-[10px] text-blue-600/80 font-medium block mt-1">
+                          Used in: {cat.usageLocation}
                         </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 line-clamp-1">{cat.description}</p>
-                      <span className="text-[10px] text-blue-600/80 font-medium block mt-1">
-                        Used in: {cat.usageLocation}
-                      </span>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 text-center text-slate-400 text-xs">
+                    No dropdowns match &quot;{categorySearchQuery}&quot;.
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -396,12 +472,28 @@ function SettingsPageContent() {
                       <h2 className="text-base font-bold text-slate-900">
                         {currentCategory.name}
                       </h2>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded border font-semibold ${
+                          currentCategory.module === "Complaints"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : currentCategory.module === "FIR"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : currentCategory.module === "Roznamcha (GD)"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        {currentCategory.module}
+                      </span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-blue-100 text-blue-800 font-semibold">
                         {items.length} Options
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {currentCategory.description}
+                    </p>
+                    <p className="text-[10px] text-blue-600/80 font-medium mt-0.5">
+                      Used in: {currentCategory.usageLocation}
                     </p>
                   </div>
 

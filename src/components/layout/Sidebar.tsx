@@ -126,8 +126,9 @@ export function Sidebar() {
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
-  // MANAGEMENT NAVIGATION ITEMS (Settings Only in Slide Bar)
+  // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
   const managementNavItems: NavItem[] = [
+    { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-blue-100 text-blue-700 border-blue-200" },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 

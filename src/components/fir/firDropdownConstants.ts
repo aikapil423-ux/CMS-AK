@@ -217,3 +217,39 @@ export const PROPERTY_TYPES_BY_CATEGORY: Record<string, string[]> = {
     "Others",
   ],
 };
+
+import { DropdownManagerService } from "@/services/dropdownManagerService";
+
+export const getDynamicSourceOfComplaint = (): string[] =>
+  DropdownManagerService.getOptionsList("fir_source_of_complaint", SOURCE_OF_COMPLAINT_OPTIONS);
+
+export const getDynamicDirectionFromPs = (): string[] =>
+  DropdownManagerService.getOptionsList("fir_direction_from_ps", DIRECTION_FROM_PS_OPTIONS);
+
+export const getDynamicGenderOptions = (): string[] =>
+  DropdownManagerService.getOptionsList("gender_options", GENDER_OPTIONS);
+
+export const getDynamicMaritalStatusOptions = (): string[] =>
+  DropdownManagerService.getOptionsList("marital_status", MARITAL_STATUS_OPTIONS);
+
+export const getDynamicRelationTypes = (): string[] =>
+  DropdownManagerService.getOptionsList("relation_types", RELATION_TYPE_OPTIONS);
+
+export const getDynamicCasteCategories = (): string[] =>
+  DropdownManagerService.getOptionsList("caste_category", CASTE_CATEGORY_OPTIONS);
+
+export const getDynamicIdentificationTypes = (): string[] =>
+  DropdownManagerService.getOptionsList("identification_type", IDENTIFICATION_TYPE_OPTIONS);
+
+export const getDynamicActionTakenOptions = (): string[] =>
+  DropdownManagerService.getOptionsList("fir_action_taken", [...ACTION_TAKEN_OPTIONS]);
+
+export const getDynamicPropertyCategories = (): string[] =>
+  DropdownManagerService.getOptionsList("fir_property_categories", PROPERTY_CATEGORIES);
+
+export const getDynamicMajorHeads = (fallback: string[]): string[] =>
+  DropdownManagerService.getOptionsList("fir_major_heads", fallback);
+
+export const getDynamicWeaponsUsed = (fallback: string[]): string[] =>
+  DropdownManagerService.getOptionsList("fir_weapon_used", fallback);
+

@@ -14,7 +14,7 @@ import {
 import { FIROccurrenceItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { DIRECTION_FROM_PS_OPTIONS } from "@/components/fir/firDropdownConstants";
+import { DIRECTION_FROM_PS_OPTIONS, getDynamicDirectionFromPs } from "@/components/fir/firDropdownConstants";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   isDateKnown?: boolean;
@@ -523,7 +523,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   onChange={(e) => setDirectionFromPs(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
                 >
-                  {DIRECTION_FROM_PS_OPTIONS.map((dir) => (
+                  {getDynamicDirectionFromPs().map((dir) => (
                     <option key={dir} value={dir}>
                       {dir}
                     </option>

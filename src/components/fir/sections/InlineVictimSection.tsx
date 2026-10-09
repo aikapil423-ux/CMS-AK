@@ -24,6 +24,11 @@ import {
   RELATION_TYPE_OPTIONS,
   CASTE_CATEGORY_OPTIONS,
   IDENTIFICATION_TYPE_OPTIONS,
+  getDynamicGenderOptions,
+  getDynamicMaritalStatusOptions,
+  getDynamicRelationTypes,
+  getDynamicCasteCategories,
+  getDynamicIdentificationTypes,
 } from "@/components/fir/firDropdownConstants";
 
 export interface VictimItemData {
@@ -632,7 +637,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
-                    {GENDER_OPTIONS.map((g) => (
+                    {getDynamicGenderOptions().map((g) => (
                       <option key={g} value={g}>
                         {g}
                       </option>
@@ -646,7 +651,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     onChange={(e) => setMaritalStatus(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
-                    {MARITAL_STATUS_OPTIONS.map((ms) => (
+                    {getDynamicMaritalStatusOptions().map((ms) => (
                       <option key={ms} value={ms}>
                         {ms}
                       </option>
@@ -660,7 +665,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     onChange={(e) => setRelationType(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
-                    {RELATION_TYPE_OPTIONS.map((rt) => (
+                    {getDynamicRelationTypes().map((rt) => (
                       <option key={rt} value={rt}>
                         {rt}
                       </option>
@@ -1090,7 +1095,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     onChange={(e) => setTempIdType(e.target.value)}
                     className="w-1/3 p-2 rounded-lg border border-slate-300 bg-white text-xs"
                   >
-                    {IDENTIFICATION_TYPE_OPTIONS.map((idType) => (
+                    {getDynamicIdentificationTypes().map((idType) => (
                       <option key={idType} value={idType}>
                         {idType}
                       </option>

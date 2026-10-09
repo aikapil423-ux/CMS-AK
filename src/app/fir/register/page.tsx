@@ -89,6 +89,11 @@ import {
   ACTION_TAKEN_OPTIONS,
   PROPERTY_CATEGORIES,
   PROPERTY_TYPES_BY_CATEGORY,
+  getDynamicSourceOfComplaint,
+  getDynamicDirectionFromPs,
+  getDynamicActionTakenOptions,
+  getDynamicCasteCategories,
+  getDynamicMajorHeads,
 } from "@/components/fir/firDropdownConstants";
 
 // Exactly 10 Main Tabs in strict order — Tag FIR is excluded
@@ -252,6 +257,23 @@ function RegisterFIRForm() {
   const [currentMajorHead, setCurrentMajorHead] = useState(MAJOR_HEADS[0]);
   const [currentMinorHead, setCurrentMinorHead] = useState(MINOR_HEADS[MAJOR_HEADS[0]][0] || "");
   const [majorMinorHeadsList, setMajorMinorHeadsList] = useState<FIRMajorMinorHeadEntry[]>([]);
+
+  // Dynamic Options from DropdownManagerService
+  const [sourceOfComplaintList, setSourceOfComplaintList] = useState<string[]>(getDynamicSourceOfComplaint);
+  const [actionTakenList, setActionTakenList] = useState<string[]>(getDynamicActionTakenOptions);
+  const [casteCategoryList, setCasteCategoryList] = useState<string[]>(getDynamicCasteCategories);
+  const [majorHeadsOptions, setMajorHeadsOptions] = useState<string[]>(() => getDynamicMajorHeads(MAJOR_HEADS));
+
+  useEffect(() => {
+    const refreshDropdowns = () => {
+      setSourceOfComplaintList(getDynamicSourceOfComplaint());
+      setActionTakenList(getDynamicActionTakenOptions());
+      setCasteCategoryList(getDynamicCasteCategories());
+      setMajorHeadsOptions(getDynamicMajorHeads(MAJOR_HEADS));
+    };
+    window.addEventListener("cms-dropdowns-updated", refreshDropdowns);
+    return () => window.removeEventListener("cms-dropdowns-updated", refreshDropdowns);
+  }, []);
 
   // TAB 2: Occurrence
   const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>([]);
@@ -1372,7 +1394,7 @@ function RegisterFIRForm() {
                     onChange={(e) => setSourceOfComplaint(e.target.value)}
                     className="w-full p-2 rounded-lg border border-slate-300 text-xs"
                   >
-                    {SOURCE_OF_COMPLAINT_OPTIONS.map((source) => (
+                    {sourceOfComplaintList.map((source) => (
                       <option key={source} value={source}>
                         {source}
                       </option>
@@ -1753,7 +1775,7 @@ function RegisterFIRForm() {
                       }}
                       className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium"
                     >
-                      {MAJOR_HEADS.map((mh) => (
+                      {majorHeadsOptions.map((mh) => (
                         <option key={mh} value={mh}>
                           {mh}
                         </option>
@@ -1966,7 +1988,7 @@ function RegisterFIRForm() {
                         onChange={(e) => setComplainantCategory(e.target.value)}
                         className="w-full p-2.5 rounded-lg border border-slate-300 font-medium"
                       >
-                        {CASTE_CATEGORY_OPTIONS.map((cat) => (
+                        {casteCategoryList.map((cat) => (
                           <option key={cat} value={cat}>
                             {cat}
                           </option>
@@ -2635,7 +2657,7 @@ function RegisterFIRForm() {
                     Action Taken by Station House Officer (SHO)
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {ACTION_TAKEN_OPTIONS.map((opt) => (
+                    {actionTakenList.map((opt) => (
                       <label
                         key={opt}
                         className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-lg border transition-all ${
