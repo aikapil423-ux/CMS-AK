@@ -13,6 +13,7 @@ import { DOWRY_ACT_1961_SECTIONS } from "./dowrySectionsData";
 import { GAMBLING_ACT_1867_SECTIONS } from "./gamblingSectionsData";
 import { EXPLOSIVES_ACT_1908_SECTIONS } from "./explosivesSectionsData";
 import { ELECTRICITY_ACT_2003_SECTIONS } from "./electricitySectionsData";
+import { DPPA_ACT_1984_SECTIONS } from "./dppaSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -208,12 +209,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Prevention of Damage to Public Property Act, 1984",
     shortName: "Prevention of Damage to Public Property Act, 1984",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3(1)", title: "Mischief causing damage to public property" },
-      { sectionNumber: "3(2)(i)", title: "Damage to public property: Water, light, power installation" },
-      { sectionNumber: "3(2)(ii)", title: "Damage to public property: Public transport or telecommunication" },
-      { sectionNumber: "4", title: "Mischief causing damage to public property by fire or explosive substance" },
-    ],
+    sections: DPPA_ACT_1984_SECTIONS,
   },
   {
     id: "act_passports_1967",
@@ -519,6 +515,15 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Electricity Act,2003"), actOption);
       map.set(normalizeKey("Electricity Act"), actOption);
     }
+    if (cAct.id === "act_dppa_1984") {
+      map.set(normalizeKey("Prevention of Damage to Public Property Act, 1984"), actOption);
+      map.set(normalizeKey("Prevention of Damage to Public Property Act,1984"), actOption);
+      map.set(normalizeKey("The Prevention of Damage to Public Property Act, 1984"), actOption);
+      map.set(normalizeKey("The Prevention of Damage to Public Property Act,1984"), actOption);
+      map.set(normalizeKey("Prevention of Damage to Public Property Act"), actOption);
+      map.set(normalizeKey("PDPP Act"), actOption);
+      map.set(normalizeKey("DPPA Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -588,6 +593,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_electricity_2003, preserve the authoritative complete 1,159 sections catalog
         if (existing.id === "act_electricity_2003") {
+          continue;
+        }
+        // If it's act_dppa_1984, preserve the authoritative complete 27 sections catalog
+        if (existing.id === "act_dppa_1984") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
