@@ -3,6 +3,7 @@
 
 import { BNS_2023_SECTIONS } from "./bnsSectionsData";
 import { BNSS_2023_SECTIONS } from "./bnssSectionsData";
+import { ARMS_ACT_1959_SECTIONS } from "./armsActSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -139,29 +140,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Arms Act, 1959",
     shortName: "The Arms Act, 1959",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3", title: "Licence for acquisition and possession of firearms and ammunition" },
-      { sectionNumber: "4", title: "Licence for acquisition and possession of arms other than firearms" },
-      { sectionNumber: "5", title: "Licence for manufacture, sale, etc., of arms and ammunition" },
-      { sectionNumber: "7", title: "Prohibition of acquisition or possession of prohibited arms or ammunition" },
-      { sectionNumber: "19", title: "Power to demand production of licence" },
-      { sectionNumber: "20", title: "Arrest of persons conveying arms under suspicious circumstances" },
-      { sectionNumber: "21", title: "Deposit of arms on possession ceasing to be lawful" },
-      { sectionNumber: "25(1)", title: "Punishment for manufacturing, selling, importing prohibited arms" },
-      { sectionNumber: "25(1A)", title: "Acquiring, possessing or carrying prohibited arms / automatic bore weapons" },
-      { sectionNumber: "25(1AA)", title: "Manufacturing, selling, or converting prohibited arms" },
-      { sectionNumber: "25(1AB)", title: "Snatching firearm from police or armed forces personnel by force" },
-      { sectionNumber: "25(1B)", title: "Unlicensed possession of firearms (Country-made pistol / Desi Katta)" },
-      { sectionNumber: "25(1B)(a)", title: "Acquires, has in his possession or carries any firearm or ammunition without licence" },
-      { sectionNumber: "25(6)", title: "Punishment for member of organized crime syndicate possessing illegal firearm" },
-      { sectionNumber: "25(7)", title: "Punishment for obtaining firearm by fraudulent means" },
-      { sectionNumber: "25(8)", title: "Punishment for dealing in illicit firearms as a business" },
-      { sectionNumber: "25(9)", title: "Celebratory gunfire / Rash discharge of firearm in public gatherings / marriages" },
-      { sectionNumber: "27(1)", title: "Punishment for using arms or ammunition in contravention of Section 5" },
-      { sectionNumber: "27(2)", title: "Using prohibited arms / ammunition with intent to resist lawful arrest" },
-      { sectionNumber: "27(3)", title: "Punishment with death for using prohibited arms resulting in death of any person" },
-      { sectionNumber: "35", title: "Criminal responsibility of persons in joint occupation of premises for illegal arms" },
-    ],
+    sections: ARMS_ACT_1959_SECTIONS,
   },
   {
     id: "act_mv_1988",
@@ -555,6 +534,12 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Bharatiya Nyaya Suraksha Sanhita, 2023"), actOption);
       map.set(normalizeKey("BNSS, 2023"), actOption);
     }
+    if (cAct.id === "act_arms_1959") {
+      map.set(normalizeKey("The Arms Act,1959"), actOption);
+      map.set(normalizeKey("The Arms Act, 1959"), actOption);
+      map.set(normalizeKey("Arms Act, 1959"), actOption);
+      map.set(normalizeKey("Arms Act 1959"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -584,6 +569,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_bnss_2023, preserve the authoritative complete 2,489 sections catalog
         if (existing.id === "act_bnss_2023") {
+          continue;
+        }
+        // If it's act_arms_1959, preserve the authoritative complete 328 sections catalog
+        if (existing.id === "act_arms_1959") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
