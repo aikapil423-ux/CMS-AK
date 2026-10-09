@@ -9,6 +9,7 @@ import { HARYANA_POLICE_2007_SECTIONS } from "./haryanaPoliceSectionsData";
 import { GAUVANSH_ACT_2015_SECTIONS } from "./gauvanshSectionsData";
 import { NDPS_ACT_1985_SECTIONS } from "./ndpsSectionsData";
 import { SC_ST_ACT_1989_SECTIONS } from "./scstSectionsData";
+import { DOWRY_ACT_1961_SECTIONS } from "./dowrySectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -143,15 +144,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Dowry Prohibition Act, 1961",
     shortName: "Dowry Prohibition Act, 1961",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3(1)", title: "Penalty for giving or taking dowry" },
-      { sectionNumber: "4", title: "Penalty for demanding dowry directly or indirectly" },
-      { sectionNumber: "4A", title: "Ban on advertisement offering share in property or business as dowry" },
-      { sectionNumber: "6(1)", title: "Dowry to be for the benefit of the wife or her heirs" },
-      { sectionNumber: "8", title: "Offences to be cognizable for certain purposes, bailable and non-compoundable" },
-      { sectionNumber: "8A", title: "Burden of proof in certain cases on person taking dowry" },
-      { sectionNumber: "8B", title: "Dowry Prohibition Officers" },
-    ],
+    sections: DOWRY_ACT_1961_SECTIONS,
   },
   {
     id: "act_pc_1988",
@@ -513,6 +506,13 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("SC ST Act"), actOption);
       map.set(normalizeKey("SC ST (Prevention of Atrocities) Act"), actOption);
     }
+    if (cAct.id === "act_dowry_1961") {
+      map.set(normalizeKey("Dowry Prohibition Act, 1961"), actOption);
+      map.set(normalizeKey("Dowry Prohibition Act,1961"), actOption);
+      map.set(normalizeKey("The Dowry Prohibition Act, 1961"), actOption);
+      map.set(normalizeKey("The Dowry Prohibition Act,1961"), actOption);
+      map.set(normalizeKey("Dowry Prohibition Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -566,6 +566,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_sc_st_1989, preserve the authoritative complete 196 sections catalog
         if (existing.id === "act_sc_st_1989") {
+          continue;
+        }
+        // If it's act_dowry_1961, preserve the authoritative complete 66 sections catalog
+        if (existing.id === "act_dowry_1961") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
