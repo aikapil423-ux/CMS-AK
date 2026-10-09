@@ -346,14 +346,6 @@ export default function FIRRegisterPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {canRegisterFir && (
-            <Link href="/fir/register">
-              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shadow-sm">
-                <PlusCircle className="w-4 h-4" />
-                Register FIR (u/s 173 BNSS)
-              </Button>
-            </Link>
-          )}
           <Link href="/fir-workspace">
             <Button variant="outline" className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5">
               <UserCheck className="w-4 h-4 text-blue-600" />
