@@ -17,6 +17,7 @@ import { DPPA_ACT_1984_SECTIONS } from "./dppaSectionsData";
 import { PASSPORTS_ACT_1967_SECTIONS } from "./passportsSectionsData";
 import { ESSENTIAL_COMMODITIES_1955_SECTIONS } from "./essentialCommoditiesSectionsData";
 import { IT_ACT_2000_SECTIONS } from "./itActSectionsData";
+import { POCSO_ACT_2012_SECTIONS } from "./pocsoSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -68,25 +69,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Protection of Children from Sexual Offences Act, 2012",
     shortName: "Protection of Children from Sexual Offences Act, 2012 (POCSO)",
     category: "Child Protection",
-    sections: [
-      { sectionNumber: "3", title: "Penetrative sexual assault defined" },
-      { sectionNumber: "4(1)", title: "Punishment for penetrative sexual assault" },
-      { sectionNumber: "4(2)", title: "Enhanced punishment for penetrative sexual assault on child under 16 years" },
-      { sectionNumber: "5", title: "Aggravated penetrative sexual assault defined" },
-      { sectionNumber: "6(1)", title: "Punishment for aggravated penetrative sexual assault" },
-      { sectionNumber: "6(2)", title: "Aggravated penetrative sexual assault on child under 12 years (Death or Life)" },
-      { sectionNumber: "7", title: "Sexual assault defined" },
-      { sectionNumber: "8", title: "Punishment for sexual assault" },
-      { sectionNumber: "9", title: "Aggravated sexual assault defined" },
-      { sectionNumber: "10", title: "Punishment for aggravated sexual assault" },
-      { sectionNumber: "11", title: "Sexual harassment of a child defined" },
-      { sectionNumber: "12", title: "Punishment for sexual harassment of a child" },
-      { sectionNumber: "14(1)", title: "Punishment for using child for pornographic purposes" },
-      { sectionNumber: "15(1)", title: "Punishment for storage of child pornographic material" },
-      { sectionNumber: "19(1)", title: "Mandatory reporting of POCSO offences to Special Juvenile Police Unit" },
-      { sectionNumber: "21(1)", title: "Punishment for failure to report or record a case under POCSO" },
-      { sectionNumber: "23(1)", title: "Punishment for media disclosure of identity of victim child" },
-    ],
+    sections: POCSO_ACT_2012_SECTIONS,
   },
   {
     id: "act_arms_1959",
@@ -530,6 +513,17 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("I.T. Act"), actOption);
       map.set(normalizeKey("Information Technology Act, 2000 (IT Act)"), actOption);
     }
+    if (cAct.id === "act_pocso_2012") {
+      map.set(normalizeKey("Protection of Children from Sexual Offences Act, 2012"), actOption);
+      map.set(normalizeKey("Protection of Children from Sexual Offences Act,2012"), actOption);
+      map.set(normalizeKey("Protection of Children from Sexual Offences Act, 2012 (POCSO)"), actOption);
+      map.set(normalizeKey("The Protection of Children from Sexual Offences Act, 2012"), actOption);
+      map.set(normalizeKey("The Protection of Children from Sexual Offences Act,2012"), actOption);
+      map.set(normalizeKey("POCSO Act, 2012"), actOption);
+      map.set(normalizeKey("POCSO Act,2012"), actOption);
+      map.set(normalizeKey("POCSO Act"), actOption);
+      map.set(normalizeKey("POCSO"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -615,6 +609,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_it_2000, preserve the authoritative complete 544 sections catalog
         if (existing.id === "act_it_2000") {
+          continue;
+        }
+        // If it's act_pocso_2012, preserve the authoritative complete 236 sections catalog
+        if (existing.id === "act_pocso_2012") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
