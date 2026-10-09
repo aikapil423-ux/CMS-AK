@@ -32,7 +32,6 @@ import {
   SlidersHorizontal,
   Columns3,
   PlusCircle,
-  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
@@ -353,63 +352,6 @@ export default function FIRRegisterPage() {
             </Button>
           </Link>
         </div>
-      </div>
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="border-slate-200 shadow-xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total FIRs</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{statusCounts.all}</h3>
-              <p className="text-[10px] text-slate-400 mt-0.5">Year 2026 Session</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
-              <FileText className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 shadow-xs bg-amber-50/40">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Under Investigation</p>
-              <h3 className="text-2xl font-black text-amber-900 mt-1">{statusCounts.underInvestigation}</h3>
-              <p className="text-[10px] text-amber-600 mt-0.5">Active Case Diaries</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700">
-              <Clock className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-emerald-200 shadow-xs bg-emerald-50/40">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Chargesheet Filed</p>
-              <h3 className="text-2xl font-black text-emerald-900 mt-1">{statusCounts.chargesheetFiled}</h3>
-              <p className="text-[10px] text-emerald-600 mt-0.5">Dispatched to Court</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-blue-200 shadow-xs bg-blue-50/40">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Closure / Other</p>
-              <h3 className="text-2xl font-black text-blue-900 mt-1">
-                {statusCounts.closureFiled + statusCounts.untracedCancelled}
-              </h3>
-              <p className="text-[10px] text-blue-600 mt-0.5">Closure &amp; Untraced</p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Master Tabs */}
