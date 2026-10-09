@@ -6,6 +6,7 @@ import { BNSS_2023_SECTIONS } from "./bnssSectionsData";
 import { ARMS_ACT_1959_SECTIONS } from "./armsActSectionsData";
 import { PUNJAB_EXCISE_1914_SECTIONS } from "./punjabExciseSectionsData";
 import { HARYANA_POLICE_2007_SECTIONS } from "./haryanaPoliceSectionsData";
+import { GAUVANSH_ACT_2015_SECTIONS } from "./gauvanshSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -266,16 +267,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Haryana Gauvansh Sanrakshan and Gausamvardhan Act, 2015",
     shortName: "Haryana Gauvansh Sanrakshan Act, 2015",
     category: "State Acts (Haryana)",
-    sections: [
-      { sectionNumber: "3", title: "Prohibition of cow slaughter" },
-      { sectionNumber: "4", title: "Exceptions to prohibition of cow slaughter" },
-      { sectionNumber: "5", title: "Prohibition of export of cow for slaughter" },
-      { sectionNumber: "8", title: "Prohibition of sale of beef" },
-      { sectionNumber: "13(1)", title: "Punishment for cow slaughter (Rigorous imprisonment 3 to 10 years and fine)" },
-      { sectionNumber: "13(2)", title: "Punishment for export of cow for slaughter (Rigorous imprisonment 3 to 7 years)" },
-      { sectionNumber: "16", title: "Power to enter, inspect, search, seize and arrest without warrant" },
-      { sectionNumber: "17", title: "Confiscation of vehicles used in transporting cows for slaughter" },
-    ],
+    sections: GAUVANSH_ACT_2015_SECTIONS,
   },
   {
     id: "act_dppa_1984",
@@ -530,6 +522,15 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Haryana Police Act, 2007"), actOption);
       map.set(normalizeKey("Haryana Police Act"), actOption);
     }
+    if (cAct.id === "act_gauvansh_2015") {
+      map.set(normalizeKey("Haryana Gauvansh sanrakshan Act,2015"), actOption);
+      map.set(normalizeKey("Haryana Gauvansh sanrakshan Act, 2015"), actOption);
+      map.set(normalizeKey("Haryana Gauvansh Sanrakshan Act, 2015"), actOption);
+      map.set(normalizeKey("Haryana Gauvansh Sanrakshan Act,2015"), actOption);
+      map.set(normalizeKey("The Haryana Gauvansh Sanrakshan and Gausamvardhan Act, 2015"), actOption);
+      map.set(normalizeKey("The Haryana Gauvansh Sanrakshan and Gausamvardhan Act,2015"), actOption);
+      map.set(normalizeKey("Haryana Gauvansh Sanrakshan Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -571,6 +572,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_haryana_police_2007, preserve the authoritative complete 320 sections catalog
         if (existing.id === "act_haryana_police_2007") {
+          continue;
+        }
+        // If it's act_gauvansh_2015, preserve the authoritative complete 99 sections catalog
+        if (existing.id === "act_gauvansh_2015") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
