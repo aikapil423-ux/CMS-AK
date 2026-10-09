@@ -386,9 +386,17 @@ export const firService = {
   },
 
   registerFir(input: Partial<FIRItem>): FIRItem {
-    const { firNumber, firYear } = input.firNumber
+    let { firNumber, firYear } = input.firNumber
       ? { firNumber: input.firNumber, firYear: input.firYear || new Date().getFullYear() }
       : this.generateNextFirNumber();
+
+    // Prevent duplicate FIR Number: if number already exists, generate a fresh sequential one
+    const existingList = this.getAllFirs();
+    if (existingList.some((f) => f.firNumber === firNumber)) {
+      const fresh = this.generateNextFirNumber();
+      firNumber = fresh.firNumber;
+      firYear = fresh.firYear;
+    }
 
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
@@ -415,15 +423,28 @@ export const firService = {
       majorAct: input.majorAct || "Bharatiya Nyaya Sanhita, 2023",
       bnsSections: input.bnsSections || [],
       specialActs: input.specialActs,
+      actsAndSectionsList: input.actsAndSectionsList || [],
+      majorMinorHeadsList: input.majorMinorHeadsList || [],
+      isHeinousCrime: input.isHeinousCrime ?? false,
+      isSensitiveFIR: input.isSensitiveFIR ?? false,
       incidentDateFrom: input.incidentDateFrom || dateStr,
       incidentDateTo: input.incidentDateTo,
       incidentTimeFrom: input.incidentTimeFrom,
       incidentTimeTo: input.incidentTimeTo,
+      incidentDay: input.incidentDay,
+      incidentTimePeriod: input.incidentTimePeriod,
       incidentPlace: input.incidentPlace || "Police Station Jurisdiction",
       incidentLandmark: input.incidentLandmark,
       distanceFromPs: input.distanceFromPs,
       beatNumber: input.beatNumber,
-      incidentDetails: input.incidentDetails || "",
+      isPlaceOutsidePs: input.isPlaceOutsidePs ?? false,
+      outsidePsDetails: input.outsidePsDetails,
+      outsideDistrict: input.outsideDistrict,
+      outsideState: input.outsideState,
+      occurrencesList: input.occurrencesList || [],
+      incidentDetails: input.incidentDetails || input.firContentText || "",
+      firContentText: input.firContentText || input.incidentDetails || "",
+      reasonsForDelay: input.reasonsForDelay,
       gdEntryNumber: input.gdEntryNumber,
       gdEntryDateTime: input.gdEntryDateTime,
       typeOfInformation: input.typeOfInformation || "WRITTEN",
@@ -436,11 +457,46 @@ export const firService = {
       complainantCity: input.complainantCity || "Gurugram",
       complainantDistrict: input.complainantDistrict || "Gurugram",
       complainantState: input.complainantState || "Haryana",
+      complainantMiddleName: input.complainantMiddleName,
+      complainantLastName: input.complainantLastName,
+      complainantUid: input.complainantUid,
+      complainantMaritalStatus: input.complainantMaritalStatus,
+      complainantLandline: input.complainantLandline,
+      complainantEmail: input.complainantEmail,
+      complainantRelationType: input.complainantRelationType,
+      complainantRelativeName: input.complainantRelativeName,
+      complainantRelativeAlias: input.complainantRelativeAlias,
+      complainantSameAsVictim: input.complainantSameAsVictim,
+      complainantDob: input.complainantDob,
+      complainantYearOfBirth: input.complainantYearOfBirth,
+      complainantAgeGroup: input.complainantAgeGroup,
+      complainantAliasList: input.complainantAliasList || [],
+      complainantPresentAddressSame: input.complainantPresentAddressSame ?? true,
+      complainantPresentAddress: input.complainantPresentAddress,
+      complainantHouseNo: input.complainantHouseNo,
+      complainantStreet: input.complainantStreet,
+      complainantColony: input.complainantColony,
+      complainantTehsil: input.complainantTehsil,
+      complainantPincode: input.complainantPincode,
+      complainantOccupation: input.complainantOccupation,
+      complainantNationality: input.complainantNationality || "Indian",
+      complainantIdentifications: input.complainantIdentifications || [],
+      complainantPassportIssueDate: input.complainantPassportIssueDate,
+      complainantPassportIssuePlace: input.complainantPassportIssuePlace,
       isAccusedKnown: input.isAccusedKnown ?? false,
       accusedList: input.accusedList || [],
       victimsList: input.victimsList || [],
+      propertiesList: input.propertiesList || [],
       stolenPropertyDetails: input.stolenPropertyDetails,
       totalPropertyEstimatedValue: input.totalPropertyEstimatedValue,
+      hurtDetails: input.hurtDetails,
+      actionTakenData: input.actionTakenData,
+      signatureData: input.signatureData,
+      firTagType: input.firTagType,
+      departmentNotifications: input.departmentNotifications || [],
+      uidbEntries: input.uidbEntries || [],
+      inquestReportNo: input.inquestReportNo,
+      courtDispatchDateTime: input.courtDispatchDateTime,
       registeredBy: input.registeredBy || "Inspector Rajesh Kumar (SHO)",
       assignedIoId: input.assignedIoId,
       assignedIoName: input.assignedIoName,
@@ -678,5 +734,38 @@ export const firService = {
     this.updateFir(firId, {
       auditTrail: [item, ...(fir.auditTrail || [])],
     });
+  },
+
+  saveFirDraft(draft: any, key: string = "default"): void {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      const storageKey = `haryana_police_cms_fir_draft_${key}`;
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({ ...draft, savedAt: new Date().toISOString() })
+      );
+    } catch (e) {
+      console.warn("Failed to save FIR draft:", e);
+    }
+  },
+
+  getFirDraft(key: string = "default"): any | null {
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    try {
+      const raw = window.localStorage.getItem(`haryana_police_cms_fir_draft_${key}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.warn("Failed to get FIR draft:", e);
+      return null;
+    }
+  },
+
+  clearFirDraft(key: string = "default"): void {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    try {
+      window.localStorage.removeItem(`haryana_police_cms_fir_draft_${key}`);
+    } catch (e) {
+      console.warn("Failed to clear FIR draft:", e);
+    }
   },
 };

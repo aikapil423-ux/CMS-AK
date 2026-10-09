@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -215,7 +215,7 @@ export const STANDARD_REPORT_TEMPLATES: StandardReportTemplate[] = [
   },
 ];
 
-export default function TemplateDraftBuilderPage() {
+function TemplateDraftBuilderContent() {
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -2184,5 +2184,19 @@ export default function TemplateDraftBuilderPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TemplateDraftBuilderPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-sm text-slate-500">
+          Loading Document Builder...
+        </div>
+      }
+    >
+      <TemplateDraftBuilderContent />
+    </Suspense>
   );
 }

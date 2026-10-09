@@ -19,24 +19,24 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="lg:hidden sticky top-0 z-40 bg-[#081225] border-b border-slate-800 text-white shadow-md">
+      <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 text-slate-900 shadow-2xs">
         {/* Main Bar */}
-        <div className="px-3 py-2 flex items-center justify-between">
+        <div className="px-3.5 py-2 flex items-center justify-between">
           {/* Police Crest & Station Title */}
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-md bg-[#b8001f] flex items-center justify-center text-white shrink-0 shadow-xs">
-              <Shield className="w-4 h-4" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0">
+              <Shield className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-amber-400 tracking-wider uppercase">
+                <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
                   {isRoznamcha ? "Roznamcha GD" : isComplaints ? "Complaints" : "HP CMS"}
                 </span>
-                <span className="text-[10px] bg-slate-800 text-slate-300 px-1 rounded font-mono">
+                <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}
                 </span>
               </div>
-              <h2 className="text-xs font-bold text-white truncate max-w-[150px] xs:max-w-[190px]">
+              <h2 className="text-xs font-semibold text-slate-900 truncate max-w-[150px] xs:max-w-[190px]">
                 {currentUser.stationName}
               </h2>
             </div>
@@ -47,20 +47,20 @@ export function MobileHeader() {
             {/* Role Switcher Pill */}
             <button
               onClick={() => setRoleModalOpen(true)}
-              className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-md text-[11px] font-medium text-slate-200 border border-slate-700 active:scale-95"
+              className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200/80 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 border border-slate-200/70"
               title="Switch Police Role"
             >
-              <UserCog className="w-3.5 h-3.5" />
-              <ChevronDown className="w-3 h-3 opacity-70" />
+              <UserCog className="w-3.5 h-3.5 text-slate-600" />
+              <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {/* Drawer menu trigger */}
             <button
               onClick={() => setDrawerOpen(!drawerOpen)}
               aria-label="Toggle menu"
-              className="p-1.5 rounded-md hover:bg-slate-800 text-slate-300 active:scale-95"
+              className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:scale-95"
             >
-              {drawerOpen ? <X className="w-5 h-5 text-amber-400" /> : <Menu className="w-5 h-5" />}
+              {drawerOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -70,185 +70,160 @@ export function MobileHeader() {
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="relative w-4/5 max-w-xs bg-[#081225] h-full text-white flex flex-col shadow-2xl z-10 border-r border-slate-800">
-            <div className="p-4 border-b border-slate-800 bg-[#060e1d] flex items-center justify-between">
+          <div className="relative w-4/5 max-w-xs bg-white h-full text-slate-800 flex flex-col shadow-xl z-10 border-r border-slate-200">
+            <div className="p-3.5 border-b border-slate-200/80 bg-slate-50/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-[#b8001f] flex items-center justify-center text-white">
-                  <Shield className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white">
+                  <Shield className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-white">Haryana Police CMS</h3>
+                  <h3 className="text-xs font-semibold text-slate-900">Haryana Police CMS</h3>
                   <p className="text-[10px] text-slate-400">{currentUser.stationName}</p>
                 </div>
               </div>
-              <button onClick={() => setDrawerOpen(false)} className="p-1 text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
+              <button onClick={() => setDrawerOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3 border-b border-slate-800/60 bg-[#0d1a30]">
-              <p className="text-xs font-bold text-white">{currentUser.name}</p>
-              <p className="text-[11px] text-amber-400 font-medium">{currentUser.roleDisplay}</p>
+            <div className="p-3 border-b border-slate-200/80 bg-white">
+              <p className="text-xs font-semibold text-slate-900">{currentUser.name}</p>
+              <p className="text-[11px] text-slate-600">{currentUser.roleDisplay}</p>
               <p className="text-[10px] text-slate-400 font-mono mt-0.5">PNO: {currentUser.pno}</p>
             </div>
 
             {/* Back to Module Selector Button in Drawer */}
-            <div className="p-3 bg-[#0a1529] border-b border-slate-800">
+            <div className="p-2.5 bg-slate-50/60 border-b border-slate-200/80">
               <Link
                 href="/"
                 onClick={() => setDrawerOpen(false)}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#1e3e62] text-amber-300 text-xs font-bold shadow-xs border border-amber-400/20"
+                className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-md bg-white hover:bg-slate-100 text-slate-800 text-xs font-medium border border-slate-200/80 transition-colors"
               >
-                <LayoutGrid className="w-4 h-4 text-amber-400" />
-                <span>&larr; Switch Module Portal</span>
+                <LayoutGrid className="w-3.5 h-3.5 text-slate-600" />
+                <span>&larr; Modules Portal</span>
               </Link>
             </div>
 
             <nav className="flex-1 overflow-y-auto p-3 space-y-1">
               {isRoznamcha ? (
-                /* ONLY ROZNAMCHA LINKS IN DRAWER */
                 <>
-                  <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-amber-400">
-                    Roznamcha GD Pages
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    Roznamcha GD
                   </div>
                   <Link
                     href="/general-diary"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Daily Roznamcha Aam
+                    Smart General Diary
                   </Link>
                   <Link
                     href="/general-diary/new"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    New Roznamcha Entry
+                    New GD Entry
                   </Link>
                   <Link
                     href="/general-diary?type=SHIFT_RELIEF_TURNOVER"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Shift & Sentry Turnover
                   </Link>
                   <Link
                     href="/general-diary?type=PATROL_DEPARTURE_RETURN"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Patrol & Night Domination
                   </Link>
                   <Link
                     href="/general-diary?type=SEIZURE_MUDDMAL"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Malkhana & Property Seizures
                   </Link>
                 </>
               ) : isComplaints ? (
-                /* ONLY COMPLAINT LINKS IN DRAWER */
                 <>
-                  <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-red-400">
-                    Complaint Management Pages
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    Complaints
                   </div>
                   <Link
                     href="/complaints"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Complaints Register
                   </Link>
                   <Link
                     href="/enquiry-workspace"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Field Enquiry Workspace
                   </Link>
                 </>
               ) : (
-                /* STATION INFO / GENERAL PAGES IN DRAWER - Show only the active module */
                 <>
-                  {typeof window !== "undefined" && window.localStorage.getItem("cms_active_module") === "ROZNAMCHA" ? (
-                    <>
-                      <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-amber-400">
-                        Roznamcha GD
-                      </div>
-                      <Link
-                        href="/general-diary"
-                        onClick={() => setDrawerOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                      >
-                        Daily Roznamcha Aam
-                      </Link>
-                      <Link
-                        href="/general-diary/new"
-                        onClick={() => setDrawerOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                      >
-                        New Roznamcha Entry
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      <div className="pt-1 pb-1 text-[10px] uppercase font-bold text-red-400">
-                        Complaints
-                      </div>
-                      <Link
-                        href="/complaints"
-                        onClick={() => setDrawerOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                      >
-                        Complaints Register
-                      </Link>
-                      <Link
-                        href="/enquiry-workspace"
-                        onClick={() => setDrawerOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-200 hover:bg-[#1e3e62]"
-                      >
-                        Field Enquiry Workspace
-                      </Link>
-                    </>
-                  )}
-
-                  <div className="pt-2 pb-1 text-[10px] uppercase font-bold text-emerald-400">
-                    Legal Reference
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    Operations
                   </div>
+                  <Link
+                    href="/general-diary"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Smart General Diary
+                  </Link>
+                  <Link
+                    href="/complaints"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Complaints Register
+                  </Link>
+                  <Link
+                    href="/fir"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    FIR Register
+                  </Link>
                   <Link
                     href="/acts-sections"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-3 py-2 rounded-lg text-xs font-semibold text-emerald-300 hover:bg-[#1e3e62] flex items-center justify-between"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    <span>ACT and SECTIONs</span>
-                    <span className="text-[10px] bg-emerald-900/60 text-emerald-300 px-1.5 py-0.2 rounded border border-emerald-500/30">Bare Acts</span>
+                    ACT and SECTIONs
                   </Link>
                 </>
               )}
 
-              <div className="pt-2 border-t border-slate-800 my-2"></div>
+              <div className="pt-2 border-t border-slate-200/80 my-2"></div>
               <button
                 onClick={() => {
                   setDrawerOpen(false);
                   setRoleModalOpen(true);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800 flex items-center gap-2"
+                className="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2"
               >
-                <UserCog className="w-4 h-4 text-amber-400" /> Switch Police Role
+                <UserCog className="w-3.5 h-3.5 text-slate-500" /> Switch Police Role
               </button>
             </nav>
 
-            <div className="p-3 border-t border-slate-800 bg-[#060e1d]">
+            <div className="p-3 border-t border-slate-200/80 bg-slate-50/60">
               <button
                 onClick={() => {
                   setDrawerOpen(false);
                   logout();
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-red-950/60 text-red-300 border border-red-800/40 text-xs font-semibold"
+                className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200/80 text-xs font-medium transition-colors"
               >
                 Sign Out
               </button>

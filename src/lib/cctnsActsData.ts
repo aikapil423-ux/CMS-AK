@@ -1,0 +1,704 @@
+// src/lib/cctnsActsData.ts
+// Comprehensive CCTNS & Statutory Acts and Sections Directory for Haryana Police
+
+export interface CCTNSSectionItem {
+  sectionNumber: string;
+  title?: string;
+  description?: string;
+  punishment?: string;
+  isPopular?: boolean;
+}
+
+export interface CCTNSActItem {
+  id: string;
+  title: string;
+  shortName: string;
+  category: string;
+  sections: CCTNSSectionItem[];
+}
+
+export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
+  {
+    id: "act_bns_2023",
+    title: "The Bharatiya Nyaya Sanhita, 2023",
+    shortName: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+    category: "Substantive Criminal Law",
+    sections: [
+      { sectionNumber: "3(5)", title: "Joint liability / Common intention (Acts done by several persons in furtherance of common intention)" },
+      { sectionNumber: "4", title: "Punishments under Sanhita" },
+      { sectionNumber: "49", title: "Abetment of an offence" },
+      { sectionNumber: "61(2)", title: "Criminal conspiracy (replaces 120B IPC)" },
+      { sectionNumber: "63", title: "Rape defined" },
+      { sectionNumber: "64(1)", title: "Punishment for rape" },
+      { sectionNumber: "64(2)", title: "Aggravated punishment for rape (Police, Public Servant, Custody)" },
+      { sectionNumber: "65(1)", title: "Punishment for rape on woman under 16 years of age" },
+      { sectionNumber: "65(2)", title: "Punishment for rape on woman under 12 years of age" },
+      { sectionNumber: "66", title: "Punishment for causing death or persistent vegetative state of victim of rape" },
+      { sectionNumber: "67", title: "Sexual intercourse by husband upon wife during separation" },
+      { sectionNumber: "68", title: "Sexual intercourse by person in authority" },
+      { sectionNumber: "69", title: "Sexual intercourse by employing deceitful means or false promise of marriage" },
+      { sectionNumber: "70(1)", title: "Gang rape" },
+      { sectionNumber: "70(2)", title: "Gang rape on woman under 18 years of age" },
+      { sectionNumber: "71", title: "Repeat offenders of rape" },
+      { sectionNumber: "72", title: "Disclosure of identity of victim of certain offences" },
+      { sectionNumber: "74", title: "Assault or criminal force to woman with intent to outrage her modesty" },
+      { sectionNumber: "75", title: "Sexual harassment" },
+      { sectionNumber: "76", title: "Assault or use of criminal force to woman with intent to disrobe" },
+      { sectionNumber: "77", title: "Voyeurism" },
+      { sectionNumber: "78", title: "Stalking" },
+      { sectionNumber: "79", title: "Word, gesture or act intended to insult modesty of woman" },
+      { sectionNumber: "80", title: "Dowry death" },
+      { sectionNumber: "84", title: "Cohabitation caused by a man deceitfully inducing a belief of lawful marriage" },
+      { sectionNumber: "85", title: "Husband or relative of husband of a woman subjecting her to cruelty" },
+      { sectionNumber: "86", title: "Cruelty defined" },
+      { sectionNumber: "91", title: "Causing miscarriage without woman's consent" },
+      { sectionNumber: "96", title: "Procuring child for prostitution" },
+      { sectionNumber: "103(1)", title: "Murder (General penalty)" },
+      { sectionNumber: "103(2)", title: "Murder committed by a mob / group on grounds of race, caste, community" },
+      { sectionNumber: "105", title: "Culpable homicide not amounting to murder" },
+      { sectionNumber: "106(1)", title: "Causing death by rash or negligent act (Hit and Run general)" },
+      { sectionNumber: "106(2)", title: "Causing death by rash and negligent driving and escaping without reporting (Hit and Run aggravated)" },
+      { sectionNumber: "108", title: "Abetment of suicide" },
+      { sectionNumber: "109", title: "Attempt to murder" },
+      { sectionNumber: "110", title: "Attempt to commit culpable homicide" },
+      { sectionNumber: "111(1)", title: "Organized crime" },
+      { sectionNumber: "111(2)", title: "Punishment for organized crime resulting in death" },
+      { sectionNumber: "111(3)", title: "Punishment for organized crime not resulting in death" },
+      { sectionNumber: "112", title: "Petty organized crime" },
+      { sectionNumber: "113", title: "Terrorist act" },
+      { sectionNumber: "115(2)", title: "Voluntarily causing hurt" },
+      { sectionNumber: "117(2)", title: "Voluntarily causing grievous hurt" },
+      { sectionNumber: "118(1)", title: "Voluntarily causing hurt by dangerous weapons or means" },
+      { sectionNumber: "118(2)", title: "Voluntarily causing grievous hurt by dangerous weapons or means" },
+      { sectionNumber: "124(1)", title: "Voluntarily causing hurt by acid" },
+      { sectionNumber: "126(2)", title: "Wrongful restraint" },
+      { sectionNumber: "127(2)", title: "Wrongful confinement" },
+      { sectionNumber: "137(2)", title: "Kidnapping" },
+      { sectionNumber: "140(1)", title: "Kidnapping or abducting in order to murder or for ransom" },
+      { sectionNumber: "140(2)", title: "Kidnapping or abducting with intent secretly and wrongfully to confine person" },
+      { sectionNumber: "143(2)", title: "Trafficking of person" },
+      { sectionNumber: "189(2)", title: "Unlawful assembly" },
+      { sectionNumber: "190", title: "Every member of unlawful assembly guilty of offence committed in prosecution of common object" },
+      { sectionNumber: "191(2)", title: "Rioting" },
+      { sectionNumber: "191(3)", title: "Rioting, armed with deadly weapon" },
+      { sectionNumber: "194", title: "Affray" },
+      { sectionNumber: "221", title: "Obstructing public servant in discharge of public functions" },
+      { sectionNumber: "223", title: "Disobedience to order duly promulgated by public servant" },
+      { sectionNumber: "281", title: "Rash driving or riding on a public way" },
+      { sectionNumber: "303(1)", title: "Theft defined" },
+      { sectionNumber: "303(2)", title: "Punishment for theft (General)" },
+      { sectionNumber: "305", title: "Theft in dwelling house, vehicle, or vessel" },
+      { sectionNumber: "306", title: "Theft by clerk or servant of property in possession of master" },
+      { sectionNumber: "307", title: "Theft after preparation made for causing death, hurt or restraint" },
+      { sectionNumber: "308(2)", title: "Extortion" },
+      { sectionNumber: "309(4)", title: "Robbery" },
+      { sectionNumber: "309(6)", title: "Attempt to commit robbery" },
+      { sectionNumber: "310(2)", title: "Dacoity" },
+      { sectionNumber: "311", title: "Robbery or dacoity, with attempt to cause death or grievous hurt" },
+      { sectionNumber: "312", title: "Attempt to commit robbery or dacoity when armed with deadly weapon" },
+      { sectionNumber: "314", title: "Snatching" },
+      { sectionNumber: "316(2)", title: "Criminal breach of trust" },
+      { sectionNumber: "316(5)", title: "Criminal breach of trust by public servant, banker, merchant or agent" },
+      { sectionNumber: "317(2)", title: "Dishonestly receiving stolen property" },
+      { sectionNumber: "318(4)", title: "Cheating and dishonestly inducing delivery of property" },
+      { sectionNumber: "324(4)", title: "Mischief causing damage to property" },
+      { sectionNumber: "329(3)", title: "Criminal trespass" },
+      { sectionNumber: "331(1)", title: "Lurking house-trespass or house-breaking" },
+      { sectionNumber: "331(4)", title: "Lurking house-trespass or house-breaking by night with intention to commit offence" },
+      { sectionNumber: "336(2)", title: "Forgery" },
+      { sectionNumber: "338", title: "Forgery for purpose of cheating" },
+      { sectionNumber: "340(2)", title: "Using as genuine a forged document or electronic record" },
+      { sectionNumber: "351(2)", title: "Criminal intimidation" },
+      { sectionNumber: "351(3)", title: "Criminal intimidation by threat to cause death or grievous hurt" },
+      { sectionNumber: "352", title: "Intentional insult with intent to provoke breach of the peace" },
+      { sectionNumber: "356(2)", title: "Defamation" },
+    ],
+  },
+  {
+    id: "act_punjab_excise_1914",
+    title: "The Punjab Excise Act, 1914 (Haryana Amendment)",
+    shortName: "Punjab Excise Act, 1914 (Haryana Amendment)",
+    category: "State Acts (Haryana)",
+    sections: [
+      { sectionNumber: "61", title: "Penalty for unlawful import, export, transport, manufacture, possession of intoxicants" },
+      { sectionNumber: "61(1)(a)", title: "Unlawful import, export, transport, manufacture or possession of liquor" },
+      { sectionNumber: "61(1)(c)", title: "Cultivation of hemp plant or collecting spontaneous growth" },
+      { sectionNumber: "61(1)(d)", title: "Constructing or working any distillery, brewery or still" },
+      { sectionNumber: "61(1)(e)", title: "Uses, keeps or has in possession any materials or apparatus for manufacturing intoxicant" },
+      { sectionNumber: "61(2)", title: "Unlawful possession of illicit liquor exceeding prescribed limits" },
+      { sectionNumber: "61-1-14", title: "Possession of illicit liquor (Excise general)" },
+      { sectionNumber: "61-4-2020", title: "Smuggling / Illegal commercial transport of liquor (Haryana Amendment 2020)" },
+      { sectionNumber: "62", title: "Penalty for consumption of liquor in public places / unauthorized premises" },
+      { sectionNumber: "63", title: "Penalty for failure to provide security or register documents" },
+      { sectionNumber: "64", title: "Penalty for possession of liquor on which duty has not been paid" },
+      { sectionNumber: "65", title: "Penalty for mixing noxious substances in liquor" },
+      { sectionNumber: "68", title: "Penalty for misconduct of licensee or sale to minors" },
+      { sectionNumber: "68A", title: "Penalty for consumption of alcohol by minors or persons below permissible age" },
+      { sectionNumber: "69A", title: "Power of Police to seize conveyance and confiscate vehicles carrying illicit liquor" },
+      { sectionNumber: "72", title: "Confiscation of articles and vehicles used in commission of excise offences" },
+    ],
+  },
+  {
+    id: "act_ndps_1985",
+    title: "The Narcotic Drugs and Psychotropic Substances Act, 1985",
+    shortName: "Narcotic Drugs and Psychotropic Substances Act, 1985 (NDPS)",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "8(c)", title: "Prohibition of certain operations relating to narcotic drugs" },
+      { sectionNumber: "15(a)", title: "Punishment for contravention in relation to poppy straw (Small quantity)" },
+      { sectionNumber: "15(b)", title: "Punishment for contravention in relation to poppy straw (Intermediate quantity)" },
+      { sectionNumber: "15(c)", title: "Punishment for contravention in relation to poppy straw (Commercial quantity)" },
+      { sectionNumber: "17(a)", title: "Punishment for contravention in relation to prepared opium (Small quantity)" },
+      { sectionNumber: "17(b)", title: "Punishment for contravention in relation to prepared opium (Intermediate quantity)" },
+      { sectionNumber: "17(c)", title: "Punishment for contravention in relation to prepared opium (Commercial quantity)" },
+      { sectionNumber: "18(a)", title: "Punishment for contravention in relation to opium poppy & opium (Small quantity)" },
+      { sectionNumber: "18(b)", title: "Punishment for contravention in relation to opium poppy & opium (Intermediate quantity)" },
+      { sectionNumber: "18(c)", title: "Punishment for contravention in relation to opium poppy & opium (Commercial quantity)" },
+      { sectionNumber: "20(a)", title: "Punishment for cultivation of cannabis plant" },
+      { sectionNumber: "20(b)(ii)(A)", title: "Punishment for possession of charas/ganja (Small quantity)" },
+      { sectionNumber: "20(b)(ii)(B)", title: "Punishment for possession of charas/ganja (Intermediate quantity)" },
+      { sectionNumber: "20(b)(ii)(C)", title: "Punishment for possession of charas/ganja (Commercial quantity)" },
+      { sectionNumber: "21(a)", title: "Punishment for manufactured drugs (Heroin/Smack) (Small quantity)" },
+      { sectionNumber: "21(b)", title: "Punishment for manufactured drugs (Heroin/Smack) (Intermediate quantity)" },
+      { sectionNumber: "21(c)", title: "Punishment for manufactured drugs (Heroin/Smack) (Commercial quantity)" },
+      { sectionNumber: "22(a)", title: "Punishment for psychotropic substances (Small quantity)" },
+      { sectionNumber: "22(b)", title: "Punishment for psychotropic substances (Intermediate quantity)" },
+      { sectionNumber: "22(c)", title: "Punishment for psychotropic substances (Commercial quantity)" },
+      { sectionNumber: "25", title: "Punishment for allowing premises/vehicle to be used for commission of an offence" },
+      { sectionNumber: "27", title: "Punishment for consumption of any narcotic drug or psychotropic substance" },
+      { sectionNumber: "27A", title: "Punishment for financing illicit traffic and harbouring offenders" },
+      { sectionNumber: "28", title: "Punishment for attempts to commit offences" },
+      { sectionNumber: "29", title: "Punishment for abetment and criminal conspiracy" },
+      { sectionNumber: "31", title: "Enhanced punishment for offences after previous conviction" },
+      { sectionNumber: "31A", title: "Death penalty for certain offences after previous conviction" },
+    ],
+  },
+  {
+    id: "act_it_2000",
+    title: "The Information Technology Act, 2000",
+    shortName: "Information Technology Act, 2000 (IT Act)",
+    category: "Cyber Crime",
+    sections: [
+      { sectionNumber: "43", title: "Penalty and compensation for damage to computer, computer system, etc." },
+      { sectionNumber: "65", title: "Tampering with computer source documents" },
+      { sectionNumber: "66", title: "Computer related offences (Hacking)" },
+      { sectionNumber: "66B", title: "Punishment for dishonestly receiving stolen computer resource or communication device" },
+      { sectionNumber: "66C", title: "Punishment for identity theft (Impersonation, stolen passwords/OTP/signature)" },
+      { sectionNumber: "66D", title: "Punishment for cheating by personation by using computer resource" },
+      { sectionNumber: "66E", title: "Punishment for violation of privacy (Capturing/transmitting private images)" },
+      { sectionNumber: "66F", title: "Punishment for cyber terrorism" },
+      { sectionNumber: "67", title: "Punishment for publishing or transmitting obscene material in electronic form" },
+      { sectionNumber: "67A", title: "Punishment for publishing or transmitting material containing sexually explicit act" },
+      { sectionNumber: "67B", title: "Punishment for publishing or transmitting child pornography / CSAM in electronic form" },
+      { sectionNumber: "69A", title: "Power to issue directions for blocking public access of information" },
+      { sectionNumber: "72", title: "Penalty for breach of confidentiality and privacy" },
+      { sectionNumber: "72A", title: "Punishment for disclosure of information in breach of lawful contract" },
+    ],
+  },
+  {
+    id: "act_pocso_2012",
+    title: "The Protection of Children from Sexual Offences Act, 2012",
+    shortName: "Protection of Children from Sexual Offences Act, 2012 (POCSO)",
+    category: "Child Protection",
+    sections: [
+      { sectionNumber: "3", title: "Penetrative sexual assault defined" },
+      { sectionNumber: "4(1)", title: "Punishment for penetrative sexual assault" },
+      { sectionNumber: "4(2)", title: "Enhanced punishment for penetrative sexual assault on child under 16 years" },
+      { sectionNumber: "5", title: "Aggravated penetrative sexual assault defined" },
+      { sectionNumber: "6(1)", title: "Punishment for aggravated penetrative sexual assault" },
+      { sectionNumber: "6(2)", title: "Aggravated penetrative sexual assault on child under 12 years (Death or Life)" },
+      { sectionNumber: "7", title: "Sexual assault defined" },
+      { sectionNumber: "8", title: "Punishment for sexual assault" },
+      { sectionNumber: "9", title: "Aggravated sexual assault defined" },
+      { sectionNumber: "10", title: "Punishment for aggravated sexual assault" },
+      { sectionNumber: "11", title: "Sexual harassment of a child defined" },
+      { sectionNumber: "12", title: "Punishment for sexual harassment of a child" },
+      { sectionNumber: "14(1)", title: "Punishment for using child for pornographic purposes" },
+      { sectionNumber: "15(1)", title: "Punishment for storage of child pornographic material" },
+      { sectionNumber: "19(1)", title: "Mandatory reporting of POCSO offences to Special Juvenile Police Unit" },
+      { sectionNumber: "21(1)", title: "Punishment for failure to report or record a case under POCSO" },
+      { sectionNumber: "23(1)", title: "Punishment for media disclosure of identity of victim child" },
+    ],
+  },
+  {
+    id: "act_arms_1959",
+    title: "The Arms Act, 1959",
+    shortName: "The Arms Act, 1959",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3", title: "Licence for acquisition and possession of firearms and ammunition" },
+      { sectionNumber: "4", title: "Licence for acquisition and possession of arms other than firearms" },
+      { sectionNumber: "5", title: "Licence for manufacture, sale, etc., of arms and ammunition" },
+      { sectionNumber: "7", title: "Prohibition of acquisition or possession of prohibited arms or ammunition" },
+      { sectionNumber: "19", title: "Power to demand production of licence" },
+      { sectionNumber: "20", title: "Arrest of persons conveying arms under suspicious circumstances" },
+      { sectionNumber: "21", title: "Deposit of arms on possession ceasing to be lawful" },
+      { sectionNumber: "25(1)", title: "Punishment for manufacturing, selling, importing prohibited arms" },
+      { sectionNumber: "25(1A)", title: "Acquiring, possessing or carrying prohibited arms / automatic bore weapons" },
+      { sectionNumber: "25(1AA)", title: "Manufacturing, selling, or converting prohibited arms" },
+      { sectionNumber: "25(1AB)", title: "Snatching firearm from police or armed forces personnel by force" },
+      { sectionNumber: "25(1B)", title: "Unlicensed possession of firearms (Country-made pistol / Desi Katta)" },
+      { sectionNumber: "25(1B)(a)", title: "Acquires, has in his possession or carries any firearm or ammunition without licence" },
+      { sectionNumber: "25(6)", title: "Punishment for member of organized crime syndicate possessing illegal firearm" },
+      { sectionNumber: "25(7)", title: "Punishment for obtaining firearm by fraudulent means" },
+      { sectionNumber: "25(8)", title: "Punishment for dealing in illicit firearms as a business" },
+      { sectionNumber: "25(9)", title: "Celebratory gunfire / Rash discharge of firearm in public gatherings / marriages" },
+      { sectionNumber: "27(1)", title: "Punishment for using arms or ammunition in contravention of Section 5" },
+      { sectionNumber: "27(2)", title: "Using prohibited arms / ammunition with intent to resist lawful arrest" },
+      { sectionNumber: "27(3)", title: "Punishment with death for using prohibited arms resulting in death of any person" },
+      { sectionNumber: "35", title: "Criminal responsibility of persons in joint occupation of premises for illegal arms" },
+    ],
+  },
+  {
+    id: "act_mv_1988",
+    title: "The Motor Vehicles Act, 1988",
+    shortName: "Motor Vehicles Act, 1988 (MV Act)",
+    category: "Traffic & Transport",
+    sections: [
+      { sectionNumber: "3/181", title: "Driving without driving licence" },
+      { sectionNumber: "5/180", title: "Allowing unauthorized person to drive vehicle" },
+      { sectionNumber: "39/192(1)", title: "Driving unregistered vehicle / without registration mark" },
+      { sectionNumber: "66/192A", title: "Using vehicle without permit / contravention of permit conditions" },
+      { sectionNumber: "112/183", title: "Driving at excessive speed / Over-speeding" },
+      { sectionNumber: "113/194", title: "Overloading vehicle exceeding permissible axle weight" },
+      { sectionNumber: "128/177", title: "Triple riding on two-wheeler" },
+      { sectionNumber: "129/194D", title: "Riding without protective headgear (Helmet)" },
+      { sectionNumber: "134(a)", title: "Duty of driver in case of accident to secure medical attention" },
+      { sectionNumber: "134(b)", title: "Duty of driver to report accident details to police station" },
+      { sectionNumber: "146/196", title: "Driving uninsured vehicle without third party insurance" },
+      { sectionNumber: "177", title: "General provision for punishment of offences" },
+      { sectionNumber: "184", title: "Driving dangerously / Rash driving endangering life" },
+      { sectionNumber: "185", title: "Driving by a drunken person or by a person under the influence of drugs" },
+      { sectionNumber: "187", title: "Punishment for offences relating to accident (Hit and Run failure to assist)" },
+      { sectionNumber: "189", title: "Speed trials and racing on public roads without authorization" },
+      { sectionNumber: "192A", title: "Using vehicle without permit" },
+      { sectionNumber: "194B", title: "Driving without seat belt" },
+      { sectionNumber: "194C", title: "Overloading of two-wheelers" },
+      { sectionNumber: "196", title: "Driving uninsured vehicle" },
+      { sectionNumber: "207", title: "Power of Police Officer to seize and detain vehicle without documents" },
+    ],
+  },
+  {
+    id: "act_sc_st_1989",
+    title: "The Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Act, 1989",
+    shortName: "SC/ST (Prevention of Atrocities) Act, 1989",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3(1)(a)", title: "Puts any inedible or obnoxious substance into mouth of member of SC/ST" },
+      { sectionNumber: "3(1)(c)", title: "Compels member of SC/ST to leave house, village or residence" },
+      { sectionNumber: "3(1)(f)", title: "Wrongfully occupies or cultivates land owned by member of SC/ST" },
+      { sectionNumber: "3(1)(g)", title: "Wrongfully dispossesses member of SC/ST from land or premises" },
+      { sectionNumber: "3(1)(p)", title: "Institutes false, malicious or vexatious suit or criminal proceedings" },
+      { sectionNumber: "3(1)(r)", title: "Intentionally insults or intimidates with intent to humiliate in public view" },
+      { sectionNumber: "3(1)(s)", title: "Abuses any member of SC/ST by caste name in any place within public view" },
+      { sectionNumber: "3(1)(u)", title: "Promotes feelings of enmity, hatred or ill-will against SC/ST" },
+      { sectionNumber: "3(1)(w)(i)", title: "Touches a woman belonging to SC/ST with sexual intent without consent" },
+      { sectionNumber: "3(2)(v)", title: "Commits any IPC/BNS offence punishable with 10 years or more on SC/ST" },
+      { sectionNumber: "3(2)(va)", title: "Commits any Schedule-specified offence against member of SC/ST" },
+      { sectionNumber: "4", title: "Punishment for neglect of duties by public servant" },
+      { sectionNumber: "14A", title: "Appeals to High Court within prescribed period" },
+      { sectionNumber: "18", title: "Bar of anticipatory bail under Section 438 CrPC / 482 BNSS" },
+      { sectionNumber: "18A", title: "No preliminary enquiry required before registration of FIR" },
+    ],
+  },
+  {
+    id: "act_dowry_1961",
+    title: "The Dowry Prohibition Act, 1961",
+    shortName: "Dowry Prohibition Act, 1961",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3(1)", title: "Penalty for giving or taking dowry" },
+      { sectionNumber: "4", title: "Penalty for demanding dowry directly or indirectly" },
+      { sectionNumber: "4A", title: "Ban on advertisement offering share in property or business as dowry" },
+      { sectionNumber: "6(1)", title: "Dowry to be for the benefit of the wife or her heirs" },
+      { sectionNumber: "8", title: "Offences to be cognizable for certain purposes, bailable and non-compoundable" },
+      { sectionNumber: "8A", title: "Burden of proof in certain cases on person taking dowry" },
+      { sectionNumber: "8B", title: "Dowry Prohibition Officers" },
+    ],
+  },
+  {
+    id: "act_pc_1988",
+    title: "The Prevention of Corruption Act, 1988",
+    shortName: "Prevention of Corruption Act, 1988",
+    category: "Anti-Corruption",
+    sections: [
+      { sectionNumber: "7(a)", title: "Public servant taking undue advantage for improper performance of duty" },
+      { sectionNumber: "7(b)", title: "Obtaining undue advantage without public duty" },
+      { sectionNumber: "7A", title: "Taking undue advantage to influence public servant by corrupt or illegal means" },
+      { sectionNumber: "8", title: "Offence relating to bribing of a public servant" },
+      { sectionNumber: "9", title: "Offence relating to bribing of a public servant by a commercial organisation" },
+      { sectionNumber: "11", title: "Public servant obtaining undue advantage without consideration from person concerned" },
+      { sectionNumber: "12", title: "Punishment for abetment of offences" },
+      { sectionNumber: "13(1)(a)", title: "Criminal misconduct: Dishonestly or fraudulently converting property" },
+      { sectionNumber: "13(1)(b)", title: "Criminal misconduct: Intentionally enriching illicitly during tenure" },
+      { sectionNumber: "13(2)", title: "Punishment for criminal misconduct by public servant (4 to 10 years)" },
+      { sectionNumber: "17A", title: "Enquiry or investigation of offences relatable to recommendations by public servant" },
+    ],
+  },
+  {
+    id: "act_gambling_1867",
+    title: "The Public Gambling Act, 1867",
+    shortName: "Public Gambling Act, 1867",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3", title: "Penalty for owning or keeping, or having charge of a gaming house" },
+      { sectionNumber: "4", title: "Penalty for being found in common gaming house (Satta / Gambling)" },
+      { sectionNumber: "5", title: "Power of Police to enter and authorise police to enter and search gaming houses" },
+      { sectionNumber: "13", title: "Gaming and setting birds and animals to fight in public streets / places" },
+      { sectionNumber: "13A", title: "Exemption of games of mere skill" },
+    ],
+  },
+  {
+    id: "act_explosives_1908",
+    title: "The Explosive Substances Act, 1908",
+    shortName: "Explosive Substances Act, 1908",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3", title: "Punishment for causing explosion likely to endanger life or property" },
+      { sectionNumber: "4(a)", title: "Attempt to cause explosion or making/keeping explosive with intent to endanger life" },
+      { sectionNumber: "4(b)", title: "Making or possessing explosive substance with intent to enable another person" },
+      { sectionNumber: "5", title: "Punishment for making or possessing explosives under suspicious circumstances" },
+      { sectionNumber: "6", title: "Punishment of abettors" },
+    ],
+  },
+  {
+    id: "act_electricity_2003",
+    title: "The Electricity Act, 2003",
+    shortName: "Electricity Act, 2003",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "135(1)(a)", title: "Theft of electricity by tapping or making unauthorized connection" },
+      { sectionNumber: "135(1)(b)", title: "Theft of electricity by tampering with meter or installing device" },
+      { sectionNumber: "135(1)(c)", title: "Theft of electricity by damaging meter or preventing recording" },
+      { sectionNumber: "136", title: "Theft of electric lines and materials (Conductor/Transformer wire)" },
+      { sectionNumber: "137", title: "Receiving stolen property of electric lines and materials" },
+      { sectionNumber: "138", title: "Interference with meters or works of licensee" },
+      { sectionNumber: "150", title: "Abetment of electricity theft offences" },
+    ],
+  },
+  {
+    id: "act_haryana_police_2007",
+    title: "The Haryana Police Act, 2007",
+    shortName: "Haryana Police Act, 2007",
+    category: "State Acts (Haryana)",
+    sections: [
+      { sectionNumber: "68", title: "Regulation of public assemblies and processions" },
+      { sectionNumber: "69", title: "Assembly and procession violating conditions or without permission" },
+      { sectionNumber: "70", title: "Use of loudspeakers or sound amplifying devices in public places" },
+      { sectionNumber: "71", title: "Directions to keep order on public roads and prevention of obstructions" },
+      { sectionNumber: "72", title: "Penalty for causing nuisance, obstructing traffic, or disobeying police directions" },
+      { sectionNumber: "74", title: "Summary arrest by police officer without warrant for certain offences" },
+    ],
+  },
+  {
+    id: "act_gauvansh_2015",
+    title: "The Haryana Gauvansh Sanrakshan and Gausamvardhan Act, 2015",
+    shortName: "Haryana Gauvansh Sanrakshan Act, 2015",
+    category: "State Acts (Haryana)",
+    sections: [
+      { sectionNumber: "3", title: "Prohibition of cow slaughter" },
+      { sectionNumber: "4", title: "Exceptions to prohibition of cow slaughter" },
+      { sectionNumber: "5", title: "Prohibition of export of cow for slaughter" },
+      { sectionNumber: "8", title: "Prohibition of sale of beef" },
+      { sectionNumber: "13(1)", title: "Punishment for cow slaughter (Rigorous imprisonment 3 to 10 years and fine)" },
+      { sectionNumber: "13(2)", title: "Punishment for export of cow for slaughter (Rigorous imprisonment 3 to 7 years)" },
+      { sectionNumber: "16", title: "Power to enter, inspect, search, seize and arrest without warrant" },
+      { sectionNumber: "17", title: "Confiscation of vehicles used in transporting cows for slaughter" },
+    ],
+  },
+  {
+    id: "act_dppa_1984",
+    title: "The Prevention of Damage to Public Property Act, 1984",
+    shortName: "Prevention of Damage to Public Property Act, 1984",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3(1)", title: "Mischief causing damage to public property" },
+      { sectionNumber: "3(2)(i)", title: "Damage to public property: Water, light, power installation" },
+      { sectionNumber: "3(2)(ii)", title: "Damage to public property: Public transport or telecommunication" },
+      { sectionNumber: "4", title: "Mischief causing damage to public property by fire or explosive substance" },
+    ],
+  },
+  {
+    id: "act_passports_1967",
+    title: "The Passports Act, 1967",
+    shortName: "Passports Act, 1967",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3", title: "Departure from India without passport or travel document prohibited" },
+      { sectionNumber: "12(1)(a)", title: "Contravenes the provisions of Section 3" },
+      { sectionNumber: "12(1)(b)", title: "Knowingly furnishes false information or suppresses material information" },
+      { sectionNumber: "12(1)(c)", title: "Fails to produce passport or travel document on demand" },
+      { sectionNumber: "12(2)", title: "Alters or tampers with passport or travel document" },
+    ],
+  },
+  {
+    id: "act_essential_1955",
+    title: "The Essential Commodities Act, 1955",
+    shortName: "Essential Commodities Act, 1955",
+    category: "Special & Local Laws",
+    sections: [
+      { sectionNumber: "3", title: "Powers to control production, supply, distribution of essential commodities" },
+      { sectionNumber: "7(1)(a)(i)", title: "Penalties for contravention of order under Section 3" },
+      { sectionNumber: "7(1)(a)(ii)", title: "Penalties for contravention involving hoarding or black-marketing" },
+      { sectionNumber: "8", title: "Attempts and abetment of offences under Section 3" },
+    ],
+  },
+  {
+    id: "act_benami_1988",
+    title: "The Prohibition of Benami Property Transactions Act, 1988",
+    shortName: "The Prohibition of Benami Property Transactions Act, 1988",
+    category: "Economic & Property Law",
+    sections: [
+      { sectionNumber: "3(1)", title: "Prohibition of benami transactions" },
+      { sectionNumber: "5", title: "Property held benami liable to confiscation by Central Government" },
+      { sectionNumber: "6", title: "Prohibition on re-transfer of property by benamidar" },
+      { sectionNumber: "53(1)", title: "Penalty for benami transaction: Rigorous imprisonment 1 to 7 years" },
+      { sectionNumber: "54", title: "Penalty for false information: Imprisonment 6 months to 5 years" },
+      { sectionNumber: "55A", title: "Power to tender immunity from prosecution to benamidar" },
+    ],
+  },
+  {
+    id: "act_ipc_1860",
+    title: "The Indian Penal Code, 1860 (Pre-July 2024 / Legacy Matters)",
+    shortName: "Indian Penal Code, 1860 (IPC)",
+    category: "Legacy Penal Code",
+    sections: [
+      { sectionNumber: "34", title: "Acts done by several persons in furtherance of common intention" },
+      { sectionNumber: "120B", title: "Punishment of criminal conspiracy" },
+      { sectionNumber: "147", title: "Punishment for rioting" },
+      { sectionNumber: "148", title: "Rioting, armed with deadly weapon" },
+      { sectionNumber: "149", title: "Every member of unlawful assembly guilty of offence committed in prosecution of common object" },
+      { sectionNumber: "186", title: "Obstructing public servant in discharge of public functions" },
+      { sectionNumber: "188", title: "Disobedience to order duly promulgated by public servant" },
+      { sectionNumber: "279", title: "Rash driving or riding on a public way" },
+      { sectionNumber: "302", title: "Punishment for murder" },
+      { sectionNumber: "304", title: "Punishment for culpable homicide not amounting to murder" },
+      { sectionNumber: "304A", title: "Causing death by negligence" },
+      { sectionNumber: "304B", title: "Dowry death" },
+      { sectionNumber: "306", title: "Abetment of suicide" },
+      { sectionNumber: "307", title: "Attempt to murder" },
+      { sectionNumber: "308", title: "Attempt to commit culpable homicide" },
+      { sectionNumber: "323", title: "Punishment for voluntarily causing hurt" },
+      { sectionNumber: "324", title: "Voluntarily causing hurt by dangerous weapons or means" },
+      { sectionNumber: "325", title: "Punishment for voluntarily causing grievous hurt" },
+      { sectionNumber: "326", title: "Voluntarily causing grievous hurt by dangerous weapons or means" },
+      { sectionNumber: "341", title: "Punishment for wrongful restraint" },
+      { sectionNumber: "342", title: "Punishment for wrongful confinement" },
+      { sectionNumber: "354", title: "Assault or criminal force to woman with intent to outrage her modesty" },
+      { sectionNumber: "354A", title: "Sexual harassment" },
+      { sectionNumber: "354B", title: "Assault or use of criminal force to woman with intent to disrobe" },
+      { sectionNumber: "354C", title: "Voyeurism" },
+      { sectionNumber: "354D", title: "Stalking" },
+      { sectionNumber: "363", title: "Punishment for kidnapping" },
+      { sectionNumber: "365", title: "Kidnapping or abducting with intent secretly and wrongfully to confine person" },
+      { sectionNumber: "366", title: "Kidnapping, abducting or inducing woman to compel her marriage" },
+      { sectionNumber: "376", title: "Punishment for rape" },
+      { sectionNumber: "376D", title: "Gang rape" },
+      { sectionNumber: "379", title: "Punishment for theft" },
+      { sectionNumber: "380", title: "Theft in dwelling house, etc." },
+      { sectionNumber: "381", title: "Theft by clerk or servant of property in possession of master" },
+      { sectionNumber: "384", title: "Punishment for extortion" },
+      { sectionNumber: "392", title: "Punishment for robbery" },
+      { sectionNumber: "394", title: "Voluntarily causing hurt in committing robbery" },
+      { sectionNumber: "395", title: "Punishment for dacoity" },
+      { sectionNumber: "397", title: "Robbery, or dacoity, with attempt to cause death or grievous hurt" },
+      { sectionNumber: "406", title: "Punishment for criminal breach of trust" },
+      { sectionNumber: "409", title: "Criminal breach of trust by public servant, or by banker, merchant or agent" },
+      { sectionNumber: "411", title: "Dishonestly receiving stolen property" },
+      { sectionNumber: "419", title: "Punishment for cheating by personation" },
+      { sectionNumber: "420", title: "Cheating and dishonestly inducing delivery of property" },
+      { sectionNumber: "427", title: "Mischief causing damage to the amount of fifty rupees" },
+      { sectionNumber: "447", title: "Punishment for criminal trespass" },
+      { sectionNumber: "448", title: "Punishment for house-trespass" },
+      { sectionNumber: "452", title: "House-trespass after preparation for hurt, assault or wrongful restraint" },
+      { sectionNumber: "457", title: "Lurking house-trespass or house-breaking by night in order to commit offence" },
+      { sectionNumber: "467", title: "Forgery of valuable security, will, etc." },
+      { sectionNumber: "468", title: "Forgery for purpose of cheating" },
+      { sectionNumber: "471", title: "Using as genuine a forged document or electronic record" },
+      { sectionNumber: "498A", title: "Husband or relative of husband of a woman subjecting her to cruelty" },
+      { sectionNumber: "504", title: "Intentional insult with intent to provoke breach of the peace" },
+      { sectionNumber: "506", title: "Punishment for criminal intimidation" },
+      { sectionNumber: "509", title: "Word, gesture or act intended to insult the modesty of a woman" },
+      { sectionNumber: "511", title: "Punishment for attempting to commit offences" },
+    ],
+  },
+  {
+    id: "act_crpc_1973",
+    title: "The Code of Criminal Procedure, 1973 (Pre-July 2024 / Legacy)",
+    shortName: "Code of Criminal Procedure, 1973 (CrPC)",
+    category: "Legacy Procedural Code",
+    sections: [
+      { sectionNumber: "41", title: "When police may arrest without warrant" },
+      { sectionNumber: "41A", title: "Notice of appearance before police officer" },
+      { sectionNumber: "91", title: "Summons to produce document or other thing" },
+      { sectionNumber: "100", title: "Persons in charge of closed place to allow search" },
+      { sectionNumber: "102", title: "Power of police officer to seize certain property" },
+      { sectionNumber: "107", title: "Security for keeping the peace in other cases" },
+      { sectionNumber: "151", title: "Arrest to prevent the commission of cognizable offences" },
+      { sectionNumber: "154", title: "Information in cognizable cases (Registration of FIR)" },
+      { sectionNumber: "156(3)", title: "Any Magistrate empowered under Section 190 may order investigation" },
+      { sectionNumber: "160", title: "Police officer's power to require attendance of witnesses" },
+      { sectionNumber: "161", title: "Examination of witnesses by police" },
+      { sectionNumber: "164", title: "Recording of confessions and statements by Magistrate" },
+      { sectionNumber: "167", title: "Procedure when investigation cannot be completed in 24 hours" },
+      { sectionNumber: "173(2)", title: "Report of police officer on completion of investigation (Chargesheet / Final Form)" },
+      { sectionNumber: "173(8)", title: "Further investigation after submission of police report" },
+      { sectionNumber: "174", title: "Police to enquire and report on suicide, etc. (Inquest Report)" },
+    ],
+  },
+  {
+    id: "act_iea_1872",
+    title: "The Indian Evidence Act, 1872 (Legacy)",
+    shortName: "Indian Evidence Act, 1872 (IEA)",
+    category: "Legacy Evidence Law",
+    sections: [
+      { sectionNumber: "24", title: "Confession caused by inducement, threat or promise, when irrelevant" },
+      { sectionNumber: "25", title: "Confession to police-officer not to be proved" },
+      { sectionNumber: "26", title: "Confession by accused while in custody of police not to be proved" },
+      { sectionNumber: "27", title: "How much of information received from accused may be proved (Recovery Memo)" },
+      { sectionNumber: "32", title: "Cases in which statement of relevant fact by person who is dead is relevant (Dying Declaration)" },
+      { sectionNumber: "45", title: "Opinions of experts (FSL / Ballistics / Handwriting / DNA)" },
+      { sectionNumber: "65B", title: "Admissibility of electronic records (Certificate under Section 65B)" },
+      { sectionNumber: "113A", title: "Presumption as to abetment of suicide by a married woman" },
+      { sectionNumber: "113B", title: "Presumption as to dowry death" },
+    ],
+  },
+  {
+    id: "act_bnss_2023",
+    title: "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+    shortName: "Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)",
+    category: "Procedural Criminal Law",
+    sections: [
+      { sectionNumber: "35", title: "When police may arrest without warrant" },
+      { sectionNumber: "35(3)", title: "Notice of appearance before police officer (replaces 41A CrPC)" },
+      { sectionNumber: "94", title: "Summons to produce document or other thing (replaces 91 CrPC)" },
+      { sectionNumber: "103", title: "Search warrants" },
+      { sectionNumber: "105", title: "Recording of search and seizure through audio-video electronic means" },
+      { sectionNumber: "106", title: "Power of police officer to seize certain property (replaces 102 CrPC)" },
+      { sectionNumber: "111", title: "Security for keeping the peace in other cases" },
+      { sectionNumber: "168", title: "Arrest to prevent the commission of cognizable offences" },
+      { sectionNumber: "173(1)", title: "Information in cognizable cases (Registration of FIR)" },
+      { sectionNumber: "173(3)", title: "Preliminary enquiry before registration of FIR" },
+      { sectionNumber: "175(3)", title: "Application to Magistrate on refusal to register FIR" },
+      { sectionNumber: "179", title: "Police officer's power to require attendance of witnesses" },
+      { sectionNumber: "180", title: "Examination of witnesses by police" },
+      { sectionNumber: "183", title: "Recording of confessions and statements by Magistrate" },
+      { sectionNumber: "187", title: "Procedure when investigation cannot be completed in 24 hours (Police Remand)" },
+      { sectionNumber: "193(3)", title: "Report of police officer on completion of investigation (Chargesheet / Final Form)" },
+      { sectionNumber: "193(9)", title: "Further investigation after submission of report" },
+      { sectionNumber: "194", title: "Police to enquire and report on suicide, etc. (Inquest Report)" },
+      { sectionNumber: "482", title: "Direction for grant of bail to person apprehending arrest (Anticipatory bail)" },
+      { sectionNumber: "483", title: "Special powers of High Court or Court of Session regarding bail" },
+    ],
+  },
+  {
+    id: "act_bsa_2023",
+    title: "The Bharatiya Sakshya Adhiniyam, 2023",
+    shortName: "Bharatiya Sakshya Adhiniyam, 2023 (BSA)",
+    category: "Law of Evidence",
+    sections: [
+      { sectionNumber: "22", title: "Confession to police officer not to be proved (replaces 25 IEA)" },
+      { sectionNumber: "23(1)", title: "Confession by accused while in custody of police not to be proved (replaces 26 IEA)" },
+      { sectionNumber: "23(2)", title: "Information received from accused leading to discovery / Recovery Memo (replaces 27 IEA)" },
+      { sectionNumber: "26", title: "Cases in which statement of relevant fact by person who is dead is relevant (Dying Declaration)" },
+      { sectionNumber: "39", title: "Opinions of experts (FSL, Ballistics, Handwriting, DNA)" },
+      { sectionNumber: "61", title: "Electronic or digital record as admissible evidence" },
+      { sectionNumber: "63", title: "Admissibility of electronic records and Certificate under Section 63 (replaces 65B IEA)" },
+      { sectionNumber: "117", title: "Presumption as to abetment of suicide by a married woman" },
+      { sectionNumber: "118", title: "Presumption as to dowry death" },
+    ],
+  },
+];
+
+export interface UnifiedSectionOption {
+  sectionNumber: string;
+  title?: string;
+  description?: string;
+}
+
+export interface UnifiedActOption {
+  id: string;
+  name: string; // The canonical name for the FIR (e.g. "Bharatiya Nyaya Sanhita, 2023 (BNS)")
+  title: string;
+  category: string;
+  isCustom?: boolean;
+  sections: UnifiedSectionOption[];
+}
+
+/**
+ * Combines acts from ActsService (user custom uploads + built-ins) with CCTNS_ACTS_CATALOG
+ * Deduplicates by canonical name/id and merges their section arrays seamlessly.
+ */
+export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] {
+  const map = new Map<string, UnifiedActOption>();
+
+  const normalizeKey = (str: string) => {
+    return str
+      .toLowerCase()
+      .replace(/^(the\s+)/i, "")
+      .replace(/[^a-z0-9]/g, "");
+  };
+
+  // 1. Seed with CCTNS_ACTS_CATALOG
+  for (const cAct of CCTNS_ACTS_CATALOG) {
+    const key = normalizeKey(cAct.title || cAct.shortName || cAct.id);
+    map.set(key, {
+      id: cAct.id,
+      name: cAct.shortName || cAct.title,
+      title: cAct.title,
+      category: cAct.category,
+      isCustom: false,
+      sections: (cAct.sections || []).map((s) => ({
+        sectionNumber: s.sectionNumber,
+        title: s.title,
+        description: s.description,
+      })),
+    });
+  }
+
+  // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
+  if (Array.isArray(userActs)) {
+    for (const uAct of userActs) {
+      if (!uAct || (!uAct.title && !uAct.shortName)) continue;
+      const key = normalizeKey(uAct.title || uAct.shortName || uAct.id || "");
+      const existing = map.get(key);
+
+      const userSections: UnifiedSectionOption[] = [];
+      if (Array.isArray(uAct.keySections)) {
+        for (const ks of uAct.keySections) {
+          if (ks && ks.sectionNumber) {
+            userSections.push({
+              sectionNumber: String(ks.sectionNumber).trim(),
+              title: ks.title,
+              description: ks.description,
+            });
+          }
+        }
+      }
+
+      if (existing) {
+        // Merge sections: append any new sections from userAct that aren't already in existing
+        const existingSecNums = new Set(existing.sections.map((s) => s.sectionNumber.toLowerCase().trim()));
+        for (const s of userSections) {
+          if (!existingSecNums.has(s.sectionNumber.toLowerCase().trim())) {
+            existing.sections.push(s);
+            existingSecNums.add(s.sectionNumber.toLowerCase().trim());
+          }
+        }
+      } else {
+        // Brand new custom act uploaded in the acts-sections module
+        map.set(key, {
+          id: uAct.id,
+          name: uAct.title || uAct.shortName,
+          title: uAct.title || uAct.shortName,
+          category: uAct.categoryLabel || uAct.category || "Custom / User Uploaded Acts",
+          isCustom: Boolean(uAct.isCustomUpload),
+          sections: userSections,
+        });
+      }
+    }
+  }
+
+  return Array.from(map.values());
+}
+

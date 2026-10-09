@@ -9,18 +9,18 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({ className, variant = "default", size = "sm", children, ...props }: BadgeProps) {
   const variantStyles = {
-    default: "bg-slate-100 text-slate-700 border-slate-200",
-    success: "bg-slate-50 text-slate-700 border-slate-200",
-    warning: "bg-slate-100 text-slate-700 border-slate-200",
-    danger: "bg-rose-50 text-rose-800 border-rose-200",
-    info: "bg-slate-100 text-slate-700 border-slate-200",
-    neutral: "bg-slate-50 text-slate-600 border-slate-200",
-    gold: "bg-slate-100 text-slate-800 border-slate-300 font-semibold",
+    default: "bg-slate-100 text-slate-700 border-slate-200/80",
+    success: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
+    warning: "bg-amber-50 text-amber-800 border-amber-200/60",
+    danger: "bg-rose-50 text-rose-800 border-rose-200/60",
+    info: "bg-slate-100 text-slate-700 border-slate-200/80",
+    neutral: "bg-slate-50 text-slate-600 border-slate-200/70",
+    gold: "bg-slate-100 text-slate-800 border-slate-300/80 font-medium",
   };
 
   const sizeStyles = {
     sm: "px-2 py-0.5 text-[11px] font-medium",
-    md: "px-2.5 py-1 text-xs font-medium",
+    md: "px-2.5 py-0.5 text-xs font-medium",
   };
 
   return (
@@ -52,7 +52,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70",
           className
         )}
       >
@@ -62,42 +62,42 @@ export function StatusBadge({
     );
   }
 
-  // 2. FIR Register (Direct Send to FIR, awaiting formal FIR registration by SHO)
+  // 2. FIR Register
   if (s === "FIR Register" || s === "FIR_REGISTER") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-900 border border-purple-300 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-50/80 text-purple-900 border border-purple-200/70",
           className
         )}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0" />
         <span>FIR Register</span>
       </span>
     );
   }
 
-  // 2b. FIR Recommend (SHO Approved FIR recommendation, awaiting FIR registration)
+  // 2b. FIR Recommend
   if (s === "FIR Recommend" || s === "FIR_RECOMMEND" || s === "FIR_RECOMMENDED") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-950 border border-amber-400 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-950 border border-amber-300/70",
           className
         )}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0 animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" />
         <span>FIR Recommend</span>
       </span>
     );
   }
 
-  // 3. FIR Registered (Formal FIR has been registered with FIR Number)
+  // 3. FIR Registered
   if (s === "FIR Registered" || s === "FIR_REGISTERED") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-50/80 text-rose-800 border border-rose-200/70",
           className
         )}
       >
@@ -107,22 +107,22 @@ export function StatusBadge({
     );
   }
 
-  // 4. Correction Required (Report rejected by SHO for correction/resubmission)
+  // 4. Correction Required
   if (s === "Correction Required" || s === "CORRECTION_REQUIRED" || s === "RE_ENQUIRY") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70",
           className
         )}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
         <span>Correction Required</span>
       </span>
     );
   }
 
-  // 3. Complete
+  // 5. Complete
   if (
     s === "Complete" ||
     s === "COMPLETE" ||
@@ -134,7 +134,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50/80 text-emerald-800 border border-emerald-200/70",
           className
         )}
       >
@@ -144,15 +144,15 @@ export function StatusBadge({
     );
   }
 
-  // 4. Pending (all in-progress / ongoing / awaiting SHO / re-enquiry)
+  // 6. Pending
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80",
         className
       )}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-slate-500 shrink-0" />
       <span>Pending</span>
     </span>
   );

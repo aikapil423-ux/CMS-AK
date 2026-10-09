@@ -65,10 +65,19 @@ function ActsAndSectionsContent() {
   const [copiedActText, setCopiedActText] = useState(false);
   const [copiedSectionNumber, setCopiedSectionNumber] = useState<string | null>(null);
 
-  // Load Acts from service (includes built-in Bare Acts + custom localStorage uploads)
-  const loadActs = () => {
-    const list = ActsService.getAllActs();
-    setActsList(list);
+  // Load Acts from service (includes built-in Bare Acts + IndexedDB + custom localStorage uploads)
+  const loadActs = async () => {
+    // 1. Instant synchronous load
+    const syncList = ActsService.getAllActs();
+    setActsList(syncList);
+
+    // 2. Full IndexedDB persistent load
+    try {
+      const fullList = await ActsService.getAllActsAsync();
+      setActsList(fullList);
+    } catch (e) {
+      console.warn("Async acts load error:", e);
+    }
   };
 
   useEffect(() => {
@@ -172,29 +181,63 @@ function ActsAndSectionsContent() {
   // Submit new document with 100% automated AI processing (Only upload file + document name!)
   const handleAddDocumentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadTitle.trim() && !uploadFileName) {
+    if (!uploadTitle.trim() && !uploadFileName && !selectedUploadFile) {
       alert("Please select a document file to upload.");
       return;
     }
 
     setIsUploading(true);
-    setProcessingStatus("Reading & analyzing document with AI...");
+    setProcessingStatus("Reading & preparing document...");
 
     try {
+      // 1. Ensure file data URL is fully read (prevents race conditions if user clicked quickly)
+      let finalDataUrl = uploadFileDataUrl;
+      if (selectedUploadFile && !finalDataUrl) {
+        try {
+          finalDataUrl = await new Promise<string>((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result as string);
+            r.onerror = () => reject(r.error);
+            r.readAsDataURL(selectedUploadFile);
+          });
+          setUploadFileDataUrl(finalDataUrl);
+        } catch (readErr) {
+          console.warn("Could not read file as data URL:", readErr);
+        }
+      }
+
+      // If text file, read text directly for better extraction
+      let fileRawText = "";
+      if (selectedUploadFile && (selectedUploadFile.type === "text/plain" || selectedUploadFile.name.endsWith(".txt"))) {
+        try {
+          fileRawText = await selectedUploadFile.text();
+        } catch {}
+      }
+
       let extractedActData: any = null;
 
+      // 2. Call auto-processing API with timeout
       try {
+        setProcessingStatus("Extracting sections, legal classifications & verbatim text...");
         const formData = new FormData();
         if (selectedUploadFile) {
           formData.append("file", selectedUploadFile);
         }
         formData.append("title", uploadTitle.trim());
+        if (fileRawText) {
+          formData.append("text", fileRawText);
+        }
 
-        setProcessingStatus("Extracting sections, legal classifications & verbatim text...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000); // 18s timeout
+
         const res = await fetch("/api/acts/process", {
           method: "POST",
           body: formData,
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const json = await res.json();
@@ -203,13 +246,15 @@ function ActsAndSectionsContent() {
           }
         }
       } catch (apiErr) {
-        console.warn("Auto-process API warning, using fallback:", apiErr);
+        console.warn("Auto-process API warning, proceeding with resilient heuristic fallback:", apiErr);
       }
 
       const finalTitle = uploadTitle.trim() || extractedActData?.title || uploadFileName.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
       const finalShortName = extractedActData?.shortName || finalTitle.split(",")[0].trim().slice(0, 25);
 
-      ActsService.addCustomAct({
+      // 3. Save act via IndexedDB + safe multi-tier storage
+      setProcessingStatus("Saving document to local legal database...");
+      await ActsService.addCustomAct({
         title: finalTitle,
         shortName: finalShortName,
         actNumber: extractedActData?.actNumber || `Act No. ${new Date().getFullYear()}/${Math.floor(Math.random() * 800 + 100)}`,
@@ -222,7 +267,7 @@ function ActsAndSectionsContent() {
         fileFormat: uploadFileFormat,
         fileName: uploadFileName || `${finalTitle.replace(/\s+/g, "_")}.${uploadFileFormat.toLowerCase()}`,
         fileSize: uploadFileSize || "Uploaded",
-        fileDataUrl: uploadFileDataUrl,
+        fileDataUrl: finalDataUrl,
         description: extractedActData?.description || `Official statutory document registered as ${finalTitle}.`,
         preambleVerbatim: extractedActData?.preambleVerbatim || undefined,
         verbatimText: extractedActData?.verbatimText || undefined,
@@ -244,7 +289,8 @@ function ActsAndSectionsContent() {
         ],
       });
 
-      loadActs();
+      // 4. Reload acts list
+      await loadActs();
       setUploadModalOpen(false);
 
       // Reset form
@@ -322,10 +368,10 @@ function ActsAndSectionsContent() {
   };
 
   // Delete custom document
-  const handleDeleteCustomAct = (actId: string, actTitle: string) => {
+  const handleDeleteCustomAct = async (actId: string, actTitle: string) => {
     if (confirm(`Are you sure you want to remove "${actTitle}" from the legal repository?`)) {
-      ActsService.deleteCustomAct(actId);
-      loadActs();
+      await ActsService.deleteCustomAct(actId);
+      await loadActs();
     }
   };
 

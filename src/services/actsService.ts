@@ -1009,26 +1009,161 @@ export const BUILTIN_LEGAL_ACTS: LegalActItem[] = [
 ];
 
 const LOCAL_STORAGE_KEY = "cms_acts_sections_documents";
+const IDB_NAME = "CMS_LEGAL_ACTS_DB_V1";
+const IDB_STORE = "custom_acts";
+const IDB_VERSION = 1;
+
+// In-memory cache of custom acts
+let inMemoryCustomActs: LegalActItem[] = [];
+let isIdbInitialized = false;
+
+// IndexedDB Helper Functions
+function openActsIdb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      reject(new Error("IndexedDB not supported"));
+      return;
+    }
+    const request = window.indexedDB.open(IDB_NAME, IDB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveActToIdb(act: LegalActItem): Promise<void> {
+  try {
+    const db = await openActsIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).put(act);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn("Could not save act to IndexedDB:", err);
+  }
+}
+
+async function loadActsFromIdb(): Promise<LegalActItem[]> {
+  try {
+    const db = await openActsIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const request = tx.objectStore(IDB_STORE).getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn("Could not load acts from IndexedDB:", err);
+    return [];
+  }
+}
+
+async function deleteActFromIdb(id: string): Promise<void> {
+  try {
+    const db = await openActsIdb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      tx.objectStore(IDB_STORE).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn("Could not delete act from IndexedDB:", err);
+  }
+}
+
+// Safely save lightweight copy in localStorage without throwing QuotaExceededError
+function saveLightweightToLocalStorage(acts: LegalActItem[]) {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  try {
+    // Strip heavy fileDataUrl (> 20KB) for localStorage to stay well below 5MB limit
+    const lightweight = acts.map((act) => {
+      if (act.fileDataUrl && act.fileDataUrl.length > 20000) {
+        const { fileDataUrl, ...rest } = act;
+        return { ...rest, hasLargeFileInIdb: true };
+      }
+      return act;
+    });
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(lightweight));
+  } catch (e: any) {
+    console.warn("LocalStorage quota reached, storing metadata only:", e?.message);
+    try {
+      // If still exceeding, strip all fileDataUrl
+      const minimal = acts.map(({ fileDataUrl, ...rest }) => rest);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(minimal));
+    } catch {
+      // Ignore if localStorage completely full; IndexedDB & in-memory handle it
+    }
+  }
+}
 
 export const ActsService = {
+  // Synchronous retrieval from in-memory cache + localStorage + built-ins
   getAllActs(): LegalActItem[] {
     if (typeof window === "undefined") {
       return BUILTIN_LEGAL_ACTS;
     }
 
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        const customActs: LegalActItem[] = JSON.parse(stored);
-        // Combine built-in acts with custom-uploaded acts (avoiding duplicates by id)
-        const customIds = new Set(customActs.map((c) => c.id));
-        const nonDuplicateBuiltins = BUILTIN_LEGAL_ACTS.filter((b) => !customIds.has(b.id));
-        return [...nonDuplicateBuiltins, ...customActs];
+    // If in-memory is empty, try loading from localStorage first
+    if (inMemoryCustomActs.length === 0) {
+      try {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            inMemoryCustomActs = parsed;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to parse custom acts from localStorage:", err);
       }
-    } catch (err) {
-      console.error("Failed to parse custom acts from localStorage:", err);
     }
-    return BUILTIN_LEGAL_ACTS;
+
+    // Trigger async load from IndexedDB in the background if not done yet
+    if (!isIdbInitialized) {
+      isIdbInitialized = true;
+      loadActsFromIdb().then((idbActs) => {
+        if (idbActs && idbActs.length > 0) {
+          // Merge IndexedDB acts (which have full fileDataUrl) with in-memory acts
+          const map = new Map<string, LegalActItem>();
+          inMemoryCustomActs.forEach((a) => map.set(a.id, a));
+          idbActs.forEach((a) => map.set(a.id, a)); // IndexedDB version takes precedence
+          inMemoryCustomActs = Array.from(map.values());
+        }
+      }).catch(() => {});
+    }
+
+    const customIds = new Set(inMemoryCustomActs.map((c) => c.id));
+    const nonDuplicateBuiltins = BUILTIN_LEGAL_ACTS.filter((b) => !customIds.has(b.id));
+    return [...nonDuplicateBuiltins, ...inMemoryCustomActs];
+  },
+
+  // Asynchronous retrieval (guaranteed full data from IndexedDB)
+  async getAllActsAsync(): Promise<LegalActItem[]> {
+    if (typeof window === "undefined") {
+      return BUILTIN_LEGAL_ACTS;
+    }
+
+    try {
+      const idbActs = await loadActsFromIdb();
+      if (idbActs && idbActs.length > 0) {
+        const map = new Map<string, LegalActItem>();
+        inMemoryCustomActs.forEach((a) => map.set(a.id, a));
+        idbActs.forEach((a) => map.set(a.id, a));
+        inMemoryCustomActs = Array.from(map.values());
+      }
+    } catch (e) {
+      console.warn("Could not load from IndexedDB:", e);
+    }
+
+    return this.getAllActs();
   },
 
   getActById(id: string): LegalActItem | undefined {
@@ -1036,7 +1171,7 @@ export const ActsService = {
     return all.find((a) => a.id === id);
   },
 
-  addCustomAct(act: Omit<LegalActItem, "id" | "isCustomUpload" | "uploadedAt">): LegalActItem {
+  async addCustomAct(act: Omit<LegalActItem, "id" | "isCustomUpload" | "uploadedAt">): Promise<LegalActItem> {
     const newAct: LegalActItem = {
       ...act,
       id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -1044,33 +1179,22 @@ export const ActsService = {
       uploadedAt: new Date().toISOString(),
     };
 
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-        const customActs: LegalActItem[] = stored ? JSON.parse(stored) : [];
-        customActs.unshift(newAct);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(customActs));
-      } catch (err) {
-        console.error("Failed to save custom act:", err);
-      }
-    }
+    // 1. Immediately store in in-memory cache
+    inMemoryCustomActs = [newAct, ...inMemoryCustomActs.filter((a) => a.id !== newAct.id)];
+
+    // 2. Persist full document and data in IndexedDB (handles gigabytes, no quota errors)
+    await saveActToIdb(newAct);
+
+    // 3. Persist lightweight metadata in localStorage
+    saveLightweightToLocalStorage(inMemoryCustomActs);
 
     return newAct;
   },
 
-  deleteCustomAct(id: string): boolean {
-    if (typeof window === "undefined") return false;
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (stored) {
-        const customActs: LegalActItem[] = JSON.parse(stored);
-        const filtered = customActs.filter((a) => a.id !== id);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(filtered));
-        return true;
-      }
-    } catch (err) {
-      console.error("Failed to delete custom act:", err);
-    }
-    return false;
+  async deleteCustomAct(id: string): Promise<boolean> {
+    inMemoryCustomActs = inMemoryCustomActs.filter((a) => a.id !== id);
+    saveLightweightToLocalStorage(inMemoryCustomActs);
+    await deleteActFromIdb(id);
+    return true;
   },
 };

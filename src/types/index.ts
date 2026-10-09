@@ -221,6 +221,7 @@ export interface AccusedPerson {
   name: string;
   alias?: string;
   fatherName?: string;
+  relativeName?: string;
   address?: string;
   phone?: string;
   relationWithComplainant?: string;
@@ -1096,6 +1097,7 @@ export interface InvestigationSummaryReport {
 // ==========================================
 
 export type FIRStatus =
+  | 'REGISTERED'
   | 'UNDER_INVESTIGATION'
   | 'PENDING_SUPERVISORY_REVIEW'
   | 'CHARGESHEET_FILED'
@@ -1105,8 +1107,11 @@ export type FIRStatus =
   | 'QUASHED_BY_COURT';
 
 export type MainFIRStatus =
+  | 'Registered'
   | 'Not Assigned'
   | 'Under Investigation'
+  | 'Under investigation'
+  | 'Pending SHO review'
   | 'Chargesheet Filed'
   | 'Closure Filed'
   | 'Untraced'
@@ -1158,6 +1163,139 @@ export interface FIRAuditRecord {
   details?: string;
 }
 
+// ==========================================
+// CCTNS 11-TAB & I.I.F.-I EXTENDED FIR TYPES
+// ==========================================
+
+export interface FIRActSectionEntry {
+  id: string;
+  srNo?: number;
+  act: string;
+  sections: string;
+}
+
+export interface FIRMajorMinorHeadEntry {
+  id: string;
+  srNo?: number;
+  majorHead: string;
+  minorHead: string;
+}
+
+export interface FIROccurrenceItem {
+  id: string;
+  srNo?: number;
+  day?: string;
+  dateFrom: string;
+  dateTo?: string;
+  timePeriodPahar?: string;
+  timePeriod?: string;
+  timeFrom?: string;
+  timeTo?: string;
+  directionFromPs?: string;
+  distanceFromPsKm?: string | number;
+  distanceKm?: string | number;
+  area?: string;
+  city?: string;
+  beatNumber?: string;
+  beatNo?: string;
+  landmark?: string;
+  address?: string;
+  isOutsidePsLimits?: boolean;
+  outsidePs?: boolean;
+  outsidePsName?: string;
+  outsideDistrict?: string;
+  outsideState?: string;
+}
+
+export interface FIRAliasEntry {
+  id: string;
+  alias?: string;
+  aliasName?: string;
+}
+
+export interface FIRIdentificationEntry {
+  id: string;
+  idType: string; // Ration Card, Voter ID Card, Passport, UID No., Driving License, PAN Card
+  idNumber: string;
+}
+
+export interface FIRDepartmentEntry {
+  id: string;
+  departmentName: string;
+  departmentEmail: string;
+}
+
+export interface FIRUidbEntry {
+  id: string;
+  uidbNumber: string;
+}
+
+export interface FIRPropertyItem {
+  id: string;
+  srNo?: number;
+  propertyCategory: string;
+  propertyType: string;
+  natureOfProperty?: string;
+  description: string;
+  estimatedValue?: number | string; // undefined/empty string = unknown, 0 = 0
+  isUnknownValue?: boolean;
+}
+
+export interface FIRHurtDetails {
+  deceasedCount: number;
+  seriouslyHurtCount: number;
+  simpleHurtCount: number;
+  nonInjuredCount: number;
+  injuryDetails?: string;
+  meansOfCausingInjury?: string;
+  hasVideoFootage?: boolean;
+  uploadedDocuments?: Array<{
+    id: string;
+    name: string;
+    size?: string | number;
+    type?: string;
+    dataUrl?: string;
+  }>;
+}
+
+export interface FIRSignatureData {
+  complainantSignatureType?: 'CAPTURE' | 'THUMB' | 'UPLOAD' | 'EXEMPT';
+  complainantSignatureDataUrl?: string;
+  officerSignatureDataUrl?: string;
+  officerInChargeName?: string;
+  officerInChargeRank?: string;
+  officerInChargeNumber?: string;
+}
+
+export interface FIRActionTakenData {
+  keepSecretOrInvisible?: boolean;
+  isSecretFir?: boolean;
+  actionTakenType?: 'INVESTIGATION_TAKEN' | 'DIRECTED_IO' | 'REFUSED' | 'TRANSFERRED';
+  actionType?: 'INVESTIGATION_TAKEN' | 'DIRECTED_IO' | 'REFUSED' | 'TRANSFERRED' | 'REGISTERED_INVESTIGATION' | 'REFUSED_INVESTIGATION' | 'TRANSFERRED_JURISDICTION' | string;
+  // Directed IO
+  directedIoId?: string;
+  directedIoName?: string;
+  directedIoRank?: string;
+  directedIoNumber?: string;
+  directedIoBelt?: string;
+  // Refused
+  refusedReason?: string;
+  // Transferred
+  transferredPs?: string;
+  transferredDistrict?: string;
+  // Inquest / UD Case
+  inquestCaseNo?: string;
+  inquestReportNo?: string;
+  uidbList?: FIRUidbEntry[];
+  // Court Dispatch
+  courtDispatchDate?: string;
+  courtDispatchTime?: string;
+  courtDispatchDateTime?: string;
+  // ROAC Confirmation
+  roacConfirmed?: boolean;
+  freeCopyGiven?: boolean;
+}
+
 export interface FIRItem {
   id: string;
   firNumber: string;
@@ -1181,59 +1319,161 @@ export interface FIRItem {
   status: FIRStatus;
   mainStatus?: MainFIRStatus;
 
-  // Acts & Sections (Mandatory for FIR under BNS / BNSS / Special Acts)
+  // Tab 1: Acts & Sections & Basic Details
+  gdNumber?: string;
+  gdDate?: string;
+  gdTime?: string;
+  sourceOfComplaint?: string;
+  complaintNumber?: string;
+  isHeinous?: boolean;
+  isHeinousCrime?: boolean;
+  isSensitive?: boolean;
+  isSensitiveFIR?: boolean;
+  originalDateTime?: string;
+  remarks?: string;
+  typeOfInformation: 'WRITTEN' | 'ORAL' | 'E_COMPLAINT';
+  actsAndSectionsList?: FIRActSectionEntry[];
+  majorMinorHeadsList?: FIRMajorMinorHeadEntry[];
+
+  // Legacy/Compatibility fields
   actsAndSections: string;
   majorAct?: string;
   bnsSections?: string[];
   specialActs?: string;
 
-  // Incident & Place
+  // Tab 2: Occurrence
+  occurrencesList?: FIROccurrenceItem[];
+  infoReceivedDate?: string;
+  infoReceivedTime?: string;
+  // Occurrence details
   incidentDateFrom: string;
   incidentDateTo?: string;
   incidentTimeFrom?: string;
   incidentTimeTo?: string;
+  incidentDay?: string;
+  incidentTimePeriod?: string;
   incidentPlace: string;
   incidentLandmark?: string;
   distanceFromPs?: string;
   beatNumber?: string;
-  incidentDetails: string;
-
-  // Occurrence & GD Entry
+  isPlaceOutsidePs?: boolean;
+  outsidePsDetails?: string;
+  outsidePsName?: string;
+  outsideDistrict?: string;
+  outsideState?: string;
   gdEntryNumber?: string;
   gdEntryDateTime?: string;
-  typeOfInformation: 'WRITTEN' | 'ORAL' | 'E_COMPLAINT';
 
-  // Complainant / Informant Details
+  // Tab 3: Complainant
+  complainantUid?: string;
+  complainantFirstName?: string;
+  complainantMiddleName?: string;
+  complainantLastName?: string;
   complainantName: string;
-  complainantRelationType?: RelativeRelation;
+  complainantAliases?: FIRAliasEntry[];
+  complainantAliasList?: FIRAliasEntry[];
+  complainantGender: 'MALE' | 'FEMALE' | 'TRANSGENDER' | 'OTHER' | string;
+  complainantMaritalStatus?: string;
+  complainantCategory?: string;
+  complainantMobile: string;
+  complainantLandline?: string;
+  complainantEmail?: string;
+  complainantRelationType?: RelativeRelation | string;
   complainantRelativeName?: string;
-  complainantFatherSpouse?: string;
-  complainantNationality?: string;
-  complainantGender: 'MALE' | 'FEMALE' | 'TRANSGENDER' | 'OTHER';
+  complainantRelativeAlias?: string;
+  complainantRelativeAliasName?: string;
+  complainantSameAsVictim?: boolean;
   complainantAge?: number;
   complainantDob?: string;
-  complainantMobile: string;
-  complainantAltPhone?: string;
+  complainantYearOfBirth?: string;
+  complainantAgeGroup?: string;
+  complainantNationality?: string;
+  complainantOccupation?: string;
+  complainantIdentifications?: FIRIdentificationEntry[];
+  complainantPassportNumber?: string;
+  complainantPassportDateOfIssue?: string;
+  complainantPassportPlaceOfIssue?: string;
+  complainantPassportIssueDate?: string;
+  complainantPassportIssuePlace?: string;
+  // Complainant Address
+  complainantPermanentHouseNo?: string;
+  complainantPermanentStreet?: string;
+  complainantPermanentColony?: string;
+  complainantPermanentVillageCity?: string;
+  complainantPermanentTehsil?: string;
+  complainantPermanentCountry?: string;
+  complainantPermanentState?: string;
+  complainantPermanentDistrict?: string;
+  complainantPermanentPoliceStation?: string;
+  complainantPermanentPincode?: string;
+  complainantHouseNo?: string;
+  complainantStreet?: string;
+  complainantColony?: string;
+  complainantTehsil?: string;
+  complainantPincode?: string;
+  isPermanentSameAsPresent?: boolean;
+  complainantPresentAddressSame?: boolean;
+  complainantPresentAddress?: string;
+  complainantPresentHouseNo?: string;
+  complainantPresentStreet?: string;
+  complainantPresentColony?: string;
+  complainantPresentVillageCity?: string;
+  complainantPresentTehsil?: string;
+  complainantPresentCountry?: string;
+  complainantPresentState?: string;
+  complainantPresentDistrict?: string;
+  complainantPresentPoliceStation?: string;
+  complainantPresentPincode?: string;
+  // Legacy address fields
   complainantAddress: string;
   complainantCity: string;
   complainantDistrict: string;
   complainantState?: string;
   complainantCountry?: string;
+  complainantFatherSpouse?: string;
+  complainantAltPhone?: string;
   complainantPermanentAddress?: string;
   complainantPermanentCity?: string;
-  complainantPermanentDistrict?: string;
-  complainantPermanentState?: string;
-  complainantPermanentCountry?: string;
   additionalComplainants?: ComplainantPerson[];
 
-  // Accused Persons
+  // Tab 4: FIR Content
+  incidentDetails: string; // Full FIR Contents
+  firContentText?: string;
+  briefFacts?: string;
+  delayReason?: string;
+  reasonsForDelay?: string;
+
+  // Tab 5: Action Taken
+  keepSecretOrInvisible?: boolean;
+  actionTakenData?: FIRActionTakenData;
+  departmentsList?: FIRDepartmentEntry[];
+  departmentNotifications?: FIRDepartmentEntry[];
+  uidbEntries?: FIRUidbEntry[];
+  inquestReportNo?: string;
+  courtDispatchDateTime?: string;
+
+  // Tab 6: Victim Information
+  victimType?: string;
+  victimsList?: any[];
+
+  // Tab 7: Accused
+  accusedTypeSelected?: 'Known' | 'Unknown / Seen';
   isAccusedKnown?: boolean;
   accusedList: AccusedPerson[];
 
-  // Victims & Property
-  victimsList?: ComplainantPerson[];
-  stolenPropertyDetails?: string;
+  // Tab 8: Property of Interest
+  propertiesList?: FIRPropertyItem[];
   totalPropertyEstimatedValue?: number;
+  stolenPropertyDetails?: string;
+
+  // Tab 9: Hurt Case Detail
+  hurtDetails?: FIRHurtDetails;
+
+  // Tab 10: Signature
+  signatureData?: FIRSignatureData;
+
+  // Tab 11: Tag FIR
+  firTagType?: string;
 
   // Assignment & Investigation Officer (IO)
   registeredBy: string;

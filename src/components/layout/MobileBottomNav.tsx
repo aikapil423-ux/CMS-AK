@@ -67,10 +67,10 @@ export function MobileBottomNav() {
   const currentNav = isRoznamcha ? roznamchaItems : isComplaints ? complaintItems : portalItems;
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#081225] border-t border-slate-800/90 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pb-safe">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-slate-200/80 shadow-2xs pb-safe">
       <div
         className={cn(
-          "grid h-16 max-w-lg mx-auto items-center px-1",
+          "grid h-15 max-w-lg mx-auto items-center px-1",
           currentNav.length === 5 ? "grid-cols-5" : "grid-cols-3"
         )}
       >
@@ -80,13 +80,13 @@ export function MobileBottomNav() {
 
           if (item.isPrimaryAction) {
             return (
-              <div key={item.name} className="flex justify-center -mt-5">
+              <div key={item.name} className="flex justify-center -mt-4">
                 <Link
                   href={item.href}
-                  className="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-gradient-to-tr from-[#b8001f] to-[#e63946] text-white shadow-lg border-2 border-[#081225] active:scale-95 transition-transform"
+                  className="flex flex-col items-center justify-center w-11 h-11 rounded-full bg-slate-900 text-white shadow-sm border-2 border-white active:scale-95 transition-transform"
                   aria-label={item.name}
                 >
-                  <PlusCircle className="w-6 h-6" />
+                  <PlusCircle className="w-5 h-5" />
                 </Link>
               </div>
             );
@@ -97,12 +97,12 @@ export function MobileBottomNav() {
               key={item.name}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center h-full min-h-[48px] py-1 text-center transition-colors active:scale-95",
-                isActive ? "text-amber-400 font-semibold" : "text-slate-400 hover:text-slate-200"
+                "flex flex-col items-center justify-center h-full min-h-[44px] py-1 text-center transition-colors active:scale-95",
+                isActive ? "text-slate-900 font-medium" : "text-slate-400 hover:text-slate-700"
               )}
             >
-              <Icon className={cn("w-5 h-5", isActive ? "text-amber-400" : "text-slate-400")} />
-              <span className="text-[10px] mt-1 tracking-tight truncate max-w-[64px]">{item.name}</span>
+              <Icon className={cn("w-4.5 h-4.5", isActive ? "text-slate-900" : "text-slate-400")} />
+              <span className="text-[10px] mt-0.5 tracking-tight truncate max-w-[64px]">{item.name}</span>
             </Link>
           );
         })}

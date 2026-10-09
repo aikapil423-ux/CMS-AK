@@ -10,22 +10,22 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", isLoading = false, children, disabled, ...props }, ref) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99]";
+      "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:ring-offset-1 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.99] select-none";
 
     const variantStyles = {
-      primary: "bg-blue-600 hover:bg-blue-700 text-white focus-visible:ring-blue-500 shadow-2xs",
-      secondary: "bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 focus-visible:ring-blue-400",
-      danger: "bg-red-600 hover:bg-red-700 text-white focus-visible:ring-red-500 shadow-2xs",
-      outline: "border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 focus-visible:ring-slate-400 shadow-2xs",
-      ghost: "hover:bg-slate-100 text-slate-700 hover:text-slate-900 focus-visible:ring-slate-300",
-      gold: "bg-amber-500 hover:bg-amber-600 text-white focus-visible:ring-amber-400 shadow-2xs",
+      primary: "bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow-sm",
+      secondary: "bg-slate-100 hover:bg-slate-200/80 text-slate-900 border border-slate-200/70",
+      danger: "bg-rose-600 hover:bg-rose-700 text-white shadow-xs",
+      outline: "border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 shadow-2xs hover:border-slate-300",
+      ghost: "hover:bg-slate-100/70 text-slate-600 hover:text-slate-900",
+      gold: "bg-amber-600 hover:bg-amber-700 text-white shadow-xs",
     };
 
     const sizeStyles = {
-      sm: "h-8 px-3 text-xs gap-1.5 min-h-[32px]",
-      md: "h-9 px-4 text-xs sm:text-sm gap-2 min-h-[38px]",
-      lg: "h-11 px-5 text-sm gap-2 min-h-[44px]",
-      icon: "h-9 w-9 min-h-[36px] min-w-[36px] p-0",
+      sm: "h-8 px-2.5 text-xs gap-1.5 min-h-[32px]",
+      md: "h-9 px-3.5 text-xs sm:text-sm gap-2 min-h-[36px]",
+      lg: "h-10 px-4 text-sm gap-2 min-h-[40px]",
+      icon: "h-8.5 w-8.5 min-h-[34px] min-w-[34px] p-0",
     };
 
     return (
