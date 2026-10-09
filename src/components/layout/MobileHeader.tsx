@@ -15,7 +15,8 @@ export function MobileHeader() {
   const [roleModalOpen, setRoleModalOpen] = useState(false);
 
   const isRoznamcha = pathname.startsWith("/general-diary");
-  const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+  const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
+  const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
   return (
     <>
@@ -30,7 +31,7 @@ export function MobileHeader() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
-                  {isRoznamcha ? "Roznamcha GD" : isComplaints ? "Complaints" : "HP CMS"}
+                  {isRoznamcha ? "Roznamcha GD" : isFir ? "FIR Module" : isComplaints ? "Complaints" : "HP CMS"}
                 </span>
                 <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}
@@ -167,6 +168,26 @@ export function MobileHeader() {
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Field Enquiry Workspace
+                  </Link>
+                </>
+              ) : isFir ? (
+                <>
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    FIR
+                  </div>
+                  <Link
+                    href="/fir"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    FIR Register
+                  </Link>
+                  <Link
+                    href="/fir-workspace"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Investigation Workspace
                   </Link>
                 </>
               ) : (

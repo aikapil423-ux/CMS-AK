@@ -14,6 +14,7 @@ import {
   Building,
   FileText,
   LayoutGrid,
+  Scale,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const isRoznamcha = pathname.startsWith("/general-diary");
-  const isComplaints = pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace");
+  const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
+  const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
-  // Only MHC, SHO, and Superior officers can register complaints (EOs cannot register complaints)
+  // Only MHC, SHO, and Superior officers can register complaints/FIR (EOs cannot register complaints or FIR)
   const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;
+  const canRegisterFir = isMhc || isSho || isSuperior;
 
   return (
     <div className="min-h-screen bg-[#fafafb] flex flex-col lg:flex-row antialiased text-slate-800">
@@ -68,6 +71,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <BookOpen className="w-3 h-3 text-slate-600" />
                 Roznamcha GD
               </span>
+            ) : isFir ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60 font-medium">
+                <Scale className="w-3 h-3 text-slate-600" />
+                FIR Module
+              </span>
             ) : isComplaints ? (
               <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60 font-medium">
                 <FileText className="w-3 h-3 text-slate-600" />
@@ -98,6 +106,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Button size="sm" variant="primary" className="gap-1.5 text-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
                   Register Complaint
+                </Button>
+              </Link>
+            )}
+
+            {isFir && canRegisterFir && (
+              <Link href="/fir/register">
+                <Button size="sm" variant="primary" className="gap-1.5 text-xs">
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  Register FIR
                 </Button>
               </Link>
             )}
