@@ -246,6 +246,10 @@ function RegisterFIRForm() {
   });
   const [selectedActId, setSelectedActId] = useState<string>("act_bns_2023");
   const [currentAct, setCurrentAct] = useState("Bharatiya Nyaya Sanhita, 2023 (BNS)");
+  const [actSearchQuery, setActSearchQuery] = useState("");
+  const [isActDropdownOpen, setIsActDropdownOpen] = useState(false);
+  const actDropdownRef = useRef<HTMLDivElement | null>(null);
+  const actSearchInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [sectionSearchQuery, setSectionSearchQuery] = useState("");
   const [currentSection, setCurrentSection] = useState("");
@@ -399,6 +403,9 @@ function RegisterFIRForm() {
     const handleClickOutside = (event: MouseEvent) => {
       if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(event.target as Node)) {
         setIsSectionDropdownOpen(false);
+      }
+      if (actDropdownRef.current && !actDropdownRef.current.contains(event.target as Node)) {
+        setIsActDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1503,26 +1510,171 @@ function RegisterFIRForm() {
               <CardContent className="p-4 space-y-4 text-xs overflow-visible">
                 {/* Inline Acts and Sections Selection */}
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end relative overflow-visible z-30">
-                  <div className="md:col-span-5">
-                    <label className="font-bold text-slate-700 block mb-1">Select Act</label>
-                    <select
-                      value={selectedActId}
-                      onChange={(e) => handleSelectAct(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium focus:ring-2 focus:ring-[#0b192c]"
+                  <div className="md:col-span-5 relative z-50" ref={actDropdownRef}>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700 block">Select Act</label>
+                      {selectedActId && (
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {(() => {
+                            const act = unifiedActs.find((a) => a.id === selectedActId);
+                            return act ? `${act.sections.length} Sections available` : "";
+                          })()}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setIsActDropdownOpen((prev) => {
+                          const nextState = !prev;
+                          if (nextState) {
+                            setIsSectionDropdownOpen(false);
+                            setTimeout(() => actSearchInputRef.current?.focus(), 50);
+                          }
+                          return nextState;
+                        });
+                      }}
+                      className="w-full min-h-[38px] p-2 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
                     >
-                      {Array.from(new Set(unifiedActs.map((a) => a.category))).map((cat) => (
-                        <optgroup key={cat} label={cat}>
-                          {unifiedActs
-                            .filter((a) => a.category === cat)
-                            .map((act) => (
-                              <option key={act.id} value={act.id}>
-                                {act.name} ({act.sections.length} Sections)
-                                {act.isCustom ? " • [Custom Bare Act]" : ""}
-                              </option>
-                            ))}
-                        </optgroup>
-                      ))}
-                    </select>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        {(() => {
+                          const act = unifiedActs.find((a) => a.id === selectedActId) || unifiedActs[0];
+                          if (!act) return <span className="text-slate-400">Select an Act...</span>;
+                          return (
+                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                              <span className="font-semibold text-slate-800 truncate">
+                                {act.name}
+                              </span>
+                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0">
+                                {act.sections.length} Sec
+                              </span>
+                              {act.isCustom && (
+                                <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-semibold shrink-0">
+                                  Custom
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                          isActDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+
+                    {isActDropdownOpen && (
+                      <div
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute left-0 w-full sm:min-w-[420px] md:min-w-[480px] max-w-[calc(100vw-2.5rem)] top-full mt-1.5 bg-white border border-slate-300 rounded-xl shadow-2xl z-50 p-2.5 space-y-2.5"
+                      >
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                          <input
+                            ref={actSearchInputRef}
+                            type="text"
+                            placeholder="Type to search Act name or category..."
+                            value={actSearchQuery}
+                            onChange={(e) => setActSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                setIsActDropdownOpen(false);
+                              }
+                            }}
+                            className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-[#0b192c]"
+                          />
+                          {actSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setActSearchQuery("")}
+                              className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        {(() => {
+                          const q = actSearchQuery.toLowerCase().trim();
+                          const filtered = unifiedActs.filter((a) => {
+                            if (!q) return true;
+                            return (
+                              a.name.toLowerCase().includes(q) ||
+                              a.title.toLowerCase().includes(q) ||
+                              a.category.toLowerCase().includes(q) ||
+                              a.id.toLowerCase().includes(q)
+                            );
+                          });
+
+                          if (filtered.length === 0) {
+                            return (
+                              <div className="p-4 text-center text-xs text-slate-500">
+                                No matching acts found for &quot;{actSearchQuery}&quot;
+                              </div>
+                            );
+                          }
+
+                          const categories = Array.from(new Set(filtered.map((a) => a.category)));
+
+                          return (
+                            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg bg-white">
+                              {categories.map((cat) => {
+                                const actsInCat = filtered.filter((a) => a.category === cat);
+                                return (
+                                  <div key={cat} className="p-1">
+                                    <div className="px-2 py-1 text-[10px] font-bold tracking-wider uppercase text-slate-400 bg-slate-50/80 rounded">
+                                      {cat}
+                                    </div>
+                                    <div className="space-y-0.5 mt-0.5">
+                                      {actsInCat.map((act) => {
+                                        const isSelected = selectedActId === act.id;
+                                        return (
+                                          <div
+                                            key={act.id}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleSelectAct(act.id);
+                                              setIsActDropdownOpen(false);
+                                              setActSearchQuery("");
+                                            }}
+                                            className={`p-2 flex items-center justify-between cursor-pointer text-xs rounded-md transition-colors ${
+                                              isSelected
+                                                ? "bg-blue-50 text-blue-950 font-semibold border border-blue-200"
+                                                : "hover:bg-slate-50 text-slate-700"
+                                            }`}
+                                          >
+                                            <div className="min-w-0 pr-2">
+                                              <div className="font-semibold text-slate-800 leading-tight">
+                                                {act.name}
+                                              </div>
+                                              <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                                <span className="font-mono text-blue-700 font-bold">
+                                                  {act.sections.length} Sections
+                                                </span>
+                                                {act.isCustom && (
+                                                  <span className="text-amber-700 font-medium">
+                                                    • [Custom Bare Act]
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                            {isSelected && (
+                                              <Check className="w-4 h-4 text-blue-600 shrink-0 font-bold" />
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   <div className="md:col-span-5 relative z-40" ref={sectionDropdownRef}>
@@ -1543,7 +1695,12 @@ function RegisterFIRForm() {
                     </div>
 
                     <div
-                      onClick={() => setIsSectionDropdownOpen(!isSectionDropdownOpen)}
+                      onClick={() => {
+                        setIsSectionDropdownOpen((prev) => {
+                          if (!prev) setIsActDropdownOpen(false);
+                          return !prev;
+                        });
+                      }}
                       className="w-full min-h-[38px] p-1.5 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
                     >
                       <div className="flex flex-wrap gap-1 items-center flex-1 min-w-0">
