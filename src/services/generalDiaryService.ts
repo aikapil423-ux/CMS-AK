@@ -9,6 +9,7 @@ import {
   GDRelatedRecords,
   GDAuditLog,
   GDStatus,
+  GDUploadedDocument,
 } from "@/types/generalDiary";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { formatGDActivityDateTime } from "@/lib/gdDateTime";
@@ -891,6 +892,7 @@ export const GeneralDiaryService = {
     policeStation?: string;
     district?: string;
     relatedRecords?: GDRelatedRecords;
+    attachments?: GDUploadedDocument[];
   }): Promise<GeneralDiaryRecord> {
     // Backend-first: persist the draft on the server (searchable later)
     try {
@@ -910,6 +912,7 @@ export const GeneralDiaryService = {
         policeStation: entry.policeStation,
         district: entry.district,
         relatedRecords: entry.relatedRecords,
+        attachments: entry.attachments,
       });
       return json.draft;
     } catch {
@@ -1019,6 +1022,8 @@ export const GeneralDiaryService = {
     // Backend-first: delete on the server register
     try {
       const json = await gdApiPost<{ success: boolean }>({ action: "DELETE_DRAFT", id });
+      memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== id);
+      saveRecordsToStorage(memoryRecordsStore);
       return json.success;
     } catch {
       // fall back to local deletion
@@ -1051,6 +1056,8 @@ export const GeneralDiaryService = {
           verifier,
           remarks: verificationRemarks,
         });
+        memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== idOrData);
+        saveRecordsToStorage(memoryRecordsStore);
         return json.record;
       } catch {
         // fall back to local lock flow
@@ -1368,6 +1375,7 @@ export const GeneralDiaryService = {
           district?: string;
           source?: any;
           relatedRecords?: GDRelatedRecords;
+          attachments?: GDUploadedDocument[];
         }
       | string,
     narrative?: string,
@@ -1395,6 +1403,7 @@ export const GeneralDiaryService = {
           district: payload.district,
           source: payload.source,
           relatedRecords: payload.relatedRecords,
+          attachments: payload.attachments,
           activityDate: payload.activityDate,
           activityTime: payload.activityTime,
         });
@@ -1459,5 +1468,14 @@ export const GeneralDiaryService = {
   async getTodayCount(): Promise<number> {
     const res = await this.getPaginatedEntries({ pageSize: 1 });
     return res.todayCount;
+  },
+
+  async deleteAttachment(recordId: string, attachmentId: string): Promise<GeneralDiaryRecord> {
+    const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+      action: "DELETE_ATTACHMENT",
+      id: recordId,
+      attachmentId,
+    });
+    return json.record;
   },
 };

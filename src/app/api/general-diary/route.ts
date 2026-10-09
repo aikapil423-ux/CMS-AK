@@ -18,6 +18,10 @@ import {
   GDStatus,
   GDSource,
 } from "@/types/generalDiary";
+import {
+  getSmartVerifiedSuggestions,
+  dismissSuggestionId,
+} from "@/services/gdSmartSuggestionService";
 
 // ------------------------------------------------------------------
 // CCTNS-style General Diary backend (Roznamcha, Register No. II)
@@ -51,6 +55,7 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
 type OfficerPartials = Partial<GDOfficerParticulars>;
 
 function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
+  const related = parseJson<GDRelatedRecords>(row.relatedRecordsJson, {});
   return {
     id: row.id,
     gdNumber: row.gdNumber,
@@ -86,7 +91,8 @@ function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
     isLocked: row.isLocked,
     verificationAuditId: row.verificationAuditId ?? undefined,
     verifiedBy: parseJson<GDOfficerParticulars | null>(row.verifiedByJson, null) ?? undefined,
-    relatedRecords: parseJson<GDRelatedRecords>(row.relatedRecordsJson, {}),
+    relatedRecords: related,
+    attachments: related.attachments || [],
     auditTrail: parseJson<GDAuditLog[]>(row.auditTrailJson, []),
     // Internal sort keys — the register is ordered by GD NUMBER, never by
     // creation time (an old draft added later must take its new sequence slot)
@@ -209,6 +215,9 @@ async function createLockedEntry(
   const entryForOfficer = buildOfficer(body.entryForOfficer, FALLBACK_OFFICER);
   const actualAuthor = buildOfficer(body.actualAuthor, FALLBACK_AUTHOR);
   const relatedRecords = (body.relatedRecords || {}) as GDRelatedRecords;
+  if (Array.isArray(body.attachments)) {
+    relatedRecords.attachments = body.attachments as any;
+  }
   const source = String(body.source || "MANUAL_ENTRY");
   const typeDisplay = String(body.typeDisplay || typeCode);
   const typeDisplayHi = String(body.typeDisplayHi || typeDisplay);
@@ -337,6 +346,10 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
         auditId: generateAuditId("EDIT"),
         remarks: "Draft updated by officer",
       });
+      const draftRel = parseJson<GDRelatedRecords>(existing.relatedRecordsJson, {});
+      if (Array.isArray(body.attachments)) {
+        draftRel.attachments = body.attachments as any;
+      }
       const updated = await prisma.gDRecord.update({
         where: { id: existing.id },
         data: {
@@ -348,12 +361,18 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
           narrative,
           entryForOfficerJson: JSON.stringify(entryForOfficer),
           actualAuthorJson: JSON.stringify(actualAuthor),
+          relatedRecordsJson: JSON.stringify(draftRel),
           auditTrailJson: JSON.stringify(trail),
           ...(hasActivity ? { entryDateTime, gdDate: draftGdDate } : {}),
         },
       });
       return mapRowToRecord(updated);
     }
+  }
+
+  const newDraftRel = ((body.relatedRecords || {}) as GDRelatedRecords);
+  if (Array.isArray(body.attachments)) {
+    newDraftRel.attachments = body.attachments as any;
   }
 
   const row = await prisma.gDRecord.create({
@@ -376,7 +395,7 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
       source: "MANUAL_ENTRY",
       isLocked: false,
       isDraft: true,
-      relatedRecordsJson: JSON.stringify((body.relatedRecords || {}) as GDRelatedRecords),
+      relatedRecordsJson: JSON.stringify(newDraftRel),
       auditTrailJson: JSON.stringify([
         {
           action: "CREATED",
@@ -394,8 +413,9 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
 }
 
 async function deleteDraftEntry(id: string): Promise<boolean> {
+  dismissSuggestionId(id);
   const existing = await prisma.gDRecord.findUnique({ where: { id } });
-  if (!existing) return false;
+  if (!existing) return true;
   if (existing.isLocked) {
     throw new Error("Violation Error: Locked GD entry cannot be deleted. All entries are permanent under law.");
   }
@@ -409,8 +429,27 @@ async function verifyAndLockEntry(
   remarks?: string
 ): Promise<{ record: GeneralDiaryRecord; resequenced: number }> {
   const verifier = buildOfficer(verifierRaw, FALLBACK_AUTHOR);
-  const existing = await prisma.gDRecord.findUnique({ where: { id } });
-  if (!existing) throw new Error("GD entry not found.");
+  let existing = await prisma.gDRecord.findUnique({ where: { id } });
+  if (!existing) {
+    const sugg = getSmartVerifiedSuggestions().find((s) => s.id === id);
+    if (sugg) {
+      dismissSuggestionId(id);
+      return await createLockedEntry({
+        typeCode: sugg.typeCode,
+        category: sugg.category,
+        typeDisplay: sugg.typeDisplay,
+        typeDisplayHi: sugg.typeDisplayHi,
+        subject: sugg.subject,
+        narrative: sugg.narrative,
+        entryForOfficer: sugg.entryForOfficer,
+        actualAuthor: verifier,
+        activityDateTime: sugg.activityDateTime,
+        relatedRecords: sugg.relatedRecords,
+        source: sugg.source,
+      });
+    }
+    throw new Error("GD entry not found.");
+  }
   if (existing.isLocked) {
     throw new Error("Security Violation: This General Diary record is already LOCKED and immutable.");
   }
@@ -574,6 +613,12 @@ export async function GET(req: NextRequest) {
       if (!row && id) {
         row = await prisma.gDRecord.findFirst({ where: { gdNumber: id } });
       }
+      if (!row && id) {
+        const sugg = getSmartVerifiedSuggestions().find((s) => s.id === id);
+        if (sugg) {
+          return NextResponse.json({ success: true, record: sugg });
+        }
+      }
       return NextResponse.json({ success: true, record: row ? mapRowToRecord(row) : null });
     }
 
@@ -603,6 +648,15 @@ export async function GET(req: NextRequest) {
     });
 
     let list = rows.map(mapRowToRecord);
+
+    // Merge verified smart suggestions from live system state
+    const verifiedSuggestions = getSmartVerifiedSuggestions();
+    const existingIds = new Set(list.map((r) => r.id));
+    for (const sugg of verifiedSuggestions) {
+      if (!existingIds.has(sugg.id)) {
+        list.push(sugg);
+      }
+    }
 
     const todayKey = formatGDDateKey(new Date());
     const counts = {
@@ -752,6 +806,31 @@ export async function POST(req: NextRequest) {
     if (action === "DELETE_DRAFT") {
       const ok = await deleteDraftEntry(String(body.id || ""));
       return NextResponse.json({ success: ok });
+    }
+
+    if (action === "DELETE_ATTACHMENT") {
+      const id = String(body.id || "");
+      const attachmentId = String(body.attachmentId || "");
+      if (!id || !attachmentId) {
+        return NextResponse.json(
+          { success: false, error: "Record ID and Attachment ID are required." },
+          { status: 400 }
+        );
+      }
+      const existing = await prisma.gDRecord.findUnique({ where: { id } });
+      if (!existing) {
+        return NextResponse.json({ success: false, error: "GD Record not found." }, { status: 404 });
+      }
+      const rel = parseJson<GDRelatedRecords>(existing.relatedRecordsJson, {});
+      const list = Array.isArray(rel.attachments) ? rel.attachments : [];
+      rel.attachments = list.filter((a) => a.id !== attachmentId);
+      const updated = await prisma.gDRecord.update({
+        where: { id },
+        data: {
+          relatedRecordsJson: JSON.stringify(rel),
+        },
+      });
+      return NextResponse.json({ success: true, record: mapRowToRecord(updated) });
     }
 
     if (action === "SAVE_DRAFT") {

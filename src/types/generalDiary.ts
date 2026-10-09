@@ -31,6 +31,15 @@ export interface GDOfficerParticulars {
   role?: string;
 }
 
+export interface GDUploadedDocument {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl?: string;
+  uploadedAt: string;
+}
+
 export interface GDRelatedRecords {
   complaintNumber?: string;
   firNumber?: string;
@@ -41,6 +50,12 @@ export interface GDRelatedRecords {
   fslParcelNo?: string;
   courtName?: string;
   destinationLocation?: string;
+  teamMembers?: string[];
+  weaponsIssued?: string;
+  purpose?: string;
+  linkedDepartureGdNumber?: string;
+  departureTime?: string;
+  attachments?: GDUploadedDocument[];
 }
 
 export interface GDAuditLog {
@@ -87,6 +102,7 @@ export interface GeneralDiaryRecord {
 
   // Linked records
   relatedRecords?: GDRelatedRecords;
+  attachments?: GDUploadedDocument[];
 
   // Audit trail
   auditTrail: GDAuditLog[];

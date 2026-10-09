@@ -109,3 +109,25 @@ export function parseGDActivityDateTime(activity: string): {
     time24: `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`,
   };
 }
+
+// Converts any date string (ISO / YYYY-MM-DD) or Date object strictly to DD/MM/YYYY
+export function toDDMMYYYY(dateOrStr: string | Date | undefined | null): string {
+  if (!dateOrStr) return "";
+  if (dateOrStr instanceof Date) {
+    return formatGDDateDisplay(dateOrStr);
+  }
+  const str = String(dateOrStr).trim();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, yyyy, mm, dd] = match;
+    const rest = str.slice(10);
+    return `${dd}/${mm}/${yyyy}${rest}`;
+  }
+  const matchDMY = str.match(/^(\d{2})[-/](\d{2})[-/](\d{4})/);
+  if (matchDMY) {
+    const [, dd, mm, yyyy] = matchDMY;
+    const rest = str.slice(10);
+    return `${dd}/${mm}/${yyyy}${rest}`;
+  }
+  return str;
+}

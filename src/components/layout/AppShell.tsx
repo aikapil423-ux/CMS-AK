@@ -84,14 +84,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {/* Right Header Controls */}
           <div className="flex items-center gap-2.5">
             {/* Quick Action Button strictly scoped */}
-            {isRoznamcha && (
-              <Link href="/general-diary/new">
-                <Button size="sm" variant="primary" className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white">
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  New Roznamcha Entry
-                </Button>
-              </Link>
-            )}
 
             {isComplaints && canRegisterComplaint && (
               <Link href="/complaints/register">
