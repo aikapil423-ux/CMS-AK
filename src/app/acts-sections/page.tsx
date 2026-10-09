@@ -65,6 +65,93 @@ function ActsAndSectionsContent() {
   const [copiedActText, setCopiedActText] = useState(false);
   const [copiedSectionNumber, setCopiedSectionNumber] = useState<string | null>(null);
 
+  // Document Viewer Modes & Blob URL Resolution
+  const [docViewerMode, setDocViewerMode] = useState<"EMBED" | "GAZETTE">("EMBED");
+  const [resolvedDocumentUrl, setResolvedDocumentUrl] = useState<string>("");
+  const [isLoadingFullDocument, setIsLoadingFullDocument] = useState<boolean>(false);
+
+  // Prepare resolved document URL (converts Base64 dataUrls to Blob URLs and resolves IndexedDB if needed)
+  useEffect(() => {
+    let createdBlobUrl: string | null = null;
+
+    if (!activeActModal) {
+      setResolvedDocumentUrl("");
+      setIsLoadingFullDocument(false);
+      return;
+    }
+
+    const prepareDocumentUrl = async () => {
+      // 1. Direct fileUrl (built-in acts)
+      if (activeActModal.fileUrl) {
+        setResolvedDocumentUrl(activeActModal.fileUrl);
+        return;
+      }
+
+      // 2. Base64 fileDataUrl (convert to Blob URL to bypass Chromium data: URL iframe restrictions)
+      if (activeActModal.fileDataUrl) {
+        if (activeActModal.fileDataUrl.startsWith("data:application/pdf;base64,")) {
+          try {
+            const base64Data = activeActModal.fileDataUrl.replace(/^data:application\/pdf;base64,/, "");
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: "application/pdf" });
+            createdBlobUrl = URL.createObjectURL(blob);
+            setResolvedDocumentUrl(createdBlobUrl);
+            return;
+          } catch (e) {
+            console.warn("Failed to convert dataUrl to Blob URL:", e);
+            setResolvedDocumentUrl(activeActModal.fileDataUrl);
+            return;
+          }
+        }
+        setResolvedDocumentUrl(activeActModal.fileDataUrl);
+        return;
+      }
+
+      // 3. Fallback for acts where payload was stored in IndexedDB (hasLargeFileInIdb)
+      if (activeActModal.hasLargeFileInIdb) {
+        setIsLoadingFullDocument(true);
+        try {
+          const fullActs = await ActsService.getAllActsAsync();
+          const match = fullActs.find((a) => a.id === activeActModal.id);
+          if (match && match.fileDataUrl) {
+            setActiveActModal(match);
+            if (match.fileDataUrl.startsWith("data:application/pdf;base64,")) {
+              const base64Data = match.fileDataUrl.replace(/^data:application\/pdf;base64,/, "");
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: "application/pdf" });
+              createdBlobUrl = URL.createObjectURL(blob);
+              setResolvedDocumentUrl(createdBlobUrl);
+            } else {
+              setResolvedDocumentUrl(match.fileDataUrl);
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to load large act from IndexedDB:", e);
+        } finally {
+          setIsLoadingFullDocument(false);
+        }
+      }
+    };
+
+    prepareDocumentUrl();
+
+    return () => {
+      if (createdBlobUrl) {
+        URL.revokeObjectURL(createdBlobUrl);
+      }
+    };
+  }, [activeActModal]);
+
   // Load Acts from service (includes built-in Bare Acts + IndexedDB + custom localStorage uploads)
   const loadActs = async () => {
     // 1. Instant synchronous load
@@ -1001,7 +1088,7 @@ function ActsAndSectionsContent() {
       {/* MODAL 2: INTERACTIVE BARE ACT, VERBATIM TEXT & ORIGINAL DOCUMENT VIEWER   */}
       {/* ========================================================================= */}
       {activeActModal && (() => {
-        const targetDocumentUrl = activeActModal.fileUrl || activeActModal.fileDataUrl;
+        const targetDocumentUrl = resolvedDocumentUrl || activeActModal.fileUrl || activeActModal.fileDataUrl;
         const fontClass =
           verbatimFontSize === "sm" ? "text-xs" : verbatimFontSize === "lg" ? "text-base" : "text-sm";
 
@@ -1379,14 +1466,14 @@ function ActsAndSectionsContent() {
               )}
 
               {/* ================================================================= */}
-              {/* TAB 2: ORIGINAL DOCUMENT PREVIEW (EMBEDDED NATIVE VIEWER)         */}
+              {/* TAB 2: ORIGINAL DOCUMENT PREVIEW (EMBEDDED NATIVE VIEWER + GAZETTE)*/}
               {/* ================================================================= */}
               {modalActiveTab === "DOCUMENT" && (
                 <div className="flex-1 overflow-y-auto flex flex-col p-4 space-y-3 bg-slate-100">
                   {/* Top Bar for Document Viewer */}
-                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 shrink-0">
                     <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-red-50 text-red-700 border border-red-200">
+                      <div className="p-2 rounded-lg bg-red-50 text-red-700 border border-red-200 shrink-0">
                         <FileText className="w-4 h-4" />
                       </div>
                       <div className="truncate">
@@ -1400,11 +1487,38 @@ function ActsAndSectionsContent() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    {/* Viewer Mode Toggles & Actions */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {/* View Mode Switcher */}
+                      <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setDocViewerMode("EMBED")}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                            docViewerMode === "EMBED"
+                              ? "bg-white text-blue-900 shadow-2xs border border-blue-200"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          📄 Native PDF (मूल PDF)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDocViewerMode("GAZETTE")}
+                          className={`px-2.5 py-1 rounded text-xs font-bold transition-all ${
+                            docViewerMode === "GAZETTE"
+                              ? "bg-amber-100 text-amber-950 shadow-2xs border border-amber-300"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          📜 Gazette View (गज़ट पाठ)
+                        </button>
+                      </div>
+
                       {targetPageNumber && (
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
                           <BookOpen className="w-3.5 h-3.5 text-amber-700" />
-                          <span>पेज {targetPageNumber} (Page {targetPageNumber})</span>
+                          <span>पेज {targetPageNumber}</span>
                         </div>
                       )}
 
@@ -1419,48 +1533,178 @@ function ActsAndSectionsContent() {
                             <span>Download {activeActModal.fileFormat}</span>
                           </a>
                           <a
-                            href={targetPageNumber ? `${targetDocumentUrl}#page=${targetPageNumber}` : targetDocumentUrl}
+                            href={targetPageNumber && !targetDocumentUrl.startsWith("blob:") ? `${targetDocumentUrl}#page=${targetPageNumber}` : targetDocumentUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                            <span>Open in Full Window</span>
+                            <span>नए टैब में खोलें</span>
                           </a>
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* Embedded Document Frame */}
-                  <div className="flex-1 min-h-[70vh] bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 shadow-inner flex flex-col">
-                    {targetDocumentUrl ? (
-                      activeActModal.fileFormat === "IMAGE" || targetDocumentUrl.startsWith("data:image/") ? (
-                        <div className="flex-1 flex items-center justify-center p-4">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={targetDocumentUrl}
-                            alt={activeActModal.title}
-                            className="max-h-[74vh] object-contain rounded-lg shadow-lg"
-                          />
+                  {/* Document View Body */}
+                  {isLoadingFullDocument ? (
+                    <div className="flex-1 min-h-[70vh] bg-white rounded-2xl border border-slate-200 flex flex-col items-center justify-center p-8 space-y-3">
+                      <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
+                      <p className="text-xs font-bold text-slate-700">दस्तावेज़ लोड हो रहा है... (Loading Document Data...)</p>
+                    </div>
+                  ) : docViewerMode === "GAZETTE" || !targetDocumentUrl ? (
+                    /* Gazette View / Fallback */
+                    <div className="flex-1 bg-white rounded-2xl border border-slate-300 p-6 md:p-10 shadow-sm overflow-y-auto space-y-6">
+                      {/* Gazette Header */}
+                      <div className="text-center border-b-2 border-slate-900 pb-6 space-y-2">
+                        <div className="font-serif text-lg md:text-xl font-black tracking-widest text-slate-900 uppercase">
+                          भारत का राजपत्र / THE GAZETTE OF INDIA
                         </div>
-                      ) : (
-                        <iframe
-                          src={targetPageNumber ? `${targetDocumentUrl}#page=${targetPageNumber}&toolbar=1` : `${targetDocumentUrl}#toolbar=1`}
-                          className="w-full h-full min-h-[72vh] flex-1 bg-slate-800 border-none"
-                          title={activeActModal.title}
-                        />
-                      )
-                    ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-300 space-y-3">
-                        <FileText className="w-12 h-12 text-slate-500" />
-                        <h4 className="font-bold text-white text-sm">Original File Attached</h4>
-                        <p className="text-xs text-slate-400 max-w-md">
-                          Original file is stored as a statutory record. Click the Download button above or browse the Verbatim Text tab for complete word-by-word text.
-                        </p>
+                        <div className="text-xs font-serif font-bold text-slate-700 uppercase tracking-wider">
+                          असाधारण / EXTRAORDINARY &bull; भाग II — खण्ड 1 / PART II — Section 1
+                        </div>
+                        <div className="text-xs text-slate-500 font-serif">
+                          विधि और न्याय मंत्रालय (विधायी कार्य विभाग) / MINISTRY OF LAW AND JUSTICE
+                        </div>
+                        <div className="text-xs text-slate-500 font-serif">
+                          नई दिल्ली / New Delhi &bull; अधिनियम संख्या: <strong>{activeActModal.actNumber}</strong>
+                        </div>
                       </div>
-                    )}
-                  </div>
+
+                      {/* Act Title */}
+                      <div className="text-center space-y-1">
+                        <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase font-serif tracking-wide">
+                          {activeActModal.title}
+                        </h2>
+                        <div className="text-xs font-bold text-amber-900 bg-amber-50 inline-block px-3 py-1 rounded-full border border-amber-200">
+                          लागू होने की तिथि: {activeActModal.effectiveDate} &bull; स्वीकृति: {activeActModal.enactmentDate}
+                        </div>
+                      </div>
+
+                      {/* Official Preamble */}
+                      {activeActModal.preambleVerbatim && (
+                        <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 text-xs md:text-sm text-slate-900 font-serif leading-relaxed whitespace-pre-wrap">
+                          <strong className="block text-amber-950 mb-1 text-sm">प्राक्कथन / PREAMBLE:</strong>
+                          {activeActModal.preambleVerbatim}
+                        </div>
+                      )}
+
+                      {/* Chapters & Key Sections Overview */}
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-slate-900 text-sm border-b border-slate-200 pb-2 flex items-center justify-between">
+                          <span>अधिनियम की धाराएं व प्रावधान ({activeActModal.keySections.length} Sections on Record)</span>
+                          <span className="text-xs text-slate-500 font-normal">कुल धाराएं: {activeActModal.totalSections}</span>
+                        </h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {activeActModal.keySections.slice(0, 30).map((sec, secIdx) => (
+                            <div
+                              key={`${sec.sectionNumber}-${secIdx}`}
+                              className="p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors text-xs space-y-1"
+                            >
+                              <div className="flex items-center justify-between font-bold text-slate-900">
+                                <span>धारा {sec.sectionNumber}</span>
+                                {sec.bailable && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${sec.bailable === "Non-bailable" ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"}`}>
+                                    {sec.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-semibold text-slate-800">{sec.title}</div>
+                              <div className="text-slate-600 line-clamp-2">{sec.description}</div>
+                              {sec.punishment && (
+                                <div className="text-[11px] text-amber-800 font-medium">दण्ड: {sec.punishment}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Native PDF Object / Embed Frame */
+                    <div className="flex-1 min-h-[72vh] flex flex-col space-y-2">
+                      <div className="flex-1 min-h-[72vh] bg-slate-900 rounded-2xl overflow-hidden border border-slate-300 shadow-inner flex flex-col">
+                        {activeActModal.fileFormat === "IMAGE" || targetDocumentUrl.startsWith("data:image/") ? (
+                          <div className="flex-1 flex items-center justify-center p-4">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={targetDocumentUrl}
+                              alt={activeActModal.title}
+                              className="max-h-[74vh] object-contain rounded-lg shadow-lg"
+                            />
+                          </div>
+                        ) : (
+                          <object
+                            data={targetPageNumber && !targetDocumentUrl.startsWith("blob:") ? `${targetDocumentUrl}#page=${targetPageNumber}&toolbar=1` : `${targetDocumentUrl}#toolbar=1`}
+                            type="application/pdf"
+                            className="w-full h-full min-h-[72vh] flex-1 bg-white border-none"
+                          >
+                            <embed
+                              src={targetPageNumber && !targetDocumentUrl.startsWith("blob:") ? `${targetDocumentUrl}#page=${targetPageNumber}&toolbar=1` : `${targetDocumentUrl}#toolbar=1`}
+                              type="application/pdf"
+                              className="w-full h-full min-h-[72vh] flex-1"
+                            />
+                            <iframe
+                              src={targetPageNumber && !targetDocumentUrl.startsWith("blob:") ? `${targetDocumentUrl}#page=${targetPageNumber}&toolbar=1` : `${targetDocumentUrl}#toolbar=1`}
+                              className="w-full h-full min-h-[72vh] flex-1 bg-white border-none"
+                              title={activeActModal.title}
+                            />
+                            <div className="p-8 text-center text-slate-300 space-y-3 flex flex-col items-center justify-center h-full">
+                              <FileText className="w-12 h-12 text-slate-400" />
+                              <h4 className="font-bold text-white text-sm">PDF Viewer Fallback</h4>
+                              <p className="text-xs text-slate-400 max-w-md">
+                                आपके ब्राउज़र में PDF स्वतः प्रदर्शित नहीं हो रहा है। नीचे दिए गए बटन से नए टैब में खोलें या गज़ट पाठ देखें।
+                              </p>
+                              <div className="flex gap-2">
+                                <a
+                                  href={targetDocumentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold"
+                                >
+                                  Open in New Tab
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => setDocViewerMode("GAZETTE")}
+                                  className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold"
+                                >
+                                  Switch to Gazette View
+                                </button>
+                              </div>
+                            </div>
+                          </object>
+                        )}
+                      </div>
+
+                      {/* Helpful Banner under PDF Frame */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-2.5 flex flex-wrap items-center justify-between text-xs text-blue-900 gap-2 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4 text-blue-700 shrink-0" />
+                          <span>
+                            यदि ब्राउज़र सुरक्षा प्रतिबंध के कारण ऊपर PDF खाली दिख रहा है, तो <strong>नए टैब में खोलें</strong> या <strong>गज़ट पाठ (Gazette View)</strong> पर क्लिक करें।
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDocViewerMode("GAZETTE")}
+                            className="px-2.5 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs"
+                          >
+                            📜 गज़ट पाठ देखें
+                          </button>
+                          <a
+                            href={targetDocumentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
+                          >
+                            🔗 नए टैब में खोलें
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

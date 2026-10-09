@@ -981,6 +981,7 @@ export interface LegalActItem {
   verbatimText?: string;
   preambleVerbatim?: string;
   isCustomUpload?: boolean;
+  hasLargeFileInIdb?: boolean;
   uploadedAt?: string;
   uploadedBy?: string;
   description: string;
