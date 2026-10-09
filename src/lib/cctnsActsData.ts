@@ -11,6 +11,7 @@ import { NDPS_ACT_1985_SECTIONS } from "./ndpsSectionsData";
 import { SC_ST_ACT_1989_SECTIONS } from "./scstSectionsData";
 import { DOWRY_ACT_1961_SECTIONS } from "./dowrySectionsData";
 import { GAMBLING_ACT_1867_SECTIONS } from "./gamblingSectionsData";
+import { EXPLOSIVES_ACT_1908_SECTIONS } from "./explosivesSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -178,13 +179,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Explosive Substances Act, 1908",
     shortName: "Explosive Substances Act, 1908",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3", title: "Punishment for causing explosion likely to endanger life or property" },
-      { sectionNumber: "4(a)", title: "Attempt to cause explosion or making/keeping explosive with intent to endanger life" },
-      { sectionNumber: "4(b)", title: "Making or possessing explosive substance with intent to enable another person" },
-      { sectionNumber: "5", title: "Punishment for making or possessing explosives under suspicious circumstances" },
-      { sectionNumber: "6", title: "Punishment of abettors" },
-    ],
+    sections: EXPLOSIVES_ACT_1908_SECTIONS,
   },
   {
     id: "act_electricity_2003",
@@ -516,6 +511,14 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Public Gambling Act"), actOption);
       map.set(normalizeKey("Gambling Act"), actOption);
     }
+    if (cAct.id === "act_explosives_1908") {
+      map.set(normalizeKey("Explosive Substances Act, 1908"), actOption);
+      map.set(normalizeKey("Explosive Substances Act,1908"), actOption);
+      map.set(normalizeKey("The Explosive Substances Act, 1908"), actOption);
+      map.set(normalizeKey("The Explosive Substances Act,1908"), actOption);
+      map.set(normalizeKey("Explosive Substances Act"), actOption);
+      map.set(normalizeKey("Explosives Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -577,6 +580,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_gambling_1867, preserve the authoritative complete 18 sections catalog
         if (existing.id === "act_gambling_1867") {
+          continue;
+        }
+        // If it's act_explosives_1908, preserve the authoritative complete 19 sections catalog
+        if (existing.id === "act_explosives_1908") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
