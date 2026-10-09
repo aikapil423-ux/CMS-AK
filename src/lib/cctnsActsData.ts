@@ -10,6 +10,7 @@ import { GAUVANSH_ACT_2015_SECTIONS } from "./gauvanshSectionsData";
 import { NDPS_ACT_1985_SECTIONS } from "./ndpsSectionsData";
 import { SC_ST_ACT_1989_SECTIONS } from "./scstSectionsData";
 import { DOWRY_ACT_1961_SECTIONS } from "./dowrySectionsData";
+import { GAMBLING_ACT_1867_SECTIONS } from "./gamblingSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -170,13 +171,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Public Gambling Act, 1867",
     shortName: "Public Gambling Act, 1867",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3", title: "Penalty for owning or keeping, or having charge of a gaming house" },
-      { sectionNumber: "4", title: "Penalty for being found in common gaming house (Satta / Gambling)" },
-      { sectionNumber: "5", title: "Power of Police to enter and authorise police to enter and search gaming houses" },
-      { sectionNumber: "13", title: "Gaming and setting birds and animals to fight in public streets / places" },
-      { sectionNumber: "13A", title: "Exemption of games of mere skill" },
-    ],
+    sections: GAMBLING_ACT_1867_SECTIONS,
   },
   {
     id: "act_explosives_1908",
@@ -513,6 +508,14 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Dowry Prohibition Act,1961"), actOption);
       map.set(normalizeKey("Dowry Prohibition Act"), actOption);
     }
+    if (cAct.id === "act_gambling_1867") {
+      map.set(normalizeKey("Public Gambling Act, 1867"), actOption);
+      map.set(normalizeKey("Public Gambling Act,1867"), actOption);
+      map.set(normalizeKey("The Public Gambling Act, 1867"), actOption);
+      map.set(normalizeKey("The Public Gambling Act,1867"), actOption);
+      map.set(normalizeKey("Public Gambling Act"), actOption);
+      map.set(normalizeKey("Gambling Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -570,6 +573,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_dowry_1961, preserve the authoritative complete 66 sections catalog
         if (existing.id === "act_dowry_1961") {
+          continue;
+        }
+        // If it's act_gambling_1867, preserve the authoritative complete 18 sections catalog
+        if (existing.id === "act_gambling_1867") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
