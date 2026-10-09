@@ -2,6 +2,7 @@
 // Comprehensive CCTNS & Statutory Acts and Sections Directory for Haryana Police
 
 import { BNS_2023_SECTIONS } from "./bnsSectionsData";
+import { BNSS_2023_SECTIONS } from "./bnssSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -481,28 +482,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Bharatiya Nagarik Suraksha Sanhita, 2023",
     shortName: "Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)",
     category: "Procedural Criminal Law",
-    sections: [
-      { sectionNumber: "35", title: "When police may arrest without warrant" },
-      { sectionNumber: "35(3)", title: "Notice of appearance before police officer (replaces 41A CrPC)" },
-      { sectionNumber: "94", title: "Summons to produce document or other thing (replaces 91 CrPC)" },
-      { sectionNumber: "103", title: "Search warrants" },
-      { sectionNumber: "105", title: "Recording of search and seizure through audio-video electronic means" },
-      { sectionNumber: "106", title: "Power of police officer to seize certain property (replaces 102 CrPC)" },
-      { sectionNumber: "111", title: "Security for keeping the peace in other cases" },
-      { sectionNumber: "168", title: "Arrest to prevent the commission of cognizable offences" },
-      { sectionNumber: "173(1)", title: "Information in cognizable cases (Registration of FIR)" },
-      { sectionNumber: "173(3)", title: "Preliminary enquiry before registration of FIR" },
-      { sectionNumber: "175(3)", title: "Application to Magistrate on refusal to register FIR" },
-      { sectionNumber: "179", title: "Police officer's power to require attendance of witnesses" },
-      { sectionNumber: "180", title: "Examination of witnesses by police" },
-      { sectionNumber: "183", title: "Recording of confessions and statements by Magistrate" },
-      { sectionNumber: "187", title: "Procedure when investigation cannot be completed in 24 hours (Police Remand)" },
-      { sectionNumber: "193(3)", title: "Report of police officer on completion of investigation (Chargesheet / Final Form)" },
-      { sectionNumber: "193(9)", title: "Further investigation after submission of report" },
-      { sectionNumber: "194", title: "Police to enquire and report on suicide, etc. (Inquest Report)" },
-      { sectionNumber: "482", title: "Direction for grant of bail to person apprehending arrest (Anticipatory bail)" },
-      { sectionNumber: "483", title: "Special powers of High Court or Court of Session regarding bail" },
-    ],
+    sections: BNSS_2023_SECTIONS,
   },
   {
     id: "act_bsa_2023",
@@ -555,7 +535,7 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
   // 1. Seed with CCTNS_ACTS_CATALOG
   for (const cAct of CCTNS_ACTS_CATALOG) {
     const key = normalizeKey(cAct.title || cAct.shortName || cAct.id);
-    map.set(key, {
+    const actOption: UnifiedActOption = {
       id: cAct.id,
       name: cAct.shortName || cAct.title,
       title: cAct.title,
@@ -566,7 +546,15 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         title: s.title,
         description: s.description,
       })),
-    });
+    };
+    map.set(key, actOption);
+    if (cAct.id) map.set(normalizeKey(cAct.id), actOption);
+    if (cAct.shortName) map.set(normalizeKey(cAct.shortName), actOption);
+    if (cAct.id === "act_bnss_2023") {
+      map.set(normalizeKey("Bharatiya Nyaya Suraksha Sanhita, 2023 BNSS"), actOption);
+      map.set(normalizeKey("The Bharatiya Nyaya Suraksha Sanhita, 2023"), actOption);
+      map.set(normalizeKey("BNSS, 2023"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -574,7 +562,7 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
     for (const uAct of userActs) {
       if (!uAct || (!uAct.title && !uAct.shortName)) continue;
       const key = normalizeKey(uAct.title || uAct.shortName || uAct.id || "");
-      const existing = map.get(key);
+      const existing = map.get(key) || (uAct.id ? map.get(normalizeKey(uAct.id)) : undefined);
 
       const userSections: UnifiedSectionOption[] = [];
       if (Array.isArray(uAct.keySections)) {
@@ -592,6 +580,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       if (existing) {
         // If it's act_bns_2023, preserve the authoritative complete 956 sections catalog
         if (existing.id === "act_bns_2023") {
+          continue;
+        }
+        // If it's act_bnss_2023, preserve the authoritative complete 2,489 sections catalog
+        if (existing.id === "act_bnss_2023") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
@@ -616,6 +608,15 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
     }
   }
 
-  return Array.from(map.values());
+  // Deduplicate by act.id
+  const seenIds = new Set<string>();
+  const result: UnifiedActOption[] = [];
+  for (const act of map.values()) {
+    if (!seenIds.has(act.id)) {
+      seenIds.add(act.id);
+      result.push(act);
+    }
+  }
+  return result;
 }
 
