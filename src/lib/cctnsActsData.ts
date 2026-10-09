@@ -8,6 +8,7 @@ import { PUNJAB_EXCISE_1914_SECTIONS } from "./punjabExciseSectionsData";
 import { HARYANA_POLICE_2007_SECTIONS } from "./haryanaPoliceSectionsData";
 import { GAUVANSH_ACT_2015_SECTIONS } from "./gauvanshSectionsData";
 import { NDPS_ACT_1985_SECTIONS } from "./ndpsSectionsData";
+import { SC_ST_ACT_1989_SECTIONS } from "./scstSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -135,23 +136,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Act, 1989",
     shortName: "SC/ST (Prevention of Atrocities) Act, 1989",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3(1)(a)", title: "Puts any inedible or obnoxious substance into mouth of member of SC/ST" },
-      { sectionNumber: "3(1)(c)", title: "Compels member of SC/ST to leave house, village or residence" },
-      { sectionNumber: "3(1)(f)", title: "Wrongfully occupies or cultivates land owned by member of SC/ST" },
-      { sectionNumber: "3(1)(g)", title: "Wrongfully dispossesses member of SC/ST from land or premises" },
-      { sectionNumber: "3(1)(p)", title: "Institutes false, malicious or vexatious suit or criminal proceedings" },
-      { sectionNumber: "3(1)(r)", title: "Intentionally insults or intimidates with intent to humiliate in public view" },
-      { sectionNumber: "3(1)(s)", title: "Abuses any member of SC/ST by caste name in any place within public view" },
-      { sectionNumber: "3(1)(u)", title: "Promotes feelings of enmity, hatred or ill-will against SC/ST" },
-      { sectionNumber: "3(1)(w)(i)", title: "Touches a woman belonging to SC/ST with sexual intent without consent" },
-      { sectionNumber: "3(2)(v)", title: "Commits any IPC/BNS offence punishable with 10 years or more on SC/ST" },
-      { sectionNumber: "3(2)(va)", title: "Commits any Schedule-specified offence against member of SC/ST" },
-      { sectionNumber: "4", title: "Punishment for neglect of duties by public servant" },
-      { sectionNumber: "14A", title: "Appeals to High Court within prescribed period" },
-      { sectionNumber: "18", title: "Bar of anticipatory bail under Section 438 CrPC / 482 BNSS" },
-      { sectionNumber: "18A", title: "No preliminary enquiry required before registration of FIR" },
-    ],
+    sections: SC_ST_ACT_1989_SECTIONS,
   },
   {
     id: "act_dowry_1961",
@@ -515,6 +500,19 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("NDPS"), actOption);
       map.set(normalizeKey("Narcotic Drugs and Psychotropic Substances Act"), actOption);
     }
+    if (cAct.id === "act_sc_st_1989") {
+      map.set(normalizeKey("SC/ST (Prevention of Atrocities) Act, 1989"), actOption);
+      map.set(normalizeKey("SC/ST (Prevention of Atrocities) Act,1989"), actOption);
+      map.set(normalizeKey("SC/ST (Prevention of Atrocities) Act"), actOption);
+      map.set(normalizeKey("The Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Act, 1989"), actOption);
+      map.set(normalizeKey("The Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Act,1989"), actOption);
+      map.set(normalizeKey("The Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Act"), actOption);
+      map.set(normalizeKey("SC/ST Act, 1989"), actOption);
+      map.set(normalizeKey("SC/ST Act,1989"), actOption);
+      map.set(normalizeKey("SC/ST Act"), actOption);
+      map.set(normalizeKey("SC ST Act"), actOption);
+      map.set(normalizeKey("SC ST (Prevention of Atrocities) Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -564,6 +562,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_ndps_1985, preserve the authoritative complete 595 sections catalog
         if (existing.id === "act_ndps_1985") {
+          continue;
+        }
+        // If it's act_sc_st_1989, preserve the authoritative complete 196 sections catalog
+        if (existing.id === "act_sc_st_1989") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
