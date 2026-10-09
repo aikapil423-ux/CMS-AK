@@ -23,6 +23,9 @@ import {
   User,
   RotateCcw,
   ShieldAlert,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
@@ -57,6 +60,14 @@ function GeneralDiaryContent() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [officerQuery, setOfficerQuery] = useState("");
+
+  // Column Sort & Column Search State
+  type GDSortField = "gdNumber" | "officer" | "gdType" | "subject" | "activityDateTime" | "narrative";
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<GDSortField>("activityDateTime");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
+  const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
 
   // Pagination State
   const [page, setPage] = useState(1);
@@ -172,7 +183,188 @@ function GeneralDiaryContent() {
     setStartDate("");
     setEndDate("");
     setOfficerQuery("");
+    setColumnSearch({});
+    setActiveSearchCol(null);
     setPage(1);
+  };
+
+  const handleSort = (field: GDSortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const displayedRecords = useMemo(() => {
+    let list = [...paginatedData.records];
+
+    // Column-specific search filter
+    for (const [col, term] of Object.entries(columnSearch)) {
+      if (!term || !term.trim()) continue;
+      const q = term.toLowerCase().trim();
+      list = list.filter((rec) => {
+        if (col === "gdNumber") {
+          return (
+            rec.gdNumber.toLowerCase().includes(q) ||
+            String(rec.sequencePerDay || "").includes(q)
+          );
+        } else if (col === "officer") {
+          return (
+            rec.entryForOfficer.name.toLowerCase().includes(q) ||
+            rec.entryForOfficer.rank.toLowerCase().includes(q) ||
+            rec.entryForOfficer.beltNumber.toLowerCase().includes(q)
+          );
+        } else if (col === "gdType") {
+          return rec.typeDisplay.toLowerCase().includes(q);
+        } else if (col === "subject") {
+          return rec.subject.toLowerCase().includes(q);
+        } else if (col === "activityDateTime") {
+          return rec.activityDateTime.toLowerCase().includes(q);
+        } else if (col === "narrative") {
+          return rec.narrative.toLowerCase().includes(q);
+        }
+        return true;
+      });
+    }
+
+    // Sorting
+    return list.sort((a, b) => {
+      let aVal = "";
+      let bVal = "";
+      if (sortField === "gdNumber") {
+        const aSeq = a.sequencePerDay || 0;
+        const bSeq = b.sequencePerDay || 0;
+        return sortOrder === "asc" ? aSeq - bSeq : bSeq - aSeq;
+      } else if (sortField === "officer") {
+        aVal = a.entryForOfficer.name.toLowerCase();
+        bVal = b.entryForOfficer.name.toLowerCase();
+      } else if (sortField === "gdType") {
+        aVal = a.typeDisplay.toLowerCase();
+        bVal = b.typeDisplay.toLowerCase();
+      } else if (sortField === "subject") {
+        aVal = a.subject.toLowerCase();
+        bVal = b.subject.toLowerCase();
+      } else if (sortField === "activityDateTime") {
+        aVal = a.activityDateTime.toLowerCase();
+        bVal = b.activityDateTime.toLowerCase();
+      } else if (sortField === "narrative") {
+        aVal = a.narrative.toLowerCase();
+        bVal = b.narrative.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [paginatedData.records, columnSearch, sortField, sortOrder]);
+
+  const renderGDColumnHeader = (field: GDSortField, label: string) => {
+    const isSearching = activeSearchCol === field;
+    const filterValue = columnSearch[field] || "";
+    const isSorted = sortField === field;
+
+    return (
+      <div className="space-y-1 relative">
+        <div className="flex items-center justify-between gap-1">
+          {/* Column Name Click -> Toggles Search */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveSearchCol(isSearching ? null : field);
+            }}
+            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+            className="flex items-center gap-1 font-bold text-white hover:text-cyan-200 transition-colors text-left uppercase text-[11px] tracking-wider cursor-pointer group"
+          >
+            <span>{label}</span>
+            {filterValue ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            ) : (
+              <Search className="w-2.5 h-2.5 text-slate-400 opacity-40 group-hover:opacity-100 group-hover:text-cyan-300 transition-opacity" />
+            )}
+          </button>
+
+          {/* Arrow Click -> Sorts */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSort(field);
+            }}
+            title={`सॉर्ट करें (Sort by ${label})`}
+            className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer shrink-0 ${
+              isSorted ? "text-cyan-300 bg-white/15" : "text-slate-400 hover:text-white"
+            }`}
+          >
+            {isSorted ? (
+              sortOrder === "asc" ? (
+                <ArrowUp className="w-3.5 h-3.5 font-bold text-cyan-300" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 font-bold text-cyan-300" />
+              )
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Inline Search Input or Active Filter Badge */}
+        {isSearching ? (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="pt-1 animate-in fade-in-50"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                autoFocus
+                value={filterValue}
+                onChange={(e) =>
+                  setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
+                }
+                placeholder={`${label} खोजें...`}
+                className="w-full text-[11px] px-2 py-1 bg-white border border-cyan-400 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 font-normal pr-5 text-slate-900 shadow-2xs normal-case"
+              />
+              {filterValue && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setColumnSearch((prev) => {
+                      const next = { ...prev };
+                      delete next[field];
+                      return next;
+                    })
+                  }
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          </div>
+        ) : filterValue ? (
+          <div className="flex items-center gap-1 text-[10px] text-cyan-200 bg-cyan-950/80 px-1.5 py-0.5 rounded font-mono border border-cyan-700">
+            <span className="truncate max-w-[90px] normal-case">&ldquo;{filterValue}&rdquo;</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setColumnSearch((prev) => {
+                  const next = { ...prev };
+                  delete next[field];
+                  return next;
+                });
+              }}
+              className="text-slate-400 hover:text-red-400 ml-auto"
+            >
+              &times;
+            </button>
+          </div>
+        ) : null}
+      </div>
+    );
   };
 
   return (
@@ -429,17 +621,49 @@ function GeneralDiaryContent() {
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0b192c] text-white uppercase text-[11px] tracking-wider font-sans">
                 <tr>
-                  <th className="py-3 px-3.5 w-24">GD No</th>
-                  <th className="py-3 px-3.5 w-44">Entry for officer</th>
-                  <th className="py-3 px-3 w-32">GD Type</th>
-                  <th className="py-3 px-3 w-40">Subject</th>
-                  <th className="py-3 px-3 w-44">Date &amp; time</th>
-                  <th className="py-3 px-3.5">Brief description</th>
-                  <th className="py-3 px-3 w-24 text-right">Actions</th>
+                  <th className="py-3 px-3.5 w-28 align-top">
+                    {renderGDColumnHeader("gdNumber", "GD No")}
+                  </th>
+                  <th className="py-3 px-3.5 w-44 align-top">
+                    {renderGDColumnHeader("officer", "Entry for officer")}
+                  </th>
+                  <th className="py-3 px-3 w-32 align-top">
+                    {renderGDColumnHeader("gdType", "GD Type")}
+                  </th>
+                  <th className="py-3 px-3 w-44 align-top">
+                    {renderGDColumnHeader("subject", "Subject")}
+                  </th>
+                  <th className="py-3 px-3 w-44 align-top">
+                    {renderGDColumnHeader("activityDateTime", "Date & time")}
+                  </th>
+                  <th className="py-3 px-3.5 align-top">
+                    {renderGDColumnHeader("narrative", "Brief description")}
+                  </th>
+                  <th className="py-3 px-3 w-24 text-right align-top pt-3.5">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {paginatedData.records.map((rec) => {
+                {displayedRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-10 text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Filter className="w-7 h-7 text-slate-300" />
+                        <p className="font-semibold text-slate-700">कोई रिकॉर्ड नहीं मिला (No records match the column filter)</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setColumnSearch({});
+                            setActiveSearchCol(null);
+                          }}
+                          className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
+                        >
+                          Clear Column Filters
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  displayedRecords.map((rec) => {
                   const isLocked = rec.isLocked;
                   const isSuggested = rec.status === "SUGGESTED";
                   const isDraft = rec.status === "DRAFT";
@@ -553,7 +777,7 @@ function GeneralDiaryContent() {
                       </td>
                     </tr>
                   );
-                })}
+                }))}
               </tbody>
             </table>
           </div>

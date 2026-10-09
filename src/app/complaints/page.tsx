@@ -221,6 +221,10 @@ function ComplaintListContent() {
   const [sortField, setSortField] = useState<ComplaintSortField>("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
+  // Column-specific search states (click column name to search, click arrow to sort)
+  const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
+  const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
+
   // Selected complaint for drawer/modal inspection
   const [selectedComplaint, setSelectedComplaint] = useState<ComplaintItem | null>(null);
 
@@ -621,7 +625,42 @@ function ComplaintListContent() {
   };
 
   const sortedComplaints = useMemo(() => {
-    return [...complaints].sort((a, b) => {
+    let list = [...complaints];
+
+    // Column-specific search filters
+    for (const [col, term] of Object.entries(columnSearch)) {
+      if (!term || !term.trim()) continue;
+      const q = term.toLowerCase().trim();
+      list = list.filter((c) => {
+        if (col === "complaintNumber") {
+          return (
+            c.complaintNumber.toLowerCase().includes(q) ||
+            (c.priority?.toLowerCase().includes(q) ?? false)
+          );
+        } else if (col === "createdAt") {
+          return c.createdAt.includes(q);
+        } else if (col === "complainantName") {
+          return (
+            c.complainantName.toLowerCase().includes(q) ||
+            (c.complainantMobile?.includes(q) ?? false)
+          );
+        } else if (col === "categoryDisplay") {
+          return (
+            (c.categoryDisplay?.toLowerCase().includes(q) ?? false) ||
+            (c.incidentPlace?.toLowerCase().includes(q) ?? false)
+          );
+        } else if (col === "status") {
+          return c.status.toLowerCase().includes(q);
+        } else if (col === "assignedEoName") {
+          return c.assignedEoName?.toLowerCase().includes(q) ?? false;
+        } else if (col === "daysPending") {
+          return String(c.daysPending || 0).includes(q);
+        }
+        return true;
+      });
+    }
+
+    return list.sort((a, b) => {
       if (sortField === "daysPending") {
         return sortOrder === "asc" ? a.daysPending - b.daysPending : b.daysPending - a.daysPending;
       }
@@ -636,18 +675,112 @@ function ComplaintListContent() {
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-  }, [complaints, sortField, sortOrder]);
+  }, [complaints, columnSearch, sortField, sortOrder]);
 
-  const renderSortIcon = (field: ComplaintSortField) => {
-    if (sortField !== field) {
-      return (
-        <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 opacity-60 group-hover:opacity-100 group-hover:text-slate-600 transition-opacity" />
-      );
-    }
-    return sortOrder === "asc" ? (
-      <ArrowUp className="w-3.5 h-3.5 text-blue-600 font-bold shrink-0" />
-    ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-blue-600 font-bold shrink-0" />
+  const renderComplaintColumnHeader = (field: ComplaintSortField, label: string) => {
+    const isSearching = activeSearchCol === field;
+    const filterValue = columnSearch[field] || "";
+    const isSorted = sortField === field;
+
+    return (
+      <div className="space-y-1 relative">
+        <div className="flex items-center justify-between gap-1.5">
+          {/* Column Name Click -> Toggles Search */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveSearchCol(isSearching ? null : field);
+            }}
+            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+            className="flex items-center gap-1 font-semibold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer"
+          >
+            <span>{label}</span>
+            {filterValue ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+            ) : (
+              <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity" />
+            )}
+          </button>
+
+          {/* Arrow Click -> Sorts */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSort(field);
+            }}
+            title={`सॉर्ट करें (Sort by ${label})`}
+            className={`p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer shrink-0 ${
+              isSorted ? "text-blue-700 bg-blue-50" : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {isSorted ? (
+              sortOrder === "asc" ? (
+                <ArrowUp className="w-3.5 h-3.5 font-bold text-blue-700" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 font-bold text-blue-700" />
+              )
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Inline Search Input or Active Filter Badge */}
+        {isSearching ? (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="pt-1 animate-in fade-in-50"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                autoFocus
+                value={filterValue}
+                onChange={(e) =>
+                  setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
+                }
+                placeholder={`${label} खोजें...`}
+                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
+              />
+              {filterValue && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setColumnSearch((prev) => {
+                      const next = { ...prev };
+                      delete next[field];
+                      return next;
+                    })
+                  }
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          </div>
+        ) : filterValue ? (
+          <div className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono border border-blue-200">
+            <span className="truncate max-w-[90px]">&ldquo;{filterValue}&rdquo;</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setColumnSearch((prev) => {
+                  const next = { ...prev };
+                  delete next[field];
+                  return next;
+                });
+              }}
+              className="text-slate-400 hover:text-red-600 ml-auto"
+            >
+              &times;
+            </button>
+          </div>
+        ) : null}
+      </div>
     );
   };
 
@@ -1240,91 +1373,49 @@ function ComplaintListContent() {
                 <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                   <tr>
                     {visibleColumns.complaintId && (
-                      <th
-                        onClick={() => handleSort("complaintNumber")}
-                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Complaint ID &amp; Priority</span>
-                          {renderSortIcon("complaintNumber")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("complaintNumber", "Complaint ID & Priority")}
                       </th>
                     )}
 
                     {visibleColumns.dateTime && (
-                      <th
-                        onClick={() => handleSort("createdAt")}
-                        className="py-3 px-4 whitespace-nowrap cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Date &amp; Time</span>
-                          {renderSortIcon("createdAt")}
-                        </div>
+                      <th className="py-3 px-4 whitespace-nowrap transition-colors select-none">
+                        {renderComplaintColumnHeader("createdAt", "Date & Time")}
                       </th>
                     )}
 
                     {visibleColumns.complainant && (
-                      <th
-                        onClick={() => handleSort("complainantName")}
-                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Complainant</span>
-                          {renderSortIcon("complainantName")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("complainantName", "Complainant")}
                       </th>
                     )}
 
                     {visibleColumns.categoryLocation && (
-                      <th
-                        onClick={() => handleSort("categoryDisplay")}
-                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Category &amp; Incident Location</span>
-                          {renderSortIcon("categoryDisplay")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("categoryDisplay", "Category & Incident Location")}
                       </th>
                     )}
 
                     {visibleColumns.status && (
-                      <th
-                        onClick={() => handleSort("status")}
-                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Enquiry Status</span>
-                          {renderSortIcon("status")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("status", "Enquiry Status")}
                       </th>
                     )}
 
                     {visibleColumns.assignedEo && (
-                      <th
-                        onClick={() => handleSort("assignedEoName")}
-                        className="py-3 px-4 cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span>Enquiry Officer</span>
-                          {renderSortIcon("assignedEoName")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("assignedEoName", "Enquiry Officer")}
                       </th>
                     )}
 
                     {visibleColumns.daysPending && (
-                      <th
-                        onClick={() => handleSort("daysPending")}
-                        className="py-3 px-4 text-center cursor-pointer hover:bg-slate-100 transition-colors select-none group"
-                      >
-                        <div className="flex items-center justify-center gap-1.5">
-                          <span>Days Pending</span>
-                          {renderSortIcon("daysPending")}
-                        </div>
+                      <th className="py-3 px-4 transition-colors select-none">
+                        {renderComplaintColumnHeader("daysPending", "Days Pending")}
                       </th>
                     )}
 
                     {visibleColumns.action && (
-                      <th className="py-3 px-4 text-right">Action</th>
+                      <th className="py-3 px-4 text-right align-top pt-3.5">Action</th>
                     )}
                   </tr>
                 </thead>

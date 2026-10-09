@@ -111,6 +111,10 @@ export default function FIRRegisterPage() {
     action: true,
   });
 
+  // Column-specific search states (click column name to search, click arrow to sort)
+  const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
+  const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
+
   const toggleColumn = (key: keyof typeof visibleColumns) => {
     setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -257,9 +261,46 @@ export default function FIRRegisterPage() {
         }
       }
 
+      // Column-specific search filters
+      for (const [col, term] of Object.entries(columnSearch)) {
+        if (!term || !term.trim()) continue;
+        const q = term.toLowerCase().trim();
+        if (col === "firNumber") {
+          const match =
+            fir.firNumber.toLowerCase().includes(q) ||
+            (fir.cctnsFirNumber?.toLowerCase().includes(q) ?? false) ||
+            (fir.sourceComplaintNumber?.toLowerCase().includes(q) ?? false);
+          if (!match) return false;
+        } else if (col === "firDate") {
+          const match = fir.firDate.includes(q) || (fir.firTime?.includes(q) ?? false);
+          if (!match) return false;
+        } else if (col === "complainantName") {
+          const match =
+            fir.complainantName.toLowerCase().includes(q) ||
+            (fir.complainantMobile?.includes(q) ?? false);
+          if (!match) return false;
+        } else if (col === "actsAndSections") {
+          const match =
+            fir.actsAndSections.toLowerCase().includes(q) ||
+            (fir.incidentPlace?.toLowerCase().includes(q) ?? false);
+          if (!match) return false;
+        } else if (col === "status") {
+          const match =
+            fir.status.toLowerCase().includes(q) ||
+            (fir.mainStatus?.toLowerCase().includes(q) ?? false);
+          if (!match) return false;
+        } else if (col === "assignedIoName") {
+          const match = fir.assignedIoName?.toLowerCase().includes(q) ?? false;
+          if (!match) return false;
+        } else if (col === "daysPending") {
+          const match = String(fir.daysPending || 0).includes(q);
+          if (!match) return false;
+        }
+      }
+
       return true;
     });
-  }, [firs, selectedStatuses, searchQuery, isIo, isSho, isSuperior, isMhc, currentUser]);
+  }, [firs, selectedStatuses, searchQuery, columnSearch, isIo, isSho, isSuperior, isMhc, currentUser]);
 
   // Sorted FIRs
   const sortedFirs = useMemo(() => {
@@ -291,6 +332,113 @@ export default function FIRRegisterPage() {
       setSortField(field);
       setSortDirection("asc");
     }
+  };
+
+  const renderColumnHeader = (field: FIRSortField, label: string) => {
+    const isSearching = activeSearchCol === field;
+    const filterValue = columnSearch[field] || "";
+    const isSorted = sortField === field;
+
+    return (
+      <div className="space-y-1 relative">
+        <div className="flex items-center justify-between gap-1.5">
+          {/* Column Name Click -> Toggles Search */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveSearchCol(isSearching ? null : field);
+            }}
+            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+            className="flex items-center gap-1 font-bold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer"
+          >
+            <span>{label}</span>
+            {filterValue ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+            ) : (
+              <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity" />
+            )}
+          </button>
+
+          {/* Arrow Click -> Sorts */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSort(field);
+            }}
+            title={`सॉर्ट करें (Sort by ${label})`}
+            className={`p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer shrink-0 ${
+              isSorted ? "text-blue-700 bg-blue-50" : "text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {isSorted ? (
+              sortDirection === "asc" ? (
+                <ArrowUp className="w-3.5 h-3.5 font-bold text-blue-700" />
+              ) : (
+                <ArrowDown className="w-3.5 h-3.5 font-bold text-blue-700" />
+              )
+            ) : (
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+
+        {/* Inline Search Input or Active Filter Badge */}
+        {isSearching ? (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="pt-1 animate-in fade-in-50"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                autoFocus
+                value={filterValue}
+                onChange={(e) =>
+                  setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
+                }
+                placeholder={`${label} खोजें...`}
+                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
+              />
+              {filterValue && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setColumnSearch((prev) => {
+                      const next = { ...prev };
+                      delete next[field];
+                      return next;
+                    })
+                  }
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                >
+                  &times;
+                </button>
+              )}
+            </div>
+          </div>
+        ) : filterValue ? (
+          <div className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono border border-blue-200">
+            <span className="truncate max-w-[90px]">&ldquo;{filterValue}&rdquo;</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setColumnSearch((prev) => {
+                  const next = { ...prev };
+                  delete next[field];
+                  return next;
+                });
+              }}
+              className="text-slate-400 hover:text-red-600 ml-auto"
+            >
+              &times;
+            </button>
+          </div>
+        ) : null}
+      </div>
+    );
   };
 
   const handleOpenAssign = (fir: FIRItem) => {
@@ -565,91 +713,49 @@ export default function FIRRegisterPage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                 {visibleColumns.firNumber && (
-                  <th
-                    onClick={() => handleSort("firNumber")}
-                    className="py-3 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>FIR No. &amp; Reference</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3.5 transition-colors">
+                    {renderColumnHeader("firNumber", "FIR No. & Reference")}
                   </th>
                 )}
 
                 {visibleColumns.dateTime && (
-                  <th
-                    onClick={() => handleSort("firDate")}
-                    className="py-3 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Date &amp; Time</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3 transition-colors">
+                    {renderColumnHeader("firDate", "Date & Time")}
                   </th>
                 )}
 
                 {visibleColumns.complainant && (
-                  <th
-                    onClick={() => handleSort("complainantName")}
-                    className="py-3 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Complainant / Informant</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3 transition-colors">
+                    {renderColumnHeader("complainantName", "Complainant / Informant")}
                   </th>
                 )}
 
                 {visibleColumns.actsPlace && (
-                  <th
-                    onClick={() => handleSort("actsAndSections")}
-                    className="py-3 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Acts, Sections &amp; Place</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3 transition-colors">
+                    {renderColumnHeader("actsAndSections", "Acts, Sections & Place")}
                   </th>
                 )}
 
                 {visibleColumns.status && (
-                  <th
-                    onClick={() => handleSort("status")}
-                    className="py-3 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Status</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3 transition-colors">
+                    {renderColumnHeader("status", "Status")}
                   </th>
                 )}
 
                 {visibleColumns.assignedIo && (
-                  <th
-                    onClick={() => handleSort("assignedIoName")}
-                    className="py-3 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span>Investigating Officer (IO)</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-3 transition-colors">
+                    {renderColumnHeader("assignedIoName", "Investigating Officer (IO)")}
                   </th>
                 )}
 
                 {visibleColumns.daysPending && (
-                  <th
-                    onClick={() => handleSort("daysPending")}
-                    className="py-3 px-2 text-center cursor-pointer hover:bg-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center justify-center gap-1">
-                      <span>Days</span>
-                      <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                    </div>
+                  <th className="py-2.5 px-2 text-center transition-colors">
+                    {renderColumnHeader("daysPending", "Days")}
                   </th>
                 )}
 
                 {visibleColumns.action && (
-                  <th className="py-3 px-3 text-right">Actions</th>
+                  <th className="py-2.5 px-3 text-right align-top pt-3">Actions</th>
                 )}
               </tr>
             </thead>
