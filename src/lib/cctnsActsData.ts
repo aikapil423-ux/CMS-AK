@@ -14,6 +14,7 @@ import { GAMBLING_ACT_1867_SECTIONS } from "./gamblingSectionsData";
 import { EXPLOSIVES_ACT_1908_SECTIONS } from "./explosivesSectionsData";
 import { ELECTRICITY_ACT_2003_SECTIONS } from "./electricitySectionsData";
 import { DPPA_ACT_1984_SECTIONS } from "./dppaSectionsData";
+import { PASSPORTS_ACT_1967_SECTIONS } from "./passportsSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -216,13 +217,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Passports Act, 1967",
     shortName: "Passports Act, 1967",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3", title: "Departure from India without passport or travel document prohibited" },
-      { sectionNumber: "12(1)(a)", title: "Contravenes the provisions of Section 3" },
-      { sectionNumber: "12(1)(b)", title: "Knowingly furnishes false information or suppresses material information" },
-      { sectionNumber: "12(1)(c)", title: "Fails to produce passport or travel document on demand" },
-      { sectionNumber: "12(2)", title: "Alters or tampers with passport or travel document" },
-    ],
+    sections: PASSPORTS_ACT_1967_SECTIONS,
   },
   {
     id: "act_essential_1955",
@@ -524,6 +519,14 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("PDPP Act"), actOption);
       map.set(normalizeKey("DPPA Act"), actOption);
     }
+    if (cAct.id === "act_passports_1967") {
+      map.set(normalizeKey("Passports Act, 1967"), actOption);
+      map.set(normalizeKey("Passports Act,1967"), actOption);
+      map.set(normalizeKey("The Passports Act, 1967"), actOption);
+      map.set(normalizeKey("The Passports Act,1967"), actOption);
+      map.set(normalizeKey("Passports Act"), actOption);
+      map.set(normalizeKey("Passport Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -597,6 +600,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_dppa_1984, preserve the authoritative complete 27 sections catalog
         if (existing.id === "act_dppa_1984") {
+          continue;
+        }
+        // If it's act_passports_1967, preserve the authoritative complete 144 sections catalog
+        if (existing.id === "act_passports_1967") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
