@@ -11,6 +11,7 @@ import {
   GDStatus,
 } from "@/types/generalDiary";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
+import { formatGDActivityDateTime } from "@/lib/gdDateTime";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
 const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v4_cctns";
@@ -539,6 +540,68 @@ let memoryRecordsStore: GeneralDiaryRecord[] = loadRecordsFromStorage();
 let memoryTypesStore: GDEntryTypeConfig[] = loadTypesFromStorage();
 
 // -------------------------------------------------------------
+// Chronological helpers for LOCAL back-dated resequencing (mirror of the
+// server-side resequenceDay). Parses "yyyy-mm-dd hh:mm AM/PM", ISO, or
+// "dd/mm/yyyy hh:mm AM/PM" activity strings into epoch ms.
+// -------------------------------------------------------------
+function gdRecordTimeMs(r: GeneralDiaryRecord): number {
+  const raw = (r.activityDateTime || "").trim();
+  if (!raw) return 0;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).getTime();
+  const parts = raw.split(" ");
+  let dateKey = "";
+  let timePart = "";
+  if (raw.includes("/")) {
+    const dmy = (parts[0] || "").split("/");
+    if (dmy.length === 3) dateKey = `${dmy[2]}-${dmy[1]}-${dmy[0]}`;
+    timePart = parts.slice(1).join(" ");
+  } else {
+    dateKey = parts[0] || "";
+    timePart = parts.slice(1).join(" ");
+  }
+  const m = timePart.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  if (!m) return 0;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = (m[3] || "").toUpperCase();
+  if (ap === "AM" && h === 12) h = 0;
+  if (ap === "PM" && h !== 12) h += 12;
+  return new Date(
+    `${dateKey}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`
+  ).getTime();
+}
+
+function gdRecordDateKey(r: GeneralDiaryRecord): string {
+  const raw = (r.activityDateTime || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
+  const first = raw.split(" ")[0] || "";
+  if (first.includes("/")) {
+    const dmy = first.split("/");
+    return dmy.length === 3 ? `${dmy[2]}-${dmy[1]}-${dmy[0]}` : first;
+  }
+  return first;
+}
+
+// Renumber every locked entry of one local day chronologically — so a
+// back-dated entry inserted between others shifts the later GD numbers.
+function resequenceLocalDay(dateKey: string): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return 0;
+  const day = memoryRecordsStore
+    .filter((r) => r.isLocked && gdRecordDateKey(r) === dateKey)
+    .sort((a, b) => gdRecordTimeMs(a) - gdRecordTimeMs(b));
+  let changed = 0;
+  day.forEach((r, i) => {
+    const seq = i + 1;
+    const gdNumber = `GD-${dateKey}-${String(seq).padStart(3, "0")}`;
+    if (r.sequencePerDay !== seq || r.gdNumber !== gdNumber) changed++;
+    r.sequencePerDay = seq;
+    r.gdNumber = gdNumber;
+  });
+  if (changed > 0) saveRecordsToStorage(memoryRecordsStore);
+  return changed;
+}
+
+// -------------------------------------------------------------
 // Backend API helpers — the authoritative GD register lives on the
 // server (SQLite). GD numbers & date/time are assigned server-side.
 // Every call falls back to the local store if the backend is down.
@@ -589,10 +652,12 @@ export const GeneralDiaryService = {
     }
   },
 
-  // Server clock + next GD number (dd/mm/yyyy + 24h HH:mm) for the read-only form
+  // Server clock (dd/mm/yyyy + HH:mm 24h key) for the entry form defaults
   async getServerNow(): Promise<{
     serverDateDisplay: string;
     serverTimeDisplay: string;
+    serverTime24: string;
+    serverTime12: string;
     serverDateISO: string;
     nextSequence: number;
     nextGdNumber: string;
@@ -1050,6 +1115,9 @@ export const GeneralDiaryService = {
         remarks: `Permanently locked as ${gdNumber} under PPR 22.48`,
       });
 
+      // Back-dated local entry — renumber the whole day chronologically
+      resequenceLocalDay(gdRecordDateKey(targetRecord));
+
       saveRecordsToStorage(memoryRecordsStore);
       return targetRecord;
     }
@@ -1112,6 +1180,7 @@ export const GeneralDiaryService = {
     };
 
     memoryRecordsStore.unshift(newLockedRecord);
+    resequenceLocalDay(gdRecordDateKey(newLockedRecord));
     saveRecordsToStorage(memoryRecordsStore);
     return newLockedRecord;
   },
@@ -1286,6 +1355,8 @@ export const GeneralDiaryService = {
           typeDisplayHi?: string;
           subject: string;
           narrative: string;
+          activityDate?: string;
+          activityTime?: string;
           activityDateTime?: string;
           entryForOfficer?: GDOfficerParticulars;
           actualAuthor?: GDOfficerParticulars;
@@ -1304,7 +1375,7 @@ export const GeneralDiaryService = {
   ): Promise<GeneralDiaryRecord> {
     if (typeof entryOrSubject === "object") {
       const payload = entryOrSubject;
-      // Backend-first: server stamps date/time and assigns the unique GD number
+      // Backend-first: server stamps the GD number by chronological position
       try {
         const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
           action: "CREATE_LOCKED",
@@ -1320,6 +1391,8 @@ export const GeneralDiaryService = {
           district: payload.district,
           source: payload.source,
           relatedRecords: payload.relatedRecords,
+          activityDate: payload.activityDate,
+          activityTime: payload.activityTime,
         });
         return json.record;
       } catch {
@@ -1340,7 +1413,12 @@ export const GeneralDiaryService = {
           category: payload.category || typeDef.category,
           typeDisplay: payload.typeDisplay || typeDef.nameEn,
           typeDisplayHi: payload.typeDisplayHi || typeDef.nameHi,
-          activityDateTime: payload.activityDateTime || new Date().toISOString(),
+          activityDateTime:
+            payload.activityDate && payload.activityTime
+              ? formatGDActivityDateTime(
+                  new Date(`${payload.activityDate}T${payload.activityTime}:00`)
+                )
+              : payload.activityDateTime || new Date().toISOString(),
           entryForOfficer: payload.entryForOfficer || author,
           actualAuthor: author,
           policeStation: payload.policeStation || "PS City Thanesar",

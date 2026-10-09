@@ -3,7 +3,8 @@ import { Prisma, GDRecord } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   formatGDDateDisplay,
-  formatGDTimeDisplay,
+  formatGDTimeDisplay24,
+  formatGDTimeDisplay12,
   formatGDDateKey,
   formatGDActivityDateTime,
   startOfDay,
@@ -129,10 +130,78 @@ async function getNextLockedSequence(gdDate: Date): Promise<{ sequence: number; 
   return { sequence, gdNumber: `GD-${formatGDDateKey(gdDate)}-${padded}` };
 }
 
-// Creates a permanently locked register entry. Date/time/number are SERVER-owned.
-async function createLockedEntry(body: Record<string, unknown>): Promise<GeneralDiaryRecord> {
+// Renumber every LOCKED entry of one GD day in strict chronological order.
+// Used when an entry is inserted BETWEEN existing ones (back-dated filing):
+// all later entries automatically shift to the next GD number.
+// Two phases (temp numbers first) so the global unique gdNumber constraint
+// can never collide mid-reshuffle. Returns how many rows moved.
+async function resequenceDay(gdDate: Date): Promise<number> {
+  const key = formatGDDateKey(gdDate);
+  const rows = await prisma.gDRecord.findMany({
+    where: { isLocked: true, gdDate },
+    orderBy: [{ entryDateTime: "asc" }, { id: "asc" }],
+  });
+
+  let changes = 0;
+  rows.forEach((row, i) => {
+    const seq = i + 1;
+    const gdNumber = `GD-${key}-${String(seq).padStart(3, "0")}`;
+    if (row.sequencePerDay !== seq || row.gdNumber !== gdNumber) changes++;
+  });
+  if (changes === 0) return 0;
+
+  const stamp = Date.now().toString(36).slice(-6);
+  // Phase 1 — park every gdNumber on a temp unique value
+  for (let i = 0; i < rows.length; i++) {
+    await prisma.gDRecord.update({
+      where: { id: rows[i].id },
+      data: { gdNumber: `GD-${key}-T${stamp}-${i}` },
+    });
+  }
+  // Phase 2 — assign final chronological numbers
+  for (let i = 0; i < rows.length; i++) {
+    const seq = i + 1;
+    await prisma.gDRecord.update({
+      where: { id: rows[i].id },
+      data: {
+        sequencePerDay: seq,
+        gdNumber: `GD-${key}-${String(seq).padStart(3, "0")}`,
+      },
+    });
+  }
+  return changes;
+}
+
+// Resolve the officer-selected activity date/time (back-dating allowed).
+// Falls back to the server clock when the form sends nothing.
+function resolveEntryDateTime(body: Record<string, unknown>): Date {
+  const dateStr = String(body.activityDate || "").trim();
+  const timeStr = String(body.activityTime || "").trim();
   const now = new Date();
-  const gdDate = startOfDay(now);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) && /^\d{2}:\d{2}$/.test(timeStr)) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const [hh, mm] = timeStr.split(":").map(Number);
+    const dt = new Date(y, m - 1, d, hh, mm, 0, 0);
+    // Guard: an entry can never be stamped in the future
+    if (dt.getTime() > now.getTime() + 5 * 60 * 1000) {
+      throw new Error(
+        "GD entry date/time cannot be in the future. Please pick the actual date & time of the activity."
+      );
+    }
+    return dt;
+  }
+  return now;
+}
+
+// Creates a permanently locked register entry. The activity date/time may be
+// back-dated by the officer; the GD number is computed by chronological
+// position and later entries of the same day are renumbered automatically.
+async function createLockedEntry(
+  body: Record<string, unknown>
+): Promise<{ record: GeneralDiaryRecord; resequenced: number }> {
+  const now = new Date();
+  const entryDateTime = resolveEntryDateTime(body);
+  const gdDate = startOfDay(entryDateTime);
   const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
   if (!subject) throw new Error("Subject is required for a General Diary entry.");
@@ -191,7 +260,7 @@ async function createLockedEntry(body: Record<string, unknown>): Promise<General
           gdNumber,
           sequencePerDay: sequence,
           gdDate,
-          entryDateTime: now, // SERVER clock — never client-editable
+          entryDateTime, // officer-picked activity time (defaults to server clock)
           policeStation,
           district,
           typeCode,
@@ -213,7 +282,12 @@ async function createLockedEntry(body: Record<string, unknown>): Promise<General
           verificationTimestamp: now,
         },
       });
-      return mapRowToRecord(row);
+      // Inserted between existing entries? Renumber the whole day so every
+      // later entry shifts to its correct chronological GD number.
+      const resequenced = await resequenceDay(gdDate);
+      // Re-fetch: resequencing may have changed this row's final GD number
+      const fresh = await prisma.gDRecord.findUnique({ where: { id: row.id } });
+      return { record: mapRowToRecord(fresh ?? row), resequenced };
     } catch (err) {
       lastError = err;
       // P2002 = unique constraint collision -> another entry took the number; retry
@@ -326,7 +400,7 @@ async function verifyAndLockEntry(
   id: string,
   verifierRaw: unknown,
   remarks?: string
-): Promise<GeneralDiaryRecord> {
+): Promise<{ record: GeneralDiaryRecord; resequenced: number }> {
   const verifier = buildOfficer(verifierRaw, FALLBACK_AUTHOR);
   const existing = await prisma.gDRecord.findUnique({ where: { id } });
   if (!existing) throw new Error("GD entry not found.");
@@ -379,7 +453,11 @@ async function verifyAndLockEntry(
           auditTrailJson: JSON.stringify(trail),
         },
       });
-      return mapRowToRecord(updated);
+      // Keep the locked day in strict chronological GD-number order
+      const resequenced = await resequenceDay(gdDate);
+      // Re-fetch: resequencing may have changed this row's final GD number
+      const fresh = await prisma.gDRecord.findUnique({ where: { id: existing.id } });
+      return { record: mapRowToRecord(fresh ?? updated), resequenced };
     } catch (err) {
       lastError = err;
       if (
@@ -469,7 +547,8 @@ export async function GET(req: NextRequest) {
         success: true,
         data: {
           serverDateDisplay: formatGDDateDisplay(now),
-          serverTimeDisplay: formatGDTimeDisplay(now),
+          serverTimeDisplay: formatGDTimeDisplay24(now),
+          serverTime12: formatGDTimeDisplay12(now),
           serverDateISO: formatGDDateKey(now),
           nextSequence: sequence,
           nextGdNumber: `GD-${formatGDDateKey(now)}-${String(sequence).padStart(3, "0")}`,
@@ -656,7 +735,7 @@ export async function POST(req: NextRequest) {
         body.verifier,
         body.remarks ? String(body.remarks) : undefined
       );
-      return NextResponse.json({ success: true, record: locked });
+      return NextResponse.json({ success: true, record: locked.record });
     }
 
     if (action === "DELETE_DRAFT") {
@@ -669,9 +748,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, draft });
     }
 
-    // Default: permanent, server-stamped register entry
-    const record = await createLockedEntry(body);
-    return NextResponse.json({ success: true, record });
+    // Default: permanent register entry — back-dated date/time supported,
+    // later entries of the same day renumber automatically
+    const result = await createLockedEntry(body);
+    return NextResponse.json({
+      success: true,
+      record: result.record,
+      resequenced: result.resequenced,
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error?.message || "Failed to process General Diary request" },

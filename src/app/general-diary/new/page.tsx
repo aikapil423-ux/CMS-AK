@@ -10,6 +10,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   User,
   Save,
   RotateCcw,
@@ -30,6 +31,7 @@ import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
+import { formatGDDateKey, to12HourParts, from12HourParts } from "@/lib/gdDateTime";
 
 function NewGDEntryContent() {
   const router = useRouter();
@@ -107,10 +109,14 @@ function NewGDEntryContent() {
   const [customOfficerName, setCustomOfficerName] = useState("");
   const [selectedType, setSelectedType] = useState<string>(preselectedType || "");
 
-  // Date & Time — SERVER-OWNED (read-only; CCTNS dd/mm/yyyy + HH:mm 24-hour)
-  const [serverDateDisplay, setServerDateDisplay] = useState("--/--/----");
-  const [serverTimeDisplay, setServerTimeDisplay] = useState("--:--");
-  const suppressAutoTemplateRef = useRef(false);
+  // Date & Time of Activity — user-selectable (back-dating allowed).
+// Defaults come from the SERVER clock; 12-hour AM/PM time picker.
+const [activityDate, setActivityDate] = useState(""); // yyyy-mm-dd
+const [hourSel, setHourSel] = useState(12);
+const [minuteSel, setMinuteSel] = useState(0);
+const [ampmSel, setAmpmSel] = useState<"AM" | "PM">("AM");
+const serverNowRef = useRef<{ dateISO: string; time24: string } | null>(null);
+const suppressAutoTemplateRef = useRef(false);
 
   // Subject & Brief Narrative
   const [subject, setSubject] = useState("");
@@ -157,14 +163,20 @@ function NewGDEntryContent() {
     return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
   }, []);
 
-  // Fetch SERVER date/time + next GD number (server-owned, never editable)
+  // Fetch SERVER date/time as the DEFAULT for the selectable date & time
   useEffect(() => {
     let alive = true;
     GeneralDiaryService.getServerNow()
       .then((n) => {
         if (!alive) return;
-        setServerDateDisplay(n.serverDateDisplay);
-        setServerTimeDisplay(n.serverTimeDisplay);
+        const dateISO = n.serverDateISO || formatGDDateKey(new Date());
+        const time24 = n.serverTime24 || n.serverTimeDisplay || "";
+        setActivityDate(dateISO);
+        const p = to12HourParts(time24);
+        setHourSel(p.hour);
+        setMinuteSel(p.minute);
+        setAmpmSel(p.ampm);
+        serverNowRef.current = { dateISO, time24 };
       })
       .catch(() => {});
     return () => {
@@ -387,12 +399,22 @@ function NewGDEntryContent() {
       setError("Please select the GD Type first.");
       return;
     }
+    if (!activityDate) {
+      setError("Please select the Date of the activity.");
+      return;
+    }
     if (!subject.trim()) {
       setError("Please enter the Subject for this General Diary entry.");
       return;
     }
     if (!narrative.trim()) {
       setError("Please enter the GD Brief (description) for this entry.");
+      return;
+    }
+    // Guard: an entry can never be filed for a future moment
+    const selMs = new Date(`${activityDate}T${activityTime24}:00`).getTime();
+    if (selMs > Date.now() + 5 * 60 * 1000) {
+      setError("GD entry date/time cannot be in the future. Pick the actual date & time of the activity.");
       return;
     }
 
@@ -413,7 +435,8 @@ function NewGDEntryContent() {
         pno: currentUser.pno || "05192834",
       };
 
-      // Save directly as locked entry — GD number, date & time are SERVER-assigned
+      // Save directly as locked entry — back-dated date/time allowed; the server
+// inserts it chronologically and renumbers later GD numbers of that day
       const newRecord = await GeneralDiaryService.addEntry({
         typeCode: selectedType,
         category: typeConfig?.category || "ROUTINE_ADMINISTRATION",
@@ -421,6 +444,8 @@ function NewGDEntryContent() {
         typeDisplayHi: typeConfig?.nameEn || selectedType,
         subject: subject.trim(),
         narrative: narrative.trim(),
+        activityDate,
+        activityTime: activityTime24,
         entryForOfficer: officerData,
         actualAuthor: authorData,
         policeStation: "PS City Thanesar",
@@ -433,7 +458,11 @@ function NewGDEntryContent() {
         await GeneralDiaryService.deleteDraft(editDraftId);
       }
 
-      setSuccessMessage(`General Diary entry #${newRecord.sequencePerDay} (${newRecord.gdNumber}) successfully recorded and locked!`);
+      setSuccessMessage(
+        `General Diary entry #${newRecord.sequencePerDay} (${newRecord.gdNumber}) successfully recorded and locked!${
+          isBackDated ? " Register renumbered automatically." : ""
+        }`
+      );
       setTimeout(() => {
         router.push("/general-diary");
       }, 1200);
@@ -489,6 +518,15 @@ function NewGDEntryContent() {
     setTypeDropdownOpen(false);
     setSubject("");
     setNarrative("");
+    // Date & time fall back to the server defaults
+    const sn = serverNowRef.current;
+    if (sn) {
+      setActivityDate(sn.dateISO);
+      const p = to12HourParts(sn.time24);
+      setHourSel(p.hour);
+      setMinuteSel(p.minute);
+      setAmpmSel(p.ampm);
+    }
     setError(null);
     setSuccessMessage(null);
   };
@@ -509,6 +547,21 @@ function NewGDEntryContent() {
     () => types.find((t) => t.code === selectedType)?.nameEn || "",
     [types, selectedType]
   );
+
+  // 24-hour key from the 12-hour picker parts
+  const activityTime24 = useMemo(
+    () => from12HourParts(hourSel, minuteSel, ampmSel),
+    [hourSel, minuteSel, ampmSel]
+  );
+
+  const todayISO = useMemo(() => formatGDDateKey(new Date()), []);
+
+  // Back-dated = the picked moment is before right now
+  const isBackDated = useMemo(() => {
+    if (!activityDate) return false;
+    const sel = new Date(`${activityDate}T${activityTime24}:00`).getTime();
+    return sel < Date.now() - 60 * 1000;
+  }, [activityDate, activityTime24]);
 
   return (
     <div className="p-3 sm:p-6 space-y-5">
@@ -585,36 +638,69 @@ function NewGDEntryContent() {
               )}
             </div>
 
-            {/* Date & Time — SERVER-OWNED (read-only; dd/mm/yyyy | hh:mm side-by-side) */}
+            {/* Date & Time of Activity — user-selectable (back-dating allowed) */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-600" />
-                <span>Date &amp; Time (Server — auto)</span>
+                <span>Date &amp; Time of Activity *</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                   <input
-                    type="text"
-                    value={serverDateDisplay}
-                    readOnly
-                    disabled
-                    placeholder="dd/mm/yyyy"
-                    className="w-full pl-8 pr-2 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono font-semibold text-slate-700 cursor-not-allowed"
+                    type="date"
+                    value={activityDate}
+                    max={todayISO}
+                    onChange={(e) => setActivityDate(e.target.value)}
+                    className="w-full pl-8 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono font-semibold text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
                   />
                 </div>
-                <div className="relative">
-                  <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={serverTimeDisplay}
-                    readOnly
-                    disabled
-                    placeholder="hh:mm"
-                    className="w-full pl-8 pr-2 py-2.5 bg-slate-100 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono font-semibold text-slate-700 cursor-not-allowed"
-                  />
+                <div className="grid grid-cols-3 gap-1">
+                  <select
+                    value={hourSel}
+                    onChange={(e) => setHourSel(Number(e.target.value))}
+                    className="w-full px-1 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-semibold text-slate-900 focus:ring-2 focus:ring-[#0b192c] cursor-pointer"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={minuteSel}
+                    onChange={(e) => setMinuteSel(Number(e.target.value))}
+                    className="w-full px-1 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-semibold text-slate-900 focus:ring-2 focus:ring-[#0b192c] cursor-pointer"
+                  >
+                    {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                      <option key={m} value={m}>
+                        {String(m).padStart(2, "0")}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={ampmSel}
+                    onChange={(e) => setAmpmSel(e.target.value as "AM" | "PM")}
+                    className="w-full px-1 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#0b192c] cursor-pointer"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
                 </div>
               </div>
+              <p className="text-[11px] text-slate-500">
+                12-hour format (AM/PM). Defaults to the server clock — pick an earlier date &amp; time to file a back-dated entry.
+              </p>
+              {isBackDated && (
+                <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-600" />
+                  <span>
+                    Back-dated entry — it will be inserted at its chronological
+                    position and the GD numbers of later entries on this date
+                    will shift automatically.
+                  </span>
+                </p>
+              )}
             </div>
           </div>
 
