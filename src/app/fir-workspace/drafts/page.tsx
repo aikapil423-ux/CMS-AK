@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -9,26 +9,17 @@ import {
   Copy,
   Check,
   Shield,
-  Download,
   FileCheck2,
-  Building,
-  User,
-  Phone,
-  ArrowLeft,
-  Save,
   CheckCircle2,
   Plus,
   Trash2,
-  Search,
-  AlertCircle,
-  FileText,
-  BadgeAlert,
   Send,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
-import { FIRItem, AccusedPerson } from "@/types";
+import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 
 export type FinalFormType = "CHARGESHEET" | "CLOSURE" | "UNTRACED" | "CANCELLED";
@@ -96,12 +87,14 @@ function FIRFinalFormContent() {
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
   const [formType, setFormType] = useState<FinalFormType>("CHARGESHEET");
 
-  // Form Fields
+  // Editable Proforma Fields
   const [courtName, setCourtName] = useState("In the Court of Chief Judicial Magistrate, Gurugram");
   const [reportNumber, setReportNumber] = useState("");
   const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
   const [policeStation, setPoliceStation] = useState("Sector 29 Police Station");
   const [district, setDistrict] = useState("Gurugram");
+  const [firActsAndSections, setFirActsAndSections] = useState("");
+  const [firNumberAndDate, setFirNumberAndDate] = useState("");
 
   // Complainant Details
   const [complainantName, setComplainantName] = useState("");
@@ -109,9 +102,9 @@ function FIRFinalFormContent() {
   const [complainantAddress, setComplainantAddress] = useState("");
   const [complainantPhone, setComplainantPhone] = useState("");
 
-  // Accused Persons Sent for Trial
+  // Accused Persons Sent for Trial (Chargesheet)
   const [accusedSentList, setAccusedSentList] = useState<AccusedTrialEntry[]>([]);
-  // Accused Persons Not Sent for Trial
+  // Accused Persons Not Sent for Trial (Closure / Untraced / Cancelled)
   const [accusedNotSentList, setAccusedNotSentList] = useState<
     { id: string; name: string; reason: string }[]
   >([]);
@@ -119,7 +112,7 @@ function FIRFinalFormContent() {
   // Property Details
   const [propertyRecovered, setPropertyRecovered] = useState("");
 
-  // IO and Findings
+  // IO and SHO Endorsement
   const [investigatingOfficer, setInvestigatingOfficer] = useState(
     currentUser.name || "SI Neeraj Kumar"
   );
@@ -148,6 +141,8 @@ function FIRFinalFormContent() {
     if (activeFir) {
       setPoliceStation(activeFir.policeStation);
       setDistrict(activeFir.district);
+      setFirNumberAndDate(`${activeFir.firNumber} dt ${activeFir.firDate || "28-03-2026"}`);
+      setFirActsAndSections(activeFir.actsAndSections || "Sec 303(2), 305 Bharatiya Nyaya Sanhita, 2023");
       setReportNumber(
         activeFir.finalFormNumber ||
           `${formType === "CHARGESHEET" ? "CS" : "FR"}/${activeFir.firYear}/${activeFir.firNumber.replace(/[^0-9]/g, "").slice(-4) || "001"}`
@@ -197,7 +192,7 @@ function FIRFinalFormContent() {
                 idx === 0
                   ? "Admitted to bail under Sec 480 BNSS by Court; Bail bond furnished."
                   : undefined,
-              jailDetails: idx !== 0 ? "Judicial Custody, District Jail Bhondsi." : undefined,
+              jailDetails: idx !== 0 ? "Judicial Custody, District Jail." : undefined,
             }))
           );
           setAccusedNotSentList([]);
@@ -276,17 +271,20 @@ function FIRFinalFormContent() {
   };
 
   const handleCopy = () => {
-    if (!activeFir) return;
     const text = `POLICE REPORT UNDER SECTION 193 BNSS, 2023 (${FINAL_FORM_CONFIGS[formType].policeFormNo})
 ${courtName}
 Police Station: ${policeStation}, District: ${district}
-FIR No.: ${activeFir.firNumber} Date: ${activeFir.firDate}
-Acts & Sections: ${activeFir.actsAndSections}
-Complainant: ${complainantName} s/o ${complainantFather}
+FIR No. & Date: ${firNumberAndDate}
+Acts & Sections: ${firActsAndSections}
+Report Serial No.: ${reportNumber}
+Dispatch Date: ${reportDate}
+Nature of Report: ${FINAL_FORM_CONFIGS[formType].label} (${FINAL_FORM_CONFIGS[formType].titleHindi})
+Complainant / Informant: ${complainantName} s/o ${complainantFather}, ${complainantAddress}, Contact: ${complainantPhone}
+Property Recovered / Seized: ${propertyRecovered}
 Investigation Summary:
 ${investigationSummary}
-IO: ${investigatingOfficer} (${ioRank}, ${ioBelt})
-SHO: ${shoName}`;
+Investigating Officer: ${investigatingOfficer} (${ioRank}, Belt No: ${ioBelt})
+Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
 
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -311,8 +309,51 @@ SHO: ${shoName}`;
     setTimeout(() => setSubmitMessage(""), 5000);
   };
 
+  // Accused Sent Table Actions
+  const handleAddAccusedSent = () => {
+    const newEntry: AccusedTrialEntry = {
+      id: `acc-sent-${Date.now()}`,
+      name: "",
+      fatherName: "",
+      address: "",
+      status: "ON_BAIL",
+      bailBondDetails: "Bail bond furnished.",
+    };
+    setAccusedSentList((prev) => [...prev, newEntry]);
+  };
+
+  const handleUpdateAccusedSent = (id: string, field: keyof AccusedTrialEntry, val: any) => {
+    setAccusedSentList((prev) =>
+      prev.map((acc) => (acc.id === id ? { ...acc, [field]: val } : acc))
+    );
+  };
+
+  const handleDeleteAccusedSent = (id: string) => {
+    setAccusedSentList((prev) => prev.filter((acc) => acc.id !== id));
+  };
+
+  // Accused Not Sent Table Actions
+  const handleAddAccusedNotSent = () => {
+    const newEntry = {
+      id: `acc-notsent-${Date.now()}`,
+      name: "",
+      reason: "No prima facie evidence found during investigation.",
+    };
+    setAccusedNotSentList((prev) => [...prev, newEntry]);
+  };
+
+  const handleUpdateAccusedNotSent = (id: string, field: "name" | "reason", val: string) => {
+    setAccusedNotSentList((prev) =>
+      prev.map((acc) => (acc.id === id ? { ...acc, [field]: val } : acc))
+    );
+  };
+
+  const handleDeleteAccusedNotSent = (id: string) => {
+    setAccusedNotSentList((prev) => prev.filter((acc) => acc.id !== id));
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       {/* Top Workspace Navigation Tabs */}
       <FIRWorkspaceNav firId={selectedFirId} />
 
@@ -329,7 +370,7 @@ SHO: ${shoName}`;
                   Final Police Report (Section 193 BNSS)
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-                  Form 24.5 / Sec 193 BNSS
+                  {FINAL_FORM_CONFIGS[formType].policeFormNo} • {FINAL_FORM_CONFIGS[formType].bnssSection}
                 </span>
                 {isSubmitted && (
                   <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
@@ -338,7 +379,7 @@ SHO: ${shoName}`;
                 )}
               </div>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Statutory Police Report under Section 193 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 for submission before Judicial Magistrate
+                Statutory Police Report under Section 193 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 • Direct On-Page Editable Proforma
               </p>
             </div>
           </div>
@@ -382,25 +423,23 @@ SHO: ${shoName}`;
           </div>
         )}
 
-        {/* Selection Strip: Active FIR & Final Form Type */}
+        {/* Selection Strip: Active FIR & Simple Final Form Category Dropdown */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">
-              Select FIR Record
+              Select FIR Record *
             </label>
-            <div className="relative">
-              <select
-                value={selectedFirId}
-                onChange={(e) => setSelectedFirId(e.target.value)}
-                className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-              >
-                {firs.map((fir) => (
-                  <option key={fir.id} value={fir.id}>
-                    {fir.firNumber} — {fir.categoryDisplay || fir.category} ({fir.status})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={selectedFirId}
+              onChange={(e) => setSelectedFirId(e.target.value)}
+              className="w-full text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-bold"
+            >
+              {firs.map((fir) => (
+                <option key={fir.id} value={fir.id}>
+                  {fir.firNumber} — {fir.categoryDisplay || fir.category} ({fir.status})
+                </option>
+              ))}
+            </select>
             {activeFir && (
               <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-2">
                 <span>PS: <strong>{activeFir.policeStation}</strong></span>
@@ -414,201 +453,91 @@ SHO: ${shoName}`;
 
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">
-              Final Form Category u/s 193 BNSS
+              Final Form Category u/s 193 BNSS *
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <select
+              value={formType}
+              onChange={(e) => setFormType(e.target.value as FinalFormType)}
+              className="w-full text-xs font-bold px-3 py-2 bg-emerald-50/60 border border-emerald-300 rounded-lg text-emerald-950 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            >
               {(Object.keys(FINAL_FORM_CONFIGS) as FinalFormType[]).map((type) => {
                 const conf = FINAL_FORM_CONFIGS[type];
-                const isSelected = formType === type;
                 return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setFormType(type)}
-                    className={`px-2.5 py-2 rounded-lg text-left transition-all border cursor-pointer ${
-                      isSelected
-                        ? "bg-emerald-50 border-emerald-400 text-emerald-950 shadow-2xs font-bold"
-                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium"
-                    }`}
-                  >
-                    <div className="text-[11px] truncate leading-tight">{conf.label}</div>
-                    <div className="text-[9px] text-slate-500 truncate mt-0.5">{conf.policeFormNo}</div>
-                  </button>
+                  <option key={type} value={type}>
+                    {conf.label} ({conf.titleHindi}) — {conf.policeFormNo}
+                  </option>
                 );
               })}
-            </div>
+            </select>
+            <p className="text-[11px] text-slate-500 mt-1 italic">
+              {FINAL_FORM_CONFIGS[formType].description}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Main Form & Live Preview Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Input Editor Panel (no-print) */}
-        <div className="no-print lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
-              <FileCheck2 className="w-4 h-4 text-emerald-600" />
-              <span>Report Parameters</span>
-            </h2>
-            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-mono font-bold text-slate-600">
-              {FINAL_FORM_CONFIGS[formType].policeFormNo}
-            </span>
-          </div>
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #fir-printable-report,
+          #fir-printable-report * {
+            visibility: visible;
+          }
+          #fir-printable-report {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-shadow: none !important;
+            border: 2px solid #000 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `}</style>
 
-          <div className="space-y-3 text-xs">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Jurisdictional Court</label>
-              <input
-                type="text"
-                value={courtName}
-                onChange={(e) => setCourtName(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md font-medium text-xs focus:ring-1 focus:ring-emerald-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Report No.</label>
-                <input
-                  type="text"
-                  value={reportNumber}
-                  onChange={(e) => setReportNumber(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md font-mono text-xs"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Report Date</label>
-                <input
-                  type="date"
-                  value={reportDate}
-                  onChange={(e) => setReportDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Police Station</label>
-                <input
-                  type="text"
-                  value={policeStation}
-                  onChange={(e) => setPoliceStation(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">District</label>
-                <input
-                  type="text"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Complainant / Informant</label>
-              <input
-                type="text"
-                value={complainantName}
-                onChange={(e) => setComplainantName(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs mb-1"
-                placeholder="Full Name"
-              />
-              <input
-                type="text"
-                value={complainantAddress}
-                onChange={(e) => setComplainantAddress(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs"
-                placeholder="Address and Mobile"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                Property Recovered / Seized
-              </label>
-              <textarea
-                rows={2}
-                value={propertyRecovered}
-                onChange={(e) => setPropertyRecovered(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs leading-relaxed"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                Summary of Investigation & Findings
-              </label>
-              <textarea
-                rows={5}
-                value={investigationSummary}
-                onChange={(e) => setInvestigationSummary(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs leading-relaxed"
-                placeholder="Brief narrative of investigation, statement recordings, technical evidence, and conclusion."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Investigating Officer</label>
-                <input
-                  type="text"
-                  value={investigatingOfficer}
-                  onChange={(e) => setInvestigatingOfficer(e.target.value)}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs font-semibold"
-                />
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Rank & Belt No.</label>
-                <div className="flex gap-1">
-                  <input
-                    type="text"
-                    value={ioRank}
-                    onChange={(e) => setIoRank(e.target.value)}
-                    className="w-1/2 px-2 py-1.5 border border-slate-200 rounded-md text-xs"
-                  />
-                  <input
-                    type="text"
-                    value={ioBelt}
-                    onChange={(e) => setIoBelt(e.target.value)}
-                    className="w-1/2 px-2 py-1.5 border border-slate-200 rounded-md text-xs"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">Forwarding SHO</label>
-              <input
-                type="text"
-                value={shoName}
-                onChange={(e) => setShoName(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-slate-200 rounded-md text-xs"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Statutory Printed Proforma (Live Document Preview) */}
-        <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-2xl border-2 border-slate-300 shadow-md font-serif text-slate-900 leading-normal printable-document">
+      {/* Main Statutory Proforma Canvas (Fully Directly Editable In-Place) */}
+      <div className="flex justify-center">
+        <div
+          id="fir-printable-report"
+          className="w-full max-w-4xl bg-white p-6 sm:p-10 rounded-2xl border-2 border-slate-300 shadow-md font-serif text-slate-900 leading-normal"
+        >
           {/* Header */}
-          <div className="text-center border-b-2 border-slate-900 pb-3 mb-4">
+          <div className="text-center border-b-2 border-slate-900 pb-3 mb-4 space-y-1">
             <div className="flex justify-center mb-1">
               <Shield className="w-9 h-9 text-slate-800" />
             </div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
               HARYANA POLICE DEPARTMENT
             </h2>
-            <h3 className="text-xs font-semibold text-slate-700">
-              POLICE STATION: {policeStation.toUpperCase()}, DISTRICT {district.toUpperCase()}
-            </h3>
-            <div className="inline-block mt-2 px-3 py-1 bg-slate-100 border border-slate-400 text-xs font-bold font-sans rounded">
+            <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-700 flex-wrap">
+              <span>POLICE STATION:</span>
+              <input
+                type="text"
+                value={policeStation}
+                onChange={(e) => setPoliceStation(e.target.value)}
+                className="font-bold text-slate-900 uppercase bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 px-1 py-0.5 outline-none text-center"
+                placeholder="POLICE STATION"
+              />
+              <span>, DISTRICT</span>
+              <input
+                type="text"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                className="font-bold text-slate-900 uppercase bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 px-1 py-0.5 outline-none text-center"
+                placeholder="DISTRICT"
+              />
+            </div>
+            <div className="inline-block mt-1 px-3 py-0.5 bg-slate-100 border border-slate-400 text-xs font-bold font-sans rounded">
               {FINAL_FORM_CONFIGS[formType].policeFormNo} • {FINAL_FORM_CONFIGS[formType].bnssSection}
             </div>
-            <h1 className="text-base sm:text-lg font-black uppercase tracking-tight text-slate-950 mt-2">
+            <h1 className="text-base sm:text-lg font-black uppercase tracking-tight text-slate-950 mt-1">
               POLICE REPORT UNDER SECTION 193 BNSS, 2023
             </h1>
             <p className="text-xs font-bold text-slate-800 italic">
@@ -616,54 +545,153 @@ SHO: ${shoName}`;
             </p>
           </div>
 
-          {/* Court Heading */}
+          {/* Court Heading (Directly Editable) */}
           <div className="text-xs font-bold mb-3">
-            <p className="underline uppercase">{courtName}</p>
+            <input
+              type="text"
+              value={courtName}
+              onChange={(e) => setCourtName(e.target.value)}
+              className="w-full font-bold underline uppercase text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-0.5 outline-none text-xs"
+              placeholder="In the Court of Judicial Magistrate..."
+            />
           </div>
 
-          {/* Key Reference Table */}
+          {/* Key Reference Table (Directly Editable) */}
           <table className="w-full border-collapse border border-slate-800 text-[11px] mb-4 font-sans">
             <tbody>
               <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">FIR No. & Date:</td>
-                <td className="border-r border-slate-800 p-2 font-mono font-bold w-1/4">
-                  {activeFir?.firNumber || "FIR/0014/2026"} dt {activeFir?.firDate || "28-03-2026"}
+                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">
+                  FIR No. &amp; Date:
                 </td>
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">Report Serial No.:</td>
-                <td className="p-2 font-mono font-bold w-1/4">{reportNumber}</td>
+                <td className="border-r border-slate-800 p-1.5 font-mono font-bold w-1/4">
+                  <input
+                    type="text"
+                    value={firNumberAndDate}
+                    onChange={(e) => setFirNumberAndDate(e.target.value)}
+                    className="w-full font-mono font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                    placeholder="FIR/0014/2026 dt 28-03-2026"
+                  />
+                </td>
+                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">
+                  Report Serial No.:
+                </td>
+                <td className="p-1.5 font-mono font-bold w-1/4">
+                  <input
+                    type="text"
+                    value={reportNumber}
+                    onChange={(e) => setReportNumber(e.target.value)}
+                    className="w-full font-mono font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                    placeholder="CS/2026/001"
+                  />
+                </td>
               </tr>
               <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Acts & Sections:</td>
-                <td className="p-2 font-bold text-emerald-900" colSpan={3}>
-                  {activeFir?.actsAndSections || "Sec 303(2), 305 Bharatiya Nyaya Sanhita, 2023"}
+                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">
+                  Acts &amp; Sections:
+                </td>
+                <td className="p-1.5 font-bold text-emerald-900" colSpan={3}>
+                  <input
+                    type="text"
+                    value={firActsAndSections}
+                    onChange={(e) => setFirActsAndSections(e.target.value)}
+                    className="w-full font-bold text-emerald-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                    placeholder="Sections of Law..."
+                  />
                 </td>
               </tr>
               <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Complainant / Informant:</td>
-                <td className="border-r border-slate-800 p-2" colSpan={2}>
-                  <strong>{complainantName}</strong> s/o {complainantFather}
-                  <br />
-                  <span className="text-slate-600 text-[10px]">{complainantAddress}</span>
+                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">
+                  Complainant / Informant:
                 </td>
-                <td className="p-2">
+                <td className="border-r border-slate-800 p-1.5" colSpan={2}>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={complainantName}
+                        onChange={(e) => setComplainantName(e.target.value)}
+                        className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs w-1/2"
+                        placeholder="Complainant Name"
+                      />
+                      <span className="text-slate-600">s/o, w/o:</span>
+                      <input
+                        type="text"
+                        value={complainantFather}
+                        onChange={(e) => setComplainantFather(e.target.value)}
+                        className="font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs flex-1"
+                        placeholder="Father/Spouse"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={complainantAddress}
+                      onChange={(e) => setComplainantAddress(e.target.value)}
+                      className="w-full text-slate-600 text-[10px] bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
+                      placeholder="Address of Complainant"
+                    />
+                  </div>
+                </td>
+                <td className="p-1.5">
                   <span className="text-[10px] text-slate-600 block">Contact:</span>
-                  <strong>{complainantPhone}</strong>
+                  <input
+                    type="text"
+                    value={complainantPhone}
+                    onChange={(e) => setComplainantPhone(e.target.value)}
+                    className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs w-full"
+                    placeholder="Phone number"
+                  />
                 </td>
               </tr>
               <tr>
                 <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Dispatch Date:</td>
-                <td className="border-r border-slate-800 p-2">{reportDate}</td>
+                <td className="border-r border-slate-800 p-1.5">
+                  <input
+                    type="date"
+                    value={reportDate}
+                    onChange={(e) => setReportDate(e.target.value)}
+                    className="w-full text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs font-semibold"
+                  />
+                </td>
                 <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Nature of Report:</td>
-                <td className="p-2 font-bold text-slate-900">{FINAL_FORM_CONFIGS[formType].label}</td>
+                <td className="p-2 font-bold text-slate-900">
+                  {FINAL_FORM_CONFIGS[formType].label} ({FINAL_FORM_CONFIGS[formType].policeFormNo})
+                </td>
               </tr>
             </tbody>
           </table>
 
-          {/* Accused Persons Table */}
+          {/* 1. Accused Persons Table (Directly Editable with Add / Delete) */}
           <div className="mb-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider mb-1 font-sans text-slate-800">
-              1. Particulars of Accused Persons:
-            </h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
+                1. Particulars of Accused Persons:
+              </h4>
+              <div className="no-print">
+                {formType === "CHARGESHEET" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddAccusedSent}
+                    className="text-[11px] h-7 px-2 font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 cursor-pointer gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Accused Row</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddAccusedNotSent}
+                    className="text-[11px] h-7 px-2 font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 cursor-pointer gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Suspect Row</span>
+                  </Button>
+                )}
+              </div>
+            </div>
 
             {formType === "CHARGESHEET" ? (
               <div className="space-y-2">
@@ -673,41 +701,87 @@ SHO: ${shoName}`;
                 <table className="w-full border-collapse border border-slate-800 text-[10px] font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-800">
-                      <th className="border-r border-slate-800 p-1.5 text-left">Sr.</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left">Name & Particulars</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left">Custody / Bail Status</th>
-                      <th className="p-1.5 text-left">Bail / Bond Particulars</th>
+                      <th className="border-r border-slate-800 p-1.5 text-center w-10">Sr.</th>
+                      <th className="border-r border-slate-800 p-1.5 text-left w-2/5">Name &amp; Particulars</th>
+                      <th className="border-r border-slate-800 p-1.5 text-left w-1/4">Custody / Bail Status</th>
+                      <th className="border-r border-slate-800 p-1.5 text-left">Bail / Bond Particulars</th>
+                      <th className="p-1 text-center w-10 no-print"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {accusedSentList.length > 0 ? (
                       accusedSentList.map((acc, i) => (
-                        <tr key={acc.id} className="border-b border-slate-300">
-                          <td className="border-r border-slate-800 p-1.5 font-bold">{i + 1}</td>
+                        <tr key={acc.id} className="border-b border-slate-300 hover:bg-slate-50/50">
+                          <td className="border-r border-slate-800 p-1.5 font-bold text-center">{i + 1}</td>
+                          <td className="border-r border-slate-800 p-1.5 space-y-1">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={acc.name}
+                                onChange={(e) => handleUpdateAccusedSent(acc.id, "name", e.target.value)}
+                                className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none w-1/2"
+                                placeholder="Accused Name"
+                              />
+                              <span className="text-slate-500 text-[9px]">s/o:</span>
+                              <input
+                                type="text"
+                                value={acc.fatherName}
+                                onChange={(e) => handleUpdateAccusedSent(acc.id, "fatherName", e.target.value)}
+                                className="text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none flex-1 text-[9px]"
+                                placeholder="Father Name"
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={acc.address}
+                              onChange={(e) => handleUpdateAccusedSent(acc.id, "address", e.target.value)}
+                              className="w-full text-slate-600 text-[9px] bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
+                              placeholder="Full Address"
+                            />
+                          </td>
                           <td className="border-r border-slate-800 p-1.5">
-                            <strong>{acc.name}</strong> s/o {acc.fatherName}
-                            <div className="text-slate-600 text-[9px]">{acc.address}</div>
-                          </td>
-                          <td className="border-r border-slate-800 p-1.5 font-semibold">
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[9px] ${
-                                acc.status === "IN_CUSTODY"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-emerald-100 text-emerald-800"
-                              }`}
+                            <select
+                              value={acc.status}
+                              onChange={(e) => handleUpdateAccusedSent(acc.id, "status", e.target.value as any)}
+                              className="text-[9px] font-bold p-1 rounded border border-slate-300 bg-white"
                             >
-                              {acc.status === "IN_CUSTODY" ? "In Judicial Custody" : "On Bail"}
-                            </span>
+                              <option value="ON_BAIL">On Bail (जमानत पर)</option>
+                              <option value="IN_CUSTODY">In Judicial Custody (न्यायिक हिरासत)</option>
+                              <option value="ABSCONDING">Absconding (फरार / उद्घोषित)</option>
+                              <option value="NOT_ARRESTED">Not Arrested (गिरफ्तार नहीं)</option>
+                            </select>
                           </td>
-                          <td className="p-1.5 text-slate-700">
-                            {acc.bailBondDetails || acc.jailDetails || "Bail bond submitted."}
+                          <td className="border-r border-slate-800 p-1.5">
+                            <input
+                              type="text"
+                              value={acc.bailBondDetails || acc.jailDetails || ""}
+                              onChange={(e) =>
+                                handleUpdateAccusedSent(
+                                  acc.id,
+                                  acc.status === "IN_CUSTODY" ? "jailDetails" : "bailBondDetails",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full text-[9px] text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
+                              placeholder="Bail bond / Jail details..."
+                            />
+                          </td>
+                          <td className="p-1 text-center no-print">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAccusedSent(acc.id)}
+                              className="text-slate-400 hover:text-red-700 p-1 cursor-pointer"
+                              title="Delete row"
+                            >
+                              <Trash2 className="w-3 h-3 mx-auto" />
+                            </button>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="p-2 text-center text-slate-500 italic">
-                          No accused sent up for trial.
+                        <td colSpan={5} className="p-2 text-center text-slate-500 italic">
+                          No accused sent up for trial. Click &quot;Add Accused Row&quot; above to add.
                         </td>
                       </tr>
                     )}
@@ -722,17 +796,44 @@ SHO: ${shoName}`;
                 <table className="w-full border-collapse border border-slate-800 text-[10px] font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-800">
-                      <th className="border-r border-slate-800 p-1.5 text-left w-12">Sr.</th>
+                      <th className="border-r border-slate-800 p-1.5 text-center w-12">Sr.</th>
                       <th className="border-r border-slate-800 p-1.5 text-left w-1/3">Name of Suspect / Accused</th>
-                      <th className="p-1.5 text-left">Reasons for Not Sending for Trial</th>
+                      <th className="border-r border-slate-800 p-1.5 text-left">Reasons for Not Sending for Trial</th>
+                      <th className="p-1 text-center w-10 no-print"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {accusedNotSentList.map((acc, i) => (
-                      <tr key={acc.id} className="border-b border-slate-300">
-                        <td className="border-r border-slate-800 p-1.5 font-bold">{i + 1}</td>
-                        <td className="border-r border-slate-800 p-1.5 font-semibold">{acc.name}</td>
-                        <td className="p-1.5 text-slate-700">{acc.reason}</td>
+                      <tr key={acc.id} className="border-b border-slate-300 hover:bg-slate-50/50">
+                        <td className="border-r border-slate-800 p-1.5 font-bold text-center">{i + 1}</td>
+                        <td className="border-r border-slate-800 p-1.5">
+                          <input
+                            type="text"
+                            value={acc.name}
+                            onChange={(e) => handleUpdateAccusedNotSent(acc.id, "name", e.target.value)}
+                            className="w-full font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                            placeholder="Suspect / Accused Name"
+                          />
+                        </td>
+                        <td className="border-r border-slate-800 p-1.5">
+                          <input
+                            type="text"
+                            value={acc.reason}
+                            onChange={(e) => handleUpdateAccusedNotSent(acc.id, "reason", e.target.value)}
+                            className="w-full text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                            placeholder="Reason for not sending for trial..."
+                          />
+                        </td>
+                        <td className="p-1 text-center no-print">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAccusedNotSent(acc.id)}
+                            className="text-slate-400 hover:text-red-700 p-1 cursor-pointer"
+                            title="Delete row"
+                          >
+                            <Trash2 className="w-3 h-3 mx-auto" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -741,46 +842,88 @@ SHO: ${shoName}`;
             )}
           </div>
 
-          {/* Property Seized / Recovered */}
+          {/* 2. Details of Property Recovered / Seized (Directly Editable) */}
           <div className="mb-4">
             <h4 className="text-xs font-bold uppercase tracking-wider mb-1 font-sans text-slate-800">
               2. Details of Property Recovered / Seized:
             </h4>
-            <div className="p-2 border border-slate-800 rounded bg-slate-50 text-[11px] font-sans">
-              {propertyRecovered || "None"}
+            <div className="p-1 border border-slate-800 rounded bg-slate-50">
+              <textarea
+                rows={2}
+                value={propertyRecovered}
+                onChange={(e) => setPropertyRecovered(e.target.value)}
+                className="w-full bg-transparent hover:bg-white focus:bg-white text-[11px] font-sans p-1.5 rounded outline-none border border-transparent focus:border-emerald-500 leading-relaxed text-slate-950 resize-y"
+                placeholder="Recovered property details / Malkhana deposit particulars..."
+              />
             </div>
           </div>
 
-          {/* Brief Facts & Findings of Investigation */}
+          {/* 3. Brief Facts & Findings of Investigation (Directly Editable) */}
           <div className="mb-6">
             <h4 className="text-xs font-bold uppercase tracking-wider mb-1 font-sans text-slate-800">
               3. Brief Facts and Grounds of Investigation:
             </h4>
-            <div className="p-3 border border-slate-800 rounded text-xs leading-relaxed text-justify whitespace-pre-line">
-              {investigationSummary}
+            <div className="p-1 border border-slate-800 rounded">
+              <textarea
+                rows={8}
+                value={investigationSummary}
+                onChange={(e) => setInvestigationSummary(e.target.value)}
+                className="w-full bg-transparent hover:bg-slate-50 focus:bg-white text-xs leading-relaxed text-justify p-2 rounded outline-none border border-transparent focus:border-emerald-500 text-slate-950 resize-y"
+                placeholder="Narrative of investigation, statement recordings under Sec 180 BNSS, technical evidence seized u/s 105 BNSS, and final conclusion..."
+              />
             </div>
           </div>
 
-          {/* Signatures and Endorsements */}
+          {/* 4. Signatures and Endorsements (Directly Editable) */}
           <div className="mt-8 pt-4 border-t border-slate-400 grid grid-cols-2 gap-8 text-center text-xs font-sans">
-            <div>
-              <div className="h-12 flex items-end justify-center">
-                <span className="font-script text-base text-slate-600 italic">Signature of IO</span>
+            <div className="space-y-1">
+              <div className="h-10 flex items-end justify-center">
+                <span className="font-script text-base text-slate-500 italic">Signature of IO</span>
               </div>
-              <p className="font-bold border-t border-slate-800 pt-1">{investigatingOfficer}</p>
-              <p className="text-[10px] text-slate-600">
-                {ioRank}, Belt No: {ioBelt}
-              </p>
+              <div className="border-t border-slate-800 pt-1">
+                <input
+                  type="text"
+                  value={investigatingOfficer}
+                  onChange={(e) => setInvestigatingOfficer(e.target.value)}
+                  className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
+                  placeholder="IO Name"
+                />
+              </div>
+              <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600">
+                <input
+                  type="text"
+                  value={ioRank}
+                  onChange={(e) => setIoRank(e.target.value)}
+                  className="text-center bg-transparent border-b border-dotted border-slate-400 outline-none w-24"
+                  placeholder="Rank"
+                />
+                <span>• Belt:</span>
+                <input
+                  type="text"
+                  value={ioBelt}
+                  onChange={(e) => setIoBelt(e.target.value)}
+                  className="text-center bg-transparent border-b border-dotted border-slate-400 outline-none w-20"
+                  placeholder="Belt No."
+                />
+              </div>
               <p className="text-[10px] text-slate-600">
                 PS {policeStation}, Distt {district}
               </p>
             </div>
 
-            <div>
-              <div className="h-12 flex items-end justify-center">
-                <span className="font-script text-base text-slate-600 italic">Forwarded by SHO</span>
+            <div className="space-y-1">
+              <div className="h-10 flex items-end justify-center">
+                <span className="font-script text-base text-slate-500 italic">Forwarded by SHO</span>
               </div>
-              <p className="font-bold border-t border-slate-800 pt-1">{shoName}</p>
+              <div className="border-t border-slate-800 pt-1">
+                <input
+                  type="text"
+                  value={shoName}
+                  onChange={(e) => setShoName(e.target.value)}
+                  className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
+                  placeholder="SHO Name"
+                />
+              </div>
               <p className="text-[10px] text-slate-600">Officer In-Charge (SHO)</p>
               <p className="text-[10px] text-slate-600">
                 PS {policeStation}, Distt {district}
