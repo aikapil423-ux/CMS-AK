@@ -1035,14 +1035,17 @@ export interface LegalAnalysisReport {
 
 export interface InvestigationSummaryActionItem {
   id: string;
-  category: 'OVERVIEW' | 'DOCUMENTS' | 'HISTORY' | 'FIELD_ACTION' | 'LEGAL_PROCEDURE';
-  categoryLabel: string;
+  category?: 'OVERVIEW' | 'DOCUMENTS' | 'HISTORY' | 'FIELD_ACTION' | 'LEGAL_PROCEDURE';
+  categoryLabel?: string;
   title: string;
   detail: string;
   status: 'COMPLETED' | 'PENDING' | 'CRITICAL';
   completedAt?: string;
   officerResponsible?: string;
   remarks?: string;
+  actor?: string;
+  priority?: string;
+  deadline?: string;
 }
 
 export interface InvestigationSummaryReport {
@@ -1071,22 +1074,38 @@ export interface InvestigationSummaryReport {
   }[];
   scannedHistoryMilestones: {
     date: string;
-    action: string;
-    officer: string;
-    details: string;
+    action?: string;
+    officer?: string;
+    details?: string;
+    title?: string;
+    actor?: string;
+    impact?: string;
   }[];
 
   // Pending Work & Next Steps (क्या बाकी है)
   pendingWorkSummary: string;
   pendingActions: InvestigationSummaryActionItem[];
+  pendingActionItems?: InvestigationSummaryActionItem[];
   urgentDeadlines: string[];
+  statutoryDeadlines?: {
+    ruleName: string;
+    deadlineDays: number;
+    description: string;
+    status: string;
+  }[];
   recommendedEoActions: string[];
   recommendedShoDirections: string[];
 
   // Evidence & Risk Evaluation
   evidenceStrength: 'STRONG' | 'MODERATE' | 'PRELIMINARY' | 'INSUFFICIENT';
   primaFacieObservation: string;
-  suggestedOutcome: 'REGISTER_FIR' | 'FURTHER_ENQUIRY' | 'MUTUAL_SETTLEMENT' | 'NON_COGNIZABLE_NCR' | 'CLOSURE_REPORT';
+  suggestedOutcome:
+    | 'REGISTER_FIR'
+    | 'FURTHER_ENQUIRY'
+    | 'MUTUAL_SETTLEMENT'
+    | 'NON_COGNIZABLE_NCR'
+    | 'CLOSURE_REPORT'
+    | string;
   suggestedOutcomeReason: string;
 
   // Change Log / Update Track (for when update summary is triggered)
@@ -1514,6 +1533,7 @@ export interface FIRItem {
   finalFormNumber?: string;
   finalFormDate?: string;
   courtName?: string;
+  finalFormSummary?: string;
 
   auditTrail?: FIRAuditRecord[];
   createdAt: string;
