@@ -47,7 +47,7 @@ export default function FIRWorkspacePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 0. Investigation Template Builder */}
         <Link href="/fir-workspace/builder" className="block group">
           <Card className="border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
@@ -142,31 +142,6 @@ export default function FIRWorkspacePage() {
               </div>
               <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
                 <span>View Templates</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* 4. Bare Acts & Penal Law Reference */}
-        <Link href="/acts-sections" className="block group">
-          <Card className="border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-blue-700 group-hover:scale-110 transition-transform" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-800 transition-colors">
-                    ACT and SECTIONs
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Search Bare Acts (BNS, BNSS, BSA, IT Act) with punishment, cognizable and bailable classification.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end text-xs font-bold text-blue-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Explore Acts</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>

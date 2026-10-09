@@ -68,14 +68,6 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           <ScrollText className="w-3.5 h-3.5 text-amber-600" />
           <span>Case Diaries / Zimni</span>
         </Link>
-
-        <Link
-          href="/acts-sections"
-          className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
-        >
-          <Shield className="w-3.5 h-3.5 text-blue-600" />
-          <span>Bare Acts Reference</span>
-        </Link>
       </div>
 
       {/* Right Action / Back to FIR Workspace */}
