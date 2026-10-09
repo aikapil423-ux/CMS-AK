@@ -15,6 +15,7 @@ import {
   Shield,
   Calendar,
   Layers,
+  Crosshair,
 } from "lucide-react";
 import { AccusedPerson, FIRAliasEntry, FIRIdentificationEntry } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -521,9 +522,9 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
             </button>
           </div>
         ) : (
-          <div className="px-4 py-2 bg-purple-50 border-b border-purple-200 text-purple-900 text-xs font-semibold flex items-center gap-2">
-            <span className="bg-purple-200 px-2 py-0.5 rounded text-purple-950 font-bold">Accused is not known</span>
-            <span>— Particulars of accused are not known. Capturing observed physical attributes.</span>
+          <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-950 text-xs font-semibold flex items-center gap-2">
+            <span className="bg-red-700 px-2 py-0.5 rounded text-white font-bold">Accused not known</span>
+            <span>— अभियुक्त का विवरण अज्ञात है।</span>
           </div>
         )}
 
@@ -1200,9 +1201,30 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
           )}
 
           {/* ============================================================ */}
-          {/* SUBTAB 4: PHYSICAL DESCRIPTION (Known & Unknown Accused) */}
+          {/* VIEW FOR UNKNOWN-SEEN (Accused not known) */}
           {/* ============================================================ */}
-          {(accusedType === "Unknown-Seen" || activeSubtab === "physical") && (
+          {accusedType === "Unknown-Seen" && (
+            <div className="p-6 bg-amber-50/80 border border-amber-200 rounded-xl flex flex-col items-center justify-center text-center py-8">
+              <div className="w-12 h-12 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-700 mb-3 shadow-2xs">
+                <Crosshair className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-800 tracking-wide uppercase">
+                Accused not known
+              </h4>
+              <p className="text-xs text-slate-600 mt-1 max-w-md">
+                अज्ञात अभियुक्त — इस मामले में अभियुक्त का कोई भी विवरण (नाम, पता अथवा हुलिया) ज्ञात नहीं है।
+              </p>
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-200/80 border border-amber-300 text-amber-950 font-bold text-xs">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                Accused not known
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* SUBTAB 4: PHYSICAL DESCRIPTION (Known Accused Only) */}
+          {/* ============================================================ */}
+          {accusedType === "Known" && activeSubtab === "physical" && (
             <div className="space-y-4 animate-in fade-in-30">
               {/* Build, Complexion, Height */}
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">

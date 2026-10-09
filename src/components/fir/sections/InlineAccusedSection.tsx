@@ -737,7 +737,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               </CardTitle>
               <p className="text-[11px] text-slate-500">
                 {accusedType === "Unknown-Seen"
-                  ? "Particulars of accused are not known. Record observed physical traits below."
+                  ? "Particulars of accused are not known (Accused is not known)."
                   : "Direct entry form — fill details and add to the Accused list below without popup dialogs."}
               </p>
             </div>
@@ -834,12 +834,12 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
         ) : (
           <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50/80 px-4 py-2.5 text-xs">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-200/90 border border-amber-300 text-amber-950 font-bold text-xs shadow-2xs">
-                <Eye className="w-3.5 h-3.5 text-amber-800" />
-                Accused is not known
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-700 border border-red-800 text-white font-bold text-xs shadow-2xs">
+                <Crosshair className="w-3.5 h-3.5 text-white" />
+                Accused not known
               </span>
-              <span className="text-slate-600 text-[11px]">
-                (अज्ञात अभियुक्त — नाम, पता व व्यक्तिगत विवरण अज्ञात है / केवल देखे गए हुलिया व शारीरिक लक्षण)
+              <span className="text-slate-600 text-[11px] font-medium">
+                (अज्ञात अभियुक्त — विवरण व पहचान अज्ञात है)
               </span>
             </div>
           </div>
@@ -1482,27 +1482,24 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
             </div>
           )}
 
-          {/* VIEW FOR UNKNOWN-SEEN ACCUSED (Accused is not known) */}
+          {/* VIEW FOR UNKNOWN-SEEN ACCUSED (Accused not known) */}
           {accusedType === "Unknown-Seen" && (
             <div className="space-y-4 animate-in fade-in-30">
-              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-700 text-xs">Accused Identity:</span>
-                    <span className="px-2.5 py-1 rounded font-bold font-mono text-xs bg-red-700 text-white shadow-2xs">
-                      Accused is not known
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-amber-900 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded">
-                    Type: Unknown-Seen (अज्ञात / देखा गया)
-                  </span>
+              <div className="p-6 bg-amber-50/80 border border-amber-200 rounded-xl flex flex-col items-center justify-center text-center py-8">
+                <div className="w-12 h-12 rounded-full bg-red-100 border border-red-200 flex items-center justify-center text-red-700 mb-3 shadow-2xs">
+                  <Crosshair className="w-6 h-6" />
                 </div>
-                <p className="text-[11px] text-slate-600">
-                  The identity and particulars of the accused person(s) are not known at this stage. Capture observed physical traits (Huliya / हुलिया), build, height, marks, or clothing below to assist police investigation.
+                <h4 className="text-sm font-bold text-slate-800 tracking-wide uppercase">
+                  Accused not known
+                </h4>
+                <p className="text-xs text-slate-600 mt-1 max-w-md">
+                  अज्ञात अभियुक्त — इस मामले में अभियुक्त का कोई भी विवरण (नाम, पता अथवा हुलिया) ज्ञात नहीं है।
                 </p>
+                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-200/80 border border-amber-300 text-amber-950 font-bold text-xs">
+                  <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse"></span>
+                  Accused not known
+                </div>
               </div>
-
-              {renderPhysicalTraitsForm()}
             </div>
           )}
 
@@ -1532,7 +1529,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               ) : accusedType === "Unknown-Seen" ? (
                 <>
                   <Plus className="w-3.5 h-3.5" />
-                  Add &ldquo;Accused is not known&rdquo; to List
+                  Add &ldquo;Accused not known&rdquo; to List
                 </>
               ) : (
                 <>
