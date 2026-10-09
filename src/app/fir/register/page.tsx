@@ -933,8 +933,9 @@ function RegisterFIRForm() {
           : [
               {
                 id: "acc-un",
-                name: "Unknown Suspect(s)",
-                isIdentified: false,
+                name: isAccusedKnown ? "Identified Suspect" : "Accused is not known",
+                isIdentified: isAccusedKnown,
+                isKnown: isAccusedKnown,
                 physicalDescription: "Under investigation",
               },
             ],

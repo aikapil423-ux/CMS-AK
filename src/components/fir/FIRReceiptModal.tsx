@@ -546,7 +546,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   ) : (
                     <tr>
                       <td className="border-r border-black p-1.5 text-center">1</td>
-                      <td className="border-r border-black p-1.5 font-medium">अज्ञात अभियुक्त (Unknown Accused)</td>
+                      <td className="border-r border-black p-1.5 font-medium">अज्ञात अभियुक्त (Accused is not known)</td>
                       <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5"></td>
                       <td className="p-1.5">पहचान अनुसंधान के दौरान की जाएगी</td>

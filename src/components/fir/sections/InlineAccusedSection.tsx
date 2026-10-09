@@ -275,13 +275,22 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
   const handleEdit = (acc: ExtendedAccusedPerson) => {
     setEditingId(acc.id || null);
-    const type = acc.accusedType || (acc.isIdentified !== false ? "Known" : "Unknown-Seen");
+    const isKnown =
+      acc.isKnown !== false &&
+      acc.name !== "Accused is not known" &&
+      acc.name !== "Unknown Accused" &&
+      acc.accusedType !== "Unknown-Seen";
+    const type: "Known" | "Unknown-Seen" = isKnown ? "Known" : "Unknown-Seen";
     setAccusedType(type);
+    setIsAccusedKnown(isKnown);
+    if (isKnown) {
+      setActiveSubtab("personal");
+    }
     setIsCaseAgainstPolice(acc.isCaseAgainstPolice || acc.hasCaseAgainstPolice || false);
     setPolicePersonnelName(acc.policePersonnelName || "");
     setUid(acc.uid || "");
     setNprNumber(acc.nprNumber || "");
-    const parts = (acc.name === "Unknown Accused" ? "" : acc.name || "").split(" ");
+    const parts = (acc.name === "Unknown Accused" || acc.name === "Accused is not known" ? "" : acc.name || "").split(" ");
     setFirstName(parts[0] || "");
     setMiddleName(parts.length > 2 ? parts.slice(1, -1).join(" ") : "");
     setLastName(parts.length > 1 ? parts[parts.length - 1] : "");
@@ -415,18 +424,19 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
     const calculatedName = isKnown
       ? [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(" ")
-      : "Unknown Accused";
+      : "Accused is not known";
 
     const physicalSummary = [
       bodyBuild ? `Build: ${bodyBuild}` : null,
       bodyComplexion ? `Complexion: ${bodyComplexion}` : null,
       heightFrom ? `Ht: ${heightFrom}-${heightTo || heightFrom} ${heightUnit}` : null,
       distinguishingMarks ? `Marks: ${distinguishingMarks}` : null,
+      clothingDescription ? `Clothes: ${clothingDescription}` : null,
     ]
       .filter(Boolean)
       .join(", ");
 
-    const formattedAddress = addressesList[0]
+    const formattedAddress = isKnown && addressesList[0]
       ? [addressesList[0].houseNo, addressesList[0].colony, addressesList[0].city]
           .filter(Boolean)
           .join(", ")
@@ -438,38 +448,38 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       isIdentified: isKnown,
       isKnown,
       name: calculatedName,
-      alias: aliases[0]?.aliasName,
-      fatherName: relativeName.trim() || undefined,
-      relativeName: relativeName.trim() || undefined,
-      relationType,
+      alias: isKnown ? (aliases[0]?.aliasName || undefined) : undefined,
+      fatherName: isKnown ? (relativeName.trim() || undefined) : undefined,
+      relativeName: isKnown ? (relativeName.trim() || undefined) : undefined,
+      relationType: isKnown ? relationType : undefined,
       address: formattedAddress,
       physicalDescription: physicalSummary || undefined,
-      gender,
-      isCaseAgainstPolice,
-      hasCaseAgainstPolice: isCaseAgainstPolice,
-      policePersonnelName: isCaseAgainstPolice ? policePersonnelName.trim() : undefined,
-      uid: uid.trim() || undefined,
-      nprNumber: nprNumber.trim() || undefined,
-      aliases,
-      mobile: mobile.trim() || undefined,
-      landline: landline.trim() || undefined,
-      email: email.trim() || undefined,
-      category,
-      isJuvenile,
-      medicalExamRequiredForAge,
-      dob: dob || undefined,
-      yearOfBirth: yearOfBirth || undefined,
-      ageYears: ageYears || undefined,
-      ageMonths: ageMonths || undefined,
-      ageRangeFrom: ageRangeFrom || undefined,
-      ageRangeTo: ageRangeTo || undefined,
-      addressesList,
-      occupation: occupation.trim() || undefined,
-      nationality: nationality.trim() || undefined,
-      passportNumber: passportNumber.trim() || undefined,
-      passportIssuePlace: passportIssuePlace.trim() || undefined,
-      passportIssueDate: passportIssueDate || undefined,
-      identifications,
+      gender: isKnown ? gender : undefined,
+      isCaseAgainstPolice: isKnown ? isCaseAgainstPolice : false,
+      hasCaseAgainstPolice: isKnown ? isCaseAgainstPolice : false,
+      policePersonnelName: isKnown && isCaseAgainstPolice ? policePersonnelName.trim() : undefined,
+      uid: isKnown ? (uid.trim() || undefined) : undefined,
+      nprNumber: isKnown ? (nprNumber.trim() || undefined) : undefined,
+      aliases: isKnown ? aliases : [],
+      mobile: isKnown ? (mobile.trim() || undefined) : undefined,
+      landline: isKnown ? (landline.trim() || undefined) : undefined,
+      email: isKnown ? (email.trim() || undefined) : undefined,
+      category: isKnown ? category : undefined,
+      isJuvenile: isKnown ? isJuvenile : false,
+      medicalExamRequiredForAge: isKnown ? medicalExamRequiredForAge : false,
+      dob: isKnown ? (dob || undefined) : undefined,
+      yearOfBirth: isKnown ? (yearOfBirth || undefined) : undefined,
+      ageYears: isKnown ? (ageYears || undefined) : undefined,
+      ageMonths: isKnown ? (ageMonths || undefined) : undefined,
+      ageRangeFrom: isKnown ? (ageRangeFrom || undefined) : undefined,
+      ageRangeTo: isKnown ? (ageRangeTo || undefined) : undefined,
+      addressesList: isKnown ? addressesList : [],
+      occupation: isKnown ? (occupation.trim() || undefined) : undefined,
+      nationality: isKnown ? (nationality.trim() || undefined) : undefined,
+      passportNumber: isKnown ? (passportNumber.trim() || undefined) : undefined,
+      passportIssuePlace: isKnown ? (passportIssuePlace.trim() || undefined) : undefined,
+      passportIssueDate: isKnown ? (passportIssueDate || undefined) : undefined,
+      identifications: isKnown ? identifications : [],
       bodyBuild,
       bodyComplexion,
       heightUnit,
@@ -500,6 +510,169 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     handleClear();
   };
 
+  const renderPhysicalTraitsForm = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Body Build</label>
+          <select
+            value={bodyBuild}
+            onChange={(e) => setBodyBuild(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+          >
+            {["Slim", "Medium", "Athletic", "Heavy", "Muscular", "Short & Stout"].map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Complexion</label>
+          <select
+            value={bodyComplexion}
+            onChange={(e) => setBodyComplexion(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+          >
+            {["Fair", "Wheatish", "Dark", "Sallow", "Very Fair"].map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Height Unit</label>
+          <select
+            value={heightUnit}
+            onChange={(e) => setHeightUnit(e.target.value as any)}
+            className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+          >
+            <option value="feet_inch">Feet / Inches</option>
+            <option value="cm">Centimeters (CM)</option>
+          </select>
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Height (From - To)</label>
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              placeholder="5.6"
+              value={heightFrom}
+              onChange={(e) => setHeightFrom(e.target.value)}
+              className="w-1/2 p-2 rounded-lg border border-slate-300 text-xs"
+            />
+            <input
+              type="text"
+              placeholder="5.8"
+              value={heightTo}
+              onChange={(e) => setHeightTo(e.target.value)}
+              className="w-1/2 p-2 rounded-lg border border-slate-300 text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Face Type</label>
+          <input
+            type="text"
+            value={faceType}
+            onChange={(e) => setFaceType(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Forehead</label>
+          <input
+            type="text"
+            value={forehead}
+            onChange={(e) => setForehead(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Nose</label>
+          <input
+            type="text"
+            value={nose}
+            onChange={(e) => setNose(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Teeth</label>
+          <input
+            type="text"
+            value={teeth}
+            onChange={(e) => setTeeth(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Beard</label>
+          <input
+            type="text"
+            value={beard}
+            onChange={(e) => setBeard(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">Moustaches</label>
+          <input
+            type="text"
+            value={moustaches}
+            onChange={(e) => setMoustaches(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div className="flex items-center pt-5">
+          <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+            <input
+              type="checkbox"
+              checked={isPockmarked}
+              onChange={(e) => setIsPockmarked(e.target.checked)}
+              className="rounded text-red-600"
+            />
+            <span>Is Pockmarked / Chechak Marks</span>
+          </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">
+            Distinguishing Marks / Scars / Tattoos
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. Scar on left cheek, tattoo on right forearm..."
+            value={distinguishingMarks}
+            onChange={(e) => setDistinguishingMarks(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+        <div>
+          <label className="font-bold text-slate-700 block mb-1">
+            Clothing Description (वस्त्र विवरण)
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. Blue jeans, black jacket, white sneakers..."
+            value={clothingDescription}
+            onChange={(e) => setClothingDescription(e.target.value)}
+            className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* GLOBAL ACCUSED SCOPE / MORE THAN BANNER */}
@@ -514,6 +687,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               onChange={() => {
                 setIsAccusedKnown(true);
                 setAccusedType("Known");
+                setActiveSubtab("personal");
               }}
               className="text-red-600"
             />
@@ -530,7 +704,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               }}
               className="text-red-600"
             />
-            <span>Unknown Suspect(s) to be traced</span>
+            <span>Unknown Suspect(s) (Accused is not known)</span>
           </label>
         </div>
 
@@ -557,10 +731,14 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               <CardTitle className="text-sm font-bold text-slate-800 tracking-tight">
                 {editingId
                   ? "Edit Accused / Suspect Details"
+                  : accusedType === "Unknown-Seen"
+                  ? "Accused Entry Form — Accused is not known"
                   : "Accused Entry Form (अभियुक्त का विवरण)"}
               </CardTitle>
               <p className="text-[11px] text-slate-500">
-                Direct entry form — fill details and add to the Accused list below without popup dialogs.
+                {accusedType === "Unknown-Seen"
+                  ? "Particulars of accused are not known. Record observed physical traits below."
+                  : "Direct entry form — fill details and add to the Accused list below without popup dialogs."}
               </p>
             </div>
           </div>
@@ -572,7 +750,11 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   type="radio"
                   name="accTypeSection"
                   checked={accusedType === "Known"}
-                  onChange={() => setAccusedType("Known")}
+                  onChange={() => {
+                    setAccusedType("Known");
+                    setIsAccusedKnown(true);
+                    setActiveSubtab("personal");
+                  }}
                 />
                 <span>Known</span>
               </label>
@@ -581,9 +763,12 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   type="radio"
                   name="accTypeSection"
                   checked={accusedType === "Unknown-Seen"}
-                  onChange={() => setAccusedType("Unknown-Seen")}
+                  onChange={() => {
+                    setAccusedType("Unknown-Seen");
+                    setIsAccusedKnown(false);
+                  }}
                 />
-                <span>Unknown-Seen</span>
+                <span>Unknown-Seen (Accused is not known)</span>
               </label>
             </div>
             {editingId && (
@@ -594,57 +779,71 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           </div>
         </CardHeader>
 
-        {/* 4 Subtabs Navigation */}
-        <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-100/70 p-2 text-xs overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("personal")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "personal"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-blue-600" />
-            Personal Information
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("address")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "address"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-            Address Details
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("other")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "other"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-purple-600" />
-            Other Information
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("physical")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "physical"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5 text-red-600" />
-            Physical Traits &amp; Description
-          </button>
-        </div>
+        {/* Subtabs Navigation (Only for Known accused; for Unknown-Seen it shows only 'Accused is not known') */}
+        {accusedType === "Known" ? (
+          <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-100/70 p-2 text-xs overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveSubtab("personal")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                activeSubtab === "personal"
+                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <User className="w-3.5 h-3.5 text-blue-600" />
+              Personal Information
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubtab("address")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                activeSubtab === "address"
+                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              Address Details
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubtab("other")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                activeSubtab === "other"
+                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              Other Information
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubtab("physical")}
+              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                activeSubtab === "physical"
+                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5 text-red-600" />
+              Physical Traits &amp; Description
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50/80 px-4 py-2.5 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-200/90 border border-amber-300 text-amber-950 font-bold text-xs shadow-2xs">
+                <Eye className="w-3.5 h-3.5 text-amber-800" />
+                Accused is not known
+              </span>
+              <span className="text-slate-600 text-[11px]">
+                (अज्ञात अभियुक्त — नाम, पता व व्यक्तिगत विवरण अज्ञात है / केवल देखे गए हुलिया व शारीरिक लक्षण)
+              </span>
+            </div>
+          </div>
+        )}
 
         <CardContent className="p-4 space-y-4 text-xs">
           {errorMsg && (
@@ -662,7 +861,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           )}
 
           {/* SUBTAB 1: PERSONAL INFORMATION */}
-          {activeSubtab === "personal" && (
+          {accusedType === "Known" && activeSubtab === "personal" && (
             <div className="space-y-4 animate-in fade-in-30">
               {/* Case Against Police Toggle */}
               <div className="p-3 bg-red-50/60 border border-red-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -1026,7 +1225,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           )}
 
           {/* SUBTAB 2: ADDRESS */}
-          {activeSubtab === "address" && (
+          {accusedType === "Known" && activeSubtab === "address" && (
             <div className="space-y-4 animate-in fade-in-30">
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <span className="font-bold text-slate-800 text-xs block">Add Known Address for Suspect</span>
@@ -1151,7 +1350,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           )}
 
           {/* SUBTAB 3: OTHER INFORMATION */}
-          {activeSubtab === "other" && (
+          {accusedType === "Known" && activeSubtab === "other" && (
             <div className="space-y-4 animate-in fade-in-30">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1276,167 +1475,34 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
             </div>
           )}
 
-          {/* SUBTAB 4: PHYSICAL TRAITS */}
-          {activeSubtab === "physical" && (
+          {/* SUBTAB 4: PHYSICAL TRAITS (For Known Accused) */}
+          {accusedType === "Known" && activeSubtab === "physical" && (
             <div className="space-y-4 animate-in fade-in-30">
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Body Build</label>
-                  <select
-                    value={bodyBuild}
-                    onChange={(e) => setBodyBuild(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  >
-                    {["Slim", "Medium", "Athletic", "Heavy", "Muscular", "Short & Stout"].map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Complexion</label>
-                  <select
-                    value={bodyComplexion}
-                    onChange={(e) => setBodyComplexion(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  >
-                    {["Fair", "Wheatish", "Dark", "Sallow", "Very Fair"].map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Height Unit</label>
-                  <select
-                    value={heightUnit}
-                    onChange={(e) => setHeightUnit(e.target.value as any)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  >
-                    <option value="feet_inch">Feet / Inches</option>
-                    <option value="cm">Centimeters (CM)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Height (From - To)</label>
-                  <div className="flex gap-1.5">
-                    <input
-                      type="text"
-                      placeholder="5.6"
-                      value={heightFrom}
-                      onChange={(e) => setHeightFrom(e.target.value)}
-                      className="w-1/2 p-2 rounded-lg border border-slate-300 text-xs"
-                    />
-                    <input
-                      type="text"
-                      placeholder="5.8"
-                      value={heightTo}
-                      onChange={(e) => setHeightTo(e.target.value)}
-                      className="w-1/2 p-2 rounded-lg border border-slate-300 text-xs"
-                    />
+              {renderPhysicalTraitsForm()}
+            </div>
+          )}
+
+          {/* VIEW FOR UNKNOWN-SEEN ACCUSED (Accused is not known) */}
+          {accusedType === "Unknown-Seen" && (
+            <div className="space-y-4 animate-in fade-in-30">
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-700 text-xs">Accused Identity:</span>
+                    <span className="px-2.5 py-1 rounded font-bold font-mono text-xs bg-red-700 text-white shadow-2xs">
+                      Accused is not known
+                    </span>
                   </div>
+                  <span className="text-[11px] font-semibold text-amber-900 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded">
+                    Type: Unknown-Seen (अज्ञात / देखा गया)
+                  </span>
                 </div>
+                <p className="text-[11px] text-slate-600">
+                  The identity and particulars of the accused person(s) are not known at this stage. Capture observed physical traits (Huliya / हुलिया), build, height, marks, or clothing below to assist police investigation.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Face Type</label>
-                  <input
-                    type="text"
-                    value={faceType}
-                    onChange={(e) => setFaceType(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Forehead</label>
-                  <input
-                    type="text"
-                    value={forehead}
-                    onChange={(e) => setForehead(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Nose</label>
-                  <input
-                    type="text"
-                    value={nose}
-                    onChange={(e) => setNose(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Teeth</label>
-                  <input
-                    type="text"
-                    value={teeth}
-                    onChange={(e) => setTeeth(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Beard</label>
-                  <input
-                    type="text"
-                    value={beard}
-                    onChange={(e) => setBeard(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Moustaches</label>
-                  <input
-                    type="text"
-                    value={moustaches}
-                    onChange={(e) => setMoustaches(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div className="flex items-center pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={isPockmarked}
-                      onChange={(e) => setIsPockmarked(e.target.checked)}
-                      className="rounded text-red-600"
-                    />
-                    <span>Is Pockmarked / Chechak Marks</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Distinguishing Marks / Scars / Tattoos
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Scar on left cheek, tattoo on right forearm..."
-                    value={distinguishingMarks}
-                    onChange={(e) => setDistinguishingMarks(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Clothing Description (वस्त्र विवरण)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Blue jeans, black jacket, white sneakers..."
-                    value={clothingDescription}
-                    onChange={(e) => setClothingDescription(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
+              {renderPhysicalTraitsForm()}
             </div>
           )}
 
@@ -1462,6 +1528,11 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 <>
                   <Check className="w-3.5 h-3.5" />
                   Update Accused Record
+                </>
+              ) : accusedType === "Unknown-Seen" ? (
+                <>
+                  <Plus className="w-3.5 h-3.5" />
+                  Add &ldquo;Accused is not known&rdquo; to List
                 </>
               ) : (
                 <>
@@ -1509,9 +1580,12 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     >
                       <td className="p-2.5 font-bold text-slate-500">{idx + 1}</td>
                       <td className="p-2.5 font-semibold text-red-900">
-                        {acc.name} {acc.alias ? `(${acc.alias})` : ""}
-                        {acc.isKnown === false && (
-                          <span className="ml-1 text-[10px] font-bold bg-amber-100 text-amber-800 px-1 py-0.2 rounded">
+                        {acc.isKnown === false || acc.name === "Accused is not known" || acc.name === "Unknown Accused"
+                          ? "Accused is not known"
+                          : acc.name}{" "}
+                        {acc.alias && acc.isKnown !== false ? `(${acc.alias})` : ""}
+                        {(acc.isKnown === false || acc.name === "Accused is not known" || acc.name === "Unknown Accused") && (
+                          <span className="ml-1.5 text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200">
                             Unknown-Seen
                           </span>
                         )}
@@ -1521,9 +1595,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="p-2.5">{acc.fatherName || acc.relativeName || "—"}</td>
+                      <td className="p-2.5">
+                        {acc.isKnown === false || acc.name === "Accused is not known" || acc.name === "Unknown Accused"
+                          ? "Not Known"
+                          : (acc.fatherName || acc.relativeName || "—")}
+                      </td>
                       <td className="p-2.5 text-slate-600 max-w-xs truncate" title={acc.address}>
-                        {acc.address || "—"}
+                        {acc.isKnown === false || acc.name === "Accused is not known" || acc.name === "Unknown Accused"
+                          ? "Not Known"
+                          : (acc.address || "—")}
                       </td>
                       <td className="p-2.5 text-slate-600 max-w-xs truncate" title={acc.physicalDescription || acc.specialTraits}>
                         {acc.physicalDescription || acc.specialTraits || "—"}
@@ -1559,7 +1639,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               <p className="font-medium text-slate-600">
                 {isAccusedKnown
                   ? "No accused entered yet. Fill the form above and click 'Add to Accused List'."
-                  : "FIR will be registered against Unknown Suspect(s) to be traced during investigation."}
+                  : "FIR will be registered with 'Accused is not known'. You may add physical description using the form above."}
               </p>
             </div>
           )}

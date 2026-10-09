@@ -336,7 +336,7 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
 
     const calculatedName = isKnown
       ? [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(" ")
-      : "Unknown Accused";
+      : "Accused is not known";
 
     const physicalSummary = [
       bodyBuild ? `Build: ${bodyBuild}` : null,
@@ -463,7 +463,7 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
                 }}
                 className="text-purple-600"
               />
-              <span>Unknown-Seen (अज्ञात / हुलिया आधारित)</span>
+              <span>Unknown-Seen (Accused is not known)</span>
             </label>
           </div>
         </div>
@@ -521,8 +521,9 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
             </button>
           </div>
         ) : (
-          <div className="px-4 py-2 bg-purple-50 border-b border-purple-200 text-purple-900 text-xs font-semibold">
-            Unknown Accused: Capturing physical attributes, build, complexion, height range, and distinguishing traits. Name and birth date are not fabricated.
+          <div className="px-4 py-2 bg-purple-50 border-b border-purple-200 text-purple-900 text-xs font-semibold flex items-center gap-2">
+            <span className="bg-purple-200 px-2 py-0.5 rounded text-purple-950 font-bold">Accused is not known</span>
+            <span>— Particulars of accused are not known. Capturing observed physical attributes.</span>
           </div>
         )}
 
