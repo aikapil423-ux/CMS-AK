@@ -16,6 +16,7 @@ import { ELECTRICITY_ACT_2003_SECTIONS } from "./electricitySectionsData";
 import { DPPA_ACT_1984_SECTIONS } from "./dppaSectionsData";
 import { PASSPORTS_ACT_1967_SECTIONS } from "./passportsSectionsData";
 import { ESSENTIAL_COMMODITIES_1955_SECTIONS } from "./essentialCommoditiesSectionsData";
+import { IT_ACT_2000_SECTIONS } from "./itActSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -60,22 +61,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Information Technology Act, 2000",
     shortName: "Information Technology Act, 2000 (IT Act)",
     category: "Cyber Crime",
-    sections: [
-      { sectionNumber: "43", title: "Penalty and compensation for damage to computer, computer system, etc." },
-      { sectionNumber: "65", title: "Tampering with computer source documents" },
-      { sectionNumber: "66", title: "Computer related offences (Hacking)" },
-      { sectionNumber: "66B", title: "Punishment for dishonestly receiving stolen computer resource or communication device" },
-      { sectionNumber: "66C", title: "Punishment for identity theft (Impersonation, stolen passwords/OTP/signature)" },
-      { sectionNumber: "66D", title: "Punishment for cheating by personation by using computer resource" },
-      { sectionNumber: "66E", title: "Punishment for violation of privacy (Capturing/transmitting private images)" },
-      { sectionNumber: "66F", title: "Punishment for cyber terrorism" },
-      { sectionNumber: "67", title: "Punishment for publishing or transmitting obscene material in electronic form" },
-      { sectionNumber: "67A", title: "Punishment for publishing or transmitting material containing sexually explicit act" },
-      { sectionNumber: "67B", title: "Punishment for publishing or transmitting child pornography / CSAM in electronic form" },
-      { sectionNumber: "69A", title: "Power to issue directions for blocking public access of information" },
-      { sectionNumber: "72", title: "Penalty for breach of confidentiality and privacy" },
-      { sectionNumber: "72A", title: "Punishment for disclosure of information in breach of lawful contract" },
-    ],
+    sections: IT_ACT_2000_SECTIONS,
   },
   {
     id: "act_pocso_2012",
@@ -532,6 +518,18 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("EC Act"), actOption);
       map.set(normalizeKey("E.C. Act"), actOption);
     }
+    if (cAct.id === "act_it_2000") {
+      map.set(normalizeKey("Information Technology Act, 2000"), actOption);
+      map.set(normalizeKey("Information Technology Act,2000"), actOption);
+      map.set(normalizeKey("The Information Technology Act, 2000"), actOption);
+      map.set(normalizeKey("The Information Technology Act,2000"), actOption);
+      map.set(normalizeKey("Information Technology Act"), actOption);
+      map.set(normalizeKey("IT Act, 2000"), actOption);
+      map.set(normalizeKey("IT Act,2000"), actOption);
+      map.set(normalizeKey("IT Act"), actOption);
+      map.set(normalizeKey("I.T. Act"), actOption);
+      map.set(normalizeKey("Information Technology Act, 2000 (IT Act)"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -613,6 +611,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_essential_1955, preserve the authoritative complete 183 sections catalog
         if (existing.id === "act_essential_1955") {
+          continue;
+        }
+        // If it's act_it_2000, preserve the authoritative complete 544 sections catalog
+        if (existing.id === "act_it_2000") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
