@@ -2614,6 +2614,11 @@ function EnquiryDraftsContent() {
         {/* EO Send to SHO Modal */}
         <EoSendingToShoModal
           complaint={complaint}
+          selectedReport={{
+            title: title || "Enquiry Report",
+            recommendationType: selectedClassification,
+            isFirRecommended: isSavedAndFirRecommended || selectedClassification === "FIR" || selectedClassification === "FIR_RECOMMENDED",
+          }}
           isOpen={eoSendModalOpen}
           onClose={() => setEoSendModalOpen(false)}
           onSubmit={handleEoSendModalSubmit}

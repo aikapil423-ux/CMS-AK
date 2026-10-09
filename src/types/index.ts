@@ -388,6 +388,7 @@ export interface ComplaintItem {
   eoRecommendedById?: string;
   eoRecommendedAt?: string;
   eoRecommendedReportTitle?: string;
+  eoRecommendedReportId?: string;
   eoRecommendedRemarks?: string;
 
   // SHO Final Decision & Category

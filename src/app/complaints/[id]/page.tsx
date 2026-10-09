@@ -1126,6 +1126,7 @@ export default function ComplaintProfilePage() {
         {
           recommendedCategory: data.recommendedCategory,
           eoId: currentUser.id || complaint.assignedEoId,
+          reportId: selectedReportForSho?.id,
           reportTitle: selectedReportForSho?.title || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
         }
       );
@@ -1133,9 +1134,6 @@ export default function ComplaintProfilePage() {
       setEoSendToShoModalOpen(false);
       alert(`शिकायत ${complaint.complaintNumber} की जांच रिपोर्ट (${displayCat} सिफारिश सहित) SHO ID को भेज दी गई है। यह शिकायत अब SHO रिव्यू डेस्क पर उपलब्ध है।`);
       await loadComplaint();
-      if (isAssignedEo) {
-        router.push("/complaints");
-      }
     } catch (err) {
       console.error("Error sending report to SHO:", err);
       alert("Error sending report to SHO");
@@ -3373,8 +3371,13 @@ Certified official record copy.`;
                                 </span>
                               )}
 
-                              {/* Status Badge: "Saved in Complaint" vs "Draft" */}
-                              {isDraftStatus ? (
+                              {/* Status Badge: "Saved in Complaint" vs "Draft" vs "Sent to SHO" */}
+                              {report.sentToSho ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-mono flex items-center gap-1">
+                                  <Send className="w-3 h-3 text-blue-600" />
+                                  <span>Sent to SHO</span>
+                                </span>
+                              ) : isDraftStatus ? (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono">
                                   Status: Draft
                                 </span>
@@ -3534,8 +3537,8 @@ Certified official record copy.`;
                             </Button>
                           )}
 
-                          {/* Send to SHO button (Strictly only visible to assigned EO) */}
-                          {isAssignedEo && !complaint.isSentToSho && (
+                          {/* Send to SHO button per report: strictly only if this specific report has not been sent to SHO */}
+                          {isAssignedEo && !report.sentToSho && (
                             <Button
                               type="button"
                               variant="primary"
@@ -3543,13 +3546,13 @@ Certified official record copy.`;
                               onClick={() => handleOpenEoSendToShoModal(report)}
                               disabled={sendingReportToSho}
                               className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                              title="Send Enquiry Report to SHO for Review & Approval"
+                              title="Send this Enquiry Report to SHO for Review & Approval"
                             >
                               <Send className="w-3 h-3" />
-                              <span>{sendingReportToSho ? "Sending..." : "Send to SHO"}</span>
+                              <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
                             </Button>
                           )}
-                          {complaint.isSentToSho && (
+                          {report.sentToSho && (
                             <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
                               <Check className="w-3 h-3 text-blue-600" />
                               <span>Sent to SHO</span>
@@ -5813,6 +5816,7 @@ Certified official record copy.`;
       {/* EO Send to SHO Modal */}
       <EoSendingToShoModal
         complaint={complaint}
+        selectedReport={selectedReportForSho}
         isOpen={eoSendToShoModalOpen}
         onClose={() => setEoSendToShoModalOpen(false)}
         onSubmit={handleEoSendToShoSubmit}

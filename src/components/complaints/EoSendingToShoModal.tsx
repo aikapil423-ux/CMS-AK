@@ -9,6 +9,7 @@ export type EOCategoryOption = "NCR" | "FIR_RECOMMEND" | "CLOSURE";
 
 interface EoSendingToShoModalProps {
   complaint: ComplaintItem | null;
+  selectedReport?: any | null;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
@@ -20,19 +21,38 @@ interface EoSendingToShoModalProps {
 
 export function EoSendingToShoModal({
   complaint,
+  selectedReport,
   isOpen,
   onClose,
   onSubmit,
   isLoading = false,
 }: EoSendingToShoModalProps) {
-  // Preselect based on complaint recommendation or default to unselected
+  // Preselect based on selected report, complaint recommendation, or default to unselected
   const [selectedCategory, setSelectedCategory] = useState<EOCategoryOption | "">(() => {
+    if (selectedReport) {
+      if (selectedReport.isFirRecommended || selectedReport.recommendationType === "FIR" || selectedReport.recommendationType === "FIR_RECOMMENDED") {
+        return "FIR_RECOMMEND";
+      }
+      if (selectedReport.recommendationType === "NCR") {
+        return "NCR";
+      }
+      if (
+        selectedReport.recommendationType === "GAMINI" ||
+        selectedReport.recommendationType === "DIWANI" ||
+        selectedReport.recommendationType === "RAZINAMA" ||
+        selectedReport.recommendationType === "JAMINI_LAND_DISPUTE" ||
+        selectedReport.recommendationType === "DIWANI_CIVIL_MONEY" ||
+        selectedReport.recommendationType === "RAJINAMA_COMPROMISE"
+      ) {
+        return "CLOSURE";
+      }
+    }
     if (!complaint) return "";
     if (complaint.eoOutcome === "FIR Recommend" || complaint.isRecommendedForFir) {
       return "FIR_RECOMMEND";
     }
     if (complaint.eoRecommendedCategory) {
-      const c = complaint.eoRecommendedCategory.toUpperCase();
+      const c = String(complaint.eoRecommendedCategory).toUpperCase();
       if (c === "NCR") return "NCR";
       if (c === "CLOSURE" || c === "CLOSE") return "CLOSURE";
       if (c.includes("FIR")) return "FIR_RECOMMEND";
@@ -121,6 +141,14 @@ export function EoSendingToShoModal({
             <p className="text-slate-700 truncate">
               <strong>Subject:</strong> {complaint.subject || complaint.complaintSubject || "Enquiry Report"}
             </p>
+            {selectedReport && (
+              <div className="pt-1 border-t border-slate-200 mt-1 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-medium">Selected Report:</span>
+                <span className="font-bold text-slate-900 truncate max-w-[240px]">
+                  {selectedReport.title || "Official Enquiry Report"}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Mandatory Category Selection */}

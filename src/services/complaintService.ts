@@ -102,6 +102,10 @@ function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
       }
       return doc;
     }),
+    reports: item.reports?.map((r) => ({
+      ...r,
+      sentToSho: Boolean(r.sentToSho),
+    })),
   };
 }
 
@@ -1911,10 +1915,12 @@ export const ComplaintService = {
     const complaint = complaintsStore[index];
     const nowIso = new Date().toISOString();
     const existingReports = complaint.reports || [];
-    const versionNumber = existingReports.length + 1;
+    const reportId = report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const existingReportIndex = existingReports.findIndex((r) => r.id === reportId);
+    const versionNumber = existingReportIndex >= 0 ? (existingReports[existingReportIndex].versionNumber || 1) : existingReports.length + 1;
 
     const newReport: ComplaintReportItem = {
-      id: report.id || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      id: reportId,
       complaintId: complaint.id,
       versionNumber,
       title: report.title,
@@ -1934,7 +1940,7 @@ export const ComplaintService = {
       dataUrl: report.dataUrl,
       fileFormat: report.fileFormat,
       isUploaded: report.isUploaded,
-      createdAt: report.createdAt || nowIso,
+      createdAt: report.createdAt || (existingReportIndex >= 0 ? existingReports[existingReportIndex].createdAt : nowIso),
       createdBy: officerName,
       lastModifiedBy: officerName,
       createdByUserId: officerPno || officerName,
@@ -1945,43 +1951,41 @@ export const ComplaintService = {
       recommendationType: report.recommendationType,
       isFirRecommended: outcome === "FIR Recommend" || report.isFirRecommended,
       selectedOutcome: outcome,
+      status: "Saved in Complaint",
+      // CRITICAL FIX: Generating/saving a report NEVER automatically sends it to SHO!
+      sentToSho: existingReportIndex >= 0 ? (existingReports[existingReportIndex].sentToSho || false) : false,
+      sentToShoAt: existingReportIndex >= 0 ? existingReports[existingReportIndex].sentToShoAt : undefined,
+      sentToShoBy: existingReportIndex >= 0 ? existingReports[existingReportIndex].sentToShoBy : undefined,
       analysisClassification: report.analysisClassification,
       analysisRationale: report.analysisRationale,
     };
 
-    let nextStatus: ComplaintStatus = complaint.status;
-    let nextWorkflowState: WorkflowState = complaint.workflowState || "PENDING";
-    let isRecommendedForFir = complaint.isRecommendedForFir;
-    let recommendedAction = complaint.recommendedAction;
-    const wasRejected = complaint.shoDecision === "REJECT" || complaint.workflowState === "CORRECTION_REQUIRED";
-
-    if (outcome === "Complete") {
-      nextStatus = "COMPLETE";
-      nextWorkflowState = "COMPLETE";
-    } else if (outcome === "Pending") {
-      nextStatus = "ENQUIRY_IN_PROGRESS";
-      nextWorkflowState = "PENDING";
-    } else if (outcome === "FIR Recommend") {
-      nextStatus = "RECOMMENDED_FOR_FIR";
-      isRecommendedForFir = true;
-      recommendedAction = "RECOMMEND_FIR";
-      nextWorkflowState = "FIR_RECOMMENDED";
+    let updatedReportsList: ComplaintReportItem[];
+    if (existingReportIndex >= 0) {
+      updatedReportsList = [...existingReports];
+      updatedReportsList[existingReportIndex] = newReport;
+    } else {
+      updatedReportsList = [newReport, ...existingReports];
     }
+
+    // Keep active enquiry status - DO NOT mark completed or sent to SHO upon saving a report
+    const activeStatus: ComplaintStatus =
+      complaint.status === "REGISTERED"
+        ? "ASSIGNED_TO_EO"
+        : (complaint.status || "ENQUIRY_IN_PROGRESS");
 
     complaintsStore[index] = {
       ...complaint,
-      reports: [newReport, ...existingReports],
-      status: nextStatus,
-      workflowState: nextWorkflowState,
+      reports: updatedReportsList,
+      status: activeStatus,
+      // CRITICAL FIX: isSentToSho remains false until user explicitly clicks "Send to SHO" and picks category!
+      isSentToSho: false,
+      shoActionRequired: false,
       eoOutcome: outcome,
-      isRecommendedForFir,
-      recommendedAction,
-      shoDecision: outcome === "Complete" ? undefined : complaint.shoDecision,
-      isSentToSho: outcome === "Complete" ? true : complaint.isSentToSho,
-      shoActionRequired: outcome === "Complete" ? true : complaint.shoActionRequired,
       updatedAt: nowIso,
     };
 
+    const wasRejected = complaint.shoDecision === "REJECT" || complaint.workflowState === "CORRECTION_REQUIRED";
     if (wasRejected && outcome === "Complete") {
       const shoNotif: OfficerNotification = {
         id: `notif_${Date.now()}_sho_resubmitted`,
@@ -1990,7 +1994,7 @@ export const ComplaintService = {
         complaintId: complaint.id,
         complaintNumber: complaint.complaintNumber,
         title: `REPORT RESUBMITTED: ${complaint.complaintNumber}`,
-        message: `EO ${officerName} has corrected and resubmitted the enquiry report on ${complaint.complaintNumber}. Action required: Review and Approve or Reject.`,
+        message: `EO ${officerName} has corrected and saved the enquiry report on ${complaint.complaintNumber}.`,
         createdAt: nowIso,
         priority: "URGENT",
       };
@@ -2048,6 +2052,7 @@ export const ComplaintService = {
     options?: {
       recommendedCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
       eoId?: string;
+      reportId?: string;
       reportTitle?: string;
     }
   ): Promise<ComplaintItem> {
@@ -2065,9 +2070,39 @@ export const ComplaintService = {
         ? "Closure"
         : "NCR";
 
-    const updatedReports = (complaint.reports || []).map((r, i) =>
-      i === 0 ? { ...r, sentToSho: true, sentToShoAt: nowIso, sentToShoBy: officerName } : r
-    );
+    const targetReportId = options?.reportId;
+    const targetReportTitle = options?.reportTitle;
+
+    const updatedReports = (complaint.reports || []).map((r, i) => {
+      const isTarget = targetReportId
+        ? r.id === targetReportId
+        : targetReportTitle
+        ? r.title === targetReportTitle
+        : i === 0;
+
+      if (isTarget) {
+        return {
+          ...r,
+          sentToSho: true,
+          sentToShoAt: nowIso,
+          sentToShoBy: officerName,
+          status: "Saved in Complaint" as const,
+        };
+      }
+      return r;
+    });
+
+    let nextStatus: ComplaintStatus = "REPORT_SUBMITTED";
+    let isRecommendedForFir = complaint.isRecommendedForFir;
+    let recommendedAction = complaint.recommendedAction;
+    let nextWorkflowState: WorkflowState = "SENT_TO_SHO";
+
+    if (recommendedCategory === "FIR_RECOMMEND") {
+      nextStatus = "RECOMMENDED_FOR_FIR";
+      isRecommendedForFir = true;
+      recommendedAction = "RECOMMEND_FIR";
+      nextWorkflowState = "FIR_RECOMMENDED";
+    }
 
     complaintsStore[index] = {
       ...complaint,
@@ -2075,14 +2110,18 @@ export const ComplaintService = {
       isSentToSho: true,
       sentToShoAt: nowIso,
       sentToShoBy: officerName,
+      status: nextStatus,
+      workflowState: nextWorkflowState,
       eoRecommendedCategory: recommendedCategory,
       eoRecommendedBy: officerName,
       eoRecommendedById: options?.eoId || complaint.assignedEoId || officerPno,
       eoRecommendedAt: nowIso,
-      eoRecommendedReportTitle: options?.reportTitle || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
+      eoRecommendedReportId: targetReportId,
+      eoRecommendedReportTitle: targetReportTitle || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
       eoRecommendedRemarks: remarks,
       shoActionRequired: true,
-      workflowState: "SENT_TO_SHO",
+      isRecommendedForFir,
+      recommendedAction,
       updatedAt: nowIso,
     };
 
