@@ -4,6 +4,7 @@
 import { BNS_2023_SECTIONS } from "./bnsSectionsData";
 import { BNSS_2023_SECTIONS } from "./bnssSectionsData";
 import { ARMS_ACT_1959_SECTIONS } from "./armsActSectionsData";
+import { PUNJAB_EXCISE_1914_SECTIONS } from "./punjabExciseSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -34,24 +35,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Punjab Excise Act, 1914 (Haryana Amendment)",
     shortName: "Punjab Excise Act, 1914 (Haryana Amendment)",
     category: "State Acts (Haryana)",
-    sections: [
-      { sectionNumber: "61", title: "Penalty for unlawful import, export, transport, manufacture, possession of intoxicants" },
-      { sectionNumber: "61(1)(a)", title: "Unlawful import, export, transport, manufacture or possession of liquor" },
-      { sectionNumber: "61(1)(c)", title: "Cultivation of hemp plant or collecting spontaneous growth" },
-      { sectionNumber: "61(1)(d)", title: "Constructing or working any distillery, brewery or still" },
-      { sectionNumber: "61(1)(e)", title: "Uses, keeps or has in possession any materials or apparatus for manufacturing intoxicant" },
-      { sectionNumber: "61(2)", title: "Unlawful possession of illicit liquor exceeding prescribed limits" },
-      { sectionNumber: "61-1-14", title: "Possession of illicit liquor (Excise general)" },
-      { sectionNumber: "61-4-2020", title: "Smuggling / Illegal commercial transport of liquor (Haryana Amendment 2020)" },
-      { sectionNumber: "62", title: "Penalty for consumption of liquor in public places / unauthorized premises" },
-      { sectionNumber: "63", title: "Penalty for failure to provide security or register documents" },
-      { sectionNumber: "64", title: "Penalty for possession of liquor on which duty has not been paid" },
-      { sectionNumber: "65", title: "Penalty for mixing noxious substances in liquor" },
-      { sectionNumber: "68", title: "Penalty for misconduct of licensee or sale to minors" },
-      { sectionNumber: "68A", title: "Penalty for consumption of alcohol by minors or persons below permissible age" },
-      { sectionNumber: "69A", title: "Power of Police to seize conveyance and confiscate vehicles carrying illicit liquor" },
-      { sectionNumber: "72", title: "Confiscation of articles and vehicles used in commission of excise offences" },
-    ],
+    sections: PUNJAB_EXCISE_1914_SECTIONS,
   },
   {
     id: "act_ndps_1985",
@@ -540,6 +524,12 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Arms Act, 1959"), actOption);
       map.set(normalizeKey("Arms Act 1959"), actOption);
     }
+    if (cAct.id === "act_punjab_excise_1914") {
+      map.set(normalizeKey("Punjab Excise Act,1914"), actOption);
+      map.set(normalizeKey("Punjab Excise Act, 1914"), actOption);
+      map.set(normalizeKey("The Punjab Excise Act, 1914"), actOption);
+      map.set(normalizeKey("Punjab Excise Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -573,6 +563,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_arms_1959, preserve the authoritative complete 328 sections catalog
         if (existing.id === "act_arms_1959") {
+          continue;
+        }
+        // If it's act_punjab_excise_1914, preserve the authoritative complete 498 sections catalog
+        if (existing.id === "act_punjab_excise_1914") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
