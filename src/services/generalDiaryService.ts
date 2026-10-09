@@ -883,6 +883,8 @@ export const GeneralDiaryService = {
     typeDisplayHi?: string;
     subject: string;
     narrative?: string;
+    activityDate?: string;
+    activityTime?: string;
     activityDateTime?: string;
     entryForOfficer?: GDOfficerParticulars;
     actualAuthor?: GDOfficerParticulars;
@@ -901,6 +903,8 @@ export const GeneralDiaryService = {
         typeDisplayHi: entry.typeDisplayHi,
         subject: entry.subject,
         narrative: entry.narrative,
+        activityDate: entry.activityDate,
+        activityTime: entry.activityTime,
         entryForOfficer: entry.entryForOfficer,
         actualAuthor: entry.actualAuthor,
         policeStation: entry.policeStation,

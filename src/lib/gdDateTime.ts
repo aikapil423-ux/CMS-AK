@@ -71,3 +71,41 @@ export function from12HourParts(
   if (hour === 12 && ampm === "PM") h = 12;
   return `${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
+
+// Parse a stored activityDateTime string back into picker values.
+// Handles "dd/mm/yyyy hh:mm AM/PM", "yyyy-mm-dd HH:mm", and ISO strings.
+export function parseGDActivityDateTime(activity: string): {
+  dateISO: string;
+  time24: string;
+} {
+  const raw = (activity || "").trim();
+  if (!raw) {
+    const now = new Date();
+    return { dateISO: formatGDDateKey(now), time24: formatGDTimeDisplay24(now) };
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    const d = new Date(raw);
+    return { dateISO: formatGDDateKey(d), time24: formatGDTimeDisplay24(d) };
+  }
+  const parts = raw.split(" ");
+  let dateKey = "";
+  let timePart = "";
+  if (raw.includes("/")) {
+    const dmy = (parts[0] || "").split("/");
+    dateKey = dmy.length === 3 ? `${dmy[2]}-${dmy[1]}-${dmy[0]}` : "";
+    timePart = parts.slice(1).join(" ");
+  } else {
+    dateKey = parts[0] || "";
+    timePart = parts.slice(1).join(" ");
+  }
+  const m = timePart.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  let h = m ? parseInt(m[1], 10) : 0;
+  const min = m ? parseInt(m[2], 10) : 0;
+  const ap = m ? (m[3] || "").toUpperCase() : "";
+  if (ap === "AM" && h === 12) h = 0;
+  if (ap === "PM" && h !== 12) h += 12;
+  return {
+    dateISO: dateKey || formatGDDateKey(new Date()),
+    time24: `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`,
+  };
+}

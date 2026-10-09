@@ -31,7 +31,7 @@ import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
-import { formatGDDateKey, to12HourParts, from12HourParts } from "@/lib/gdDateTime";
+import { formatGDDateKey, to12HourParts, from12HourParts, parseGDActivityDateTime } from "@/lib/gdDateTime";
 
 function NewGDEntryContent() {
   const router = useRouter();
@@ -378,6 +378,13 @@ const suppressAutoTemplateRef = useRef(false);
       setSelectedType(draft.typeCode);
       setSubject(draft.subject);
       setNarrative(draft.narrative);
+      // Restore the draft's stored activity date/time into the pickers
+      const dt = parseGDActivityDateTime(draft.activityDateTime || "");
+      setActivityDate(dt.dateISO);
+      const tp = to12HourParts(dt.time24);
+      setHourSel(tp.hour);
+      setMinuteSel(tp.minute);
+      setAmpmSel(tp.ampm);
       if (draft.entryForOfficer?.name) {
         const match = stationOfficers.find((o) => o.name === draft.entryForOfficer.name);
         if (match) setSelectedOfficerId(match.id);
@@ -476,6 +483,10 @@ const suppressAutoTemplateRef = useRef(false);
   // Save Draft
   const handleSaveDraft = async () => {
     setError(null);
+    if (!activityDate) {
+      setError("Please select the Date of the activity.");
+      return;
+    }
     if (!subject.trim()) {
       setError("Please enter at least a Subject to save a draft.");
       return;
@@ -490,6 +501,8 @@ const suppressAutoTemplateRef = useRef(false);
         typeDisplay: typeConfig?.nameEn || selectedType,
         subject: subject.trim(),
         narrative: narrative.trim(),
+        activityDate,
+        activityTime: activityTime24,
         entryForOfficer: currentOfficer,
         policeStation: "PS City Thanesar",
       });

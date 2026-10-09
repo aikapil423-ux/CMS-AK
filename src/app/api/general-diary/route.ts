@@ -315,6 +315,12 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
   const actualAuthor = buildOfficer(body.actualAuthor, FALLBACK_AUTHOR);
   const existingId = body.id ? String(body.id) : undefined;
 
+  // Officer-assigned activity date/time (back-dating allowed) — stored on the
+  // draft so "Add to GD" later files it at exactly that moment.
+  const hasActivity = /^\d{4}-\d{2}-\d{2}$/.test(String(body.activityDate || "").trim());
+  const entryDateTime = hasActivity ? resolveEntryDateTime(body) : now;
+  const draftGdDate = startOfDay(entryDateTime);
+
   if (existingId) {
     const existing = await prisma.gDRecord.findUnique({ where: { id: existingId } });
     if (existing) {
@@ -343,6 +349,7 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
           entryForOfficerJson: JSON.stringify(entryForOfficer),
           actualAuthorJson: JSON.stringify(actualAuthor),
           auditTrailJson: JSON.stringify(trail),
+          ...(hasActivity ? { entryDateTime, gdDate: draftGdDate } : {}),
         },
       });
       return mapRowToRecord(updated);
@@ -353,8 +360,8 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
     data: {
       gdNumber: `GD-DRAFT-${Date.now()}`,
       sequencePerDay: 0,
-      gdDate: startOfDay(now),
-      entryDateTime: now,
+      gdDate: draftGdDate,
+      entryDateTime,
       policeStation: String(body.policeStation || DEFAULT_STATION),
       district: String(body.district || DEFAULT_DISTRICT),
       typeCode,
@@ -409,7 +416,11 @@ async function verifyAndLockEntry(
   }
 
   const now = new Date();
-  const gdDate = startOfDay(now);
+  // Respect the draft's officer-assigned activity date/time (back-dating
+  // supported) — the entry is filed at exactly that moment, and the whole
+  // day is resequenced so later GD numbers shift automatically.
+  const activity = existing.entryDateTime ? new Date(existing.entryDateTime) : now;
+  const gdDate = startOfDay(activity);
 
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -443,7 +454,7 @@ async function verifyAndLockEntry(
           gdNumber,
           sequencePerDay: sequence,
           gdDate,
-          entryDateTime: now,
+          entryDateTime: activity, // the officer-assigned activity moment
           status: "LOCKED",
           isLocked: true,
           isDraft: false,
