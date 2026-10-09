@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 
 export type FinalFormType = "CHARGESHEET" | "CLOSURE" | "UNTRACED" | "CANCELLED";
 
@@ -546,13 +547,18 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           </div>
 
           {/* Court Heading (Directly Editable) */}
-          <div className="text-xs font-bold mb-3">
+          <div className="text-xs font-bold mb-3 flex items-center gap-1.5">
             <input
               type="text"
               value={courtName}
               onChange={(e) => setCourtName(e.target.value)}
-              className="w-full font-bold underline uppercase text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-0.5 outline-none text-xs"
+              className="flex-1 font-bold underline uppercase text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-0.5 outline-none text-xs"
               placeholder="In the Court of Judicial Magistrate..."
+            />
+            <VoiceInputButton
+              onTranscript={(text) => setCourtName(text)}
+              fieldLabel="Court Name"
+              iconOnly={true}
             />
           </div>
 
@@ -590,13 +596,21 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   Acts &amp; Sections:
                 </td>
                 <td className="p-1.5 font-bold text-emerald-900" colSpan={3}>
-                  <input
-                    type="text"
-                    value={firActsAndSections}
-                    onChange={(e) => setFirActsAndSections(e.target.value)}
-                    className="w-full font-bold text-emerald-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
-                    placeholder="Sections of Law..."
-                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={firActsAndSections}
+                      onChange={(e) => setFirActsAndSections(e.target.value)}
+                      className="w-full font-bold text-emerald-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
+                      placeholder="Sections of Law..."
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => setFirActsAndSections((prev) => (prev ? prev + ", " + t : t))}
+                      currentValue={firActsAndSections}
+                      fieldLabel="Sections of Law"
+                      iconOnly
+                    />
+                  </div>
                 </td>
               </tr>
               <tr className="border-b border-slate-800">
@@ -613,6 +627,12 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs w-1/2"
                         placeholder="Complainant Name"
                       />
+                      <VoiceInputButton
+                        onTranscript={(t) => setComplainantName(t)}
+                        currentValue={complainantName}
+                        fieldLabel="Complainant Name"
+                        iconOnly
+                      />
                       <span className="text-slate-600">s/o, w/o:</span>
                       <input
                         type="text"
@@ -621,25 +641,47 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         className="font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs flex-1"
                         placeholder="Father/Spouse"
                       />
+                      <VoiceInputButton
+                        onTranscript={(t) => setComplainantFather(t)}
+                        currentValue={complainantFather}
+                        fieldLabel="Father/Spouse"
+                        iconOnly
+                      />
                     </div>
-                    <input
-                      type="text"
-                      value={complainantAddress}
-                      onChange={(e) => setComplainantAddress(e.target.value)}
-                      className="w-full text-slate-600 text-[10px] bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
-                      placeholder="Address of Complainant"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={complainantAddress}
+                        onChange={(e) => setComplainantAddress(e.target.value)}
+                        className="w-full text-slate-600 text-[10px] bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
+                        placeholder="Address of Complainant"
+                      />
+                      <VoiceInputButton
+                        onTranscript={(t) => setComplainantAddress((prev) => (prev ? prev + " " + t : t))}
+                        currentValue={complainantAddress}
+                        fieldLabel="Complainant Address"
+                        iconOnly
+                      />
+                    </div>
                   </div>
                 </td>
                 <td className="p-1.5">
                   <span className="text-[10px] text-slate-600 block">Contact:</span>
-                  <input
-                    type="text"
-                    value={complainantPhone}
-                    onChange={(e) => setComplainantPhone(e.target.value)}
-                    className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs w-full"
-                    placeholder="Phone number"
-                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={complainantPhone}
+                      onChange={(e) => setComplainantPhone(e.target.value)}
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs w-full"
+                      placeholder="Phone number"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => setComplainantPhone(t)}
+                      currentValue={complainantPhone}
+                      fieldLabel="Phone"
+                      iconOnly
+                    />
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -844,9 +886,17 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
 
           {/* 2. Details of Property Recovered / Seized (Directly Editable) */}
           <div className="mb-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider mb-1 font-sans text-slate-800">
-              2. Details of Property Recovered / Seized:
-            </h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
+                2. Details of Property Recovered / Seized:
+              </h4>
+              <VoiceInputButton
+                onTranscript={(t) => setPropertyRecovered((prev) => (prev ? prev + " " + t : t))}
+                currentValue={propertyRecovered}
+                fieldLabel="Property Recovered"
+                iconOnly
+              />
+            </div>
             <div className="p-1 border border-slate-800 rounded bg-slate-50">
               <textarea
                 rows={2}
@@ -860,9 +910,17 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
 
           {/* 3. Brief Facts & Findings of Investigation (Directly Editable) */}
           <div className="mb-6">
-            <h4 className="text-xs font-bold uppercase tracking-wider mb-1 font-sans text-slate-800">
-              3. Brief Facts and Grounds of Investigation:
-            </h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
+                3. Brief Facts and Grounds of Investigation:
+              </h4>
+              <VoiceInputButton
+                onTranscript={(t) => setInvestigationSummary((prev) => (prev ? prev + " " + t : t))}
+                currentValue={investigationSummary}
+                fieldLabel="Brief Facts and Grounds"
+                iconOnly
+              />
+            </div>
             <div className="p-1 border border-slate-800 rounded">
               <textarea
                 rows={8}
@@ -880,13 +938,19 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <div className="h-10 flex items-end justify-center">
                 <span className="font-script text-base text-slate-500 italic">Signature of IO</span>
               </div>
-              <div className="border-t border-slate-800 pt-1">
+              <div className="border-t border-slate-800 pt-1 flex items-center justify-center gap-1">
                 <input
                   type="text"
                   value={investigatingOfficer}
                   onChange={(e) => setInvestigatingOfficer(e.target.value)}
                   className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
                   placeholder="IO Name"
+                />
+                <VoiceInputButton
+                  onTranscript={(t) => setInvestigatingOfficer(t)}
+                  currentValue={investigatingOfficer}
+                  fieldLabel="IO Name"
+                  iconOnly
                 />
               </div>
               <div className="flex items-center justify-center gap-1 text-[10px] text-slate-600">
@@ -915,13 +979,19 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <div className="h-10 flex items-end justify-center">
                 <span className="font-script text-base text-slate-500 italic">Forwarded by SHO</span>
               </div>
-              <div className="border-t border-slate-800 pt-1">
+              <div className="border-t border-slate-800 pt-1 flex items-center justify-center gap-1">
                 <input
                   type="text"
                   value={shoName}
                   onChange={(e) => setShoName(e.target.value)}
                   className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
                   placeholder="SHO Name"
+                />
+                <VoiceInputButton
+                  onTranscript={(t) => setShoName(t)}
+                  currentValue={shoName}
+                  fieldLabel="SHO Name"
+                  iconOnly
                 />
               </div>
               <p className="text-[10px] text-slate-600">Officer In-Charge (SHO)</p>

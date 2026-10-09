@@ -28,6 +28,7 @@ import {
   ArrowDown,
   GripVertical,
 } from "lucide-react";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import {
@@ -454,7 +455,7 @@ function GeneralDiaryContent() {
             onClick={(e) => e.stopPropagation()}
             className="pt-1 animate-in fade-in-50"
           >
-            <div className="relative">
+            <div className="relative flex items-center gap-1">
               <input
                 type="text"
                 autoFocus
@@ -470,6 +471,14 @@ function GeneralDiaryContent() {
                 placeholder={`${label} खोजें...`}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-cyan-400 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 font-normal pr-5 text-slate-900 shadow-2xs normal-case"
               />
+              <VoiceInputButton
+                onTranscript={(text) =>
+                  setColumnSearch((prev) => ({ ...prev, [field]: text }))
+                }
+                fieldLabel={label}
+                iconOnly={true}
+                className="bg-white/90 border-cyan-300"
+              />
               {filterValue && (
                 <button
                   type="button"
@@ -480,7 +489,7 @@ function GeneralDiaryContent() {
                       return next;
                     })
                   }
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 text-xs font-bold"
+                  className="text-slate-400 hover:text-slate-700 text-xs font-bold"
                 >
                   &times;
                 </button>
@@ -786,17 +795,27 @@ function GeneralDiaryContent() {
         <CardContent className="p-3.5 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {/* Keyword Search */}
-            <div className="sm:col-span-2 relative">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => {
-                  setKeyword(e.target.value);
+            <div className="sm:col-span-2 relative flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => {
+                    setKeyword(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Search GD by officer, subject, keyword..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-[#0b192c]"
+                />
+              </div>
+              <VoiceInputButton
+                onTranscript={(text) => {
+                  setKeyword((prev) => (prev ? `${prev} ${text}` : text));
                   setPage(1);
                 }}
-                placeholder="Search GD by officer, subject, keyword..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-[#0b192c]"
+                fieldLabel="GD Search"
+                preferredLang="hi-IN"
               />
             </div>
 

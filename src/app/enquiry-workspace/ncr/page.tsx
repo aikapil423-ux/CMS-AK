@@ -498,31 +498,59 @@ function NcrWorkspaceContent() {
             {showHeader && (
               <div className="text-center space-y-1 mb-6 border-b pb-4 border-slate-300">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <div className="flex items-center gap-1 w-1/2">
+                    <input
+                      type="text"
+                      value={headerLeft}
+                      onChange={(e) => setHeaderLeft(e.target.value)}
+                      className="font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none w-full text-left"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setHeaderLeft(text)}
+                      fieldLabel="Header Left"
+                      iconOnly={true}
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-1 w-1/3">
+                    <input
+                      type="text"
+                      value={headerRight}
+                      onChange={(e) => setHeaderRight(e.target.value)}
+                      className="font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none w-full text-right"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setHeaderRight(text)}
+                      fieldLabel="Header Right"
+                      iconOnly={true}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-1">
                   <input
                     type="text"
-                    value={headerLeft}
-                    onChange={(e) => setHeaderLeft(e.target.value)}
-                    className="font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none w-1/2 text-left"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full text-center font-black text-sm text-slate-900 border-b border-dashed border-transparent hover:border-slate-400 outline-none uppercase tracking-tight py-1"
                   />
-                  <input
-                    type="text"
-                    value={headerRight}
-                    onChange={(e) => setHeaderRight(e.target.value)}
-                    className="font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none w-1/3 text-right"
+                  <VoiceInputButton
+                    onTranscript={(text) => setTitle(text)}
+                    fieldLabel="NCR Title"
+                    iconOnly={true}
                   />
                 </div>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full text-center font-black text-sm text-slate-900 border-b border-dashed border-transparent hover:border-slate-400 outline-none uppercase tracking-tight py-1"
-                />
-                <input
-                  type="text"
-                  value={subTitle}
-                  onChange={(e) => setSubTitle(e.target.value)}
-                  className="w-full text-center text-xs text-slate-600 border-b border-dashed border-transparent hover:border-slate-400 outline-none italic"
-                />
+                <div className="flex items-center justify-center gap-1">
+                  <input
+                    type="text"
+                    value={subTitle}
+                    onChange={(e) => setSubTitle(e.target.value)}
+                    className="w-full text-center text-xs text-slate-600 border-b border-dashed border-transparent hover:border-slate-400 outline-none italic"
+                  />
+                  <VoiceInputButton
+                    onTranscript={(text) => setSubTitle(text)}
+                    fieldLabel="NCR Subtitle"
+                    iconOnly={true}
+                  />
+                </div>
               </div>
             )}
 
@@ -572,13 +600,24 @@ function NcrWorkspaceContent() {
                       </td>
 
                       {/* Row Content (Right Column) */}
-                      <td className="w-3/4 p-3 align-top">
-                        <textarea
-                          value={row.cells[0] || ""}
-                          onChange={(e) => handleUpdateCell(row.id, 0, e.target.value)}
-                          rows={Math.max(3, (row.cells[0] || "").split("\n").length)}
-                          className="w-full bg-transparent border-0 outline-none resize-y text-slate-800 text-xs leading-relaxed focus:bg-blue-50/20 rounded p-1"
-                        />
+                      <td className="w-3/4 p-3 align-top relative">
+                        <div className="relative">
+                          <textarea
+                            value={row.cells[0] || ""}
+                            onChange={(e) => handleUpdateCell(row.id, 0, e.target.value)}
+                            rows={Math.max(3, (row.cells[0] || "").split("\n").length)}
+                            className="w-full bg-transparent border-0 outline-none resize-y text-slate-800 text-xs leading-relaxed focus:bg-blue-50/20 rounded p-1 pr-7"
+                          />
+                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <VoiceInputButton
+                              onTranscript={(val) => handleUpdateCell(row.id, 0, val)}
+                              currentValue={row.cells[0] || ""}
+                              fieldLabel={row.label}
+                              preferredLang="hi-IN"
+                              iconOnly={true}
+                            />
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -587,13 +626,21 @@ function NcrWorkspaceContent() {
             </div>
 
             {/* Closing Line */}
-            <div className="my-5">
-              <textarea
-                value={closingLine}
-                onChange={(e) => setClosingLine(e.target.value)}
-                rows={2}
-                className="w-full text-xs italic text-slate-700 border-b border-dashed border-transparent hover:border-slate-400 outline-none resize-none"
-              />
+            <div className="my-5 relative group">
+              <div className="flex items-center gap-1">
+                <textarea
+                  value={closingLine}
+                  onChange={(e) => setClosingLine(e.target.value)}
+                  rows={2}
+                  className="w-full text-xs italic text-slate-700 border-b border-dashed border-transparent hover:border-slate-400 outline-none resize-none"
+                />
+                <VoiceInputButton
+                  onTranscript={(text) => setClosingLine(text)}
+                  fieldLabel="Closing Line"
+                  iconOnly={true}
+                  className="opacity-0 group-hover:opacity-100"
+                />
+              </div>
             </div>
 
             {/* Signatures & Seal */}
@@ -601,30 +648,62 @@ function NcrWorkspaceContent() {
               <div className="mt-8 pt-6 flex justify-end">
                 <div className="w-72 text-right space-y-1 text-xs text-slate-900">
                   <div className="h-10"></div>
-                  <input
-                    type="text"
-                    value={officerName}
-                    onChange={(e) => setOfficerName(e.target.value)}
-                    className="w-full text-right font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={officerRank}
-                    onChange={(e) => setOfficerRank(e.target.value)}
-                    className="w-full text-right text-[11px] text-slate-600 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={officerLocation}
-                    onChange={(e) => setOfficerLocation(e.target.value)}
-                    className="w-full text-right text-[11px] text-slate-500 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={reportDate}
-                    onChange={(e) => setReportDate(e.target.value)}
-                    className="w-full text-right text-[11px] text-slate-500 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
-                  />
+                  <div className="flex items-center justify-end gap-1 group">
+                    <input
+                      type="text"
+                      value={officerName}
+                      onChange={(e) => setOfficerName(e.target.value)}
+                      className="w-full text-right font-bold border-b border-dashed border-transparent hover:border-slate-400 outline-none"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setOfficerName(text)}
+                      fieldLabel="Officer Name"
+                      iconOnly={true}
+                      className="opacity-0 group-hover:opacity-100"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-1 group">
+                    <input
+                      type="text"
+                      value={officerRank}
+                      onChange={(e) => setOfficerRank(e.target.value)}
+                      className="w-full text-right text-[11px] text-slate-600 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setOfficerRank(text)}
+                      fieldLabel="Officer Rank"
+                      iconOnly={true}
+                      className="opacity-0 group-hover:opacity-100"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-1 group">
+                    <input
+                      type="text"
+                      value={officerLocation}
+                      onChange={(e) => setOfficerLocation(e.target.value)}
+                      className="w-full text-right text-[11px] text-slate-500 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setOfficerLocation(text)}
+                      fieldLabel="Officer Location"
+                      iconOnly={true}
+                      className="opacity-0 group-hover:opacity-100"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-1 group">
+                    <input
+                      type="text"
+                      value={reportDate}
+                      onChange={(e) => setReportDate(e.target.value)}
+                      className="w-full text-right text-[11px] text-slate-500 border-b border-dashed border-transparent hover:border-slate-400 outline-none"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setReportDate(text)}
+                      fieldLabel="Report Date"
+                      iconOnly={true}
+                      className="opacity-0 group-hover:opacity-100"
+                    />
+                  </div>
                 </div>
               </div>
             )}

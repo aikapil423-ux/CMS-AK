@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { GDEntryTypeConfig, GDTemplate } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 
 interface GDTemplateModalProps {
   types: GDEntryTypeConfig[];
@@ -157,7 +158,14 @@ export function GDTemplateModal({
                 <h5 className="font-bold text-xs text-slate-900">Create Station Custom Template</h5>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">Template Title (English) *</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-semibold text-slate-700">Template Title (English) *</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setNewTitle(text)}
+                        fieldLabel="Template Title"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={newTitle}
@@ -168,7 +176,15 @@ export function GDTemplateModal({
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">शीर्षक (हिंदी)</label>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-semibold text-slate-700">शीर्षक (हिंदी)</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setNewTitleHi(text)}
+                        fieldLabel="शीर्षक हिंदी"
+                        preferredLang="hi-IN"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={newTitleHi}
@@ -180,7 +196,15 @@ export function GDTemplateModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">विषय प्रारूप (Subject Template)</label>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[11px] font-semibold text-slate-700">विषय प्रारूप (Subject Template)</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setNewSubject(text)}
+                      fieldLabel="विषय प्रारूप"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={newSubject}
@@ -191,7 +215,14 @@ export function GDTemplateModal({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">विवरण प्रारूप (Body Text Template) *</label>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[11px] font-semibold text-slate-700">विवरण प्रारूप (Body Text Template) *</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setNewBody((prev) => (prev ? `${prev} ${text}` : text))}
+                      fieldLabel="विवरण प्रारूप"
+                      preferredLang="hi-IN"
+                    />
+                  </div>
                   <textarea
                     rows={4}
                     value={newBody}

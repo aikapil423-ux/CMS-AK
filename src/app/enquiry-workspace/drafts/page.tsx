@@ -1894,6 +1894,12 @@ function EnquiryDraftsContent() {
                   className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base uppercase"
                   placeholder="POLICE DEPARTMENT"
                 />
+                <VoiceInputButton
+                  onTranscript={(text) => setHeaderLeft(text)}
+                  fieldLabel="Department Header"
+                  iconOnly={true}
+                  className="opacity-0 group-hover:opacity-100"
+                />
                 <button
                   type="button"
                   onClick={() => setHeaderLeft("")}
@@ -1911,6 +1917,12 @@ function EnquiryDraftsContent() {
                   onChange={(e) => setHeaderRight(e.target.value)}
                   className="font-bold text-slate-950 text-right bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base uppercase"
                   placeholder="DISTRICT PANIPAT"
+                />
+                <VoiceInputButton
+                  onTranscript={(text) => setHeaderRight(text)}
+                  fieldLabel="District Header"
+                  iconOnly={true}
+                  className="opacity-0 group-hover:opacity-100"
                 />
                 <button
                   type="button"
@@ -1933,6 +1945,12 @@ function EnquiryDraftsContent() {
                 onChange={(e) => setSubHeaderLeft(e.target.value)}
                 className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base w-40"
               />
+              <VoiceInputButton
+                onTranscript={(text) => setSubHeaderLeft(text)}
+                fieldLabel="Sub-header"
+                iconOnly={true}
+                className="opacity-0 group-hover:opacity-100"
+              />
               <button
                 type="button"
                 onClick={() => setSubHeaderLeft("")}
@@ -1946,7 +1964,7 @@ function EnquiryDraftsContent() {
 
           {/* Report Title Center */}
           <div className="my-2 text-center space-y-1">
-            <div className="relative group">
+            <div className="relative group flex items-center justify-center gap-1">
               <input
                 type="text"
                 value={title}
@@ -1954,16 +1972,28 @@ function EnquiryDraftsContent() {
                 className="w-full text-center text-sm sm:text-base font-black tracking-wide text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-1 uppercase"
                 placeholder="ENQUIRY REPORT ON COMPLAINT NO..."
               />
+              <VoiceInputButton
+                onTranscript={(text) => setTitle(text)}
+                fieldLabel="Report Title"
+                iconOnly={true}
+                className="opacity-0 group-hover:opacity-100"
+              />
             </div>
 
             {subTitle !== undefined && (
-              <div className="relative group">
+              <div className="relative group flex items-center justify-center gap-1">
                 <input
                   type="text"
                   value={subTitle}
                   onChange={(e) => setSubTitle(e.target.value)}
                   className="w-full text-center text-xs sm:text-sm font-bold text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-0.5"
                   placeholder="Enquiry findings are as follows -"
+                />
+                <VoiceInputButton
+                  onTranscript={(text) => setSubTitle(text)}
+                  fieldLabel="Sub Title"
+                  iconOnly={true}
+                  className="opacity-0 group-hover:opacity-100"
                 />
               </div>
             )}
@@ -2274,6 +2304,12 @@ function EnquiryDraftsContent() {
                   className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5 text-sm sm:text-base w-80"
                   placeholder="Report is submitted for perusal and orders."
                 />
+                <VoiceInputButton
+                  onTranscript={(text) => setClosingLine(text)}
+                  fieldLabel="Closing Line"
+                  iconOnly={true}
+                  className="opacity-0 group-hover:opacity-100"
+                />
                 <button
                   type="button"
                   onClick={() => setShowClosingLine(false)}
@@ -2302,30 +2338,54 @@ function EnquiryDraftsContent() {
                   </svg>
                 </div>
 
-                <input
-                  type="text"
-                  value={officerName}
-                  onChange={(e) => setOfficerName(e.target.value)}
-                  className="w-full text-right font-black text-slate-950 text-sm sm:text-base bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                  placeholder="(Satish Kumar, HPS)"
-                />
-
-                <input
-                  type="text"
-                  value={officerRank}
-                  onChange={(e) => setOfficerRank(e.target.value)}
-                  className="w-full text-right font-bold text-slate-900 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                  placeholder="Deputy Superintendent of Police"
-                />
-
-                {officerLocation && (
+                <div className="flex items-center justify-end gap-1 group">
                   <input
                     type="text"
-                    value={officerLocation}
-                    onChange={(e) => setOfficerLocation(e.target.value)}
-                    className="w-full text-right font-medium text-slate-800 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
-                    placeholder="Headquarters Panipat"
+                    value={officerName}
+                    onChange={(e) => setOfficerName(e.target.value)}
+                    className="w-full text-right font-black text-slate-950 text-sm sm:text-base bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
+                    placeholder="(Satish Kumar, HPS)"
                   />
+                  <VoiceInputButton
+                    onTranscript={(text) => setOfficerName(text)}
+                    fieldLabel="Officer Name"
+                    iconOnly={true}
+                    className="opacity-0 group-hover:opacity-100"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-1 group">
+                  <input
+                    type="text"
+                    value={officerRank}
+                    onChange={(e) => setOfficerRank(e.target.value)}
+                    className="w-full text-right font-bold text-slate-900 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
+                    placeholder="Deputy Superintendent of Police"
+                  />
+                  <VoiceInputButton
+                    onTranscript={(text) => setOfficerRank(text)}
+                    fieldLabel="Officer Rank"
+                    iconOnly={true}
+                    className="opacity-0 group-hover:opacity-100"
+                  />
+                </div>
+
+                {officerLocation && (
+                  <div className="flex items-center justify-end gap-1 group">
+                    <input
+                      type="text"
+                      value={officerLocation}
+                      onChange={(e) => setOfficerLocation(e.target.value)}
+                      className="w-full text-right font-medium text-slate-800 text-xs sm:text-sm bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-1.5 py-0.5"
+                      placeholder="Headquarters Panipat"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => setOfficerLocation(text)}
+                      fieldLabel="Officer Location"
+                      iconOnly={true}
+                      className="opacity-0 group-hover:opacity-100"
+                    />
+                  </div>
                 )}
 
                 <input

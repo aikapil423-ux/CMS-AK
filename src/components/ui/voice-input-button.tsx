@@ -9,6 +9,7 @@ interface VoiceInputButtonProps {
   fieldLabel?: string;
   className?: string;
   preferredLang?: "hi-IN" | "en-IN";
+  iconOnly?: boolean;
 }
 
 export function VoiceInputButton({
@@ -16,7 +17,8 @@ export function VoiceInputButton({
   currentValue = "",
   fieldLabel = "this field",
   className = "",
-  preferredLang = "en-IN",
+  preferredLang = "hi-IN",
+  iconOnly = false,
 }: VoiceInputButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
@@ -129,13 +131,13 @@ export function VoiceInputButton({
       >
         {isListening ? (
           <>
-            <MicOff className="w-3 h-3 text-white animate-spin" />
-            <span className="font-bold">Listening...</span>
+            <MicOff className="w-3.5 h-3.5 text-white animate-spin" />
+            {!iconOnly && <span className="font-bold">Listening...</span>}
           </>
         ) : (
           <>
-            <Mic className="w-3 h-3 text-blue-600" />
-            <span>Voice Input</span>
+            <Mic className="w-3.5 h-3.5 text-blue-600" />
+            {!iconOnly && <span>Voice Input</span>}
           </>
         )}
       </button>

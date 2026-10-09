@@ -886,6 +886,12 @@ function FIRTemplatesContent() {
                       placeholder="नाम दर्ज करें"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
                     />
+                    <VoiceInputButton
+                      onTranscript={(t) => handleFieldChange("noticeeName", t)}
+                      currentValue={formData.noticeeName || ""}
+                      fieldLabel="नाम"
+                      iconOnly
+                    />
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -896,6 +902,12 @@ function FIRTemplatesContent() {
                       onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
                       placeholder="पिता/पति का नाम"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => handleFieldChange("noticeeFather", t)}
+                      currentValue={formData.noticeeFather || ""}
+                      fieldLabel="पिता/पति का नाम"
+                      iconOnly
                     />
                   </div>
 
@@ -919,6 +931,12 @@ function FIRTemplatesContent() {
                       onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
                       placeholder="पूरा पता"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => handleFieldChange("noticeeAddress", (formData.noticeeAddress ? formData.noticeeAddress + " " : "") + t)}
+                      currentValue={formData.noticeeAddress || ""}
+                      fieldLabel="पूरा पता"
+                      iconOnly
                     />
                   </div>
 
@@ -982,7 +1000,15 @@ function FIRTemplatesContent() {
 
               {/* Allegation Paragraph */}
               <div className="space-y-1">
-                <div className="font-bold text-slate-900">संक्षिप्त विषय/आरोप:</div>
+                <div className="flex items-center justify-between">
+                  <div className="font-bold text-slate-900">संक्षिप्त विषय/आरोप:</div>
+                  <VoiceInputButton
+                    onTranscript={(t) => handleFieldChange("allegationsBrief", (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t)}
+                    currentValue={formData.allegationsBrief || ""}
+                    fieldLabel="संक्षिप्त विषय/आरोप"
+                    iconOnly
+                  />
+                </div>
                 <textarea
                   rows={3}
                   value={formData.allegationsBrief || ""}
@@ -1018,31 +1044,55 @@ function FIRTemplatesContent() {
                   </div>
                   <div>
                     <span className="block font-semibold text-slate-700 text-xs mb-1">उपस्थिति स्थान:</span>
-                    <input
-                      type="text"
-                      value={formData.appearancePlace || `कार्यालय अनुसंधान अधिकारी, ${formData.policeStation}`}
-                      onChange={(e) => handleFieldChange("appearancePlace", e.target.value)}
-                      placeholder="स्थान"
-                      className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
-                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={formData.appearancePlace || `कार्यालय अनुसंधान अधिकारी, ${formData.policeStation}`}
+                        onChange={(e) => handleFieldChange("appearancePlace", e.target.value)}
+                        placeholder="स्थान"
+                        className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
+                      />
+                      <VoiceInputButton
+                        onTranscript={(t) => handleFieldChange("appearancePlace", t)}
+                        currentValue={formData.appearancePlace || ""}
+                        fieldLabel="उपस्थिति स्थान"
+                        iconOnly
+                      />
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <span className="block font-semibold text-slate-700 text-xs mb-1">आवश्यक दस्तावेज:</span>
-                  <input
-                    type="text"
-                    value={formData.documentsRequired || ""}
-                    onChange={(e) => handleFieldChange("documentsRequired", e.target.value)}
-                    placeholder="पहचान पत्र, साक्ष्य दस्तावेज..."
-                    className="w-full text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
-                  />
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={formData.documentsRequired || ""}
+                      onChange={(e) => handleFieldChange("documentsRequired", e.target.value)}
+                      placeholder="पहचान पत्र, साक्ष्य दस्तावेज..."
+                      className="w-full text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => handleFieldChange("documentsRequired", (formData.documentsRequired ? formData.documentsRequired + ", " : "") + t)}
+                      currentValue={formData.documentsRequired || ""}
+                      fieldLabel="आवश्यक दस्तावेज"
+                      iconOnly
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Statutory Warning */}
               <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-xs leading-relaxed text-amber-950 font-medium">
-                <strong>वैधानिक चेतावनी (Statutory Clarification): </strong>
+                <div className="flex items-center justify-between">
+                  <strong>वैधानिक चेतावनी (Statutory Clarification): </strong>
+                  <VoiceInputButton
+                    onTranscript={(t) => handleFieldChange("statutoryClarification", (formData.statutoryClarification ? formData.statutoryClarification + " " : "") + t)}
+                    currentValue={formData.statutoryClarification || ""}
+                    fieldLabel="वैधानिक चेतावनी"
+                    iconOnly
+                  />
+                </div>
                 <textarea
                   rows={2}
                   value={
@@ -1204,7 +1254,15 @@ function FIRTemplatesContent() {
 
               {/* 4. श्रीमान जी, निवेदन है कि... */}
               <div className="space-y-1 text-sm">
-                <p className="font-bold text-slate-900">श्रीमान जी,</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900">श्रीमान जी,</p>
+                  <VoiceInputButton
+                    onTranscript={(t) => handleFieldChange("allegationsBrief", (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t)}
+                    currentValue={formData.allegationsBrief || ""}
+                    fieldLabel="निवेदन विवरण"
+                    iconOnly
+                  />
+                </div>
                 <div className="pl-8">
                   <textarea
                     rows={2}
@@ -1310,13 +1368,21 @@ function FIRTemplatesContent() {
                             />
                           </td>
                           <td className="p-1 border-r-2 border-slate-900 align-middle">
-                            <input
-                              type="text"
-                              value={row.reason || ""}
-                              onChange={(e) => handleUpdateCdrRow(row.id, "reason", e.target.value)}
-                              placeholder="अभियोग का संक्षिप्त विवरण व डाटा का कारण"
-                              className="w-full text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none"
-                            />
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={row.reason || ""}
+                                onChange={(e) => handleUpdateCdrRow(row.id, "reason", e.target.value)}
+                                placeholder="अभियोग का संक्षिप्त विवरण व डाटा का कारण"
+                                className="w-full text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none"
+                              />
+                              <VoiceInputButton
+                                onTranscript={(t) => handleUpdateCdrRow(row.id, "reason", (row.reason ? row.reason + " " : "") + t)}
+                                currentValue={row.reason || ""}
+                                fieldLabel="डाटा का कारण"
+                                iconOnly
+                              />
+                            </div>
                           </td>
                           <td className="p-1 text-center align-middle no-print">
                             <button

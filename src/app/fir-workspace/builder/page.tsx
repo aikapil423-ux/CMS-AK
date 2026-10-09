@@ -63,6 +63,7 @@ import { Badge } from "@/components/ui/badge";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import {
   BuilderService,
   BuilderTemplateItem,
@@ -1233,16 +1234,24 @@ function FIRTemplateBuilderContent() {
           <div className="bg-white border border-slate-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-2 flex-1 min-w-[260px]">
               <span className="text-xs font-bold text-slate-600 shrink-0">टेम्पलेट नाम:</span>
-              <input
-                type="text"
-                value={docName}
-                onChange={(e) => {
-                  setDocName(e.target.value);
-                  setHasUnsavedChanges(true);
-                }}
-                placeholder="उदा. धारा 180 बीएनएसएस बयान प्रारूप..."
-                className="text-sm font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div className="flex items-center gap-1.5 w-full">
+                <input
+                  type="text"
+                  value={docName}
+                  onChange={(e) => {
+                    setDocName(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  placeholder="उदा. धारा 180 बीएनएसएस बयान प्रारूप..."
+                  className="text-sm font-bold text-slate-900 border border-slate-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <VoiceInputButton
+                  onTranscript={(t) => setDocName(t)}
+                  currentValue={docName}
+                  fieldLabel="टेम्पलेट नाम"
+                  iconOnly
+                />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-slate-500 shrink-0">श्रेणी:</span>
@@ -1555,6 +1564,21 @@ function FIRTemplateBuilderContent() {
               >
                 <ImageIcon className="w-4 h-4 text-blue-600" />
               </button>
+            </div>
+
+            {/* Voice Dictation (बोलकर टाइप करें) */}
+            <div className="border-r border-slate-200 pr-1.5 flex items-center">
+              <VoiceInputButton
+                onTranscript={(text) => {
+                  if (editorRef.current) {
+                    editorRef.current.focus();
+                    document.execCommand("insertText", false, text + " ");
+                    handleContentChange();
+                  }
+                }}
+                fieldLabel="बोलकर टाइप करें (Voice Dictation)"
+                preferredLang="hi-IN"
+              />
             </div>
 
             {/* Dynamic Placeholder Tokens Dropdown */}

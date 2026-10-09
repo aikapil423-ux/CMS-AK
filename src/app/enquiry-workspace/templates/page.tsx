@@ -1894,6 +1894,12 @@ function NoticeTemplatesContent() {
                       placeholder="नाम दर्ज करें"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
                     />
+                    <VoiceInputButton
+                      onTranscript={(text) => handleFieldChange("noticeeName", text)}
+                      fieldLabel="नाम"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
+                    />
                   </div>
 
                   <div className="flex items-center gap-1.5">
@@ -1904,6 +1910,12 @@ function NoticeTemplatesContent() {
                       onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
                       placeholder="पिता/पति का नाम"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => handleFieldChange("noticeeFather", text)}
+                      fieldLabel="पिता/पति का नाम"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
                     />
                   </div>
 
@@ -1927,6 +1939,12 @@ function NoticeTemplatesContent() {
                       onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
                       placeholder="पूरा पता"
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => handleFieldChange("noticeeAddress", text)}
+                      fieldLabel="पता"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
                     />
                   </div>
 
@@ -4304,6 +4322,12 @@ function NoticeTemplatesContent() {
                       onChange={(e) => handleUpdateClauseTitle(clause.id, e.target.value)}
                       className="font-bold text-slate-900 bg-white border border-slate-300 rounded px-2 py-1 flex-1 uppercase tracking-wide"
                     />
+                    <VoiceInputButton
+                      onTranscript={(text) => handleUpdateClauseTitle(clause.id, text)}
+                      fieldLabel="Clause Title"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
+                    />
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
@@ -4330,12 +4354,27 @@ function NoticeTemplatesContent() {
                       </button>
                     </div>
                   </div>
-                  <textarea
-                    rows={2}
-                    value={clause.content}
-                    onChange={(e) => handleUpdateClauseContent(clause.id, e.target.value)}
-                    className="w-full text-slate-900 bg-white border border-slate-300 rounded p-2 text-xs leading-relaxed"
-                  />
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      value={clause.content}
+                      onChange={(e) => handleUpdateClauseContent(clause.id, e.target.value)}
+                      className="w-full text-slate-900 bg-white border border-slate-300 rounded p-2 pr-8 text-xs leading-relaxed"
+                    />
+                    <div className="absolute top-1.5 right-1.5">
+                      <VoiceInputButton
+                        onTranscript={(text) =>
+                          handleUpdateClauseContent(
+                            clause.id,
+                            clause.content ? `${clause.content} ${text}` : text
+                          )
+                        }
+                        fieldLabel="Clause Content"
+                        preferredLang="hi-IN"
+                        iconOnly={true}
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

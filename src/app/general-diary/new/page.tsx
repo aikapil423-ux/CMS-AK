@@ -572,13 +572,21 @@ function NewGDEntryContent() {
               </select>
 
               {selectedOfficerId === "custom" && (
-                <input
-                  type="text"
-                  value={customOfficerName}
-                  onChange={(e) => setCustomOfficerName(e.target.value)}
-                  placeholder="Enter officer name (e.g. SI Malkeet Singh)"
-                  className="w-full mt-2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900"
-                />
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={customOfficerName}
+                    onChange={(e) => setCustomOfficerName(e.target.value)}
+                    placeholder="Enter officer name (e.g. SI Malkeet Singh)"
+                    className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900"
+                  />
+                  <VoiceInputButton
+                    onTranscript={(text) => setCustomOfficerName(text)}
+                    fieldLabel="Officer Name"
+                    preferredLang="hi-IN"
+                    iconOnly={true}
+                  />
+                </div>
               )}
             </div>
 
@@ -618,10 +626,17 @@ function NewGDEntryContent() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-600" />
-                <span>Time *</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Time *</span>
+                </label>
+                <VoiceInputButton
+                  onTranscript={(text) => setActivityTime(text)}
+                  fieldLabel="Time"
+                  iconOnly={true}
+                />
+              </div>
               <input
                 type="text"
                 value={activityTime}

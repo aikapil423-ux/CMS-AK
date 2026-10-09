@@ -42,6 +42,7 @@ interface ZimniEntryRow {
   dateTime: string;
   srNo: string;
   narration: string;
+  hasBottomBorder?: boolean;
 }
 
 interface AdditionalSignature {
@@ -52,11 +53,29 @@ interface AdditionalSignature {
   date: string;
 }
 
+interface VerticalBordersConfig {
+  outerLeft: boolean;
+  col1ToCol2: boolean;
+  col2ToCol3: boolean;
+  outerRight: boolean;
+}
+
+interface HorizontalBordersConfig {
+  outerTop: boolean;
+  headerBottom: boolean;
+  caseHeadingBottom: boolean;
+  closingTop: boolean;
+  outerBottom: boolean;
+}
+
 interface ZimniProformaData {
   formNumberText: string;
   reportTitleText: string;
   showHeader: boolean;
   borderStyle: "box" | "thin" | "none";
+  borderWidth: "1px" | "2px" | "3px";
+  verticalBorders: VerticalBordersConfig;
+  horizontalBorders: HorizontalBordersConfig;
   leftHeaderLines: HeaderLine[];
   rightHeaderLines: HeaderLine[];
   col1Title: string;
@@ -81,6 +100,20 @@ const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
   reportTitleText: "रिपोर्ट जिमनी",
   showHeader: true,
   borderStyle: "box",
+  borderWidth: "2px",
+  verticalBorders: {
+    outerLeft: true,
+    col1ToCol2: true,
+    col2ToCol3: true,
+    outerRight: true,
+  },
+  horizontalBorders: {
+    outerTop: true,
+    headerBottom: true,
+    caseHeadingBottom: false,
+    closingTop: true,
+    outerBottom: true,
+  },
   leftHeaderLines: [
     { id: "lh_1", text: "थाना सैक्टर 20 पंचकूला" },
     { id: "lh_2", text: "मु०नं० 137 दिनांक 24.08.2024" },
@@ -90,7 +123,7 @@ const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
   ],
   rightHeaderLines: [
     { id: "rh_1", text: "पुलिस आयुक्तालय पंचकूला" },
-    { id: "rh_2", text: "जिमनी न० 16" },
+    { id: "rh_2", text: "जिमनी न० 17" },
     { id: "rh_3", text: "प्राप्ति तिथी...." },
     { id: "rh_4", text: "रवानगी तिथी...." },
   ],
@@ -99,32 +132,106 @@ const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
   col3Title: "अनुसंधान का विवरण",
   showCaseHeading: true,
   stateLine:
-    "राज्य द्वारा:- ललिता देवी पत्नी श्री फूलपाला निवासी वार्ड न. 2 दरभंगा थाना कलियानपुर जिला समस्तीपुर बिहार) हाल निवासी मकान न. 357 गांव अभयपुर सैक्टर 19 पंचकूला थाना सैक्टर 20 पंचकूला।",
+    "राज्य द्वारा:- ललिता देवी पत्नी श्री फूतुपाला निवासी वार्ड न. 2 दरभंगा थाना कलियानपुर जिला समस्तीपुर बिहार। हाल निवासी मकान न. 357 गांव अभयपुर सैक्टर 19 पंचकूला थाना सैक्टर 20 पंचकूला।",
   accusedLine:
     "बनाम:- ------------------------*--------------------------*--------------------------",
   ioLine:
-    "अनुसन्धानकर्ता:- स.उप.नि. जसबीर सिंह नं. 128/पंचकूला पुलिस चौकी सैक्टर 19 पंचकूला।",
+    "अनुसन्धानकर्ता:- स.उप.नि. जसबीर सिंह न. 128/पंचकूला पुलिस चौकी सैक्टर 19 पंचकूला।",
   salutation: "श्रीमान जी,",
   entries: [
     {
       id: "entry_1",
-      dateTime: "दिनांक\n10.11.2024\nसमय\n08.30.ए.एम.",
+      dateTime: "दिनांक\n11.11.2024\nसमय\n07.00.ए.एम.",
       srNo: "1.",
       narration:
-        "बा सिलसिला रिपोर्ट जिमनी पुर्व लिखित खुद के पश्चात निवेदन है कि समय गैर होने के कारण जिमनी हजा को बंद किया गया था जो अभियोग में नामजद आरोपी रोशन पुत्र सरजु वासी गांव मिशरौली माफी जिला अमेठी यू.पी. की गिरफ्तारी बकाया है जो उसका बड़ा भाई दीपक जोकि मुम्बई (बाम्बे) में रहता है जो अपने भाई दीपक के पास जाना मालूम हुआ है जो आरोपी की तलाश की जानी है जो बराए तलाश मन स.उप.नि. मय साथी कर्मचारी सि. अंकित न. 173/पंचकूला, HGH प्रदीप कुमार न. 6618/पंचकूला के रवाना बा सवारी ट्रेन (पश्चिमी एक्सप्रेस चंडीगढ़ टू बोम्बे) रवाना मुम्बई जिला महाराष्ट्र का होता हूं।",
+        "बा सिलसिला रिपोर्ट जिमनी पूर्व लिखित खुद के पश्चात निवेदन है कि समय गैर होने के कारण जिमनी हजा को बंद किया गया था जो अभियोग में नामजद आरोपी रोशन पुत्र सरजू वासी गांव मिशरौली माफी जिला अमेठी यू.पी. की गिरफ्तारी बकाया है जिसकी तलाश आरोपी रोशन के मोबाईल नम्बर की लोकेशन मुताबिक फेस 2 तलोजा, नवी मुंबई जिला महाराष्ट्र में की गई थी लेकिन सुराग नहीं चला था जो साईबर सेल से आरोपी रोशन के मोबाईल नम्बर 8528471236 की लोकेशन एन.आर.आप सागरी जिला नवी मुंबई के आस पास की होनी पाई गई है जो आरोपी की तलाश की जानी है जो बराए तलाश मन स.उप.नि. मय साथी कर्मचारी सि. अंकित न. 173/पंचकूला, HGH प्रदीप कुमार न. 6618/पंचकूला के बा सवारी गाड़ी प्राईवेट के रवाना थाना एन.आर.आय सागरी जिला नवी मुंबई का होता हूं।",
+      hasBottomBorder: false,
     },
     {
       id: "entry_2",
       dateTime: "",
       srNo: "2.",
       narration:
-        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के थाना तलोजा जिला नवी मुंबई महाराष्ट्र पहुंचा हूं जहां पर अभियोग की तफ्तीश में आने जाने बारे आमद रवानगी करवाई गई जो आरोपी रोशन के मोबाईल नम्बर की लोकेशन मुताबिक फेस 2 तलोजा, नवी मुंबई जिला महाराष्ट्र में जाकर तलाश की गई जो आरोपी रोशन की तलाश करने उपरांत कोई सुराग नहीं चल सका जो समय गैर हो चुका है जो आईन्दा आरोपी रोशन बारे तलाश करके आगामी कार्यवाही अमल में लाई जाएगी। हालात इन्चार्ज चौकी को बजरिया फोन बतलाए गए। मन स.उप.नि. अन्य कार सरकार में व्यस्त होता हूं।",
+        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के थाना एन.आर.आय सागरी जिला नवी मुंबई महाराष्ट्र पहुंचा हूं जहां पर MHC थाना हाजिर मिले जिनको हालात अभियोग बतलाकर अभियोग की तफ्तीश में आने जाने बारे आमद रवानगी करवाई गई जो आरोपी रोशन की तलाश की गई लेकिन कोई सुराग नहीं चल सका है जो आरोपी रोशन के भाई दीपक के मोबाईल नम्बर 6394482571 के मुताबिक दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई पाया गया है जो मन स.उप.नि. मय साथी कर्मचारियों के प्राईवेट गाड़ी के रवाना गांव खूनी थाना मानपाडा जिला ठाणे मुंबई का होता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_3",
+      dateTime: "",
+      srNo: "3.",
+      narration:
+        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के प्राईवेट गाड़ी के गांव खूनी थाना मानपाडा जिला ठाणे मुंबई पहुंचा हूं जहां पर दीपक पुत्र सरजू प्रसाद गांव खूनी थाना मानपाडा जिला ठाणे मुंबई हाजिर मिला है जिसका हालात अभियोग बतलाकर शामिल तफ्तीश पूछताछ में व्यस्त होता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_4",
+      dateTime: "पुछताछ",
+      srNo: "4.",
+      narration:
+        "इस समय मेरी पुछताछ पर दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मैं पेन्ट का काम करता हूं जो रोशन मेरा छोटा भाई है जो मेरे घर से पता चला था कि काम के सिलसिले में मेरा भाई रोशन करीब 5-6 दिनों से मुम्बई आया हुआ है लेकिन वह मेरे घर पर नहीं आया, लेकिन मेरे को उसके बारे कुछ नहीं पता कि वह कहां पर रह रहा है और ना ही मैं उसके बारे में कुछ जानता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_5",
+      dateTime: "",
+      srNo: "5.",
+      narration:
+        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई को उसके भाई रोशन को पेश करने के लिए एक नोटिस 35 BNS लिखकर दिया गया व नोटिस की एक कापी पर रिसीव ली गई जिसने अपने भाई रोशन को पुलिस चौकी सैक्टर 19 पंचकूला में पेश करने का वादा किया है व इसी समय वहां पर राजबीर पुत्र श्री मिश्री राज वासी कोटा राजस्थान नाम का ठेकेदार हाजिर मिला जिसको हालात अभियोग बतलाकर पुछताछ में व्यस्त होता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_6",
+      dateTime: "पुछताछ",
+      srNo: "6.",
+      narration:
+        "इस समय मेरी पुछताछ पर राजबीर पुत्र श्री मिश्री राज वासी कोटा राजस्थान ने बतलाया कि मैं उपरोक्त नाम पते का रहने वाला हूं और पेन्ट का ठेकेदार हूं जो मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं और मेरा एक साथी राहुल नाम का ठेकेदार मेरा दोस्त है जो पनवेल नई मुम्बई ठेकेदारी का काम करते हैं जिसके पास काफी लड़के काम करते हैं वहां पर काफी लड़के यू.पी. के आए हुए हैं शायद उनके रोशन नाम का लड़का वहीं पर काम करता होगा।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_7",
+      dateTime: "",
+      srNo: "7.",
+      narration:
+        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश को बाद हिदायत फारिग करके मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के रवाना पनवेल करंजाडे नई मुम्बई का रवाना होता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_8",
+      dateTime: "",
+      srNo: "8.",
+      narration:
+        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के पनवेल करंजाडे नई मुम्बई पहुंचा हूं जहां पर राहुल शेखावत पुत्र श्री हुकम सिंह शेखावत... अजब कुमार पुत्र जवाहर लाल गांव रूपेपुर थाना अन्तु जिला प्रतापगढ़ यू.पी. हाजिर मिला जिनको हालात अभियोग बतलाकर पुछताछ में व्यस्त होता हूं।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_9",
+      dateTime: "पुछताछ",
+      srNo: "9.",
+      narration:
+        "इस समय मेरी पुछताछ पर राहुल शेखावत पुत्र श्री हुकम सिंह शेखावत ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं जो आप रोशन बारे पूछ रहे हो वह लड़का रोशन मेरे से करीब 2 दिनों पहले यहां से चला गया था क्योंकि उसका वजन 38 किलो था इस मारे कंपनी ने उस व्यक्ति को काम पर नहीं रखा। उसके बाद मेरे को ना तो रोशन मिला और ना ही उसका पता कि वह कहां पर रहता है।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_10",
+      dateTime: "पुछताछ",
+      srNo: "10.",
+      narration:
+        "इस समय मेरी पुछताछ पर अजब कुमार पुत्र जवाहर लाल गांव रूपेपुर थाना अन्तु जिला प्रतापगढ़ यू.पी. ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं जो आप रोशन बारे पूछ रहे हो वह मेरी बुआ जी का लड़का है जो मुझे गांव से ही पता चला था कि रोशन भी काम के सिलसिले में मुंबई आया हुआ है लेकिन मैं उसका पता नहीं जानता कि वह कहां पर रह रहा है यदि मुझे उसके पते बारे कुछ पता चला तो मैं आपको बतला दूंगा।",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_11",
+      dateTime: "",
+      srNo: "11.",
+      narration:
+        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश को बाद हिदायत फारिग किया गया जो समय गैर हो चुका है जो आईन्दा अभियोग में रोशन के शामिल तफ्तीश होने पर आगामी कार्यवाही अमल में लाई जाएगी। हालात अभियोग बारे इन्चार्ज चौकी थाना प्रबन्धक थाना को बजरिया फोन बतलाए गए। मन स.उप.नि. साथी कर्मचारियों के रवाना पंचकूला का होता हूं।",
+      hasBottomBorder: false,
     },
   ],
   closingText: "रिपोर्ट जिमनी लिखी सेवा में प्रस्तुत है।",
-  officerNameRank: "स.उप.नि. जसबीर सिंह नं. 128/पंचकूला",
+  officerNameRank: "स.उप.नि. जसबीर सिंह न. 128/पंचकूला",
   officerPost: "पुलिस चौकी सैक्टर 19 पंचकूला",
-  signDate: "दिनांक - 10.11.2024",
+  signDate: "दिनांक - 11.11.2024",
   hasSignatureGraphic: true,
   additionalSignatures: [],
 };
@@ -389,23 +496,148 @@ function ZimniWorkspaceContent() {
     }));
   };
 
-  // Border CSS classes
-  const getBorderClasses = () => {
-    if (data.borderStyle === "none") return "border-none";
-    if (data.borderStyle === "thin") return "border border-slate-400";
-    return "border-2 border-slate-900"; // Formal Black Box
+  // Border Manipulation Handlers
+  const handleToggleRowBottomBorder = (rowId: string) => {
+    setData((prev) => ({
+      ...prev,
+      entries: prev.entries.map((e) =>
+        e.id === rowId ? { ...e, hasBottomBorder: !e.hasBottomBorder } : e
+      ),
+    }));
   };
 
-  const getCellDividerClasses = () => {
-    if (data.borderStyle === "none") return "";
-    if (data.borderStyle === "thin") return "border-r border-slate-400";
-    return "border-r-2 border-slate-900";
+  const handleAddAllHorizontalBorders = () => {
+    setData((prev) => ({
+      ...prev,
+      entries: prev.entries.map((e) => ({ ...e, hasBottomBorder: true })),
+    }));
   };
 
-  const getBottomDividerClasses = () => {
-    if (data.borderStyle === "none") return "";
-    if (data.borderStyle === "thin") return "border-b border-slate-400";
-    return "border-b-2 border-slate-900";
+  const handleRemoveAllHorizontalBorders = () => {
+    setData((prev) => ({
+      ...prev,
+      entries: prev.entries.map((e) => ({ ...e, hasBottomBorder: false })),
+    }));
+  };
+
+  const handleToggleVerticalBorder = (key: keyof VerticalBordersConfig) => {
+    setData((prev) => ({
+      ...prev,
+      verticalBorders: {
+        ...prev.verticalBorders,
+        [key]: !prev.verticalBorders[key],
+      },
+    }));
+  };
+
+  const handleToggleHorizontalBorder = (key: keyof HorizontalBordersConfig) => {
+    setData((prev) => ({
+      ...prev,
+      horizontalBorders: {
+        ...prev.horizontalBorders,
+        [key]: !prev.horizontalBorders[key],
+      },
+    }));
+  };
+
+  const handleSetBorderWidth = (w: "1px" | "2px" | "3px") => {
+    setData((prev) => ({
+      ...prev,
+      borderWidth: w,
+    }));
+  };
+
+  const applyPreset = (preset: "original" | "full_grid" | "none") => {
+    if (preset === "original") {
+      setData((prev) => ({
+        ...prev,
+        borderStyle: "box",
+        borderWidth: "2px",
+        verticalBorders: {
+          outerLeft: true,
+          col1ToCol2: true,
+          col2ToCol3: true,
+          outerRight: true,
+        },
+        horizontalBorders: {
+          outerTop: true,
+          headerBottom: true,
+          caseHeadingBottom: false,
+          closingTop: true,
+          outerBottom: true,
+        },
+        entries: prev.entries.map((e) => ({ ...e, hasBottomBorder: false })),
+      }));
+    } else if (preset === "full_grid") {
+      setData((prev) => ({
+        ...prev,
+        borderStyle: "box",
+        borderWidth: "2px",
+        verticalBorders: {
+          outerLeft: true,
+          col1ToCol2: true,
+          col2ToCol3: true,
+          outerRight: true,
+        },
+        horizontalBorders: {
+          outerTop: true,
+          headerBottom: true,
+          caseHeadingBottom: true,
+          closingTop: true,
+          outerBottom: true,
+        },
+        entries: prev.entries.map((e) => ({ ...e, hasBottomBorder: true })),
+      }));
+    } else if (preset === "none") {
+      setData((prev) => ({
+        ...prev,
+        borderStyle: "none",
+        verticalBorders: {
+          outerLeft: false,
+          col1ToCol2: false,
+          col2ToCol3: false,
+          outerRight: false,
+        },
+        horizontalBorders: {
+          outerTop: false,
+          headerBottom: false,
+          caseHeadingBottom: false,
+          closingTop: false,
+          outerBottom: false,
+        },
+        entries: prev.entries.map((e) => ({ ...e, hasBottomBorder: false })),
+      }));
+    }
+  };
+
+  const bw = data.borderWidth || "2px";
+  const borderCol = "#0f172a";
+
+  const tableContainerStyle: React.CSSProperties = {
+    borderTop: data.horizontalBorders?.outerTop ? `${bw} solid ${borderCol}` : "none",
+    borderBottom: data.horizontalBorders?.outerBottom ? `${bw} solid ${borderCol}` : "none",
+    borderLeft: data.verticalBorders?.outerLeft ? `${bw} solid ${borderCol}` : "none",
+    borderRight: data.verticalBorders?.outerRight ? `${bw} solid ${borderCol}` : "none",
+  };
+
+  const col1DividerStyle: React.CSSProperties = {
+    borderRight: data.verticalBorders?.col1ToCol2 ? `${bw} solid ${borderCol}` : "none",
+  };
+
+  const col2DividerStyle: React.CSSProperties = {
+    borderRight: data.verticalBorders?.col2ToCol3 ? `${bw} solid ${borderCol}` : "none",
+  };
+
+  const headerBottomStyle: React.CSSProperties = {
+    borderBottom: data.horizontalBorders?.headerBottom ? `${bw} solid ${borderCol}` : "none",
+  };
+
+  const caseHeadingBottomStyle: React.CSSProperties = {
+    borderBottom: data.horizontalBorders?.caseHeadingBottom ? `${bw} solid ${borderCol}` : "none",
+  };
+
+  const closingTopStyle: React.CSSProperties = {
+    borderTop: data.horizontalBorders?.closingTop ? `${bw} solid ${borderCol}` : "none",
   };
 
   return (
@@ -458,7 +690,7 @@ function ZimniWorkspaceContent() {
               </span>
             </h1>
             <p className="text-xs text-slate-500 font-medium">
-              Statutory Case Diary / Zimni under Section 175 BNSS & PPR 25.54 • सम्पूर्ण प्रोफार्मा १००% एडिटेबल (Border, Content, Header)
+              Statutory Case Diary / Zimni under Section 175 BNSS &amp; PPR 25.54 • सम्पूर्ण प्रोफार्मा १००% एडिटेबल (Border, Content, Header)
             </p>
           </div>
         </div>
@@ -550,47 +782,9 @@ function ZimniWorkspaceContent() {
           </div>
         </div>
 
-        {/* Toolbar for Customization (Border, Headers, Font Size) */}
+        {/* Visibility Toggles & Font Size */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Border Style Toggle */}
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-slate-600 text-[11px]">बॉर्डर शैली:</span>
-              <button
-                type="button"
-                onClick={() => setData((p) => ({ ...p, borderStyle: "box" }))}
-                className={`px-2 py-1 rounded text-xs font-bold border transition-colors ${
-                  data.borderStyle === "box"
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                बॉक्स बॉर्डर (Full Box)
-              </button>
-              <button
-                type="button"
-                onClick={() => setData((p) => ({ ...p, borderStyle: "thin" }))}
-                className={`px-2 py-1 rounded text-xs font-bold border transition-colors ${
-                  data.borderStyle === "thin"
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                पतली बॉर्डर (Thin)
-              </button>
-              <button
-                type="button"
-                onClick={() => setData((p) => ({ ...p, borderStyle: "none" }))}
-                className={`px-2 py-1 rounded text-xs font-bold border transition-colors ${
-                  data.borderStyle === "none"
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                बिना बॉर्डर (None)
-              </button>
-            </div>
-
             {/* Toggle Header Visibility */}
             <button
               type="button"
@@ -637,6 +831,214 @@ function ZimniWorkspaceContent() {
                 {sz === "compact" ? "छोटा" : sz === "normal" ? "मध्यम" : "बड़ा"}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* ================= GRANULAR BORDER & LINE CONTROLLER (HORIZONTAL & VERTICAL LINES) ================= */}
+        <div className="pt-2 border-t border-slate-200 space-y-2.5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 flex items-center gap-1">
+                <span>📐 बॉर्डर व रेखा नियंत्रक (Border &amp; Line Manager):</span>
+              </span>
+            </div>
+
+            {/* Presets */}
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-[11px] font-bold text-slate-600">प्रीसेट:</span>
+              <button
+                type="button"
+                onClick={() => applyPreset("original")}
+                className="px-2.5 py-1 rounded text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs"
+                title="हरियाणा पुलिस मूल प्रारूप (बाहरी बॉक्स + कॉलम रेखाएं, पंक्तियों के बीच रेखाएं नहीं)"
+              >
+                ★ मूल प्रारूप (Photo Sample)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("full_grid")}
+                className="px-2.5 py-1 rounded text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300"
+                title="हर पंक्ति में क्षैतिज रेखा चालू करें"
+              >
+                ▦ पूर्ण ग्रिड (Full Grid)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("none")}
+                className="px-2.5 py-1 rounded text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+                title="बिना बॉर्डर"
+              >
+                बिना बॉर्डर (None)
+              </button>
+            </div>
+
+            {/* Line Thickness */}
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-slate-600">मोटाई:</span>
+              {(["1px", "2px", "3px"] as const).map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => handleSetBorderWidth(w)}
+                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
+                    (data.borderWidth || "2px") === w
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  {w === "1px" ? "1px (पतली)" : w === "2px" ? "2px (मानक)" : "3px (मोटी)"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Granular Toggles for Vertical & Horizontal Border Lines */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+            {/* Vertical Lines (खड़ी रेखाएं) */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-700 block">
+                खड़ी रेखाएं (Vertical Lines) जोड़ें / हटाएं:
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleToggleVerticalBorder("outerLeft")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.verticalBorders?.outerLeft
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  | बायां बॉर्डर (Outer Left)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleVerticalBorder("col1ToCol2")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.verticalBorders?.col1ToCol2
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  | कॉलम १-२ रेखा (तिथि - क्रं.स.)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleVerticalBorder("col2ToCol3")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.verticalBorders?.col2ToCol3
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  | कॉलम २-३ रेखा (क्रं.स. - विवरण)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleVerticalBorder("outerRight")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.verticalBorders?.outerRight
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  | दायां बॉर्डर (Outer Right)
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal Lines (आड़ी / क्षैतिज रेखाएं) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 block">
+                  आड़ी / क्षैतिज रेखाएं (Horizontal Lines) जोड़ें / हटाएं:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleAddAllHorizontalBorders}
+                    className="text-[11px] font-bold text-blue-700 hover:underline px-1"
+                    title="सभी प्रविष्टियों के नीचे रेखा जोड़ें"
+                  >
+                    + सबमें जोड़ें
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAllHorizontalBorders}
+                    className="text-[11px] font-bold text-red-600 hover:underline px-1"
+                    title="सभी प्रविष्टियों की रेखाएं हटाएं"
+                  >
+                    - सब हटाएं (मूल)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleToggleHorizontalBorder("outerTop")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.horizontalBorders?.outerTop
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  — ऊपरी आउटर रेखा
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleHorizontalBorder("headerBottom")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.horizontalBorders?.headerBottom
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  — हेडर के नीचे रेखा
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleHorizontalBorder("caseHeadingBottom")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.horizontalBorders?.caseHeadingBottom
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  — राज्य/बनाम रेखा
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleHorizontalBorder("closingTop")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.horizontalBorders?.closingTop
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  — हस्ताक्षर के ऊपर रेखा
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleHorizontalBorder("outerBottom")}
+                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
+                    data.horizontalBorders?.outerBottom
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-slate-400 border-slate-200 line-through"
+                  }`}
+                >
+                  — निचली आउटर रेखा
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -741,11 +1143,20 @@ function ZimniWorkspaceContent() {
           )}
 
           {/* ================= THE MAIN 3-COLUMN STATUTORY BOX TABLE ================= */}
-          <div className={`w-full ${getBorderClasses()} rounded-none`}>
+          <div
+            className="w-full rounded-none"
+            style={tableContainerStyle}
+          >
             {/* Table Header Row (Column Titles) */}
-            <div className={`grid grid-cols-12 font-bold text-slate-950 ${getBottomDividerClasses()} bg-slate-50/40 text-center`}>
+            <div
+              className="grid grid-cols-12 font-bold text-slate-950 bg-slate-50/40 text-center"
+              style={headerBottomStyle}
+            >
               {/* Column 1 Title */}
-              <div className={`col-span-2 p-2 ${getCellDividerClasses()} flex items-center justify-center`}>
+              <div
+                className="col-span-2 p-2 flex items-center justify-center"
+                style={col1DividerStyle}
+              >
                 <input
                   type="text"
                   value={data.col1Title}
@@ -756,7 +1167,10 @@ function ZimniWorkspaceContent() {
               </div>
 
               {/* Column 2 Title */}
-              <div className={`col-span-1 p-2 ${getCellDividerClasses()} flex items-center justify-center`}>
+              <div
+                className="col-span-1 p-2 flex items-center justify-center"
+                style={col2DividerStyle}
+              >
                 <input
                   type="text"
                   value={data.col2Title}
@@ -780,9 +1194,18 @@ function ZimniWorkspaceContent() {
 
             {/* Case Headings Inside Top of Column 3 (राज्य द्वारा, बनाम, अनुसन्धानकर्ता, श्रीमान जी) */}
             {data.showCaseHeading && (
-              <div className={`grid grid-cols-12 ${getBottomDividerClasses()}`}>
-                <div className={`col-span-2 ${getCellDividerClasses()} bg-slate-50/20`}></div>
-                <div className={`col-span-1 ${getCellDividerClasses()} bg-slate-50/20`}></div>
+              <div
+                className="grid grid-cols-12"
+                style={caseHeadingBottomStyle}
+              >
+                <div
+                  className="col-span-2 bg-slate-50/20"
+                  style={col1DividerStyle}
+                ></div>
+                <div
+                  className="col-span-1 bg-slate-50/20"
+                  style={col2DividerStyle}
+                ></div>
                 <div className="col-span-9 p-3 space-y-2">
                   {/* State / Complainant Line */}
                   <div className="flex items-start gap-1">
@@ -792,6 +1215,12 @@ function ZimniWorkspaceContent() {
                       onChange={(e) => setData((p) => ({ ...p, stateLine: e.target.value }))}
                       placeholder="राज्य द्वारा:- ..."
                       className="w-full font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y leading-relaxed"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => setData((p) => ({ ...p, stateLine: (p.stateLine ? p.stateLine + " " : "") + t }))}
+                      currentValue={data.stateLine}
+                      fieldLabel="राज्य द्वारा विवरण"
+                      iconOnly
                     />
                   </div>
 
@@ -804,6 +1233,12 @@ function ZimniWorkspaceContent() {
                       placeholder="बनाम:- ..."
                       className="w-full font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y"
                     />
+                    <VoiceInputButton
+                      onTranscript={(t) => setData((p) => ({ ...p, accusedLine: (p.accusedLine ? p.accusedLine + " " : "") + t }))}
+                      currentValue={data.accusedLine}
+                      fieldLabel="बनाम विवरण"
+                      iconOnly
+                    />
                   </div>
 
                   {/* IO Line */}
@@ -815,10 +1250,16 @@ function ZimniWorkspaceContent() {
                       placeholder="अनुसन्धानकर्ता:- ..."
                       className="w-full font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y"
                     />
+                    <VoiceInputButton
+                      onTranscript={(t) => setData((p) => ({ ...p, ioLine: (p.ioLine ? p.ioLine + " " : "") + t }))}
+                      currentValue={data.ioLine}
+                      fieldLabel="अनुसन्धानकर्ता विवरण"
+                      iconOnly
+                    />
                   </div>
 
                   {/* Salutation */}
-                  <div className="pt-1">
+                  <div className="pt-1 flex items-center justify-between">
                     <input
                       type="text"
                       value={data.salutation}
@@ -826,6 +1267,14 @@ function ZimniWorkspaceContent() {
                       placeholder="श्रीमान जी,"
                       className="font-bold text-slate-950 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={() => handleToggleHorizontalBorder("caseHeadingBottom")}
+                      className="no-print text-[10px] font-bold px-2 py-0.5 rounded border border-slate-300 hover:bg-amber-50 text-slate-600"
+                      title="इस विवरण के नीचे क्षैतिज रेखा चालू या बंद करें"
+                    >
+                      नीचे रेखा: {data.horizontalBorders?.caseHeadingBottom ? "ऑन" : "ऑफ"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -835,23 +1284,44 @@ function ZimniWorkspaceContent() {
             {data.entries.map((entry, index) => (
               <div
                 key={entry.id}
-                className={`grid grid-cols-12 group relative ${
-                  index !== data.entries.length - 1 ? getBottomDividerClasses() : ""
-                }`}
+                className="grid grid-cols-12 group relative"
+                style={{
+                  borderBottom: entry.hasBottomBorder
+                    ? `${bw} solid ${borderCol}`
+                    : "none",
+                }}
               >
-                {/* Column 1: Date & Time */}
-                <div className={`col-span-2 p-2 sm:p-3 ${getCellDividerClasses()} align-top flex flex-col justify-start`}>
+                {/* Column 1: Date & Time / पुछताछ */}
+                <div
+                  className="col-span-2 p-2 sm:p-3 align-top flex flex-col justify-start relative group/col1"
+                  style={col1DividerStyle}
+                >
                   <textarea
-                    rows={4}
+                    rows={Math.max(2, (entry.dateTime || "").split("\n").length)}
                     value={entry.dateTime}
                     onChange={(e) => handleUpdateEntry(entry.id, "dateTime", e.target.value)}
                     placeholder={"दिनांक\n..\nसमय\n.."}
                     className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y leading-tight whitespace-pre-line"
                   />
+                  <div className="no-print absolute top-1 right-1 opacity-0 group-hover/col1:opacity-100 transition-opacity">
+                    <VoiceInputButton
+                      currentValue={entry.dateTime}
+                      fieldLabel="तिथि / समय"
+                      preferredLang="hi-IN"
+                      iconOnly
+                      onTranscript={(text) => {
+                        const updated = entry.dateTime ? `${entry.dateTime} ${text}` : text;
+                        handleUpdateEntry(entry.id, "dateTime", updated);
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Column 2: Serial Number */}
-                <div className={`col-span-1 p-2 sm:p-3 ${getCellDividerClasses()} text-center align-top`}>
+                <div
+                  className="col-span-1 p-2 sm:p-3 text-center align-top"
+                  style={col2DividerStyle}
+                >
                   <input
                     type="text"
                     value={entry.srNo}
@@ -887,44 +1357,77 @@ function ZimniWorkspaceContent() {
                   </div>
 
                   {/* Row Controls Bar (Shown on hover in interactive mode) */}
-                  <div className="no-print opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-end gap-2 pt-1 border-t border-dashed border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => handleAddEntryRow(index)}
-                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>नीचे नई पंक्ति जोड़ें</span>
-                    </button>
-
-                    {data.entries.length > 1 && (
+                  <div className="no-print opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-2 pt-1 border-t border-dashed border-slate-200">
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => handleDeleteEntryRow(entry.id)}
-                        className="text-[11px] font-bold text-red-600 hover:text-red-800 hover:underline flex items-center gap-1"
+                        onClick={() => handleToggleRowBottomBorder(entry.id)}
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 transition-colors ${
+                          entry.hasBottomBorder
+                            ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                            : "bg-slate-50 text-slate-700 border-slate-300 hover:bg-amber-50"
+                        }`}
+                        title="इस पंक्ति के नीचे क्षैतिज रेखा जोड़ें या हटाएं"
                       >
-                        <Trash2 className="w-3 h-3" />
-                        <span>पंक्ति हटाएं</span>
+                        <span>नीचे रेखा:</span>
+                        <span>{entry.hasBottomBorder ? "✓ ऑन" : "✕ ऑफ"}</span>
                       </button>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleAddEntryRow(index)}
+                        className="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>नीचे नई पंक्ति जोड़ें</span>
+                      </button>
+
+                      {data.entries.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEntryRow(entry.id)}
+                          className="text-[11px] font-bold text-red-600 hover:text-red-800 hover:underline flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>पंक्ति हटाएं</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
 
             {/* ================= CLOSING STATEMENT & SIGNATURE BLOCK ================= */}
-            <div className={`grid grid-cols-12 ${getBorderClasses().includes("border") ? "border-t-2 border-slate-900" : ""}`}>
-              <div className={`col-span-2 ${getCellDividerClasses()} bg-slate-50/20`}></div>
-              <div className={`col-span-1 ${getCellDividerClasses()} bg-slate-50/20`}></div>
+            <div
+              className="grid grid-cols-12"
+              style={closingTopStyle}
+            >
+              <div
+                className="col-span-2 bg-slate-50/20"
+                style={col1DividerStyle}
+              ></div>
+              <div
+                className="col-span-1 bg-slate-50/20"
+                style={col2DividerStyle}
+              ></div>
               <div className="col-span-9 p-4 space-y-4">
                 {/* Closing Presentation Line */}
-                <div>
+                <div className="flex items-center gap-1">
                   <input
                     type="text"
                     value={data.closingText}
                     onChange={(e) => setData((p) => ({ ...p, closingText: e.target.value }))}
                     placeholder="रिपोर्ट जिमनी लिखी सेवा में प्रस्तुत है।"
                     className="w-full font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none"
+                  />
+                  <VoiceInputButton
+                    onTranscript={(t) => setData((p) => ({ ...p, closingText: t }))}
+                    currentValue={data.closingText}
+                    fieldLabel="समापन विवरण"
+                    iconOnly
                   />
                 </div>
 
@@ -937,27 +1440,43 @@ function ZimniWorkspaceContent() {
                     </div>
                   )}
 
-                  <input
-                    type="text"
-                    value={data.officerNameRank}
-                    onChange={(e) => setData((p) => ({ ...p, officerNameRank: e.target.value }))}
-                    placeholder="स.उप.नि. जसबीर सिंह नं. 128/पंचकूला"
-                    className="text-right font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none w-72"
-                  />
+                  <div className="flex items-center justify-end gap-1 w-full">
+                    <input
+                      type="text"
+                      value={data.officerNameRank}
+                      onChange={(e) => setData((p) => ({ ...p, officerNameRank: e.target.value }))}
+                      placeholder="स.उप.नि. जसबीर सिंह न. 128/पंचकूला"
+                      className="text-right font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none w-72"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => setData((p) => ({ ...p, officerNameRank: t }))}
+                      currentValue={data.officerNameRank}
+                      fieldLabel="अधिकारी का नाम"
+                      iconOnly
+                    />
+                  </div>
 
-                  <input
-                    type="text"
-                    value={data.officerPost}
-                    onChange={(e) => setData((p) => ({ ...p, officerPost: e.target.value }))}
-                    placeholder="पुलिस चौकी सैक्टर 19 पंचकूला"
-                    className="text-right font-medium text-slate-800 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none w-72"
-                  />
+                  <div className="flex items-center justify-end gap-1 w-full">
+                    <input
+                      type="text"
+                      value={data.officerPost}
+                      onChange={(e) => setData((p) => ({ ...p, officerPost: e.target.value }))}
+                      placeholder="पुलिस चौकी सैक्टर 19 पंचकूला"
+                      className="text-right font-medium text-slate-800 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none w-72"
+                    />
+                    <VoiceInputButton
+                      onTranscript={(t) => setData((p) => ({ ...p, officerPost: t }))}
+                      currentValue={data.officerPost}
+                      fieldLabel="पदस्थापना"
+                      iconOnly
+                    />
+                  </div>
 
                   <input
                     type="text"
                     value={data.signDate}
                     onChange={(e) => setData((p) => ({ ...p, signDate: e.target.value }))}
-                    placeholder="दिनांक - 10.11.2024"
+                    placeholder="दिनांक - 11.11.2024"
                     className="text-right font-medium text-slate-800 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded px-1 py-0.5 outline-none w-72"
                   />
                 </div>

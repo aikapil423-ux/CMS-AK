@@ -58,6 +58,7 @@ import { ComplaintItem } from "@/types";
 import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
 import { ComplaintAnalysisHeader } from "@/components/enquiry-workspace/ComplaintAnalysisHeader";
 import { IdentifiedPerson, ComplaintAnalysisReport } from "@/services/complaintDocumentAnalysisService";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import {
   BuilderService,
   BuilderTemplateItem,
@@ -1044,16 +1045,27 @@ function TemplateDraftBuilderContent() {
           {/* TOP ACTION & STATUS BAR */}
           <div className="no-print bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={docName}
-                onChange={(e) => {
-                  setDocName(e.target.value);
-                  handleContentChange();
-                }}
-                className="text-sm font-black text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-1 outline-none min-w-[200px] max-w-[320px]"
-                placeholder="Document Title (e.g. Field Enquiry Preliminary Report)"
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={docName}
+                  onChange={(e) => {
+                    setDocName(e.target.value);
+                    handleContentChange();
+                  }}
+                  className="text-sm font-black text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-blue-500 rounded px-2 py-1 outline-none min-w-[200px] max-w-[320px]"
+                  placeholder="Document Title (e.g. Field Enquiry Preliminary Report)"
+                />
+                <VoiceInputButton
+                  onTranscript={(t) => {
+                    setDocName(t);
+                    handleContentChange();
+                  }}
+                  currentValue={docName}
+                  fieldLabel="दस्तावेज़ शीर्षक"
+                  iconOnly
+                />
+              </div>
 
               {/* Case Link Pill */}
               {complaint ? (
@@ -1491,6 +1503,23 @@ function TemplateDraftBuilderContent() {
                   - Delete Column
                 </button>
               </div>
+            </div>
+
+            <span className="w-px h-5 bg-slate-200 mx-0.5" />
+
+            {/* Voice Dictation (बोलकर लिखें) */}
+            <div className="flex items-center">
+              <VoiceInputButton
+                onTranscript={(text) => {
+                  if (editorRef.current) {
+                    editorRef.current.focus();
+                    document.execCommand("insertText", false, text + " ");
+                    handleContentChange();
+                  }
+                }}
+                fieldLabel="बोलकर लिखें (Voice Typing)"
+                preferredLang="hi-IN"
+              />
             </div>
 
             <span className="w-px h-5 bg-slate-200 mx-0.5" />
