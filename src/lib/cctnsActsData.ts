@@ -1,6 +1,8 @@
 // src/lib/cctnsActsData.ts
 // Comprehensive CCTNS & Statutory Acts and Sections Directory for Haryana Police
 
+import { BNS_2023_SECTIONS } from "./bnsSectionsData";
+
 export interface CCTNSSectionItem {
   sectionNumber: string;
   title?: string;
@@ -23,96 +25,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Bharatiya Nyaya Sanhita, 2023",
     shortName: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
     category: "Substantive Criminal Law",
-    sections: [
-      { sectionNumber: "3(5)", title: "Joint liability / Common intention (Acts done by several persons in furtherance of common intention)" },
-      { sectionNumber: "4", title: "Punishments under Sanhita" },
-      { sectionNumber: "49", title: "Abetment of an offence" },
-      { sectionNumber: "61(2)", title: "Criminal conspiracy (replaces 120B IPC)" },
-      { sectionNumber: "63", title: "Rape defined" },
-      { sectionNumber: "64(1)", title: "Punishment for rape" },
-      { sectionNumber: "64(2)", title: "Aggravated punishment for rape (Police, Public Servant, Custody)" },
-      { sectionNumber: "65(1)", title: "Punishment for rape on woman under 16 years of age" },
-      { sectionNumber: "65(2)", title: "Punishment for rape on woman under 12 years of age" },
-      { sectionNumber: "66", title: "Punishment for causing death or persistent vegetative state of victim of rape" },
-      { sectionNumber: "67", title: "Sexual intercourse by husband upon wife during separation" },
-      { sectionNumber: "68", title: "Sexual intercourse by person in authority" },
-      { sectionNumber: "69", title: "Sexual intercourse by employing deceitful means or false promise of marriage" },
-      { sectionNumber: "70(1)", title: "Gang rape" },
-      { sectionNumber: "70(2)", title: "Gang rape on woman under 18 years of age" },
-      { sectionNumber: "71", title: "Repeat offenders of rape" },
-      { sectionNumber: "72", title: "Disclosure of identity of victim of certain offences" },
-      { sectionNumber: "74", title: "Assault or criminal force to woman with intent to outrage her modesty" },
-      { sectionNumber: "75", title: "Sexual harassment" },
-      { sectionNumber: "76", title: "Assault or use of criminal force to woman with intent to disrobe" },
-      { sectionNumber: "77", title: "Voyeurism" },
-      { sectionNumber: "78", title: "Stalking" },
-      { sectionNumber: "79", title: "Word, gesture or act intended to insult modesty of woman" },
-      { sectionNumber: "80", title: "Dowry death" },
-      { sectionNumber: "84", title: "Cohabitation caused by a man deceitfully inducing a belief of lawful marriage" },
-      { sectionNumber: "85", title: "Husband or relative of husband of a woman subjecting her to cruelty" },
-      { sectionNumber: "86", title: "Cruelty defined" },
-      { sectionNumber: "91", title: "Causing miscarriage without woman's consent" },
-      { sectionNumber: "96", title: "Procuring child for prostitution" },
-      { sectionNumber: "103(1)", title: "Murder (General penalty)" },
-      { sectionNumber: "103(2)", title: "Murder committed by a mob / group on grounds of race, caste, community" },
-      { sectionNumber: "105", title: "Culpable homicide not amounting to murder" },
-      { sectionNumber: "106(1)", title: "Causing death by rash or negligent act (Hit and Run general)" },
-      { sectionNumber: "106(2)", title: "Causing death by rash and negligent driving and escaping without reporting (Hit and Run aggravated)" },
-      { sectionNumber: "108", title: "Abetment of suicide" },
-      { sectionNumber: "109", title: "Attempt to murder" },
-      { sectionNumber: "110", title: "Attempt to commit culpable homicide" },
-      { sectionNumber: "111(1)", title: "Organized crime" },
-      { sectionNumber: "111(2)", title: "Punishment for organized crime resulting in death" },
-      { sectionNumber: "111(3)", title: "Punishment for organized crime not resulting in death" },
-      { sectionNumber: "112", title: "Petty organized crime" },
-      { sectionNumber: "113", title: "Terrorist act" },
-      { sectionNumber: "115(2)", title: "Voluntarily causing hurt" },
-      { sectionNumber: "117(2)", title: "Voluntarily causing grievous hurt" },
-      { sectionNumber: "118(1)", title: "Voluntarily causing hurt by dangerous weapons or means" },
-      { sectionNumber: "118(2)", title: "Voluntarily causing grievous hurt by dangerous weapons or means" },
-      { sectionNumber: "124(1)", title: "Voluntarily causing hurt by acid" },
-      { sectionNumber: "126(2)", title: "Wrongful restraint" },
-      { sectionNumber: "127(2)", title: "Wrongful confinement" },
-      { sectionNumber: "137(2)", title: "Kidnapping" },
-      { sectionNumber: "140(1)", title: "Kidnapping or abducting in order to murder or for ransom" },
-      { sectionNumber: "140(2)", title: "Kidnapping or abducting with intent secretly and wrongfully to confine person" },
-      { sectionNumber: "143(2)", title: "Trafficking of person" },
-      { sectionNumber: "189(2)", title: "Unlawful assembly" },
-      { sectionNumber: "190", title: "Every member of unlawful assembly guilty of offence committed in prosecution of common object" },
-      { sectionNumber: "191(2)", title: "Rioting" },
-      { sectionNumber: "191(3)", title: "Rioting, armed with deadly weapon" },
-      { sectionNumber: "194", title: "Affray" },
-      { sectionNumber: "221", title: "Obstructing public servant in discharge of public functions" },
-      { sectionNumber: "223", title: "Disobedience to order duly promulgated by public servant" },
-      { sectionNumber: "281", title: "Rash driving or riding on a public way" },
-      { sectionNumber: "303(1)", title: "Theft defined" },
-      { sectionNumber: "303(2)", title: "Punishment for theft (General)" },
-      { sectionNumber: "305", title: "Theft in dwelling house, vehicle, or vessel" },
-      { sectionNumber: "306", title: "Theft by clerk or servant of property in possession of master" },
-      { sectionNumber: "307", title: "Theft after preparation made for causing death, hurt or restraint" },
-      { sectionNumber: "308(2)", title: "Extortion" },
-      { sectionNumber: "309(4)", title: "Robbery" },
-      { sectionNumber: "309(6)", title: "Attempt to commit robbery" },
-      { sectionNumber: "310(2)", title: "Dacoity" },
-      { sectionNumber: "311", title: "Robbery or dacoity, with attempt to cause death or grievous hurt" },
-      { sectionNumber: "312", title: "Attempt to commit robbery or dacoity when armed with deadly weapon" },
-      { sectionNumber: "314", title: "Snatching" },
-      { sectionNumber: "316(2)", title: "Criminal breach of trust" },
-      { sectionNumber: "316(5)", title: "Criminal breach of trust by public servant, banker, merchant or agent" },
-      { sectionNumber: "317(2)", title: "Dishonestly receiving stolen property" },
-      { sectionNumber: "318(4)", title: "Cheating and dishonestly inducing delivery of property" },
-      { sectionNumber: "324(4)", title: "Mischief causing damage to property" },
-      { sectionNumber: "329(3)", title: "Criminal trespass" },
-      { sectionNumber: "331(1)", title: "Lurking house-trespass or house-breaking" },
-      { sectionNumber: "331(4)", title: "Lurking house-trespass or house-breaking by night with intention to commit offence" },
-      { sectionNumber: "336(2)", title: "Forgery" },
-      { sectionNumber: "338", title: "Forgery for purpose of cheating" },
-      { sectionNumber: "340(2)", title: "Using as genuine a forged document or electronic record" },
-      { sectionNumber: "351(2)", title: "Criminal intimidation" },
-      { sectionNumber: "351(3)", title: "Criminal intimidation by threat to cause death or grievous hurt" },
-      { sectionNumber: "352", title: "Intentional insult with intent to provoke breach of the peace" },
-      { sectionNumber: "356(2)", title: "Defamation" },
-    ],
+    sections: BNS_2023_SECTIONS,
   },
   {
     id: "act_punjab_excise_1914",
@@ -677,6 +590,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       }
 
       if (existing) {
+        // If it's act_bns_2023, preserve the authoritative complete 956 sections catalog
+        if (existing.id === "act_bns_2023") {
+          continue;
+        }
         // Merge sections: append any new sections from userAct that aren't already in existing
         const existingSecNums = new Set(existing.sections.map((s) => s.sectionNumber.toLowerCase().trim()));
         for (const s of userSections) {

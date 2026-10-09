@@ -1622,7 +1622,7 @@ function RegisterFIRForm() {
                           });
 
                           return (
-                            <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+                            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg bg-white">
                               {filtered.length > 0 ? (
                                 filtered.map((sec) => {
                                   const isSelected = selectedSections.includes(sec.sectionNumber);
@@ -1639,9 +1639,9 @@ function RegisterFIRForm() {
                                           : "hover:bg-slate-50 text-slate-700"
                                       }`}
                                     >
-                                      <div className="flex items-center gap-2 min-w-0">
+                                      <div className="flex items-start gap-2 min-w-0">
                                         <div
-                                          className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 text-[10px] border ${
+                                          className={`w-3.5 h-3.5 mt-0.5 rounded flex items-center justify-center shrink-0 text-[10px] border ${
                                             isSelected
                                               ? "bg-blue-600 text-white border-blue-600 font-bold"
                                               : "border-slate-300"
@@ -1649,12 +1649,12 @@ function RegisterFIRForm() {
                                         >
                                           {isSelected ? "✓" : ""}
                                         </div>
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 leading-tight">
                                           <span className="font-mono font-bold text-blue-900 mr-1.5">
-                                            Sec {sec.sectionNumber}
+                                            {sec.sectionNumber}
                                           </span>
                                           {sec.title && (
-                                            <span className="text-[11px] text-slate-500 truncate font-normal">
+                                            <span className="text-[11px] text-slate-600 font-normal">
                                               — {sec.title}
                                             </span>
                                           )}
