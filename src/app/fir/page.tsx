@@ -32,6 +32,8 @@ import {
   SlidersHorizontal,
   Columns3,
   PlusCircle,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
@@ -111,6 +113,81 @@ export default function FIRRegisterPage() {
     action: true,
   });
 
+  // Column Reordering (Grab & Drag)
+  type FIRColKey = "firNumber" | "dateTime" | "complainant" | "actsPlace" | "status" | "assignedIo" | "daysPending";
+  const DEFAULT_FIR_COLUMN_ORDER: FIRColKey[] = [
+    "firNumber",
+    "dateTime",
+    "complainant",
+    "actsPlace",
+    "status",
+    "assignedIo",
+    "daysPending",
+  ];
+
+  const FIR_COL_TO_SORT_FIELD: Record<FIRColKey, FIRSortField> = {
+    firNumber: "firNumber",
+    dateTime: "firDate",
+    complainant: "complainantName",
+    actsPlace: "actsAndSections",
+    status: "status",
+    assignedIo: "assignedIoName",
+    daysPending: "daysPending",
+  };
+
+  const FIR_COL_LABELS: Record<FIRColKey, string> = {
+    firNumber: "FIR No. & Reference",
+    dateTime: "Date & Time",
+    complainant: "Complainant / Informant",
+    actsPlace: "Acts, Sections & Place",
+    status: "Status",
+    assignedIo: "Investigating Officer (IO)",
+    daysPending: "Days",
+  };
+
+  const [columnOrder, setColumnOrder] = useState<FIRColKey[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cms_fir_column_order");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === DEFAULT_FIR_COLUMN_ORDER.length) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_FIR_COLUMN_ORDER;
+  });
+
+  const [draggedCol, setDraggedCol] = useState<FIRColKey | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<FIRColKey | null>(null);
+
+  const handleColumnDrop = (targetCol: FIRColKey) => {
+    if (!draggedCol || draggedCol === targetCol) return;
+    setColumnOrder((prev) => {
+      const next = [...prev];
+      const srcIdx = next.indexOf(draggedCol);
+      const tgtIdx = next.indexOf(targetCol);
+      if (srcIdx === -1 || tgtIdx === -1) return prev;
+      next.splice(srcIdx, 1);
+      next.splice(tgtIdx, 0, draggedCol);
+      try {
+        localStorage.setItem("cms_fir_column_order", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setDraggedCol(null);
+    setDragOverCol(null);
+  };
+
+  const resetColumnOrder = () => {
+    setColumnOrder(DEFAULT_FIR_COLUMN_ORDER);
+    try {
+      localStorage.removeItem("cms_fir_column_order");
+    } catch {}
+  };
+
   // Column-specific search states (click column name to search, click arrow to sort)
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
@@ -130,6 +207,7 @@ export default function FIRRegisterPage() {
       daysPending: true,
       action: true,
     });
+    resetColumnOrder();
   };
 
   // Master Filter Tabs
@@ -215,6 +293,18 @@ export default function FIRRegisterPage() {
       fetchFirs();
     });
     return unsubscribe;
+  }, []);
+
+  // Close column search input on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest("[data-column-search-box]")) {
+        setActiveSearchCol(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Filtered FIRs
@@ -334,31 +424,43 @@ export default function FIRRegisterPage() {
     }
   };
 
-  const renderColumnHeader = (field: FIRSortField, label: string) => {
+  const renderColumnHeader = (colKey: FIRColKey) => {
+    const field = FIR_COL_TO_SORT_FIELD[colKey];
+    const label = FIR_COL_LABELS[colKey];
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
 
     return (
-      <div className="space-y-1 relative">
-        <div className="flex items-center justify-between gap-1.5">
-          {/* Column Name Click -> Toggles Search */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveSearchCol(isSearching ? null : field);
-            }}
-            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
-            className="flex items-center gap-1 font-bold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer"
-          >
-            <span>{label}</span>
-            {filterValue ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-            ) : (
-              <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity" />
-            )}
-          </button>
+      <div className="space-y-1 relative" data-column-search-box="true">
+        <div className="flex items-center justify-between gap-1">
+          {/* Grab Handle + Column Name */}
+          <div className="flex items-center gap-1 min-w-0">
+            <span
+              className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
+              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+            >
+              <GripVertical className="w-3 h-3" />
+            </span>
+
+            {/* Column Name Click -> Toggles Search */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveSearchCol(isSearching ? null : field);
+              }}
+              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              className="flex items-center gap-1 font-bold text-slate-700 hover:text-blue-700 transition-colors text-left uppercase text-[11px] tracking-wider group cursor-pointer truncate"
+            >
+              <span className="truncate">{label}</span>
+              {filterValue ? (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+              ) : (
+                <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity shrink-0" />
+              )}
+            </button>
+          </div>
 
           {/* Arrow Click -> Sorts */}
           <button
@@ -398,8 +500,13 @@ export default function FIRRegisterPage() {
                 onChange={(e) =>
                   setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" || e.key === "Enter") {
+                    setActiveSearchCol(null);
+                  }
+                }}
                 placeholder={`${label} खोजें...`}
-                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
+                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs normal-case"
               />
               {filterValue && (
                 <button
@@ -420,7 +527,7 @@ export default function FIRRegisterPage() {
           </div>
         ) : filterValue ? (
           <div className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono border border-blue-200">
-            <span className="truncate max-w-[90px]">&ldquo;{filterValue}&rdquo;</span>
+            <span className="truncate max-w-[90px] normal-case">&ldquo;{filterValue}&rdquo;</span>
             <button
               type="button"
               onClick={(e) => {
@@ -439,6 +546,139 @@ export default function FIRRegisterPage() {
         ) : null}
       </div>
     );
+  };
+
+  const renderFirCell = (colKey: FIRColKey, fir: FIRItem) => {
+    switch (colKey) {
+      case "firNumber":
+        return (
+          <td key="firNumber" className="py-3 px-3.5 align-top">
+            <div className="space-y-1">
+              <Link
+                href={`/fir/${fir.id}`}
+                className="font-mono font-bold text-red-700 hover:text-red-900 hover:underline flex items-center gap-1 text-xs"
+              >
+                <span>{fir.firNumber}</span>
+              </Link>
+
+              <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
+                <span className="px-1.5 py-0.2 bg-slate-100 border border-slate-200 rounded">
+                  {fir.cctnsFirNumber || "LOCAL"}
+                </span>
+                {fir.cctnsSyncStatus === "SYNCED" && (
+                  <span className="text-emerald-600 font-bold" title="CCTNS Synced">
+                    ✓
+                  </span>
+                )}
+              </div>
+
+              {fir.sourceComplaintNumber && (
+                <div className="pt-0.5">
+                  <Link
+                    href={`/complaints/${fir.sourceComplaintId || ""}`}
+                    className="inline-flex items-center gap-1 text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 hover:bg-blue-100"
+                    title="View Linked Complaint"
+                  >
+                    <span>Comp: {fir.sourceComplaintNumber}</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </td>
+        );
+
+      case "dateTime":
+        return (
+          <td key="dateTime" className="py-3 px-3 align-top whitespace-nowrap">
+            <div className="text-slate-800 font-semibold">{fir.firDate}</div>
+            <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <Clock className="w-3 h-3 text-slate-400" />
+              <span>{fir.firTime || "10:00"} hrs</span>
+            </div>
+          </td>
+        );
+
+      case "complainant":
+        return (
+          <td key="complainant" className="py-3 px-3 align-top">
+            <div className="font-bold text-slate-900">{fir.complainantName}</div>
+            {fir.complainantFatherSpouse && (
+              <div className="text-[10px] text-slate-500">
+                S/o {fir.complainantFatherSpouse}
+              </div>
+            )}
+            <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <Phone className="w-3 h-3 text-slate-400" />
+              <span>{fir.complainantMobile || "—"}</span>
+            </div>
+          </td>
+        );
+
+      case "actsPlace":
+        return (
+          <td key="actsPlace" className="py-3 px-3 align-top max-w-xs">
+            <div className="font-bold text-slate-800 text-xs">
+              {fir.actsAndSections}
+            </div>
+            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 truncate">
+              <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+              <span className="truncate">{fir.incidentPlace}</span>
+            </div>
+          </td>
+        );
+
+      case "status":
+        return (
+          <td key="status" className="py-3 px-3 align-top whitespace-nowrap">
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                fir.status === "UNDER_INVESTIGATION"
+                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                  : fir.status === "CHARGESHEET_FILED"
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  : fir.status === "CLOSURE_REPORT_FILED"
+                  ? "bg-blue-50 text-blue-800 border-blue-200"
+                  : "bg-slate-100 text-slate-800 border-slate-200"
+              }`}
+            >
+              {fir.mainStatus || fir.status.replace(/_/g, " ")}
+            </span>
+          </td>
+        );
+
+      case "assignedIo":
+        return (
+          <td key="assignedIo" className="py-3 px-3 align-top">
+            {fir.assignedIoName ? (
+              <div>
+                <div className="font-bold text-slate-800 flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{fir.assignedIoName}</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">
+                  {fir.assignedIoRank || "IO"} {fir.assignedIoBeltNumber ? `(${fir.assignedIoBeltNumber})` : ""}
+                </div>
+              </div>
+            ) : (
+              <span className="inline-block text-[11px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                Not Assigned
+              </span>
+            )}
+          </td>
+        );
+
+      case "daysPending":
+        return (
+          <td key="daysPending" className="py-3 px-2 align-top text-center">
+            <span className="font-mono font-bold text-slate-700">
+              {fir.daysPending || 0}d
+            </span>
+          </td>
+        );
+
+      default:
+        return null;
+    }
   };
 
   const handleOpenAssign = (fir: FIRItem) => {
@@ -654,12 +894,21 @@ export default function FIRRegisterPage() {
               <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 text-xs animate-in fade-in-50">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
                   <span className="font-bold text-slate-800">Toggle Columns</span>
-                  <button
-                    onClick={resetColumns}
-                    className="text-[11px] text-red-600 hover:underline font-medium"
-                  >
-                    Reset
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={resetColumnOrder}
+                      className="text-[11px] text-slate-600 hover:text-slate-900 hover:underline font-medium cursor-pointer"
+                      title="कॉलम क्रम रीसेट करें"
+                    >
+                      Reset Order
+                    </button>
+                    <button
+                      onClick={resetColumns}
+                      className="text-[11px] text-red-600 hover:underline font-medium cursor-pointer"
+                    >
+                      Reset All
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1 py-1">
                   {Object.entries({
@@ -689,6 +938,9 @@ export default function FIRRegisterPage() {
                     );
                   })}
                 </div>
+                <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 px-1">
+                  💡 <em>कॉलम हेडर को पकड़कर (Grab) अपनी पसंद अनुसार आगे-पीछे सेट कर सकते हैं।</em>
+                </div>
               </div>
             )}
           </div>
@@ -712,47 +964,53 @@ export default function FIRRegisterPage() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                {visibleColumns.firNumber && (
-                  <th className="py-2.5 px-3.5 transition-colors">
-                    {renderColumnHeader("firNumber", "FIR No. & Reference")}
-                  </th>
-                )}
+                {columnOrder.map((col) => {
+                  if (!visibleColumns[col]) return null;
+                  const isDragging = draggedCol === col;
+                  const isOver = dragOverCol === col;
 
-                {visibleColumns.dateTime && (
-                  <th className="py-2.5 px-3 transition-colors">
-                    {renderColumnHeader("firDate", "Date & Time")}
-                  </th>
-                )}
-
-                {visibleColumns.complainant && (
-                  <th className="py-2.5 px-3 transition-colors">
-                    {renderColumnHeader("complainantName", "Complainant / Informant")}
-                  </th>
-                )}
-
-                {visibleColumns.actsPlace && (
-                  <th className="py-2.5 px-3 transition-colors">
-                    {renderColumnHeader("actsAndSections", "Acts, Sections & Place")}
-                  </th>
-                )}
-
-                {visibleColumns.status && (
-                  <th className="py-2.5 px-3 transition-colors">
-                    {renderColumnHeader("status", "Status")}
-                  </th>
-                )}
-
-                {visibleColumns.assignedIo && (
-                  <th className="py-2.5 px-3 transition-colors">
-                    {renderColumnHeader("assignedIoName", "Investigating Officer (IO)")}
-                  </th>
-                )}
-
-                {visibleColumns.daysPending && (
-                  <th className="py-2.5 px-2 text-center transition-colors">
-                    {renderColumnHeader("daysPending", "Days")}
-                  </th>
-                )}
+                  return (
+                    <th
+                      key={col}
+                      draggable={!activeSearchCol}
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", col);
+                        setDraggedCol(col);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDragEnter={() => {
+                        if (draggedCol && draggedCol !== col) {
+                          setDragOverCol(col);
+                        }
+                      }}
+                      onDragLeave={(e) => {
+                        if (e.currentTarget === e.target) {
+                          setDragOverCol(null);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        handleColumnDrop(col);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedCol(null);
+                        setDragOverCol(null);
+                      }}
+                      className={`py-2.5 px-3 transition-all select-none cursor-grab active:cursor-grabbing ${
+                        col === "daysPending" ? "text-center" : ""
+                      } ${
+                        isDragging ? "opacity-30 bg-slate-200" : ""
+                      } ${
+                        isOver ? "border-l-4 border-l-blue-600 bg-blue-50/80 shadow-inner" : ""
+                      }`}
+                    >
+                      {renderColumnHeader(col)}
+                    </th>
+                  );
+                })}
 
                 {visibleColumns.action && (
                   <th className="py-2.5 px-3 text-right align-top pt-3">Actions</th>
@@ -787,131 +1045,10 @@ export default function FIRRegisterPage() {
                       key={fir.id}
                       className="hover:bg-slate-50/80 transition-colors group"
                     >
-                      {/* FIR Number & Reference */}
-                      {visibleColumns.firNumber && (
-                        <td className="py-3 px-3.5 align-top">
-                          <div className="space-y-1">
-                            <Link
-                              href={`/fir/${fir.id}`}
-                              className="font-mono font-bold text-red-700 hover:text-red-900 hover:underline flex items-center gap-1 text-xs"
-                            >
-                              <span>{fir.firNumber}</span>
-                            </Link>
-
-                            <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                              <span className="px-1.5 py-0.2 bg-slate-100 border border-slate-200 rounded">
-                                {fir.cctnsFirNumber || "LOCAL"}
-                              </span>
-                              {fir.cctnsSyncStatus === "SYNCED" && (
-                                <span className="text-emerald-600 font-bold" title="CCTNS Synced">
-                                  ✓
-                                </span>
-                              )}
-                            </div>
-
-                            {fir.sourceComplaintNumber && (
-                              <div className="pt-0.5">
-                                <Link
-                                  href={`/complaints/${fir.sourceComplaintId || ""}`}
-                                  className="inline-flex items-center gap-1 text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 hover:bg-blue-100"
-                                  title="View Linked Complaint"
-                                >
-                                  <span>Comp: {fir.sourceComplaintNumber}</span>
-                                </Link>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Date & Time */}
-                      {visibleColumns.dateTime && (
-                        <td className="py-3 px-3 align-top whitespace-nowrap">
-                          <div className="text-slate-800 font-semibold">{fir.firDate}</div>
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Clock className="w-3 h-3 text-slate-400" />
-                            <span>{fir.firTime || "10:00"} hrs</span>
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Complainant */}
-                      {visibleColumns.complainant && (
-                        <td className="py-3 px-3 align-top">
-                          <div className="font-bold text-slate-900">{fir.complainantName}</div>
-                          {fir.complainantFatherSpouse && (
-                            <div className="text-[10px] text-slate-500">
-                              S/o {fir.complainantFatherSpouse}
-                            </div>
-                          )}
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span>{fir.complainantMobile || "—"}</span>
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Acts, Sections & Place */}
-                      {visibleColumns.actsPlace && (
-                        <td className="py-3 px-3 align-top max-w-xs">
-                          <div className="font-bold text-slate-800 text-xs">
-                            {fir.actsAndSections}
-                          </div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 truncate">
-                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="truncate">{fir.incidentPlace}</span>
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Status */}
-                      {visibleColumns.status && (
-                        <td className="py-3 px-3 align-top whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                              fir.status === "UNDER_INVESTIGATION"
-                                ? "bg-amber-50 text-amber-800 border-amber-200"
-                                : fir.status === "CHARGESHEET_FILED"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : fir.status === "CLOSURE_REPORT_FILED"
-                                ? "bg-blue-50 text-blue-800 border-blue-200"
-                                : "bg-slate-100 text-slate-800 border-slate-200"
-                            }`}
-                          >
-                            {fir.mainStatus || fir.status.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                      )}
-
-                      {/* Assigned IO */}
-                      {visibleColumns.assignedIo && (
-                        <td className="py-3 px-3 align-top">
-                          {fir.assignedIoName ? (
-                            <div>
-                              <div className="font-bold text-slate-800 flex items-center gap-1">
-                                <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                                <span>{fir.assignedIoName}</span>
-                              </div>
-                              <div className="text-[10px] text-slate-500 font-mono">
-                                {fir.assignedIoRank || "IO"} {fir.assignedIoBeltNumber ? `(${fir.assignedIoBeltNumber})` : ""}
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="inline-block text-[11px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                              Not Assigned
-                            </span>
-                          )}
-                        </td>
-                      )}
-
-                      {/* Days Pending */}
-                      {visibleColumns.daysPending && (
-                        <td className="py-3 px-2 align-top text-center">
-                          <span className="font-mono font-bold text-slate-700">
-                            {fir.daysPending || 0}d
-                          </span>
-                        </td>
-                      )}
+                      {columnOrder.map((col) => {
+                        if (!visibleColumns[col]) return null;
+                        return renderFirCell(col, fir);
+                      })}
 
                       {/* Actions */}
                       {visibleColumns.action && (

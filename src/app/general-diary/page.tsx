@@ -26,6 +26,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  GripVertical,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
@@ -68,6 +69,78 @@ function GeneralDiaryContent() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
+
+  // Column Reordering (Grab & Drag)
+  type GDColKey = "gdNumber" | "officer" | "gdType" | "subject" | "activityDateTime" | "narrative";
+  const DEFAULT_GD_COLUMN_ORDER: GDColKey[] = [
+    "gdNumber",
+    "officer",
+    "gdType",
+    "subject",
+    "activityDateTime",
+    "narrative",
+  ];
+
+  const GD_COLUMN_LABELS: Record<GDColKey, string> = {
+    gdNumber: "GD No",
+    officer: "Entry for officer",
+    gdType: "GD Type",
+    subject: "Subject",
+    activityDateTime: "Date & time",
+    narrative: "Brief description",
+  };
+
+  const GD_COLUMN_WIDTHS: Record<GDColKey, string> = {
+    gdNumber: "w-28",
+    officer: "w-44",
+    gdType: "w-32",
+    subject: "w-44",
+    activityDateTime: "w-44",
+    narrative: "min-w-[200px]",
+  };
+
+  const [columnOrder, setColumnOrder] = useState<GDColKey[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cms_gd_column_order");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === DEFAULT_GD_COLUMN_ORDER.length) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_GD_COLUMN_ORDER;
+  });
+
+  const [draggedCol, setDraggedCol] = useState<GDColKey | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<GDColKey | null>(null);
+
+  const handleColumnDrop = (targetCol: GDColKey) => {
+    if (!draggedCol || draggedCol === targetCol) return;
+    setColumnOrder((prev) => {
+      const next = [...prev];
+      const srcIdx = next.indexOf(draggedCol);
+      const tgtIdx = next.indexOf(targetCol);
+      if (srcIdx === -1 || tgtIdx === -1) return prev;
+      next.splice(srcIdx, 1);
+      next.splice(tgtIdx, 0, draggedCol);
+      try {
+        localStorage.setItem("cms_gd_column_order", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setDraggedCol(null);
+    setDragOverCol(null);
+  };
+
+  const resetColumnOrder = () => {
+    setColumnOrder(DEFAULT_GD_COLUMN_ORDER);
+    try {
+      localStorage.removeItem("cms_gd_column_order");
+    } catch {}
+  };
 
   // Pagination State
   const [page, setPage] = useState(1);
@@ -260,31 +333,54 @@ function GeneralDiaryContent() {
     });
   }, [paginatedData.records, columnSearch, sortField, sortOrder]);
 
-  const renderGDColumnHeader = (field: GDSortField, label: string) => {
+  // Close column search input on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest("[data-column-search-box]")) {
+        setActiveSearchCol(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const renderGDColumnHeader = (field: GDColKey) => {
+    const label = GD_COLUMN_LABELS[field];
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
 
     return (
-      <div className="space-y-1 relative">
+      <div className="space-y-1 relative" data-column-search-box="true">
         <div className="flex items-center justify-between gap-1">
-          {/* Column Name Click -> Toggles Search */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveSearchCol(isSearching ? null : field);
-            }}
-            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
-            className="flex items-center gap-1 font-bold text-white hover:text-cyan-200 transition-colors text-left uppercase text-[11px] tracking-wider cursor-pointer group"
-          >
-            <span>{label}</span>
-            {filterValue ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            ) : (
-              <Search className="w-2.5 h-2.5 text-slate-400 opacity-40 group-hover:opacity-100 group-hover:text-cyan-300 transition-opacity" />
-            )}
-          </button>
+          {/* Grab Handle + Column Name */}
+          <div className="flex items-center gap-1 min-w-0">
+            <span
+              className="text-slate-400 hover:text-white cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
+              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+            >
+              <GripVertical className="w-3 h-3" />
+            </span>
+
+            {/* Column Name Click -> Toggles Search */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveSearchCol(isSearching ? null : field);
+              }}
+              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              className="flex items-center gap-1 font-bold text-white hover:text-cyan-200 transition-colors text-left uppercase text-[11px] tracking-wider cursor-pointer group truncate"
+            >
+              <span className="truncate">{label}</span>
+              {filterValue ? (
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+              ) : (
+                <Search className="w-2.5 h-2.5 text-slate-400 opacity-40 group-hover:opacity-100 group-hover:text-cyan-300 transition-opacity shrink-0" />
+              )}
+            </button>
+          </div>
 
           {/* Arrow Click -> Sorts */}
           <button
@@ -324,6 +420,11 @@ function GeneralDiaryContent() {
                 onChange={(e) =>
                   setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" || e.key === "Enter") {
+                    setActiveSearchCol(null);
+                  }
+                }}
                 placeholder={`${label} खोजें...`}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-cyan-400 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 font-normal pr-5 text-slate-900 shadow-2xs normal-case"
               />
@@ -365,6 +466,86 @@ function GeneralDiaryContent() {
         ) : null}
       </div>
     );
+  };
+
+  const renderGDCell = (col: GDColKey, rec: GeneralDiaryRecord) => {
+    switch (col) {
+      case "gdNumber":
+        return (
+          <td key="gdNumber" className="py-3.5 px-3.5 align-top">
+            <div className="space-y-0.5">
+              <span className="font-mono font-black text-sm text-blue-950 block">
+                {rec.sequencePerDay || 1}
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono block">
+                {rec.gdNumber}
+              </span>
+            </div>
+          </td>
+        );
+
+      case "officer":
+        return (
+          <td key="officer" className="py-3.5 px-3.5 align-top">
+            <div className="space-y-0.5">
+              <p className="font-bold text-slate-900 text-xs">
+                {rec.entryForOfficer.name}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                {rec.entryForOfficer.rank} • {rec.entryForOfficer.beltNumber}
+              </p>
+            </div>
+          </td>
+        );
+
+      case "gdType":
+        return (
+          <td key="gdType" className="py-3.5 px-3 align-top">
+            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
+              {rec.typeDisplay}
+            </span>
+          </td>
+        );
+
+      case "subject":
+        return (
+          <td key="subject" className="py-3.5 px-3 align-top">
+            <p className="font-bold text-slate-950 text-xs">
+              {rec.subject}
+            </p>
+          </td>
+        );
+
+      case "activityDateTime":
+        return (
+          <td key="activityDateTime" className="py-3.5 px-3 align-top font-mono">
+            <div className="space-y-0.5 text-xs text-slate-800">
+              <p className="font-bold">
+                {rec.activityDateTime.includes(" ")
+                  ? rec.activityDateTime.split(" ")[0]
+                  : rec.activityDateTime}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Time: {rec.activityDateTime.includes(" ")
+                  ? rec.activityDateTime.split(" ").slice(1).join(" ")
+                  : ""}
+              </p>
+            </div>
+          </td>
+        );
+
+      case "narrative":
+        return (
+          <td key="narrative" className="py-3.5 px-3.5 align-top">
+            <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
+              {rec.narrative}
+            </p>
+          </td>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -621,24 +802,52 @@ function GeneralDiaryContent() {
             <table className="w-full text-xs text-left">
               <thead className="bg-[#0b192c] text-white uppercase text-[11px] tracking-wider font-sans">
                 <tr>
-                  <th className="py-3 px-3.5 w-28 align-top">
-                    {renderGDColumnHeader("gdNumber", "GD No")}
-                  </th>
-                  <th className="py-3 px-3.5 w-44 align-top">
-                    {renderGDColumnHeader("officer", "Entry for officer")}
-                  </th>
-                  <th className="py-3 px-3 w-32 align-top">
-                    {renderGDColumnHeader("gdType", "GD Type")}
-                  </th>
-                  <th className="py-3 px-3 w-44 align-top">
-                    {renderGDColumnHeader("subject", "Subject")}
-                  </th>
-                  <th className="py-3 px-3 w-44 align-top">
-                    {renderGDColumnHeader("activityDateTime", "Date & time")}
-                  </th>
-                  <th className="py-3 px-3.5 align-top">
-                    {renderGDColumnHeader("narrative", "Brief description")}
-                  </th>
+                  {columnOrder.map((col) => {
+                    const isDragging = draggedCol === col;
+                    const isOver = dragOverCol === col;
+
+                    return (
+                      <th
+                        key={col}
+                        draggable={!activeSearchCol}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", col);
+                          setDraggedCol(col);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                        }}
+                        onDragEnter={() => {
+                          if (draggedCol && draggedCol !== col) {
+                            setDragOverCol(col);
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (e.currentTarget === e.target) {
+                            setDragOverCol(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleColumnDrop(col);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedCol(null);
+                          setDragOverCol(null);
+                        }}
+                        className={`py-3 px-3.5 align-top transition-all select-none cursor-grab active:cursor-grabbing ${
+                          GD_COLUMN_WIDTHS[col] || ""
+                        } ${
+                          isDragging ? "opacity-30 bg-slate-800" : ""
+                        } ${
+                          isOver ? "border-l-4 border-l-cyan-400 bg-cyan-950/90 shadow-inner" : ""
+                        }`}
+                      >
+                        {renderGDColumnHeader(col)}
+                      </th>
+                    );
+                  })}
                   <th className="py-3 px-3 w-24 text-right align-top pt-3.5">Actions</th>
                 </tr>
               </thead>
@@ -675,66 +884,7 @@ function GeneralDiaryContent() {
                         isSuggested ? "bg-purple-50/30" : isDraft ? "bg-amber-50/30" : ""
                       }`}
                     >
-                      {/* 1. GD No */}
-                      <td className="py-3.5 px-3.5 align-top">
-                        <div className="space-y-0.5">
-                          <span className="font-mono font-black text-sm text-blue-950 block">
-                            {rec.sequencePerDay || 1}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono block">
-                            {rec.gdNumber}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* 2. Entry for officer */}
-                      <td className="py-3.5 px-3.5 align-top">
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-slate-900 text-xs">
-                            {rec.entryForOfficer.name}
-                          </p>
-                          <p className="text-[11px] text-slate-500">
-                            {rec.entryForOfficer.rank} • {rec.entryForOfficer.beltNumber}
-                          </p>
-                        </div>
-                      </td>
-
-                      {/* 3. GD Type */}
-                      <td className="py-3.5 px-3 align-top">
-                        <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
-                          {rec.typeDisplay}
-                        </span>
-                      </td>
-
-                      {/* 4. Subject */}
-                      <td className="py-3.5 px-3 align-top">
-                        <p className="font-bold text-slate-950 text-xs">
-                          {rec.subject}
-                        </p>
-                      </td>
-
-                      {/* 5. Date & time */}
-                      <td className="py-3.5 px-3 align-top font-mono">
-                        <div className="space-y-0.5 text-xs text-slate-800">
-                          <p className="font-bold">
-                            {rec.activityDateTime.includes(" ")
-                              ? rec.activityDateTime.split(" ")[0]
-                              : rec.activityDateTime}
-                          </p>
-                          <p className="text-[11px] text-slate-500">
-                            Time: {rec.activityDateTime.includes(" ")
-                              ? rec.activityDateTime.split(" ").slice(1).join(" ")
-                              : ""}
-                          </p>
-                        </div>
-                      </td>
-
-                      {/* 6. Brief description */}
-                      <td className="py-3.5 px-3.5 align-top">
-                        <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
-                          {rec.narrative}
-                        </p>
-                      </td>
+                      {columnOrder.map((col) => renderGDCell(col, rec))}
 
                       {/* 7. Actions */}
                       <td className="py-3.5 px-3 align-top text-right">

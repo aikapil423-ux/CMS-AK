@@ -37,6 +37,8 @@ import {
   SlidersHorizontal,
   Columns3,
   PlusCircle,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -176,6 +178,81 @@ function ComplaintListContent() {
     action: true,
   });
 
+  // Column Reordering (Grab & Drag)
+  type ComplaintColKey = "complaintId" | "dateTime" | "complainant" | "categoryLocation" | "status" | "assignedEo" | "daysPending";
+  const DEFAULT_COMPLAINT_COLUMN_ORDER: ComplaintColKey[] = [
+    "complaintId",
+    "dateTime",
+    "complainant",
+    "categoryLocation",
+    "status",
+    "assignedEo",
+    "daysPending",
+  ];
+
+  const COMPLAINT_COL_TO_SORT_FIELD: Record<ComplaintColKey, ComplaintSortField> = {
+    complaintId: "complaintNumber",
+    dateTime: "createdAt",
+    complainant: "complainantName",
+    categoryLocation: "categoryDisplay",
+    status: "status",
+    assignedEo: "assignedEoName",
+    daysPending: "daysPending",
+  };
+
+  const COMPLAINT_COL_LABELS: Record<ComplaintColKey, string> = {
+    complaintId: "Complaint ID & Priority",
+    dateTime: "Date & Time",
+    complainant: "Complainant",
+    categoryLocation: "Category & Incident Location",
+    status: "Enquiry Status",
+    assignedEo: "Enquiry Officer",
+    daysPending: "Days Pending",
+  };
+
+  const [columnOrder, setColumnOrder] = useState<ComplaintColKey[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cms_complaint_column_order");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === DEFAULT_COMPLAINT_COLUMN_ORDER.length) {
+            return parsed;
+          }
+        }
+      } catch {}
+    }
+    return DEFAULT_COMPLAINT_COLUMN_ORDER;
+  });
+
+  const [draggedCol, setDraggedCol] = useState<ComplaintColKey | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<ComplaintColKey | null>(null);
+
+  const handleColumnDrop = (targetCol: ComplaintColKey) => {
+    if (!draggedCol || draggedCol === targetCol) return;
+    setColumnOrder((prev) => {
+      const next = [...prev];
+      const srcIdx = next.indexOf(draggedCol);
+      const tgtIdx = next.indexOf(targetCol);
+      if (srcIdx === -1 || tgtIdx === -1) return prev;
+      next.splice(srcIdx, 1);
+      next.splice(tgtIdx, 0, draggedCol);
+      try {
+        localStorage.setItem("cms_complaint_column_order", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setDraggedCol(null);
+    setDragOverCol(null);
+  };
+
+  const resetColumnOrder = () => {
+    setColumnOrder(DEFAULT_COMPLAINT_COLUMN_ORDER);
+    try {
+      localStorage.removeItem("cms_complaint_column_order");
+    } catch {}
+  };
+
   const toggleColumn = (key: keyof typeof visibleColumns) => {
     setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -191,6 +268,7 @@ function ComplaintListContent() {
       daysPending: true,
       action: true,
     });
+    resetColumnOrder();
   };
 
   // Master Filter Tabs: ALL | DIRECT_FIR | NOT_ASSIGNED | PENDING | COMPLETE | FIR_REGISTERED | CORRECTION
@@ -521,7 +599,7 @@ function ComplaintListContent() {
     }
   };
 
-  // Close status dropdown and column dropdown on click outside
+  // Close status dropdown, column dropdown, and column search on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
@@ -529,6 +607,10 @@ function ComplaintListContent() {
       }
       if (columnDropdownRef.current && !columnDropdownRef.current.contains(event.target as Node)) {
         setColumnDropdownOpen(false);
+      }
+      const target = event.target as HTMLElement;
+      if (!target?.closest?.("[data-column-search-box]")) {
+        setActiveSearchCol(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -677,31 +759,43 @@ function ComplaintListContent() {
     });
   }, [complaints, columnSearch, sortField, sortOrder]);
 
-  const renderComplaintColumnHeader = (field: ComplaintSortField, label: string) => {
+  const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
+    const field = COMPLAINT_COL_TO_SORT_FIELD[colKey];
+    const label = COMPLAINT_COL_LABELS[colKey];
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
 
     return (
-      <div className="space-y-1 relative">
-        <div className="flex items-center justify-between gap-1.5">
-          {/* Column Name Click -> Toggles Search */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveSearchCol(isSearching ? null : field);
-            }}
-            title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
-            className="flex items-center gap-1 font-semibold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer"
-          >
-            <span>{label}</span>
-            {filterValue ? (
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-            ) : (
-              <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity" />
-            )}
-          </button>
+      <div className="space-y-1 relative" data-column-search-box="true">
+        <div className="flex items-center justify-between gap-1">
+          {/* Grab Handle + Column Name */}
+          <div className="flex items-center gap-1 min-w-0">
+            <span
+              className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
+              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+            >
+              <GripVertical className="w-3 h-3" />
+            </span>
+
+            {/* Column Name Click -> Toggles Search */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveSearchCol(isSearching ? null : field);
+              }}
+              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              className="flex items-center gap-1 font-semibold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer truncate"
+            >
+              <span className="truncate">{label}</span>
+              {filterValue ? (
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+              ) : (
+                <Search className="w-3 h-3 text-slate-400 opacity-30 group-hover:opacity-100 group-hover:text-blue-600 transition-opacity shrink-0" />
+              )}
+            </button>
+          </div>
 
           {/* Arrow Click -> Sorts */}
           <button
@@ -741,6 +835,11 @@ function ComplaintListContent() {
                 onChange={(e) =>
                   setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
                 }
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" || e.key === "Enter") {
+                    setActiveSearchCol(null);
+                  }
+                }}
                 placeholder={`${label} खोजें...`}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
               />
@@ -782,6 +881,160 @@ function ComplaintListContent() {
         ) : null}
       </div>
     );
+  };
+
+  const renderComplaintCell = (colKey: ComplaintColKey, c: ComplaintItem) => {
+    switch (colKey) {
+      case "complaintId":
+        return (
+          <td key="complaintId" className="py-3 px-4 font-mono">
+            <Link
+              href={`/complaints/${c.id}`}
+              className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
+            >
+              {c.complaintNumber}
+            </Link>
+            <div className="mt-1">
+              <PriorityBadge priority={c.priority} />
+            </div>
+          </td>
+        );
+
+      case "dateTime":
+        return (
+          <td key="dateTime" className="py-3 px-4 whitespace-nowrap">
+            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+              <Calendar className="w-3.5 h-3.5 text-blue-600" />
+              <span>{formatDate(c.createdAt)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              <span>
+                {new Date(c.createdAt).toLocaleTimeString("en-IN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </span>
+            </div>
+          </td>
+        );
+
+      case "complainant":
+        return (
+          <td key="complainant" className="py-3 px-4">
+            <Link
+              href={`/complaints/${c.id}`}
+              className="font-bold text-slate-900 hover:text-blue-600 hover:underline block break-words"
+            >
+              {c.complainantName}
+            </Link>
+            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+              <Phone className="w-3.5 h-3.5 text-slate-400" />
+              <span>+91 {c.complainantMobile}</span>
+            </div>
+          </td>
+        );
+
+      case "categoryLocation":
+        return (
+          <td key="categoryLocation" className="py-3 px-4">
+            <div className="font-semibold text-slate-900">{c.categoryDisplay}</div>
+            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="line-clamp-2">{c.incidentPlace}</span>
+            </div>
+          </td>
+        );
+
+      case "status":
+        return (
+          <td key="status" className="py-3 px-4">
+            <StatusBadge status={getMainComplaintStatus(c)} />
+          </td>
+        );
+
+      case "assignedEo":
+        return (
+          <td key="assignedEo" className="py-3 px-4">
+            {c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER" ? (
+              <div className="space-y-1">
+                <span className="text-purple-700 bg-purple-50 border border-purple-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
+                  Direct to FIR (No EO)
+                </span>
+              </div>
+            ) : c.assignedEoName ? (
+              <div className="space-y-0.5">
+                <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
+                <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
+                  Not Assigned
+                </span>
+                {isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTERED" && c.workflowState !== "FIR_REGISTERED" && (
+                  <div className="relative inline-block mt-1" data-assign-dropdown>
+                    <button
+                      type="button"
+                      onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
+                      className="text-xs font-bold text-white bg-[#0b192c] hover:bg-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                    >
+                      <UserCheck className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Assign EO ▾</span>
+                    </button>
+                    {assignDropdownComplaintId === c.id && (
+                      <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
+                        <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                          <span>Select EO / IO</span>
+                          <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto py-0.5">
+                          {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                            const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                            return (
+                              <button
+                                key={eo.id}
+                                type="button"
+                                disabled={isQuickAssigning}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleQuickAssignEO(c.id, eo);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition-colors flex items-center justify-between cursor-pointer"
+                              >
+                                <span className="truncate">{label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </td>
+        );
+
+      case "daysPending":
+        return (
+          <td key="daysPending" className="py-3 px-4 text-center">
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                c.daysPending > 10
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "bg-slate-100 text-slate-700"
+              }`}
+            >
+              {c.daysPending}d
+            </span>
+          </td>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -1250,13 +1503,23 @@ function ComplaintListContent() {
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Visible Columns
                   </span>
-                  <button
-                    type="button"
-                    onClick={resetColumns}
-                    className="text-[10px] font-bold text-blue-700 hover:text-blue-900"
-                  >
-                    Reset All
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={resetColumnOrder}
+                      className="text-[10px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                      title="कॉलम क्रम रीसेट करें"
+                    >
+                      Reset Order
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetColumns}
+                      className="text-[10px] font-bold text-blue-700 hover:text-blue-900 cursor-pointer"
+                    >
+                      Reset All
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-1.5 text-xs text-slate-700">
                   <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
@@ -1332,6 +1595,9 @@ function ComplaintListContent() {
                     <span>Action</span>
                   </label>
                 </div>
+                <div className="pt-2 mt-2 border-t border-slate-100 text-[10px] text-slate-500">
+                  💡 <em>कॉलम हेडर को पकड़कर (Grab) अपनी पसंद अनुसार आगे-पीछे सेट कर सकते हैं।</em>
+                </div>
               </div>
             )}
           </div>
@@ -1372,47 +1638,53 @@ function ComplaintListContent() {
               <table className="min-w-[1050px] w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                   <tr>
-                    {visibleColumns.complaintId && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("complaintNumber", "Complaint ID & Priority")}
-                      </th>
-                    )}
+                    {columnOrder.map((col) => {
+                      if (!visibleColumns[col]) return null;
+                      const isDragging = draggedCol === col;
+                      const isOver = dragOverCol === col;
 
-                    {visibleColumns.dateTime && (
-                      <th className="py-3 px-4 whitespace-nowrap transition-colors select-none">
-                        {renderComplaintColumnHeader("createdAt", "Date & Time")}
-                      </th>
-                    )}
-
-                    {visibleColumns.complainant && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("complainantName", "Complainant")}
-                      </th>
-                    )}
-
-                    {visibleColumns.categoryLocation && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("categoryDisplay", "Category & Incident Location")}
-                      </th>
-                    )}
-
-                    {visibleColumns.status && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("status", "Enquiry Status")}
-                      </th>
-                    )}
-
-                    {visibleColumns.assignedEo && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("assignedEoName", "Enquiry Officer")}
-                      </th>
-                    )}
-
-                    {visibleColumns.daysPending && (
-                      <th className="py-3 px-4 transition-colors select-none">
-                        {renderComplaintColumnHeader("daysPending", "Days Pending")}
-                      </th>
-                    )}
+                      return (
+                        <th
+                          key={col}
+                          draggable={!activeSearchCol}
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", col);
+                            setDraggedCol(col);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                          }}
+                          onDragEnter={() => {
+                            if (draggedCol && draggedCol !== col) {
+                              setDragOverCol(col);
+                            }
+                          }}
+                          onDragLeave={(e) => {
+                            if (e.currentTarget === e.target) {
+                              setDragOverCol(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            handleColumnDrop(col);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedCol(null);
+                            setDragOverCol(null);
+                          }}
+                          className={`py-3 px-4 transition-all select-none cursor-grab active:cursor-grabbing ${
+                            col === "dateTime" ? "whitespace-nowrap" : ""
+                          } ${
+                            isDragging ? "opacity-30 bg-slate-200" : ""
+                          } ${
+                            isOver ? "border-l-4 border-l-blue-600 bg-blue-50/80 shadow-inner" : ""
+                          }`}
+                        >
+                          {renderComplaintColumnHeader(col)}
+                        </th>
+                      );
+                    })}
 
                     {visibleColumns.action && (
                       <th className="py-3 px-4 text-right align-top pt-3.5">Action</th>
@@ -1422,147 +1694,10 @@ function ComplaintListContent() {
                 <tbody className="divide-y divide-slate-200">
                   {sortedComplaints.map((c) => (
                     <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
-                      {visibleColumns.complaintId && (
-                        <td className="py-3 px-4 font-mono">
-                          <Link
-                            href={`/complaints/${c.id}`}
-                            className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
-                          >
-                            {c.complaintNumber}
-                          </Link>
-                          <div className="mt-1">
-                            <PriorityBadge priority={c.priority} />
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Date & Time */}
-                      {visibleColumns.dateTime && (
-                        <td className="py-3 px-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                            <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                            <span>{formatDate(c.createdAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>
-                              {new Date(c.createdAt).toLocaleTimeString("en-IN", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
-                            </span>
-                          </div>
-                        </td>
-                      )}
-
-                      {/* Complainant: Display full name without truncation (Requirement 6) */}
-                      {visibleColumns.complainant && (
-                        <td className="py-3 px-4">
-                          <Link
-                            href={`/complaints/${c.id}`}
-                            className="font-bold text-slate-900 hover:text-blue-600 hover:underline block break-words"
-                          >
-                            {c.complainantName}
-                          </Link>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
-                            <Phone className="w-3 h-3 text-slate-400" />
-                            <span>+91 {c.complainantMobile}</span>
-                          </div>
-                        </td>
-                      )}
-
-                      {visibleColumns.categoryLocation && (
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900">{c.categoryDisplay}</div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="line-clamp-2">{c.incidentPlace}</span>
-                          </div>
-                        </td>
-                      )}
-
-                      {visibleColumns.status && (
-                        <td className="py-3 px-4">
-                          <StatusBadge status={getMainComplaintStatus(c)} />
-                        </td>
-                      )}
-
-                      {visibleColumns.assignedEo && (
-                        <td className="py-3 px-4">
-                          {c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER" ? (
-                            <div className="space-y-1">
-                              <span className="text-purple-700 bg-purple-50 border border-purple-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
-                                Direct to FIR (No EO)
-                              </span>
-                            </div>
-                          ) : c.assignedEoName ? (
-                            <div className="space-y-0.5">
-                              <p className="font-semibold text-slate-900">{c.assignedEoName}</p>
-                              <p className="text-[10px] text-slate-500 font-mono">PNO: {c.assignedEoPno}</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <span className="text-amber-700 bg-amber-50 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full inline-block">
-                                Not Assigned
-                              </span>
-                              {isSho && !isMhc && !c.directSendToFir && c.status !== "FIR_REGISTERED" && c.workflowState !== "FIR_REGISTERED" && (
-                                <div className="relative inline-block mt-1" data-assign-dropdown>
-                                  <button
-                                    type="button"
-                                    onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
-                                    className="text-xs font-bold text-white bg-[#0b192c] hover:bg-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                                  >
-                                    <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                                    <span>Assign EO ▾</span>
-                                  </button>
-                                  {assignDropdownComplaintId === c.id && (
-                                    <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
-                                      <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                                        <span>Select EO / IO</span>
-                                        <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
-                                      </div>
-                                      <div className="max-h-56 overflow-y-auto py-0.5">
-                                        {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                                          const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
-                                          return (
-                                            <button
-                                              key={eo.id}
-                                              type="button"
-                                              disabled={isQuickAssigning}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleQuickAssignEO(c.id, eo);
-                                              }}
-                                              className="w-full text-left px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition-colors flex items-center justify-between cursor-pointer"
-                                            >
-                                              <span className="truncate">{label}</span>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      )}
-
-                      {visibleColumns.daysPending && (
-                        <td className="py-3 px-4 text-center">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                              c.daysPending > 10
-                                ? "bg-red-50 text-red-700 border border-red-200"
-                                : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {c.daysPending}d
-                          </span>
-                        </td>
-                      )}
+                      {columnOrder.map((col) => {
+                        if (!visibleColumns[col]) return null;
+                        return renderComplaintCell(col, c);
+                      })}
 
                       {visibleColumns.action && (
                         <td className="py-2.5 px-4 text-right align-middle">
