@@ -7,6 +7,7 @@ import { ARMS_ACT_1959_SECTIONS } from "./armsActSectionsData";
 import { PUNJAB_EXCISE_1914_SECTIONS } from "./punjabExciseSectionsData";
 import { HARYANA_POLICE_2007_SECTIONS } from "./haryanaPoliceSectionsData";
 import { GAUVANSH_ACT_2015_SECTIONS } from "./gauvanshSectionsData";
+import { NDPS_ACT_1985_SECTIONS } from "./ndpsSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -44,35 +45,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Narcotic Drugs and Psychotropic Substances Act, 1985",
     shortName: "Narcotic Drugs and Psychotropic Substances Act, 1985 (NDPS)",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "8(c)", title: "Prohibition of certain operations relating to narcotic drugs" },
-      { sectionNumber: "15(a)", title: "Punishment for contravention in relation to poppy straw (Small quantity)" },
-      { sectionNumber: "15(b)", title: "Punishment for contravention in relation to poppy straw (Intermediate quantity)" },
-      { sectionNumber: "15(c)", title: "Punishment for contravention in relation to poppy straw (Commercial quantity)" },
-      { sectionNumber: "17(a)", title: "Punishment for contravention in relation to prepared opium (Small quantity)" },
-      { sectionNumber: "17(b)", title: "Punishment for contravention in relation to prepared opium (Intermediate quantity)" },
-      { sectionNumber: "17(c)", title: "Punishment for contravention in relation to prepared opium (Commercial quantity)" },
-      { sectionNumber: "18(a)", title: "Punishment for contravention in relation to opium poppy & opium (Small quantity)" },
-      { sectionNumber: "18(b)", title: "Punishment for contravention in relation to opium poppy & opium (Intermediate quantity)" },
-      { sectionNumber: "18(c)", title: "Punishment for contravention in relation to opium poppy & opium (Commercial quantity)" },
-      { sectionNumber: "20(a)", title: "Punishment for cultivation of cannabis plant" },
-      { sectionNumber: "20(b)(ii)(A)", title: "Punishment for possession of charas/ganja (Small quantity)" },
-      { sectionNumber: "20(b)(ii)(B)", title: "Punishment for possession of charas/ganja (Intermediate quantity)" },
-      { sectionNumber: "20(b)(ii)(C)", title: "Punishment for possession of charas/ganja (Commercial quantity)" },
-      { sectionNumber: "21(a)", title: "Punishment for manufactured drugs (Heroin/Smack) (Small quantity)" },
-      { sectionNumber: "21(b)", title: "Punishment for manufactured drugs (Heroin/Smack) (Intermediate quantity)" },
-      { sectionNumber: "21(c)", title: "Punishment for manufactured drugs (Heroin/Smack) (Commercial quantity)" },
-      { sectionNumber: "22(a)", title: "Punishment for psychotropic substances (Small quantity)" },
-      { sectionNumber: "22(b)", title: "Punishment for psychotropic substances (Intermediate quantity)" },
-      { sectionNumber: "22(c)", title: "Punishment for psychotropic substances (Commercial quantity)" },
-      { sectionNumber: "25", title: "Punishment for allowing premises/vehicle to be used for commission of an offence" },
-      { sectionNumber: "27", title: "Punishment for consumption of any narcotic drug or psychotropic substance" },
-      { sectionNumber: "27A", title: "Punishment for financing illicit traffic and harbouring offenders" },
-      { sectionNumber: "28", title: "Punishment for attempts to commit offences" },
-      { sectionNumber: "29", title: "Punishment for abetment and criminal conspiracy" },
-      { sectionNumber: "31", title: "Enhanced punishment for offences after previous conviction" },
-      { sectionNumber: "31A", title: "Death penalty for certain offences after previous conviction" },
-    ],
+    sections: NDPS_ACT_1985_SECTIONS,
   },
   {
     id: "act_it_2000",
@@ -531,6 +504,17 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Haryana Gauvansh Sanrakshan and Gausamvardhan Act,2015"), actOption);
       map.set(normalizeKey("Haryana Gauvansh Sanrakshan Act"), actOption);
     }
+    if (cAct.id === "act_ndps_1985") {
+      map.set(normalizeKey("Narcotic Drugs and Psychotropic Substances Act, 1985"), actOption);
+      map.set(normalizeKey("Narcotic Drugs and Psychotropic Substances Act,1985"), actOption);
+      map.set(normalizeKey("The Narcotic Drugs and Psychotropic Substances Act, 1985"), actOption);
+      map.set(normalizeKey("The Narcotic Drugs and Psychotropic Substances Act,1985"), actOption);
+      map.set(normalizeKey("NDPS Act, 1985"), actOption);
+      map.set(normalizeKey("NDPS Act,1985"), actOption);
+      map.set(normalizeKey("NDPS Act"), actOption);
+      map.set(normalizeKey("NDPS"), actOption);
+      map.set(normalizeKey("Narcotic Drugs and Psychotropic Substances Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -576,6 +560,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_gauvansh_2015, preserve the authoritative complete 99 sections catalog
         if (existing.id === "act_gauvansh_2015") {
+          continue;
+        }
+        // If it's act_ndps_1985, preserve the authoritative complete 595 sections catalog
+        if (existing.id === "act_ndps_1985") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
