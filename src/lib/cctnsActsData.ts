@@ -18,6 +18,7 @@ import { PASSPORTS_ACT_1967_SECTIONS } from "./passportsSectionsData";
 import { ESSENTIAL_COMMODITIES_1955_SECTIONS } from "./essentialCommoditiesSectionsData";
 import { IT_ACT_2000_SECTIONS } from "./itActSectionsData";
 import { POCSO_ACT_2012_SECTIONS } from "./pocsoSectionsData";
+import { MOTOR_VEHICLES_ACT_1988_SECTIONS } from "./motorVehiclesSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -83,29 +84,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Motor Vehicles Act, 1988",
     shortName: "Motor Vehicles Act, 1988 (MV Act)",
     category: "Traffic & Transport",
-    sections: [
-      { sectionNumber: "3/181", title: "Driving without driving licence" },
-      { sectionNumber: "5/180", title: "Allowing unauthorized person to drive vehicle" },
-      { sectionNumber: "39/192(1)", title: "Driving unregistered vehicle / without registration mark" },
-      { sectionNumber: "66/192A", title: "Using vehicle without permit / contravention of permit conditions" },
-      { sectionNumber: "112/183", title: "Driving at excessive speed / Over-speeding" },
-      { sectionNumber: "113/194", title: "Overloading vehicle exceeding permissible axle weight" },
-      { sectionNumber: "128/177", title: "Triple riding on two-wheeler" },
-      { sectionNumber: "129/194D", title: "Riding without protective headgear (Helmet)" },
-      { sectionNumber: "134(a)", title: "Duty of driver in case of accident to secure medical attention" },
-      { sectionNumber: "134(b)", title: "Duty of driver to report accident details to police station" },
-      { sectionNumber: "146/196", title: "Driving uninsured vehicle without third party insurance" },
-      { sectionNumber: "177", title: "General provision for punishment of offences" },
-      { sectionNumber: "184", title: "Driving dangerously / Rash driving endangering life" },
-      { sectionNumber: "185", title: "Driving by a drunken person or by a person under the influence of drugs" },
-      { sectionNumber: "187", title: "Punishment for offences relating to accident (Hit and Run failure to assist)" },
-      { sectionNumber: "189", title: "Speed trials and racing on public roads without authorization" },
-      { sectionNumber: "192A", title: "Using vehicle without permit" },
-      { sectionNumber: "194B", title: "Driving without seat belt" },
-      { sectionNumber: "194C", title: "Overloading of two-wheelers" },
-      { sectionNumber: "196", title: "Driving uninsured vehicle" },
-      { sectionNumber: "207", title: "Power of Police Officer to seize and detain vehicle without documents" },
-    ],
+    sections: MOTOR_VEHICLES_ACT_1988_SECTIONS,
   },
   {
     id: "act_sc_st_1989",
@@ -524,6 +503,24 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("POCSO Act"), actOption);
       map.set(normalizeKey("POCSO"), actOption);
     }
+    if (cAct.id === "act_mv_1988") {
+      map.set(normalizeKey("Motor Vehicles Act, 1988"), actOption);
+      map.set(normalizeKey("Motor Vehicles Act,1988"), actOption);
+      map.set(normalizeKey("The Motor Vehicles Act, 1988"), actOption);
+      map.set(normalizeKey("The Motor Vehicles Act,1988"), actOption);
+      map.set(normalizeKey("Motor Vehicles Act"), actOption);
+      map.set(normalizeKey("Motor Vehicles Act 1988"), actOption);
+      map.set(normalizeKey("MV Act, 1988"), actOption);
+      map.set(normalizeKey("MV Act,1988"), actOption);
+      map.set(normalizeKey("MV Act 1988"), actOption);
+      map.set(normalizeKey("MV Act"), actOption);
+      map.set(normalizeKey("M.V. Act"), actOption);
+      map.set(normalizeKey("M.V. Act, 1988"), actOption);
+      map.set(normalizeKey("M.V. Act,1988"), actOption);
+      map.set(normalizeKey("Motor Vehicle Act"), actOption);
+      map.set(normalizeKey("Motor Vehicle Act, 1988"), actOption);
+      map.set(normalizeKey("Motor Vehicle Act,1988"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -613,6 +610,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_pocso_2012, preserve the authoritative complete 236 sections catalog
         if (existing.id === "act_pocso_2012") {
+          continue;
+        }
+        // If it's act_mv_1988, preserve the authoritative complete 1,932 sections catalog
+        if (existing.id === "act_mv_1988") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
