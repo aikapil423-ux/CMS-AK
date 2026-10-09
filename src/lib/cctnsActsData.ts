@@ -15,6 +15,7 @@ import { EXPLOSIVES_ACT_1908_SECTIONS } from "./explosivesSectionsData";
 import { ELECTRICITY_ACT_2003_SECTIONS } from "./electricitySectionsData";
 import { DPPA_ACT_1984_SECTIONS } from "./dppaSectionsData";
 import { PASSPORTS_ACT_1967_SECTIONS } from "./passportsSectionsData";
+import { ESSENTIAL_COMMODITIES_1955_SECTIONS } from "./essentialCommoditiesSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -224,12 +225,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Essential Commodities Act, 1955",
     shortName: "Essential Commodities Act, 1955",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "3", title: "Powers to control production, supply, distribution of essential commodities" },
-      { sectionNumber: "7(1)(a)(i)", title: "Penalties for contravention of order under Section 3" },
-      { sectionNumber: "7(1)(a)(ii)", title: "Penalties for contravention involving hoarding or black-marketing" },
-      { sectionNumber: "8", title: "Attempts and abetment of offences under Section 3" },
-    ],
+    sections: ESSENTIAL_COMMODITIES_1955_SECTIONS,
   },
   {
     id: "act_benami_1988",
@@ -527,6 +523,15 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Passports Act"), actOption);
       map.set(normalizeKey("Passport Act"), actOption);
     }
+    if (cAct.id === "act_essential_1955") {
+      map.set(normalizeKey("Essential Commodities Act, 1955"), actOption);
+      map.set(normalizeKey("Essential Commodities Act,1955"), actOption);
+      map.set(normalizeKey("The Essential Commodities Act, 1955"), actOption);
+      map.set(normalizeKey("The Essential Commodities Act,1955"), actOption);
+      map.set(normalizeKey("Essential Commodities Act"), actOption);
+      map.set(normalizeKey("EC Act"), actOption);
+      map.set(normalizeKey("E.C. Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -604,6 +609,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_passports_1967, preserve the authoritative complete 144 sections catalog
         if (existing.id === "act_passports_1967") {
+          continue;
+        }
+        // If it's act_essential_1955, preserve the authoritative complete 183 sections catalog
+        if (existing.id === "act_essential_1955") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
