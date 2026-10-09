@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield } from "lucide-react";
+import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText } from "lucide-react";
 
 interface FIRWorkspaceNavProps {
   firId?: string | null;
@@ -19,11 +19,24 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
 
   const isDrafts = pathname.includes("/fir-workspace/drafts");
   const isTemplates = pathname.includes("/fir-workspace/templates");
+  const isBuilder = pathname.includes("/fir-workspace/builder");
 
   return (
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
       {/* FIR Investigation Workspace Tabs */}
       <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+        <Link
+          href={`/fir-workspace/builder${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isBuilder
+              ? "text-blue-950 bg-blue-50 border border-blue-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <FileText className={`w-3.5 h-3.5 ${isBuilder ? "text-blue-700" : "text-blue-600"}`} />
+          <span>Template Builder (टेम्पलेट बिल्डर)</span>
+        </Link>
+
         <Link
           href={`/fir-workspace/drafts${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
