@@ -5,6 +5,7 @@ import { BNS_2023_SECTIONS } from "./bnsSectionsData";
 import { BNSS_2023_SECTIONS } from "./bnssSectionsData";
 import { ARMS_ACT_1959_SECTIONS } from "./armsActSectionsData";
 import { PUNJAB_EXCISE_1914_SECTIONS } from "./punjabExciseSectionsData";
+import { HARYANA_POLICE_2007_SECTIONS } from "./haryanaPoliceSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -258,14 +259,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Haryana Police Act, 2007",
     shortName: "Haryana Police Act, 2007",
     category: "State Acts (Haryana)",
-    sections: [
-      { sectionNumber: "68", title: "Regulation of public assemblies and processions" },
-      { sectionNumber: "69", title: "Assembly and procession violating conditions or without permission" },
-      { sectionNumber: "70", title: "Use of loudspeakers or sound amplifying devices in public places" },
-      { sectionNumber: "71", title: "Directions to keep order on public roads and prevention of obstructions" },
-      { sectionNumber: "72", title: "Penalty for causing nuisance, obstructing traffic, or disobeying police directions" },
-      { sectionNumber: "74", title: "Summary arrest by police officer without warrant for certain offences" },
-    ],
+    sections: HARYANA_POLICE_2007_SECTIONS,
   },
   {
     id: "act_gauvansh_2015",
@@ -530,6 +524,12 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("The Punjab Excise Act, 1914"), actOption);
       map.set(normalizeKey("Punjab Excise Act"), actOption);
     }
+    if (cAct.id === "act_haryana_police_2007") {
+      map.set(normalizeKey("Haryana Police Act,2007"), actOption);
+      map.set(normalizeKey("Haryana Police Act, 2007"), actOption);
+      map.set(normalizeKey("The Haryana Police Act, 2007"), actOption);
+      map.set(normalizeKey("Haryana Police Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -567,6 +567,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_punjab_excise_1914, preserve the authoritative complete 498 sections catalog
         if (existing.id === "act_punjab_excise_1914") {
+          continue;
+        }
+        // If it's act_haryana_police_2007, preserve the authoritative complete 320 sections catalog
+        if (existing.id === "act_haryana_police_2007") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
