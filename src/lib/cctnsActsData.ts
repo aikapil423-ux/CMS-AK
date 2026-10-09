@@ -12,6 +12,7 @@ import { SC_ST_ACT_1989_SECTIONS } from "./scstSectionsData";
 import { DOWRY_ACT_1961_SECTIONS } from "./dowrySectionsData";
 import { GAMBLING_ACT_1867_SECTIONS } from "./gamblingSectionsData";
 import { EXPLOSIVES_ACT_1908_SECTIONS } from "./explosivesSectionsData";
+import { ELECTRICITY_ACT_2003_SECTIONS } from "./electricitySectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -186,15 +187,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Electricity Act, 2003",
     shortName: "Electricity Act, 2003",
     category: "Special & Local Laws",
-    sections: [
-      { sectionNumber: "135(1)(a)", title: "Theft of electricity by tapping or making unauthorized connection" },
-      { sectionNumber: "135(1)(b)", title: "Theft of electricity by tampering with meter or installing device" },
-      { sectionNumber: "135(1)(c)", title: "Theft of electricity by damaging meter or preventing recording" },
-      { sectionNumber: "136", title: "Theft of electric lines and materials (Conductor/Transformer wire)" },
-      { sectionNumber: "137", title: "Receiving stolen property of electric lines and materials" },
-      { sectionNumber: "138", title: "Interference with meters or works of licensee" },
-      { sectionNumber: "150", title: "Abetment of electricity theft offences" },
-    ],
+    sections: ELECTRICITY_ACT_2003_SECTIONS,
   },
   {
     id: "act_haryana_police_2007",
@@ -519,6 +512,13 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Explosive Substances Act"), actOption);
       map.set(normalizeKey("Explosives Act"), actOption);
     }
+    if (cAct.id === "act_electricity_2003") {
+      map.set(normalizeKey("Electricity Act, 2003"), actOption);
+      map.set(normalizeKey("Electricity Act,2003"), actOption);
+      map.set(normalizeKey("The Electricity Act, 2003"), actOption);
+      map.set(normalizeKey("The Electricity Act,2003"), actOption);
+      map.set(normalizeKey("Electricity Act"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -584,6 +584,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_explosives_1908, preserve the authoritative complete 19 sections catalog
         if (existing.id === "act_explosives_1908") {
+          continue;
+        }
+        // If it's act_electricity_2003, preserve the authoritative complete 1,159 sections catalog
+        if (existing.id === "act_electricity_2003") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
