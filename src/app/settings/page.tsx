@@ -27,6 +27,7 @@ import {
   ArrowRight,
   Database,
   Lock,
+  Table,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,8 +38,9 @@ import {
   DropdownItem,
   DROPDOWN_CATEGORIES,
 } from "@/services/dropdownManagerService";
+import TableManagerTab from "@/components/settings/TableManagerTab";
 
-type SettingsTab = "dropdowns" | "station" | "system";
+type SettingsTab = "dropdowns" | "station" | "system" | "table-manager";
 
 const COLOR_OPTIONS = [
   { label: "Blue", value: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -329,6 +331,28 @@ function SettingsPageContent() {
             }`}
           >
             {DROPDOWN_CATEGORIES.length} Categories
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("table-manager")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "table-manager"
+              ? "bg-indigo-600 text-white shadow-xs"
+              : "text-slate-700 bg-indigo-50/70 border border-indigo-200 hover:bg-indigo-100"
+          }`}
+        >
+          <Table className="w-4 h-4 text-indigo-500" />
+          <span className="font-extrabold">Table Manager</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === "table-manager"
+                ? "bg-white/20 text-white"
+                : "bg-indigo-200 text-indigo-900 font-bold"
+            }`}
+          >
+            All Tables
           </span>
         </button>
 
@@ -716,6 +740,35 @@ function SettingsPageContent() {
             </Button>
           </div>
 
+          {/* Quick Access Card to Table Manager */}
+          <div className="bg-gradient-to-r from-indigo-50 via-slate-50 to-indigo-50 border border-indigo-200 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Table className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900">Table Column Manager</h3>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full border border-indigo-200">
+                    Custom Columns CRUD
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                  FIR, Complaints, और General Diary टेबल्स में नए कस्टम कॉलम्स जोड़ें, एडिट करें या डिलीट करें। सिस्टम के डिफ़ॉल्ट कॉलम्स सुरक्षित (Read-only) रहते हैं।
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => setActiveTab("table-manager")}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xs shrink-0 gap-2 self-start md:self-auto cursor-pointer"
+            >
+              <Table className="w-4 h-4" />
+              <span>Open Table Manager Tab</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+
           <Card className="border-slate-200 shadow-xs bg-white">
             <CardContent className="p-6 space-y-5">
               <div>
@@ -801,6 +854,11 @@ function SettingsPageContent() {
           </CardContent>
         </Card>
       )}
+
+      {/* ======================================================== */}
+      {/* TAB 4: TABLE MANAGER (Configurable Columns) */}
+      {/* ======================================================== */}
+      {activeTab === "table-manager" && <TableManagerTab />}
 
       {/* ======================================================== */}
       {/* MODAL: ADD NEW DROPDOWN OPTION */}

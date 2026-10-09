@@ -45,6 +45,7 @@ import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
+import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 
 type FIRSortField =
   | "firNumber"
@@ -102,7 +103,20 @@ export default function FIRRegisterPage() {
   // Column visibility
   const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
   const columnDropdownRef = useRef<HTMLDivElement | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState({
+  // Custom columns from Table Manager
+  const [customCols, setCustomCols] = useState<ManagedColumn[]>(() => {
+    return TableManagerService.getCustomColumns("fir");
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCustomCols(TableManagerService.getCustomColumns("fir"));
+    };
+    window.addEventListener("cms_table_columns_changed", handleUpdate);
+    return () => window.removeEventListener("cms_table_columns_changed", handleUpdate);
+  }, []);
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     firNumber: true,
     dateTime: true,
     complainant: true,
@@ -114,7 +128,7 @@ export default function FIRRegisterPage() {
   });
 
   // Column Reordering (Grab & Drag)
-  type FIRColKey = "firNumber" | "dateTime" | "complainant" | "actsPlace" | "status" | "assignedIo" | "daysPending";
+  type FIRColKey = string;
   const DEFAULT_FIR_COLUMN_ORDER: FIRColKey[] = [
     "firNumber",
     "dateTime",
@@ -125,7 +139,7 @@ export default function FIRRegisterPage() {
     "daysPending",
   ];
 
-  const FIR_COL_TO_SORT_FIELD: Record<FIRColKey, FIRSortField> = {
+  const FIR_COL_TO_SORT_FIELD: Record<string, FIRSortField> = {
     firNumber: "firNumber",
     dateTime: "firDate",
     complainant: "complainantName",
@@ -135,7 +149,7 @@ export default function FIRRegisterPage() {
     daysPending: "daysPending",
   };
 
-  const FIR_COL_LABELS: Record<FIRColKey, string> = {
+  const FIR_COL_LABELS: Record<string, string> = {
     firNumber: "FIR No. & Reference",
     dateTime: "Date & Time",
     complainant: "Complainant / Informant",
@@ -145,13 +159,19 @@ export default function FIRRegisterPage() {
     daysPending: "Days",
   };
 
+  const getColLabel = (colKey: string) => {
+    if (FIR_COL_LABELS[colKey]) return FIR_COL_LABELS[colKey];
+    const found = customCols.find((c) => c.key === colKey);
+    return found ? found.label : colKey;
+  };
+
   const [columnOrder, setColumnOrder] = useState<FIRColKey[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("cms_fir_column_order");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length === DEFAULT_FIR_COLUMN_ORDER.length) {
+          if (Array.isArray(parsed) && parsed.length >= DEFAULT_FIR_COLUMN_ORDER.length) {
             return parsed;
           }
         }
@@ -159,6 +179,35 @@ export default function FIRRegisterPage() {
     }
     return DEFAULT_FIR_COLUMN_ORDER;
   });
+
+  // Keep columnOrder and visibleColumns in sync with custom columns
+  useEffect(() => {
+    if (customCols.length > 0) {
+      setColumnOrder((prev) => {
+        const activeKeys = customCols.filter((c) => c.isActive).map((c) => c.key);
+        const missing = activeKeys.filter((k) => !prev.includes(k));
+        if (missing.length > 0) {
+          const next = [...prev, ...missing];
+          try {
+            localStorage.setItem("cms_fir_column_order", JSON.stringify(next));
+          } catch {}
+          return next;
+        }
+        return prev;
+      });
+      setVisibleColumns((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        customCols.forEach((c) => {
+          if (next[c.key] === undefined) {
+            next[c.key] = c.isActive;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }
+  }, [customCols]);
 
   const [draggedCol, setDraggedCol] = useState<FIRColKey | null>(null);
   const [dragOverCol, setDragOverCol] = useState<FIRColKey | null>(null);
@@ -182,7 +231,11 @@ export default function FIRRegisterPage() {
   };
 
   const resetColumnOrder = () => {
-    setColumnOrder(DEFAULT_FIR_COLUMN_ORDER);
+    const fullOrder = [
+      ...DEFAULT_FIR_COLUMN_ORDER,
+      ...customCols.filter((c) => c.isActive).map((c) => c.key),
+    ];
+    setColumnOrder(fullOrder);
     try {
       localStorage.removeItem("cms_fir_column_order");
     } catch {}
@@ -192,12 +245,12 @@ export default function FIRRegisterPage() {
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
 
-  const toggleColumn = (key: keyof typeof visibleColumns) => {
+  const toggleColumn = (key: string) => {
     setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const resetColumns = () => {
-    setVisibleColumns({
+    const base: Record<string, boolean> = {
       firNumber: true,
       dateTime: true,
       complainant: true,
@@ -206,7 +259,11 @@ export default function FIRRegisterPage() {
       assignedIo: true,
       daysPending: true,
       action: true,
+    };
+    customCols.forEach((c) => {
+      base[c.key] = c.isActive;
     });
+    setVisibleColumns(base);
     resetColumnOrder();
   };
 
@@ -425,8 +482,8 @@ export default function FIRRegisterPage() {
   };
 
   const renderColumnHeader = (colKey: FIRColKey) => {
-    const field = FIR_COL_TO_SORT_FIELD[colKey];
-    const label = FIR_COL_LABELS[colKey];
+    const field = (FIR_COL_TO_SORT_FIELD[colKey] || colKey) as any;
+    const label = getColLabel(colKey);
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
@@ -676,8 +733,16 @@ export default function FIRRegisterPage() {
           </td>
         );
 
-      default:
-        return null;
+      default: {
+        const customDef = customCols.find((c) => c.key === colKey);
+        return (
+          <td key={colKey} className="py-3 px-3.5 align-top text-xs text-slate-700">
+            <span className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              {customDef?.defaultValue || "—"}
+            </span>
+          </td>
+        );
+      }
     }
   };
 
@@ -937,9 +1002,48 @@ export default function FIRRegisterPage() {
                       </label>
                     );
                   })}
+
+                  {customCols.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
+                        Custom Columns (Table Manager)
+                      </span>
+                      <div className="space-y-1 mt-1">
+                        {customCols.map((c) => {
+                          const isChecked = visibleColumns[c.key] ?? c.isActive;
+                          return (
+                            <label
+                              key={c.key}
+                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleColumn(c.key)}
+                                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                              />
+                              <span className="truncate">{c.label}</span>
+                              <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
+                                Custom
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 px-1">
-                  💡 <em>कॉलम हेडर को पकड़कर (Grab) अपनी पसंद अनुसार आगे-पीछे सेट कर सकते हैं।</em>
+                <div className="pt-2 border-t border-slate-100 space-y-1 px-1">
+                  <div className="text-[10px] text-slate-500">
+                    💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                  </div>
+                  <Link
+                    href="/settings?tab=table-manager"
+                    className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
+                  >
+                    <span>+ Add/Manage Columns</span>
+                    <span>&rarr;</span>
+                  </Link>
                 </div>
               </div>
             )}

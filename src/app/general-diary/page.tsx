@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { GDRecordModal } from "@/components/general-diary/GDRecordModal";
 import { GDVerificationModal } from "@/components/general-diary/GDVerificationModal";
+import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS" | "AUDIT_TRAIL";
 
@@ -63,15 +64,28 @@ function GeneralDiaryContent() {
   const [officerQuery, setOfficerQuery] = useState("");
 
   // Column Sort & Column Search State
-  type GDSortField = "gdNumber" | "officer" | "gdType" | "subject" | "activityDateTime" | "narrative";
+  type GDSortField = string;
   type SortOrder = "asc" | "desc";
   const [sortField, setSortField] = useState<GDSortField>("activityDateTime");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
 
+  // Custom columns from Table Manager
+  const [customCols, setCustomCols] = useState<ManagedColumn[]>(() => {
+    return TableManagerService.getCustomColumns("general-diary");
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCustomCols(TableManagerService.getCustomColumns("general-diary"));
+    };
+    window.addEventListener("cms_table_columns_changed", handleUpdate);
+    return () => window.removeEventListener("cms_table_columns_changed", handleUpdate);
+  }, []);
+
   // Column Reordering (Grab & Drag)
-  type GDColKey = "gdNumber" | "officer" | "gdType" | "subject" | "activityDateTime" | "narrative";
+  type GDColKey = string;
   const DEFAULT_GD_COLUMN_ORDER: GDColKey[] = [
     "gdNumber",
     "officer",
@@ -81,7 +95,7 @@ function GeneralDiaryContent() {
     "narrative",
   ];
 
-  const GD_COLUMN_LABELS: Record<GDColKey, string> = {
+  const GD_COLUMN_LABELS: Record<string, string> = {
     gdNumber: "GD No",
     officer: "Entry for officer",
     gdType: "GD Type",
@@ -90,7 +104,13 @@ function GeneralDiaryContent() {
     narrative: "Brief description",
   };
 
-  const GD_COLUMN_WIDTHS: Record<GDColKey, string> = {
+  const getGDColLabel = (field: string) => {
+    if (GD_COLUMN_LABELS[field]) return GD_COLUMN_LABELS[field];
+    const custom = customCols.find((c) => c.key === field);
+    return custom ? custom.label : field;
+  };
+
+  const GD_COLUMN_WIDTHS: Record<string, string> = {
     gdNumber: "w-28",
     officer: "w-44",
     gdType: "w-32",
@@ -105,7 +125,7 @@ function GeneralDiaryContent() {
         const saved = localStorage.getItem("cms_gd_column_order");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length === DEFAULT_GD_COLUMN_ORDER.length) {
+          if (Array.isArray(parsed) && parsed.length >= DEFAULT_GD_COLUMN_ORDER.length) {
             return parsed;
           }
         }
@@ -113,6 +133,24 @@ function GeneralDiaryContent() {
     }
     return DEFAULT_GD_COLUMN_ORDER;
   });
+
+  // Keep columnOrder in sync with custom columns
+  useEffect(() => {
+    if (customCols.length > 0) {
+      setColumnOrder((prev) => {
+        const activeKeys = customCols.filter((c) => c.isActive).map((c) => c.key);
+        const missing = activeKeys.filter((k) => !prev.includes(k));
+        if (missing.length > 0) {
+          const next = [...prev, ...missing];
+          try {
+            localStorage.setItem("cms_gd_column_order", JSON.stringify(next));
+          } catch {}
+          return next;
+        }
+        return prev;
+      });
+    }
+  }, [customCols]);
 
   const [draggedCol, setDraggedCol] = useState<GDColKey | null>(null);
   const [dragOverCol, setDragOverCol] = useState<GDColKey | null>(null);
@@ -136,7 +174,11 @@ function GeneralDiaryContent() {
   };
 
   const resetColumnOrder = () => {
-    setColumnOrder(DEFAULT_GD_COLUMN_ORDER);
+    const fullOrder = [
+      ...DEFAULT_GD_COLUMN_ORDER,
+      ...customCols.filter((c) => c.isActive).map((c) => c.key),
+    ];
+    setColumnOrder(fullOrder);
     try {
       localStorage.removeItem("cms_gd_column_order");
     } catch {}
@@ -346,7 +388,7 @@ function GeneralDiaryContent() {
   }, []);
 
   const renderGDColumnHeader = (field: GDColKey) => {
-    const label = GD_COLUMN_LABELS[field];
+    const label = getGDColLabel(field);
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
@@ -543,8 +585,16 @@ function GeneralDiaryContent() {
           </td>
         );
 
-      default:
-        return null;
+      default: {
+        const customDef = customCols.find((c) => c.key === col);
+        return (
+          <td key={col} className="py-3.5 px-3.5 align-top text-xs text-slate-700">
+            <span className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              {customDef?.defaultValue || "—"}
+            </span>
+          </td>
+        );
+      }
     }
   };
 

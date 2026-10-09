@@ -53,6 +53,7 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
+import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 
 type ComplaintSortField =
   | "complaintNumber"
@@ -167,7 +168,20 @@ function ComplaintListContent() {
   // Column Selection Checkboxes state
   const [columnDropdownOpen, setColumnDropdownOpen] = useState(false);
   const columnDropdownRef = useRef<HTMLDivElement | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState({
+  // Custom columns from Table Manager
+  const [customCols, setCustomCols] = useState<ManagedColumn[]>(() => {
+    return TableManagerService.getCustomColumns("complaints");
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setCustomCols(TableManagerService.getCustomColumns("complaints"));
+    };
+    window.addEventListener("cms_table_columns_changed", handleUpdate);
+    return () => window.removeEventListener("cms_table_columns_changed", handleUpdate);
+  }, []);
+
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     complaintId: true,
     dateTime: true,
     complainant: true,
@@ -179,7 +193,7 @@ function ComplaintListContent() {
   });
 
   // Column Reordering (Grab & Drag)
-  type ComplaintColKey = "complaintId" | "dateTime" | "complainant" | "categoryLocation" | "status" | "assignedEo" | "daysPending";
+  type ComplaintColKey = string;
   const DEFAULT_COMPLAINT_COLUMN_ORDER: ComplaintColKey[] = [
     "complaintId",
     "dateTime",
@@ -190,7 +204,7 @@ function ComplaintListContent() {
     "daysPending",
   ];
 
-  const COMPLAINT_COL_TO_SORT_FIELD: Record<ComplaintColKey, ComplaintSortField> = {
+  const COMPLAINT_COL_TO_SORT_FIELD: Record<string, ComplaintSortField> = {
     complaintId: "complaintNumber",
     dateTime: "createdAt",
     complainant: "complainantName",
@@ -200,7 +214,7 @@ function ComplaintListContent() {
     daysPending: "daysPending",
   };
 
-  const COMPLAINT_COL_LABELS: Record<ComplaintColKey, string> = {
+  const COMPLAINT_COL_LABELS: Record<string, string> = {
     complaintId: "Complaint ID & Priority",
     dateTime: "Date & Time",
     complainant: "Complainant",
@@ -210,13 +224,19 @@ function ComplaintListContent() {
     daysPending: "Days Pending",
   };
 
+  const getColLabel = (colKey: string) => {
+    if (COMPLAINT_COL_LABELS[colKey]) return COMPLAINT_COL_LABELS[colKey];
+    const custom = customCols.find((c) => c.key === colKey);
+    return custom ? custom.label : colKey;
+  };
+
   const [columnOrder, setColumnOrder] = useState<ComplaintColKey[]>(() => {
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem("cms_complaint_column_order");
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length === DEFAULT_COMPLAINT_COLUMN_ORDER.length) {
+          if (Array.isArray(parsed) && parsed.length >= DEFAULT_COMPLAINT_COLUMN_ORDER.length) {
             return parsed;
           }
         }
@@ -224,6 +244,35 @@ function ComplaintListContent() {
     }
     return DEFAULT_COMPLAINT_COLUMN_ORDER;
   });
+
+  // Keep columnOrder and visibleColumns in sync with custom columns
+  useEffect(() => {
+    if (customCols.length > 0) {
+      setColumnOrder((prev) => {
+        const activeKeys = customCols.filter((c) => c.isActive).map((c) => c.key);
+        const missing = activeKeys.filter((k) => !prev.includes(k));
+        if (missing.length > 0) {
+          const next = [...prev, ...missing];
+          try {
+            localStorage.setItem("cms_complaint_column_order", JSON.stringify(next));
+          } catch {}
+          return next;
+        }
+        return prev;
+      });
+      setVisibleColumns((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        customCols.forEach((c) => {
+          if (next[c.key] === undefined) {
+            next[c.key] = c.isActive;
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }
+  }, [customCols]);
 
   const [draggedCol, setDraggedCol] = useState<ComplaintColKey | null>(null);
   const [dragOverCol, setDragOverCol] = useState<ComplaintColKey | null>(null);
@@ -247,18 +296,22 @@ function ComplaintListContent() {
   };
 
   const resetColumnOrder = () => {
-    setColumnOrder(DEFAULT_COMPLAINT_COLUMN_ORDER);
+    const fullOrder = [
+      ...DEFAULT_COMPLAINT_COLUMN_ORDER,
+      ...customCols.filter((c) => c.isActive).map((c) => c.key),
+    ];
+    setColumnOrder(fullOrder);
     try {
       localStorage.removeItem("cms_complaint_column_order");
     } catch {}
   };
 
-  const toggleColumn = (key: keyof typeof visibleColumns) => {
+  const toggleColumn = (key: string) => {
     setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const resetColumns = () => {
-    setVisibleColumns({
+    const base: Record<string, boolean> = {
       complaintId: true,
       dateTime: true,
       complainant: true,
@@ -267,7 +320,11 @@ function ComplaintListContent() {
       assignedEo: true,
       daysPending: true,
       action: true,
+    };
+    customCols.forEach((c) => {
+      base[c.key] = c.isActive;
     });
+    setVisibleColumns(base);
     resetColumnOrder();
   };
 
@@ -760,8 +817,8 @@ function ComplaintListContent() {
   }, [complaints, columnSearch, sortField, sortOrder]);
 
   const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
-    const field = COMPLAINT_COL_TO_SORT_FIELD[colKey];
-    const label = COMPLAINT_COL_LABELS[colKey];
+    const field = (COMPLAINT_COL_TO_SORT_FIELD[colKey] || colKey) as any;
+    const label = getColLabel(colKey);
     const isSearching = activeSearchCol === field;
     const filterValue = columnSearch[field] || "";
     const isSorted = sortField === field;
@@ -1032,8 +1089,16 @@ function ComplaintListContent() {
           </td>
         );
 
-      default:
-        return null;
+      default: {
+        const customDef = customCols.find((col) => col.key === colKey);
+        return (
+          <td key={colKey} className="py-3 px-4 text-xs text-slate-700">
+            <span className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+              {customDef?.defaultValue || "—"}
+            </span>
+          </td>
+        );
+      }
     }
   };
 
@@ -1594,9 +1659,48 @@ function ComplaintListContent() {
                     />
                     <span>Action</span>
                   </label>
+
+                  {customCols.length > 0 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
+                        Custom Columns (Table Manager)
+                      </span>
+                      <div className="space-y-1 mt-1">
+                        {customCols.map((c) => {
+                          const isChecked = visibleColumns[c.key] ?? c.isActive;
+                          return (
+                            <label
+                              key={c.key}
+                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleColumn(c.key)}
+                                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                              />
+                              <span className="truncate">{c.label}</span>
+                              <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
+                                Custom
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="pt-2 mt-2 border-t border-slate-100 text-[10px] text-slate-500">
-                  💡 <em>कॉलम हेडर को पकड़कर (Grab) अपनी पसंद अनुसार आगे-पीछे सेट कर सकते हैं।</em>
+                <div className="pt-2 mt-2 border-t border-slate-100 space-y-1">
+                  <div className="text-[10px] text-slate-500">
+                    💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                  </div>
+                  <Link
+                    href="/settings?tab=table-manager"
+                    className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
+                  >
+                    <span>+ Add/Manage Columns</span>
+                    <span>&rarr;</span>
+                  </Link>
                 </div>
               </div>
             )}
