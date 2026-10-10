@@ -419,7 +419,11 @@ export default function FIRRegisterPage() {
             (fir.sourceComplaintNumber?.toLowerCase().includes(q) ?? false);
           if (!match) return false;
         } else if (col === "firDate") {
-          const match = fir.firDate.includes(q) || (fir.firTime?.includes(q) ?? false);
+          const formatted = formatDate(fir.firDate);
+          const match =
+            fir.firDate.includes(q) ||
+            formatted.includes(q) ||
+            (fir.firTime?.includes(q) ?? false);
           if (!match) return false;
         } else if (col === "complainantName") {
           const match =
@@ -647,7 +651,7 @@ export default function FIRRegisterPage() {
       case "dateTime":
         return (
           <td key="dateTime" className="py-3 px-3 align-top whitespace-nowrap">
-            <div className="text-slate-800 font-semibold">{fir.firDate}</div>
+            <div className="text-slate-800 font-semibold">{formatDate(fir.firDate)}</div>
             <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3 text-slate-400" />
               <span>{fir.firTime || "10:00"} hrs</span>

@@ -39,6 +39,7 @@ import {
 } from "@/services/recommendationReportService";
 import { ComplaintService } from "@/services/complaintService";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/utils";
 
 interface RecommendationReportModalProps {
   isOpen: boolean;
@@ -111,7 +112,7 @@ export const RecommendationReportModal: React.FC<RecommendationReportModalProps>
       setOfficerRank(existingReport.officerRank || currentUser.rankDisplay || "Enquiry Officer");
       setOfficerPno(existingReport.officerPno || currentUser.pno || "PNO-23841");
       setOfficerLocation(complaint.policeStation || "Panipat");
-      setReportDateStr(new Date().toLocaleDateString("en-GB").replace(/\//g, "."));
+      setReportDateStr(formatDate(new Date()));
       setActiveVersionNumber(existingReport.versionNumber || 1);
       setSaveMode((existingReport.status as any) || "Saved in Complaint");
 

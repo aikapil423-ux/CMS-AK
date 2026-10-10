@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
@@ -207,7 +208,7 @@ const TEMPLATE_PRESETS: Record<EnquiryProformaType, FormatTemplate> = {
       {
         id: "row_report_date",
         label: "DATE OF REPORT-",
-        cells: [new Date().toLocaleDateString("en-GB").replace(/\//g, ".")],
+        cells: [formatDate(new Date())],
       },
       {
         id: "row_satisfaction",
@@ -617,7 +618,7 @@ function EnquiryDraftsContent() {
   const [officerName, setOfficerName] = useState(TEMPLATE_PRESETS[initialFormat].officerName);
   const [officerRank, setOfficerRank] = useState(TEMPLATE_PRESETS[initialFormat].officerRank);
   const [officerLocation, setOfficerLocation] = useState(TEMPLATE_PRESETS[initialFormat].officerLocation);
-  const [reportDate, setReportDate] = useState(`Dated: ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
+  const [reportDate, setReportDate] = useState(`Dated: ${formatDate(new Date())}`);
 
   // Appearance & Border Controls
   const [borderStyle, setBorderStyle] = useState<"solid" | "double" | "light" | "none">("solid");
@@ -658,7 +659,7 @@ function EnquiryDraftsContent() {
     const districtName = (found.district || currentUser.district || "PANIPAT").toUpperCase();
     setHeaderLeft("POLICE DEPARTMENT");
     setHeaderRight(`DISTRICT ${districtName}`);
-    setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`);
+    setTitle(`ENQUIRY REPORT ON COMPLAINT NO. ${found.complaintNumber} DATED ${formatDate(new Date())}`);
 
     // If reportId is provided, check if existing report exists
     const existingReport = targetReportId ? found.reports?.find((r) => r.id === targetReportId) : null;
@@ -738,14 +739,14 @@ function EnquiryDraftsContent() {
       setRows([
         { id: "row_citizen_detail", label: "CITIZEN DETAIL-", cells: [`NAME- ${found.complainantName}\nMOBILE NO.- ${found.complainantMobile || "N/A"}\nADDRESS- ${found.complainantAddress || "Panipat"}`] },
         { id: "row_allegation", label: "ALLEGATIONS LEVELED IN COMPLAINT-", cells: [found.subject || found.complaintDescription || ""] },
-        { id: "row_report_date", label: "DATE OF REPORT-", cells: [new Date().toLocaleDateString("en-GB").replace(/\//g, ".")] },
+        { id: "row_report_date", label: "DATE OF REPORT-", cells: [formatDate(new Date())] },
         { id: "row_satisfaction", label: "CITIZEN SATISFACTION- YES/NO -", cells: [analysis.proformaFindingsText.citizen_detail.satisfaction] },
         { id: "row_final_report", label: "FINAL REPORT ON THE ENQUIRY CONDUCTED BY THE INVESTIGATING OFFICER -", cells: [analysis.proformaFindingsText.citizen_detail.finalReport] },
       ]);
     } else if (fmtKey === "ncr_174") {
       setColumns([]);
       setRows([
-        { id: "row_ncr_date", label: "Date & GD Entry Reference", cells: [`Roznamcha GD Reference Dated ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`] },
+        { id: "row_ncr_date", label: "Date & GD Entry Reference", cells: [`Roznamcha GD Reference Dated ${formatDate(new Date())}`] },
         { id: "row_ncr_parties", label: "Complainant & Opposite Party Details", cells: [`Complainant: ${complainantInfo}\nOpposite Party: ${accusedInfo}`] },
         { id: "row_ncr_findings", label: "General Diary Entry & Enquiry Report Details", cells: [row4Content] },
       ]);

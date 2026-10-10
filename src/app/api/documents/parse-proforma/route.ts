@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { formatDate } from "@/lib/utils";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -220,7 +221,7 @@ Return ONLY valid JSON matching this exact structure without markdown backticks:
       officerName: "",
       officerRank: "",
       officerLocation: "",
-      reportDate: new Date().toLocaleDateString("en-GB").replace(/\//g, "."),
+      reportDate: formatDate(new Date()),
       borderStyle: "solid",
       rawText: fallbackText,
     };

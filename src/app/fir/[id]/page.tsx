@@ -449,7 +449,7 @@ export default function FIRProfilePage() {
         category = "SEIZURE_MEMO";
         content = `HARYANA POLICE\nSEIZURE MEMO / FARD ZABTI (RECOVERY UNDER BNSS)\n\nFIR No: ${
           fir.firNumber
-        }\nDate of Seizure: ${new Date().toLocaleDateString("en-IN")}\nPlace of Seizure: ${
+        }\nDate of Seizure: ${formatDate(new Date())}\nPlace of Seizure: ${
           fir.incidentPlace
         }\n\nArticles Recovered & Seized:\n1. Material evidence related to ${
           fir.actsAndSections
@@ -462,7 +462,7 @@ export default function FIRProfilePage() {
         category = "FIELD_REPORT";
         content = `CASE DIARY EXTRACT (SECTION 175 BNSS)\nFIR No: ${fir.firNumber} | PS: ${
           fir.policeStation
-        }\nDate: ${new Date().toLocaleDateString("en-IN")}\n\nRecord of Day-to-Day Investigation:\n1. Investigation taken up by IO.\n2. Evidentiary material inspected and placed on docket.\n3. Case diaries maintained chronologically as mandated by law.\n\nSigned by IO: ${
+        }\nDate: ${formatDate(new Date())}\n\nRecord of Day-to-Day Investigation:\n1. Investigation taken up by IO.\n2. Evidentiary material inspected and placed on docket.\n3. Case diaries maintained chronologically as mandated by law.\n\nSigned by IO: ${
           fir.assignedIoName || currentUser.name
         }`;
         break;
@@ -495,9 +495,7 @@ export default function FIRProfilePage() {
     } else {
       const content = `HARYANA POLICE\nFIR No: ${fir?.firNumber || ""}\nDocument: ${
         doc.title
-      }\nDate: ${new Date().toLocaleDateString(
-        "en-IN"
-      )}\n\nThis is an authentic certified evidentiary record attached to the case docket.`;
+      }\nDate: ${formatDate(new Date())}\n\nThis is an authentic certified evidentiary record attached to the case docket.`;
       const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

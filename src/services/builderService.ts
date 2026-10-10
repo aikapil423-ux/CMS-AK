@@ -1,4 +1,5 @@
 import { ComplaintItem } from "@/types";
+import { formatDate } from "@/lib/utils";
 
 export interface BuilderTemplateItem {
   id: string;
@@ -56,11 +57,11 @@ export const CMS_DYNAMIC_FIELDS: DynamicFieldDef[] = [
   // Location & Date
   { key: "POLICE_STATION", token: "{{POLICE_STATION}}", label: "Police Station Name", category: "Location & Date", example: "Police Station City Panipat" },
   { key: "DISTRICT", token: "{{DISTRICT}}", label: "District Name", category: "Location & Date", example: "Panipat" },
-  { key: "DATE", token: "{{DATE}}", label: "Current Date", category: "Location & Date", example: new Date().toLocaleDateString("en-GB") },
+  { key: "DATE", token: "{{DATE}}", label: "Current Date", category: "Location & Date", example: formatDate(new Date()) },
   { key: "TIME", token: "{{TIME}}", label: "Current Time", category: "Location & Date", example: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) },
   { key: "INCIDENT_DATE", token: "{{INCIDENT_DATE}}", label: "Incident Date", category: "Location & Date", example: "18-09-2026" },
   { key: "INCIDENT_PLACE", token: "{{INCIDENT_PLACE}}", label: "Incident Place / Address", category: "Location & Date", example: "GT Road Near Bus Stand, Panipat" },
-  { key: "ENQUIRY_DATE", token: "{{ENQUIRY_DATE}}", label: "Enquiry Conduct Date", category: "Location & Date", example: new Date().toLocaleDateString("en-GB") },
+  { key: "ENQUIRY_DATE", token: "{{ENQUIRY_DATE}}", label: "Enquiry Conduct Date", category: "Location & Date", example: formatDate(new Date()) },
   { key: "ENQUIRY_LOCATION", token: "{{ENQUIRY_LOCATION}}", label: "Enquiry Location / Venue", category: "Location & Date", example: "Police Station Panipat / Spot Verification" },
 
   // Officer
@@ -104,7 +105,7 @@ export function resolveDynamicPlaceholders(
   if (!content) return "";
   let resolved = content;
 
-  const todayStr = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+  const todayStr = formatDate(new Date());
   const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
   const values: Record<string, string> = {
@@ -115,7 +116,7 @@ export function resolveDynamicPlaceholders(
     "{{DISTRICT}}": complaint?.district || "Panipat",
     "{{DATE}}": todayStr,
     "{{TIME}}": timeStr,
-    "{{INCIDENT_DATE}}": complaint?.incidentDate ? new Date(complaint.incidentDate).toLocaleDateString("en-GB") : todayStr,
+    "{{INCIDENT_DATE}}": complaint?.incidentDate ? formatDate(complaint.incidentDate) : todayStr,
     "{{INCIDENT_PLACE}}": complaint?.incidentPlace || "Panipat",
     "{{ENQUIRY_DATE}}": todayStr,
     "{{ENQUIRY_LOCATION}}": complaint?.policeStation || "Police Station City Panipat",

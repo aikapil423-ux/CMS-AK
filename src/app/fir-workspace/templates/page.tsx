@@ -27,6 +27,7 @@ import { firService } from "@/services/firService";
 import { FIRItem, NoticeFormData } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { formatDate } from "@/lib/utils";
 
 export type FIRNoticeTemplateType =
   | "section_35_notice"
@@ -45,7 +46,7 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     dispatchNo: "",
     policeStation: "थाना शहर अम्बाला",
     district: "जिला अम्बाला।",
-    issueDate: new Date().toLocaleDateString("hi-IN"),
+    issueDate: formatDate(new Date()),
 
     noticeeName: "",
     noticeeFather: "",
@@ -57,13 +58,13 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     complaintNo: "128/2026",
     complainantName: "",
     complainantAddress: "",
-    incidentDate: new Date().toLocaleDateString("hi-IN"),
+    incidentDate: formatDate(new Date()),
     sectionsOfLaw: "धारा 318(4), 316(2) BNS",
     allegationsBrief:
       "उपरोक्त अभियोग में आपके विरुद्ध संज्ञेय अपराध के संबंध में उचित साक्ष्य एवं संदेह पाया गया है। तदनुसार अनुसंधान में शामिल होकर अपना पक्ष प्रस्तुत करने हेतु यह नोटिस जारी किया जाता है।",
 
     groundsBrief: "अनुसंधान में सहयोग एवं साक्ष्यों का परीक्षण करने हेतु।",
-    appearanceDate: new Date(Date.now() + 2 * 86400000).toLocaleDateString("hi-IN"),
+    appearanceDate: formatDate(new Date(Date.now() + 2 * 86400000)),
     appearanceTime: "11:00 AM",
     appearancePlace: "कार्यालय अनुसंधान अधिकारी, थाना शहर अम्बाला",
     documentsRequired: "पहचान पत्र (आधार कार्ड/पैन कार्ड), पते का प्रमाण एवं अभियोग से संबंधित आवश्यक दस्तावेज।",
@@ -84,7 +85,7 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     dispatchNo: "",
     policeStation: "थाना शहर पानीपत",
     district: "जिला पानीपत",
-    issueDate: new Date().toLocaleDateString("hi-IN"),
+    issueDate: formatDate(new Date()),
 
     toAuthority: "पुलिस अधीक्षक पानीपत।",
 
@@ -322,7 +323,7 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     dispatchNo: "",
     policeStation: "थाना शहर अम्बाला",
     district: "जिला अम्बाला।",
-    issueDate: new Date().toLocaleDateString("hi-IN"),
+    issueDate: formatDate(new Date()),
 
     noticeeName: "",
     noticeeFather: "",
@@ -334,13 +335,13 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     complaintNo: "128/2026",
     complainantName: "",
     complainantAddress: "",
-    incidentDate: new Date().toLocaleDateString("hi-IN"),
+    incidentDate: formatDate(new Date()),
     sectionsOfLaw: "धारा 318(4), 316(2) BNS",
     allegationsBrief:
       "उपरोक्त अभियोग के अनुसंधान से यह प्रतीत होता है कि आप कथित अपराध के तथ्यों व परिस्थितियों से भली-भांति परिचित हैं। अतः आपके बयान दर्ज करने आवश्यक हैं।",
 
     groundsBrief: "अभियोग में साक्ष्य एवं बयान धारा 180 BNSS के तहत अभिलिखित करने हेतु।",
-    appearanceDate: new Date(Date.now() + 2 * 86400000).toLocaleDateString("hi-IN"),
+    appearanceDate: formatDate(new Date(Date.now() + 2 * 86400000)),
     appearanceTime: "11:00 AM",
     appearancePlace: "कार्यालय अनुसंधान अधिकारी, थाना शहर अम्बाला",
     documentsRequired: "पहचान पत्र तथा मामले से संबंधित कोई भी सुसंगत अभिलेख या सूचना।",
@@ -509,7 +510,7 @@ function FIRTemplatesContent() {
           id: "cdr_1",
           phone: primaryAccused.phone || "9812044551",
           periodFrom: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || "01-08-2026",
-          periodTo: new Date().toLocaleDateString("hi-IN"),
+          periodTo: formatDate(new Date()),
           reason: `Verification of accused in FIR No. ${activeFir.firNumber}`,
         },
       ]);

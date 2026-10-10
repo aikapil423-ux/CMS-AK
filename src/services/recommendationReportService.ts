@@ -233,7 +233,7 @@ export const RecommendationReportService = {
     }
   ): RecommendationReportDraft {
     const config = this.getRecommendationConfig(recType);
-    const dateFormatted = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+    const dateFormatted = formatDate(new Date());
     const compDate = complaint.createdAt
       ? formatDate(complaint.createdAt)
       : "[दिनांक उपलब्ध नहीं / Date not recorded]";

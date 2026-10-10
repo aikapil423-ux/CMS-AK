@@ -52,6 +52,7 @@ import {
   FileType,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem } from "@/types";
@@ -577,7 +578,7 @@ function TemplateDraftBuilderContent() {
   };
 
   const insertDate = () => {
-    const today = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+    const today = formatDate(new Date());
     execCmd("insertText", today);
   };
 
@@ -1721,7 +1722,7 @@ function TemplateDraftBuilderContent() {
                           v{t.version}
                         </td>
                         <td className="p-3 text-slate-500">
-                          {new Date(t.updatedAt).toLocaleDateString("en-GB")}
+                          {formatDate(t.updatedAt)}
                         </td>
                         <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                           <Button
@@ -1878,7 +1879,7 @@ function TemplateDraftBuilderContent() {
                           </span>
                         </td>
                         <td className="p-3 text-slate-500">
-                          {new Date(d.updatedAt).toLocaleDateString("en-GB")}
+                          {formatDate(d.updatedAt)}
                         </td>
                         <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
                           <Button

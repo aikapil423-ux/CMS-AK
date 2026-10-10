@@ -777,7 +777,7 @@ function ComplaintListContent() {
             (c.priority?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "createdAt") {
-          return c.createdAt.includes(q);
+          return c.createdAt.includes(q) || formatDate(c.createdAt).includes(q);
         } else if (col === "complainantName") {
           return (
             c.complainantName.toLowerCase().includes(q) ||
@@ -2323,7 +2323,7 @@ function ComplaintListContent() {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center gap-4 text-slate-600">
                     <span>
-                      <strong>Date of Incident:</strong> {selectedComplaint.incidentDate || "Not specified"}
+                      <strong>Date of Incident:</strong> {selectedComplaint.incidentDate ? formatDate(selectedComplaint.incidentDate) : "Not specified"}
                     </span>
                     <span>
                       <strong>Location:</strong> {selectedComplaint.incidentPlace}

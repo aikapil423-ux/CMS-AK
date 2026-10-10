@@ -28,6 +28,7 @@ import {
   Info,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
@@ -73,7 +74,7 @@ function NcrWorkspaceContent() {
   const [officerRank, setOfficerRank] = useState<string>("Sub-Inspector / Enquiry Officer");
   const [officerLocation, setOfficerLocation] = useState<string>("Police Station City");
   const [reportDate, setReportDate] = useState<string>(
-    `Dated: ${new Date().toLocaleDateString("en-GB").replace(/\//g, ".")}`
+    `Dated: ${formatDate(new Date())}`
   );
 
   // Appearance Controls
@@ -92,7 +93,7 @@ function NcrWorkspaceContent() {
   const populateFromAnalysis = (comp: ComplaintItem, report: ComplaintAnalysisReport) => {
     const dName = (comp.district || currentUser.district || "PANIPAT").toUpperCase();
     const psName = comp.policeStation || currentUser.stationName || "Police Station City";
-    const dateStr = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+    const dateStr = formatDate(new Date());
     const genNcrNum = `NCR-${dName.slice(0, 3)}-${comp.complaintNumber.split("-").pop() || "018"}`;
 
     setNcrNumber(genNcrNum);

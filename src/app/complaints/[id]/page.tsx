@@ -1494,7 +1494,7 @@ export default function ComplaintProfilePage() {
       const generated = `PRELIMINARY ENQUIRY REPORT (UNDER SECTION 173(3) BNSS)
 Police Station: ${complaint.policeStation}
 Complaint Reference: ${complaint.complaintNumber}
-Date of Inquiry: ${new Date().toLocaleDateString("en-IN")}
+Date of Inquiry: ${formatDate(new Date())}
 Designated Officer: ${complaint.assignedEoName || currentUser.name} (${complaint.assignedEoRank || currentUser.rankDisplay})
 
 1. BRIEF FACTS:

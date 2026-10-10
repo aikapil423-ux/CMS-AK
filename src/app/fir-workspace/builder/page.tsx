@@ -57,6 +57,7 @@ import {
   FileSignature,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -452,7 +453,7 @@ export function resolveFIRPlaceholders(content: string, fir?: FIRItem | null, cu
   if (!content) return "";
   let resolved = content;
 
-  const todayStr = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+  const todayStr = formatDate(new Date());
   const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
   const values: Record<string, string> = {
@@ -698,7 +699,7 @@ function FIRTemplateBuilderContent() {
   };
 
   const insertDate = () => {
-    const today = new Date().toLocaleDateString("en-GB").replace(/\//g, ".");
+    const today = formatDate(new Date());
     execCmd("insertText", today);
   };
 
@@ -729,7 +730,7 @@ function FIRTemplateBuilderContent() {
               रैंक / Rank: ${selectedFir?.assignedIoRank || currentUser?.rankDisplay || "............................................"}<br/>
               PNO / Belt No: ${selectedFir?.assignedIoBeltNumber || currentUser?.pno || "...................................."}<br/>
               थाना / Police Station: ${selectedFir?.policeStation || "............................"}<br/>
-              दिनांक / Date: ${new Date().toLocaleDateString("en-GB")}
+              दिनांक / Date: ${formatDate(new Date())}
             </td>
           </tr>
         </table>
@@ -1867,7 +1868,7 @@ function FIRTemplateBuilderContent() {
                     <div className="flex items-center gap-2 mt-3 text-[11px] text-slate-400 font-medium">
                       <span>श्रेणी: <strong className="text-slate-600">{tpl.category}</strong></span>
                       {tpl.createdAt && (
-                        <span>• {new Date(tpl.createdAt).toLocaleDateString("en-GB")}</span>
+                        <span>• {formatDate(tpl.createdAt)}</span>
                       )}
                     </div>
                   </div>

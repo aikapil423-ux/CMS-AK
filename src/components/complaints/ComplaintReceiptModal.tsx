@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ComplaintItem } from "@/types";
 import { Button } from "@/components/ui/button";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface ComplaintReceiptModalProps {
   complaint: ComplaintItem | null;
@@ -32,16 +33,9 @@ export function ComplaintReceiptModal({
   const formattedDateTime = (() => {
     try {
       const d = complaint.createdAt ? new Date(complaint.createdAt) : new Date();
-      return d.toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
+      return formatDateTime(d);
     } catch {
-      return new Date().toLocaleDateString("en-IN");
+      return formatDate(new Date());
     }
   })();
 

@@ -120,14 +120,12 @@ export function toDDMMYYYY(dateOrStr: string | Date | undefined | null): string 
   const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
     const [, yyyy, mm, dd] = match;
-    const rest = str.slice(10);
-    return `${dd}/${mm}/${yyyy}${rest}`;
+    return `${dd}/${mm}/${yyyy}`;
   }
   const matchDMY = str.match(/^(\d{2})[-/](\d{2})[-/](\d{4})/);
   if (matchDMY) {
     const [, dd, mm, yyyy] = matchDMY;
-    const rest = str.slice(10);
-    return `${dd}/${mm}/${yyyy}${rest}`;
+    return `${dd}/${mm}/${yyyy}`;
   }
   return str;
 }

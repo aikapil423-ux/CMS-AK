@@ -31,6 +31,7 @@ import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { formatDate } from "@/lib/utils";
 
 interface HeaderLine {
   id: string;
@@ -278,7 +279,7 @@ function ZimniWorkspaceContent() {
       : "थाना सैक्टर 20 पंचकूला";
 
     const firNoStr = `मु०नं० ${activeFir.firNumber || "137"} दिनांक ${
-      activeFir.firDate || new Date().toLocaleDateString("hi-IN")
+      activeFir.firDate ? formatDate(activeFir.firDate) : formatDate(new Date())
     }`;
 
     const incidentPlaceStr = `घटना स्थल:- ${
@@ -287,10 +288,12 @@ function ZimniWorkspaceContent() {
 
     const incidentDateStr = `घटना तिथि:- ${
       activeFir.incidentDateFrom
-        ? `${activeFir.incidentDateFrom}${
-            activeFir.incidentDateTo ? ` से ${activeFir.incidentDateTo} तक` : ""
+        ? `${formatDate(activeFir.incidentDateFrom)}${
+            activeFir.incidentDateTo ? ` से ${formatDate(activeFir.incidentDateTo)} तक` : ""
           }`
-        : activeFir.firDate || "दिनांक अनुसार"
+        : activeFir.firDate
+        ? formatDate(activeFir.firDate)
+        : "दिनांक अनुसार"
     }`;
 
     const offenceStr = `अपराध:- ${activeFir.actsAndSections || "धारा 175 BNSS"}`;
@@ -353,7 +356,7 @@ function ZimniWorkspaceContent() {
       ioLine: ioLineStr,
       officerNameRank: `${ioRank} ${ioName} ${ioBelt}`,
       officerPost: psName,
-      signDate: `दिनांक - ${new Date().toLocaleDateString("hi-IN")}`,
+      signDate: `दिनांक - ${formatDate(new Date())}`,
     }));
 
     setSaveStatus("Selected FIR Details Populated!");

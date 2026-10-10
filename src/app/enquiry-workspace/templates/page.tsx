@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem, NoticeFormData, DynamicDocumentSection } from "@/types";
+import { formatDate } from "@/lib/utils";
 import { generateNoticeDocumentHtml } from "@/utils/documentHtmlGenerators";
 import { parseUploadedDocument } from "@/utils/universalDocumentParser";
 import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
@@ -75,7 +76,7 @@ const DEFAULT_SAMPLE_DATA: Record<PresetTemplateType, NoticeFormData> = {
     dispatchNo: "",
     policeStation: "थाना शहर अम्बाला",
     district: "जिला अम्बाला।",
-    issueDate: new Date().toLocaleDateString("hi-IN"),
+    issueDate: formatDate(new Date()),
 
     noticeeName: "",
     noticeeFather: "",
@@ -87,7 +88,7 @@ const DEFAULT_SAMPLE_DATA: Record<PresetTemplateType, NoticeFormData> = {
     complaintNo: "",
     complainantName: "",
     complainantAddress: "",
-    incidentDate: new Date().toLocaleDateString("hi-IN"),
+    incidentDate: formatDate(new Date()),
     sectionsOfLaw: "",
     allegationsBrief: "",
 
@@ -116,7 +117,7 @@ const DEFAULT_SAMPLE_DATA: Record<PresetTemplateType, NoticeFormData> = {
     dispatchNo: "",
     policeStation: "थाना शहर पानीपत",
     district: "जिला पानीपत",
-    issueDate: new Date().toLocaleDateString("hi-IN"),
+    issueDate: formatDate(new Date()),
 
     toAuthority: "पुलिस अधीक्षक पानीपत।",
 
@@ -595,8 +596,8 @@ function NoticeTemplatesContent() {
             {
               id: "cdr_1",
               phone: person.phone || "",
-              periodFrom: new Date(Date.now() - 30 * 86400000).toLocaleDateString("hi-IN"),
-              periodTo: new Date().toLocaleDateString("hi-IN"),
+              periodFrom: formatDate(new Date(Date.now() - 30 * 86400000)),
+              periodTo: formatDate(new Date()),
               reason: `Statement and evidence verification of ${person.name} (${roleDisplay}) in Complaint ${complaint?.complaintNumber || ""}`,
             },
           ];
@@ -673,7 +674,7 @@ function NoticeTemplatesContent() {
             dispatchNo: currentType === "haryana_notice" ? "" : `HP/${(found.district || "AMB").substring(0, 3).toUpperCase()}/CT/${new Date().getFullYear()}/DOC-${found.complaintNumber.split("-").pop() || "01"}`,
             policeStation: found.policeStation || currentUser.stationName || sample.policeStation,
             district: found.district ? (found.district.startsWith("जिला") ? found.district : `जिला ${found.district}।`) : sample.district,
-            issueDate: new Date().toLocaleDateString("hi-IN"),
+            issueDate: formatDate(new Date()),
 
             noticeeName,
             noticeeFather,

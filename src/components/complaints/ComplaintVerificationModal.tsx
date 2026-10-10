@@ -16,6 +16,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatDate } from "@/lib/utils";
 
 export interface ComplaintPreviewData {
   sourceChannel: string;
@@ -208,7 +209,7 @@ export function ComplaintVerificationModal({
               </div>
               <div>
                 <span className="text-slate-500 font-semibold block text-[10px] uppercase">Date of Intake:</span>
-                <span className="font-mono font-bold text-slate-900">{new Date().toLocaleDateString("en-IN")}</span>
+                <span className="font-mono font-bold text-slate-900">{formatDate(new Date())}</span>
               </div>
             </div>
 
