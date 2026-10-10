@@ -1,20 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Mic, MicOff } from "lucide-react";
 
-interface VoiceInputButtonProps {
+export type VoiceInputLang = "hi-IN" | "en-IN";
+
+export interface VoiceInputButtonProps {
   onTranscript: (text: string) => void;
   currentValue?: string;
   fieldLabel?: string;
   className?: string;
-  preferredLang?: "hi-IN" | "en-IN";
+  preferredLang?: VoiceInputLang;
   iconOnly?: boolean;
+  showLangToggle?: boolean;
 }
 
 // Web Speech API based voice input (Chrome / Edge / Safari).
-// The button ALWAYS renders — if voice cannot run, clicking it explains why
-// (unsupported browser or insecure context) instead of silently vanishing.
+// Supports Hindi (hi-IN) and English (en-IN) voice input directly into the field.
 export function VoiceInputButton({
   onTranscript,
   currentValue = "",
@@ -22,22 +24,52 @@ export function VoiceInputButton({
   className = "",
   preferredLang = "hi-IN",
   iconOnly = false,
+  showLangToggle = true,
 }: VoiceInputButtonProps) {
   const [isListening, setIsListening] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedLang, setSelectedLang] = useState<VoiceInputLang>(preferredLang);
+
   const recognitionRef = useRef<any>(null);
-  // Deduplication guard — Chrome can re-emit the same final transcript
-  // multiple times through onresult; without this, text gets appended twice+
+  const isListeningRef = useRef(false);
+  const selectedLangRef = useRef<VoiceInputLang>(preferredLang);
   const lastTranscriptRef = useRef<string>("");
 
+  // Keep ref in sync
   useEffect(() => {
+    selectedLangRef.current = selectedLang;
+  }, [selectedLang]);
+
+  // Load language preference from localStorage and listen to cross-component changes
+  useEffect(() => {
+    try {
+      const savedLang = localStorage.getItem("cms_dictation_lang") as VoiceInputLang;
+      if (savedLang === "hi-IN" || savedLang === "en-IN") {
+        setSelectedLang(savedLang);
+        selectedLangRef.current = savedLang;
+      }
+    } catch {
+      // ignore
+    }
+
+    const handleSync = (e: any) => {
+      const lang = e.detail?.lang as VoiceInputLang;
+      if (lang === "hi-IN" || lang === "en-IN") {
+        setSelectedLang(lang);
+        selectedLangRef.current = lang;
+      }
+    };
+    window.addEventListener("cms-dictation-lang-changed", handleSync);
+
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setUnsupported(true);
     }
+
     return () => {
+      window.removeEventListener("cms-dictation-lang-changed", handleSync);
       if (recognitionRef.current) {
         try {
           recognitionRef.current.abort();
@@ -50,160 +82,258 @@ export function VoiceInputButton({
 
   const friendlyError = (code: string): string => {
     const map: Record<string, string> = {
-      "not-allowed":
-        "Mic permission denied — click the lock icon in the address bar and allow Microphone.",
-      "service-not-allowed":
-        "Mic service blocked — allow Microphone permission for this site in browser settings.",
-      "audio-capture": "No microphone found. Please connect or enable a microphone.",
-      network: "Speech service network error — check your internet connection.",
-      language: "Selected language not supported by the speech service.",
+      "not-allowed": "माइक्रोफ़ोन अनुमति अस्वीकृत — कृपया ब्राउज़र में Mic की अनुमति दें।",
+      "service-not-allowed": "माइक्रोफ़ोन सेवा अवरुद्ध है।",
+      "audio-capture": "कोई माइक्रोफ़ोन नहीं मिला।",
+      network: "नेटवर्क त्रुटि: इंटरनेट कनेक्शन जांचें।",
+      language: "चयनित भाषा समर्थित नहीं है।",
     };
     return map[code] || `Mic error: ${code}`;
   };
+
+  // Start speech recognition in specified or currently selected language
+  const startRecognition = useCallback(
+    (langToUse?: VoiceInputLang) => {
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        const secure = (window as any).isSecureContext;
+        alert(
+          "वॉइस इनपुट के लिए Google Chrome या Microsoft Edge ब्राउज़र की आवश्यकता है।\n\n" +
+            (secure
+              ? "यह पेज सुरक्षित है परंतु ब्राउज़र Web Speech API सपोर्ट नहीं करता।"
+              : "यह पेज HTTPS या localhost पर नहीं है।")
+        );
+        return;
+      }
+
+      // Stop any existing instance first
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+        recognitionRef.current = null;
+      }
+      lastTranscriptRef.current = "";
+
+      const activeLang = langToUse || selectedLangRef.current;
+
+      try {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = activeLang;
+
+        recognition.onstart = () => {
+          setIsListening(true);
+          isListeningRef.current = true;
+          setErrorMsg(null);
+        };
+
+        recognition.onresult = (event: any) => {
+          const result = event.results?.[event.resultIndex] ?? event.results?.[0];
+          if (!result || !result.isFinal) return;
+          const transcript = result[0]?.transcript;
+          if (!transcript) return;
+          const cleanTranscript = transcript.trim();
+          if (!cleanTranscript) return;
+
+          // Deduplication guard
+          if (cleanTranscript === lastTranscriptRef.current) return;
+          lastTranscriptRef.current = cleanTranscript;
+
+          // Smart append or replace into field
+          if (currentValue && currentValue.trim().length > 0) {
+            onTranscript(`${currentValue.trim()} ${cleanTranscript}`);
+          } else {
+            onTranscript(cleanTranscript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          const code = event?.error;
+          if (code && code !== "no-speech" && code !== "aborted") {
+            setErrorMsg(friendlyError(code));
+            setTimeout(() => setErrorMsg(null), 3500);
+          }
+          if (code !== "no-speech") {
+            setIsListening(false);
+            isListeningRef.current = false;
+          }
+        };
+
+        recognition.onend = () => {
+          // If still listening, restart recognition (continuous)
+          if (isListeningRef.current) {
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+              isListeningRef.current = false;
+            }
+          } else {
+            setIsListening(false);
+          }
+        };
+
+        recognition.start();
+        setIsListening(true);
+        isListeningRef.current = true;
+      } catch (err: any) {
+        console.error("Speech recognition error:", err);
+        setErrorMsg("माइक शुरू करने में त्रुटि। कृपया पुनः प्रयास करें।");
+        setTimeout(() => setErrorMsg(null), 3500);
+        setIsListening(false);
+        isListeningRef.current = false;
+      }
+    },
+    [currentValue, onTranscript]
+  );
+
+  const stopRecognition = useCallback(() => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
 
   const toggleListening = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      const secure = (window as any).isSecureContext;
-      alert(
-        "Voice input needs the Web Speech API (Chrome, Edge or Safari) in a secure context.\n\n" +
-          (secure
-            ? "This page is secure — your browser does not expose the Web Speech API. Please use Google Chrome or Microsoft Edge."
-            : "This page is NOT secure. Open the app via http://localhost:3000 (or HTTPS) in Chrome/Edge — voice input will then work.")
-      );
-      return;
-    }
-
     if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {
-          // ignore
-        }
-      }
-      setIsListening(false);
-      return;
+      stopRecognition();
+    } else {
+      startRecognition();
     }
+  };
 
-    // Kill any previous instance first — a leftover live instance would
-    // emit its result AGAIN on top of the new one (duplicate words bug)
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch {
-        // ignore
-      }
-      recognitionRef.current = null;
-    }
-    lastTranscriptRef.current = "";
+  const handleSelectLang = (e: React.MouseEvent, lang: VoiceInputLang) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setSelectedLang(lang);
+    selectedLangRef.current = lang;
 
     try {
-      const recognition = new SpeechRecognition();
-      recognitionRef.current = recognition;
+      localStorage.setItem("cms_dictation_lang", lang);
+      window.dispatchEvent(
+        new CustomEvent("cms-dictation-lang-changed", { detail: { lang } })
+      );
+    } catch {
+      // ignore
+    }
 
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = preferredLang;
-
-      recognition.onstart = () => {
-        setIsListening(true);
-        setErrorMsg(null);
-      };
-
-      recognition.onresult = (event: any) => {
-        // Process ONLY the newest result and ONLY when it is final.
-        // Non-final / provisional fires must be ignored or the same words
-        // get appended more than once.
-        const result =
-          event.results?.[event.resultIndex] ?? event.results?.[0];
-        if (!result || !result.isFinal) return;
-        const transcript = result[0]?.transcript;
-        if (!transcript) return;
-        const cleanTranscript = transcript.trim();
-        if (!cleanTranscript) return;
-        // Same final transcript re-emitted? Skip it.
-        if (cleanTranscript === lastTranscriptRef.current) return;
-        lastTranscriptRef.current = cleanTranscript;
-        // Smart append or replace
-        if (currentValue && currentValue.trim().length > 0) {
-          onTranscript(`${currentValue.trim()} ${cleanTranscript}`);
-        } else {
-          onTranscript(cleanTranscript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        const code = event?.error;
-        if (code && code !== "no-speech" && code !== "aborted") {
-          setErrorMsg(friendlyError(code));
-        }
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      try {
-        recognition.start();
-      } catch (err: any) {
-        // InvalidStateError = an instance is already running — restart cleanly
-        try {
-          recognition.abort();
-          recognition.start();
-        } catch {
-          setErrorMsg("Could not start the microphone. Please try again.");
-          setIsListening(false);
-        }
-      }
-    } catch (err: any) {
-      console.error("Speech recognition error:", err);
-      setErrorMsg("Could not start the microphone. Please try again.");
-      setIsListening(false);
+    // If currently listening, seamlessly switch language by restarting
+    if (isListeningRef.current) {
+      stopRecognition();
+      setTimeout(() => {
+        startRecognition(lang);
+      }, 150);
     }
   };
 
   return (
-    <div className="relative inline-flex items-center">
-      <button
-        type="button"
-        onClick={toggleListening}
-        title={
+    <div className={`relative inline-flex items-center gap-1 ${className}`}>
+      <div
+        className={`inline-flex items-center gap-0.5 p-0.5 rounded-md border transition-all ${
           isListening
-            ? "Listening... Click to stop"
-            : unsupported
-              ? "Voice input unavailable in this browser/context — click for details"
-              : `Click to speak for ${fieldLabel}`
-        }
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all select-none border ${
-          isListening
-            ? "bg-red-500 text-white border-red-600 shadow-md animate-pulse ring-2 ring-red-300"
-            : unsupported
-              ? "bg-slate-200 text-slate-500 border-slate-300 hover:bg-slate-300 shadow-2xs"
-              : "bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border-slate-200 hover:border-blue-300 shadow-2xs"
-        } ${className}`}
+            ? "bg-red-50/80 border-red-300 ring-2 ring-red-400/30"
+            : "bg-slate-50 hover:bg-slate-100 border-slate-200/90 shadow-2xs"
+        }`}
       >
-        {isListening ? (
-          <>
-            <MicOff className="w-3.5 h-3.5 text-white animate-spin" />
-            {!iconOnly && <span className="font-bold">Listening...</span>}
-          </>
-        ) : (
-          <>
-            <Mic className={`w-3.5 h-3.5 ${unsupported ? "text-slate-500" : "text-blue-600"}`} />
-            {!iconOnly && <span>Voice Input</span>}
-          </>
+        {/* Language Switcher Pill (Hindi / English) */}
+        {showLangToggle && (
+          <div className="flex items-center rounded bg-white p-0.2 border border-slate-200/70 text-[10px] font-bold shadow-2xs">
+            <button
+              type="button"
+              onClick={(e) => handleSelectLang(e, "hi-IN")}
+              className={`px-1.5 py-0.2 rounded transition-all cursor-pointer ${
+                selectedLang === "hi-IN"
+                  ? "bg-amber-400 text-slate-950 font-black shadow-2xs"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+              title="हिंदी में बोलें (Hindi Voice Input)"
+            >
+              {iconOnly ? "हिं" : "हिंदी"}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => handleSelectLang(e, "en-IN")}
+              className={`px-1.5 py-0.2 rounded transition-all cursor-pointer ${
+                selectedLang === "en-IN"
+                  ? "bg-slate-900 text-white font-black shadow-2xs"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+              title="English Voice Input"
+            >
+              EN
+            </button>
+          </div>
         )}
-      </button>
 
+        {/* Mic Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleListening}
+          title={
+            isListening
+              ? "डिक्टेशन रोकें (Click to stop)"
+              : unsupported
+                ? "ब्राउज़र में वॉइस इनपुट उपलब्ध नहीं है"
+                : `${fieldLabel} में बोलकर टाइप करें (${selectedLang === "hi-IN" ? "हिंदी" : "English"})`
+          }
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all select-none cursor-pointer ${
+            isListening
+              ? "bg-red-600 text-white shadow-xs animate-pulse"
+              : unsupported
+                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                : "bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/60"
+          }`}
+        >
+          {isListening ? (
+            <>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <MicOff className="w-3.5 h-3.5 text-white animate-bounce" />
+              {!iconOnly && (
+                <span className="font-bold text-[10px] tracking-tight">
+                  {selectedLang === "hi-IN" ? "बोलिए..." : "Listening..."}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <Mic
+                className={`w-3.5 h-3.5 ${
+                  unsupported ? "text-slate-400" : "text-blue-600"
+                }`}
+              />
+              {!iconOnly && (
+                <span className="text-[10px] font-medium">
+                  {selectedLang === "hi-IN" ? "बोलें" : "Voice"}
+                </span>
+              )}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Floating Error Message Tooltip */}
       {errorMsg && (
-        <span className="absolute top-6 left-0 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded shadow-md whitespace-nowrap z-20">
+        <span className="absolute top-full mt-1 left-0 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-30 animate-in fade-in">
           {errorMsg}
         </span>
       )}

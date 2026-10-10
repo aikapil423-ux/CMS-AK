@@ -46,7 +46,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
     selectedLangRef.current = selectedLang;
   }, [selectedLang]);
 
-  // Load language preference from localStorage
+  // Load language preference from localStorage & listen for cross-component changes
   useEffect(() => {
     try {
       const savedLang = localStorage.getItem("cms_dictation_lang") as DictationLanguage;
@@ -58,11 +58,24 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       // ignore
     }
 
+    const handleLangSync = (e: any) => {
+      const lang = e.detail?.lang as DictationLanguage;
+      if (lang === "hi-IN" || lang === "en-IN") {
+        setSelectedLang(lang);
+        selectedLangRef.current = lang;
+      }
+    };
+    window.addEventListener("cms-dictation-lang-changed", handleLangSync);
+
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setIsSupported(false);
     }
+
+    return () => {
+      window.removeEventListener("cms-dictation-lang-changed", handleLangSync);
+    };
   }, []);
 
   // Track the most recently focused form input or textarea anywhere on the page
@@ -334,6 +347,9 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
     selectedLangRef.current = lang;
     try {
       localStorage.setItem("cms_dictation_lang", lang);
+      window.dispatchEvent(
+        new CustomEvent("cms-dictation-lang-changed", { detail: { lang } })
+      );
     } catch {
       // ignore
     }
