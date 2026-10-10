@@ -129,3 +129,11 @@ export function toDDMMYYYY(dateOrStr: string | Date | undefined | null): string 
   }
   return str;
 }
+
+// Converts any activityDateTime string ("dd/mm/yyyy hh:mm AM/PM", ISO, etc.) to epoch milliseconds for accurate sorting
+export function parseGDActivityDateTimeToMs(raw: string): number {
+  if (!raw) return 0;
+  const { dateISO, time24 } = parseGDActivityDateTime(raw);
+  const ms = new Date(`${dateISO}T${time24}:00`).getTime();
+  return isNaN(ms) ? 0 : ms;
+}

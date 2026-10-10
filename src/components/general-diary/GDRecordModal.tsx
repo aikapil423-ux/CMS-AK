@@ -461,7 +461,6 @@ export function GDRecordModal({
             <History className="w-3.5 h-3.5 text-slate-500" />
             <span>Audit Trail: {record.auditTrail.length} step(s)</span>
           </div>
-
           <div className="flex items-center gap-2">
             {!isLocked && onVerifyAndLock && canVerify && (
               <Button

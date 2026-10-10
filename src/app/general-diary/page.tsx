@@ -51,7 +51,7 @@ import { GDVerificationModal } from "@/components/general-diary/GDVerificationMo
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
-import { toDDMMYYYY } from "@/lib/gdDateTime";
+import { toDDMMYYYY, parseGDActivityDateTimeToMs } from "@/lib/gdDateTime";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
 
@@ -93,7 +93,7 @@ function GeneralDiaryContent() {
   // Column Sort & Column Search State
   type GDSortField = string;
   type SortOrder = "asc" | "desc";
-  const [sortField, setSortField] = useState<GDSortField>("activityDateTime");
+  const [sortField, setSortField] = useState<GDSortField>("gdNumber");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
   const [activeSearchCol, setActiveSearchCol] = useState<string | null>(null);
@@ -452,33 +452,48 @@ function GeneralDiaryContent() {
 
     // Sorting
     return list.sort((a, b) => {
-      let aVal = "";
-      let bVal = "";
+      let cmp = 0;
       if (sortField === "gdNumber") {
         const aSeq = a.sequencePerDay || 0;
         const bSeq = b.sequencePerDay || 0;
-        return sortOrder === "asc" ? aSeq - bSeq : bSeq - aSeq;
-      } else if (sortField === "officer") {
-        aVal = a.entryForOfficer.name.toLowerCase();
-        bVal = b.entryForOfficer.name.toLowerCase();
-      } else if (sortField === "gdType") {
-        aVal = a.typeDisplay.toLowerCase();
-        bVal = b.typeDisplay.toLowerCase();
-      } else if (sortField === "subject") {
-        aVal = a.subject.toLowerCase();
-        bVal = b.subject.toLowerCase();
+        if (a.isLocked && b.isLocked) {
+          cmp = (a.gdNumber || "").localeCompare(b.gdNumber || "");
+        } else if (a.isLocked) {
+          cmp = 1;
+        } else if (b.isLocked) {
+          cmp = -1;
+        } else {
+          cmp = aSeq - bSeq;
+        }
       } else if (sortField === "activityDateTime") {
-        aVal = a.activityDateTime.toLowerCase();
-        bVal = b.activityDateTime.toLowerCase();
+        const aMs = parseGDActivityDateTimeToMs(a.activityDateTime);
+        const bMs = parseGDActivityDateTimeToMs(b.activityDateTime);
+        cmp = aMs - bMs;
+        if (cmp === 0) {
+          cmp = (a.sequencePerDay || 0) - (b.sequencePerDay || 0);
+        }
+      } else if (sortField === "officer") {
+        cmp = (a.entryForOfficer.name || "").toLowerCase().localeCompare((b.entryForOfficer.name || "").toLowerCase());
+      } else if (sortField === "gdType") {
+        cmp = (a.typeDisplay || "").toLowerCase().localeCompare((b.typeDisplay || "").toLowerCase());
+      } else if (sortField === "subject") {
+        cmp = (a.subject || "").toLowerCase().localeCompare((b.subject || "").toLowerCase());
       } else if (sortField === "narrative") {
-        aVal = a.narrative.toLowerCase();
-        bVal = b.narrative.toLowerCase();
+        cmp = (a.narrative || "").toLowerCase().localeCompare((b.narrative || "").toLowerCase());
+      } else {
+        const aVal = String((a as any)[sortField] || "").toLowerCase();
+        const bVal = String((b as any)[sortField] || "").toLowerCase();
+        cmp = aVal.localeCompare(bVal);
       }
 
-      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-      return 0;
+      if (cmp !== 0) {
+        return sortOrder === "asc" ? cmp : -cmp;
+      }
+      return sortOrder === "asc"
+        ? (a.sequencePerDay || 0) - (b.sequencePerDay || 0)
+        : (b.sequencePerDay || 0) - (a.sequencePerDay || 0);
     });
+
   }, [paginatedData.records, columnSearch, sortField, sortOrder]);
 
   // Close column search input and view action menu on click outside
@@ -742,6 +757,18 @@ function GeneralDiaryContent() {
 
         {/* Top Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/general-diary/new">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className="text-xs font-bold gap-1.5 cursor-pointer shadow-md px-[39.375px]"
+              title="Create a new General Diary entry"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>New Entry</span>
+            </Button>
+          </Link>
           <Button
             type="button"
             variant="outline"

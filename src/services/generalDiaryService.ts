@@ -721,11 +721,21 @@ export const GeneralDiaryService = {
     }
 
     // Filter by Date or Date Range
+    const localDateKey = (r: GeneralDiaryRecord): string => {
+      const raw = (r.activityDateTime || "").split(" ")[0];
+      if (/^\d{4}-/.test(raw)) return raw;
+      const parts = raw.split("/");
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      return raw;
+    };
+
     if (filter.startDate) {
-      list = list.filter((r) => r.activityDateTime.split(" ")[0] >= filter.startDate!);
+      list = list.filter((r) => localDateKey(r) >= filter.startDate!);
     }
     if (filter.endDate) {
-      list = list.filter((r) => r.activityDateTime.split(" ")[0] <= filter.endDate!);
+      list = list.filter((r) => localDateKey(r) <= filter.endDate!);
     }
 
     // Filter by Officer (Entry-For or Author)
@@ -801,15 +811,6 @@ export const GeneralDiaryService = {
     // Sort order:
     // 1. Pending Suggestions & Drafts first if in draft view
     // 2. Otherwise locked entries in GD-number order (per-day sequence)
-    const localDateKey = (r: GeneralDiaryRecord): string => {
-      const raw = (r.activityDateTime || "").split(" ")[0];
-      if (/^\d{4}-/.test(raw)) return raw; // yyyy-mm-dd
-      const parts = raw.split("/");
-      if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`; // dd/mm/yyyy -> yyyy-mm-dd
-      }
-      return raw;
-    };
     list.sort((a, b) => {
       if (a.status === "SUGGESTED" && b.status !== "SUGGESTED") return -1;
       if (b.status === "SUGGESTED" && a.status !== "SUGGESTED") return 1;

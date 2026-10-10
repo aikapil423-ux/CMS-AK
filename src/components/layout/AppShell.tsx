@@ -31,7 +31,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const isRoznamcha = pathname.startsWith("/general-diary");
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
@@ -75,16 +74,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5">
             {/* Universal Police Dictation (Hindi & English Voice Input) */}
             <TopBarDictation />
-
-            {/* Quick Action Button strictly scoped */}
-            {isRoznamcha && (
-              <Link href="/general-diary/new">
-                <Button size="sm" variant="primary" className="gap-1.5 text-xs">
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  New Entry
-                </Button>
-              </Link>
-            )}
 
             {isComplaints && canRegisterComplaint && (
               <Link href="/complaints/register">
