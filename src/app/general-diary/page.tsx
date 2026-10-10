@@ -30,6 +30,7 @@ import {
   FileDown,
   Image as ImageIcon,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { useAuth } from "@/context/AuthContext";
@@ -231,6 +232,8 @@ function GeneralDiaryContent() {
   // Modals State
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
+  const [inspectAutoPrint, setInspectAutoPrint] = useState(false);
+  const [openViewActionMenuId, setOpenViewActionMenuId] = useState<string | null>(null);
   const [printDailyRegisterOpen, setPrintDailyRegisterOpen] = useState(false);
   const [selectedPrintDate, setSelectedPrintDate] = useState<string>("");
 
@@ -478,12 +481,15 @@ function GeneralDiaryContent() {
     });
   }, [paginatedData.records, columnSearch, sortField, sortOrder]);
 
-  // Close column search input on click outside
+  // Close column search input and view action menu on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
       if (!target.closest("[data-column-search-box]")) {
         setActiveSearchCol(null);
+      }
+      if (!target.closest("[data-view-action-menu]")) {
+        setOpenViewActionMenuId(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -1034,34 +1040,75 @@ function GeneralDiaryContent() {
                             </div>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-end gap-1">
+                          <div className="relative inline-block text-right" data-view-action-menu={rec.id}>
                             <button
                               type="button"
-                              onClick={() => {
-                                setSelectedRecord(rec);
-                                setInspectModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline p-0.5 cursor-pointer shrink-0"
-                              title="Print / View entry"
+                              onClick={() => setOpenViewActionMenuId(openViewActionMenuId === rec.id ? null : rec.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-blue-50/70 text-slate-700 hover:text-blue-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                              title="View entry options"
                             >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>Print</span>
+                              <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>View</span>
+                              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${openViewActionMenuId === rec.id ? "rotate-180 text-blue-600" : ""}`} />
                             </button>
 
-                            {/* Uploaded Document button ONLY if record actually has uploaded attachments — placed below Print */}
-                            {Boolean(
-                              (rec.attachments && rec.attachments.length > 0) ||
-                                (rec.relatedRecords?.attachments && rec.relatedRecords.attachments.length > 0)
-                            ) && (
-                              <button
-                                type="button"
-                                onClick={() => setDocModalRecord(rec)}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 hover:text-indigo-900 hover:underline p-0.5 cursor-pointer shrink-0 whitespace-nowrap"
-                                title="View uploaded documents"
+                            {openViewActionMenuId === rec.id && (
+                              <div
+                                className={`absolute right-0 ${
+                                  displayedRecords.indexOf(rec) >= displayedRecords.length - 2 && displayedRecords.length > 2
+                                    ? "bottom-full mb-1.5"
+                                    : "top-full mt-1.5"
+                                } w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5 text-xs animate-in fade-in-50 zoom-in-95 text-left divide-y divide-slate-100`}
                               >
-                                <Paperclip className="w-3.5 h-3.5 text-indigo-600" />
-                                <span>Doc</span>
-                              </button>
+                                <div className="pb-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenViewActionMenuId(null);
+                                      setSelectedRecord(rec);
+                                      setInspectAutoPrint(false);
+                                      setInspectModalOpen(true);
+                                    }}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                    <span>Preview</span>
+                                  </button>
+                                </div>
+
+                                <div className="pt-1 space-y-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenViewActionMenuId(null);
+                                      setSelectedRecord(rec);
+                                      setInspectAutoPrint(true);
+                                      setInspectModalOpen(true);
+                                    }}
+                                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-amber-50 hover:text-amber-800 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
+                                  >
+                                    <Printer className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                                    <span>Print</span>
+                                  </button>
+
+                                  {Boolean(
+                                    (rec.attachments && rec.attachments.length > 0) ||
+                                      (rec.relatedRecords?.attachments && rec.relatedRecords.attachments.length > 0)
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenViewActionMenuId(null);
+                                        setDocModalRecord(rec);
+                                      }}
+                                      className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-indigo-50 hover:text-indigo-800 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
+                                    >
+                                      <Paperclip className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                      <span>Documents</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
                         )}
@@ -1131,10 +1178,11 @@ function GeneralDiaryContent() {
         <GDRecordModal
           record={selectedRecord}
           isOpen={inspectModalOpen}
-          autoPrint={true}
+          autoPrint={inspectAutoPrint}
           onClose={() => {
             setInspectModalOpen(false);
             setSelectedRecord(null);
+            setInspectAutoPrint(false);
           }}
         />
       )}

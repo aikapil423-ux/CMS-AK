@@ -20,6 +20,7 @@ import {
   Paperclip,
   Image as ImageIcon,
   FileDown,
+  Eye,
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
@@ -119,12 +120,15 @@ export function GDRecordModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleDownload}
+              onClick={() => {
+                const el = document.getElementById("printable-gd-record");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
               className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              title="Download clean A4 HTML document"
+              title="Preview Roznamcha Record"
             >
-              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Download A4</span>
+              <Eye className="w-3.5 h-3.5 text-blue-300" />
+              <span>Preview</span>
             </Button>
             <Button
               type="button"
@@ -135,6 +139,17 @@ export function GDRecordModal({
             >
               <Printer className="w-3.5 h-3.5 text-amber-300" />
               <span>Print</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              title="Download clean A4 HTML document"
+            >
+              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Download A4</span>
             </Button>
             <button
               type="button"
@@ -460,6 +475,19 @@ export function GDRecordModal({
                 <span>Verify &amp; Lock GD Now</span>
               </Button>
             )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const el = document.getElementById("printable-gd-record");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="text-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-600" />
+              <span>Preview</span>
+            </Button>
             <Button
               type="button"
               variant="outline"
