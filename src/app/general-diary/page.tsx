@@ -237,11 +237,6 @@ function GeneralDiaryContent() {
   const [docModalRecord, setDocModalRecord] = useState<GeneralDiaryRecord | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
-  // Sync print date with selected date
-  useEffect(() => {
-    setSelectedPrintDate(selectedDate || "");
-  }, [selectedDate]);
-
   // Draft/Suggestion row actions state
   const [addingRecordId, setAddingRecordId] = useState<string | null>(null);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
@@ -755,11 +750,11 @@ function GeneralDiaryContent() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setSelectedPrintDate(selectedDate || "");
+              setSelectedPrintDate("");
               setPrintDailyRegisterOpen(true);
             }}
             className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
-            title="View, Search, Print & Download Roznamcha General Diary Register"
+            title="View, Search, Print & Download Roznamcha General Diary Register (सभी दिनों की प्रविष्टियाँ - नवीनतम से पूर्व)"
           >
             <BookOpen className="w-3.5 h-3.5 text-blue-700" />
             <span>Register</span>
