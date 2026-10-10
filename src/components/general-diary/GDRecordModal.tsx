@@ -479,42 +479,10 @@ export function GDRecordModal({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
-                const el = document.getElementById("printable-gd-record");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              className="text-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <Eye className="w-3.5 h-3.5 text-blue-600" />
-              <span>Preview</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="text-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>Download A4</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
               onClick={onClose}
               className="text-xs cursor-pointer"
             >
               Close
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handlePrint}
-              className="bg-[#0b192c] hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-300" />
-              <span>Print Official GD Record</span>
             </Button>
           </div>
         </div>
