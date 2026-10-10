@@ -1997,11 +1997,11 @@ function RegisterFIRForm() {
                           return (
                             <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg bg-white">
                               {filtered.length > 0 ? (
-                                filtered.map((sec) => {
+                                filtered.map((sec, secIdx) => {
                                   const isSelected = selectedSections.includes(sec.sectionNumber);
                                   return (
                                     <div
-                                      key={sec.sectionNumber}
+                                      key={`${sec.sectionNumber}-${secIdx}`}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleToggleSection(sec.sectionNumber);

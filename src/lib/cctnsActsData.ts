@@ -25,6 +25,7 @@ import { IPC_1860_SECTIONS } from "./ipcSectionsData";
 import { CRPC_1973_SECTIONS } from "./crpcSectionsData";
 import { IEA_1872_SECTIONS } from "./ieaSectionsData";
 import { BSA_2023_SECTIONS } from "./bsaSectionsData";
+import { DV_ACT_2005_SECTIONS } from "./dvActSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -210,6 +211,13 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     shortName: "Bharatiya Sakshya Adhiniyam, 2023 (BSA)",
     category: "Law of Evidence",
     sections: BSA_2023_SECTIONS,
+  },
+  {
+    id: "act_dv_2005",
+    title: "The Protection of Women from Domestic Violence Act, 2005 (PWDVA)",
+    shortName: "Domestic Violence Act, 2005",
+    category: "Special & Local Laws",
+    sections: DV_ACT_2005_SECTIONS,
   },
 ];
 
@@ -579,6 +587,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_bsa_2023, preserve the authoritative complete 456 sections catalog
         if (existing.id === "act_bsa_2023") {
+          continue;
+        }
+        // If it's act_dv_2005, preserve the authoritative complete 188 sections catalog
+        if (existing.id === "act_dv_2005" || existing.id === "act_domestic_violence_2005") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
