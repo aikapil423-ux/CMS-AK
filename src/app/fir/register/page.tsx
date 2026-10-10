@@ -1263,7 +1263,7 @@ function RegisterFIRForm() {
               className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs"
             />
           </div>
-          <div className="col-span-2">
+          <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Police Station</label>
             <input
               type="text"
@@ -1281,10 +1281,10 @@ function RegisterFIRForm() {
               className="w-full mt-0.5 p-1.5 rounded border border-slate-200 bg-slate-100 font-mono font-bold text-red-900 text-xs"
             />
           </div>
-          <div>
+          <div className="col-span-2 sm:col-span-2">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Reg. Date &amp; Time</label>
-            <div className="flex gap-1 mt-0.5">
-              <div className="w-1/2">
+            <div className="flex gap-1.5 mt-0.5">
+              <div className="flex-1">
                 <DatePickerDDMMYYYY
                   value={firDate}
                   onChange={(e) => setFirDate(e.target.value)}
@@ -1296,7 +1296,7 @@ function RegisterFIRForm() {
                 type="time"
                 value={firTime}
                 onChange={(e) => setFirTime(e.target.value)}
-                className="w-1/2 p-1.5 rounded border border-slate-300 bg-white text-xs font-mono"
+                className="w-24 sm:w-28 p-1.5 rounded border border-slate-300 bg-white text-xs font-mono"
               />
             </div>
           </div>
