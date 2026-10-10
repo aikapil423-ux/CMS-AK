@@ -5,6 +5,7 @@ import { X, Search, Check, Calendar, FileText, User, Filter, RotateCcw } from "l
 import { GeneralDiaryItem } from "@/types";
 import { MOCK_GD_ENTRIES } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 
 export interface GDLookupResult {
   diaryNumber: string;
@@ -178,18 +179,24 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
             <div className="sm:col-span-5">
               <label className="font-bold text-slate-700 block mb-1">Date Range (From - To)</label>
               <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                />
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                />
+                <div className="w-1/2">
+                  <DatePickerDDMMYYYY
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    placeholder="DD/MM/YYYY"
+                    size="sm"
+                    title="From date (DD/MM/YYYY)"
+                  />
+                </div>
+                <div className="w-1/2">
+                  <DatePickerDDMMYYYY
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    placeholder="DD/MM/YYYY"
+                    size="sm"
+                    title="To date (DD/MM/YYYY)"
+                  />
+                </div>
               </div>
             </div>
             <div className="sm:col-span-5">

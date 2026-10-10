@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
@@ -1134,83 +1135,17 @@ function NewGDEntryContent() {
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
-                  {/* Hidden native date input for the calendar popup picker */}
-                  <input
-                    ref={hiddenDateInputRef}
-                    type="date"
-                    tabIndex={-1}
-                    aria-hidden="true"
+                  <DatePickerDDMMYYYY
                     value={activityDate}
                     max={todayISO}
+                    placeholder="DD/MM/YYYY"
                     onChange={(e) => {
-                      setActivityDate(e.target.value);
+                      if (e.target.value) {
+                        setActivityDate(e.target.value);
+                      }
                     }}
-                    className="sr-only"
+                    title="Activity Date (DD/MM/YYYY)"
                   />
-                  <div className="relative flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try {
-                          hiddenDateInputRef.current?.showPicker();
-                        } catch {
-                          hiddenDateInputRef.current?.focus();
-                        }
-                      }}
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
-                      title="Open Calendar Picker (DD/MM/YYYY)"
-                    >
-                      <CalendarDays className="w-3.5 h-3.5" />
-                    </button>
-                    <input
-                      type="text"
-                      value={activityDateDisplay}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setActivityDateDisplay(val);
-                        const parts = val.trim().split(/[-/]/);
-                        if (parts.length === 3) {
-                          const dd = parts[0].padStart(2, "0");
-                          const mm = parts[1].padStart(2, "0");
-                          const yyyy = parts[2];
-                          if (
-                            yyyy.length === 4 &&
-                            Number(mm) >= 1 &&
-                            Number(mm) <= 12 &&
-                            Number(dd) >= 1 &&
-                            Number(dd) <= 31
-                          ) {
-                            setActivityDate(`${yyyy}-${mm}-${dd}`);
-                          }
-                        }
-                      }}
-                      onBlur={() => {
-                        if (activityDate) {
-                          setActivityDateDisplay(toDDMMYYYY(activityDate));
-                        } else {
-                          const today = formatGDDateKey(new Date());
-                          setActivityDate(today);
-                          setActivityDateDisplay(toDDMMYYYY(today));
-                        }
-                      }}
-                      placeholder="DD/MM/YYYY"
-                      className="w-full pl-8 pr-11 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        try {
-                          hiddenDateInputRef.current?.showPicker();
-                        } catch {
-                          hiddenDateInputRef.current?.focus();
-                        }
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-                      title="Pick date from calendar"
-                    >
-                      <Clock className="w-4 h-4 text-blue-600" />
-                    </button>
-                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                   <select

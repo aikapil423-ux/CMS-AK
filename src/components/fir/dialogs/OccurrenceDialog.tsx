@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, MapPin, Check, RotateCcw, AlertCircle, Compass } from "lucide-react";
 import { FIROccurrenceItem } from "@/types";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { DIRECTION_FROM_PS_OPTIONS } from "@/components/fir/firDropdownConstants";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
@@ -262,12 +263,14 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">From Date &amp; Time <span className="text-red-500">*</span></label>
                   <div className="flex gap-1.5">
-                    <input
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                      className="w-3/5 p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                    />
+                    <div className="w-3/5">
+                      <DatePickerDDMMYYYY
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        size="sm"
+                      />
+                    </div>
                     <input
                       type="time"
                       value={timeFrom}
@@ -280,12 +283,14 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">To Date &amp; Time</label>
                   <div className="flex gap-1.5">
-                    <input
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                      className="w-3/5 p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                    />
+                    <div className="w-3/5">
+                      <DatePickerDDMMYYYY
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        size="sm"
+                      />
+                    </div>
                     <input
                       type="time"
                       value={timeTo}
@@ -349,12 +354,14 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                   Information Received at Police Station <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-1.5">
-                  <input
-                    type="date"
-                    value={infoReceivedDate}
-                    onChange={(e) => setInfoReceivedDate(e.target.value)}
-                    className="w-3/5 p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  />
+                  <div className="w-3/5">
+                    <DatePickerDDMMYYYY
+                      value={infoReceivedDate}
+                      onChange={(e) => setInfoReceivedDate(e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                      size="sm"
+                    />
+                  </div>
                   <input
                     type="time"
                     value={infoReceivedTime}

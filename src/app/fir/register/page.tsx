@@ -69,6 +69,7 @@ import {
 } from "@/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 
@@ -1281,12 +1282,14 @@ function RegisterFIRForm() {
           <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Reg. Date &amp; Time</label>
             <div className="flex gap-1 mt-0.5">
-              <input
-                type="date"
-                value={firDate}
-                onChange={(e) => setFirDate(e.target.value)}
-                className="w-1/2 p-1.5 rounded border border-slate-300 bg-white text-xs"
-              />
+              <div className="w-1/2">
+                <DatePickerDDMMYYYY
+                  value={firDate}
+                  onChange={(e) => setFirDate(e.target.value)}
+                  placeholder="DD/MM/YYYY"
+                  size="sm"
+                />
+              </div>
               <input
                 type="time"
                 value={firTime}
@@ -1380,12 +1383,14 @@ function RegisterFIRForm() {
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">GD Entry Date &amp; Time</label>
                   <div className="flex gap-2">
-                    <input
-                      type="date"
-                      value={gdDate}
-                      onChange={(e) => setGdDate(e.target.value)}
-                      className="w-1/2 p-2 rounded-lg border border-slate-300 text-xs"
-                    />
+                    <div className="w-1/2">
+                      <DatePickerDDMMYYYY
+                        value={gdDate}
+                        onChange={(e) => setGdDate(e.target.value)}
+                        placeholder="DD/MM/YYYY"
+                        size="sm"
+                      />
+                    </div>
                     <input
                       type="time"
                       value={gdTime}
@@ -2218,26 +2223,28 @@ function RegisterFIRForm() {
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                       <div>
                         <span className="text-[11px] text-slate-500 block">Date of Birth (DOB)</span>
-                        <input
-                          type="date"
-                          value={complainantDob}
-                          onChange={(e) => {
-                            setComplainantDob(e.target.value);
-                            if (e.target.value) {
-                              const birthYear = new Date(e.target.value).getFullYear();
-                              setComplainantYearOfBirth(String(birthYear));
-                              const currentYear = new Date().getFullYear();
-                              const calcAge = Math.max(0, currentYear - birthYear);
-                              setComplainantAge(String(calcAge));
-                              if (calcAge < 18) setComplainantAgeRange("Under 18 (Minor / Child)");
-                              else if (calcAge <= 30) setComplainantAgeRange("18 - 30 Years (Young Adult)");
-                              else if (calcAge <= 50) setComplainantAgeRange("31 - 50 Years (Middle Age)");
-                              else if (calcAge <= 60) setComplainantAgeRange("51 - 60 Years (Senior)");
-                              else setComplainantAgeRange("Above 60 Years (Elderly / Senior Citizen)");
-                            }
-                          }}
-                          className="w-full mt-1 p-2 rounded border border-slate-300 text-xs"
-                        />
+                        <div className="mt-1">
+                          <DatePickerDDMMYYYY
+                            value={complainantDob}
+                            onChange={(e) => {
+                              setComplainantDob(e.target.value);
+                              if (e.target.value) {
+                                const birthYear = new Date(e.target.value).getFullYear();
+                                setComplainantYearOfBirth(String(birthYear));
+                                const currentYear = new Date().getFullYear();
+                                const calcAge = Math.max(0, currentYear - birthYear);
+                                setComplainantAge(String(calcAge));
+                                if (calcAge < 18) setComplainantAgeRange("Under 18 (Minor / Child)");
+                                else if (calcAge <= 30) setComplainantAgeRange("18 - 30 Years (Young Adult)");
+                                else if (calcAge <= 50) setComplainantAgeRange("31 - 50 Years (Middle Age)");
+                                else if (calcAge <= 60) setComplainantAgeRange("51 - 60 Years (Senior)");
+                                else setComplainantAgeRange("Above 60 Years (Elderly / Senior Citizen)");
+                              }
+                            }}
+                            placeholder="DD/MM/YYYY"
+                            size="sm"
+                          />
+                        </div>
                       </div>
                       <div>
                         <span className="text-[11px] text-slate-500 block">Year of Birth</span>
@@ -2578,11 +2585,11 @@ function RegisterFIRForm() {
                       </div>
                       <div>
                         <span className="text-[10px] text-slate-500 block mb-0.5">Date of Issue</span>
-                        <input
-                          type="date"
+                        <DatePickerDDMMYYYY
                           value={passportIssueDate}
                           onChange={(e) => setPassportIssueDate(e.target.value)}
-                          className="w-full p-1.5 rounded border border-slate-300 bg-white"
+                          placeholder="DD/MM/YYYY"
+                          size="sm"
                         />
                       </div>
                       <div>

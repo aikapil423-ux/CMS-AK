@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { FIROccurrenceItem } from "@/types";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DIRECTION_FROM_PS_OPTIONS, getDynamicDirectionFromPs } from "@/components/fir/firDropdownConstants";
 
@@ -277,11 +278,11 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <label className="font-bold text-slate-700 block mb-1">
                   Date From (दिनांक से) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
+                <DatePickerDDMMYYYY
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  placeholder="DD/MM/YYYY"
+                  size="sm"
                   required
                 />
               </div>
@@ -296,12 +297,12 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               </div>
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Date To (दिनांक तक)</label>
-                <input
-                  type="date"
+                <DatePickerDDMMYYYY
                   disabled={!isDateKnown}
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs disabled:opacity-50"
+                  placeholder="DD/MM/YYYY"
+                  size="sm"
                 />
               </div>
               <div>
@@ -338,11 +339,11 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <label className="font-bold text-slate-700 block mb-1">
                   Info Received Date (सूचना प्राप्त दिनांक) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
+                <DatePickerDDMMYYYY
                   value={infoReceivedDate}
                   onChange={(e) => setInfoReceivedDate(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  placeholder="DD/MM/YYYY"
+                  size="sm"
                   required
                 />
               </div>

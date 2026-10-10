@@ -49,6 +49,7 @@ import { GDRecordModal } from "@/components/general-diary/GDRecordModal";
 import { GDVerificationModal } from "@/components/general-diary/GDVerificationModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { toDDMMYYYY } from "@/lib/gdDateTime";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
@@ -888,16 +889,18 @@ function GeneralDiaryContent() {
                   All
                 </button>
               </div>
-              <input
-                type="date"
-                value={selectedDate}
-                max={todayISO}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full sm:w-[145px] h-8 px-2 py-1 bg-slate-50 border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#0b192c] cursor-pointer"
-              />
+              <div className="w-full sm:w-[150px]">
+                <DatePickerDDMMYYYY
+                  value={selectedDate}
+                  max={todayISO}
+                  size="sm"
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setPage(1);
+                  }}
+                  title="Filter entries by date (DD/MM/YYYY)"
+                />
+              </div>
             </div>
           </div>
         </CardContent>

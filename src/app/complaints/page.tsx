@@ -50,6 +50,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
@@ -2669,11 +2670,11 @@ function ComplaintListContent() {
                 <label className="block font-semibold text-slate-700 mb-1">
                   Registration Date
                 </label>
-                <input
-                  type="date"
+                <DatePickerDDMMYYYY
                   value={firDateInput}
                   onChange={(e) => setFirDateInput(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  placeholder="DD/MM/YYYY"
+                  size="sm"
                 />
               </div>
             </div>

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { FIRAliasEntry, FIRIdentificationEntry } from "@/types";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   GENDER_OPTIONS,
@@ -815,11 +816,11 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Date of Birth (DOB)</label>
-                    <input
-                      type="date"
+                    <DatePickerDDMMYYYY
                       value={dob}
                       onChange={(e) => handleDobChange(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      placeholder="DD/MM/YYYY"
+                      size="sm"
                     />
                   </div>
                   <div>

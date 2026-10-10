@@ -58,6 +58,7 @@ import {
 } from "@/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import {
@@ -3514,18 +3515,15 @@ export default function RegisterComplaintPage() {
                             </span>
                           )}
                         </div>
-                        <input
-                          type="date"
+                        <DatePickerDDMMYYYY
                           value={incidentDate}
                           onChange={(e) => {
                             setIncidentDate(e.target.value);
                             markFieldAsEdited("incidentDate");
                           }}
-                          className={`w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
-                            isAutofilled("incidentDate")
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
-                              : "border-slate-300"
-                          }`}
+                          placeholder="DD/MM/YYYY"
+                          size="sm"
+                          className={isAutofilled("incidentDate") ? "bg-blue-50/80 border-blue-400" : ""}
                         />
                       </div>
                       <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
@@ -3730,11 +3728,11 @@ export default function RegisterComplaintPage() {
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
                         FIR Registration Date
                       </label>
-                      <input
-                        type="date"
+                      <DatePickerDDMMYYYY
                         value={firDate}
                         onChange={(e) => setFirDate(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                        placeholder="DD/MM/YYYY"
+                        size="sm"
                       />
                     </div>
                   </div>

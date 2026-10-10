@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { GeneralDiaryRecord, GDOfficerParticulars } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
+import { formatDateTime } from "@/lib/utils";
 
 interface GDVerificationModalProps {
   record: GeneralDiaryRecord | null;
@@ -110,7 +111,7 @@ export function GDVerificationModal({
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 font-bold uppercase block">कार्यवाही समय:</span>
-                <span className="font-mono font-bold text-slate-900">{record.activityDateTime}</span>
+                <span className="font-mono font-bold text-slate-900">{formatDateTime(record.activityDateTime)}</span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-500 font-bold uppercase block">मुलाज़िम मुताल्लिक:</span>

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
+import { formatDate, formatDateTime } from "@/lib/utils";
 
 interface GDRecordModalProps {
   record: GeneralDiaryRecord | null;
@@ -208,13 +209,13 @@ export function GDRecordModal({
                 <div>
                   <span className="font-bold text-slate-700">घटना/कार्यवाही समय: </span>
                   <span className="font-semibold text-slate-900 font-mono">
-                    {record.activityDateTime}
+                    {formatDateTime(record.activityDateTime)}
                   </span>
                 </div>
                 <div className="text-slate-500 text-[10px]">
                   <span>Server Recorded: </span>
                   <span className="font-mono">
-                    {new Date(record.officialCreationTimestamp).toLocaleString("en-IN")}
+                    {formatDateTime(record.officialCreationTimestamp)}
                   </span>
                 </div>
               </div>

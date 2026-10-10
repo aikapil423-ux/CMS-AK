@@ -22,6 +22,7 @@ import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 
 export type FinalFormType = "CHARGESHEET" | "CLOSURE" | "UNTRACED" | "CANCELLED";
 
@@ -687,11 +688,11 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <tr>
                 <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Dispatch Date:</td>
                 <td className="border-r border-slate-800 p-1.5">
-                  <input
-                    type="date"
+                  <DatePickerDDMMYYYY
                     value={reportDate}
                     onChange={(e) => setReportDate(e.target.value)}
-                    className="w-full text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs font-semibold"
+                    placeholder="DD/MM/YYYY"
+                    size="sm"
                   />
                 </td>
                 <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Nature of Report:</td>

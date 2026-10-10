@@ -13,6 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
@@ -329,31 +330,35 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
             {/* From - To Date Pickers */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
-                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>From:</span>
                 </span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="text-xs font-mono font-semibold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
-                  title="Filter entries from this date"
-                />
+                <div className="w-32">
+                  <DatePickerDDMMYYYY
+                    value={startDate}
+                    size="sm"
+                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
+                    onChange={(e) => setStartDate(e.target.value)}
+                    title="Filter entries from this date (DD/MM/YYYY)"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
-                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>To:</span>
                 </span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="text-xs font-mono font-semibold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
-                  title="Filter entries up to this date"
-                />
+                <div className="w-32">
+                  <DatePickerDDMMYYYY
+                    value={endDate}
+                    size="sm"
+                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
+                    onChange={(e) => setEndDate(e.target.value)}
+                    title="Filter entries up to this date (DD/MM/YYYY)"
+                  />
+                </div>
               </div>
 
               {/* Quick Date Presets */}
