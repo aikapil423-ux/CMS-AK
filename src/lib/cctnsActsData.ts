@@ -19,6 +19,7 @@ import { ESSENTIAL_COMMODITIES_1955_SECTIONS } from "./essentialCommoditiesSecti
 import { IT_ACT_2000_SECTIONS } from "./itActSectionsData";
 import { POCSO_ACT_2012_SECTIONS } from "./pocsoSectionsData";
 import { MOTOR_VEHICLES_ACT_1988_SECTIONS } from "./motorVehiclesSectionsData";
+import { PC_ACT_1988_SECTIONS } from "./pcActSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -105,19 +106,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Prevention of Corruption Act, 1988",
     shortName: "Prevention of Corruption Act, 1988",
     category: "Anti-Corruption",
-    sections: [
-      { sectionNumber: "7(a)", title: "Public servant taking undue advantage for improper performance of duty" },
-      { sectionNumber: "7(b)", title: "Obtaining undue advantage without public duty" },
-      { sectionNumber: "7A", title: "Taking undue advantage to influence public servant by corrupt or illegal means" },
-      { sectionNumber: "8", title: "Offence relating to bribing of a public servant" },
-      { sectionNumber: "9", title: "Offence relating to bribing of a public servant by a commercial organisation" },
-      { sectionNumber: "11", title: "Public servant obtaining undue advantage without consideration from person concerned" },
-      { sectionNumber: "12", title: "Punishment for abetment of offences" },
-      { sectionNumber: "13(1)(a)", title: "Criminal misconduct: Dishonestly or fraudulently converting property" },
-      { sectionNumber: "13(1)(b)", title: "Criminal misconduct: Intentionally enriching illicitly during tenure" },
-      { sectionNumber: "13(2)", title: "Punishment for criminal misconduct by public servant (4 to 10 years)" },
-      { sectionNumber: "17A", title: "Enquiry or investigation of offences relatable to recommendations by public servant" },
-    ],
+    sections: PC_ACT_1988_SECTIONS,
   },
   {
     id: "act_gambling_1867",
@@ -521,6 +510,22 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Motor Vehicle Act, 1988"), actOption);
       map.set(normalizeKey("Motor Vehicle Act,1988"), actOption);
     }
+    if (cAct.id === "act_pc_1988") {
+      map.set(normalizeKey("Prevention of Corruption Act, 1988"), actOption);
+      map.set(normalizeKey("Prevention of Corruption Act,1988"), actOption);
+      map.set(normalizeKey("Prevention of Corruption Act 1988"), actOption);
+      map.set(normalizeKey("Prevention of Corruption Act"), actOption);
+      map.set(normalizeKey("The Prevention of Corruption Act, 1988"), actOption);
+      map.set(normalizeKey("The Prevention of Corruption Act,1988"), actOption);
+      map.set(normalizeKey("The Prevention of Corruption Act"), actOption);
+      map.set(normalizeKey("PC Act, 1988"), actOption);
+      map.set(normalizeKey("PC Act,1988"), actOption);
+      map.set(normalizeKey("PC Act"), actOption);
+      map.set(normalizeKey("P.C. Act"), actOption);
+      map.set(normalizeKey("P.C. Act, 1988"), actOption);
+      map.set(normalizeKey("Corruption Act"), actOption);
+      map.set(normalizeKey("भ्रष्टाचार निवारण अधिनियम"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -614,6 +619,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_mv_1988, preserve the authoritative complete 1,932 sections catalog
         if (existing.id === "act_mv_1988") {
+          continue;
+        }
+        // If it's act_pc_1988, preserve the authoritative complete 190 sections catalog
+        if (existing.id === "act_pc_1988") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
