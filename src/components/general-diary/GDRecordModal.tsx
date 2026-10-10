@@ -446,49 +446,6 @@ export function GDRecordModal({
             <History className="w-3.5 h-3.5 text-slate-500" />
             <span>Audit Trail: {record.auditTrail.length} step(s)</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {!isLocked && onVerifyAndLock && canVerify && (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={() => onVerifyAndLock(record)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Lock className="w-3.5 h-3.5 text-amber-300" />
-                <span>Verify &amp; Lock GD Now</span>
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="text-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>Download A4</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              className="text-xs cursor-pointer"
-            >
-              Close
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handlePrint}
-              className="bg-[#0b192c] hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-300" />
-              <span>Print Official GD Record</span>
-            </Button>
-          </div>
         </div>
       </div>
     </div>

@@ -736,6 +736,18 @@ function GeneralDiaryContent() {
 
         {/* Top Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link href="/general-diary/new">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className="text-xs font-bold gap-1.5 cursor-pointer shadow-md px-[39.375px]"
+              title="Create a new General Diary entry"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>New Entry</span>
+            </Button>
+          </Link>
           <Button
             type="button"
             variant="outline"
@@ -1131,7 +1143,7 @@ function GeneralDiaryContent() {
         <GDRecordModal
           record={selectedRecord}
           isOpen={inspectModalOpen}
-          autoPrint={true}
+          autoPrint={false}
           onClose={() => {
             setInspectModalOpen(false);
             setSelectedRecord(null);
