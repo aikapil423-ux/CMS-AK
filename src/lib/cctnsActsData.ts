@@ -20,6 +20,7 @@ import { IT_ACT_2000_SECTIONS } from "./itActSectionsData";
 import { POCSO_ACT_2012_SECTIONS } from "./pocsoSectionsData";
 import { MOTOR_VEHICLES_ACT_1988_SECTIONS } from "./motorVehiclesSectionsData";
 import { PC_ACT_1988_SECTIONS } from "./pcActSectionsData";
+import { BENAMI_ACT_1988_SECTIONS } from "./benamiSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -169,14 +170,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Prohibition of Benami Property Transactions Act, 1988",
     shortName: "The Prohibition of Benami Property Transactions Act, 1988",
     category: "Economic & Property Law",
-    sections: [
-      { sectionNumber: "3(1)", title: "Prohibition of benami transactions" },
-      { sectionNumber: "5", title: "Property held benami liable to confiscation by Central Government" },
-      { sectionNumber: "6", title: "Prohibition on re-transfer of property by benamidar" },
-      { sectionNumber: "53(1)", title: "Penalty for benami transaction: Rigorous imprisonment 1 to 7 years" },
-      { sectionNumber: "54", title: "Penalty for false information: Imprisonment 6 months to 5 years" },
-      { sectionNumber: "55A", title: "Power to tender immunity from prosecution to benamidar" },
-    ],
+    sections: BENAMI_ACT_1988_SECTIONS,
   },
   {
     id: "act_ipc_1860",
@@ -526,6 +520,21 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("Corruption Act"), actOption);
       map.set(normalizeKey("भ्रष्टाचार निवारण अधिनियम"), actOption);
     }
+
+    if (cAct.id === "act_benami_1988") {
+      map.set(normalizeKey("The The Prohibition of Benami Property Transactions Act, 1988"), actOption);
+      map.set(normalizeKey("The Prohibition of Benami Property Transactions Act, 1988"), actOption);
+      map.set(normalizeKey("The Prohibition of Benami Property Transactions Act"), actOption);
+      map.set(normalizeKey("Prohibition of Benami Property Transactions Act, 1988"), actOption);
+      map.set(normalizeKey("Prohibition of Benami Property Transactions Act"), actOption);
+      map.set(normalizeKey("Benami Act, 1988"), actOption);
+      map.set(normalizeKey("Benami Act,1988"), actOption);
+      map.set(normalizeKey("Benami Act"), actOption);
+      map.set(normalizeKey("The Benami Transactions (Prohibition) Act, 1988"), actOption);
+      map.set(normalizeKey("The Benami Transactions Act, 1988"), actOption);
+      map.set(normalizeKey("बेनामी संपत्ति लेन-देन प्रतिषेध अधिनियम"), actOption);
+      map.set(normalizeKey("बेनामी संपत्ति लेनदेन प्रतिषेध अधिनियम, 1988"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -623,6 +632,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_pc_1988, preserve the authoritative complete 190 sections catalog
         if (existing.id === "act_pc_1988") {
+          continue;
+        }
+        // If it's act_benami_1988, preserve the authoritative complete 413 sections catalog
+        if (existing.id === "act_benami_1988") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
