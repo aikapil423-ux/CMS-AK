@@ -42,11 +42,18 @@ import {
   ChevronDown,
   RefreshCw,
   Info,
+  UploadCloud,
+  Database,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
 import { ComplaintService } from "@/services/complaintService";
 import { ActsService } from "@/services/actsService";
+import {
+  firAutoFillService,
+  ProcessedFIRDocumentRecord,
+} from "@/services/firAutoFillService";
+import { FIRUploadAutoFillModal } from "@/components/fir/FIRUploadAutoFillModal";
 import {
   getUnifiedActsCatalog,
   UnifiedActOption,
@@ -215,6 +222,20 @@ function RegisterFIRForm() {
 
   // Dialog Visibility & Edit States
   const [showGDLookupDialog, setShowGDLookupDialog] = useState(false);
+  const [showUploadAutoFillModal, setShowUploadAutoFillModal] = useState(false);
+  const [hasProcessedDocument, setHasProcessedDocument] = useState(false);
+
+  useEffect(() => {
+    const checkDocument = () => {
+      if (autoFirNumber?.firNumber) {
+        const rec = firAutoFillService.getByFirNumber(autoFirNumber.firNumber);
+        setHasProcessedDocument(!!rec);
+      }
+    };
+    checkDocument();
+    window.addEventListener("cms-fir-autofill-updated", checkDocument);
+    return () => window.removeEventListener("cms-fir-autofill-updated", checkDocument);
+  }, [autoFirNumber?.firNumber]);
 
   // Occurrence Inline Handlers
   const handleAddOccurrence = (item: ExtendedFIROccurrenceItem) => {
@@ -602,6 +623,100 @@ function RegisterFIRForm() {
     firService.saveFirDraft(currentDraft);
     setSaveDraftFeedback("Draft saved to browser storage at " + new Date().toLocaleTimeString());
     setTimeout(() => setSaveDraftFeedback(null), 4000);
+  };
+
+  // Apply auto-fill from uploaded and processed complaint document
+  const handleApplyAutoFill = (record: ProcessedFIRDocumentRecord) => {
+    const data = record.processedData;
+    if (!data) return;
+
+    if (data.state) setState(data.state);
+    if (data.district) setDistrict(data.district);
+    if (data.policeStation) setPoliceStation(data.policeStation);
+
+    if (data.gdEntryNumber) setGdEntryNumber(data.gdEntryNumber);
+    if (data.gdDate) setGdDate(data.gdDate);
+    if (data.gdTime) setGdTime(data.gdTime);
+    if (data.sourceOfComplaint) setSourceOfComplaint(data.sourceOfComplaint);
+    if (data.complaintNumber) setComplaintNumber(data.complaintNumber);
+
+    // Complainant
+    if (data.complainant) {
+      if (data.complainant.firstName) setComplainantFirstName(data.complainant.firstName);
+      if (data.complainant.middleName) setComplainantMiddleName(data.complainant.middleName);
+      if (data.complainant.lastName) setComplainantLastName(data.complainant.lastName);
+      if (data.complainant.fatherOrSpouse) setComplainantRelativeName(data.complainant.fatherOrSpouse);
+      if (data.complainant.relationType) setComplainantRelationType(data.complainant.relationType);
+      if (data.complainant.mobile) setComplainantMobile(data.complainant.mobile);
+      if (data.complainant.gender) setComplainantGender(data.complainant.gender);
+      if (data.complainant.age) setComplainantAge(data.complainant.age);
+      if (data.complainant.houseNo) setPermHouseNo(data.complainant.houseNo);
+      if (data.complainant.city) setPermCity(data.complainant.city);
+      if (data.complainant.district) setPermDistrict(data.complainant.district);
+      if (data.complainant.state) setPermState(data.complainant.state);
+    }
+
+    // Incident / Occurrence
+    if (data.occurrence) {
+      const occItem: ExtendedFIROccurrenceItem = {
+        id: `occ-${Date.now()}`,
+        dateFrom: data.occurrence.dateFrom || firDate,
+        dateTo: data.occurrence.dateTo || firDate,
+        timeFrom: data.occurrence.timeFrom || "10:00",
+        timeTo: data.occurrence.timeTo || "11:00",
+        day: "Monday",
+        timePeriod: "Morning / Pahar 1",
+        directionFromPs: data.occurrence.directionFromPs || "East",
+        distanceKm: data.occurrence.distanceKm || "1.5",
+        area: data.occurrence.place || "Area of incident",
+        city: data.district || district,
+        beatNo: data.occurrence.beatNo || "Beat No. 1",
+        landmark: data.occurrence.landmark,
+      };
+      setOccurrencesList([occItem]);
+    }
+
+    // Accused
+    if (data.accusedList && data.accusedList.length > 0) {
+      const formattedAccused: ExtendedAccusedPerson[] = data.accusedList.map((a, idx) => ({
+        id: a.id || `acc-${Date.now()}-${idx}`,
+        name: a.name,
+        relativeName: a.relativeName || "",
+        gender: (a.gender as any) || "Unknown",
+        age: a.age || "Unknown",
+        address: a.address || "Address under investigation",
+        phone: a.phone || "",
+        physicalDescription: a.physicalDescription || "Under investigation",
+        isKnown: a.isIdentified,
+        isIdentified: a.isIdentified,
+        status: "Suspect",
+      }));
+      setAccusedList(formattedAccused);
+      setIsAccusedKnown(data.accusedList.some((a) => a.isIdentified));
+    }
+
+    // FIR Content & Facts
+    if (data.firContentText) setFirContentText(data.firContentText);
+    if (data.briefFacts) setBriefFacts(data.briefFacts);
+
+    // Acts & Sections
+    if (data.actsAndSections && data.actsAndSections.length > 0) {
+      const formattedActs: FIRActSectionEntry[] = data.actsAndSections.map((item, idx) => ({
+        id: `act-${Date.now()}-${idx}`,
+        act: item.act,
+        sections: item.sections,
+      }));
+      setActsAndSectionsList(formattedActs);
+    }
+
+    // Major / Minor Head
+    if (data.majorHead) setCurrentMajorHead(data.majorHead);
+    if (data.minorHead) setCurrentMinorHead(data.minorHead);
+
+    setSaveDraftFeedback(
+      `Document "${record.rawDocument.fileName}" processed & FIR Form auto-filled successfully! (Database Record Linked)`
+    );
+    setTimeout(() => setSaveDraftFeedback(null), 5000);
   };
 
   // Clear All Form Fields
@@ -1167,6 +1282,20 @@ function RegisterFIRForm() {
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Clear All
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUploadAutoFillModal(true)}
+            className="text-xs text-blue-800 border-blue-300 bg-blue-50/80 hover:bg-blue-100 flex items-center gap-1.5 font-semibold shadow-xs transition-all"
+            title="Upload complaint document to auto-fill FIR fields and cache raw document in database"
+          >
+            <UploadCloud className="w-3.5 h-3.5 text-blue-600" />
+            <span>Upload &amp; Auto Fill FIR Form</span>
+            {hasProcessedDocument && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Database record linked" />
+            )}
           </Button>
           <Button
             type="button"
@@ -3922,6 +4051,17 @@ function RegisterFIRForm() {
           }}
         />
       )}
+
+      {/* Upload & Auto Fill FIR Modal */}
+      <FIRUploadAutoFillModal
+        isOpen={showUploadAutoFillModal}
+        onClose={() => setShowUploadAutoFillModal(false)}
+        targetFirNumber={autoFirNumber.firNumber}
+        targetFirYear={autoFirNumber.firYear}
+        currentStation={policeStation}
+        currentDistrict={district}
+        onApplyAutoFill={handleApplyAutoFill}
+      />
     </div>
   );
 }
