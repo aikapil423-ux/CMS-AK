@@ -661,91 +661,106 @@ function RegisterFIRForm() {
 
     const newlyFilled: Record<string, boolean> = {};
 
-    if (data.state) { setState(data.state); newlyFilled.state = true; }
-    if (data.district) { setDistrict(data.district); newlyFilled.district = true; }
-    if (data.policeStation) { setPoliceStation(data.policeStation); newlyFilled.policeStation = true; }
+    if (data.state?.trim()) { setState(data.state.trim()); newlyFilled.state = true; }
+    if (data.district?.trim()) { setDistrict(data.district.trim()); newlyFilled.district = true; }
+    if (data.policeStation?.trim()) { setPoliceStation(data.policeStation.trim()); newlyFilled.policeStation = true; }
 
-    if (data.gdEntryNumber) { setGdEntryNumber(data.gdEntryNumber); newlyFilled.gdEntryNumber = true; }
-    if (data.gdDate) { setGdDate(data.gdDate); newlyFilled.gdDate = true; }
-    if (data.gdTime) { setGdTime(data.gdTime); newlyFilled.gdTime = true; }
-    if (data.sourceOfComplaint) { setSourceOfComplaint(data.sourceOfComplaint); newlyFilled.sourceOfComplaint = true; }
-    if (data.complaintNumber) { setComplaintNumber(data.complaintNumber); newlyFilled.complaintNumber = true; }
+    if (data.gdEntryNumber?.trim()) { setGdEntryNumber(data.gdEntryNumber.trim()); newlyFilled.gdEntryNumber = true; }
+    if (data.gdDate?.trim()) { setGdDate(data.gdDate.trim()); newlyFilled.gdDate = true; }
+    if (data.gdTime?.trim()) { setGdTime(data.gdTime.trim()); newlyFilled.gdTime = true; }
+    if (data.sourceOfComplaint?.trim()) { setSourceOfComplaint(data.sourceOfComplaint.trim()); newlyFilled.sourceOfComplaint = true; }
+    if (data.complaintNumber?.trim()) { setComplaintNumber(data.complaintNumber.trim()); newlyFilled.complaintNumber = true; }
 
-    // Complainant
+    // Complainant - only set fields explicitly extracted
     if (data.complainant) {
-      if (data.complainant.firstName) { setComplainantFirstName(data.complainant.firstName); newlyFilled.complainantFirstName = true; }
-      if (data.complainant.middleName) { setComplainantMiddleName(data.complainant.middleName); newlyFilled.complainantMiddleName = true; }
-      if (data.complainant.lastName) { setComplainantLastName(data.complainant.lastName); newlyFilled.complainantLastName = true; }
-      if (data.complainant.fatherOrSpouse) { setComplainantRelativeName(data.complainant.fatherOrSpouse); newlyFilled.complainantRelativeName = true; }
-      if (data.complainant.relationType) { setComplainantRelationType(data.complainant.relationType); newlyFilled.complainantRelationType = true; }
-      if (data.complainant.mobile) { setComplainantMobile(data.complainant.mobile); newlyFilled.complainantMobile = true; }
-      if (data.complainant.gender) { setComplainantGender(data.complainant.gender); newlyFilled.complainantGender = true; }
-      if (data.complainant.age) { setComplainantAge(data.complainant.age); newlyFilled.complainantAge = true; }
-      if (data.complainant.houseNo) { setPermHouseNo(data.complainant.houseNo); newlyFilled.permHouseNo = true; }
-      if (data.complainant.city) { setPermCity(data.complainant.city); newlyFilled.permCity = true; }
-      if (data.complainant.district) { setPermDistrict(data.complainant.district); newlyFilled.permDistrict = true; }
-      if (data.complainant.state) { setPermState(data.complainant.state); newlyFilled.permState = true; }
+      if (data.complainant.firstName?.trim()) { setComplainantFirstName(data.complainant.firstName.trim()); newlyFilled.complainantFirstName = true; }
+      if (data.complainant.middleName?.trim()) { setComplainantMiddleName(data.complainant.middleName.trim()); newlyFilled.complainantMiddleName = true; }
+      if (data.complainant.lastName?.trim()) { setComplainantLastName(data.complainant.lastName.trim()); newlyFilled.complainantLastName = true; }
+      if (data.complainant.fatherOrSpouse?.trim()) { setComplainantRelativeName(data.complainant.fatherOrSpouse.trim()); newlyFilled.complainantRelativeName = true; }
+      if (data.complainant.relationType?.trim()) { setComplainantRelationType(data.complainant.relationType.trim()); newlyFilled.complainantRelationType = true; }
+      if (data.complainant.mobile?.trim()) { setComplainantMobile(data.complainant.mobile.trim()); newlyFilled.complainantMobile = true; }
+      if (data.complainant.gender?.trim()) { setComplainantGender(data.complainant.gender.trim()); newlyFilled.complainantGender = true; }
+      if (data.complainant.age?.trim()) { setComplainantAge(data.complainant.age.trim()); newlyFilled.complainantAge = true; }
+      if (data.complainant.houseNo?.trim()) { setPermHouseNo(data.complainant.houseNo.trim()); newlyFilled.permHouseNo = true; }
+      if (data.complainant.city?.trim()) { setPermCity(data.complainant.city.trim()); newlyFilled.permCity = true; }
+      if (data.complainant.district?.trim()) { setPermDistrict(data.complainant.district.trim()); newlyFilled.permDistrict = true; }
+      if (data.complainant.state?.trim()) { setPermState(data.complainant.state.trim()); newlyFilled.permState = true; }
     }
 
-    // Incident / Occurrence
+    // Incident / Occurrence - strictly populate only what is present in document
     if (data.occurrence) {
-      const occItem: ExtendedFIROccurrenceItem = {
-        id: `occ-${Date.now()}`,
-        dateFrom: data.occurrence.dateFrom || firDate,
-        dateTo: data.occurrence.dateTo || firDate,
-        timeFrom: data.occurrence.timeFrom || "10:00",
-        timeTo: data.occurrence.timeTo || "11:00",
-        day: "Monday",
-        timePeriod: "Morning / Pahar 1",
-        directionFromPs: data.occurrence.directionFromPs || "East",
-        distanceKm: data.occurrence.distanceKm || "1.5",
-        area: data.occurrence.place || "Area of incident",
-        city: data.district || district,
-        beatNo: data.occurrence.beatNo || "Beat No. 1",
-        landmark: data.occurrence.landmark,
-      };
-      setOccurrencesList([occItem]);
-      newlyFilled.occurrence = true;
+      const hasOccurrenceData = Boolean(
+        data.occurrence.place?.trim() ||
+        data.occurrence.dateFrom?.trim() ||
+        data.occurrence.timeFrom?.trim() ||
+        data.occurrence.distanceKm?.trim() ||
+        data.occurrence.directionFromPs?.trim() ||
+        data.occurrence.landmark?.trim() ||
+        data.occurrence.beatNo?.trim()
+      );
+
+      if (hasOccurrenceData) {
+        const occItem: ExtendedFIROccurrenceItem = {
+          id: `occ-${Date.now()}`,
+          dateFrom: data.occurrence.dateFrom?.trim() || "",
+          dateTo: data.occurrence.dateTo?.trim() || data.occurrence.dateFrom?.trim() || "",
+          timeFrom: data.occurrence.timeFrom?.trim() || "",
+          timeTo: data.occurrence.timeTo?.trim() || "",
+          day: "",
+          timePeriod: "",
+          directionFromPs: data.occurrence.directionFromPs?.trim() || "",
+          distanceKm: data.occurrence.distanceKm?.trim() || "",
+          area: data.occurrence.place?.trim() || "",
+          city: data.district?.trim() || district,
+          beatNo: data.occurrence.beatNo?.trim() || "",
+          landmark: data.occurrence.landmark?.trim() || "",
+        };
+        setOccurrencesList([occItem]);
+        newlyFilled.occurrence = true;
+      }
     }
 
-    // Accused
+    // Accused - strictly populate only named/identified accused from document
     if (data.accusedList && data.accusedList.length > 0) {
-      const formattedAccused: ExtendedAccusedPerson[] = data.accusedList.map((a, idx) => ({
-        id: a.id || `acc-${Date.now()}-${idx}`,
-        name: a.name,
-        relativeName: a.relativeName || "",
-        gender: (a.gender as any) || "Unknown",
-        age: a.age || "Unknown",
-        address: a.address || "Address under investigation",
-        phone: a.phone || "",
-        physicalDescription: a.physicalDescription || "Under investigation",
-        isKnown: a.isIdentified,
-        isIdentified: a.isIdentified,
-        status: "Suspect",
-      }));
-      setAccusedList(formattedAccused);
-      setIsAccusedKnown(data.accusedList.some((a) => a.isIdentified));
-      newlyFilled.accused = true;
+      const validAccused = data.accusedList.filter((a) => a.name && a.name.trim().length > 0);
+      if (validAccused.length > 0) {
+        const formattedAccused: ExtendedAccusedPerson[] = validAccused.map((a, idx) => ({
+          id: a.id || `acc-${Date.now()}-${idx}`,
+          name: a.name.trim(),
+          relativeName: a.relativeName?.trim() || "",
+          gender: (a.gender as any) || "Unknown",
+          age: a.age?.trim() || "",
+          address: a.address?.trim() || "",
+          phone: a.phone?.trim() || "",
+          physicalDescription: a.physicalDescription?.trim() || "",
+          isKnown: Boolean(a.isIdentified),
+          isIdentified: Boolean(a.isIdentified),
+          status: "Suspect",
+        }));
+        setAccusedList(formattedAccused);
+        setIsAccusedKnown(validAccused.some((a) => a.isIdentified));
+        newlyFilled.accused = true;
+      }
     }
 
     // FIR Content & Facts
-    if (data.firContentText) { setFirContentText(data.firContentText); newlyFilled.firContentText = true; }
-    if (data.briefFacts) { setBriefFacts(data.briefFacts); newlyFilled.briefFacts = true; }
+    if (data.firContentText?.trim()) { setFirContentText(data.firContentText.trim()); newlyFilled.firContentText = true; }
+    if (data.briefFacts?.trim()) { setBriefFacts(data.briefFacts.trim()); newlyFilled.briefFacts = true; }
 
     // Acts & Sections
     if (data.actsAndSections && data.actsAndSections.length > 0) {
       const formattedActs: FIRActSectionEntry[] = data.actsAndSections.map((item, idx) => ({
         id: `act-${Date.now()}-${idx}`,
-        act: item.act,
-        sections: item.sections,
+        act: item.act.trim(),
+        sections: item.sections.trim(),
       }));
       setActsAndSectionsList(formattedActs);
       newlyFilled.actsAndSections = true;
     }
 
     // Major / Minor Head
-    if (data.majorHead) { setCurrentMajorHead(data.majorHead); newlyFilled.majorHead = true; }
-    if (data.minorHead) { setCurrentMinorHead(data.minorHead); newlyFilled.minorHead = true; }
+    if (data.majorHead?.trim()) { setCurrentMajorHead(data.majorHead.trim()); newlyFilled.majorHead = true; }
+    if (data.minorHead?.trim()) { setCurrentMinorHead(data.minorHead.trim()); newlyFilled.minorHead = true; }
 
     setAutoFilledFields((prev) => ({ ...prev, ...newlyFilled }));
 

@@ -532,31 +532,32 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                   <div>
                     <span className="text-slate-500">Name:</span>{" "}
                     <span className="font-bold text-slate-900">
-                      {savedRecord.processedData.complainant.firstName}{" "}
-                      {savedRecord.processedData.complainant.lastName}
+                      {[savedRecord.processedData.complainant?.firstName, savedRecord.processedData.complainant?.lastName].filter(Boolean).join(" ") || "Not specified in document"}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Relative:</span>{" "}
-                    <span className="font-medium text-slate-800">
-                      {savedRecord.processedData.complainant.fatherOrSpouse} (
-                      {savedRecord.processedData.complainant.relationType})
-                    </span>
-                  </div>
+                  {savedRecord.processedData.complainant?.fatherOrSpouse && (
+                    <div>
+                      <span className="text-slate-500">Relative:</span>{" "}
+                      <span className="font-medium text-slate-800">
+                        {savedRecord.processedData.complainant.fatherOrSpouse}
+                        {savedRecord.processedData.complainant.relationType ? ` (${savedRecord.processedData.complainant.relationType})` : ""}
+                      </span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-slate-500">Mobile:</span>{" "}
                     <span className="font-mono font-bold text-blue-700">
-                      {savedRecord.processedData.complainant.mobile || "Not specified"}
+                      {savedRecord.processedData.complainant?.mobile || "Not specified in document"}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Address:</span>{" "}
-                    <span className="text-slate-800">
-                      {savedRecord.processedData.complainant.houseNo},{" "}
-                      {savedRecord.processedData.complainant.city},{" "}
-                      {savedRecord.processedData.complainant.state}
-                    </span>
-                  </div>
+                  {(savedRecord.processedData.complainant?.houseNo || savedRecord.processedData.complainant?.city || savedRecord.processedData.complainant?.state) && (
+                    <div>
+                      <span className="text-slate-500">Address:</span>{" "}
+                      <span className="text-slate-800">
+                        {[savedRecord.processedData.complainant?.houseNo, savedRecord.processedData.complainant?.city, savedRecord.processedData.complainant?.state].filter(Boolean).join(", ")}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Occurrence */}
@@ -568,25 +569,27 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                   <div>
                     <span className="text-slate-500">Place:</span>{" "}
                     <span className="font-semibold text-slate-900">
-                      {savedRecord.processedData.occurrence.place}
+                      {savedRecord.processedData.occurrence?.place || "Not specified in document"}
                     </span>
                   </div>
                   <div>
                     <span className="text-slate-500">Date:</span>{" "}
                     <span className="font-mono text-slate-800">
-                      {savedRecord.processedData.occurrence.dateFrom}
+                      {savedRecord.processedData.occurrence?.dateFrom || "Not specified in document"}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Time:</span>{" "}
-                    <span className="font-mono text-slate-800">
-                      {savedRecord.processedData.occurrence.timeFrom}
-                    </span>
-                  </div>
+                  {savedRecord.processedData.occurrence?.timeFrom && (
+                    <div>
+                      <span className="text-slate-500">Time:</span>{" "}
+                      <span className="font-mono text-slate-800">
+                        {savedRecord.processedData.occurrence.timeFrom}
+                      </span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-slate-500">Police Station:</span>{" "}
                     <span className="font-semibold text-slate-800">
-                      {savedRecord.processedData.policeStation}, {savedRecord.processedData.district}
+                      {[savedRecord.processedData.policeStation, savedRecord.processedData.district].filter(Boolean).join(", ") || "Not specified"}
                     </span>
                   </div>
                 </div>
@@ -597,12 +600,16 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                     <Shield className="w-3.5 h-3.5 text-amber-600" />
                     <span>Accused Details (आरोपी विवरण)</span>
                   </div>
-                  {savedRecord.processedData.accusedList.map((acc, idx) => (
-                    <div key={idx} className="bg-slate-50 p-2 rounded border border-slate-200">
-                      <span className="font-bold text-slate-900">{acc.name}</span>
-                      <p className="text-[11px] text-slate-500 mt-0.5">{acc.physicalDescription}</p>
-                    </div>
-                  ))}
+                  {savedRecord.processedData.accusedList && savedRecord.processedData.accusedList.length > 0 ? (
+                    savedRecord.processedData.accusedList.map((acc, idx) => (
+                      <div key={idx} className="bg-slate-50 p-2 rounded border border-slate-200">
+                        <span className="font-bold text-slate-900">{acc.name}</span>
+                        {acc.physicalDescription && <p className="text-[11px] text-slate-500 mt-0.5">{acc.physicalDescription}</p>}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 italic text-[11px]">No specific accused named in document</p>
+                  )}
                 </div>
 
                 {/* 4. Acts & Sections */}
@@ -612,12 +619,16 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                     <span>Detected Acts &amp; Sections (धाराएं)</span>
                   </div>
                   <div className="space-y-1">
-                    {savedRecord.processedData.actsAndSections.map((as, idx) => (
-                      <div key={idx} className="bg-purple-50 p-2 rounded border border-purple-200 text-[11px]">
-                        <span className="font-bold text-purple-900">{as.act}</span>:{" "}
-                        <span className="font-mono text-purple-800">{as.sections}</span>
-                      </div>
-                    ))}
+                    {savedRecord.processedData.actsAndSections && savedRecord.processedData.actsAndSections.length > 0 ? (
+                      savedRecord.processedData.actsAndSections.map((as, idx) => (
+                        <div key={idx} className="bg-purple-50 p-2 rounded border border-purple-200 text-[11px]">
+                          <span className="font-bold text-purple-900">{as.act}</span>:{" "}
+                          <span className="font-mono text-purple-800">{as.sections}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-slate-500 italic text-[11px]">No specific legal sections detected</p>
+                    )}
                   </div>
                 </div>
               </div>
