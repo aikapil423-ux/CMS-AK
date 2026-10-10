@@ -656,40 +656,6 @@ function ZimniWorkspaceContent() {
 
   return (
     <div className="space-y-4 pb-20 animate-in fade-in-50">
-      {/* Print CSS Rules */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #zimni-printable-canvas,
-          #zimni-printable-canvas * {
-            visibility: visible;
-          }
-          #zimni-printable-canvas {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 16px !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          textarea, input {
-            border: none !important;
-            outline: none !important;
-            resize: none !important;
-            box-shadow: none !important;
-            background: transparent !important;
-          }
-        }
-      `}</style>
-
       {/* Top Header / Actions Bar */}
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">

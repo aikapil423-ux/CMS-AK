@@ -567,32 +567,6 @@ function FIRTemplatesContent() {
         </div>
       </div>
 
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #fir-printable-notice,
-          #fir-printable-notice * {
-            visibility: visible;
-          }
-          #fir-printable-notice {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
       {/* Fully Editable Official Legal Document Canvas */}
       <div className="flex justify-center">
         <div

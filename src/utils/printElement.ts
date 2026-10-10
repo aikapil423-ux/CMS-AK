@@ -8,6 +8,59 @@
  * 4. Multi-page documents break naturally across A4 pages without blank screens
  */
 
+function preparePrintableClone(el: HTMLElement): HTMLElement {
+  const clone = el.cloneNode(true) as HTMLElement;
+
+  const origInputs = el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+    "input, textarea, select"
+  );
+  const cloneInputs = clone.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+    "input, textarea, select"
+  );
+
+  for (let i = 0; i < origInputs.length; i++) {
+    const orig = origInputs[i];
+    const dest = cloneInputs[i];
+    if (!dest) continue;
+
+    if (orig instanceof HTMLTextAreaElement) {
+      dest.textContent = orig.value;
+      (dest as HTMLTextAreaElement).value = orig.value;
+      dest.style.height = "auto";
+      dest.style.overflow = "visible";
+    } else if (orig instanceof HTMLInputElement) {
+      if (orig.type === "checkbox" || orig.type === "radio") {
+        if (orig.checked) {
+          dest.setAttribute("checked", "checked");
+          (dest as HTMLInputElement).checked = true;
+        } else {
+          dest.removeAttribute("checked");
+          (dest as HTMLInputElement).checked = false;
+        }
+      } else {
+        dest.setAttribute("value", orig.value);
+        (dest as HTMLInputElement).value = orig.value;
+      }
+    } else if (orig instanceof HTMLSelectElement) {
+      dest.setAttribute("value", orig.value);
+      const selectedIndex = orig.selectedIndex;
+      const destOptions = (dest as HTMLSelectElement).options;
+      for (let j = 0; j < destOptions.length; j++) {
+        if (j === selectedIndex) {
+          destOptions[j].setAttribute("selected", "selected");
+        } else {
+          destOptions[j].removeAttribute("selected");
+        }
+      }
+    }
+  }
+
+  if (el.id) {
+    clone.id = el.id;
+  }
+  return clone;
+}
+
 export function printA4Element(
   elementOrId: HTMLElement | string,
   documentTitle?: string
@@ -46,14 +99,20 @@ export function printA4Element(
     return;
   }
 
-  // Collect all stylesheets from current document
+  // Collect all stylesheets, filtering out obsolete global print hacks that hide body *
   let stylesHtml = "";
   document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
+    if (node.tagName.toLowerCase() === "style") {
+      const text = node.textContent || "";
+      if (text.includes("visibility: hidden") || text.includes("visibility:hidden")) {
+        return;
+      }
+    }
     stylesHtml += node.outerHTML;
   });
 
   const title = documentTitle || "Police Legal Document";
-  const contentHtml = el.innerHTML;
+  const cloned = preparePrintableClone(el);
 
   iframeDoc.open();
   iframeDoc.write(`
@@ -82,8 +141,15 @@ export function printA4Element(
           font-size: 11pt;
           line-height: 1.6;
         }
+        body, body * {
+          visibility: visible !important;
+        }
+        .print-container, .print-container * {
+          visibility: visible !important;
+        }
         .no-print, button, input[type="button"], [data-no-print] {
           display: none !important;
+          visibility: hidden !important;
         }
         table {
           border-collapse: collapse !important;
@@ -110,11 +176,20 @@ export function printA4Element(
         .bg-slate-50, .bg-blue-50, .bg-amber-50, .bg-purple-50 {
           background-color: transparent !important;
         }
+        /* Form inputs and textareas in print */
+        textarea, input {
+          border-color: transparent !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          color: #000000 !important;
+          resize: none !important;
+          outline: none !important;
+        }
       </style>
     </head>
     <body>
       <div class="print-container" style="width: 100%; max-width: 100%; margin: 0 auto;">
-        ${contentHtml}
+        ${cloned.outerHTML}
       </div>
     </body>
     </html>
@@ -252,14 +327,21 @@ export function downloadA4DocumentAsHtml(
     return;
   }
 
-  // Collect all stylesheets from current document
+  // Collect all stylesheets from current document, filtering out rogue print hacks
   let stylesHtml = "";
   document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
+    if (node.tagName.toLowerCase() === "style") {
+      const text = node.textContent || "";
+      if (text.includes("visibility: hidden") || text.includes("visibility:hidden")) {
+        return;
+      }
+    }
     stylesHtml += node.outerHTML;
   });
 
   const title = documentTitle || "Police Legal Document";
-  const contentHtml = el.innerHTML;
+  const cloned = preparePrintableClone(el);
+  const contentHtml = cloned.outerHTML;
 
   const fullHtml = `<!DOCTYPE html>
 <html lang="hi">

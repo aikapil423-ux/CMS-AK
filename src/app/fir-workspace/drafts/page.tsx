@@ -23,6 +23,7 @@ import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 export type FinalFormType = "CHARGESHEET" | "CLOSURE" | "UNTRACED" | "CANCELLED";
 
@@ -269,7 +270,15 @@ function FIRFinalFormContent() {
   }, [activeFir, formType]);
 
   const handlePrint = () => {
-    window.print();
+    printA4Element("fir-printable-report", `Final_Report_${formType}_FIR_${activeFir?.firNumber || "Draft"}`);
+  };
+
+  const handleDownload = () => {
+    downloadA4DocumentAsHtml(
+      "fir-printable-report",
+      `Final_Report_${formType}_FIR_${activeFir?.firNumber || "Draft"}`,
+      `Final Report Section 193 BNSS - ${FINAL_FORM_CONFIGS[formType].label}`
+    );
   };
 
   const handleCopy = () => {
@@ -477,32 +486,6 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           </div>
         </div>
       </div>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #fir-printable-report,
-          #fir-printable-report * {
-            visibility: visible;
-          }
-          #fir-printable-report {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            box-shadow: none !important;
-            border: 2px solid #000 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
 
       {/* Main Statutory Proforma Canvas (Fully Directly Editable In-Place) */}
       <div className="flex justify-center">
