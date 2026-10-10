@@ -231,7 +231,7 @@ function GeneralDiaryContent() {
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
   const [printDailyRegisterOpen, setPrintDailyRegisterOpen] = useState(false);
-  const [selectedPrintDate, setSelectedPrintDate] = useState<string>(todayISO);
+  const [selectedPrintDate, setSelectedPrintDate] = useState<string>("");
 
   // Document Modal State
   const [docModalRecord, setDocModalRecord] = useState<GeneralDiaryRecord | null>(null);
@@ -239,9 +239,7 @@ function GeneralDiaryContent() {
 
   // Sync print date with selected date
   useEffect(() => {
-    if (selectedDate) {
-      setSelectedPrintDate(selectedDate);
-    }
+    setSelectedPrintDate(selectedDate || "");
   }, [selectedDate]);
 
   // Draft/Suggestion row actions state
@@ -756,11 +754,15 @@ function GeneralDiaryContent() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setPrintDailyRegisterOpen(true)}
+            onClick={() => {
+              setSelectedPrintDate(selectedDate || "");
+              setPrintDailyRegisterOpen(true);
+            }}
             className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
+            title="View, Search, Print & Download Roznamcha General Diary Register"
           >
-            <Printer className="w-3.5 h-3.5 text-slate-700" />
-            <span>Print Register</span>
+            <BookOpen className="w-3.5 h-3.5 text-blue-700" />
+            <span>Register</span>
           </Button>
         </div>
       </div>
