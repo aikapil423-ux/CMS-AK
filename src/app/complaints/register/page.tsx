@@ -1183,7 +1183,7 @@ export default function RegisterComplaintPage() {
         category,
         dataUrl,
         uploadedAt: new Date().toISOString(),
-        description: `Original ${typeLabel} uploaded during complaint intake`,
+        description: "",
       };
       setAttachments((prev) => [attachedDoc, ...prev.filter((a) => a.name !== file.name)]);
 
@@ -1255,7 +1255,7 @@ export default function RegisterComplaintPage() {
             ? {
                 ...a,
                 name: classifiedName,
-                description: `${verifiedTitle} (Auto-classified by Gemini 3.5 Flash: ${file.name} -> ${classifiedName})`,
+                description: "",
                 isAutoFilled: true,
                 isProcessed: true,
                 processedRecordId: attachedDocId || `proc_${Date.now()}`,
@@ -2125,7 +2125,7 @@ export default function RegisterComplaintPage() {
           fileSize: typeof att.size === "number" ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || "10 KB"),
           fileUrl: att.dataUrl,
           dataUrl: att.dataUrl,
-          description: att.description || "Uploaded during complaint registration",
+          description: att.description || "",
           isAutoFilled: att.isAutoFilled,
           isProcessed: att.isProcessed,
           processedRecordId: att.processedRecordId,
@@ -2150,7 +2150,7 @@ export default function RegisterComplaintPage() {
           fileSize: "120 KB",
           fileUrl: autofillSuccessNotice.dataUrl,
           dataUrl: autofillSuccessNotice.dataUrl,
-          description: `Original ${autofillSuccessNotice.typeLabel || "Document"} uploaded during intake`,
+          description: "",
           isAutoFilled: true,
           isProcessed: true,
           processedRecordId: currentProcessedRecord?.id,

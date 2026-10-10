@@ -2288,12 +2288,6 @@ function ComplaintListContent() {
                           </span>
                         </div>
 
-                        {file.description && (
-                          <p className="text-[11px] text-slate-600 italic">
-                            &ldquo;{file.description}&rdquo;
-                          </p>
-                        )}
-
                         {file.category === "audio" && file.dataUrl && (
                           <audio controls src={file.dataUrl} className="w-full h-7 pt-1" />
                         )}

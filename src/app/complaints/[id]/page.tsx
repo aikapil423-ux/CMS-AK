@@ -3060,11 +3060,6 @@ Certified official record copy.`;
                                       </span>
                                     )}
                                   </div>
-                                  {doc.description && (
-                                    <p className="text-[10px] text-slate-500 truncate" title={doc.description}>
-                                      {doc.description}
-                                    </p>
-                                  )}
                                 </div>
                               </div>
                             </td>

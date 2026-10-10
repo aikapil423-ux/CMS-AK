@@ -668,29 +668,6 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
             >
               Close
             </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              disabled={loading || filteredRecords.length === 0}
-              className="gap-1.5 text-xs font-bold border-slate-300 text-slate-800 hover:bg-slate-100 cursor-pointer shadow-2xs"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Download Register</span>
-            </Button>
-
-            <Button
-              type="button"
-              size="sm"
-              onClick={handlePrint}
-              disabled={loading || filteredRecords.length === 0}
-              className="bg-[#0b192c] hover:bg-slate-900 text-white font-bold gap-1.5 text-xs cursor-pointer shadow-xs"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print Register</span>
-            </Button>
           </div>
         </div>
       </div>
