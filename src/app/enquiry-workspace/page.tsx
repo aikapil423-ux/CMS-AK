@@ -79,7 +79,7 @@ export default function EnquiryWorkspacePage() {
                     Notice Generator
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Legal notices (u/s 173(3) BNSS), CDR requisition, 4-page arrest memo, &amp; NATGRID.
+                    Haryana Police Appearance Notice (सूचना-पत्र u/s 173(3) BNSS).
                   </p>
                 </div>
               </div>

@@ -49,11 +49,7 @@ import { ComplaintAnalysisHeader } from "@/components/enquiry-workspace/Complain
 import { IdentifiedPerson, ComplaintAnalysisReport } from "@/services/complaintDocumentAnalysisService";
 import { BuilderService, BuilderTemplateItem } from "@/services/builderService";
 
-export type PresetTemplateType =
-  | "haryana_notice"
-  | "cdr_requisition"
-  | "arrest_memo"
-  | "natgrid_proforma";
+export type PresetTemplateType = "haryana_notice";
 
 export type TemplateType = PresetTemplateType | string;
 
@@ -66,7 +62,7 @@ interface CustomTemplate {
   clauses: DynamicDocumentSection[];
 }
 
-const DEFAULT_SAMPLE_DATA: Record<PresetTemplateType, NoticeFormData> = {
+const DEFAULT_SAMPLE_DATA: Record<string, NoticeFormData> = {
   haryana_notice: {
     headerDept: "हरियाणा पुलिस",
     headerGovt: "जिला अम्बाला।",
@@ -352,32 +348,11 @@ const TEMPLATE_CONFIG: Record<
   { label: string; icon: any; color: string; badge: string; desc: string }
 > = {
   haryana_notice: {
-    label: "1. Haryana Police Appearance Notice (सूचना-पत्र)",
+    label: "Haryana Police Appearance Notice (सूचना-पत्र)",
     icon: FileText,
     color: "text-blue-600",
     badge: "सूचना-पत्र",
     desc: "हरियाणा पुलिस प्रारूप सूचना-पत्र (थाना/यूनिट, परिवादी, उपस्थिति एवं वीडियो कॉन्फ्रेंस)",
-  },
-  cdr_requisition: {
-    label: "2. CDR & Digital Evidence Requisition (Panipat Format)",
-    icon: Phone,
-    color: "text-purple-600",
-    badge: "CDR & IMEI Proforma",
-    desc: "Call Detail Records, CAF, IMEI & WhatsApp requisition with non-VIP certificate",
-  },
-  arrest_memo: {
-    label: "3. गिरफ्तारी/ न्यायालय में समर्पण फार्म 26.8(1) (4 पृष्ठ)",
-    icon: Shield,
-    color: "text-red-600",
-    badge: "फार्म 26.8(1) (4 पृष्ठ)",
-    desc: "गिरफ्तारी/न्यायालय समर्पण फार्म भाग-1 व 2, धारा 47 BNSS, जामा तलाशी, पहचान पत्र व 18-शारीरिक लक्षण",
-  },
-  natgrid_proforma: {
-    label: "4. NATGRID Intelligence Requisition Proforma",
-    icon: Layers,
-    color: "text-emerald-600",
-    badge: "NATGRID Table",
-    desc: "Multi-agency intelligence requisition table (Banks, Telecom, Immigration, VAHAN)",
   },
 };
 
