@@ -300,3 +300,40 @@ model BuilderDraft {
   @@index([status])
 }
 
+// CCTNS-style General Diary (Roznamcha) register — server-owned numbering & timestamps.
+// gdNumber embeds date + daily sequence (GD-YYYY-MM-DD-001); unique per event per day.
+model GDRecord {
+  id                    String    @id @default(cuid())
+  gdNumber              String    @unique
+  sequencePerDay        Int
+  gdDate                DateTime
+  entryDateTime         DateTime
+  policeStation         String    @default("PS City Thanesar")
+  district              String    @default("Kurukshetra")
+  typeCode              String
+  category              String
+  typeDisplay           String
+  typeDisplayHi         String
+  subject               String
+  narrative             String
+  entryForOfficerJson   String
+  actualAuthorJson      String
+  status                String    @default("LOCKED")
+  source                String    @default("MANUAL_ENTRY")
+  isLocked              Boolean   @default(true)
+  isDraft               Boolean   @default(false)
+  relatedRecordsJson    String?
+  auditTrailJson        String?
+  verificationAuditId   String?
+  verifiedByJson        String?
+  verificationTimestamp DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([gdDate])
+  @@index([typeCode])
+  @@index([status])
+  @@index([isDraft])
+  @@index([subject])
+}
+

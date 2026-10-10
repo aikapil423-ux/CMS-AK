@@ -9,11 +9,13 @@ import {
   GDRelatedRecords,
   GDAuditLog,
   GDStatus,
+  GDUploadedDocument,
 } from "@/types/generalDiary";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
+import { formatGDActivityDateTime } from "@/lib/gdDateTime";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
-const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v3";
+const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v4_cctns";
 const GD_TEMPLATES_STORAGE_KEY = "haryana_police_cms_gd_templates_v3";
 
 // Generate cryptographic-style verification audit hash
@@ -50,7 +52,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "AAGAZ_ROZNAMCHA",
+      typeCode: "OPENING_OF_GD",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Opening",
       typeDisplayHi: "Opening",
@@ -110,7 +112,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "SAFAI_THANA",
+      typeCode: "OTHERS",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Cleanliness",
       typeDisplayHi: "Cleanliness",
@@ -168,7 +170,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "STAFF_GINTI",
+      typeCode: "ROLL_CALL",
       category: "ROUTINE_ADMINISTRATION",
       typeDisplay: "Roll Call",
       typeDisplayHi: "Roll Call",
@@ -226,7 +228,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "419/KKR",
         pno: "09384712",
       },
-      typeCode: "RAVANGI_OFFICER",
+      typeCode: "DEPARTURE",
       category: "DUTY_MOVEMENT",
       typeDisplay: "Departure",
       typeDisplayHi: "Departure",
@@ -287,7 +289,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "419/KKR",
         pno: "09384712",
       },
-      typeCode: "WAPSI_OFFICER",
+      typeCode: "ARRIVAL_RETURN",
       category: "DUTY_MOVEMENT",
       typeDisplay: "Arrival",
       typeDisplayHi: "Arrival",
@@ -408,7 +410,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         beltNumber: "SYS/AUTO",
         pno: "00000000",
       },
-      typeCode: "COMPLAINT_INTAKE",
+      typeCode: "CITIZEN_INFORMATION_TIP_RECEIVED",
       category: "INVESTIGATION_PROCESS",
       typeDisplay: "Complaint Received / Disposal",
       typeDisplayHi: "प्राप्ति / निपटान शिकायत दरख्वास्त (PPR 22.48)",
@@ -538,6 +540,95 @@ function saveTypesToStorage(types: GDEntryTypeConfig[]) {
 let memoryRecordsStore: GeneralDiaryRecord[] = loadRecordsFromStorage();
 let memoryTypesStore: GDEntryTypeConfig[] = loadTypesFromStorage();
 
+// -------------------------------------------------------------
+// Chronological helpers for LOCAL back-dated resequencing (mirror of the
+// server-side resequenceDay). Parses "yyyy-mm-dd hh:mm AM/PM", ISO, or
+// "dd/mm/yyyy hh:mm AM/PM" activity strings into epoch ms.
+// -------------------------------------------------------------
+function gdRecordTimeMs(r: GeneralDiaryRecord): number {
+  const raw = (r.activityDateTime || "").trim();
+  if (!raw) return 0;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return new Date(raw).getTime();
+  const parts = raw.split(" ");
+  let dateKey = "";
+  let timePart = "";
+  if (raw.includes("/")) {
+    const dmy = (parts[0] || "").split("/");
+    if (dmy.length === 3) dateKey = `${dmy[2]}-${dmy[1]}-${dmy[0]}`;
+    timePart = parts.slice(1).join(" ");
+  } else {
+    dateKey = parts[0] || "";
+    timePart = parts.slice(1).join(" ");
+  }
+  const m = timePart.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+  if (!m) return 0;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = (m[3] || "").toUpperCase();
+  if (ap === "AM" && h === 12) h = 0;
+  if (ap === "PM" && h !== 12) h += 12;
+  return new Date(
+    `${dateKey}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`
+  ).getTime();
+}
+
+function gdRecordDateKey(r: GeneralDiaryRecord): string {
+  const raw = (r.activityDateTime || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) return raw.slice(0, 10);
+  const first = raw.split(" ")[0] || "";
+  if (first.includes("/")) {
+    const dmy = first.split("/");
+    return dmy.length === 3 ? `${dmy[2]}-${dmy[1]}-${dmy[0]}` : first;
+  }
+  return first;
+}
+
+// Renumber every locked entry of one local day chronologically — so a
+// back-dated entry inserted between others shifts the later GD numbers.
+function resequenceLocalDay(dateKey: string): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return 0;
+  const day = memoryRecordsStore
+    .filter((r) => r.isLocked && gdRecordDateKey(r) === dateKey)
+    .sort((a, b) => gdRecordTimeMs(a) - gdRecordTimeMs(b));
+  let changed = 0;
+  day.forEach((r, i) => {
+    const seq = i + 1;
+    const gdNumber = `GD-${dateKey}-${String(seq).padStart(3, "0")}`;
+    if (r.sequencePerDay !== seq || r.gdNumber !== gdNumber) changed++;
+    r.sequencePerDay = seq;
+    r.gdNumber = gdNumber;
+  });
+  if (changed > 0) saveRecordsToStorage(memoryRecordsStore);
+  return changed;
+}
+
+// -------------------------------------------------------------
+// Backend API helpers — the authoritative GD register lives on the
+// server (SQLite). GD numbers & date/time are assigned server-side.
+// Every call falls back to the local store if the backend is down.
+// -------------------------------------------------------------
+async function gdApiPost<T = any>(body: Record<string, unknown>): Promise<T> {
+  const res = await fetch("/api/general-diary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.error || `GD API error (${res.status})`);
+  }
+  return json as T;
+}
+
+async function gdApiGet<T = any>(queryString: string): Promise<T> {
+  const res = await fetch(`/api/general-diary${queryString}`, { cache: "no-store" });
+  const json = await res.json();
+  if (!res.ok || json?.success === false) {
+    throw new Error(json?.error || `GD API error (${res.status})`);
+  }
+  return json as T;
+}
+
 export const GeneralDiaryService = {
   // Synchronous helpers for UI components
   getTypes(): GDEntryTypeConfig[] {
@@ -550,6 +641,32 @@ export const GeneralDiaryService = {
     return memoryRecordsStore.find((r) => r.id === id);
   },
 
+  // Draft lookup against the server register (falls back to local store)
+  async getDraftByIdAsync(id: string): Promise<GeneralDiaryRecord | undefined> {
+    try {
+      const json = await gdApiGet<{ record: GeneralDiaryRecord | null }>(
+        `?action=BY_ID&id=${encodeURIComponent(id)}`
+      );
+      return json.record || undefined;
+    } catch {
+      return this.getDraftById(id);
+    }
+  },
+
+  // Server clock (dd/mm/yyyy + HH:mm 24h key) for the entry form defaults
+  async getServerNow(): Promise<{
+    serverDateDisplay: string;
+    serverTimeDisplay: string;
+    serverTime24: string;
+    serverTime12: string;
+    serverDateISO: string;
+    nextSequence: number;
+    nextGdNumber: string;
+  }> {
+    const json = await gdApiGet<{ data: any }>("?action=SERVER_NOW");
+    return json.data;
+  },
+
   // -------------------------------------------------------------
   // 1. Core Server-side Paginated Search & Multi-criteria Filter
   // -------------------------------------------------------------
@@ -558,6 +675,33 @@ export const GeneralDiaryService = {
     overridePage?: number,
     overridePageSize?: number
   ): Promise<GDPaginatedResponse> {
+    // Backend-first: authoritative search over the persisted server register
+    try {
+      const params = new URLSearchParams();
+      const mapped: Record<string, string | undefined> = {
+        gdNumber: filter.gdNumber,
+        startDate: filter.startDate,
+        endDate: filter.endDate,
+        officer: filter.officerQuery || filter.officerName,
+        person: filter.personName,
+        fir: filter.firNumber,
+        complaint: filter.complaintNumber,
+        vehicle: filter.vehicleNumber,
+        type: filter.typeCode,
+        status: filter.status && filter.status !== "ALL" ? filter.status : undefined,
+        isLocked: filter.isLocked !== undefined ? String(filter.isLocked) : undefined,
+        q: filter.keyword,
+        page: String(Math.max(1, overridePage || filter.page || 1)),
+        pageSize: String(Math.max(1, overridePageSize || filter.pageSize || 15)),
+      };
+      Object.entries(mapped).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") params.set(key, value);
+      });
+      const json = await gdApiGet<{ data: GDPaginatedResponse }>(`?${params.toString()}`);
+      return json.data;
+    } catch {
+      // Backend unreachable — fall back to the local in-memory register
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     let list = [...memoryRecordsStore];
 
@@ -656,15 +800,23 @@ export const GeneralDiaryService = {
 
     // Sort order:
     // 1. Pending Suggestions & Drafts first if in draft view
-    // 2. Otherwise sort by date/sequence descending
+    // 2. Otherwise locked entries in GD-number order (per-day sequence)
+    const localDateKey = (r: GeneralDiaryRecord): string => {
+      const raw = (r.activityDateTime || "").split(" ")[0];
+      if (/^\d{4}-/.test(raw)) return raw; // yyyy-mm-dd
+      const parts = raw.split("/");
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; // dd/mm/yyyy -> yyyy-mm-dd
+      }
+      return raw;
+    };
     list.sort((a, b) => {
       if (a.status === "SUGGESTED" && b.status !== "SUGGESTED") return -1;
       if (b.status === "SUGGESTED" && a.status !== "SUGGESTED") return 1;
-      if (a.status === "DRAFT" && b.status === "LOCKED") return -1;
-      if (b.status === "DRAFT" && a.status === "LOCKED") return 1;
-
-      const dateComp = b.activityDateTime.localeCompare(a.activityDateTime);
-      if (dateComp !== 0) return dateComp;
+      if (a.status === "DRAFT" && b.status !== "DRAFT") return -1;
+      if (b.status === "DRAFT" && a.status !== "DRAFT") return 1;
+      const dayComp = localDateKey(b).localeCompare(localDateKey(a));
+      if (dayComp !== 0) return dayComp;
       return b.sequencePerDay - a.sequencePerDay;
     });
 
@@ -693,6 +845,14 @@ export const GeneralDiaryService = {
   // 2. Fetch Single GD Record by ID or Number
   // -------------------------------------------------------------
   async getRecordById(idOrNumber: string): Promise<GeneralDiaryRecord | undefined> {
+    try {
+      const json = await gdApiGet<{ record: GeneralDiaryRecord | null }>(
+        `?action=BY_ID&id=${encodeURIComponent(idOrNumber)}`
+      );
+      return json.record || undefined;
+    } catch {
+      // fall back to local register
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     return memoryRecordsStore.find(
       (r) => r.id === idOrNumber || r.gdNumber.toLowerCase() === idOrNumber.toLowerCase()
@@ -724,13 +884,40 @@ export const GeneralDiaryService = {
     typeDisplayHi?: string;
     subject: string;
     narrative?: string;
+    activityDate?: string;
+    activityTime?: string;
     activityDateTime?: string;
     entryForOfficer?: GDOfficerParticulars;
     actualAuthor?: GDOfficerParticulars;
     policeStation?: string;
     district?: string;
     relatedRecords?: GDRelatedRecords;
+    attachments?: GDUploadedDocument[];
   }): Promise<GeneralDiaryRecord> {
+    // Backend-first: persist the draft on the server (searchable later)
+    try {
+      const json = await gdApiPost<{ draft: GeneralDiaryRecord }>({
+        action: "SAVE_DRAFT",
+        id: entry.id,
+        typeCode: entry.typeCode,
+        category: entry.category,
+        typeDisplay: entry.typeDisplay,
+        typeDisplayHi: entry.typeDisplayHi,
+        subject: entry.subject,
+        narrative: entry.narrative,
+        activityDate: entry.activityDate,
+        activityTime: entry.activityTime,
+        entryForOfficer: entry.entryForOfficer,
+        actualAuthor: entry.actualAuthor,
+        policeStation: entry.policeStation,
+        district: entry.district,
+        relatedRecords: entry.relatedRecords,
+        attachments: entry.attachments,
+      });
+      return json.draft;
+    } catch {
+      // Backend unreachable — fall back to local draft store
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const typeDef = memoryTypesStore.find((t) => t.code === entry.typeCode) || memoryTypesStore[0];
 
@@ -832,6 +1019,15 @@ export const GeneralDiaryService = {
   // 5. Delete Draft Entry (Only DRAFT or SUGGESTED; Locked blocked)
   // -------------------------------------------------------------
   async deleteDraft(id: string): Promise<boolean> {
+    // Backend-first: delete on the server register
+    try {
+      const json = await gdApiPost<{ success: boolean }>({ action: "DELETE_DRAFT", id });
+      memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== id);
+      saveRecordsToStorage(memoryRecordsStore);
+      return json.success;
+    } catch {
+      // fall back to local deletion
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const target = memoryRecordsStore.find((r) => r.id === id);
     if (!target) return false;
@@ -851,6 +1047,22 @@ export const GeneralDiaryService = {
     verifier: GDOfficerParticulars,
     verificationRemarks?: string
   ): Promise<GeneralDiaryRecord> {
+    // Backend-first: server assigns the atomic per-day GD number
+    if (typeof idOrData === "string") {
+      try {
+        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+          action: "VERIFY_AND_LOCK",
+          id: idOrData,
+          verifier,
+          remarks: verificationRemarks,
+        });
+        memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== idOrData);
+        saveRecordsToStorage(memoryRecordsStore);
+        return json.record;
+      } catch {
+        // fall back to local lock flow
+      }
+    }
     memoryRecordsStore = loadRecordsFromStorage();
     const now = new Date();
     const nowIso = now.toISOString();
@@ -914,6 +1126,9 @@ export const GeneralDiaryService = {
         remarks: `Permanently locked as ${gdNumber} under PPR 22.48`,
       });
 
+      // Back-dated local entry — renumber the whole day chronologically
+      resequenceLocalDay(gdRecordDateKey(targetRecord));
+
       saveRecordsToStorage(memoryRecordsStore);
       return targetRecord;
     }
@@ -976,6 +1191,7 @@ export const GeneralDiaryService = {
     };
 
     memoryRecordsStore.unshift(newLockedRecord);
+    resequenceLocalDay(gdRecordDateKey(newLockedRecord));
     saveRecordsToStorage(memoryRecordsStore);
     return newLockedRecord;
   },
@@ -998,13 +1214,13 @@ export const GeneralDiaryService = {
     const nowIso = new Date().toISOString();
 
     const typeCodeMap: Record<string, string> = {
-      COMPLAINT_REGISTERED: "COMPLAINT_INTAKE",
-      FIR_LODGED: "FIR_REGISTRATION",
-      OFFICER_DISPATCHED: "RAVANGI_OFFICER",
-      MALKHANA_SEIZURE: "CASE_PROPERTY_DEPOSIT",
+      COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
+      FIR_LODGED: "CRIMINAL_CASE",
+      OFFICER_DISPATCHED: "DEPARTURE",
+      MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
     };
 
-    const typeCode = typeCodeMap[event.eventType] || "OTHER_MISCELLANEOUS";
+    const typeCode = typeCodeMap[event.eventType] || "OTHERS";
     const typeDef = memoryTypesStore.find((t) => t.code === typeCode) || memoryTypesStore[0];
 
     const suggestionRecord: GeneralDiaryRecord = {
@@ -1088,17 +1304,17 @@ export const GeneralDiaryService = {
     const targetDate = activityDateTime.split(" ")[0];
 
     // Check 1: Officer already has a departure on this day without return
-    if (typeCode === "RAVANGI_OFFICER") {
+    if (typeCode === "DEPARTURE") {
       const departures = memoryRecordsStore.filter(
         (r) =>
           r.entryForOfficer.pno === officerPno &&
-          r.typeCode === "RAVANGI_OFFICER" &&
+          r.typeCode === "DEPARTURE" &&
           r.activityDateTime.startsWith(targetDate)
       );
       const returns = memoryRecordsStore.filter(
         (r) =>
           r.entryForOfficer.pno === officerPno &&
-          r.typeCode === "WAPSI_OFFICER" &&
+          r.typeCode === "ARRIVAL_RETURN" &&
           r.activityDateTime.startsWith(targetDate)
       );
       if (departures.length > returns.length) {
@@ -1150,6 +1366,8 @@ export const GeneralDiaryService = {
           typeDisplayHi?: string;
           subject: string;
           narrative: string;
+          activityDate?: string;
+          activityTime?: string;
           activityDateTime?: string;
           entryForOfficer?: GDOfficerParticulars;
           actualAuthor?: GDOfficerParticulars;
@@ -1157,6 +1375,7 @@ export const GeneralDiaryService = {
           district?: string;
           source?: any;
           relatedRecords?: GDRelatedRecords;
+          attachments?: GDUploadedDocument[];
         }
       | string,
     narrative?: string,
@@ -1168,6 +1387,30 @@ export const GeneralDiaryService = {
   ): Promise<GeneralDiaryRecord> {
     if (typeof entryOrSubject === "object") {
       const payload = entryOrSubject;
+      // Backend-first: server stamps the GD number by chronological position
+      try {
+        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+          action: "CREATE_LOCKED",
+          typeCode: payload.typeCode,
+          category: payload.category,
+          typeDisplay: payload.typeDisplay,
+          typeDisplayHi: payload.typeDisplayHi,
+          subject: payload.subject,
+          narrative: payload.narrative,
+          entryForOfficer: payload.entryForOfficer,
+          actualAuthor: payload.actualAuthor,
+          policeStation: payload.policeStation,
+          district: payload.district,
+          source: payload.source,
+          relatedRecords: payload.relatedRecords,
+          attachments: payload.attachments,
+          activityDate: payload.activityDate,
+          activityTime: payload.activityTime,
+        });
+        return json.record;
+      } catch {
+        // Backend unreachable — fall back to the local register flow
+      }
       const typeDef = memoryTypesStore.find((t) => t.code === payload.typeCode) || memoryTypesStore[0];
       const author: GDOfficerParticulars = payload.actualAuthor || {
         name: "HC Devinder Kumar",
@@ -1183,7 +1426,12 @@ export const GeneralDiaryService = {
           category: payload.category || typeDef.category,
           typeDisplay: payload.typeDisplay || typeDef.nameEn,
           typeDisplayHi: payload.typeDisplayHi || typeDef.nameHi,
-          activityDateTime: payload.activityDateTime || new Date().toISOString(),
+          activityDateTime:
+            payload.activityDate && payload.activityTime
+              ? formatGDActivityDateTime(
+                  new Date(`${payload.activityDate}T${payload.activityTime}:00`)
+                )
+              : payload.activityDateTime || new Date().toISOString(),
           entryForOfficer: payload.entryForOfficer || author,
           actualAuthor: author,
           policeStation: payload.policeStation || "PS City Thanesar",
@@ -1205,7 +1453,7 @@ export const GeneralDiaryService = {
         {
           subject: entryOrSubject,
           narrative: narrative || "",
-          typeCode: typeof entryType === "string" ? entryType : "OTHER_MISCELLANEOUS",
+          typeCode: typeof entryType === "string" ? entryType : "OTHERS",
           policeStation: station || "PS City Thanesar",
           relatedRecords: {
             complaintNumber: relatedComplaintNumber,
@@ -1220,5 +1468,14 @@ export const GeneralDiaryService = {
   async getTodayCount(): Promise<number> {
     const res = await this.getPaginatedEntries({ pageSize: 1 });
     return res.todayCount;
+  },
+
+  async deleteAttachment(recordId: string, attachmentId: string): Promise<GeneralDiaryRecord> {
+    const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
+      action: "DELETE_ATTACHMENT",
+      id: recordId,
+      attachmentId,
+    });
+    return json.record;
   },
 };

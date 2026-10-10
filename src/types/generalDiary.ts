@@ -31,6 +31,15 @@ export interface GDOfficerParticulars {
   role?: string;
 }
 
+export interface GDUploadedDocument {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl?: string;
+  uploadedAt: string;
+}
+
 export interface GDRelatedRecords {
   complaintNumber?: string;
   firNumber?: string;
@@ -41,6 +50,12 @@ export interface GDRelatedRecords {
   fslParcelNo?: string;
   courtName?: string;
   destinationLocation?: string;
+  teamMembers?: string[];
+  weaponsIssued?: string;
+  purpose?: string;
+  linkedDepartureGdNumber?: string;
+  departureTime?: string;
+  attachments?: GDUploadedDocument[];
 }
 
 export interface GDAuditLog {
@@ -87,9 +102,14 @@ export interface GeneralDiaryRecord {
 
   // Linked records
   relatedRecords?: GDRelatedRecords;
+  attachments?: GDUploadedDocument[];
 
   // Audit trail
   auditTrail: GDAuditLog[];
+
+  // Internal server sort keys (never rendered in UI)
+  _sortGdDate?: string;  // yyyy-mm-dd of the GD day (immutable numbering day)
+  _sortEntryMs?: number; // server entryDateTime epoch ms
 }
 
 export interface GDTemplateVariable {
@@ -142,7 +162,7 @@ export interface GDSearchFilter {
   complaintNumber?: string;
   vehicleNumber?: string;
   typeCode?: string;
-  status?: GDStatus | "ALL";
+  status?: GDStatus | "ALL" | "SUGGESTED,DRAFT";
   isLocked?: boolean;
   keyword?: string;
   page?: number;

@@ -14,9 +14,6 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
-  Clock,
-  Car,
-  Package,
   CheckCircle2,
   Flame,
   LayoutGrid,
@@ -104,12 +101,8 @@ export function Sidebar() {
   const roznamchaNavItems: NavItem[] = [
     { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
     { name: "Add New GD Entry", href: "/general-diary/new", icon: PlusCircle },
+    { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Departure & Return", href: "/general-diary?type=RAVANGI_OFFICER", icon: Clock },
-    { name: "Patrol & Night Vigilance", href: "/general-diary?type=BEAT_PATROLLING", icon: Car },
-    { name: "Malkhana & Property", href: "/general-diary?type=PROPERTY_DEPOSIT", icon: Package },
-    { name: "Station Diary Opening", href: "/general-diary?type=AAGAZ_ROZNAMCHA", icon: Clock },
   ];
 
   // COMPLAINTS NAVIGATION ITEMS
