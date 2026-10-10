@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText } from "lucide-react";
+import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert } from "lucide-react";
 
 interface FIRWorkspaceNavProps {
   firId?: string | null;
@@ -21,6 +21,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
   const isTemplates = pathname.includes("/fir-workspace/templates");
   const isBuilder = pathname.includes("/fir-workspace/builder");
   const isZimni = pathname.includes("/fir-workspace/zimni");
+  const isArrestDocs = pathname.includes("/fir-workspace/arrest-docs");
 
   return (
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -60,6 +61,18 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
         >
           <FileCheck2 className={`w-3.5 h-3.5 ${isTemplates ? "text-purple-700" : "text-purple-600"}`} />
           <span>Statutory Notice Generator</span>
+        </Link>
+
+        <Link
+          href={`/fir-workspace/arrest-docs${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isArrestDocs
+              ? "text-rose-950 bg-rose-50 border border-rose-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <ShieldAlert className={`w-3.5 h-3.5 ${isArrestDocs ? "text-rose-700" : "text-rose-600"}`} />
+          <span>Arrest Docs (गिरफ्तारी प्रपत्र)</span>
         </Link>
 
         <Link

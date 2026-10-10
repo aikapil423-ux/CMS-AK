@@ -15,6 +15,7 @@ import {
   Scale,
   PhoneCall,
   MapPin,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export default function FIRWorkspacePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* 0. Investigation Template Builder */}
         <Link href="/fir-workspace/builder" className="block group">
           <Card className="border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
@@ -73,25 +74,25 @@ export default function FIRWorkspacePage() {
           </Card>
         </Link>
 
-        {/* 1. Case Diaries / Zimni */}
-        <Link href="/fir-workspace/zimni" className="block group">
-          <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
+        {/* 1. Final Form (Chargesheet / Closure) */}
+        <Link href="/fir-workspace/drafts" className="block group">
+          <Card className="border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-red-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <ScrollText className="w-5 h-5 text-amber-700 group-hover:scale-110 transition-transform" />
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                  <Scale className="w-5 h-5 text-red-700 group-hover:scale-110 transition-transform" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-800 transition-colors">
-                    Case Diaries (Zimni)
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-red-800 transition-colors">
+                    Final Form (Sec 193 BNSS)
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Record chronological investigation diaries under Section 175 BNSS with spot inspections.
+                    Statutory Police Report (Chargesheet / Challan / Closure) for submission before Court.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-amber-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Diaries</span>
+              <div className="flex items-center justify-end text-xs font-bold text-red-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>View Form</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>
@@ -111,7 +112,7 @@ export default function FIRWorkspacePage() {
                     Statutory Notice Generator
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Accused notice (Sec 35(3) BNSS), Witness summons (Sec 179 BNSS), and 4-page arrest memos.
+                    Accused notice (Sec 35(3) BNSS), CDR requisition, NATGRID intelligence & Witness summons (Sec 179 BNSS).
                   </p>
                 </div>
               </div>
@@ -123,25 +124,50 @@ export default function FIRWorkspacePage() {
           </Card>
         </Link>
 
-        {/* 3. Final Form (Chargesheet / Closure) */}
-        <Link href="/fir-workspace/drafts" className="block group">
-          <Card className="border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
+        {/* 3. Arrest Docs (गिरफ्तारी प्रपत्र) */}
+        <Link href="/fir-workspace/arrest-docs" className="block group">
+          <Card className="border-slate-200 hover:border-rose-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-rose-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                  <Scale className="w-5 h-5 text-emerald-700 group-hover:scale-110 transition-transform" />
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5 text-rose-700 group-hover:scale-110 transition-transform" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-emerald-800 transition-colors">
-                    Final Form (Sec 193 BNSS)
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-rose-800 transition-colors">
+                    Arrest Docs (गिरफ्तारी प्रपत्र)
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Statutory Police Report (Chargesheet / Challan / Closure) for submission before Court.
+                    Arrest memo, Fard Jamatalashi, Grounds of arrest, Pehchan Patr, Fard Baramadgi, Remand & Medical letters.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>View Templates</span>
+              <div className="flex items-center justify-end text-xs font-bold text-rose-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Arrest Docs</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 4. Case Diaries / Zimni */}
+        <Link href="/fir-workspace/zimni" className="block group">
+          <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <ScrollText className="w-5 h-5 text-amber-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-800 transition-colors">
+                    Case Diaries (Zimni)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Record chronological investigation diaries under Section 175 BNSS with spot inspections.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-amber-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Diaries</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>
