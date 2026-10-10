@@ -26,6 +26,7 @@ import { CRPC_1973_SECTIONS } from "./crpcSectionsData";
 import { IEA_1872_SECTIONS } from "./ieaSectionsData";
 import { BSA_2023_SECTIONS } from "./bsaSectionsData";
 import { DV_ACT_2005_SECTIONS } from "./dvActSectionsData";
+import { TELECOM_ACT_2023_SECTIONS } from "./telecomActSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -218,6 +219,13 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     shortName: "Domestic Violence Act, 2005",
     category: "Special & Local Laws",
     sections: DV_ACT_2005_SECTIONS,
+  },
+  {
+    id: "act_telecom_2023",
+    title: "THE TELECOMMUNICATIONS ACT, 2023",
+    shortName: "THE TELECOMMUNICATIONS ACT, 2023",
+    category: "Special & Local Laws",
+    sections: TELECOM_ACT_2023_SECTIONS,
   },
 ];
 
@@ -470,6 +478,26 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("भारतीय दंड संहिता, 1860"), actOption);
       map.set(normalizeKey("भारतीय दंड संहिता"), actOption);
     }
+
+    if (cAct.id === "act_telecom_2023") {
+      map.set(normalizeKey("THE TELECOMMUNICATIONS ACT, 2023"), actOption);
+      map.set(normalizeKey("THE TELECOMMUNICATIONS ACT, 2023 1 sections"), actOption);
+      map.set(normalizeKey("THE TELECOMMUNICATIONS ACT, 2023 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE TELECOMMUNICATIONS ACT 2023"), actOption);
+      map.set(normalizeKey("The Telecommunications Act, 2023"), actOption);
+      map.set(normalizeKey("The Telecommunications Act 2023"), actOption);
+      map.set(normalizeKey("Telecommunications Act, 2023"), actOption);
+      map.set(normalizeKey("Telecommunications Act 2023"), actOption);
+      map.set(normalizeKey("The Telecommunications Act"), actOption);
+      map.set(normalizeKey("Telecommunications Act"), actOption);
+      map.set(normalizeKey("Telecom Act, 2023"), actOption);
+      map.set(normalizeKey("Telecom Act 2023"), actOption);
+      map.set(normalizeKey("Telecom Act"), actOption);
+      map.set(normalizeKey("Telecommunication Act"), actOption);
+      map.set(normalizeKey("Telecommunication Act, 2023"), actOption);
+      map.set(normalizeKey("दूरसंचार अधिनियम, 2023"), actOption);
+      map.set(normalizeKey("दूरसंचार अधिनियम"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -591,6 +619,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_dv_2005, preserve the authoritative complete 188 sections catalog
         if (existing.id === "act_dv_2005" || existing.id === "act_domestic_violence_2005") {
+          continue;
+        }
+        // If it's act_telecom_2023, preserve the authoritative complete 354 sections catalog
+        if (existing.id === "act_telecom_2023") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
