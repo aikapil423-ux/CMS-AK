@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileHeader />
 
         {/* Desktop Top Header Bar - Minimalist, clean backdrop-blur */}
-        <header className="hidden lg:flex items-center justify-between h-13 px-6 bg-white/90 backdrop-blur-sm border-b border-slate-200/80 sticky top-0 z-30">
+        <header className="hidden lg:flex items-center justify-between h-13 px-6 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 sticky top-0 z-45">
           {/* Left: Station & Active Module Indicator */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700">

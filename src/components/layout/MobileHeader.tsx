@@ -22,7 +22,7 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 text-slate-900 shadow-2xs">
+      <header className="lg:hidden sticky top-0 z-45 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 text-slate-900 shadow-2xs">
         {/* Main Bar */}
         <div className="px-3.5 py-2 flex items-center justify-between">
           {/* Police Crest & Station Title */}

@@ -1740,7 +1740,7 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card className={`border-slate-200 overflow-visible relative z-30 ${autoFilledFields.actsAndSections ? "!border-emerald-500 ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+            <Card className={`border-slate-200 overflow-visible relative z-20 ${autoFilledFields.actsAndSections ? "!border-emerald-500 ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
@@ -1754,7 +1754,7 @@ function RegisterFIRForm() {
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-xs overflow-visible">
                 {/* Inline Acts and Sections Selection */}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end relative overflow-visible z-30">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end relative overflow-visible z-20">
                   <div className="md:col-span-5 relative z-50" ref={actDropdownRef}>
                     <div className="flex items-center justify-between mb-1">
                       <label className="font-bold text-slate-700 block">Select Act</label>

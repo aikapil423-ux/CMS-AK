@@ -121,7 +121,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   ];
 
   return (
-    <div className="relative inline-flex items-center" ref={dropdownRef}>
+    <div className={`relative inline-flex items-center ${isOpen ? "z-50" : ""}`} ref={dropdownRef}>
       {/* Icon-Only Trigger Button */}
       <button
         type="button"
@@ -141,7 +141,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       {/* Switch Module Dropdown Popover */}
       {isOpen && (
         <div
-          className={`absolute top-full mt-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-top-2 ${
+          className={`absolute top-full mt-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-top-2 max-h-[calc(100vh-4.5rem)] overflow-y-auto flex flex-col ${
             isMobile
               ? "left-0 w-[calc(100vw-2rem)] max-w-sm"
               : "left-0 w-84 sm:w-92"
