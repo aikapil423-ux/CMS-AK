@@ -1301,29 +1301,6 @@ function RegisterFIRForm() {
             type="button"
             variant="outline"
             size="sm"
-            onClick={handleSaveDraft}
-            className="text-xs text-slate-700 flex items-center gap-1.5"
-          >
-            <Save className="w-3.5 h-3.5 text-blue-600" />
-            Save Draft
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setRegisteredFir(buildCurrentFirItem());
-              setShowReceiptModal(true);
-            }}
-            className="text-xs text-slate-700 flex items-center gap-1.5"
-          >
-            <Eye className="w-3.5 h-3.5 text-purple-600" />
-            Preview IIF-I
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
             onClick={handleCloseForm}
             className="text-xs text-slate-700 hover:bg-slate-100"
           >
