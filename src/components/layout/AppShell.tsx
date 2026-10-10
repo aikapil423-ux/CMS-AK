@@ -7,6 +7,7 @@ import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
+import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import {
   PlusCircle,
@@ -66,28 +67,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="h-3 w-px bg-slate-200/80"></div>
 
-            {/* Active Module State Chip */}
-            {isRoznamcha ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60 font-medium">
-                <BookOpen className="w-3 h-3 text-slate-600" />
-                Roznamcha GD
-              </span>
-            ) : isFir ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60 font-medium">
-                <Scale className="w-3 h-3 text-slate-600" />
-                FIR Module
-              </span>
-            ) : isComplaints ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200/60 font-medium">
-                <FileText className="w-3 h-3 text-slate-600" />
-                Complaints
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60">
-                <LayoutGrid className="w-3 h-3 text-slate-400" />
-                Operations Portal
-              </span>
-            )}
+            {/* Switch Module Dropdown with LayoutGrid Icon */}
+            <TopBarModuleSwitcher />
           </div>
 
           {/* Right Header Controls */}
