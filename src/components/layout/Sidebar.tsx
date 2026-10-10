@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Shield,
   FileText,
-  PlusCircle,
   BookOpen,
   UserCheck,
   Building2,
@@ -100,7 +99,6 @@ export function Sidebar() {
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
     { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Add New GD Entry", href: "/general-diary/new", icon: PlusCircle },
     { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];

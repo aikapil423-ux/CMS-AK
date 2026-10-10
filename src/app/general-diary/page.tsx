@@ -736,16 +736,6 @@ function GeneralDiaryContent() {
 
         {/* Top Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
-          <Link href="/general-diary/new">
-            <Button
-              type="button"
-              size="sm"
-              className="bg-[#0b192c] hover:bg-slate-900 text-white text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
-            >
-              <span>Add New GD Entry</span>
-            </Button>
-          </Link>
-
           <Button
             type="button"
             variant="outline"
@@ -912,9 +902,7 @@ function GeneralDiaryContent() {
       ) : paginatedData.records.length === 0 ? (
         <EmptyState
           title="No General Diary entries match the criteria"
-          description="Try broadening your search or record a new entry."
-          actionLabel="+ Add New GD Entry"
-          onAction={() => router.push("/general-diary/new")}
+          description="Try broadening your search or filter."
         />
       ) : (
         <div className="space-y-4">
