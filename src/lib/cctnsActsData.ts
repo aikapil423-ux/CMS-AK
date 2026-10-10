@@ -21,6 +21,7 @@ import { POCSO_ACT_2012_SECTIONS } from "./pocsoSectionsData";
 import { MOTOR_VEHICLES_ACT_1988_SECTIONS } from "./motorVehiclesSectionsData";
 import { PC_ACT_1988_SECTIONS } from "./pcActSectionsData";
 import { BENAMI_ACT_1988_SECTIONS } from "./benamiSectionsData";
+import { IPC_1860_SECTIONS } from "./ipcSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -177,65 +178,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Indian Penal Code, 1860 (Pre-July 2024 / Legacy Matters)",
     shortName: "Indian Penal Code, 1860 (IPC)",
     category: "Legacy Penal Code",
-    sections: [
-      { sectionNumber: "34", title: "Acts done by several persons in furtherance of common intention" },
-      { sectionNumber: "120B", title: "Punishment of criminal conspiracy" },
-      { sectionNumber: "147", title: "Punishment for rioting" },
-      { sectionNumber: "148", title: "Rioting, armed with deadly weapon" },
-      { sectionNumber: "149", title: "Every member of unlawful assembly guilty of offence committed in prosecution of common object" },
-      { sectionNumber: "186", title: "Obstructing public servant in discharge of public functions" },
-      { sectionNumber: "188", title: "Disobedience to order duly promulgated by public servant" },
-      { sectionNumber: "279", title: "Rash driving or riding on a public way" },
-      { sectionNumber: "302", title: "Punishment for murder" },
-      { sectionNumber: "304", title: "Punishment for culpable homicide not amounting to murder" },
-      { sectionNumber: "304A", title: "Causing death by negligence" },
-      { sectionNumber: "304B", title: "Dowry death" },
-      { sectionNumber: "306", title: "Abetment of suicide" },
-      { sectionNumber: "307", title: "Attempt to murder" },
-      { sectionNumber: "308", title: "Attempt to commit culpable homicide" },
-      { sectionNumber: "323", title: "Punishment for voluntarily causing hurt" },
-      { sectionNumber: "324", title: "Voluntarily causing hurt by dangerous weapons or means" },
-      { sectionNumber: "325", title: "Punishment for voluntarily causing grievous hurt" },
-      { sectionNumber: "326", title: "Voluntarily causing grievous hurt by dangerous weapons or means" },
-      { sectionNumber: "341", title: "Punishment for wrongful restraint" },
-      { sectionNumber: "342", title: "Punishment for wrongful confinement" },
-      { sectionNumber: "354", title: "Assault or criminal force to woman with intent to outrage her modesty" },
-      { sectionNumber: "354A", title: "Sexual harassment" },
-      { sectionNumber: "354B", title: "Assault or use of criminal force to woman with intent to disrobe" },
-      { sectionNumber: "354C", title: "Voyeurism" },
-      { sectionNumber: "354D", title: "Stalking" },
-      { sectionNumber: "363", title: "Punishment for kidnapping" },
-      { sectionNumber: "365", title: "Kidnapping or abducting with intent secretly and wrongfully to confine person" },
-      { sectionNumber: "366", title: "Kidnapping, abducting or inducing woman to compel her marriage" },
-      { sectionNumber: "376", title: "Punishment for rape" },
-      { sectionNumber: "376D", title: "Gang rape" },
-      { sectionNumber: "379", title: "Punishment for theft" },
-      { sectionNumber: "380", title: "Theft in dwelling house, etc." },
-      { sectionNumber: "381", title: "Theft by clerk or servant of property in possession of master" },
-      { sectionNumber: "384", title: "Punishment for extortion" },
-      { sectionNumber: "392", title: "Punishment for robbery" },
-      { sectionNumber: "394", title: "Voluntarily causing hurt in committing robbery" },
-      { sectionNumber: "395", title: "Punishment for dacoity" },
-      { sectionNumber: "397", title: "Robbery, or dacoity, with attempt to cause death or grievous hurt" },
-      { sectionNumber: "406", title: "Punishment for criminal breach of trust" },
-      { sectionNumber: "409", title: "Criminal breach of trust by public servant, or by banker, merchant or agent" },
-      { sectionNumber: "411", title: "Dishonestly receiving stolen property" },
-      { sectionNumber: "419", title: "Punishment for cheating by personation" },
-      { sectionNumber: "420", title: "Cheating and dishonestly inducing delivery of property" },
-      { sectionNumber: "427", title: "Mischief causing damage to the amount of fifty rupees" },
-      { sectionNumber: "447", title: "Punishment for criminal trespass" },
-      { sectionNumber: "448", title: "Punishment for house-trespass" },
-      { sectionNumber: "452", title: "House-trespass after preparation for hurt, assault or wrongful restraint" },
-      { sectionNumber: "457", title: "Lurking house-trespass or house-breaking by night in order to commit offence" },
-      { sectionNumber: "467", title: "Forgery of valuable security, will, etc." },
-      { sectionNumber: "468", title: "Forgery for purpose of cheating" },
-      { sectionNumber: "471", title: "Using as genuine a forged document or electronic record" },
-      { sectionNumber: "498A", title: "Husband or relative of husband of a woman subjecting her to cruelty" },
-      { sectionNumber: "504", title: "Intentional insult with intent to provoke breach of the peace" },
-      { sectionNumber: "506", title: "Punishment for criminal intimidation" },
-      { sectionNumber: "509", title: "Word, gesture or act intended to insult the modesty of a woman" },
-      { sectionNumber: "511", title: "Punishment for attempting to commit offences" },
-    ],
+    sections: IPC_1860_SECTIONS,
   },
   {
     id: "act_crpc_1973",
@@ -535,6 +478,24 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("बेनामी संपत्ति लेन-देन प्रतिषेध अधिनियम"), actOption);
       map.set(normalizeKey("बेनामी संपत्ति लेनदेन प्रतिषेध अधिनियम, 1988"), actOption);
     }
+
+    if (cAct.id === "act_ipc_1860") {
+      map.set(normalizeKey("The Indian Penal Code, 1860 (Pre-July 2024 / Legacy Matters)"), actOption);
+      map.set(normalizeKey("The Indian Penal Code, 1860"), actOption);
+      map.set(normalizeKey("Indian Penal Code, 1860"), actOption);
+      map.set(normalizeKey("Indian Penal Code Act, 1860"), actOption);
+      map.set(normalizeKey("Indian Penal Code Act, 1860 57 sections"), actOption);
+      map.set(normalizeKey("Indian Penal Code"), actOption);
+      map.set(normalizeKey("The Indian Penal Code"), actOption);
+      map.set(normalizeKey("IPC, 1860"), actOption);
+      map.set(normalizeKey("IPC,1860"), actOption);
+      map.set(normalizeKey("IPC 1860"), actOption);
+      map.set(normalizeKey("IPC"), actOption);
+      map.set(normalizeKey("I.P.C."), actOption);
+      map.set(normalizeKey("I.P.C., 1860"), actOption);
+      map.set(normalizeKey("भारतीय दंड संहिता, 1860"), actOption);
+      map.set(normalizeKey("भारतीय दंड संहिता"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -636,6 +597,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_benami_1988, preserve the authoritative complete 413 sections catalog
         if (existing.id === "act_benami_1988") {
+          continue;
+        }
+        // If it's act_ipc_1860, preserve the authoritative complete 997 sections catalog
+        if (existing.id === "act_ipc_1860") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
