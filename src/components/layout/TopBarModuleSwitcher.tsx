@@ -59,21 +59,6 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   const isComplaints =
     !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
-  const currentModuleName = isRoznamcha
-    ? "Roznamcha GD"
-    : isFir
-    ? "FIR Module"
-    : isComplaints
-    ? "Complaints"
-    : "Operations Portal";
-
-  const CurrentModuleIcon = isRoznamcha
-    ? BookOpen
-    : isFir
-    ? Scale
-    : isComplaints
-    ? FileText
-    : LayoutGrid;
 
   const handleNavigate = (path: string, moduleKey?: PoliceModule) => {
     if (moduleKey) {
@@ -137,47 +122,20 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
 
   return (
     <div className="relative inline-flex items-center" ref={dropdownRef}>
-      {/* Trigger Button with Switch Module Icon */}
+      {/* Icon-Only Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer border select-none ${
+        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
           isOpen
             ? "bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-900/20"
-            : "bg-white hover:bg-slate-50 text-slate-800 border-slate-200/90 hover:border-slate-300 shadow-2xs"
+            : "bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200/90 hover:border-slate-300 shadow-2xs"
         }`}
-        title="मॉड्यूल बदलें (Click to Switch Police Module)"
+        title="मॉड्यूल बदलें (Switch Module)"
+        aria-label="Switch Module"
         aria-expanded={isOpen}
       >
-        {/* Switch Module Icon */}
-        <div
-          className={`w-4.5 h-4.5 rounded flex items-center justify-center transition-colors ${
-            isOpen ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
-          }`}
-        >
-          <LayoutGrid className="w-3 h-3" />
-        </div>
-
-        {!isMobile && (
-          <>
-            <span className="font-bold tracking-tight text-xs flex items-center gap-1.5">
-              <span>{currentModuleName}</span>
-            </span>
-            <span
-              className={`text-[10px] px-1 py-0.2 rounded font-medium ${
-                isOpen ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-              }`}
-            >
-              बदलें
-            </span>
-          </>
-        )}
-
-        <ChevronDown
-          className={`w-3 h-3 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-white" : "text-slate-400"
-          }`}
-        />
+        <LayoutGrid className="w-4 h-4" />
       </button>
 
       {/* Switch Module Dropdown Popover */}
