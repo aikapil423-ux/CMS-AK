@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { RoleSwitcherModal } from "./RoleSwitcherModal";
+import { TopBarDictation } from "./TopBarDictation";
 import { useAuth } from "@/context/AuthContext";
 import {
   PlusCircle,
@@ -90,7 +91,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            {/* Universal Police Dictation (Hindi & English Voice Input) */}
+            <TopBarDictation />
+
             {/* Quick Action Button strictly scoped */}
             {isRoznamcha && (
               <Link href="/general-diary/new">

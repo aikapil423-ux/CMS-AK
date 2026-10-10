@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { RoleSwitcherModal } from "./RoleSwitcherModal";
+import { TopBarDictation } from "./TopBarDictation";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
@@ -45,6 +46,9 @@ export function MobileHeader() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
+            {/* Universal Dictation for Mobile */}
+            <TopBarDictation isMobile={true} />
+
             {/* Role Switcher Pill */}
             <button
               onClick={() => setRoleModalOpen(true)}
