@@ -32,6 +32,7 @@ import {
   Gavel,
 } from "lucide-react";
 import { ActsService } from "@/services/actsService";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { LegalActItem, LegalSectionItem } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -375,6 +376,21 @@ function ActsAndSectionsContent() {
           },
         ],
       });
+
+      // Persistently register raw evidence and case data across CMS
+      if (finalDataUrl || selectedUploadFile) {
+        universalEvidenceService
+          .registerAndProcess({
+            file: selectedUploadFile || undefined,
+            dataUrl: finalDataUrl,
+            text: fileRawText || extractedActData?.verbatimText,
+            fileName: uploadFileName || `${finalTitle.replace(/\s+/g, "_")}.${uploadFileFormat.toLowerCase()}`,
+            fileId: `act_${Date.now()}`,
+            module: "ACTS",
+            uploadedBy: "Legal Officer",
+          })
+          .catch((e) => console.warn("Acts universal evidence sync warning:", e));
+      }
 
       // 4. Reload acts list
       await loadActs();

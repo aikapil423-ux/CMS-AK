@@ -48,6 +48,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
 import { complaintAutoFillService, ProcessedComplaintDocumentRecord } from "@/services/complaintAutoFillService";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import {
   ComplaintItem,
@@ -1079,16 +1080,29 @@ export default function RegisterComplaintPage() {
       const reader = new FileReader();
 
       reader.onload = (e) => {
+        const attId = `ev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const dataUrlStr = e.target?.result as string;
         newAttachments.push({
-          id: `ev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          id: attId,
           name: file.name,
           size: file.size,
           type: file.type || "application/octet-stream",
           category,
-          dataUrl: e.target?.result as string,
+          dataUrl: dataUrlStr,
           uploadedAt: new Date().toISOString(),
           description: "",
         });
+
+        universalEvidenceService
+          .registerAndProcess({
+            file,
+            dataUrl: dataUrlStr,
+            fileName: file.name,
+            fileId: attId,
+            module: "COMPLAINTS",
+            uploadedBy: currentUser?.name || "Intake Officer",
+          })
+          .catch((err) => console.warn("Background evidence registration warning:", err));
 
         loadedCount++;
         const pct = Math.round((loadedCount / fileArray.length) * 100);
@@ -1615,6 +1629,19 @@ export default function RegisterComplaintPage() {
       complaintAutoFillService.save(processedRecord);
       setCurrentProcessedRecord(processedRecord);
 
+      // Persistently register raw evidence and structured case data across CMS
+      universalEvidenceService
+        .registerAndProcess({
+          file,
+          dataUrl,
+          text: rawText,
+          fileName: classifiedName,
+          fileId: recId,
+          module: "COMPLAINTS",
+          uploadedBy: currentUser?.name || "Intake Officer",
+        })
+        .catch((err) => console.warn("Universal persistent evidence registration warning:", err));
+
       // Set success notice
       setAutofillSuccessNotice({
         fileName: classifiedName,
@@ -1857,6 +1884,17 @@ export default function RegisterComplaintPage() {
 
     complaintAutoFillService.save(processedRecord);
     setCurrentProcessedRecord(processedRecord);
+
+    universalEvidenceService
+      .registerAndProcess({
+        dataUrl,
+        text: textContent,
+        fileName,
+        fileId: processedRecord.id,
+        module: "COMPLAINTS",
+        uploadedBy: currentUser?.name || "Intake Officer",
+      })
+      .catch((err) => console.warn("Universal persistent evidence registration warning:", err));
 
     // Tag attachment with processed flags
     setAttachments((prev) =>
@@ -2242,8 +2280,18 @@ export default function RegisterComplaintPage() {
           complaint.id,
           complaint.complaintNumber
         );
+        universalEvidenceService.bindToCase(
+          currentProcessedRecord.id,
+          complaint.id,
+          complaint.complaintNumber
+        );
         if (currentProcessedRecord.documentId) {
           complaintAutoFillService.bindToComplaint(
+            currentProcessedRecord.documentId,
+            complaint.id,
+            complaint.complaintNumber
+          );
+          universalEvidenceService.bindToCase(
             currentProcessedRecord.documentId,
             complaint.id,
             complaint.complaintNumber
@@ -2254,6 +2302,18 @@ export default function RegisterComplaintPage() {
         if (doc.isProcessed || doc.processedRecordId) {
           complaintAutoFillService.bindToComplaint(
             doc.processedRecordId || doc.id,
+            complaint.id,
+            complaint.complaintNumber
+          );
+          universalEvidenceService.bindToCase(
+            doc.processedRecordId || doc.id,
+            complaint.id,
+            complaint.complaintNumber
+          );
+        }
+        if (doc.id) {
+          universalEvidenceService.bindToCase(
+            doc.id,
             complaint.id,
             complaint.complaintNumber
           );
@@ -2320,6 +2380,18 @@ export default function RegisterComplaintPage() {
           },
         };
         complaintAutoFillService.save(regDocProcessedRecord);
+        universalEvidenceService
+          .registerAndProcess({
+            dataUrl: previewDataUrl,
+            text: previewHtml,
+            fileName: docFileName,
+            fileId: `doc_reg_${complaint.id}`,
+            caseId: complaint.id,
+            caseNumber: complaint.complaintNumber,
+            module: "COMPLAINTS",
+            uploadedBy: currentUser.name,
+          })
+          .catch((e) => console.warn("Registered complaint evidence registration warning:", e));
 
         await ComplaintService.addDocument(complaint.id, {
           fileName: docFileName,

@@ -1,6 +1,7 @@
 import { ComplaintItem, ComplaintDocumentItem, ComplaintEvidenceAttachment, UserSession } from "@/types";
 import { ComplaintService } from "./complaintService";
 import { complaintAutoFillService } from "./complaintAutoFillService";
+import { universalEvidenceService } from "./universalEvidenceService";
 import { convertKrutiDevIfDetected } from "@/utils/universalDocumentParser";
 
 export interface IdentifiedPerson {
@@ -333,9 +334,18 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
   );
 
   for (const doc of uniqueDocs) {
-    // Check if this document has already been processed and cached in complaintAutoFillService
+    // 1. Check Universal Evidence Store (Process Once and Reuse Everywhere)
     const cleanId = doc.id?.replace(/^(?:att_|doc_|doc_att_)/, "");
+    const universalRecord =
+      (doc.id ? universalEvidenceService.getByFileId(doc.id) : null) ||
+      (cleanId ? universalEvidenceService.getByFileId(cleanId) : null) ||
+      ((doc as any).processedRecordId ? universalEvidenceService.getByFileId((doc as any).processedRecordId) : null) ||
+      (doc.fileName ? universalEvidenceService.getByFileName(doc.fileName, complaint.id) : null) ||
+      (doc.fileName ? universalEvidenceService.getByFileName(doc.fileName, complaint.complaintNumber) : null);
+
+    // 2. Check legacy complaintAutoFillService
     const cachedRecord =
+      universalRecord ? null :
       (doc.id ? complaintAutoFillService.getByDocumentId(doc.id) : null) ||
       (cleanId ? complaintAutoFillService.getByDocumentId(cleanId) : null) ||
       ((doc as any).processedRecordId ? complaintAutoFillService.getByDocumentId((doc as any).processedRecordId) : null) ||
@@ -343,6 +353,48 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
       (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.complaintNumber) : null);
 
     let docPersons: IdentifiedPerson[] = [];
+
+    // Prioritize Universal Persistent Evidence Store
+    if (universalRecord && (universalRecord.extractedText || universalRecord.structuredData?.persons?.length > 0)) {
+      const textToUse = universalRecord.extractedText || universalRecord.structuredData.incident?.details || "";
+
+      if (Array.isArray(universalRecord.structuredData?.persons) && universalRecord.structuredData.persons.length > 0) {
+        universalRecord.structuredData.persons.forEach((p, idx) => {
+          let role: IdentifiedPerson["role"] = "Other / Related";
+          const rLow = (p.role || "").toLowerCase();
+          if (rLow.includes("complainant") || rLow.includes("प्रार्थी")) role = "Complainant";
+          else if (rLow.includes("accused") || rLow.includes("आरोपी")) role = "Respondent / Accused";
+          else if (rLow.includes("witness") || rLow.includes("गवाह")) role = "Witness";
+          else if (rLow.includes("victim") || rLow.includes("पीड़ित")) role = "Victim";
+
+          docPersons.push({
+            id: `p_univ_${doc.id}_${idx}`,
+            name: p.name,
+            role,
+            fatherOrSpouse: p.relativeName,
+            phone: p.mobile,
+            address: p.address,
+            source: "Document",
+            documentName: doc.fileName,
+            details: `Retrieved from persistent processed evidence database "${doc.fileName}".`,
+          });
+        });
+      } else if (textToUse) {
+        docPersons = extractPersonsFromText(textToUse, doc.fileName);
+      }
+
+      docPersons.forEach((dp) => identifiedPersons.push(dp));
+
+      extractedDocuments.push({
+        id: doc.id,
+        fileName: doc.fileName,
+        fileCategory: doc.fileCategory || "DOCUMENT",
+        isReadable: true,
+        extractedText: textToUse,
+        identifiedPersonsCount: docPersons.length,
+      });
+      continue;
+    }
 
     if (cachedRecord && cachedRecord.rawDocument?.rawExtractedText) {
       const cachedText = cachedRecord.rawDocument.rawExtractedText;

@@ -58,10 +58,16 @@ import {
   Handshake,
   ShieldAlert,
   ArrowRight,
+  Database,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
 import { complaintAutoFillService } from "@/services/complaintAutoFillService";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { UniversalEvidenceRecord } from "@/types/evidence";
+import { CaseEvidenceDataModal } from "@/components/evidence/CaseEvidenceDataModal";
 import {
   ComplaintItem,
   ComplaintEvidenceAttachment,
@@ -410,6 +416,10 @@ export default function ComplaintProfilePage() {
     size?: number | string;
   } | null>(null);
 
+  // Universal Processed Evidence Review Modal State
+  const [selectedEvidenceRecord, setSelectedEvidenceRecord] = useState<UniversalEvidenceRecord | null>(null);
+  const [evidenceRefreshTrigger, setEvidenceRefreshTrigger] = useState(0);
+
   // Confidential Dossier State (Strictly EO ID only)
   const [dossierModalOpen, setDossierModalOpen] = useState(false);
   const [dossierModalTab, setDossierModalTab] = useState<"upload" | "note">("upload");
@@ -656,6 +666,15 @@ export default function ComplaintProfilePage() {
   useEffect(() => {
     loadComplaint();
   }, [complaintId]);
+
+  useEffect(() => {
+    const handleEvidenceUpdate = () => setEvidenceRefreshTrigger((c) => c + 1);
+    window.addEventListener("cms-evidence-updated", handleEvidenceUpdate);
+    if (complaint?.id) {
+      universalEvidenceService.syncFromServer(complaint.id, complaint.complaintNumber);
+    }
+    return () => window.removeEventListener("cms-evidence-updated", handleEvidenceUpdate);
+  }, [complaint?.id, complaint?.complaintNumber]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -998,18 +1017,34 @@ export default function ComplaintProfilePage() {
     const finalName = docFileName || (docName ? (docName.includes(".") ? docName : `${docName}.pdf`) : "Official_Document.pdf");
 
     try {
-      await ComplaintService.addDocument(
+      const addedDoc = await ComplaintService.addDocument(
         complaint.id,
         {
           fileName: finalName,
           fileCategory: docCategory,
           fileSize: docFileSize || "98 KB",
           fileUrl: docFileDataUrl,
+          dataUrl: docFileDataUrl,
           description: docDesc,
           uploadedBy: `${currentUser.name} (${currentUser.rankDisplay || "Inspector"})`,
         },
         currentUser
       );
+
+      // Persistently register raw evidence and process structured data in background (Process Once and Reuse Everywhere)
+      if (docFileDataUrl) {
+        universalEvidenceService
+          .registerAndProcess({
+            fileId: addedDoc.id,
+            fileName: finalName,
+            dataUrl: docFileDataUrl,
+            caseId: complaint.id,
+            caseNumber: complaint.complaintNumber,
+            module: "COMPLAINTS",
+            uploadedBy: currentUser.name,
+          })
+          .catch((e) => console.warn("Evidence background processing error:", e));
+      }
 
       setDocName("");
       setDocDesc("");
@@ -1343,8 +1378,11 @@ export default function ComplaintProfilePage() {
     try {
       complaintAutoFillService.deleteByDocumentId(docId);
       complaintAutoFillService.deleteByDocumentId(cleanDocId);
+      await universalEvidenceService.deleteByDocumentId(docId);
+      await universalEvidenceService.deleteByDocumentId(cleanDocId);
       if (targetDoc?.fileName) {
         complaintAutoFillService.deleteByFileName(targetDoc.fileName, complaint.id);
+        await universalEvidenceService.deleteByDocumentId(targetDoc.fileName);
       }
       const updated = await ComplaintService.deleteDocument(complaint.id, docId, currentUser.name, currentUser);
       setComplaint(updated);
@@ -3021,7 +3059,13 @@ Certified official record copy.`;
                       {combinedDocuments.map((doc) => {
                         const cat = detectCategory(doc.fileName, doc.fileCategory);
                         const cleanDocId = doc.id?.replace(/^(?:att_|doc_|doc_att_)/, "");
+                        const evidenceRec =
+                          universalEvidenceService.getByFileId(doc.id) ||
+                          (cleanDocId ? universalEvidenceService.getByFileId(cleanDocId) : null) ||
+                          (doc.fileName ? universalEvidenceService.getByFileName(doc.fileName, complaint.id) : null);
+
                         const isCached =
+                          Boolean(evidenceRec && evidenceRec.processingStatus === "COMPLETED") ||
                           Boolean(doc.isProcessed) ||
                           Boolean(complaintAutoFillService.getByDocumentId(doc.id)) ||
                           Boolean(cleanDocId && complaintAutoFillService.getByDocumentId(cleanDocId)) ||
@@ -3053,10 +3097,27 @@ Certified official record copy.`;
                                     <p className="truncate font-semibold text-slate-900" title={doc.fileName}>
                                       {doc.fileName}
                                     </p>
-                                    {isCached && (
+                                    {evidenceRec?.processingStatus === "PROCESSING" ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded animate-pulse">
+                                        <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-600" />
+                                        Processing...
+                                      </span>
+                                    ) : evidenceRec?.processingStatus === "FAILED" ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">
+                                        <AlertTriangle className="w-2.5 h-2.5 text-red-600" />
+                                        Processing Failed
+                                      </span>
+                                    ) : isCached ? (
                                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs">
                                         <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
                                         AI Processed & Saved in DB
+                                      </span>
+                                    ) : null}
+
+                                    {evidenceRec?.verificationStatus === "HUMAN_VERIFIED" && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-1.5 py-0.5 rounded shadow-2xs" title="Human-verified case data">
+                                        <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
+                                        Verified Case Data
                                       </span>
                                     )}
                                   </div>
@@ -3075,6 +3136,35 @@ Certified official record copy.`;
                             <td className="py-3 px-4 text-right font-mono text-slate-500">{doc.fileSize}</td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
+                                {evidenceRec && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedEvidenceRecord(evidenceRec)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                    title="Inspect extracted case facts, entities & verification audit"
+                                  >
+                                    <Database className="w-3.5 h-3.5 text-purple-600" />
+                                    <span>Case Data</span>
+                                  </button>
+                                )}
+                                {evidenceRec?.processingStatus === "FAILED" && (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      try {
+                                        await universalEvidenceService.retryProcessing(evidenceRec.id, currentUser.name);
+                                        setEvidenceRefreshTrigger((c) => c + 1);
+                                      } catch (err: any) {
+                                        alert("Retry failed: " + err.message);
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                                    title="Retry processing failed evidence"
+                                  >
+                                    <RotateCcw className="w-3 h-3 text-amber-700" />
+                                    <span>Retry</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handlePreviewDocument(doc)}
@@ -5003,6 +5093,26 @@ Certified official record copy.`;
             </form>
           </div>
         </div>
+      )}
+
+      {/* =========================================================================
+          CASE EVIDENCE STRUCTURED DATA & VERIFICATION MODAL
+         ========================================================================= */}
+      {selectedEvidenceRecord && (
+        <CaseEvidenceDataModal
+          record={selectedEvidenceRecord}
+          onClose={() => setSelectedEvidenceRecord(null)}
+          currentOfficerName={currentUser.name}
+          currentOfficerRole={currentUser.rankDisplay || "Inspector / IO"}
+          onPreviewFile={(f) => {
+            setSelectedEvidenceRecord(null);
+            setPreviewModalFile(f);
+          }}
+          onUpdated={(updated) => {
+            setSelectedEvidenceRecord(updated);
+            setEvidenceRefreshTrigger((c) => c + 1);
+          }}
+        />
       )}
 
       {/* =========================================================================

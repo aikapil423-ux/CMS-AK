@@ -44,6 +44,7 @@ import { ComplaintItem, NoticeFormData, DynamicDocumentSection } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { generateNoticeDocumentHtml } from "@/utils/documentHtmlGenerators";
 import { parseUploadedDocument } from "@/utils/universalDocumentParser";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
 import { ComplaintAnalysisHeader } from "@/components/enquiry-workspace/ComplaintAnalysisHeader";
 import { IdentifiedPerson, ComplaintAnalysisReport } from "@/services/complaintDocumentAnalysisService";
@@ -1060,6 +1061,17 @@ function NoticeTemplatesContent() {
           `Document "${file.name}" successfully parsed! Added as brand new editable template "${newCustomTmpl.name}". Words, language & formatting mirrored word-to-word.`
         );
         setTimeout(() => setUploadSuccessMessage(null), 8000);
+
+        // Persistently register raw evidence and case data across CMS
+        universalEvidenceService
+          .registerAndProcess({
+            file,
+            caseId: complaint?.id,
+            caseNumber: complaint?.complaintNumber,
+            module: "ENQUIRY_WORKSPACE",
+            uploadedBy: currentUser.name,
+          })
+          .catch((e) => console.warn("Templates universal evidence sync warning:", e));
       }
     } catch (err: any) {
       console.error("Template upload error:", err);

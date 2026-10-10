@@ -44,6 +44,7 @@ import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
 import { complaintAutoFillService } from "./complaintAutoFillService";
+import { universalEvidenceService } from "./universalEvidenceService";
 
 // In-memory store initialized with localStorage if available, or fallback to MOCK_COMPLAINTS
 const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
@@ -1231,6 +1232,23 @@ export const ComplaintService = {
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 
+    // Persistently register raw evidence and process structured data in background (Process Once and Reuse Everywhere)
+    if (typeof window !== "undefined") {
+      universalEvidenceService
+        .registerAndProcess({
+          fileId: newDoc.id,
+          fileName: newDoc.fileName,
+          dataUrl: newDoc.dataUrl || newDoc.fileUrl,
+          caseId: complaintsStore[index].id,
+          caseNumber: complaintsStore[index].complaintNumber,
+          module: "COMPLAINTS",
+          uploadedBy: newDoc.uploadedBy,
+        })
+        .catch((err) => {
+          console.warn("Evidence persistent registration error:", err);
+        });
+    }
+
     return newDoc;
   },
 
@@ -1947,9 +1965,12 @@ export const ComplaintService = {
     // Delete associated cached processed data from database so no stale analysis lingers
     complaintAutoFillService.deleteByDocumentId(docId);
     complaintAutoFillService.deleteByDocumentId(cleanDocId);
+    universalEvidenceService.deleteByDocumentId(docId);
+    universalEvidenceService.deleteByDocumentId(cleanDocId);
     if (doc?.fileName) {
       complaintAutoFillService.deleteByFileName(doc.fileName, complaintsStore[index].id);
       complaintAutoFillService.deleteByFileName(doc.fileName, complaintsStore[index].complaintNumber);
+      universalEvidenceService.deleteByDocumentId(doc.fileName);
     }
 
     const nowIso = new Date().toISOString();

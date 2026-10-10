@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 import {
   FIRItem,
   FIRCaseDiaryItem,
@@ -178,6 +179,8 @@ export default function FIRProfilePage() {
   const [docTitle, setDocTitle] = useState("");
   const [docCategory, setDocCategory] = useState("FIELD_REPORT");
   const [docFileName, setDocFileName] = useState("");
+  const [docFileDataUrl, setDocFileDataUrl] = useState("");
+  const [docFileSize, setDocFileSize] = useState("");
 
   // Document actions states
   const [generateDocDropdownOpen, setGenerateDocDropdownOpen] = useState(false);
@@ -332,8 +335,9 @@ export default function FIRProfilePage() {
 
       // Also attach to documents docket if file was selected
       if (uploadZimniFileDataUrl) {
+        const docId = `doc-zimni-${Date.now()}`;
         const newDoc: FIRDocumentItem = {
-          id: `doc-zimni-${Date.now()}`,
+          id: docId,
           firId: fir.id,
           title: uploadZimniTitle.trim(),
           fileName: uploadZimniFileName || `zimni_${nextNum}.pdf`,
@@ -344,6 +348,18 @@ export default function FIRProfilePage() {
           dataUrl: uploadZimniFileDataUrl,
         };
         firService.addDocument(fir.id, newDoc);
+
+        universalEvidenceService
+          .registerAndProcess({
+            dataUrl: uploadZimniFileDataUrl,
+            fileName: newDoc.fileName,
+            fileId: docId,
+            caseId: fir.id,
+            caseNumber: fir.firNumber,
+            module: "FIR",
+            uploadedBy: currentUser.name || "IO",
+          })
+          .catch((err) => console.warn("FIR universal evidence sync warning:", err));
       }
 
       setUploadZimniTitle("");
@@ -364,18 +380,38 @@ export default function FIRProfilePage() {
     e.preventDefault();
     if (!fir || !docTitle.trim()) return;
 
+    const docId = `doc-${Date.now()}`;
     const newDoc: FIRDocumentItem = {
-      id: `doc-${Date.now()}`,
+      id: docId,
       title: docTitle,
       fileName: docFileName || `${docTitle.toLowerCase().replace(/\s+/g, "_")}.pdf`,
       category: docCategory as any,
       uploadedBy: currentUser.name || "Officer",
       uploadedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+      dataUrl: docFileDataUrl || undefined,
+      fileSize: docFileSize || "45.0 KB",
     };
 
     firService.addDocument(fir.id, newDoc);
+
+    if (docFileDataUrl) {
+      universalEvidenceService
+        .registerAndProcess({
+          dataUrl: docFileDataUrl,
+          fileName: newDoc.fileName,
+          fileId: docId,
+          caseId: fir.id,
+          caseNumber: fir.firNumber,
+          module: "FIR",
+          uploadedBy: currentUser.name || "Officer",
+        })
+        .catch((err) => console.warn("FIR universal evidence sync warning:", err));
+    }
+
     setDocTitle("");
     setDocFileName("");
+    setDocFileDataUrl("");
+    setDocFileSize("");
     setIsDocModalOpen(false);
     fetchFir();
   };
@@ -2173,7 +2209,15 @@ export default function FIRProfilePage() {
                   type="file"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) setDocFileName(f.name);
+                    if (f) {
+                      setDocFileName(f.name);
+                      setDocFileSize(`${(f.size / 1024).toFixed(1)} KB`);
+                      const reader = new FileReader();
+                      reader.onload = (loadEvt) => {
+                        setDocFileDataUrl(loadEvt.target?.result as string);
+                      };
+                      reader.readAsDataURL(f);
+                    }
                   }}
                   className="w-full text-xs p-2 rounded-lg border border-slate-300"
                 />

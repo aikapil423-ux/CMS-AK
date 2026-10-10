@@ -5,6 +5,7 @@
 // Leaves missing fields completely blank without inventing or fabricating any dummy data.
 
 import { parseUploadedDocument } from "@/utils/universalDocumentParser";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 
 export interface ProcessedFIRDocumentRecord {
   id: string;
@@ -146,10 +147,58 @@ export const firAutoFillService = {
     if (!firNumber) return null;
     const records = loadFromStorage();
     const cleanTarget = firNumber.trim().toLowerCase();
-    return (
-      records.find((r) => r.relatedFirNumber.trim().toLowerCase() === cleanTarget) ||
-      null
-    );
+    const found = records.find((r) => r.relatedFirNumber.trim().toLowerCase() === cleanTarget);
+    if (found) return found;
+
+    // Fallback to Universal Evidence Service
+    const uniRecords = universalEvidenceService.getByCase(firNumber);
+    if (uniRecords && uniRecords.length > 0) {
+      const uRec = uniRecords[0];
+      return {
+        id: uRec.id,
+        relatedFirNumber: firNumber,
+        relatedFirId: uRec.caseId || `fir-${firNumber.replace(/\//g, "-")}`,
+        firYear: new Date(uRec.createdAt).getFullYear(),
+        createdAt: uRec.createdAt,
+        updatedAt: uRec.updatedAt,
+        rawDocument: {
+          fileName: uRec.rawDocument.fileName,
+          fileSize: uRec.rawDocument.fileSize,
+          fileType: uRec.rawDocument.fileType || "application/pdf",
+          dataUrl: uRec.rawDocument.dataUrl,
+          rawExtractedText: uRec.extractedText,
+          detectedLanguage: uRec.detectedLanguage || "bilingual",
+        },
+        processedData: {
+          firContentText: uRec.extractedText,
+          briefFacts: uRec.structuredData?.incident?.summary || uRec.structuredData?.incident?.details,
+          complainant: uRec.structuredData?.complainant ? {
+            firstName: uRec.structuredData.complainant.name?.split(" ")[0],
+            lastName: uRec.structuredData.complainant.name?.split(" ").slice(1).join(" "),
+            fatherOrSpouse: uRec.structuredData.complainant.relativeName,
+            relationType: uRec.structuredData.complainant.relationType,
+            mobile: uRec.structuredData.complainant.mobile,
+            houseNo: uRec.structuredData.complainant.address,
+            city: uRec.structuredData.complainant.city,
+            district: uRec.structuredData.complainant.district,
+            state: uRec.structuredData.complainant.state,
+          } : undefined,
+          occurrence: uRec.structuredData?.incident ? {
+            place: uRec.structuredData.incident.place,
+            dateFrom: uRec.structuredData.incident.date,
+            timeFrom: uRec.structuredData.incident.time,
+          } : undefined,
+          accusedList: (uRec.structuredData?.accusedList || []).map((a, i) => ({
+            id: `acc-${i}`,
+            name: a.name,
+            address: a.address,
+            phone: a.phone,
+            isIdentified: true,
+          })),
+        },
+      };
+    }
+    return null;
   },
 
   /**
@@ -179,6 +228,23 @@ export const firAutoFillService = {
     }
 
     persistToStorage(records);
+
+    // Sync with universal persistent evidence store
+    if (record.rawDocument?.dataUrl) {
+      universalEvidenceService
+        .registerAndProcess({
+          dataUrl: record.rawDocument.dataUrl,
+          text: record.rawDocument.rawExtractedText,
+          fileName: record.rawDocument.fileName,
+          fileId: record.id,
+          caseId: record.relatedFirId || `fir-${record.relatedFirNumber.replace(/\//g, "-")}`,
+          caseNumber: record.relatedFirNumber,
+          module: "FIR",
+          uploadedBy: "FIR Intake Officer",
+        })
+        .catch((err) => console.warn("Universal persistent evidence sync warning:", err));
+    }
+
     return recordToSave;
   },
 

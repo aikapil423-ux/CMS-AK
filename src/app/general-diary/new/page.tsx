@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 import {
   GeneralDiaryRecord,
   GDEntryTypeConfig,
@@ -460,6 +461,20 @@ function NewGDEntryContent() {
       // 1. Add uploaded documents to attachments state
       if (data.files && Array.isArray(data.files)) {
         setAttachments((prev) => [...prev, ...data.files]);
+
+        // Register each file persistently in universal evidence store
+        data.files.forEach((f: any) => {
+          universalEvidenceService
+            .registerAndProcess({
+              dataUrl: f.dataUrl,
+              text: f.extractedText,
+              fileName: f.name,
+              fileId: f.id,
+              module: "GENERAL_DIARY",
+              uploadedBy: currentUser?.name || "GD Writer",
+            })
+            .catch((err) => console.warn("GD universal evidence registration error:", err));
+        });
       }
 
       // 2. Autofill extracted text ONLY into GD Brief (narrative)

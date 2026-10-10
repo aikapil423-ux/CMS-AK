@@ -61,6 +61,7 @@ import {
   EnquiryClassificationType,
 } from "@/utils/complaintAnalysisEngine";
 import { parseUploadedDocument } from "@/utils/universalDocumentParser";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
 
 export type EnquiryProformaType =
   | "standard_4row" // PDF 1, 2, 5: Complainant / Substance / Opposite Party / Findings
@@ -963,6 +964,17 @@ function EnquiryDraftsContent() {
           `Document "${file.name}" successfully parsed! Added as brand new editable template "${newTemplate.name}". Words, language & formatting mirrored word-to-word.`
         );
         setTimeout(() => setUploadSuccessMessage(null), 8000);
+
+        // Persistently register raw evidence and case data across CMS
+        universalEvidenceService
+          .registerAndProcess({
+            file,
+            caseId: complaint?.id,
+            caseNumber: complaint?.complaintNumber,
+            module: "ENQUIRY_WORKSPACE",
+            uploadedBy: currentUser.name,
+          })
+          .catch((e) => console.warn("Enquiry universal evidence sync warning:", e));
       }
     } catch (err: any) {
       console.error("Upload parse error:", err);
