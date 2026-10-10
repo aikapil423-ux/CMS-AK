@@ -320,6 +320,17 @@ export interface ComplaintItem {
   crossComplaintNumber?: string;
   isCrossComplaint?: boolean;
   linkedComplaintReason?: string;
+  linkedComplaintsList?: LinkedComplaintEntry[];
+  isTransferred?: boolean;
+  transferType?: "OTHER_STATION" | "OTHER_DISTRICT" | "OTHER_STATE";
+  transferredToState?: string;
+  transferredToDistrict?: string;
+  transferredToPoliceStation?: string;
+  transferredAt?: string;
+  transferredBy?: string;
+  transferReason?: string;
+  transferOrderNumber?: string;
+  transferHistory?: ComplaintTransferRecord[];
   ncrNumber?: string;
   dispositionType?: string;
   dispositionCategory?: string;
@@ -841,6 +852,39 @@ export interface ComplaintTimelineEvent {
   officerRank?: string;
   timestamp: string;
   documentName?: string;
+}
+
+export interface ComplaintTransferRecord {
+  id: string;
+  complaintId: string;
+  complaintNumber: string;
+  complainantName?: string;
+  transferType: "OTHER_STATION" | "OTHER_DISTRICT" | "OTHER_STATE";
+  sourcePoliceStation: string;
+  sourceDistrict: string;
+  targetState: string;
+  targetDistrict: string;
+  targetPoliceStation: string;
+  transferReason: string;
+  orderNumber?: string;
+  dispatchDate: string;
+  dispatchTime?: string;
+  transferredBy: string;
+  transferredByRank?: string;
+  remarks?: string;
+  timestamp: string;
+}
+
+export interface LinkedComplaintEntry {
+  id: string;
+  complaintNumber: string;
+  complaintId?: string;
+  complainantName?: string;
+  incidentDate?: string;
+  linkType: "RELATED" | "CROSS" | "DUPLICATE" | "SAME_ACCUSED";
+  reason: string;
+  linkedAt: string;
+  linkedBy: string;
 }
 
 export interface OfficerNotification {

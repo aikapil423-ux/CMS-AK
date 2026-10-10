@@ -39,6 +39,9 @@ import {
   PlusCircle,
   GripVertical,
   RotateCcw,
+  ArrowRightLeft,
+  Link2,
+  Unlink,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -55,6 +58,8 @@ import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptM
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
+import { TransferComplaintModal } from "@/components/complaints/TransferComplaintModal";
+import { LinkDelinkComplaintsModal } from "@/components/complaints/LinkDelinkComplaintsModal";
 
 type ComplaintSortField =
   | "complaintNumber"
@@ -385,6 +390,11 @@ function ComplaintListContent() {
   const [assignDropdownComplaintId, setAssignDropdownComplaintId] = useState<string | null>(null);
   const [assignToast, setAssignToast] = useState<string | null>(null);
   const [isQuickAssigning, setIsQuickAssigning] = useState<boolean>(false);
+
+  // Transfer and Link/Delink Modals
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isLinkDelinkModalOpen, setIsLinkDelinkModalOpen] = useState(false);
+  const [modalPreselectedComplaintId, setModalPreselectedComplaintId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -930,8 +940,26 @@ function ComplaintListContent() {
             >
               {c.complaintNumber}
             </Link>
-            <div className="mt-1">
+            <div className="mt-1 flex flex-wrap items-center gap-1">
               <PriorityBadge priority={c.priority} />
+              {c.isTransferred && (
+                <span
+                  title={`Transferred to: ${c.transferredToPoliceStation || "Other Station"}`}
+                  className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-0.5"
+                >
+                  <ArrowRightLeft className="w-2.5 h-2.5 text-amber-700" />
+                  <span>Transferred</span>
+                </span>
+              )}
+              {((c.linkedComplaintsList && c.linkedComplaintsList.length > 0) || c.linkedComplaintNumber) && (
+                <span
+                  title={c.isCrossComplaint ? "Cross-Complaint" : "Linked Complaint"}
+                  className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-900 border border-indigo-200 flex items-center gap-0.5"
+                >
+                  <Link2 className="w-2.5 h-2.5 text-indigo-700" />
+                  <span>{c.isCrossComplaint ? "Cross" : `Linked (${c.linkedComplaintsList?.length || 1})`}</span>
+                </span>
+              )}
             </div>
           </td>
         );
@@ -1097,6 +1125,33 @@ function ComplaintListContent() {
           <p className="text-xs sm:text-sm text-slate-500">
             Station intake, preliminary verification, and enquiry monitoring
           </p>
+        </div>
+
+        {/* Top Right Actions: Transfer Complaint & Link & Delink */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            type="button"
+            onClick={() => {
+              setModalPreselectedComplaintId(undefined);
+              setIsTransferModalOpen(true);
+            }}
+            className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-700"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
+            <span>Transfer Complaint</span>
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => {
+              setModalPreselectedComplaintId(undefined);
+              setIsLinkDelinkModalOpen(true);
+            }}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer border border-emerald-600"
+          >
+            <Link2 className="w-3.5 h-3.5 text-emerald-200" />
+            <span>Link &amp; Delink</span>
+          </Button>
         </div>
       </div>
 
@@ -2574,6 +2629,28 @@ function ComplaintListContent() {
         complaint={receiptComplaint}
         isOpen={showReceiptModal}
         onClose={() => setShowReceiptModal(false)}
+      />
+
+      {/* Transfer Complaint Modal */}
+      <TransferComplaintModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        complaints={complaints}
+        onTransferSuccess={() => {
+          fetchComplaints();
+        }}
+        preSelectedComplaintId={modalPreselectedComplaintId}
+      />
+
+      {/* Link & Delink Complaints Modal */}
+      <LinkDelinkComplaintsModal
+        isOpen={isLinkDelinkModalOpen}
+        onClose={() => setIsLinkDelinkModalOpen(false)}
+        complaints={complaints}
+        onSuccess={() => {
+          fetchComplaints();
+        }}
+        preSelectedComplaintId={modalPreselectedComplaintId}
       />
     </div>
   );

@@ -26,6 +26,8 @@ import {
   getMainComplaintStatus,
   LegalAnalysisReport,
   InvestigationSummaryReport,
+  ComplaintTransferRecord,
+  LinkedComplaintEntry,
 } from "@/types";
 import {
   canCreateDocument,
@@ -1279,6 +1281,11 @@ export const ComplaintService = {
     complaintsStore[index] = {
       ...complaintsStore[index],
       status: "TRANSFERRED_OTHER_PS",
+      isTransferred: true,
+      transferredToPoliceStation: destinationStation,
+      transferredAt: new Date().toISOString(),
+      transferredBy: officerName,
+      transferReason: reason,
       policeStation: `${complaintsStore[index].policeStation} ➔ Transferred to ${destinationStation}`,
       updatedAt: new Date().toISOString(),
     };
@@ -1291,7 +1298,152 @@ export const ComplaintService = {
       timestamp: new Date().toISOString(),
     });
 
+    saveComplaintsToStorage(complaintsStore);
     return complaintsStore[index];
+  },
+
+  async transferComplaintFull(payload: {
+    complaintId: string;
+    transferType: "OTHER_STATION" | "OTHER_DISTRICT" | "OTHER_STATE";
+    targetState: string;
+    targetDistrict: string;
+    targetPoliceStation: string;
+    transferReason: string;
+    orderNumber?: string;
+    dispatchDate: string;
+    dispatchTime?: string;
+    transferredBy: string;
+    transferredByRank?: string;
+    remarks?: string;
+  }): Promise<ComplaintItem> {
+    const index = complaintsStore.findIndex(
+      (c) => c.id === payload.complaintId || c.complaintNumber === payload.complaintId
+    );
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const typeLabel =
+      payload.transferType === "OTHER_STATION"
+        ? "Other Station (अन्य थाना)"
+        : payload.transferType === "OTHER_DISTRICT"
+        ? "Other District (अन्य ज़िला)"
+        : "Other State (अन्य राज्य)";
+
+    const transferRecord: ComplaintTransferRecord = {
+      id: `TRF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      complaintId: complaint.id,
+      complaintNumber: complaint.complaintNumber,
+      complainantName: complaint.complainantName,
+      transferType: payload.transferType,
+      sourcePoliceStation: complaint.policeStation || "PS Civil Lines",
+      sourceDistrict: complaint.district || "Gurugram",
+      targetState: payload.targetState,
+      targetDistrict: payload.targetDistrict,
+      targetPoliceStation: payload.targetPoliceStation,
+      transferReason: payload.transferReason,
+      orderNumber: payload.orderNumber || "",
+      dispatchDate: payload.dispatchDate || new Date().toISOString().split("T")[0],
+      dispatchTime: payload.dispatchTime || new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      transferredBy: payload.transferredBy,
+      transferredByRank: payload.transferredByRank || "Inspector / SHO",
+      remarks: payload.remarks,
+      timestamp: new Date().toISOString(),
+    };
+
+    const existingHistory = complaint.transferHistory || [];
+    const updatedHistory = [transferRecord, ...existingHistory];
+
+    complaintsStore[index] = {
+      ...complaint,
+      status: "TRANSFERRED_OTHER_PS",
+      isTransferred: true,
+      transferType: payload.transferType,
+      transferredToState: payload.targetState,
+      transferredToDistrict: payload.targetDistrict,
+      transferredToPoliceStation: payload.targetPoliceStation,
+      transferredAt: new Date().toISOString(),
+      transferredBy: payload.transferredBy,
+      transferReason: payload.transferReason,
+      transferOrderNumber: payload.orderNumber,
+      transferHistory: updatedHistory,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.addTimelineEvent(complaint.id, {
+      title: `स्थानांतरित / Transferred (${typeLabel}) ➔ ${payload.targetPoliceStation}`,
+      description: `स्थानांतरित स्थान: ${payload.targetPoliceStation}, ${payload.targetDistrict}, ${payload.targetState} | आदेश सं. (Order No): ${payload.orderNumber || "N/A"} | कारण (Reason): "${payload.transferReason}" | द्वारा: ${payload.transferredBy} (${payload.transferredByRank || "SHO"})`,
+      category: "TRANSFER",
+      officerName: payload.transferredBy,
+      officerRank: payload.transferredByRank || "SHO",
+      timestamp: new Date().toISOString(),
+    });
+
+    this.saveGlobalTransferRecord(transferRecord);
+    saveComplaintsToStorage(complaintsStore);
+    return complaintsStore[index];
+  },
+
+  saveGlobalTransferRecord(record: ComplaintTransferRecord): void {
+    if (typeof window === "undefined") return;
+    try {
+      const existingStr = localStorage.getItem("cms_complaint_transfers_log_v1");
+      const list: ComplaintTransferRecord[] = existingStr ? JSON.parse(existingStr) : [];
+      list.unshift(record);
+      localStorage.setItem("cms_complaint_transfers_log_v1", JSON.stringify(list));
+    } catch (e) {
+      console.warn("Could not save global transfer log", e);
+    }
+  },
+
+  getTransferHistory(): ComplaintTransferRecord[] {
+    const listMap = new Map<string, ComplaintTransferRecord>();
+
+    // 1. From complaintsStore in-memory
+    complaintsStore.forEach((c) => {
+      if (c.transferHistory && c.transferHistory.length > 0) {
+        c.transferHistory.forEach((tr) => listMap.set(tr.id, tr));
+      } else if (c.isTransferred && c.transferredToPoliceStation) {
+        const syntheticId = `TRF-SYNTH-${c.id}`;
+        if (!listMap.has(syntheticId)) {
+          listMap.set(syntheticId, {
+            id: syntheticId,
+            complaintId: c.id,
+            complaintNumber: c.complaintNumber,
+            complainantName: c.complainantName,
+            transferType: c.transferType || "OTHER_STATION",
+            sourcePoliceStation: c.policeStation || "PS Civil Lines",
+            sourceDistrict: c.district || "Gurugram",
+            targetState: c.transferredToState || "Haryana",
+            targetDistrict: c.transferredToDistrict || "Gurugram",
+            targetPoliceStation: c.transferredToPoliceStation || "Other Station",
+            transferReason: c.transferReason || "Jurisdictional transfer",
+            orderNumber: c.transferOrderNumber || "DCP/TRF/2026/01",
+            dispatchDate: c.transferredAt ? c.transferredAt.split("T")[0] : new Date().toISOString().split("T")[0],
+            dispatchTime: "10:30 AM",
+            transferredBy: c.transferredBy || "SHO In-charge",
+            transferredByRank: "Inspector",
+            timestamp: c.transferredAt || new Date().toISOString(),
+          });
+        }
+      }
+    });
+
+    // 2. From localStorage
+    if (typeof window !== "undefined") {
+      try {
+        const existingStr = localStorage.getItem("cms_complaint_transfers_log_v1");
+        if (existingStr) {
+          const storedList: ComplaintTransferRecord[] = JSON.parse(existingStr);
+          storedList.forEach((r) => listMap.set(r.id, r));
+        }
+      } catch (e) {
+        console.warn("Could not parse transfer history from localStorage", e);
+      }
+    }
+
+    const all = Array.from(listMap.values());
+    all.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return all;
   },
 
   async linkComplaint(
@@ -1319,6 +1471,167 @@ export const ComplaintService = {
     });
 
     return complaintsStore[index];
+  },
+
+  async linkComplaintsFull(payload: {
+    primaryComplaintId: string;
+    targetComplaintId: string;
+    linkType: "RELATED" | "CROSS" | "DUPLICATE" | "SAME_ACCUSED";
+    reason: string;
+    officerName: string;
+  }): Promise<{ primary: ComplaintItem; target: ComplaintItem }> {
+    const pIdx = complaintsStore.findIndex(
+      (c) => c.id === payload.primaryComplaintId || c.complaintNumber === payload.primaryComplaintId
+    );
+    const tIdx = complaintsStore.findIndex(
+      (c) => c.id === payload.targetComplaintId || c.complaintNumber === payload.targetComplaintId
+    );
+
+    if (pIdx === -1 || tIdx === -1) {
+      throw new Error("One or both complaints could not be found");
+    }
+
+    const primary = complaintsStore[pIdx];
+    const target = complaintsStore[tIdx];
+
+    const typeLabel =
+      payload.linkType === "CROSS"
+        ? "Cross-Complaint (क्रॉस शिकायत)"
+        : payload.linkType === "DUPLICATE"
+        ? "Duplicate Complaint (समान/डुप्लीकेट)"
+        : payload.linkType === "SAME_ACCUSED"
+        ? "Same Accused / Gang (समान आरोपी)"
+        : "Related Matter (संबंधित मामला)";
+
+    // Update Primary
+    const pExisting = primary.linkedComplaintsList || [];
+    const pFiltered = pExisting.filter((l) => l.complaintNumber !== target.complaintNumber);
+    const pNewEntry: LinkedComplaintEntry = {
+      id: `LNK-${Date.now()}-P`,
+      complaintId: target.id,
+      complaintNumber: target.complaintNumber,
+      complainantName: target.complainantName,
+      incidentDate: target.incidentDate,
+      linkType: payload.linkType,
+      reason: payload.reason,
+      linkedAt: new Date().toISOString(),
+      linkedBy: payload.officerName,
+    };
+    complaintsStore[pIdx] = {
+      ...primary,
+      linkedComplaintNumber: target.complaintNumber,
+      isCrossComplaint: payload.linkType === "CROSS" || primary.isCrossComplaint,
+      crossComplaintNumber: payload.linkType === "CROSS" ? target.complaintNumber : primary.crossComplaintNumber,
+      linkedComplaintsList: [pNewEntry, ...pFiltered],
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Update Target
+    const tExisting = target.linkedComplaintsList || [];
+    const tFiltered = tExisting.filter((l) => l.complaintNumber !== primary.complaintNumber);
+    const tNewEntry: LinkedComplaintEntry = {
+      id: `LNK-${Date.now()}-T`,
+      complaintId: primary.id,
+      complaintNumber: primary.complaintNumber,
+      complainantName: primary.complainantName,
+      incidentDate: primary.incidentDate,
+      linkType: payload.linkType,
+      reason: payload.reason,
+      linkedAt: new Date().toISOString(),
+      linkedBy: payload.officerName,
+    };
+    complaintsStore[tIdx] = {
+      ...target,
+      linkedComplaintNumber: primary.complaintNumber,
+      isCrossComplaint: payload.linkType === "CROSS" || target.isCrossComplaint,
+      crossComplaintNumber: payload.linkType === "CROSS" ? primary.complaintNumber : target.crossComplaintNumber,
+      linkedComplaintsList: [tNewEntry, ...tFiltered],
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Timeline for Primary
+    this.addTimelineEvent(primary.id, {
+      title: `लिंक किया गया / Linked with ${target.complaintNumber} (${typeLabel})`,
+      description: `संबंधित शिकायत: ${target.complaintNumber} (${target.complainantName}). संबंध: ${typeLabel}. कारण: "${payload.reason}". द्वारा: ${payload.officerName}`,
+      category: "STATUS_CHANGE",
+      officerName: payload.officerName,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Timeline for Target
+    this.addTimelineEvent(target.id, {
+      title: `लिंक किया गया / Linked with ${primary.complaintNumber} (${typeLabel})`,
+      description: `संबंधित शिकायत: ${primary.complaintNumber} (${primary.complainantName}). संबंध: ${typeLabel}. कारण: "${payload.reason}". द्वारा: ${payload.officerName}`,
+      category: "STATUS_CHANGE",
+      officerName: payload.officerName,
+      timestamp: new Date().toISOString(),
+    });
+
+    saveComplaintsToStorage(complaintsStore);
+    return { primary: complaintsStore[pIdx], target: complaintsStore[tIdx] };
+  },
+
+  async delinkComplaintsFull(payload: {
+    primaryComplaintId: string;
+    targetComplaintNumber: string;
+    reason: string;
+    officerName: string;
+  }): Promise<{ primary: ComplaintItem; target?: ComplaintItem }> {
+    const pIdx = complaintsStore.findIndex(
+      (c) => c.id === payload.primaryComplaintId || c.complaintNumber === payload.primaryComplaintId
+    );
+    if (pIdx === -1) throw new Error("Primary complaint not found");
+
+    const primary = complaintsStore[pIdx];
+    const pUpdatedList = (primary.linkedComplaintsList || []).filter(
+      (l) => l.complaintNumber !== payload.targetComplaintNumber
+    );
+
+    complaintsStore[pIdx] = {
+      ...primary,
+      linkedComplaintsList: pUpdatedList,
+      linkedComplaintNumber: primary.linkedComplaintNumber === payload.targetComplaintNumber ? undefined : primary.linkedComplaintNumber,
+      crossComplaintNumber: primary.crossComplaintNumber === payload.targetComplaintNumber ? undefined : primary.crossComplaintNumber,
+      isCrossComplaint: primary.crossComplaintNumber === payload.targetComplaintNumber ? false : primary.isCrossComplaint,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.addTimelineEvent(primary.id, {
+      title: `डी-लिंक किया गया / Delinked from ${payload.targetComplaintNumber}`,
+      description: `शिकायत ${payload.targetComplaintNumber} से संबंध हटाया गया। कारण: "${payload.reason}". द्वारा: ${payload.officerName}`,
+      category: "STATUS_CHANGE",
+      officerName: payload.officerName,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Target complaint update if exists
+    const tIdx = complaintsStore.findIndex((c) => c.complaintNumber === payload.targetComplaintNumber);
+    let updatedTarget: ComplaintItem | undefined;
+    if (tIdx !== -1) {
+      const target = complaintsStore[tIdx];
+      const tUpdatedList = (target.linkedComplaintsList || []).filter(
+        (l) => l.complaintNumber !== primary.complaintNumber
+      );
+      complaintsStore[tIdx] = {
+        ...target,
+        linkedComplaintsList: tUpdatedList,
+        linkedComplaintNumber: target.linkedComplaintNumber === primary.complaintNumber ? undefined : target.linkedComplaintNumber,
+        crossComplaintNumber: target.crossComplaintNumber === primary.complaintNumber ? undefined : target.crossComplaintNumber,
+        isCrossComplaint: target.crossComplaintNumber === primary.complaintNumber ? false : target.isCrossComplaint,
+        updatedAt: new Date().toISOString(),
+      };
+      this.addTimelineEvent(target.id, {
+        title: `डी-लिंक किया गया / Delinked from ${primary.complaintNumber}`,
+        description: `शिकायत ${primary.complaintNumber} से संबंध हटाया गया। कारण: "${payload.reason}". द्वारा: ${payload.officerName}`,
+        category: "STATUS_CHANGE",
+        officerName: payload.officerName,
+        timestamp: new Date().toISOString(),
+      });
+      updatedTarget = complaintsStore[tIdx];
+    }
+
+    saveComplaintsToStorage(complaintsStore);
+    return { primary: complaintsStore[pIdx], target: updatedTarget };
   },
 
   async issueNcrReference(

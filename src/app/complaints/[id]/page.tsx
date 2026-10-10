@@ -1693,6 +1693,43 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       }
     }
 
+    // 7.5 TRANSFER EVENTS
+    if (complaint.transferHistory && complaint.transferHistory.length > 0) {
+      complaint.transferHistory.forEach((tr) => {
+        addUnique({
+          id: `hist_trf_${tr.id}`,
+          title: `COMPLAINT TRANSFERRED (${tr.transferType})`,
+          timestamp: tr.timestamp || tr.dispatchDate || new Date().toISOString(),
+          officerName: `${tr.transferredBy} (${tr.transferredByRank || "SHO"})`,
+          details: `Transferred to: ${tr.targetPoliceStation}, ${tr.targetDistrict}, ${tr.targetState} | Order Ref: ${tr.orderNumber || "N/A"} | Reason: "${tr.transferReason}"${tr.remarks ? ` | Notes: ${tr.remarks}` : ""}`,
+          stageWeight: 6.5,
+        });
+      });
+    } else if (complaint.isTransferred && complaint.transferredToPoliceStation) {
+      addUnique({
+        id: "hist_trf_direct",
+        title: "COMPLAINT TRANSFERRED",
+        timestamp: complaint.transferredAt || complaint.updatedAt || new Date().toISOString(),
+        officerName: complaint.transferredBy || "Authorized Officer",
+        details: `Transferred to ${complaint.transferredToPoliceStation} | Reason: "${complaint.transferReason || "Jurisdictional transfer"}"`,
+        stageWeight: 6.5,
+      });
+    }
+
+    // 7.6 LINKED COMPLAINTS LIST
+    if (complaint.linkedComplaintsList && complaint.linkedComplaintsList.length > 0) {
+      complaint.linkedComplaintsList.forEach((lnk) => {
+        addUnique({
+          id: `hist_lnk_${lnk.id}`,
+          title: `LINKED COMPLAINT (${lnk.linkType})`,
+          timestamp: lnk.linkedAt || complaint.updatedAt || new Date().toISOString(),
+          officerName: lnk.linkedBy || "Investigating Officer",
+          details: `Linked with Complaint #${lnk.complaintNumber} (${lnk.complainantName || "Complainant"}). Reason: "${lnk.reason}"`,
+          stageWeight: 7.2,
+        });
+      });
+    }
+
     // 8. Custom timeline events from complaint.timeline
     if (complaint.timeline && complaint.timeline.length > 0) {
       complaint.timeline.forEach((tl) => {
@@ -1704,7 +1741,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         else if (upper.includes("REPORT")) weight = 4;
         else if (upper.includes("NCR") || upper.includes("FIR")) weight = 5;
         else if (upper.includes("DISPOSE")) weight = 6;
-        else if (upper.includes("LINK")) weight = 7;
+        else if (upper.includes("TRANSFER")) weight = 6.5;
+        else if (upper.includes("LINK") || upper.includes("DELINK")) weight = 7;
 
         addUnique({
           id: tl.id,
@@ -3687,6 +3725,123 @@ Certified official record copy.`;
                 </div>
               ))}
             </div>
+
+            {/* Transfer & Association History Card */}
+            {(complaint.isTransferred || (complaint.transferHistory && complaint.transferHistory.length > 0) || (complaint.linkedComplaintsList && complaint.linkedComplaintsList.length > 0) || complaint.linkedComplaintNumber) && (
+              <div className="mt-8 pt-6 border-t border-slate-200 space-y-4">
+                <div className="flex items-center gap-2">
+                  <ArrowRightLeft className="w-4 h-4 text-amber-600" />
+                  <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800">
+                    Jurisdiction Transfer &amp; Case Linkage Records (स्थानांतरण व लिंक इतिहास)
+                  </h4>
+                </div>
+
+                {/* Transfer History Card */}
+                {(complaint.isTransferred || (complaint.transferHistory && complaint.transferHistory.length > 0)) && (
+                  <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-950 flex items-center gap-2">
+                        <ArrowRightLeft className="w-4 h-4 text-amber-700" />
+                        <span>Jurisdictional Transfer Log (थाना / ज़िला / राज्य स्थानांतरण विवरण)</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
+                        {complaint.transferHistory?.length || 1} Record(s)
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {complaint.transferHistory && complaint.transferHistory.length > 0 ? (
+                        complaint.transferHistory.map((tr) => (
+                          <div key={tr.id} className="bg-white p-3 rounded-lg border border-amber-200 text-xs space-y-1">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <span className="font-bold text-slate-900">
+                                ➔ Transferred to: {tr.targetPoliceStation} ({tr.targetDistrict}, {tr.targetState})
+                              </span>
+                              <span className="font-mono text-[11px] text-slate-500">
+                                Dispatch Date: {tr.dispatchDate} {tr.dispatchTime || ""}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-600">
+                              <strong>Scope:</strong> {tr.transferType} | <strong>Order Ref:</strong> {tr.orderNumber || "N/A"} | <strong>Authorized By:</strong> {tr.transferredBy} ({tr.transferredByRank || "SHO"})
+                            </div>
+                            <div className="text-[11px] text-slate-800">
+                              <strong>Reason:</strong> &ldquo;{tr.transferReason}&rdquo;
+                            </div>
+                            {tr.remarks && (
+                              <div className="text-[10px] text-slate-500 italic">
+                                <strong>Remarks:</strong> {tr.remarks}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="bg-white p-3 rounded-lg border border-amber-200 text-xs space-y-1">
+                          <div className="font-bold text-slate-900">
+                            ➔ Transferred to: {complaint.transferredToPoliceStation} ({complaint.transferredToDistrict || ""}, {complaint.transferredToState || ""})
+                          </div>
+                          <div className="text-[11px] text-slate-600">
+                            <strong>Order Ref:</strong> {complaint.transferOrderNumber || "N/A"} | <strong>Transferred By:</strong> {complaint.transferredBy || "Authorized Officer"}
+                          </div>
+                          <div className="text-[11px] text-slate-800">
+                            <strong>Reason:</strong> &ldquo;{complaint.transferReason || "Jurisdictional Transfer"}&rdquo;
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Linked Cases Log */}
+                {((complaint.linkedComplaintsList && complaint.linkedComplaintsList.length > 0) || complaint.linkedComplaintNumber) && (
+                  <div className="bg-indigo-50/70 border border-indigo-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-indigo-950 flex items-center gap-2">
+                        <Link2 className="w-4 h-4 text-indigo-700" />
+                        <span>Linked &amp; Cross-Complaint Associations (लिंक की गई शिकायतें)</span>
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-900 border border-indigo-300">
+                        {complaint.linkedComplaintsList?.length || 1} Linked
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {complaint.linkedComplaintsList && complaint.linkedComplaintsList.length > 0 ? (
+                        complaint.linkedComplaintsList.map((lnk) => (
+                          <div key={lnk.id} className="bg-white p-3 rounded-lg border border-indigo-200 text-xs space-y-1">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded">
+                                  #{lnk.complaintNumber}
+                                </span>
+                                <span className="font-bold text-slate-800">{lnk.complainantName}</span>
+                                <span className="text-[10px] font-bold px-2 py-0.2 rounded bg-indigo-100 text-indigo-800">
+                                  {lnk.linkType}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                Linked On: {formatDate(lnk.linkedAt)}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-700">
+                              <strong>Reason:</strong> &ldquo;{lnk.reason}&rdquo; | <strong>By:</strong> {lnk.linkedBy}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="bg-white p-3 rounded-lg border border-indigo-200 text-xs">
+                          <span className="font-mono font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded">
+                            #{complaint.linkedComplaintNumber}
+                          </span>
+                          <span className="text-[11px] text-slate-700 ml-2">
+                            Relation: {complaint.isCrossComplaint ? "Cross-Complaint" : "Linked Complaint"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
