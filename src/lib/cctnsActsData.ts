@@ -23,6 +23,7 @@ import { PC_ACT_1988_SECTIONS } from "./pcActSectionsData";
 import { BENAMI_ACT_1988_SECTIONS } from "./benamiSectionsData";
 import { IPC_1860_SECTIONS } from "./ipcSectionsData";
 import { CRPC_1973_SECTIONS } from "./crpcSectionsData";
+import { IEA_1872_SECTIONS } from "./ieaSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -193,17 +194,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Indian Evidence Act, 1872 (Legacy)",
     shortName: "Indian Evidence Act, 1872 (IEA)",
     category: "Legacy Evidence Law",
-    sections: [
-      { sectionNumber: "24", title: "Confession caused by inducement, threat or promise, when irrelevant" },
-      { sectionNumber: "25", title: "Confession to police-officer not to be proved" },
-      { sectionNumber: "26", title: "Confession by accused while in custody of police not to be proved" },
-      { sectionNumber: "27", title: "How much of information received from accused may be proved (Recovery Memo)" },
-      { sectionNumber: "32", title: "Cases in which statement of relevant fact by person who is dead is relevant (Dying Declaration)" },
-      { sectionNumber: "45", title: "Opinions of experts (FSL / Ballistics / Handwriting / DNA)" },
-      { sectionNumber: "65B", title: "Admissibility of electronic records (Certificate under Section 65B)" },
-      { sectionNumber: "113A", title: "Presumption as to abetment of suicide by a married woman" },
-      { sectionNumber: "113B", title: "Presumption as to dowry death" },
-    ],
+    sections: IEA_1872_SECTIONS,
   },
   {
     id: "act_bnss_2023",
@@ -589,6 +580,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_crpc_1973, preserve the authoritative complete 1552 sections catalog
         if (existing.id === "act_crpc_1973") {
+          continue;
+        }
+        // If it's act_iea_1872, preserve the authoritative complete 359 sections catalog
+        if (existing.id === "act_iea_1872") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
