@@ -46,7 +46,14 @@ import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
-import { formatGDDateKey, to12HourParts, from12HourParts, parseGDActivityDateTime, toDDMMYYYY } from "@/lib/gdDateTime";
+import {
+  formatGDDateKey,
+  formatGDTimeDisplay24,
+  to12HourParts,
+  from12HourParts,
+  parseGDActivityDateTime,
+  toDDMMYYYY,
+} from "@/lib/gdDateTime";
 
 // Default station officers ordered strictly by rank hierarchy:
 // Inspector (50) > SI (40) > ASI (30) > HC (20) > Constable (10)
@@ -368,22 +375,25 @@ function NewGDEntryContent() {
   };
 
   // Date & Time of Activity — user-selectable (back-dating allowed).
-  // Defaults come from the SERVER clock; 12-hour AM/PM time picker.
-  const [activityDate, setActivityDate] = useState(""); // yyyy-mm-dd
-  const [activityDateDisplay, setActivityDateDisplay] = useState(""); // DD/MM/YYYY format
+  // Defaults always show current date and time by default (never blank).
+  const [activityDate, setActivityDate] = useState(() => formatGDDateKey(new Date())); // yyyy-mm-dd
+  const [activityDateDisplay, setActivityDateDisplay] = useState(() => toDDMMYYYY(formatGDDateKey(new Date()))); // DD/MM/YYYY format
   const hiddenDateInputRef = useRef<HTMLInputElement>(null);
-  const [hourSel, setHourSel] = useState(12);
-  const [minuteSel, setMinuteSel] = useState(0);
-  const [ampmSel, setAmpmSel] = useState<"AM" | "PM">("AM");
+  const initialTimeParts = useMemo(() => to12HourParts(formatGDTimeDisplay24(new Date())), []);
+  const [hourSel, setHourSel] = useState(initialTimeParts.hour);
+  const [minuteSel, setMinuteSel] = useState(initialTimeParts.minute);
+  const [ampmSel, setAmpmSel] = useState<"AM" | "PM">(initialTimeParts.ampm);
   const serverNowRef = useRef<{ dateISO: string; time24: string } | null>(null);
   const suppressAutoTemplateRef = useRef(false);
 
-  // Keep visible input always strictly in DD/MM/YYYY format
+  // Keep visible input always strictly in DD/MM/YYYY format and never blank
   useEffect(() => {
     if (activityDate) {
       setActivityDateDisplay(toDDMMYYYY(activityDate));
     } else {
-      setActivityDateDisplay("");
+      const todayISO = formatGDDateKey(new Date());
+      setActivityDate(todayISO);
+      setActivityDateDisplay(toDDMMYYYY(todayISO));
     }
   }, [activityDate]);
 
@@ -513,12 +523,13 @@ function NewGDEntryContent() {
 
   // Fetch SERVER date/time as the DEFAULT for the selectable date & time
   useEffect(() => {
+    if (editDraftId) return;
     let alive = true;
     GeneralDiaryService.getServerNow()
       .then((n) => {
         if (!alive) return;
         const dateISO = n.serverDateISO || formatGDDateKey(new Date());
-        const time24 = n.serverTime24 || n.serverTimeDisplay || "";
+        const time24 = n.serverTime24 || n.serverTimeDisplay || formatGDTimeDisplay24(new Date());
         setActivityDate(dateISO);
         const p = to12HourParts(time24);
         setHourSel(p.hour);
@@ -530,7 +541,7 @@ function NewGDEntryContent() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [editDraftId]);
 
   // Get active officer
   const currentOfficer = useMemo(() => {
@@ -901,11 +912,18 @@ function NewGDEntryContent() {
     setTypeDropdownOpen(false);
     setSubject("");
     setNarrative("");
-    // Date & time fall back to the server defaults
+    // Date & time fall back to the server defaults (never blank)
     const sn = serverNowRef.current;
     if (sn) {
       setActivityDate(sn.dateISO);
       const p = to12HourParts(sn.time24);
+      setHourSel(p.hour);
+      setMinuteSel(p.minute);
+      setAmpmSel(p.ampm);
+    } else {
+      const todayISO = formatGDDateKey(new Date());
+      setActivityDate(todayISO);
+      const p = to12HourParts(formatGDTimeDisplay24(new Date()));
       setHourSel(p.hour);
       setMinuteSel(p.minute);
       setAmpmSel(p.ampm);
@@ -1169,6 +1187,10 @@ function NewGDEntryContent() {
                       onBlur={() => {
                         if (activityDate) {
                           setActivityDateDisplay(toDDMMYYYY(activityDate));
+                        } else {
+                          const today = formatGDDateKey(new Date());
+                          setActivityDate(today);
+                          setActivityDateDisplay(toDDMMYYYY(today));
                         }
                       }}
                       placeholder="DD/MM/YYYY"
