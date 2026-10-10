@@ -69,7 +69,7 @@ const STATUS_OPTIONS = [
   { key: "NOT_ASSIGNED", label: "Not Assigned" },
   { key: "PENDING", label: "Pending" },
   { key: "COMPLETE", label: "Complete" },
-  { key: "FIR_REGISTER", label: "FIR Register" },
+  { key: "FIR_REGISTER", label: "Direct FIR (FIR Register)" },
   { key: "FIR_REGISTERED", label: "FIR Registered" },
   { key: "CORRECTION_REQUIRED", label: "Correction Required" },
 ];
@@ -327,28 +327,6 @@ function ComplaintListContent() {
     });
     setVisibleColumns(base);
     resetColumnOrder();
-  };
-
-  // Master Filter Tabs: ALL | DIRECT_FIR | NOT_ASSIGNED | PENDING | COMPLETE | FIR_REGISTERED | CORRECTION
-  const [masterFilterTab, setMasterFilterTab] = useState<string>("ALL");
-
-  const handleMasterTabChange = (tab: string) => {
-    setMasterFilterTab(tab);
-    if (tab === "ALL") {
-      setSelectedStatuses([...ALL_STATUS_KEYS]);
-    } else if (tab === "DIRECT_FIR") {
-      setSelectedStatuses(["FIR_REGISTER"]);
-    } else if (tab === "NOT_ASSIGNED") {
-      setSelectedStatuses(["NOT_ASSIGNED"]);
-    } else if (tab === "PENDING") {
-      setSelectedStatuses(["PENDING"]);
-    } else if (tab === "COMPLETE") {
-      setSelectedStatuses(["COMPLETE"]);
-    } else if (tab === "FIR_REGISTERED") {
-      setSelectedStatuses(["FIR_REGISTERED"]);
-    } else if (tab === "CORRECTION") {
-      setSelectedStatuses(["CORRECTION_REQUIRED"]);
-    }
   };
 
   const [priorityFilter, setPriorityFilter] = useState(initialPriority);
@@ -1194,120 +1172,6 @@ function ComplaintListContent() {
           </div>
         </div>
       )}
-
-      {/* Master Filter Bar (Requirement 10) */}
-      <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-100/90 border border-slate-200 rounded-xl text-xs">
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("ALL")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "ALL"
-              ? "bg-[#0b192c] text-white shadow-xs"
-              : "text-slate-700 hover:text-slate-900 hover:bg-white/80"
-          }`}
-        >
-          <span>All Enquiries</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "ALL" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
-            {statusCounts.all}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("DIRECT_FIR")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "DIRECT_FIR"
-              ? "bg-purple-700 text-white shadow-xs"
-              : "text-purple-900 hover:bg-purple-50"
-          }`}
-        >
-          <Scale className="w-3.5 h-3.5" />
-          <span>Direct FIR</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "DIRECT_FIR" ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
-            {statusCounts.firRegister}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("NOT_ASSIGNED")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "NOT_ASSIGNED"
-              ? "bg-amber-600 text-white shadow-xs"
-              : "text-amber-900 hover:bg-amber-50"
-          }`}
-        >
-          <UserCheck className="w-3.5 h-3.5" />
-          <span>Not Assigned</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "NOT_ASSIGNED" ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
-            {statusCounts.notAssigned}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("PENDING")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "PENDING"
-              ? "bg-blue-600 text-white shadow-xs"
-              : "text-blue-900 hover:bg-blue-50"
-          }`}
-        >
-          <Clock className="w-3.5 h-3.5" />
-          <span>Pending / Under Enquiry</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "PENDING" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
-            {statusCounts.pending}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("COMPLETE")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "COMPLETE"
-              ? "bg-emerald-600 text-white shadow-xs"
-              : "text-emerald-900 hover:bg-emerald-50"
-          }`}
-        >
-          <CheckCircle className="w-3.5 h-3.5" />
-          <span>Complete (Report Ready)</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "COMPLETE" ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
-            {statusCounts.complete}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("FIR_REGISTERED")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "FIR_REGISTERED"
-              ? "bg-red-700 text-white shadow-xs"
-              : "text-red-900 hover:bg-red-50"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>FIR Registered</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "FIR_REGISTERED" ? "bg-white/20 text-white" : "bg-red-100 text-red-800"}`}>
-            {statusCounts.firRegistered}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleMasterTabChange("CORRECTION")}
-          className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            masterFilterTab === "CORRECTION"
-              ? "bg-rose-700 text-white shadow-xs"
-              : "text-rose-900 hover:bg-rose-50"
-          }`}
-        >
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>Correction Required</span>
-          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${masterFilterTab === "CORRECTION" ? "bg-white/20 text-white" : "bg-rose-100 text-rose-800"}`}>
-            {statusCounts.correctionRequired}
-          </span>
-        </button>
-      </div>
 
       {/* Filter and Search Controls */}
       <Card className="border-slate-200 !overflow-visible relative z-30">
