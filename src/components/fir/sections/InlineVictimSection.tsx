@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -1311,12 +1312,14 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   )}
                 </div>
               </div>
-              <textarea
+              <AutoSuggestField
+                as="textarea"
                 rows={6}
+                entryType="STATEMENT"
                 placeholder="Record statement verbatim as narrated by victim in presence of enquiry officer/woman officer..."
                 value={statementText}
-                onChange={(e) => setStatementText(e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-300 bg-white text-xs leading-relaxed focus:ring-2 focus:ring-pink-500"
+                onChange={(val) => setStatementText(val)}
+                inputClassName="p-3 rounded-xl border-slate-300 bg-white text-xs leading-relaxed focus:ring-2 focus:ring-pink-500"
               />
             </div>
           )}

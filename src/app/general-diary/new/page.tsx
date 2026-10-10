@@ -44,6 +44,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
@@ -1418,19 +1419,14 @@ function NewGDEntryContent() {
               </div>
             )}
 
-            <textarea
-              ref={narrativeTextareaRef}
+            <AutoSuggestField
+              as="textarea"
               rows={5}
               value={narrative}
-              onChange={(e) => {
-                setNarrative(e.target.value);
-                const el = e.currentTarget;
-                el.style.height = "auto";
-                el.style.height = `${Math.max(130, el.scrollHeight + 4)}px`;
-              }}
+              onChange={(val) => setNarrative(val)}
+              entryType={selectedType || "MISCELLANEOUS_EVENT"}
               placeholder="Enter brief description of the police station activity..."
-              className="w-full px-3.5 py-3 bg-slate-50 border border-slate-300 rounded-lg text-xs sm:text-sm leading-relaxed text-slate-900 focus:ring-2 focus:ring-[#0b192c] font-sans resize-none overflow-hidden transition-[height] duration-75 min-h-[130px]"
-              style={{ minHeight: "130px" }}
+              inputClassName="px-3.5 py-3 text-xs sm:text-sm leading-relaxed text-slate-900 focus:ring-2 focus:ring-[#0b192c] min-h-[130px]"
             />
           </div>
 

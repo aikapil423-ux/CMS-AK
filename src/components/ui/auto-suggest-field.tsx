@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils";
 import { getGDSuggestion, type GDChainState } from "@/lib/gdSuggestions";
 
-interface AutoSuggestFieldProps {
+export interface AutoSuggestFieldProps {
   value: string;
   onChange: (value: string) => void;
   /** Visual variant: single-line `<input>` or multi-line `<textarea>`. */
@@ -17,8 +17,14 @@ interface AutoSuggestFieldProps {
   /** Feeds entry-type aware opening templates into the engine. */
   entryType?: string;
   id?: string;
+  name?: string;
+  maxLength?: number;
   required?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
+  enableGhost?: boolean;
+  showAcceptBadge?: boolean;
+  style?: React.CSSProperties;
   "data-testid"?: string;
 }
 
@@ -28,10 +34,11 @@ interface AutoSuggestFieldProps {
  * Renders the real input/textarea with a transparent background and layers a
  * "ghost" layer behind it that shows the predicted continuation in light grey.
  *
- * - TAB  -> accepts the prediction and types it in.
+ * - TAB or RIGHT ARROW (at end) -> accepts the prediction and types it in.
  * - Any other key -> the officer's own character is typed and the ghost is
  *   recomputed, so their own word always wins.
  * - ESC  -> dismisses the current prediction without changing the value.
+ * - Clickable Badge -> allows tapping to accept on touchscreens.
  */
 export function AutoSuggestField({
   value,
@@ -43,8 +50,14 @@ export function AutoSuggestField({
   inputClassName,
   entryType,
   id,
+  name,
+  maxLength,
   required,
   disabled,
+  readOnly,
+  enableGhost = true,
+  showAcceptBadge = true,
+  style,
   "data-testid": dataTestId,
 }: AutoSuggestFieldProps) {
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -59,8 +72,8 @@ export function AutoSuggestField({
 
   /** Prediction for the current value, taking any active chain into account. */
   const suggestion = useMemo(
-    () => getGDSuggestion(value, entryType, chain),
-    [value, entryType, chain]
+    () => (enableGhost && !readOnly && !disabled ? getGDSuggestion(value, entryType, chain) : null),
+    [value, entryType, chain, enableGhost, readOnly, disabled]
   );
 
   /**
@@ -77,11 +90,6 @@ export function AutoSuggestField({
 
   /**
    * Applies the prediction.
-   *
-   * When the prediction came from a sequence, the chain is ADVANCED to the next
-   * fragment so the following TAB offers the next piece. The chain is cleared
-   * whenever the officer types their own word, because then their text - not
-   * ours - is the source of truth (exactly how a real keyboard behaves).
    */
   const accept = useCallback(() => {
     if (!activeSuggestion) return;
@@ -104,7 +112,6 @@ export function AutoSuggestField({
 
   /**
    * Any real typing breaks the chain: the officer's own word takes over.
-   * (Called from onChange, before updating the value.)
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setChain(null);
@@ -128,6 +135,17 @@ export function AutoSuggestField({
       if (!activeSuggestion) return;
       e.preventDefault();
       accept();
+      return;
+    }
+
+    if (e.key === "ArrowRight") {
+      const target = e.currentTarget;
+      // If cursor is at the very end of the input, ArrowRight accepts suggestion
+      if (target.selectionStart === value.length && target.selectionEnd === value.length) {
+        if (!activeSuggestion) return;
+        e.preventDefault();
+        accept();
+      }
     }
   };
 
@@ -155,7 +173,8 @@ export function AutoSuggestField({
     "font-sans text-xs sm:text-sm px-3 py-2 border border-transparent rounded-lg",
     as === "textarea"
       ? "whitespace-pre-wrap break-words overflow-hidden"
-      : "whitespace-nowrap overflow-hidden"
+      : "whitespace-nowrap overflow-hidden",
+    inputClassName
   );
 
   const ghostText = activeSuggestion ? activeSuggestion.text : "";
@@ -165,19 +184,23 @@ export function AutoSuggestField({
     <div
       ref={ghostRef}
       aria-hidden="true"
-      className={cn("pointer-events-none absolute inset-0 z-0 text-slate-300 select-none", layerRecipe)}
+      className={cn("pointer-events-none absolute inset-0 z-0 text-slate-400 select-none", layerRecipe)}
     >
       {/* Invisible copy of the typed text so the prediction starts at the caret. */}
-      <span className="invisible">{value}</span>
-      {ghostText && <span>{ghostText}</span>}
+      <span className="invisible whitespace-pre-wrap">{value}</span>
+      {ghostText && <span className="text-slate-400/90">{ghostText}</span>}
     </div>
   );
 
   const controlProps = {
     id,
+    name,
     value,
+    maxLength,
     required,
     disabled,
+    readOnly,
+    style,
     "data-testid": dataTestId,
     placeholder,
     onChange: handleChange,
@@ -186,7 +209,7 @@ export function AutoSuggestField({
     // Hide the native placeholder while a ghost hint is on screen.
     className: cn(
       sharedClasses,
-      "relative z-10 bg-slate-50/0",
+      "relative z-10 bg-transparent",
       activeSuggestion && "placeholder-transparent"
     ),
   };
@@ -199,7 +222,7 @@ export function AutoSuggestField({
           {...controlProps}
           rows={rows}
           ref={controlRef as React.RefObject<HTMLTextAreaElement>}
-          className={cn(controlProps.className, "resize-y min-h-[120px]")}
+          className={cn(controlProps.className, "resize-y min-h-[100px]")}
         />
       ) : (
         <input
@@ -207,6 +230,23 @@ export function AutoSuggestField({
           type="text"
           ref={controlRef as React.RefObject<HTMLInputElement>}
         />
+      )}
+
+      {/* Floating Clickable Acceptance Badge for Mobile / Touch & Visual Clarity */}
+      {showAcceptBadge && activeSuggestion && (
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            accept();
+          }}
+          className="no-print absolute right-2.5 bottom-2.5 z-20 flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-950 text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow cursor-pointer select-none transition-all animate-in fade-in border border-slate-700/60"
+          title="Press Tab, → or click here to complete"
+        >
+          <span className="text-slate-300">सुझाव</span>
+          <kbd className="px-1 py-0.2 bg-slate-800 rounded text-[9px] font-mono border border-slate-600 text-amber-300">Tab ⇥</kbd>
+        </button>
       )}
     </div>
   );

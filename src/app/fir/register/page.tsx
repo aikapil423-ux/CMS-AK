@@ -71,6 +71,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 
@@ -2912,13 +2913,15 @@ function RegisterFIRForm() {
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-xs">
                 <div>
-                  <textarea
+                  <AutoSuggestField
+                    as="textarea"
                     rows={12}
+                    entryType="FIR_CONTENT"
                     maxLength={10000}
                     placeholder="Enter verbatim complaint statement / written complaint contents as received from complainant. FIR content is statutory and mandatory u/s 173 BNSS."
                     value={firContentText}
-                    onChange={(e) => setFirContentText(e.target.value)}
-                    className="w-full p-3 rounded-lg border border-slate-300 font-serif leading-relaxed text-xs focus:ring-2 focus:ring-blue-500"
+                    onChange={(val) => setFirContentText(val)}
+                    inputClassName="font-serif leading-relaxed text-xs focus:ring-2 focus:ring-blue-500"
                     required
                   />
                   {errors.fir_content && (
@@ -2947,12 +2950,14 @@ function RegisterFIRForm() {
                       </span>
                     </div>
                   </div>
-                  <textarea
+                  <AutoSuggestField
+                    as="textarea"
                     rows={3}
+                    entryType="BRIEF_FACTS"
                     placeholder="Short summary of facts for investigation assignment and monitoring"
                     value={briefFacts}
-                    onChange={(e) => setBriefFacts(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs"
+                    onChange={(val) => setBriefFacts(val)}
+                    inputClassName="text-xs"
                   />
                 </div>
 
@@ -2970,12 +2975,14 @@ function RegisterFIRForm() {
                       iconOnly={true}
                     />
                   </div>
-                  <textarea
+                  <AutoSuggestField
+                    as="textarea"
                     rows={2}
+                    entryType="DELAY_REASONS"
                     placeholder="If any delay occurred in reporting, record the specific reason here (e.g. hospitalization, medical examination, threat by accused, delay in discovering theft)"
                     value={reasonsForDelay}
-                    onChange={(e) => setReasonsForDelay(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs"
+                    onChange={(val) => setReasonsForDelay(val)}
+                    inputClassName="text-xs"
                   />
                 </div>
               </CardContent>

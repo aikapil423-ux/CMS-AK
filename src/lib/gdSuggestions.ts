@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Roznamcha (General Diary) Auto-Suggest Engine
  * ----------------------------------------------------
  * Inline "ghost text" prediction, modelled exactly on the Android Google Keyboard
@@ -96,6 +96,20 @@ const WORD_BANK: string[] = [
   "\u0907\u0915\u094d\u0915\u0930", // ikkar (interrogation)
   "\u092e\u0941\u0916\u094d\u092f", // mukhya (chief)
   "\u0905\u0928\u0941\u0936\u093e\u0938\u0928", // anusasan (search warrant)
+  "\u092a\u094d\u0930\u093e\u0930\u094d\u0925\u0940", // prarthi
+  "\u0924\u0939\u0930\u0940\u0930", // tehreer
+  "\u0935\u093f\u0935\u0947\u091a\u0928\u093e", // vivechna
+  "\u092c\u0930\u093e\u092e\u0926\u0917\u0940", // baramadgi
+  "\u0928\u0915\u094d\u0936\u093e", // naksha
+  "\u0905\u0938\u094d\u092a\u0924\u093e\u0932", // aspatal
+  "\u091a\u094b\u091f\u093f\u0932", // chotil
+  "\u092b\u0930\u093e\u0930", // farar
+  "\u0926\u092c\u093f\u0936", // dabish
+  "\u092a\u0902\u091a\u0928\u093e\u092e\u093e", // panchnama
+  "\u092c\u0940\u090f\u0928\u090f\u0938", // BNS
+  "\u092c\u0940\u090f\u0928\u090f\u0938\u090f\u0938", // BNSS
+  "\u0927\u093e\u0930\u093e", // dhara
+  "\u0935\u093f\u0932\u0902\u092c", // vilamb
   // English core
   "Patrol",
   "Raiding",
@@ -134,6 +148,24 @@ const WORD_BANK: string[] = [
   "Notice",
   "Summons",
   "Remand",
+  "BNS",
+  "BNSS",
+  "BSA",
+  "IPC",
+  "CrPC",
+  "Complainant",
+  "Informant",
+  "Hospitalization",
+  "Medical",
+  "Assault",
+  "Threat",
+  "Delay",
+  "Zimni",
+  "Chargesheet",
+  "Absconding",
+  "Recovery",
+  "Fard",
+  "Tehreer",
 
   /* --------------------------------------------------------------
    *  Land & civil vocabulary - harvested from scanned land/civil
@@ -548,6 +580,188 @@ const SEQUENCES: GDSequence[] = [
     id: "hi-cont-aarambhiki",
     trigger: ["\u0938\u0941\u092c\u0939 \u0915\u0940 \u0906\u0930\u0902\u092d\u093f\u0915\u0940 \u0915\u0940 \u0917\u0908"],
     fragments: ["\u0924\u0925\u093e \u0938\u093e\u092f\u0902\u0915\u093e\u0932\u0940\u0928 \u0930\u093f\u092a\u094b\u0930\u094d\u091f \u0915\u0940 \u0917\u0908\u0964"],
+  },
+  {
+    id: "hi-open-fir",
+    entryTypes: ["FIR_CONTENT","FIR","TEHREER"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+          "\\u0938\\u0947\\u0935\\u093e \\u092e\\u0947\\u0902, \\u0936\\u094d\\u0930\\u0940\\u092e\\u093e\\u0928 \\u0925\\u093e\\u0928\\u093e \\u092a\\u094d\\u0930\\u092d\\u093e\\u0930\\u0940 \\u092e\\u0939\\u094b\\u0926\\u092f, ",
+          "\\u0925\\u093e\\u0928\\u093e ____________\\u0964 ",
+          "\\u092e\\u0939\\u094b\\u0926\\u092f, \\u0938\\u0935\\u093f\\u0928\\u092f \\u0928\\u093f\\u0935\\u0947\\u0926\\u0928 \\u0939\\u0948 \\u0915\\u093f \\u092a\\u094d\\u0930\\u093e\\u0930\\u094d\\u0925\\u0940 \\u0926\\u093f\\u0928\\u093e\\u0902\\u0915 ____ \\u0915\\u094b \\u0938\\u092e\\u092f \\u0915\\u0930\\u0940\\u092c ____ \\u092c\\u091c\\u0947 ",
+          "\\u0905\\u092a\\u0928\\u0947 \\u0918\\u0930 \\u092a\\u0930 \\u092e\\u094c\\u091c\\u0942\\u0926 \\u0925\\u093e \\u0915\\u093f \\u0924\\u092d\\u0940 \\u0928\\u093e\\u092e\\u091c\\u0926 \\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u0917\\u0923 \\u0926\\u094d\\u0935\\u093e\\u0930\\u093e \\u092a\\u0941\\u0930\\u093e\\u0928\\u0940 \\u0930\\u0902\\u091c\\u093f\\u0936 \\u0915\\u094b \\u0932\\u0947\\u0915\\u0930 ",
+          "\\u0935\\u093e\\u0926\\u0940 \\u0915\\u0947 \\u0938\\u093e\\u0925 \\u0917\\u093e\\u0932\\u0940-\\u0917\\u0932\\u094c\\u091c \\u0935 \\u0932\\u093e\\u0920\\u0940-\\u0921\\u0902\\u0921\\u094b\\u0902 \\u0938\\u0947 \\u092e\\u093e\\u0930\\u092a\\u0940\\u091f \\u0915\\u0940 \\u0917\\u0908 \\u0924\\u0925\\u093e \\u091c\\u093e\\u0928 \\u0938\\u0947 \\u092e\\u093e\\u0930\\u0928\\u0947 \\u0915\\u0940 \\u0927\\u092e\\u0915\\u0940 \\u0926\\u0940 \\u0917\\u0908\\u0964 ",
+          "\\u0905\\u0924\\u0903 \\u0936\\u094d\\u0930\\u0940\\u092e\\u093e\\u0928 \\u091c\\u0940 \\u0938\\u0947 \\u092a\\u094d\\u0930\\u093e\\u0930\\u094d\\u0925\\u0928\\u093e \\u0939\\u0948 \\u0915\\u093f \\u0930\\u093f\\u092a\\u094b\\u0930\\u094d\\u091f \\u0926\\u0930\\u094d\\u091c \\u0915\\u0930 \\u0915\\u093e\\u0928\\u0942\\u0928\\u0940 \\u0915\\u093e\\u0930\\u094d\\u092f\\u0935\\u093e\\u0939\\u0940 \\u0915\\u0930\\u0928\\u0947 \\u0915\\u0940 \\u0915\\u0943\\u092a\\u093e \\u0915\\u0930\\u0947\\u0902\\u0964"
+    ],
+  },
+  {
+    id: "en-open-fir",
+    entryTypes: ["FIR_CONTENT","FIR","TEHREER"],
+    trigger: [],
+    fragments: [
+          "To, The Station House Officer, ",
+          "Police Station ____________. ",
+          "Sir, it is submitted that on ____ at about ____ hours, ",
+          "the accused persons namely ____________ ",
+          "unlawfully restrained and assaulted the complainant with weapons, causing injuries, ",
+          "and threatened with dire consequences. Necessary legal action may kindly be taken."
+    ],
+  },
+  {
+    id: "hi-open-delay",
+    entryTypes: ["DELAY_REASONS","DELAY"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+          "\\u091a\\u094b\\u091f\\u093f\\u0932/\\u092a\\u0940\\u0921\\u093c\\u093f\\u0924 \\u0915\\u0947 \\u0917\\u0902\\u092d\\u0940\\u0930 \\u0930\\u0942\\u092a \\u0938\\u0947 \\u0918\\u093e\\u092f\\u0932 \\u0939\\u094b\\u0928\\u0947 \\u0935 \\u0905\\u0938\\u094d\\u092a\\u0924\\u093e\\u0932 \\u092e\\u0947\\u0902 \\u0909\\u092a\\u091a\\u093e\\u0930\\u093e\\u0927\\u0940\\u0928 \\u0930\\u0939\\u0928\\u0947 \\u0915\\u0947 \\u0915\\u093e\\u0930\\u0923 ",
+          "\\u0924\\u0939\\u0930\\u0940\\u0930 \\u0926\\u0947\\u0928\\u0947 \\u092e\\u0947\\u0902 \\u0935\\u093f\\u0932\\u0902\\u092c \\u0939\\u0941\\u0906 \\u0939\\u0948\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-delay-treatment",
+    trigger: ["\\u091a\\u094b\\u091f\\u093f\\u0932 \\u0915\\u0947 \\u0909\\u092a\\u091a\\u093e\\u0930","\\u0905\\u0938\\u094d\\u092a\\u0924\\u093e\\u0932 \\u092e\\u0947\\u0902 \\u092d\\u0930\\u094d\\u0924\\u0940"],
+    fragments: [
+          "\\u0930\\u0939\\u0928\\u0947 \\u090f\\u0935\\u0902 \\u091a\\u093f\\u0915\\u093f\\u0924\\u094d\\u0938\\u0940\\u092f \\u0926\\u0947\\u0916\\u092d\\u093e\\u0932 \\u0915\\u0947 \\u0915\\u093e\\u0930\\u0923 \\u0925\\u093e\\u0928\\u0947 \\u092a\\u0930 \\u0938\\u0942\\u091a\\u0928\\u093e \\u0926\\u0947\\u0928\\u0947 \\u092e\\u0947\\u0902 \\u0935\\u093f\\u0932\\u0902\\u092c \\u0939\\u0941\\u0906\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-delay-compromise",
+    trigger: ["\\u0938\\u0941\\u0932\\u0939 \\u0938\\u092e\\u091d\\u094c\\u0924\\u0947","\\u0906\\u092a\\u0938\\u0940 \\u0938\\u092e\\u091d\\u094c\\u0924\\u0947 \\u0915\\u0947 \\u092a\\u094d\\u0930\\u092f\\u093e\\u0938"],
+    fragments: [
+          "\\u092a\\u093e\\u0930\\u093f\\u0935\\u093e\\u0930\\u093f\\u0915 \\u090f\\u0935\\u0902 \\u0938\\u093e\\u092e\\u093e\\u091c\\u093f\\u0915 \\u0938\\u094d\\u0924\\u0930 \\u092a\\u0930 \\u0915\\u093f\\u090f \\u091c\\u093e\\u0928\\u0947 \\u0915\\u0947 \\u0915\\u093e\\u0930\\u0923 \\u090f\\u092b\\u0906\\u0908\\u0906\\u0930 \\u0926\\u0930\\u094d\\u091c \\u0915\\u0930\\u093e\\u0928\\u0947 \\u092e\\u0947\\u0902 \\u0938\\u094d\\u0935\\u093e\\u092d\\u093e\\u0935\\u093f\\u0915 \\u0935\\u093f\\u0932\\u0902\\u092c \\u0939\\u0941\\u0906\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-delay-fear",
+    trigger: ["\\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u094b\\u0902 \\u0915\\u0947 \\u0921\\u0930","\\u091c\\u093e\\u0928 \\u0938\\u0947 \\u092e\\u093e\\u0930\\u0928\\u0947 \\u0915\\u0940 \\u0927\\u092e\\u0915\\u0940 \\u0915\\u0947 \\u0915\\u093e\\u0930\\u0923"],
+    fragments: [
+          "\\u0935\\u093e\\u0926\\u0940 \\u0935 \\u092a\\u0930\\u093f\\u091c\\u0928 \\u0905\\u0924\\u094d\\u092f\\u0927\\u093f\\u0915 \\u092d\\u092f\\u092d\\u0940\\u0924 \\u0925\\u0947, \\u091c\\u093f\\u0938\\u0938\\u0947 \\u0924\\u0939\\u0930\\u0940\\u0930 \\u0926\\u0947\\u0928\\u0947 \\u092e\\u0947\\u0902 \\u0935\\u093f\\u0932\\u0902\\u092c \\u0939\\u0941\\u0906\\u0964"
+    ],
+  },
+  {
+    id: "en-open-delay",
+    entryTypes: ["DELAY_REASONS","DELAY"],
+    trigger: [],
+    fragments: [
+          "Delay occurred due to medical treatment and hospitalization of the injured victim ",
+          "and the matter was reported promptly upon stabilization."
+    ],
+  },
+  {
+    id: "en-cont-delay-settlement",
+    trigger: ["efforts for compromise","settlement between parties"],
+    fragments: [
+          "were being explored by family elders, causing bona fide delay in reporting."
+    ],
+  },
+  {
+    id: "hi-open-brief-facts",
+    entryTypes: ["BRIEF_FACTS"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+          "\\u0935\\u093e\\u0926\\u0940 \\u0915\\u0947 \\u0938\\u093e\\u0925 \\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u094b\\u0902 \\u0926\\u094d\\u0935\\u093e\\u0930\\u093e \\u0915\\u093f\\u090f \\u0917\\u090f \\u0935\\u093f\\u0935\\u093e\\u0926, ",
+          "\\u092e\\u093e\\u0930\\u092a\\u0940\\u091f \\u090f\\u0935\\u0902 \\u0917\\u093e\\u0932\\u0940-\\u0917\\u0932\\u094c\\u091c \\u0935 \\u0927\\u092e\\u0915\\u0940 \\u0915\\u0947 \\u0938\\u0902\\u092c\\u0902\\u0927 \\u092e\\u0947\\u0902\\u0964"
+    ],
+  },
+  {
+    id: "en-open-brief-facts",
+    entryTypes: ["BRIEF_FACTS"],
+    trigger: [],
+    fragments: [
+          "Assault and criminal intimidation committed against the complainant ",
+          "by identified accused persons over prior dispute."
+    ],
+  },
+  {
+    id: "hi-open-zimni",
+    entryTypes: ["ZIMNI","CASE_DIARY"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+          "\\u0926\\u094c\\u0930\\u093e\\u0928\\u0947 \\u0935\\u093f\\u0935\\u0947\\u091a\\u0928\\u093e \\u092e\\u092f \\u0939\\u092e\\u0930\\u093e\\u0939\\u0940 \\u092e\\u0941\\u0932\\u093e\\u091c\\u092e\\u093e\\u0928 ",
+          "\\u0918\\u091f\\u0928\\u093e\\u0938\\u094d\\u0925\\u0932 \\u092a\\u0930 \\u092a\\u0939\\u0941\\u0902\\u091a\\u0947 \\u0914\\u0930 \\u0938\\u094d\\u0935\\u0924\\u0902\\u0924\\u094d\\u0930 \\u0938\\u093e\\u0915\\u094d\\u0937\\u093f\\u092f\\u094b\\u0902 \\u0915\\u0947 \\u0938\\u092e\\u0915\\u094d\\u0937 ",
+          "\\u0918\\u091f\\u0928\\u093e\\u0938\\u094d\\u0925\\u0932 \\u0915\\u093e \\u0928\\u093f\\u0930\\u0940\\u0915\\u094d\\u0937\\u0923 \\u0915\\u093f\\u092f\\u093e \\u0917\\u092f\\u093e \\u0924\\u0925\\u093e \\u0928\\u091c\\u0930\\u0940 \\u0928\\u0915\\u094d\\u0936\\u093e \\u0924\\u0948\\u092f\\u093e\\u0930 \\u0915\\u093f\\u092f\\u093e \\u0917\\u092f\\u093e\\u0964"
+    ],
+  },
+  {
+    id: "en-open-zimni",
+    entryTypes: ["ZIMNI","CASE_DIARY"],
+    trigger: [],
+    fragments: [
+          "During investigation, visited the spot of occurrence along with staff, ",
+          "conducted site inspection in presence of independent witnesses ",
+          "and prepared site plan (naksha nazri)."
+    ],
+  },
+  {
+    id: "hi-cont-zimni-statement",
+    trigger: ["\\u0935\\u093e\\u0926\\u0940 \\u0915\\u093e \\u092c\\u092f\\u093e\\u0928","\\u092c\\u092f\\u093e\\u0928 \\u0927\\u093e\\u0930\\u093e 180"],
+    fragments: [
+          "\\u0926\\u0930\\u094d\\u091c \\u0915\\u093f\\u092f\\u093e \\u0917\\u092f\\u093e, \\u091c\\u093f\\u0938\\u0928\\u0947 \\u0905\\u092a\\u0928\\u0940 \\u092a\\u0942\\u0930\\u094d\\u0935 \\u0924\\u0939\\u0930\\u0940\\u0930 \\u0915\\u0940 \\u092a\\u0941\\u0937\\u094d\\u091f\\u093f \\u0915\\u0930\\u0924\\u0947 \\u0939\\u0941\\u090f \\u0918\\u091f\\u0928\\u093e \\u0915\\u093e \\u092a\\u0942\\u0930\\u094d\\u0923 \\u0938\\u092e\\u0930\\u094d\\u0925\\u0928 \\u0915\\u093f\\u092f\\u093e\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-zimni-witness",
+    trigger: ["\\u0917\\u0935\\u093e\\u0939\\u094b\\u0902 \\u0915\\u0947 \\u092c\\u092f\\u093e\\u0928","\\u0938\\u093e\\u0915\\u094d\\u0937\\u093f\\u092f\\u094b\\u0902 \\u0938\\u0947 \\u092a\\u0942\\u091b\\u0924\\u093e\\u091b"],
+    fragments: [
+          "\\u0905\\u0902\\u0924\\u0930\\u094d\\u0917\\u0924 \\u0927\\u093e\\u0930\\u093e 180 \\u092c\\u0940\\u090f\\u0928\\u090f\\u0938\\u090f\\u0938 (161 \\u0938\\u0940\\u0906\\u0930\\u092a\\u0940\\u0938\\u0940) \\u0915\\u0932\\u092e\\u092c\\u0902\\u0926 \\u0915\\u093f\\u090f \\u0917\\u090f\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-zimni-raid",
+    trigger: ["\\u0926\\u092c\\u093f\\u0936 \\u0926\\u0940 \\u0917\\u0908","\\u0917\\u093f\\u0930\\u092b\\u094d\\u0924\\u093e\\u0930\\u0940 \\u0939\\u0947\\u0924\\u0941 \\u0926\\u092c\\u093f\\u0936"],
+    fragments: [
+          "\\u0915\\u093f\\u0902\\u0924\\u0941 \\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u0917\\u0923 \\u0905\\u092a\\u0928\\u0947 \\u0906\\u0935\\u093e\\u0938 \\u0938\\u0947 \\u092b\\u0930\\u093e\\u0930 \\u092a\\u093e\\u090f \\u0917\\u090f, \\u0924\\u0932\\u093e\\u0936 \\u091c\\u093e\\u0930\\u0940 \\u0939\\u0948\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-zimni-recovery",
+    trigger: ["\\u092b\\u0930\\u094d\\u0926 \\u092c\\u0930\\u093e\\u092e\\u0926\\u0917\\u0940","\\u092e\\u093e\\u0932 \\u092c\\u0930\\u093e\\u092e\\u0926\\u0917\\u0940"],
+    fragments: [
+          "\\u0938\\u093e\\u0915\\u094d\\u0937\\u093f\\u092f\\u094b\\u0902 \\u0915\\u0947 \\u0938\\u092e\\u0915\\u094d\\u0937 \\u0924\\u0948\\u092f\\u093e\\u0930 \\u0915\\u0940 \\u0917\\u0908 \\u0924\\u0925\\u093e \\u092c\\u0930\\u093e\\u092e\\u0926\\u0936\\u0941\\u0926\\u093e \\u0935\\u0938\\u094d\\u0924\\u0941 \\u0915\\u094b \\u0928\\u093f\\u092f\\u092e\\u093e\\u0928\\u0941\\u0938\\u093e\\u0930 \\u0938\\u0940\\u0932\\u092c\\u0902\\u0926 \\u0915\\u093f\\u092f\\u093e \\u0917\\u092f\\u093e\\u0964"
+    ],
+  },
+  {
+    id: "en-cont-zimni-witness",
+    trigger: ["statement under section 180","examined witness under section 161"],
+    fragments: [
+          "was recorded verbatim and verified to be correct."
+    ],
+  },
+  {
+    id: "en-cont-zimni-raid",
+    trigger: ["raided the suspected hideouts","sincere efforts were made to arrest"],
+    fragments: [
+          "the accused persons, but they were found absconding from their residence."
+    ],
+  },
+  {
+    id: "hi-cont-fir-prarthi",
+    trigger: ["\\u092a\\u094d\\u0930\\u093e\\u0930\\u094d\\u0925\\u0940 \\u0928\\u0947","\\u0935\\u093e\\u0926\\u0940 \\u0928\\u0947"],
+    fragments: [
+          "\\u0925\\u093e\\u0928\\u0947 \\u092a\\u0930 \\u0909\\u092a\\u0938\\u094d\\u0925\\u093f\\u0924 \\u0939\\u094b\\u0915\\u0930 \\u090f\\u0915 \\u0924\\u0939\\u0930\\u0940\\u0930\\u0940 \\u0938\\u0942\\u091a\\u0928\\u093e \\u092a\\u0947\\u0936 \\u0915\\u0940 \\u0915\\u093f ",
+          "\\u0926\\u093f\\u0928\\u093e\\u0902\\u0915 ____ \\u0915\\u094b \\u0938\\u092e\\u092f \\u0915\\u0930\\u0940\\u092c ____ \\u092c\\u091c\\u0947 ",
+          "\\u0928\\u093e\\u092e\\u093f\\u0924 \\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u0917\\u0923 \\u0926\\u094d\\u0935\\u093e\\u0930\\u093e \\u0905\\u0915\\u093e\\u0930\\u0923 \\u0917\\u093e\\u0932\\u0940-\\u0917\\u0932\\u094c\\u091c \\u0935 \\u092e\\u093e\\u0930\\u092a\\u0940\\u091f \\u0915\\u0940 \\u0917\\u0908 \\u0924\\u0925\\u093e ",
+          "\\u091c\\u093e\\u0928 \\u0938\\u0947 \\u092e\\u093e\\u0930\\u0928\\u0947 \\u0915\\u0940 \\u0927\\u092e\\u0915\\u0940 \\u0926\\u0940 \\u0917\\u0908\\u0964 \\u0905\\u0924\\u0903 \\u0915\\u093e\\u0928\\u0942\\u0928\\u0940 \\u0915\\u093e\\u0930\\u094d\\u092f\\u0935\\u093e\\u0939\\u0940 \\u0915\\u0940 \\u091c\\u093e\\u090f\\u0964"
+    ],
+  },
+  {
+    id: "hi-cont-fir-tehreer",
+    trigger: ["\\u0924\\u0939\\u0930\\u0940\\u0930 \\u0915\\u0947 \\u0906\\u0927\\u093e\\u0930 \\u092a\\u0930","\\u092a\\u094d\\u0930\\u093e\\u092a\\u094d\\u0924 \\u0924\\u0939\\u0930\\u0940\\u0930 \\u0915\\u0947 \\u0906\\u0927\\u093e\\u0930 \\u092a\\u0930"],
+    fragments: [
+          "\\u092e\\u0941\\u0915\\u0926\\u092e\\u093e \\u092a\\u0902\\u091c\\u0940\\u0915\\u0943\\u0924 \\u0915\\u0930 \\u0935\\u093f\\u0935\\u0947\\u091a\\u0928\\u093e \\u092a\\u094d\\u0930\\u093e\\u0930\\u0902\\u092d \\u0915\\u0940 \\u0917\\u0908\\u0964"
+    ],
+  },
+  {
+    id: "en-cont-fir-complainant",
+    trigger: ["The complainant approached","The complainant stated"],
+    fragments: [
+          "the Police Station and lodged a complaint stating that on ",
+          "____ at about ____ hours, the accused persons unlawfully ",
+          "assaulted and threatened the complainant. Necessary action be taken."
+    ],
   },
 ];
 

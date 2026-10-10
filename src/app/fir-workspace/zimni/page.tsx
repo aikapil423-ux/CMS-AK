@@ -31,6 +31,7 @@ import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { formatDate } from "@/lib/utils";
 
 interface HeaderLine {
@@ -1337,12 +1338,14 @@ function ZimniWorkspaceContent() {
                 {/* Column 3: Narration Details */}
                 <div className="col-span-9 p-3 relative space-y-2">
                   <div className="relative">
-                    <textarea
+                    <AutoSuggestField
+                      as="textarea"
+                      entryType="ZIMNI"
                       rows={Math.max(4, Math.ceil((entry.narration || "").length / 85))}
                       value={entry.narration}
-                      onChange={(e) => handleUpdateEntry(entry.id, "narration", e.target.value)}
+                      onChange={(val) => handleUpdateEntry(entry.id, "narration", val)}
                       placeholder="अनुसंधान का विस्तृत विवरण दर्ज करें..."
-                      className="w-full text-justify text-slate-950 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y leading-relaxed whitespace-pre-wrap font-serif"
+                      inputClassName="text-justify text-slate-950 bg-transparent hover:bg-amber-50/40 focus:bg-white border-transparent hover:border-slate-300 focus:border-amber-500 rounded p-1 outline-none resize-y leading-relaxed font-serif"
                     />
 
                     {/* Hindi / English Voice Typing Support */}
