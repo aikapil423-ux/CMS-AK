@@ -24,6 +24,7 @@ import { BENAMI_ACT_1988_SECTIONS } from "./benamiSectionsData";
 import { IPC_1860_SECTIONS } from "./ipcSectionsData";
 import { CRPC_1973_SECTIONS } from "./crpcSectionsData";
 import { IEA_1872_SECTIONS } from "./ieaSectionsData";
+import { BSA_2023_SECTIONS } from "./bsaSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -208,17 +209,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Bharatiya Sakshya Adhiniyam, 2023",
     shortName: "Bharatiya Sakshya Adhiniyam, 2023 (BSA)",
     category: "Law of Evidence",
-    sections: [
-      { sectionNumber: "22", title: "Confession to police officer not to be proved (replaces 25 IEA)" },
-      { sectionNumber: "23(1)", title: "Confession by accused while in custody of police not to be proved (replaces 26 IEA)" },
-      { sectionNumber: "23(2)", title: "Information received from accused leading to discovery / Recovery Memo (replaces 27 IEA)" },
-      { sectionNumber: "26", title: "Cases in which statement of relevant fact by person who is dead is relevant (Dying Declaration)" },
-      { sectionNumber: "39", title: "Opinions of experts (FSL, Ballistics, Handwriting, DNA)" },
-      { sectionNumber: "61", title: "Electronic or digital record as admissible evidence" },
-      { sectionNumber: "63", title: "Admissibility of electronic records and Certificate under Section 63 (replaces 65B IEA)" },
-      { sectionNumber: "117", title: "Presumption as to abetment of suicide by a married woman" },
-      { sectionNumber: "118", title: "Presumption as to dowry death" },
-    ],
+    sections: BSA_2023_SECTIONS,
   },
 ];
 
@@ -584,6 +575,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_iea_1872, preserve the authoritative complete 359 sections catalog
         if (existing.id === "act_iea_1872") {
+          continue;
+        }
+        // If it's act_bsa_2023, preserve the authoritative complete 456 sections catalog
+        if (existing.id === "act_bsa_2023") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
