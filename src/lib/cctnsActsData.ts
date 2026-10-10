@@ -22,6 +22,7 @@ import { MOTOR_VEHICLES_ACT_1988_SECTIONS } from "./motorVehiclesSectionsData";
 import { PC_ACT_1988_SECTIONS } from "./pcActSectionsData";
 import { BENAMI_ACT_1988_SECTIONS } from "./benamiSectionsData";
 import { IPC_1860_SECTIONS } from "./ipcSectionsData";
+import { CRPC_1973_SECTIONS } from "./crpcSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -185,24 +186,7 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     title: "The Code of Criminal Procedure, 1973 (Pre-July 2024 / Legacy)",
     shortName: "Code of Criminal Procedure, 1973 (CrPC)",
     category: "Legacy Procedural Code",
-    sections: [
-      { sectionNumber: "41", title: "When police may arrest without warrant" },
-      { sectionNumber: "41A", title: "Notice of appearance before police officer" },
-      { sectionNumber: "91", title: "Summons to produce document or other thing" },
-      { sectionNumber: "100", title: "Persons in charge of closed place to allow search" },
-      { sectionNumber: "102", title: "Power of police officer to seize certain property" },
-      { sectionNumber: "107", title: "Security for keeping the peace in other cases" },
-      { sectionNumber: "151", title: "Arrest to prevent the commission of cognizable offences" },
-      { sectionNumber: "154", title: "Information in cognizable cases (Registration of FIR)" },
-      { sectionNumber: "156(3)", title: "Any Magistrate empowered under Section 190 may order investigation" },
-      { sectionNumber: "160", title: "Police officer's power to require attendance of witnesses" },
-      { sectionNumber: "161", title: "Examination of witnesses by police" },
-      { sectionNumber: "164", title: "Recording of confessions and statements by Magistrate" },
-      { sectionNumber: "167", title: "Procedure when investigation cannot be completed in 24 hours" },
-      { sectionNumber: "173(2)", title: "Report of police officer on completion of investigation (Chargesheet / Final Form)" },
-      { sectionNumber: "173(8)", title: "Further investigation after submission of police report" },
-      { sectionNumber: "174", title: "Police to enquire and report on suicide, etc. (Inquest Report)" },
-    ],
+    sections: CRPC_1973_SECTIONS,
   },
   {
     id: "act_iea_1872",
@@ -601,6 +585,10 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_ipc_1860, preserve the authoritative complete 997 sections catalog
         if (existing.id === "act_ipc_1860") {
+          continue;
+        }
+        // If it's act_crpc_1973, preserve the authoritative complete 1552 sections catalog
+        if (existing.id === "act_crpc_1973") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
