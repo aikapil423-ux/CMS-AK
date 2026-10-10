@@ -24,6 +24,12 @@ import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import {
+  useTableResize,
+  TableColResizer,
+  TableRowResizer,
+  TableResizeToolbar,
+} from "@/components/fir-workspace/TableResizeHelper";
 
 export type FinalFormType = "CHARGESHEET" | "CLOSURE" | "UNTRACED" | "CANCELLED";
 
@@ -127,6 +133,16 @@ function FIRFinalFormContent() {
   const [copied, setCopied] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+
+  const keyRefTableResize = useTableResize({
+    initialColWidths: { 0: 160, 1: 180, 2: 160, 3: 180 },
+  });
+  const accusedSentTableResize = useTableResize({
+    initialColWidths: { 0: 44, 1: 250, 2: 160, 3: 200, 4: 44 },
+  });
+  const accusedNotSentTableResize = useTableResize({
+    initialColWidths: { 0: 44, 1: 220, 2: 300, 3: 44 },
+  });
 
   useEffect(() => {
     const list = firService.getAllFirs();
@@ -547,13 +563,37 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           </div>
 
           {/* Key Reference Table (Directly Editable) */}
+          <TableResizeToolbar
+            hasCustomSizes={keyRefTableResize.hasCustomSizes}
+            onReset={keyRefTableResize.resetSizes}
+          />
           <table className="w-full border-collapse border border-slate-800 text-[11px] mb-4 font-sans">
             <tbody>
-              <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">
+              <tr
+                style={{
+                  height: keyRefTableResize.rowHeights[0] ? `${keyRefTableResize.rowHeights[0]}px` : undefined,
+                }}
+                className="border-b border-slate-800"
+              >
+                <td
+                  style={{
+                    width: keyRefTableResize.colWidths[0] ? `${keyRefTableResize.colWidths[0]}px` : undefined,
+                    minWidth: keyRefTableResize.colWidths[0] ? `${keyRefTableResize.colWidths[0]}px` : undefined,
+                  }}
+                  className="relative border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4"
+                >
                   FIR No. &amp; Date:
+                  <TableColResizer onResize={(e) => keyRefTableResize.startColResize(0, e)} />
+                  <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(0, e)} />
                 </td>
-                <td className="border-r border-slate-800 p-1.5 font-mono font-bold w-1/4">
+                <td
+                  style={{
+                    width: keyRefTableResize.colWidths[1] ? `${keyRefTableResize.colWidths[1]}px` : undefined,
+                    minWidth: keyRefTableResize.colWidths[1] ? `${keyRefTableResize.colWidths[1]}px` : undefined,
+                  }}
+                  className="relative border-r border-slate-800 p-1.5 font-mono font-bold w-1/4"
+                >
+                  <TableColResizer onResize={(e) => keyRefTableResize.startColResize(1, e)} />
                   <input
                     type="text"
                     value={firNumberAndDate}
@@ -562,10 +602,23 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                     placeholder="FIR/0014/2026 dt 28-03-2026"
                   />
                 </td>
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4">
+                <td
+                  style={{
+                    width: keyRefTableResize.colWidths[2] ? `${keyRefTableResize.colWidths[2]}px` : undefined,
+                    minWidth: keyRefTableResize.colWidths[2] ? `${keyRefTableResize.colWidths[2]}px` : undefined,
+                  }}
+                  className="relative border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4"
+                >
                   Report Serial No.:
+                  <TableColResizer onResize={(e) => keyRefTableResize.startColResize(2, e)} />
                 </td>
-                <td className="p-1.5 font-mono font-bold w-1/4">
+                <td
+                  style={{
+                    width: keyRefTableResize.colWidths[3] ? `${keyRefTableResize.colWidths[3]}px` : undefined,
+                    minWidth: keyRefTableResize.colWidths[3] ? `${keyRefTableResize.colWidths[3]}px` : undefined,
+                  }}
+                  className="p-1.5 font-mono font-bold w-1/4"
+                >
                   <input
                     type="text"
                     value={reportNumber}
@@ -575,9 +628,15 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   />
                 </td>
               </tr>
-              <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">
+              <tr
+                style={{
+                  height: keyRefTableResize.rowHeights[1] ? `${keyRefTableResize.rowHeights[1]}px` : undefined,
+                }}
+                className="border-b border-slate-800"
+              >
+                <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
                   Acts &amp; Sections:
+                  <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(1, e)} />
                 </td>
                 <td className="p-1.5 font-bold text-emerald-900" colSpan={3}>
                   <div className="flex items-center gap-1">
@@ -597,9 +656,15 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   </div>
                 </td>
               </tr>
-              <tr className="border-b border-slate-800">
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">
+              <tr
+                style={{
+                  height: keyRefTableResize.rowHeights[2] ? `${keyRefTableResize.rowHeights[2]}px` : undefined,
+                }}
+                className="border-b border-slate-800"
+              >
+                <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
                   Complainant / Informant:
+                  <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(2, e)} />
                 </td>
                 <td className="border-r border-slate-800 p-1.5" colSpan={2}>
                   <div className="space-y-1">
@@ -668,8 +733,15 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   </div>
                 </td>
               </tr>
-              <tr>
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Dispatch Date:</td>
+              <tr
+                style={{
+                  height: keyRefTableResize.rowHeights[3] ? `${keyRefTableResize.rowHeights[3]}px` : undefined,
+                }}
+              >
+                <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
+                  Dispatch Date:
+                  <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(3, e)} />
+                </td>
                 <td className="border-r border-slate-800 p-1.5">
                   <DatePickerDDMMYYYY
                     value={reportDate}
@@ -721,24 +793,74 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
 
             {formType === "CHARGESHEET" ? (
               <div className="space-y-2">
-                <p className="text-[11px] font-sans text-slate-600 italic">
-                  (A) Accused Persons Sent Up for Trial:
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-sans text-slate-600 italic">
+                    (A) Accused Persons Sent Up for Trial:
+                  </p>
+                </div>
+                <TableResizeToolbar
+                  hasCustomSizes={accusedSentTableResize.hasCustomSizes}
+                  onReset={accusedSentTableResize.resetSizes}
+                />
                 <table className="w-full border-collapse border border-slate-800 text-[10px] font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-800">
-                      <th className="border-r border-slate-800 p-1.5 text-center w-10">Sr.</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left w-2/5">Name &amp; Particulars</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left w-1/4">Custody / Bail Status</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left">Bail / Bond Particulars</th>
+                      <th
+                        style={{
+                          width: accusedSentTableResize.colWidths[0] ? `${accusedSentTableResize.colWidths[0]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-center w-10"
+                      >
+                        Sr.
+                        <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(0, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: accusedSentTableResize.colWidths[1] ? `${accusedSentTableResize.colWidths[1]}px` : undefined,
+                          minWidth: accusedSentTableResize.colWidths[1] ? `${accusedSentTableResize.colWidths[1]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-left w-2/5"
+                      >
+                        Name &amp; Particulars
+                        <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(1, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: accusedSentTableResize.colWidths[2] ? `${accusedSentTableResize.colWidths[2]}px` : undefined,
+                          minWidth: accusedSentTableResize.colWidths[2] ? `${accusedSentTableResize.colWidths[2]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-left w-1/4"
+                      >
+                        Custody / Bail Status
+                        <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(2, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: accusedSentTableResize.colWidths[3] ? `${accusedSentTableResize.colWidths[3]}px` : undefined,
+                          minWidth: accusedSentTableResize.colWidths[3] ? `${accusedSentTableResize.colWidths[3]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-left"
+                      >
+                        Bail / Bond Particulars
+                        <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(3, e)} />
+                      </th>
                       <th className="p-1 text-center w-10 no-print"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {accusedSentList.length > 0 ? (
                       accusedSentList.map((acc, i) => (
-                        <tr key={acc.id} className="border-b border-slate-300 hover:bg-slate-50/50">
-                          <td className="border-r border-slate-800 p-1.5 font-bold text-center">{i + 1}</td>
+                        <tr
+                          key={acc.id}
+                          style={{
+                            height: accusedSentTableResize.rowHeights[i] ? `${accusedSentTableResize.rowHeights[i]}px` : undefined,
+                          }}
+                          className="border-b border-slate-300 hover:bg-slate-50/50"
+                        >
+                          <td className="relative border-r border-slate-800 p-1.5 font-bold text-center">
+                            {i + 1}
+                            <TableRowResizer onResize={(e) => accusedSentTableResize.startRowResize(i, e)} />
+                          </td>
                           <td className="border-r border-slate-800 p-1.5 space-y-1">
                             <div className="flex items-center gap-1">
                               <input
@@ -816,22 +938,63 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-[11px] font-sans text-slate-600 italic">
-                  (B) Accused Persons Not Sent Up for Trial:
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-sans text-slate-600 italic">
+                    (B) Accused Persons Not Sent Up for Trial:
+                  </p>
+                </div>
+                <TableResizeToolbar
+                  hasCustomSizes={accusedNotSentTableResize.hasCustomSizes}
+                  onReset={accusedNotSentTableResize.resetSizes}
+                />
                 <table className="w-full border-collapse border border-slate-800 text-[10px] font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-800">
-                      <th className="border-r border-slate-800 p-1.5 text-center w-12">Sr.</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left w-1/3">Name of Suspect / Accused</th>
-                      <th className="border-r border-slate-800 p-1.5 text-left">Reasons for Not Sending for Trial</th>
+                      <th
+                        style={{
+                          width: accusedNotSentTableResize.colWidths[0] ? `${accusedNotSentTableResize.colWidths[0]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-center w-12"
+                      >
+                        Sr.
+                        <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(0, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: accusedNotSentTableResize.colWidths[1] ? `${accusedNotSentTableResize.colWidths[1]}px` : undefined,
+                          minWidth: accusedNotSentTableResize.colWidths[1] ? `${accusedNotSentTableResize.colWidths[1]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-left w-1/3"
+                      >
+                        Name of Suspect / Accused
+                        <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(1, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: accusedNotSentTableResize.colWidths[2] ? `${accusedNotSentTableResize.colWidths[2]}px` : undefined,
+                          minWidth: accusedNotSentTableResize.colWidths[2] ? `${accusedNotSentTableResize.colWidths[2]}px` : undefined,
+                        }}
+                        className="relative border-r border-slate-800 p-1.5 text-left"
+                      >
+                        Reasons for Not Sending for Trial
+                        <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(2, e)} />
+                      </th>
                       <th className="p-1 text-center w-10 no-print"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {accusedNotSentList.map((acc, i) => (
-                      <tr key={acc.id} className="border-b border-slate-300 hover:bg-slate-50/50">
-                        <td className="border-r border-slate-800 p-1.5 font-bold text-center">{i + 1}</td>
+                      <tr
+                        key={acc.id}
+                        style={{
+                          height: accusedNotSentTableResize.rowHeights[i] ? `${accusedNotSentTableResize.rowHeights[i]}px` : undefined,
+                        }}
+                        className="border-b border-slate-300 hover:bg-slate-50/50"
+                      >
+                        <td className="relative border-r border-slate-800 p-1.5 font-bold text-center">
+                          {i + 1}
+                          <TableRowResizer onResize={(e) => accusedNotSentTableResize.startRowResize(i, e)} />
+                        </td>
                         <td className="border-r border-slate-800 p-1.5">
                           <input
                             type="text"

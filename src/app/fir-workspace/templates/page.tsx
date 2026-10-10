@@ -29,6 +29,12 @@ import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import {
+  useTableResize,
+  TableColResizer,
+  TableRowResizer,
+  TableResizeToolbar,
+} from "@/components/fir-workspace/TableResizeHelper";
 
 export type FIRNoticeTemplateType =
   | "section_35_notice"
@@ -277,6 +283,13 @@ function FIRTemplatesContent() {
       reason: "सह-आरोपी के साथ संपर्क व लोकेशन मिलान हेतु",
     },
   ]);
+
+  const cdrTableResize = useTableResize({
+    initialColWidths: { 0: 48, 1: 220, 2: 110, 3: 110, 4: 260, 5: 44 },
+  });
+  const natgridTableResize = useTableResize({
+    initialColWidths: { 0: 220 },
+  });
 
   const [fontSize, setFontSize] = useState<"compact" | "standard" | "large">("standard");
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
@@ -1093,20 +1106,34 @@ function FIRTemplatesContent() {
                 </div>
 
                 <div className="overflow-x-auto border-2 border-slate-900">
+                  <TableResizeToolbar
+                    hasCustomSizes={cdrTableResize.hasCustomSizes}
+                    onReset={cdrTableResize.resetSizes}
+                  />
                   <table className="w-full border-collapse text-xs text-slate-900 font-sans">
                     <thead>
                       <tr className="bg-slate-50 border-b-2 border-slate-900">
                         <th
                           rowSpan={2}
-                          className="w-12 p-2 font-black border-r-2 border-slate-900 text-center align-middle"
+                          style={{
+                            width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
+                          }}
+                          className="relative w-12 p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
                           क्र.स.
+                          <TableColResizer onResize={(e) => cdrTableResize.startColResize(0, e)} />
                         </th>
                         <th
                           rowSpan={2}
-                          className="p-2 font-black border-r-2 border-slate-900 text-center align-middle min-w-[200px]"
+                          style={{
+                            width: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : "200px",
+                          }}
+                          className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
                           मोबाईल फोन/ आई.एम.ई.आई. / आई पी/ व्हाटसअप नम्बर जिनकी डिटेल की आवश्यकता है
+                          <TableColResizer onResize={(e) => cdrTableResize.startColResize(1, e)} />
                         </th>
                         <th
                           colSpan={2}
@@ -1116,24 +1143,54 @@ function FIRTemplatesContent() {
                         </th>
                         <th
                           rowSpan={2}
-                          className="p-2 font-black border-r-2 border-slate-900 text-center align-middle min-w-[240px]"
+                          style={{
+                            width: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : "240px",
+                          }}
+                          className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
                           अभियोग का विवरण एवं डाटा किस कारण से जरूरी है संक्षिप्त विवरण
+                          <TableColResizer onResize={(e) => cdrTableResize.startColResize(4, e)} />
                         </th>
                         <th rowSpan={2} className="w-10 p-1 font-black text-center align-middle no-print">
                           हटाएं
                         </th>
                       </tr>
                       <tr className="bg-slate-50 border-b-2 border-slate-900">
-                        <th className="w-28 p-1.5 font-black border-r-2 border-slate-900 text-center">कब से</th>
-                        <th className="w-28 p-1.5 font-black border-r-2 border-slate-900 text-center">कब तक</th>
+                        <th
+                          style={{
+                            width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
+                          }}
+                          className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
+                        >
+                          कब से
+                          <TableColResizer onResize={(e) => cdrTableResize.startColResize(2, e)} />
+                        </th>
+                        <th
+                          style={{
+                            width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
+                          }}
+                          className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
+                        >
+                          कब तक
+                          <TableColResizer onResize={(e) => cdrTableResize.startColResize(3, e)} />
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {cdrTargetRows.map((row, index) => (
-                        <tr key={row.id} className="border-b border-slate-900 hover:bg-slate-50/50">
-                          <td className="p-2 border-r-2 border-slate-900 text-center font-bold align-middle">
+                        <tr
+                          key={row.id}
+                          style={{
+                            height: cdrTableResize.rowHeights[index] ? `${cdrTableResize.rowHeights[index]}px` : undefined,
+                          }}
+                          className="border-b border-slate-900 hover:bg-slate-50/50"
+                        >
+                          <td className="relative p-2 border-r-2 border-slate-900 text-center font-bold align-middle">
                             {index + 1}
+                            <TableRowResizer onResize={(e) => cdrTableResize.startRowResize(index, e)} />
                           </td>
                           <td className="p-1 border-r-2 border-slate-900 align-middle">
                             <input
@@ -1164,12 +1221,12 @@ function FIRTemplatesContent() {
                           </td>
                           <td className="p-1 border-r-2 border-slate-900 align-middle">
                             <div className="flex items-center gap-1">
-                              <input
-                                type="text"
+                              <textarea
+                                rows={Math.max(1, Math.floor(((cdrTableResize.rowHeights[index] || 36) - 14) / 18))}
                                 value={row.reason || ""}
                                 onChange={(e) => handleUpdateCdrRow(row.id, "reason", e.target.value)}
                                 placeholder="अभियोग का संक्षिप्त विवरण व डाटा का कारण"
-                                className="w-full text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none"
+                                className="w-full text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none resize-y"
                               />
                               <VoiceInputButton
                                 onTranscript={(t) => handleUpdateCdrRow(row.id, "reason", (row.reason ? row.reason + " " : "") + t)}
@@ -1300,13 +1357,30 @@ function FIRTemplatesContent() {
               </div>
 
               {/* Official 12-Row Bordered Table */}
+              <TableResizeToolbar
+                hasCustomSizes={natgridTableResize.hasCustomSizes}
+                onReset={natgridTableResize.resetSizes}
+              />
               <div className="border-[1.5px] border-slate-950 rounded-none overflow-hidden">
                 <table className="w-full border-collapse text-xs sm:text-[13px] text-slate-950">
                   <tbody>
                     {/* Row 1: Name of Incharge Unit/SHO */}
-                    <tr className="border-b border-slate-950">
-                      <td className="w-[28%] p-2 font-medium border-r border-slate-950 align-top leading-tight">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[0] ? `${natgridTableResize.rowHeights[0]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td
+                        style={{
+                          width: natgridTableResize.colWidths[0] ? `${natgridTableResize.colWidths[0]}px` : undefined,
+                          minWidth: natgridTableResize.colWidths[0] ? `${natgridTableResize.colWidths[0]}px` : undefined,
+                        }}
+                        className="relative w-[28%] p-2 font-medium border-r border-slate-950 align-top leading-tight"
+                      >
                         Name of Incharge<br />Unit/SHO (with<br />Rank)
+                        <TableColResizer onResize={(e) => natgridTableResize.startColResize(0, e)} />
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(0, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
                         <input
@@ -1320,8 +1394,16 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 2: Mobile No. */}
-                    <tr className="border-b border-slate-950">
-                      <td className="p-2 font-medium border-r border-slate-950 align-top">Mobile No.</td>
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[1] ? `${natgridTableResize.rowHeights[1]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td className="relative p-2 font-medium border-r border-slate-950 align-top">
+                        Mobile No.
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(1, e)} />
+                      </td>
                       <td colSpan={3} className="p-2 align-top">
                         <input
                           type="text"
@@ -1334,8 +1416,16 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 3: Govt. Email ID */}
-                    <tr className="border-b border-slate-950">
-                      <td className="p-2 font-medium border-r border-slate-950 align-top">Govt. Email ID</td>
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[2] ? `${natgridTableResize.rowHeights[2]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td className="relative p-2 font-medium border-r border-slate-950 align-top">
+                        Govt. Email ID
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(2, e)} />
+                      </td>
                       <td colSpan={3} className="p-2 align-top">
                         <input
                           type="text"
@@ -1348,8 +1438,14 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 4: FIR No. | Date :- | P.S. | District */}
-                    <tr className="border-b border-slate-950">
-                      <td className="w-[28%] p-2 border-r border-slate-950 align-top">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[3] ? `${natgridTableResize.rowHeights[3]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td className="relative w-[28%] p-2 border-r border-slate-950 align-top">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(3, e)} />
                         <div className="flex items-center gap-1 font-bold">
                           <span className="whitespace-nowrap">FIR No.</span>
                           <input
@@ -1400,8 +1496,14 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 5: Offence U/s */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[4] ? `${natgridTableResize.rowHeights[4]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(4, e)} />
                         <div className="flex items-center gap-1 font-bold">
                           <span className="whitespace-nowrap">Offence U/s</span>
                           <input
@@ -1416,22 +1518,34 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 6: Brief summary of case */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top space-y-1">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[5] ? `${natgridTableResize.rowHeights[5]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top space-y-1">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(5, e)} />
                         <div className="font-bold text-slate-950">Brief summary of case :- &ldquo;&rdquo;</div>
                         <textarea
                           rows={3}
                           value={formData.allegationsBrief || ""}
                           onChange={(e) => handleFieldChange("allegationsBrief", e.target.value)}
                           placeholder="Organized financial fraud and inter-state syndicate cheating victims..."
-                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed"
+                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
                         />
                       </td>
                     </tr>
 
                     {/* Row 7: Name/Rank of I.O. with Mobile No */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[6] ? `${natgridTableResize.rowHeights[6]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(6, e)} />
                         <div className="flex flex-wrap items-center gap-1 font-bold text-slate-950">
                           <span className="whitespace-nowrap">Name/Rank of I.O. with Mobile No :-</span>
                           <input
@@ -1462,8 +1576,14 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 8: For what reason/purpose this case is related to */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={3} className="p-2.5 border-r border-slate-950 align-middle">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[7] ? `${natgridTableResize.rowHeights[7]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={3} className="relative p-2.5 border-r border-slate-950 align-middle">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(7, e)} />
                         <div className="font-medium text-slate-950 mb-1">
                           For what reason/purpose this case is related to
                         </div>
@@ -1504,8 +1624,14 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 9: Explain along with a Valid Reason */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[8] ? `${natgridTableResize.rowHeights[8]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(8, e)} />
                         <div className="flex items-center gap-1 font-bold text-slate-950">
                           <span className="whitespace-nowrap">Explain along with a Valid Reason :-</span>
                           <input
@@ -1520,8 +1646,14 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 10: Name of Department from which Information is required */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[9] ? `${natgridTableResize.rowHeights[9]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(9, e)} />
                         <div className="flex items-center gap-1 font-bold text-slate-950">
                           <span className="whitespace-nowrap">
                             Name of Department from which Information is required:-
@@ -1538,22 +1670,33 @@ function FIRTemplatesContent() {
                     </tr>
 
                     {/* Row 11: What type of information is required? */}
-                    <tr className="border-b border-slate-950">
-                      <td colSpan={4} className="p-2 align-top space-y-1">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[10] ? `${natgridTableResize.rowHeights[10]}px` : undefined,
+                      }}
+                      className="border-b border-slate-950"
+                    >
+                      <td colSpan={4} className="relative p-2 align-top space-y-1">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(10, e)} />
                         <div className="font-bold text-slate-950">What type of information is required?</div>
                         <textarea
                           rows={2}
                           value={formData.natgridInfoRequired || ""}
                           onChange={(e) => handleFieldChange("natgridInfoRequired", e.target.value)}
                           placeholder="All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections..."
-                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed"
+                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
                         />
                       </td>
                     </tr>
 
                     {/* Row 12: Information available at your end */}
-                    <tr>
-                      <td colSpan={4} className="p-2.5 align-top space-y-1.5 text-slate-950">
+                    <tr
+                      style={{
+                        height: natgridTableResize.rowHeights[11] ? `${natgridTableResize.rowHeights[11]}px` : undefined,
+                      }}
+                    >
+                      <td colSpan={4} className="relative p-2.5 align-top space-y-1.5 text-slate-950">
+                        <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(11, e)} />
                         <div className="font-bold text-slate-950">Information available at your end:-</div>
 
                         <div className="flex items-center gap-1 font-medium">

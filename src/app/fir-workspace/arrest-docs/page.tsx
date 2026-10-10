@@ -27,6 +27,12 @@ import { FIRItem, NoticeFormData } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import {
+  useTableResize,
+  TableColResizer,
+  TableRowResizer,
+  TableResizeToolbar,
+} from "@/components/fir-workspace/TableResizeHelper";
 
 export type ArrestDocTemplateType =
   | "arrest_memo"
@@ -600,6 +606,19 @@ function ArrestDocsContent() {
   const [fontSize, setFontSize] = useState<"compact" | "standard" | "large">("standard");
   const [copied, setCopied] = useState(false);
 
+  const witnessTableResize = useTableResize({
+    initialColWidths: { 0: 44, 1: 220, 2: 240, 3: 150, 4: 44 },
+  });
+  const jamaTalashiTableResize = useTableResize({
+    initialColWidths: { 0: 44, 1: 300, 2: 120, 3: 180, 4: 44 },
+  });
+  const recoveryTableResize = useTableResize({
+    initialColWidths: { 0: 44, 1: 280, 2: 100, 3: 180, 4: 44 },
+  });
+  const traitsTableResize = useTableResize({
+    initialColWidths: { 0: 240, 1: 300 },
+  });
+
   // Load all FIRs
   useEffect(() => {
     const list = firService.getAllFirs();
@@ -977,20 +996,64 @@ function ArrestDocsContent() {
         </button>
       </div>
 
+      <TableResizeToolbar
+        hasCustomSizes={witnessTableResize.hasCustomSizes}
+        onReset={witnessTableResize.resetSizes}
+      />
       <table className="w-full border-collapse border border-slate-400 text-xs">
         <thead>
           <tr className="bg-slate-100">
-            <th className="border border-slate-400 p-1.5 w-10 text-center">क्र0</th>
-            <th className="border border-slate-400 p-1.5 text-left">गवाह का नाम व वल्दियत</th>
-            <th className="border border-slate-400 p-1.5 text-left">पूरा पता व मोबाइल</th>
-            <th className="border border-slate-400 p-1.5 w-36 text-center">हस्ताक्षर/निशान अंगूठा</th>
+            <th
+              style={{
+                width: witnessTableResize.colWidths[0] ? `${witnessTableResize.colWidths[0]}px` : undefined,
+              }}
+              className="relative border border-slate-400 p-1.5 w-10 text-center"
+            >
+              क्र0
+              <TableColResizer onResize={(e) => witnessTableResize.startColResize(0, e)} />
+            </th>
+            <th
+              style={{
+                width: witnessTableResize.colWidths[1] ? `${witnessTableResize.colWidths[1]}px` : undefined,
+              }}
+              className="relative border border-slate-400 p-1.5 text-left"
+            >
+              गवाह का नाम व वल्दियत
+              <TableColResizer onResize={(e) => witnessTableResize.startColResize(1, e)} />
+            </th>
+            <th
+              style={{
+                width: witnessTableResize.colWidths[2] ? `${witnessTableResize.colWidths[2]}px` : undefined,
+              }}
+              className="relative border border-slate-400 p-1.5 text-left"
+            >
+              पूरा पता व मोबाइल
+              <TableColResizer onResize={(e) => witnessTableResize.startColResize(2, e)} />
+            </th>
+            <th
+              style={{
+                width: witnessTableResize.colWidths[3] ? `${witnessTableResize.colWidths[3]}px` : undefined,
+              }}
+              className="relative border border-slate-400 p-1.5 w-36 text-center"
+            >
+              हस्ताक्षर/निशान अंगूठा
+              <TableColResizer onResize={(e) => witnessTableResize.startColResize(3, e)} />
+            </th>
             <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
           </tr>
         </thead>
         <tbody>
           {(formData.arrestWitnesses || []).map((w, idx) => (
-            <tr key={w.id}>
-              <td className="border border-slate-400 p-1.5 text-center">{idx + 1}</td>
+            <tr
+              key={w.id}
+              style={{
+                height: witnessTableResize.rowHeights[idx] ? `${witnessTableResize.rowHeights[idx]}px` : undefined,
+              }}
+            >
+              <td className="relative border border-slate-400 p-1.5 text-center">
+                {idx + 1}
+                <TableRowResizer onResize={(e) => witnessTableResize.startRowResize(idx, e)} />
+              </td>
               <td className="border border-slate-400 p-1.5">
                 <input
                   type="text"
@@ -1629,20 +1692,64 @@ function ArrestDocsContent() {
                     <Plus className="w-3.5 h-3.5" /> सामान जोड़ें
                   </button>
                 </div>
+                <TableResizeToolbar
+                  hasCustomSizes={jamaTalashiTableResize.hasCustomSizes}
+                  onReset={jamaTalashiTableResize.resetSizes}
+                />
                 <table className="w-full border-collapse border border-slate-400 text-xs">
                   <thead>
                     <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-2 w-12 text-center font-bold">क्र0 सं0</th>
-                      <th className="border border-slate-400 p-2 text-left font-bold">विवरण सामान / नकदी / दस्तावेज</th>
-                      <th className="border border-slate-400 p-2 w-28 text-center font-bold">तादाद / रकम</th>
-                      <th className="border border-slate-400 p-2 w-36 text-left font-bold">पहचान / विशेष चिन्ह</th>
+                      <th
+                        style={{
+                          width: jamaTalashiTableResize.colWidths[0] ? `${jamaTalashiTableResize.colWidths[0]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-12 text-center font-bold"
+                      >
+                        क्र0 सं0
+                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(0, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: jamaTalashiTableResize.colWidths[1] ? `${jamaTalashiTableResize.colWidths[1]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 text-left font-bold"
+                      >
+                        विवरण सामान / नकदी / दस्तावेज
+                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(1, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: jamaTalashiTableResize.colWidths[2] ? `${jamaTalashiTableResize.colWidths[2]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-28 text-center font-bold"
+                      >
+                        तादाद / रकम
+                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(2, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: jamaTalashiTableResize.colWidths[3] ? `${jamaTalashiTableResize.colWidths[3]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-36 text-left font-bold"
+                      >
+                        पहचान / विशेष चिन्ह
+                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(3, e)} />
+                      </th>
                       <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {(formData.jamaTalashiItems || []).map((it, idx) => (
-                      <tr key={it.id}>
-                        <td className="border border-slate-400 p-2 text-center">{idx + 1}</td>
+                      <tr
+                        key={it.id}
+                        style={{
+                          height: jamaTalashiTableResize.rowHeights[idx] ? `${jamaTalashiTableResize.rowHeights[idx]}px` : undefined,
+                        }}
+                      >
+                        <td className="relative border border-slate-400 p-2 text-center">
+                          {idx + 1}
+                          <TableRowResizer onResize={(e) => jamaTalashiTableResize.startRowResize(idx, e)} />
+                        </td>
                         <td className="border border-slate-400 p-2">
                           <input
                             type="text"
@@ -1878,20 +1985,64 @@ function ArrestDocsContent() {
                     <Plus className="w-3.5 h-3.5" /> बरामदगी जोड़ें
                   </button>
                 </div>
+                <TableResizeToolbar
+                  hasCustomSizes={recoveryTableResize.hasCustomSizes}
+                  onReset={recoveryTableResize.resetSizes}
+                />
                 <table className="w-full border-collapse border border-slate-400 text-xs">
                   <thead>
                     <tr className="bg-slate-100">
-                      <th className="border border-slate-400 p-2 w-12 text-center font-bold">क्र0 सं0</th>
-                      <th className="border border-slate-400 p-2 text-left font-bold">बरामद सामान/नकदी का विवरण</th>
-                      <th className="border border-slate-400 p-2 w-28 text-center font-bold">तादाद / संख्या</th>
-                      <th className="border border-slate-400 p-2 w-44 text-left font-bold">मोहर व सीलबंद पार्सल</th>
+                      <th
+                        style={{
+                          width: recoveryTableResize.colWidths[0] ? `${recoveryTableResize.colWidths[0]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-12 text-center font-bold"
+                      >
+                        क्र0 सं0
+                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(0, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: recoveryTableResize.colWidths[1] ? `${recoveryTableResize.colWidths[1]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 text-left font-bold"
+                      >
+                        बरामद सामान/नकदी का विवरण
+                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(1, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: recoveryTableResize.colWidths[2] ? `${recoveryTableResize.colWidths[2]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-28 text-center font-bold"
+                      >
+                        तादाद / संख्या
+                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(2, e)} />
+                      </th>
+                      <th
+                        style={{
+                          width: recoveryTableResize.colWidths[3] ? `${recoveryTableResize.colWidths[3]}px` : undefined,
+                        }}
+                        className="relative border border-slate-400 p-2 w-44 text-left font-bold"
+                      >
+                        मोहर व सीलबंद पार्सल
+                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(3, e)} />
+                      </th>
                       <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {(formData.recoveryItems || []).map((it, idx) => (
-                      <tr key={it.id}>
-                        <td className="border border-slate-400 p-2 text-center">{idx + 1}</td>
+                      <tr
+                        key={it.id}
+                        style={{
+                          height: recoveryTableResize.rowHeights[idx] ? `${recoveryTableResize.rowHeights[idx]}px` : undefined,
+                        }}
+                      >
+                        <td className="relative border border-slate-400 p-2 text-center">
+                          {idx + 1}
+                          <TableRowResizer onResize={(e) => recoveryTableResize.startRowResize(idx, e)} />
+                        </td>
                         <td className="border border-slate-400 p-2">
                           <input
                             type="text"
