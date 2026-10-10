@@ -337,6 +337,16 @@ function RegisterFIRForm() {
     return () => window.removeEventListener("cms-dropdowns-updated", refreshDropdowns);
   }, []);
 
+  // Track fields that were auto-filled to highlight them distinctly in green
+  const [autoFilledFields, setAutoFilledFields] = useState<Record<string, boolean>>({});
+
+  const getFieldHighlightClass = (fieldName: string) => {
+    if (autoFilledFields[fieldName]) {
+      return "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100 transition-all";
+    }
+    return "";
+  };
+
   // TAB 2: Occurrence
   const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>([]);
 
@@ -552,6 +562,25 @@ function RegisterFIRForm() {
                 isForestPlace: false,
               },
             ]);
+
+            setAutoFilledFields({
+              complaintNumber: true,
+              sourceOfComplaint: true,
+              complainantFirstName: Boolean(names[0]),
+              complainantLastName: Boolean(names.slice(1).join(" ")),
+              complainantRelativeName: Boolean(c.complainantFatherSpouse || c.complainantRelativeName),
+              complainantGender: true,
+              complainantAge: Boolean(c.complainantAge),
+              complainantMobile: Boolean(c.complainantMobile),
+              permHouseNo: Boolean(c.complainantAddress),
+              permCity: true,
+              permDistrict: true,
+              firContentText: Boolean(c.incidentDetails),
+              briefFacts: Boolean(c.incidentDetails),
+              actsAndSections: true,
+              occurrence: true,
+              ...(Boolean((c as any).gdEntryNumber) ? { gdEntryNumber: true } : {}),
+            });
           }
         })
         .catch((e) => console.warn("Prefill error:", e));
@@ -630,30 +659,32 @@ function RegisterFIRForm() {
     const data = record.processedData;
     if (!data) return;
 
-    if (data.state) setState(data.state);
-    if (data.district) setDistrict(data.district);
-    if (data.policeStation) setPoliceStation(data.policeStation);
+    const newlyFilled: Record<string, boolean> = {};
 
-    if (data.gdEntryNumber) setGdEntryNumber(data.gdEntryNumber);
-    if (data.gdDate) setGdDate(data.gdDate);
-    if (data.gdTime) setGdTime(data.gdTime);
-    if (data.sourceOfComplaint) setSourceOfComplaint(data.sourceOfComplaint);
-    if (data.complaintNumber) setComplaintNumber(data.complaintNumber);
+    if (data.state) { setState(data.state); newlyFilled.state = true; }
+    if (data.district) { setDistrict(data.district); newlyFilled.district = true; }
+    if (data.policeStation) { setPoliceStation(data.policeStation); newlyFilled.policeStation = true; }
+
+    if (data.gdEntryNumber) { setGdEntryNumber(data.gdEntryNumber); newlyFilled.gdEntryNumber = true; }
+    if (data.gdDate) { setGdDate(data.gdDate); newlyFilled.gdDate = true; }
+    if (data.gdTime) { setGdTime(data.gdTime); newlyFilled.gdTime = true; }
+    if (data.sourceOfComplaint) { setSourceOfComplaint(data.sourceOfComplaint); newlyFilled.sourceOfComplaint = true; }
+    if (data.complaintNumber) { setComplaintNumber(data.complaintNumber); newlyFilled.complaintNumber = true; }
 
     // Complainant
     if (data.complainant) {
-      if (data.complainant.firstName) setComplainantFirstName(data.complainant.firstName);
-      if (data.complainant.middleName) setComplainantMiddleName(data.complainant.middleName);
-      if (data.complainant.lastName) setComplainantLastName(data.complainant.lastName);
-      if (data.complainant.fatherOrSpouse) setComplainantRelativeName(data.complainant.fatherOrSpouse);
-      if (data.complainant.relationType) setComplainantRelationType(data.complainant.relationType);
-      if (data.complainant.mobile) setComplainantMobile(data.complainant.mobile);
-      if (data.complainant.gender) setComplainantGender(data.complainant.gender);
-      if (data.complainant.age) setComplainantAge(data.complainant.age);
-      if (data.complainant.houseNo) setPermHouseNo(data.complainant.houseNo);
-      if (data.complainant.city) setPermCity(data.complainant.city);
-      if (data.complainant.district) setPermDistrict(data.complainant.district);
-      if (data.complainant.state) setPermState(data.complainant.state);
+      if (data.complainant.firstName) { setComplainantFirstName(data.complainant.firstName); newlyFilled.complainantFirstName = true; }
+      if (data.complainant.middleName) { setComplainantMiddleName(data.complainant.middleName); newlyFilled.complainantMiddleName = true; }
+      if (data.complainant.lastName) { setComplainantLastName(data.complainant.lastName); newlyFilled.complainantLastName = true; }
+      if (data.complainant.fatherOrSpouse) { setComplainantRelativeName(data.complainant.fatherOrSpouse); newlyFilled.complainantRelativeName = true; }
+      if (data.complainant.relationType) { setComplainantRelationType(data.complainant.relationType); newlyFilled.complainantRelationType = true; }
+      if (data.complainant.mobile) { setComplainantMobile(data.complainant.mobile); newlyFilled.complainantMobile = true; }
+      if (data.complainant.gender) { setComplainantGender(data.complainant.gender); newlyFilled.complainantGender = true; }
+      if (data.complainant.age) { setComplainantAge(data.complainant.age); newlyFilled.complainantAge = true; }
+      if (data.complainant.houseNo) { setPermHouseNo(data.complainant.houseNo); newlyFilled.permHouseNo = true; }
+      if (data.complainant.city) { setPermCity(data.complainant.city); newlyFilled.permCity = true; }
+      if (data.complainant.district) { setPermDistrict(data.complainant.district); newlyFilled.permDistrict = true; }
+      if (data.complainant.state) { setPermState(data.complainant.state); newlyFilled.permState = true; }
     }
 
     // Incident / Occurrence
@@ -674,6 +705,7 @@ function RegisterFIRForm() {
         landmark: data.occurrence.landmark,
       };
       setOccurrencesList([occItem]);
+      newlyFilled.occurrence = true;
     }
 
     // Accused
@@ -693,11 +725,12 @@ function RegisterFIRForm() {
       }));
       setAccusedList(formattedAccused);
       setIsAccusedKnown(data.accusedList.some((a) => a.isIdentified));
+      newlyFilled.accused = true;
     }
 
     // FIR Content & Facts
-    if (data.firContentText) setFirContentText(data.firContentText);
-    if (data.briefFacts) setBriefFacts(data.briefFacts);
+    if (data.firContentText) { setFirContentText(data.firContentText); newlyFilled.firContentText = true; }
+    if (data.briefFacts) { setBriefFacts(data.briefFacts); newlyFilled.briefFacts = true; }
 
     // Acts & Sections
     if (data.actsAndSections && data.actsAndSections.length > 0) {
@@ -707,11 +740,14 @@ function RegisterFIRForm() {
         sections: item.sections,
       }));
       setActsAndSectionsList(formattedActs);
+      newlyFilled.actsAndSections = true;
     }
 
     // Major / Minor Head
-    if (data.majorHead) setCurrentMajorHead(data.majorHead);
-    if (data.minorHead) setCurrentMinorHead(data.minorHead);
+    if (data.majorHead) { setCurrentMajorHead(data.majorHead); newlyFilled.majorHead = true; }
+    if (data.minorHead) { setCurrentMinorHead(data.minorHead); newlyFilled.minorHead = true; }
+
+    setAutoFilledFields((prev) => ({ ...prev, ...newlyFilled }));
 
     setSaveDraftFeedback(
       `Document "${record.rawDocument.fileName}" processed & FIR Form auto-filled successfully! (Database Record Linked)`
@@ -728,6 +764,7 @@ function RegisterFIRForm() {
       variant: "danger",
       confirmLabel: "Yes, Clear All Fields",
       onConfirm: () => {
+        setAutoFilledFields({});
         setActsAndSectionsList([]);
         setMajorMinorHeadsList([]);
         setOccurrencesList([]);
@@ -1390,7 +1427,7 @@ function RegisterFIRForm() {
             <select
               value={state}
               onChange={(e) => handleStateChange(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              className={`w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${getFieldHighlightClass("state")}`}
             >
               {availableStates.map((st: string) => (
                 <option key={st} value={st}>
@@ -1404,7 +1441,7 @@ function RegisterFIRForm() {
             <select
               value={district}
               onChange={(e) => handleDistrictChange(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              className={`w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${getFieldHighlightClass("district")}`}
             >
               {district && !availableDistricts.includes(district) && (
                 <option value={district}>{district}</option>
@@ -1421,7 +1458,7 @@ function RegisterFIRForm() {
             <select
               value={policeStation}
               onChange={(e) => handlePoliceStationChange(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-semibold text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+              className={`w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-semibold text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer ${getFieldHighlightClass("policeStation")}`}
             >
               {policeStation && !availablePoliceStations.includes(policeStation) && (
                 <option value={policeStation}>{policeStation}</option>
@@ -1536,7 +1573,7 @@ function RegisterFIRForm() {
                       placeholder="e.g. GD-0042/28-03-2026"
                       value={gdEntryNumber}
                       onChange={(e) => setGdEntryNumber(e.target.value)}
-                      className="flex-1 p-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-1 focus:ring-blue-600"
+                      className={`flex-1 p-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-1 focus:ring-blue-600 ${getFieldHighlightClass("gdEntryNumber")}`}
                       required
                     />
                     <Button
@@ -1560,13 +1597,14 @@ function RegisterFIRForm() {
                         onChange={(e) => setGdDate(e.target.value)}
                         placeholder="DD/MM/YYYY"
                         size="sm"
+                        className={getFieldHighlightClass("gdDate")}
                       />
                     </div>
                     <input
                       type="time"
                       value={gdTime}
                       onChange={(e) => setGdTime(e.target.value)}
-                      className="w-1/2 p-2 rounded-lg border border-slate-300 font-mono text-xs"
+                      className={`w-1/2 p-2 rounded-lg border border-slate-300 font-mono text-xs ${getFieldHighlightClass("gdTime")}`}
                     />
                   </div>
                 </div>
@@ -1576,7 +1614,7 @@ function RegisterFIRForm() {
                   <select
                     value={sourceOfComplaint}
                     onChange={(e) => setSourceOfComplaint(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                    className={`w-full p-2 rounded-lg border border-slate-300 text-xs ${getFieldHighlightClass("sourceOfComplaint")}`}
                   >
                     {sourceOfComplaintList.map((source) => (
                       <option key={source} value={source}>
@@ -1601,7 +1639,7 @@ function RegisterFIRForm() {
                     placeholder="e.g. COMP/2026/00142"
                     value={complaintNumber}
                     onChange={(e) => setComplaintNumber(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 font-mono text-xs"
+                    className={`w-full p-2 rounded-lg border border-slate-300 font-mono text-xs ${getFieldHighlightClass("complaintNumber")}`}
                   />
                 </div>
 
@@ -1687,7 +1725,7 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card className="border-slate-200 overflow-visible relative z-30">
+            <Card className={`border-slate-200 overflow-visible relative z-30 ${autoFilledFields.actsAndSections ? "!border-emerald-500 ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
@@ -2123,7 +2161,7 @@ function RegisterFIRForm() {
                         setCurrentMajorHead(e.target.value);
                         setCurrentMinorHead(MINOR_HEADS[e.target.value]?.[0] || "");
                       }}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium"
+                      className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium ${getFieldHighlightClass("majorHead")}`}
                     >
                       {majorHeadsOptions.map((mh) => (
                         <option key={mh} value={mh}>
@@ -2137,7 +2175,7 @@ function RegisterFIRForm() {
                     <select
                       value={currentMinorHead}
                       onChange={(e) => setCurrentMinorHead(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium"
+                      className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-medium ${getFieldHighlightClass("minorHead")}`}
                     >
                       {(MINOR_HEADS[currentMajorHead] || []).map((min) => (
                         <option key={min} value={min}>
@@ -2205,7 +2243,7 @@ function RegisterFIRForm() {
         {/* TAB 2: OCCURRENCE (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "occurrence" && (
-          <div className="space-y-5 animate-in fade-in-30">
+          <div className={`space-y-5 animate-in fade-in-30 ${autoFilledFields.occurrence ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
             <InlineOccurrenceSection
               occurrencesList={occurrencesList}
               onAddOccurrence={handleAddOccurrence}
@@ -2279,7 +2317,7 @@ function RegisterFIRForm() {
                         placeholder="Complainant First Name"
                         value={complainantFirstName}
                         onChange={(e) => setComplainantFirstName(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 font-semibold"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-semibold ${getFieldHighlightClass("complainantFirstName")}`}
                         required
                       />
                       {errors.complainant && (
@@ -2301,7 +2339,7 @@ function RegisterFIRForm() {
                         placeholder="Middle Name"
                         value={complainantMiddleName}
                         onChange={(e) => setComplainantMiddleName(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 ${getFieldHighlightClass("complainantMiddleName")}`}
                       />
                     </div>
                     <div>
@@ -2319,7 +2357,7 @@ function RegisterFIRForm() {
                         placeholder="Last Name"
                         value={complainantLastName}
                         onChange={(e) => setComplainantLastName(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 font-semibold"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-semibold ${getFieldHighlightClass("complainantLastName")}`}
                       />
                     </div>
 
@@ -2330,7 +2368,7 @@ function RegisterFIRForm() {
                       <select
                         value={complainantGender}
                         onChange={(e) => setComplainantGender(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 font-medium"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-medium ${getFieldHighlightClass("complainantGender")}`}
                       >
                         {GENDER_OPTIONS.map((g) => (
                           <option key={g} value={g}>
@@ -2380,7 +2418,7 @@ function RegisterFIRForm() {
                         placeholder="10-digit mobile number"
                         value={complainantMobile}
                         onChange={(e) => setComplainantMobile(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300 font-mono"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-mono ${getFieldHighlightClass("complainantMobile")}`}
                         required
                       />
                       {errors.complainantMobile && (
@@ -2393,7 +2431,7 @@ function RegisterFIRForm() {
                       <select
                         value={complainantRelationType}
                         onChange={(e) => setComplainantRelationType(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 ${getFieldHighlightClass("complainantRelationType")}`}
                       >
                         {RELATION_TYPE_OPTIONS.map((rt) => (
                           <option key={rt} value={rt}>
@@ -2418,7 +2456,7 @@ function RegisterFIRForm() {
                         placeholder="Father's or Husband's Full Name"
                         value={complainantRelativeName}
                         onChange={(e) => setComplainantRelativeName(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 ${getFieldHighlightClass("complainantRelativeName")}`}
                       />
                     </div>
                   </div>
@@ -2488,7 +2526,7 @@ function RegisterFIRForm() {
                           placeholder="e.g. 35"
                           value={complainantAge}
                           onChange={(e) => setComplainantAge(e.target.value)}
-                          className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs"
+                          className={`w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs ${getFieldHighlightClass("complainantAge")}`}
                         />
                       </div>
                       <div>
@@ -2623,7 +2661,7 @@ function RegisterFIRForm() {
                           placeholder="House No."
                           value={permHouseNo}
                           onChange={(e) => setPermHouseNo(e.target.value)}
-                          className="w-full p-2 rounded border border-slate-300"
+                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permHouseNo")}`}
                         />
                       </div>
                       <div>
@@ -2676,7 +2714,7 @@ function RegisterFIRForm() {
                           type="text"
                           value={permCity}
                           onChange={(e) => setPermCity(e.target.value)}
-                          className="w-full p-2 rounded border border-slate-300"
+                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permCity")}`}
                           required
                         />
                       </div>
@@ -2728,7 +2766,7 @@ function RegisterFIRForm() {
                           type="text"
                           value={permDistrict}
                           onChange={(e) => setPermDistrict(e.target.value)}
-                          className="w-full p-2 rounded border border-slate-300"
+                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permDistrict")}`}
                         />
                       </div>
                       <div>
@@ -2745,7 +2783,7 @@ function RegisterFIRForm() {
                           type="text"
                           value={permState}
                           onChange={(e) => setPermState(e.target.value)}
-                          className="w-full p-2 rounded border border-slate-300"
+                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permState")}`}
                         />
                       </div>
                       <div>
@@ -3082,7 +3120,7 @@ function RegisterFIRForm() {
                     placeholder="Enter verbatim complaint statement / written complaint contents as received from complainant. FIR content is statutory and mandatory u/s 173 BNSS."
                     value={firContentText}
                     onChange={(val) => setFirContentText(val)}
-                    inputClassName="font-serif leading-relaxed text-xs focus:ring-2 focus:ring-blue-500"
+                    inputClassName={`font-serif leading-relaxed text-xs focus:ring-2 focus:ring-blue-500 ${getFieldHighlightClass("firContentText")}`}
                     required
                   />
                   {errors.fir_content && (
@@ -3118,7 +3156,7 @@ function RegisterFIRForm() {
                     placeholder="Short summary of facts for investigation assignment and monitoring"
                     value={briefFacts}
                     onChange={(val) => setBriefFacts(val)}
-                    inputClassName="text-xs"
+                    inputClassName={`text-xs ${getFieldHighlightClass("briefFacts")}`}
                   />
                 </div>
 
@@ -3488,7 +3526,7 @@ function RegisterFIRForm() {
         {/* TAB 7: ACCUSED (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "accused" && (
-          <div className="space-y-4 animate-in fade-in-30">
+          <div className={`space-y-4 animate-in fade-in-30 ${autoFilledFields.accused ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
             <InlineAccusedSection
               accusedList={accusedList}
               isAccusedKnown={isAccusedKnown}
