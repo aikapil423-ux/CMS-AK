@@ -70,6 +70,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 
@@ -1350,14 +1351,22 @@ function RegisterFIRForm() {
                     <label className="font-bold text-slate-700 block">
                       GD / SD / DD Number <span className="text-red-600">*</span>
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowGDLookupDialog(true)}
-                      className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                    >
-                      <Search className="w-3 h-3" />
-                      Lookup GD
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <VoiceInputButton
+                        onTranscript={(t) => setGdEntryNumber(t)}
+                        currentValue={gdEntryNumber}
+                        fieldLabel="GD Number"
+                        iconOnly={true}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGDLookupDialog(true)}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <Search className="w-3 h-3" />
+                        Lookup GD
+                      </button>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -1416,7 +1425,15 @@ function RegisterFIRForm() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Complaint / Docket No.</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">Complaint / Docket No.</label>
+                    <VoiceInputButton
+                      onTranscript={(t) => setComplaintNumber(t)}
+                      currentValue={complaintNumber}
+                      fieldLabel="Complaint Docket No"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     placeholder="e.g. COMP/2026/00142"
@@ -1487,7 +1504,15 @@ function RegisterFIRForm() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="font-bold text-slate-700 block mb-1">Remarks</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">Remarks</label>
+                    <VoiceInputButton
+                      onTranscript={(t) => setActRemarks((prev) => (prev ? prev + " " + t : t))}
+                      currentValue={actRemarks}
+                      fieldLabel="GD Remarks"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     placeholder="GD reference or administrative remarks"
@@ -2076,9 +2101,17 @@ function RegisterFIRForm() {
                 <CardContent className="p-4 space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">
-                        First Name <span className="text-red-600">*</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">
+                          First Name <span className="text-red-600">*</span>
+                        </label>
+                        <VoiceInputButton
+                          onTranscript={(t) => setComplainantFirstName(t)}
+                          currentValue={complainantFirstName}
+                          fieldLabel="Complainant First Name"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="Complainant First Name"
@@ -2092,7 +2125,15 @@ function RegisterFIRForm() {
                       )}
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Middle Name</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Middle Name</label>
+                        <VoiceInputButton
+                          onTranscript={(t) => setComplainantMiddleName(t)}
+                          currentValue={complainantMiddleName}
+                          fieldLabel="Complainant Middle Name"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="Middle Name"
@@ -2102,7 +2143,15 @@ function RegisterFIRForm() {
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Last Name</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Last Name</label>
+                        <VoiceInputButton
+                          onTranscript={(t) => setComplainantLastName(t)}
+                          currentValue={complainantLastName}
+                          fieldLabel="Complainant Last Name"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="Last Name"
@@ -2193,7 +2242,15 @@ function RegisterFIRForm() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="font-bold text-slate-700 block mb-1">Relative Name</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Relative Name</label>
+                        <VoiceInputButton
+                          onTranscript={(t) => setComplainantRelativeName(t)}
+                          currentValue={complainantRelativeName}
+                          fieldLabel="Relative Name"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="Father's or Husband's Full Name"
@@ -2304,9 +2361,17 @@ function RegisterFIRForm() {
 
                   {/* Aliases Table */}
                   <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-                    <span className="font-bold text-slate-800 uppercase text-[11px]">
-                      Aliases / Nicknames (उपनाम)
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 uppercase text-[11px]">
+                        Aliases / Nicknames (उपनाम)
+                      </span>
+                      <VoiceInputButton
+                        onTranscript={(t) => setTempAlias(t)}
+                        currentValue={tempAlias}
+                        fieldLabel="Alias / Nickname"
+                        iconOnly={true}
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -2382,7 +2447,15 @@ function RegisterFIRForm() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">House / Flat No.</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">House / Flat No.</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermHouseNo(t)}
+                            currentValue={permHouseNo}
+                            fieldLabel="House No"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="House No."
@@ -2392,7 +2465,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">Street / Gali</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">Street / Gali</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermStreet(t)}
+                            currentValue={permStreet}
+                            fieldLabel="Street"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="Street Name"
@@ -2402,7 +2483,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">Colony / Area</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">Colony / Area</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermColony(t)}
+                            currentValue={permColony}
+                            fieldLabel="Colony / Sector"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="Colony / Sector"
@@ -2412,7 +2501,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">Village / City *</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">Village / City *</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermCity(t)}
+                            currentValue={permCity}
+                            fieldLabel="Village / City"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           value={permCity}
@@ -2422,7 +2519,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">Tehsil / Sub-Division</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">Tehsil / Sub-Division</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermTehsil(t)}
+                            currentValue={permTehsil}
+                            fieldLabel="Tehsil"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           value={permTehsil}
@@ -2431,7 +2536,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">Police Station</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">Police Station</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermPs(t)}
+                            currentValue={permPs}
+                            fieldLabel="Police Station"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           value={permPs}
@@ -2440,7 +2553,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">District</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">District</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermDistrict(t)}
+                            currentValue={permDistrict}
+                            fieldLabel="District"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           value={permDistrict}
@@ -2449,7 +2570,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <label className="font-bold text-slate-700 block mb-1">State</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="font-bold text-slate-700 block">State</label>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPermState(t)}
+                            currentValue={permState}
+                            fieldLabel="State"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           value={permState}
@@ -2487,7 +2616,15 @@ function RegisterFIRForm() {
                         <h5 className="font-bold text-slate-700 uppercase text-[10px]">Present Address Details</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div>
-                            <span className="text-[10px] text-slate-500 block mb-0.5">House / Flat</span>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[10px] text-slate-500 block">House / Flat</span>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresHouseNo(t)}
+                                currentValue={presHouseNo}
+                                fieldLabel="Present House No"
+                                iconOnly={true}
+                              />
+                            </div>
                             <input
                               type="text"
                               value={presHouseNo}
@@ -2496,7 +2633,15 @@ function RegisterFIRForm() {
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 block mb-0.5">Street</span>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[10px] text-slate-500 block">Street</span>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresStreet(t)}
+                                currentValue={presStreet}
+                                fieldLabel="Present Street"
+                                iconOnly={true}
+                              />
+                            </div>
                             <input
                               type="text"
                               value={presStreet}
@@ -2505,7 +2650,15 @@ function RegisterFIRForm() {
                             />
                           </div>
                           <div>
-                            <span className="text-[10px] text-slate-500 block mb-0.5">City / Town</span>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[10px] text-slate-500 block">City / Town</span>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresCity(t)}
+                                currentValue={presCity}
+                                fieldLabel="Present City"
+                                iconOnly={true}
+                              />
+                            </div>
                             <input
                               type="text"
                               value={presCity}
@@ -2546,7 +2699,15 @@ function RegisterFIRForm() {
                       </select>
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Nationality</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Nationality</label>
+                        <VoiceInputButton
+                          onTranscript={(t) => setComplainantNationality(t)}
+                          currentValue={complainantNationality}
+                          fieldLabel="Nationality"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={complainantNationality}
@@ -2574,7 +2735,15 @@ function RegisterFIRForm() {
                     </span>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
-                        <span className="text-[10px] text-slate-500 block mb-0.5">Passport Number</span>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] text-slate-500 block">Passport Number</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPassportNumber(t)}
+                            currentValue={passportNumber}
+                            fieldLabel="Passport Number"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="e.g. Z1234567"
@@ -2593,7 +2762,15 @@ function RegisterFIRForm() {
                         />
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 block mb-0.5">Place of Issue</span>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] text-slate-500 block">Place of Issue</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setPassportIssuePlace(t)}
+                            currentValue={passportIssuePlace}
+                            fieldLabel="Place of Issue"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="e.g. Delhi"
@@ -2626,7 +2803,15 @@ function RegisterFIRForm() {
                         </select>
                       </div>
                       <div className="md:col-span-5">
-                        <span className="text-[10px] text-slate-500 block mb-0.5">ID Number</span>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] text-slate-500 block">ID Number</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setTempIdNumber(t)}
+                            currentValue={tempIdNumber}
+                            fieldLabel="ID Number"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="e.g. DL-04201100234"
@@ -2700,6 +2885,13 @@ function RegisterFIRForm() {
                   FIR Contents / Tehreer (तहरीर) <span className="text-red-600">*</span>
                 </CardTitle>
                 <div className="flex items-center gap-3">
+                  <VoiceInputButton
+                    onTranscript={(t) =>
+                      setFirContentText((prev) => (prev ? prev + " " + t : t))
+                    }
+                    currentValue={firContentText}
+                    fieldLabel="FIR Contents / Tehreer"
+                  />
                   <span
                     className={`text-[11px] font-mono font-bold ${
                       firContentText.length > 9500 ? "text-red-600" : "text-slate-500"
@@ -2741,9 +2933,19 @@ function RegisterFIRForm() {
                     <label className="font-bold text-slate-700 block">
                       Brief Facts / Case Summary (For Police Records)
                     </label>
-                    <span className="text-[10px] font-mono text-slate-400">
-                      {briefFacts.length} chars
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <VoiceInputButton
+                        onTranscript={(t) =>
+                          setBriefFacts((prev) => (prev ? prev + " " + t : t))
+                        }
+                        currentValue={briefFacts}
+                        fieldLabel="Brief Facts"
+                        iconOnly={true}
+                      />
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {briefFacts.length} chars
+                      </span>
+                    </div>
                   </div>
                   <textarea
                     rows={3}
@@ -2755,9 +2957,19 @@ function RegisterFIRForm() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Reasons for Delay in reporting by Complainant / Informant (Printed Section 8)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">
+                      Reasons for Delay in reporting by Complainant / Informant (Printed Section 8)
+                    </label>
+                    <VoiceInputButton
+                      onTranscript={(t) =>
+                        setReasonsForDelay((prev) => (prev ? prev + " " + t : t))
+                      }
+                      currentValue={reasonsForDelay}
+                      fieldLabel="Reasons for Delay"
+                      iconOnly={true}
+                    />
+                  </div>
                   <textarea
                     rows={2}
                     placeholder="If any delay occurred in reporting, record the specific reason here (e.g. hospitalization, medical examination, threat by accused, delay in discovering theft)"
@@ -2866,6 +3078,15 @@ function RegisterFIRForm() {
                         </select>
                       </div>
                       <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] text-slate-600 font-medium">Directions / Guidelines to IO</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setAssignedDirections((prev) => (prev ? prev + " " + t : t))}
+                            currentValue={assignedDirections}
+                            fieldLabel="Directions to IO"
+                            iconOnly={true}
+                          />
+                        </div>
                         <input
                           type="text"
                           placeholder="Directions / Guidelines to IO"
@@ -2881,9 +3102,17 @@ function RegisterFIRForm() {
                 {/* Refused Reason Box */}
                 {actionType === "Refused" && (
                   <div className="bg-amber-50/70 p-3 rounded-lg border border-amber-200 space-y-2 animate-in fade-in-30">
-                    <label className="font-bold text-amber-900 block text-xs">
-                      Reason for Refusal of Investigation u/s 173(1) BNSS
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-amber-900 block text-xs">
+                        Reason for Refusal of Investigation u/s 173(1) BNSS
+                      </label>
+                      <VoiceInputButton
+                        onTranscript={(t) => setRefusedReason((prev) => (prev ? prev + " " + t : t))}
+                        currentValue={refusedReason}
+                        fieldLabel="Reason for Refusal"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       placeholder="e.g. Offence purely of non-cognizable civil dispute / No sufficient ground..."
@@ -2901,20 +3130,42 @@ function RegisterFIRForm() {
                       Transferred Police Station &amp; District (Zero FIR)
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        placeholder="Transferred Police Station Name"
-                        value={transferredPs}
-                        onChange={(e) => setTransferredPs(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-amber-300 bg-white text-xs"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Transferred District"
-                        value={transferredDistrict}
-                        onChange={(e) => setTransferredDistrict(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-amber-300 bg-white text-xs"
-                      />
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-slate-500">Transferred Police Station</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setTransferredPs(t)}
+                            currentValue={transferredPs}
+                            fieldLabel="Transferred Police Station"
+                            iconOnly={true}
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Transferred Police Station Name"
+                          value={transferredPs}
+                          onChange={(e) => setTransferredPs(e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-amber-300 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-slate-500">Transferred District</span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setTransferredDistrict(t)}
+                            currentValue={transferredDistrict}
+                            fieldLabel="Transferred District"
+                            iconOnly={true}
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Transferred District"
+                          value={transferredDistrict}
+                          onChange={(e) => setTransferredDistrict(e.target.value)}
+                          className="w-full p-2.5 rounded-lg border border-amber-300 bg-white text-xs"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2926,7 +3177,15 @@ function RegisterFIRForm() {
                   </span>
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
                     <div className="md:col-span-6">
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Department / Authority Name</span>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[10px] text-slate-500 block">Department / Authority Name</span>
+                        <VoiceInputButton
+                          onTranscript={(t) => setTempDeptName(t)}
+                          currentValue={tempDeptName}
+                          fieldLabel="Department Name"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. District Magistrate / Chief Medical Officer"
@@ -3183,9 +3442,17 @@ function RegisterFIRForm() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <span className="text-[10px] text-slate-500 block mb-0.5">
-                        Description (Make, Model, Serial, Specs, Registration)
-                      </span>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[10px] text-slate-500 block">
+                          Description (Make, Model, Serial, Specs, Registration)
+                        </span>
+                        <VoiceInputButton
+                          onTranscript={(t) => setTempPropDescription((prev) => (prev ? prev + " " + t : t))}
+                          currentValue={tempPropDescription}
+                          fieldLabel="Property Description"
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. Samsung Galaxy S23 Ultra, IMEI 3589410291..., Black Color"
@@ -3285,7 +3552,15 @@ function RegisterFIRForm() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Injury Description</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700 block">Injury Description</label>
+                      <VoiceInputButton
+                        onTranscript={(t) => setInjuryDescription((prev) => (prev ? prev + " " + t : t))}
+                        currentValue={injuryDescription}
+                        fieldLabel="Injury Description"
+                        iconOnly={true}
+                      />
+                    </div>
                     <textarea
                       rows={4}
                       placeholder="Details of physical injuries, wounds, fractures, MLR number, Hospital admitted"

@@ -19,6 +19,7 @@ import { FIRAliasEntry, FIRIdentificationEntry } from "@/types";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -543,9 +544,17 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <VoiceInputButton
+                      onTranscript={(t) => setFirstName(t)}
+                      currentValue={firstName}
+                      fieldLabel="Victim First Name"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={firstName}
@@ -556,7 +565,15 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Middle Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">Middle Name</label>
+                    <VoiceInputButton
+                      onTranscript={(t) => setMiddleName(t)}
+                      currentValue={middleName}
+                      fieldLabel="Victim Middle Name"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={middleName}
@@ -565,7 +582,15 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Last Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700 block">Last Name</label>
+                    <VoiceInputButton
+                      onTranscript={(t) => setLastName(t)}
+                      currentValue={lastName}
+                      fieldLabel="Victim Last Name"
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={lastName}
@@ -578,7 +603,15 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
 
               {/* Aliases */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-700 block">Aliases (उर्फ़ / उपनाम)</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700 block">Aliases (उर्फ़ / उपनाम)</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setTempAlias(t)}
+                    currentValue={tempAlias}
+                    fieldLabel="Alias / Nickname"
+                    iconOnly={true}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -674,7 +707,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Relative Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Relative Name</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setRelativeName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={relativeName}
@@ -683,7 +722,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Relative Alias Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Relative Alias Name</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setRelativeAliasName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={relativeAliasName}
@@ -883,7 +928,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 <span className="font-bold text-slate-800 text-xs block">Permanent Address (स्थायी पता)</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">House / Flat No.</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">House / Flat No.</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermHouseNo((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permHouseNo}
@@ -892,7 +943,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Street Name</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Street Name</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermStreet((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permStreet}
@@ -901,7 +958,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Colony / Locality / Area</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Colony / Locality / Area</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermColony((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permColony}
@@ -913,7 +976,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Village / Town / City</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Village / Town / City</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermCity((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permCity}
@@ -922,7 +991,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Tehsil / Mandal</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Tehsil / Mandal</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermTehsil((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permTehsil}
@@ -931,7 +1006,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Country</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Country</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermCountry((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permCountry}
@@ -940,7 +1021,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">State</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">State</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermState((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permState}
@@ -952,7 +1039,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">District</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">District</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermDistrict((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permDistrict}
@@ -961,7 +1054,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Police Station</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Police Station</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPermPs((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={permPs}
@@ -1002,7 +1101,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   <span className="font-bold text-slate-800 text-xs block">Present Address (वर्तमान पता)</span>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">House / Flat No.</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">House / Flat No.</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresHouseNo((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={presHouseNo}
@@ -1011,7 +1116,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">Street Name</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">Street Name</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresStreet((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={presStreet}
@@ -1020,7 +1131,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">Colony / Locality</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">Colony / Locality</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresColony((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={presColony}
@@ -1031,7 +1148,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">City</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">City</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresCity((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={presCity}
@@ -1040,7 +1163,13 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700 block mb-1">District</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">District</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresDistrict((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={presDistrict}
@@ -1163,6 +1292,11 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   Victim Statement (पीड़िता / पीड़ित का बयान)
                 </label>
                 <div className="flex items-center gap-3">
+                  <VoiceInputButton
+                    onTranscript={(text) => setStatementText((prev) => (prev ? `${prev} ${text}` : text))}
+                    iconOnly={false}
+                    className="text-xs py-1 px-2.5 h-auto"
+                  />
                   <span className="text-[11px] font-mono text-slate-500">
                     {statementText.length} characters
                   </span>

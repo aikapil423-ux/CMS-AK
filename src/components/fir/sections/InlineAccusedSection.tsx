@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { AccusedPerson, FIRAliasEntry, FIRIdentificationEntry } from "@/types";
 import { Button } from "@/components/ui/button";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -576,7 +577,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Face Type</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Face Type</label>
+            <VoiceInputButton
+              onTranscript={(text) => setFaceType((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={faceType}
@@ -585,7 +592,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           />
         </div>
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Forehead</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Forehead</label>
+            <VoiceInputButton
+              onTranscript={(text) => setForehead((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={forehead}
@@ -594,7 +607,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           />
         </div>
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Nose</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Nose</label>
+            <VoiceInputButton
+              onTranscript={(text) => setNose((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={nose}
@@ -603,7 +622,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           />
         </div>
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Teeth</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Teeth</label>
+            <VoiceInputButton
+              onTranscript={(text) => setTeeth((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={teeth}
@@ -615,7 +640,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Beard</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Beard</label>
+            <VoiceInputButton
+              onTranscript={(text) => setBeard((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={beard}
@@ -624,7 +655,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           />
         </div>
         <div>
-          <label className="font-bold text-slate-700 block mb-1">Moustaches</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">Moustaches</label>
+            <VoiceInputButton
+              onTranscript={(text) => setMoustaches((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             value={moustaches}
@@ -647,9 +684,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="font-bold text-slate-700 block mb-1">
-            Distinguishing Marks / Scars / Tattoos
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">
+              Distinguishing Marks / Scars / Tattoos
+            </label>
+            <VoiceInputButton
+              onTranscript={(text) => setDistinguishingMarks((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             placeholder="e.g. Scar on left cheek, tattoo on right forearm..."
@@ -659,9 +702,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           />
         </div>
         <div>
-          <label className="font-bold text-slate-700 block mb-1">
-            Clothing Description (वस्त्र विवरण)
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="font-bold text-slate-700">
+              Clothing Description (वस्त्र विवरण)
+            </label>
+            <VoiceInputButton
+              onTranscript={(text) => setClothingDescription((prev) => (prev ? `${prev} ${text}` : text))}
+              iconOnly={true}
+            />
+          </div>
           <input
             type="text"
             placeholder="e.g. Blue jeans, black jacket, white sneakers..."
@@ -711,13 +760,19 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <span className="font-bold text-slate-700 whitespace-nowrap">Accused More Than:</span>
-          <input
-            type="text"
-            placeholder="e.g. More than 4-5 unknown persons"
-            value={accusedMoreThan}
-            onChange={(e) => setAccusedMoreThan(e.target.value)}
-            className="w-full sm:w-64 p-1.5 rounded-lg border border-slate-300 bg-white text-xs"
-          />
+          <div className="flex items-center gap-1.5 w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="e.g. More than 4-5 unknown persons"
+              value={accusedMoreThan}
+              onChange={(e) => setAccusedMoreThan(e.target.value)}
+              className="w-full p-1.5 rounded-lg border border-slate-300 bg-white text-xs"
+            />
+            <VoiceInputButton
+              onTranscript={(text) => setAccusedMoreThan(accusedMoreThan ? `${accusedMoreThan} ${text}` : text)}
+              iconOnly={true}
+            />
+          </div>
         </div>
       </div>
 
@@ -886,13 +941,19 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     <span>Yes, Police Personnel</span>
                   </label>
                   {isCaseAgainstPolice && (
-                    <input
-                      type="text"
-                      placeholder="Name / Rank / Belt No..."
-                      value={policePersonnelName}
-                      onChange={(e) => setPolicePersonnelName(e.target.value)}
-                      className="p-1.5 rounded-lg border border-red-300 bg-white text-xs w-52"
-                    />
+                    <div className="flex items-center gap-1.5 w-56">
+                      <input
+                        type="text"
+                        placeholder="Name / Rank / Belt No..."
+                        value={policePersonnelName}
+                        onChange={(e) => setPolicePersonnelName(e.target.value)}
+                        className="p-1.5 rounded-lg border border-red-300 bg-white text-xs w-full"
+                      />
+                      <VoiceInputButton
+                        onTranscript={(text) => setPolicePersonnelName((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                   )}
                 </div>
               </div>
@@ -921,9 +982,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    First Name {accusedType === "Known" && <span className="text-red-500">*</span>}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">
+                      First Name {accusedType === "Known" && <span className="text-red-500">*</span>}
+                    </label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setFirstName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     placeholder={accusedType === "Known" ? "e.g. Ramesh" : "Unknown"}
@@ -933,7 +1000,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Middle Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Middle Name</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setMiddleName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={middleName}
@@ -942,7 +1015,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Last Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Last Name</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setLastName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     placeholder="e.g. Yadav"
@@ -955,7 +1034,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
               {/* Aliases */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-700 block">Aliases (उर्फ़ / उपनाम)</label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700">Aliases (उर्फ़ / उपनाम)</label>
+                  <VoiceInputButton
+                    onTranscript={(text) => setTempAlias((prev) => (prev ? `${prev} ${text}` : text))}
+                    iconOnly={true}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1051,7 +1136,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Relative Name</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Relative Name</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setRelativeName((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={relativeName}
@@ -1232,7 +1323,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 <span className="font-bold text-slate-800 text-xs block">Add Known Address for Suspect</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">House / Flat No.</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">House / Flat No.</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setHouseNo((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={houseNo}
@@ -1241,7 +1338,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Street Name</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Street Name</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setStreetName((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={streetName}
@@ -1250,7 +1353,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Colony / Locality</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Colony / Locality</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setColony((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={colony}
@@ -1262,7 +1371,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">City / Town</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">City / Town</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setCity((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={city}
@@ -1271,7 +1386,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">District</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">District</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setDistrict((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={district}
@@ -1280,7 +1401,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">State</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">State</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setState((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={state}
@@ -1289,7 +1416,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Country</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Country</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setCountry((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={country}
@@ -1355,7 +1488,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
             <div className="space-y-4 animate-in fade-in-30">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Occupation</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Occupation</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setOccupation((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={occupation}
@@ -1364,7 +1503,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Nationality</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-slate-700">Nationality</label>
+                    <VoiceInputButton
+                      onTranscript={(text) => setNationality((prev) => (prev ? `${prev} ${text}` : text))}
+                      iconOnly={true}
+                    />
+                  </div>
                   <input
                     type="text"
                     value={nationality}
@@ -1388,7 +1533,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Place of Issue</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Place of Issue</label>
+                      <VoiceInputButton
+                        onTranscript={(text) => setPassportIssuePlace((prev) => (prev ? `${prev} ${text}` : text))}
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={passportIssuePlace}

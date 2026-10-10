@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DIRECTION_FROM_PS_OPTIONS, getDynamicDirectionFromPs } from "@/components/fir/firDropdownConstants";
+import { VoiceInputButton } from "@/components/ui/voice-input-button";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   isDateKnown?: boolean;
@@ -407,9 +408,17 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Delay in Reporting by Complainant
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700 block">
+                    Delay in Reporting by Complainant
+                  </label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setDelayInReportingByComplainant((prev) => (prev ? prev + " " + t : t))}
+                    currentValue={delayInReportingByComplainant}
+                    fieldLabel="Delay by Complainant"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Complainant was hospitalized / Fear of retaliation..."
@@ -419,9 +428,17 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
-                  Delay in Registration by Police
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700 block">
+                    Delay in Registration by Police
+                  </label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setDelayInRegistrationByPolice((prev) => (prev ? prev + " " + t : t))}
+                    currentValue={delayInRegistrationByPolice}
+                    fieldLabel="Delay by Police"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Preliminary enquiry under Sec 173(3) BNSS / Verification..."
@@ -440,7 +457,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">House / Building No.</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">House / Building No.</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setHouseNo(t)}
+                    currentValue={houseNo}
+                    fieldLabel="House No"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. H.No. 452, Tower B"
@@ -450,7 +475,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Street Name</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Street Name</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setStreetName(t)}
+                    currentValue={streetName}
+                    fieldLabel="Street Name"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Main Market Road, NH-44"
@@ -460,9 +493,17 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Colony / Locality / Area <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">
+                    Colony / Locality / Area <span className="text-red-500">*</span>
+                  </label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setArea(t)}
+                    currentValue={area}
+                    fieldLabel="Colony / Locality / Area"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Sector 29 Huda Ground"
@@ -476,7 +517,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Village / Town / City</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Village / Town / City</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setCity(t)}
+                    currentValue={city}
+                    fieldLabel="Village / Town / City"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   value={city}
@@ -485,7 +534,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Tehsil / Block / Mandal</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Tehsil / Block / Mandal</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setTehsil(t)}
+                    currentValue={tehsil}
+                    fieldLabel="Tehsil"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   value={tehsil}
@@ -504,7 +561,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Landmark / Reference Point</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Landmark / Reference Point</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setLandmark(t)}
+                    currentValue={landmark}
+                    fieldLabel="Landmark"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Near Metro Station Pillar 42"
@@ -544,7 +609,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Beat / Sector Number</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Beat / Sector Number</label>
+                  <VoiceInputButton
+                    onTranscript={(t) => setBeatNo(t)}
+                    currentValue={beatNo}
+                    fieldLabel="Beat Number"
+                    iconOnly={true}
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="e.g. Beat No. 2 / Sector 29"
@@ -570,7 +643,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               {outsidePs && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-red-50/60 rounded-lg border border-red-200 animate-in fade-in-20">
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Outside State</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700 block">Outside State</label>
+                      <VoiceInputButton
+                        onTranscript={(t) => setOutsideState(t)}
+                        currentValue={outsideState}
+                        fieldLabel="Outside State"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       placeholder="e.g. Uttar Pradesh"
@@ -580,7 +661,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                     />
                   </div>
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Outside District</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700 block">Outside District</label>
+                      <VoiceInputButton
+                        onTranscript={(t) => setOutsideDistrict(t)}
+                        currentValue={outsideDistrict}
+                        fieldLabel="Outside District"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       placeholder="e.g. Panipat"
@@ -590,7 +679,15 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                     />
                   </div>
                   <div>
-                    <label className="font-bold text-slate-700 block mb-1">Outside Police Station Name</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-bold text-slate-700 block">Outside Police Station Name</label>
+                      <VoiceInputButton
+                        onTranscript={(t) => setOutsidePsName(t)}
+                        currentValue={outsidePsName}
+                        fieldLabel="Outside PS Name"
+                        iconOnly={true}
+                      />
+                    </div>
                     <input
                       type="text"
                       placeholder="e.g. PS Sanauli"
