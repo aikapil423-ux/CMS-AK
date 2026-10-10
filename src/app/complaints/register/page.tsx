@@ -221,6 +221,61 @@ function extractAccusedFromComplaintText(fullText: string, fallbackAddress?: str
   return results;
 }
 
+/**
+ * Generates a concise synopsis / summary (संक्षिप्त सार) from the full complaint text
+ * so that `complaintDescription` holds a concise summary rather than duplicating the entire complaint.
+ */
+function summarizeComplaintText(
+  fullText: string,
+  subject?: string,
+  complainantName?: string,
+  accusedNames?: string[]
+): string {
+  if (!fullText || !fullText.trim()) return subject || "";
+
+  const clean = fullText.replace(/\r\n/g, "\n").trim();
+  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  // Filter out formal header/salutations and footer signatures
+  const substantiveLines = lines.filter((line) => {
+    const l = line.toLowerCase();
+    if (/^(सेवा में|श्रीमान|थाना प्रभारी|महोदय|सादर प्रणाम|निवेदन है|to,|the sho|sir,|विषय[:\s]|sub[:\s])/i.test(l)) {
+      return false;
+    }
+    if (/^(प्रार्थी|भवदीय|हस्ताक्षर|applicant|yours faithfully|sd\/-|धन्यवाद|दिनांक)/i.test(l)) {
+      return false;
+    }
+    return true;
+  });
+
+  const bodyText = substantiveLines.join(" ").trim();
+  // If short already (<= 250 chars), return it directly
+  if (bodyText.length <= 250) {
+    return bodyText;
+  }
+
+  // Split into sentences (by purna viram '।', question mark, exclamation, or period)
+  const sentences = bodyText
+    .split(/(?<=[।!?.\n])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 15);
+
+  if (sentences.length <= 3) {
+    return sentences.join(" ");
+  }
+
+  // Take the key initial 2-3 substantive allegations + concluding prayer sentence
+  const opening = sentences.slice(0, 2).join(" ");
+  const closing = sentences[sentences.length - 1];
+  const summary = `${opening} ${closing}`.trim();
+
+  // If summary is reasonably sized, return it, otherwise trim to ~450 chars cleanly
+  if (summary.length > 480) {
+    return summary.slice(0, 460).replace(/\s+\S*$/, "") + "...";
+  }
+  return summary;
+}
+
 export default function RegisterComplaintPage() {
   const router = useRouter();
   const { currentUser } = useAuth();
@@ -1362,18 +1417,35 @@ export default function RegisterComplaintPage() {
         ]);
       }
 
-      // 3. Incident details - STRICT: ONLY what was found in document
+      // 3. Incident details - Description of Incident holds the FULL COMPLAINT (पूरी शिकायत)
       setIncidentPlace(inc.place ? String(inc.place).trim() : "");
       setIsDateTimeKnown(Boolean(inc.isDateTimeKnown && inc.date));
       setIncidentDate(inc.date ? String(inc.date).trim() : "");
       setIncidentTime(inc.time ? String(inc.time).trim() : "");
       if (inc.category) setIncidentCategory(inc.category);
-      if (inc.details) setIncidentDetails(inc.details);
+      
+      const fullVerbatimComplaint = inc.details
+        ? String(inc.details).trim()
+        : geminiData.rawText
+        ? String(geminiData.rawText).trim()
+        : "";
+      if (fullVerbatimComplaint) setIncidentDetails(fullVerbatimComplaint);
 
-      // 4. Complaint details - STRICT: ONLY what was found in document
+      // 4. Complaint details - Description of Complaint holds the CONCISE SUMMARY (शिकायत का संक्षिप्त विवरण / सारांश)
       if (comp.mode) setIntakeMode(comp.mode);
       setComplaintSubject(comp.subject ? String(comp.subject).trim() : "");
-      setComplaintDescription(comp.description ? String(comp.description).trim() : inc.details ? String(inc.details).trim() : "");
+      
+      // If comp.description is missing or identically duplicates the verbatim full text, generate a concise summary
+      let summaryText = comp.description ? String(comp.description).trim() : "";
+      if (!summaryText || summaryText === fullVerbatimComplaint) {
+        summaryText = summarizeComplaintText(
+          fullVerbatimComplaint,
+          comp.subject,
+          extractedName,
+          validAccusedCards.map((a) => a.name).filter(Boolean)
+        );
+      }
+      setComplaintDescription(summaryText);
       if (comp.type) setComplaintAgeType(comp.type);
       if (comp.isFirRegistered !== undefined) setIsFirRegistered(Boolean(comp.isFirRegistered));
       if (comp.firNumber) setFirNumber(comp.firNumber);
@@ -1410,11 +1482,11 @@ export default function RegisterComplaintPage() {
       if (inc.category && String(inc.category).trim()) filledKeys.add("incidentCategory");
       if (inc.date && String(inc.date).trim()) filledKeys.add("incidentDate");
       if (inc.time && String(inc.time).trim()) filledKeys.add("incidentTime");
-      if (inc.details && String(inc.details).trim()) filledKeys.add("incidentDetails");
+      if (fullVerbatimComplaint) filledKeys.add("incidentDetails");
 
       if (comp.mode && String(comp.mode).trim()) filledKeys.add("intakeMode");
       if (comp.subject && String(comp.subject).trim()) filledKeys.add("complaintSubject");
-      if (comp.description && String(comp.description).trim()) filledKeys.add("complaintDescription");
+      if (summaryText) filledKeys.add("complaintDescription");
       if (comp.type && String(comp.type).trim()) filledKeys.add("complaintAgeType");
       if (comp.classification && String(comp.classification).trim()) filledKeys.add("complaintClassification");
       if (comp.purpose && String(comp.purpose).trim()) filledKeys.add("complaintPurpose");
@@ -1549,8 +1621,16 @@ export default function RegisterComplaintPage() {
       ]);
     }
 
+    // Description of Incident receives the complete verbatim complaint
     setIncidentDetails(textContent);
-    setComplaintDescription(textContent);
+    // Description of Complaint receives a concise summary (NOT the full duplicate complaint)
+    const localSummary = summarizeComplaintText(
+      textContent,
+      extractedSub,
+      extractedName,
+      extractedAccused.map((a) => a.name).filter(Boolean)
+    );
+    setComplaintDescription(localSummary);
     setComplaintSubject(extractedSub);
 
     const filledKeys = new Set<string>();
@@ -3739,12 +3819,12 @@ export default function RegisterComplaintPage() {
                 )}
               </div>
 
-              {/* Row 4: Description of Incident (Enlarged Box + Brief Summary Guidance + Live Word Count) */}
+              {/* Row 4: Description of Incident (Full Complaint / पूरी शिकायत) */}
               <div className="space-y-1">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-bold text-slate-800">
-                      Description of Incident (घटना का संक्षिप्त विवरण) *
+                      Description of Incident / Full Complaint (घटना का संपूर्ण विवरण / पूरी शिकायत) *
                     </label>
                     {isAutofilled("incidentDetails") && (
                       <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
@@ -3754,14 +3834,14 @@ export default function RegisterComplaintPage() {
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
                     <span className="italic text-slate-500">
-                      Brief &amp; summary in minimum words
+                      Complete verbatim complaint text (पूरी शिकायत)
                     </span>
                     <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
                       {incidentDetails.trim() ? incidentDetails.trim().split(/\s+/).length : 0} words
                     </span>
                     <VoiceInputButton
                       preferredLang={voiceLang}
-                      fieldLabel="Description of Incident"
+                      fieldLabel="Description of Incident / Full Complaint"
                       currentValue={incidentDetails}
                       onTranscript={(val) => {
                         setIncidentDetails((prev) => (prev ? `${prev} ${val}` : val));
@@ -3777,7 +3857,7 @@ export default function RegisterComplaintPage() {
                     setIncidentDetails(e.target.value);
                     markFieldAsEdited("incidentDetails");
                   }}
-                  placeholder="Provide a concise summary of the incident in minimum words: What occurred, where, sequence of events, persons involved, loss/property details, and immediate witness observations..."
+                  placeholder="पूरी शिकायत का संपूर्ण विवरण (Full verbatim text of the complaint / incident as received in document or verbal report)..."
                   className={`w-full min-h-[260px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
                     isAutofilled("incidentDetails")
                       ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
@@ -3785,17 +3865,17 @@ export default function RegisterComplaintPage() {
                   }`}
                 />
                 <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
-                  <span>State the core facts and incident chronology briefly without repetitive statements.</span>
+                  <span>Contains the complete, unabridged complaint as submitted by the citizen / complainant.</span>
                   <span className="font-mono text-[10px] text-slate-400">{incidentDetails.length} characters</span>
                 </p>
               </div>
 
-              {/* Row 5: Description of Complaint (Enlarged Box + Brief Summary Guidance + Live Word Count) */}
+              {/* Row 5: Description of Complaint (Brief Summary / संक्षिप्त सार) */}
               <div className="space-y-1">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-bold text-slate-800">
-                      Description of Complaint (शिकायत का विवरण / Detailed Allegations) *
+                      Description of Complaint / Summary (शिकायत का संक्षिप्त विवरण / सारांश) *
                     </label>
                     {isAutofilled("complaintDescription") && (
                       <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
@@ -3805,14 +3885,14 @@ export default function RegisterComplaintPage() {
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
                     <span className="italic text-slate-500">
-                      Summary of complaint in minimum words
+                      Brief summary of allegations in minimum words (संक्षिप्त सार)
                     </span>
                     <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
                       {complaintDescription.trim() ? complaintDescription.trim().split(/\s+/).length : 0} words
                     </span>
                     <VoiceInputButton
                       preferredLang={voiceLang}
-                      fieldLabel="Description of Complaint"
+                      fieldLabel="Description of Complaint / Summary"
                       currentValue={complaintDescription}
                       onTranscript={(val) => {
                         setComplaintDescription((prev) => (prev ? `${prev} ${val}` : val));
@@ -3822,7 +3902,7 @@ export default function RegisterComplaintPage() {
                   </div>
                 </div>
                 <textarea
-                  rows={12}
+                  rows={8}
                   value={complaintDescription}
                   onChange={(e) => {
                     setComplaintDescription(e.target.value);
@@ -3835,8 +3915,8 @@ export default function RegisterComplaintPage() {
                       });
                     }
                   }}
-                  placeholder="Enter a brief, structured summary of the complaint allegations: specific accusations against each named respondent, monetary loss or injury sustained, and prayer for police action..."
-                  className={`w-full min-h-[260px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
+                  placeholder="शिकायत का संक्षिप्त सार (Concise structured summary of allegations against respondents, core incident facts, and prayer for police action in minimum words)..."
+                  className={`w-full min-h-[180px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
                     validationErrors.complaintDescription
                       ? "border-red-500 bg-red-50"
                       : isAutofilled("complaintDescription")
@@ -3848,7 +3928,7 @@ export default function RegisterComplaintPage() {
                   <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintDescription}</p>
                 )}
                 <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
-                  <span>Keep allegations succinct and focused on actionable points for the Enquiry Officer.</span>
+                  <span>Keep allegations succinct, actionable, and summarized in minimum words for quick review.</span>
                   <span className="font-mono text-[10px] text-slate-400">{complaintDescription.length} characters</span>
                 </p>
               </div>

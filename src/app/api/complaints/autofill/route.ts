@@ -43,11 +43,10 @@ TASK 1: CLASSIFY & RENAME DOCUMENT (CRITICAL)
 - Provide a clean, official, and standardized sanitized filename: "classifiedDocumentName".
 - Provide a one-sentence verification note: "verifiedDocumentTitle".
 
-TASK 2: 100% EXACT WORD-BY-WORD VERBATIM TRANSCRIPTION FOR DESCRIPTION (ABSOLUTE MANDATORY REQUIREMENT)
-- In the "complaint.description" field, you MUST transcribe the ENTIRE document text WORD-BY-WORD (शब्द-ब-शब्द / हू-ब-हू) exactly as written in the uploaded document/image/petition.
-- STRICT RULE: Do NOT summarize. Do NOT shorten. Do NOT skip any words, sentences, dates, greetings, or sign-offs. The entire verbatim body of the complaint as written by the citizen (whether in Hindi, English, or mixed) must be placed in full inside "complaint.description".
-- The user's exact instruction: "sthe me complaint details me descripation me jo bhi document upload hua hai vo word by word likha jaaye usme kam na ho baaki filled shi fill hui thi".
-- Also mirror this exact full narrative in "incident.details".
+TASK 2: DIVISION OF NARRATIVE (INCIDENT DETAILS = FULL COMPLAINT, COMPLAINT DESCRIPTION = SUMMARY)
+- STRICT USER REQUIREMENT: "in register complaint form description of complaint field me puri compalint copy na ho uski summary ho decription of incident me puri complaint ho"
+- 1. In "incident.details": Put the ENTIRE verbatim, word-by-word (शब्द-ब-शब्द / हू-ब-हू) complete text of the uploaded complaint/document. Do NOT shorten, do NOT summarize, do NOT omit any sentences, dates, or details. The full complaint belongs here.
+- 2. In "complaint.description": DO NOT copy the full complaint! Instead, provide a concise, structured SUMMARY (शिकायत का संक्षिप्त सार) of the complaint in minimum words (focusing on core allegations, named respondents, monetary/physical loss, and specific relief/prayer requested). Keep it succinct and actionable for the Enquiry Officer.
 
 TASK 3: EXTRACT ONLY DOCUMENT-PROVEN FIELDS (NO INVENTED DATA)
 Read and extract all particulars from this document to populate the Police Station Complaint Registration Register. Keep fields in the original language of the document (Hindi in Hindi):
@@ -79,11 +78,11 @@ Read and extract all particulars from this document to populate the Police Stati
    - Time of Incident (HH:MM from document, else "")
    - isDateTimeKnown (boolean: true if date/time present in document, false otherwise)
    - Class of Incident (must strictly match one of: "FINANCIAL_FRAUD_CHEATING", "CYBER_CRIME", "LAND_PROPERTY_DISPUTE", "PHYSICAL_ASSAULT_AFFRAY", "PROPERTY_THEFT_BURGLARY", "DOMESTIC_VIOLENCE_DOWRY", "PUBLIC_NUISANCE", "MISSING_PERSON", "NARCOTICS_DRUGS_INFO", "HARASSMENT_STALKING", "OTHER_GENERAL")
-   - Facts of Details / Detailed Allegations: Complete word-to-word verbatim incident narrative from document.
+   - details: MANDATORY 100% complete exact word-by-word verbatim transcript of the entire complaint / application without any omission, reduction, or summarization (पूरी शिकायत).
 4. Complaint Details:
    - Mode of Intake (one of: "WALK_IN_STATION", "CM_WINDOW_HARYANA", "CITIZEN_PORTAL_HARPATH", "EMERGENCY_112", "SP_OFFICE_REFERENCE", "POSTAL_APPLICATION", "WOMEN_HELPDESK")
    - Subject (Precise legal subject line from document)
-   - Description (MANDATORY: 100% complete exact word-by-word verbatim transcript of the entire application/document without any reduction or omission)
+   - description: MANDATORY Concise, structured summary of the complaint allegations in minimum words (शिकायत का संक्षिप्त सार). DO NOT copy the entire full complaint here!
    - Type of Complaint ("FRESH" or "OLD")
    - Is FIR Registered (boolean: false unless expressly mentions FIR already registered)
    - FIR Number (if registered, else "")
