@@ -238,6 +238,9 @@ export interface ComplaintEvidenceAttachment {
   dataUrl?: string;
   uploadedAt: string;
   description?: string;
+  isAutoFilled?: boolean;
+  isProcessed?: boolean;
+  processedRecordId?: string;
 }
 
 export interface ComplaintItem {
@@ -369,6 +372,9 @@ export interface ComplaintItem {
 
   // AI & Investigation Case Summary (Overview, Documents & History)
   investigationSummary?: InvestigationSummaryReport;
+
+  // Cached Processed Document Records (Zero Reprocessing)
+  processedDocuments?: any[];
 
   // Direct Send to FIR
   directSendToFir?: boolean;
@@ -600,6 +606,12 @@ export interface ComplaintDocumentItem {
   lastModifiedByUserId?: string;
   lastModifiedBy?: string;
   transferHistory?: Array<{ fromUserId: string; toUserId: string; timestamp: string; action: string; remarks?: string }>;
+  isAutoFilled?: boolean;
+  isProcessed?: boolean;
+  processedRecordId?: string;
+  rawExtractedText?: string;
+  detectedLanguage?: string;
+  isPermanentRegistrationDoc?: boolean;
 }
 
 export interface PoliceReportFormData {

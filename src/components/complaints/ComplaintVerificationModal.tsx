@@ -82,6 +82,7 @@ interface ComplaintVerificationModalProps {
   isSubmitting: boolean;
   onEdit: () => void;
   onSubmit: () => void;
+  readOnlyPreview?: boolean;
 }
 
 export function ComplaintVerificationModal({
@@ -90,6 +91,7 @@ export function ComplaintVerificationModal({
   isSubmitting,
   onEdit,
   onSubmit,
+  readOnlyPreview = false,
 }: ComplaintVerificationModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -118,43 +120,47 @@ export function ComplaintVerificationModal({
             </div>
             <div>
               <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
-                <span>Complaint Verification &amp; Final Review</span>
+                <span>Complaint Preview (पूर्वावलोकन)</span>
                 <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.2 rounded uppercase">
-                  Pre-Registration Check
+                  Draft Preview
                 </span>
               </h3>
               <p className="text-[11px] text-slate-300">
-                Verify details before official registration.
+                Official complaint intake format preview
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Download A4</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5 text-amber-300" />
-              <span>Print Preview</span>
-            </Button>
+            {!readOnlyPreview && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Download A4</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Print Preview</span>
+                </Button>
+              </>
+            )}
             <button
               type="button"
               onClick={onEdit}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
-              title="Close and edit form"
+              title="Close Preview"
             >
               <X className="w-5 h-5" />
             </button>
@@ -407,41 +413,43 @@ export function ComplaintVerificationModal({
           </div>
         </div>
 
-        {/* Footer Actions: Edit Form OR Confirm & Register */}
-        <div className="no-print p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              Submitting will register this complaint into the central register and auto-save this proforma under Documents.
-            </span>
-          </div>
+        {/* Footer Actions: Edit Form OR Confirm & Register (Hidden in Read-Only Preview mode) */}
+        {!readOnlyPreview && (
+          <div className="no-print p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                Submitting will register this complaint into the central register and auto-save this proforma under Documents.
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="md"
-              onClick={onEdit}
-              disabled={isSubmitting}
-              className="text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Edit Form (बदलाव करें)</span>
-            </Button>
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={onEdit}
+                disabled={isSubmitting}
+                className="text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Edit Form (बदलाव करें)</span>
+              </Button>
 
-            <Button
-              type="button"
-              variant="danger"
-              size="md"
-              onClick={onSubmit}
-              isLoading={isSubmitting}
-              className="text-xs sm:text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 shadow-md transition-all active:scale-98 cursor-pointer"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Submit &amp; Register Complaint (फाइनल दर्ज करें)</span>
-            </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="md"
+                onClick={onSubmit}
+                isLoading={isSubmitting}
+                className="text-xs sm:text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 shadow-md transition-all active:scale-98 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Submit &amp; Register Complaint (फाइनल दर्ज करें)</span>
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -43,6 +43,7 @@ import {
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
+import { complaintAutoFillService } from "./complaintAutoFillService";
 
 // In-memory store initialized with localStorage if available, or fallback to MOCK_COMPLAINTS
 const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
@@ -1943,7 +1944,28 @@ export const ComplaintService = {
       }
     }
 
+    // Delete associated cached processed data from database so no stale analysis lingers
+    complaintAutoFillService.deleteByDocumentId(docId);
+    complaintAutoFillService.deleteByDocumentId(cleanDocId);
+    if (doc?.fileName) {
+      complaintAutoFillService.deleteByFileName(doc.fileName, complaintsStore[index].id);
+      complaintAutoFillService.deleteByFileName(doc.fileName, complaintsStore[index].complaintNumber);
+    }
+
     const nowIso = new Date().toISOString();
+    const currentProcessed = complaintsStore[index].processedDocuments;
+    const filteredProcessed = currentProcessed
+      ? currentProcessed.filter(
+          (p: any) =>
+            p.documentId !== docId &&
+            p.documentId !== cleanDocId &&
+            p.id !== docId &&
+            p.id !== cleanDocId &&
+            p.rawDocument?.fileName !== doc?.fileName &&
+            p.processedData?.classifiedDocumentName !== doc?.fileName
+        )
+      : undefined;
+
     complaintsStore[index] = {
       ...complaintsStore[index],
       documents: (complaintsStore[index].documents || []).filter(
@@ -1952,6 +1974,7 @@ export const ComplaintService = {
       attachments: (complaintsStore[index].attachments || []).filter(
         (a) => a.id !== docId && a.id !== cleanDocId && `doc_${a.id}` !== docId
       ),
+      processedDocuments: filteredProcessed,
       updatedAt: nowIso,
     };
 

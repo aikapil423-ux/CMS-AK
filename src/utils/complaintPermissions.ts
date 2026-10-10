@@ -145,9 +145,32 @@ export function canEditDocument(
  */
 export function canDeleteDocument(
   user: AuthUserContext,
-  doc: { createdByUserId?: string; uploadedBy?: string; createdBy?: string; officerName?: string },
+  doc: {
+    createdByUserId?: string;
+    uploadedBy?: string;
+    createdBy?: string;
+    officerName?: string;
+    fileCategory?: string;
+    fileName?: string;
+    isPermanentRegistrationDoc?: boolean;
+  },
   complaint?: ComplaintItem
 ): PermissionResult {
+  // Statutory Rule & PPR Rule 22.48: Official registered complaint docket is permanent and cannot be deleted
+  const isRegisteredComplaintDoc =
+    Boolean(doc.isPermanentRegistrationDoc) ||
+    doc.fileCategory === "REGISTERED COMPLAINT DOCKET" ||
+    doc.fileCategory === "INTAKE VERIFICATION PROFORMA" ||
+    Boolean(doc.fileName && doc.fileName.toLowerCase().includes("registered_complaint")) ||
+    Boolean(doc.fileName && doc.fileName.toLowerCase().includes("intake_verification"));
+
+  if (isRegisteredComplaintDoc) {
+    return {
+      allowed: false,
+      reason: "Statutory Law & PPR Rule 22.48: Official registered complaint docket is permanent and cannot be deleted.",
+    };
+  }
+
   const creatorId = doc.createdByUserId;
   if (creatorId && (creatorId === user.id || (user.pno && creatorId === user.pno))) {
     return { allowed: true };

@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
+import { complaintAutoFillService, ProcessedComplaintDocumentRecord } from "@/services/complaintAutoFillService";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import {
   ComplaintItem,
@@ -284,6 +285,7 @@ export default function RegisterComplaintPage() {
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [isReadOnlyPreview, setIsReadOnlyPreview] = useState(false);
   const [previewVerificationData, setPreviewVerificationData] = useState<ComplaintPreviewData | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
@@ -334,6 +336,7 @@ export default function RegisterComplaintPage() {
     categoryName: string;
     subject: string;
   } | null>(null);
+  const [currentProcessedRecord, setCurrentProcessedRecord] = useState<ProcessedComplaintDocumentRecord | null>(null);
 
   // Common Header Configuration
   const [sourceChannel, setSourceChannel] = useState<
@@ -512,6 +515,10 @@ export default function RegisterComplaintPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const isAutofilled = (key: string) => autofilledFieldKeys.has(key);
+  const getAutofillGreenClass = (key: string) =>
+    isAutofilled(key)
+      ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100 transition-all"
+      : "";
   const markFieldAsEdited = (key: string) => {
     setAutofilledFieldKeys((prev) => {
       if (!prev.has(key)) return prev;
@@ -1109,6 +1116,20 @@ export default function RegisterComplaintPage() {
   };
 
   const handleRemoveAttachment = (id: string) => {
+    const target = attachments.find((a) => a.id === id);
+    if (
+      currentProcessedRecord &&
+      (currentProcessedRecord.documentId === id ||
+        currentProcessedRecord.id === id ||
+        (target && (currentProcessedRecord.rawDocument?.fileName === target.name || currentProcessedRecord.processedData?.classifiedDocumentName === target.name)))
+    ) {
+      complaintAutoFillService.deleteByDocumentId(id);
+      if (currentProcessedRecord.rawDocument?.fileName) {
+        complaintAutoFillService.deleteByFileName(currentProcessedRecord.rawDocument.fileName);
+      }
+      setCurrentProcessedRecord(null);
+      setAutofillSuccessNotice(null);
+    }
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
@@ -1171,11 +1192,11 @@ export default function RegisterComplaintPage() {
         const textReader = new FileReader();
         textReader.onload = (te) => {
           const textContent = te.target?.result as string;
-          executeExtractionPipeline(file, dataUrl, typeLabel, category, textContent);
+          executeExtractionPipeline(file, dataUrl, typeLabel, category, textContent, attachedDoc.id);
         };
         textReader.readAsText(file);
       } else {
-        executeExtractionPipeline(file, dataUrl, typeLabel, category);
+        executeExtractionPipeline(file, dataUrl, typeLabel, category, undefined, attachedDoc.id);
       }
     };
 
@@ -1188,7 +1209,8 @@ export default function RegisterComplaintPage() {
     dataUrl: string,
     typeLabel: string,
     category: string,
-    textContent?: string
+    textContent?: string,
+    attachedDocId?: string
   ) => {
     try {
       setAutofillProgress(35);
@@ -1226,14 +1248,17 @@ export default function RegisterComplaintPage() {
       const classifiedName = geminiData.classifiedDocumentName || file.name;
       const verifiedTitle = geminiData.verifiedDocumentTitle || typeLabel;
 
-      // Update the sealed attachment with the classified, verified filename and description
+      // Update the sealed attachment with the classified, verified filename, description, and processed flags
       setAttachments((prev) =>
         prev.map((a) =>
-          a.name === file.name
+          a.id === attachedDocId || a.name === file.name
             ? {
                 ...a,
                 name: classifiedName,
                 description: `${verifiedTitle} (Auto-classified by Gemini 3.5 Flash: ${file.name} -> ${classifiedName})`,
+                isAutoFilled: true,
+                isProcessed: true,
+                processedRecordId: attachedDocId || `proc_${Date.now()}`,
               }
             : a
         )
@@ -1493,6 +1518,103 @@ export default function RegisterComplaintPage() {
 
       setAutofilledFieldKeys(filledKeys);
 
+      // Build and save persistent processed document record in Database / localStorage
+      const recId = attachedDocId || `proc_doc_${Date.now()}`;
+      const rawText = geminiData.rawText || textContent || fullVerbatimComplaint || "";
+      const isHindi = /[\u0900-\u097F]/.test(rawText);
+      const isEnglish = /[a-zA-Z]/.test(rawText);
+      const detectedLang: "hindi" | "english" | "bilingual" = isHindi && isEnglish ? "bilingual" : isHindi ? "hindi" : "english";
+
+      const identifiedPersonsList: Array<{
+        name: string;
+        role: string;
+        fatherOrSpouse?: string;
+        phone?: string;
+        address?: string;
+      }> = [];
+
+      if (extractedName) {
+        identifiedPersonsList.push({
+          name: extractedName,
+          role: "Complainant / प्रार्थी",
+          fatherOrSpouse: extractedRelativeName,
+          phone: extractedMobile,
+          address: extractedAddress,
+        });
+      }
+
+      validAccusedCards.forEach((acc, idx) => {
+        identifiedPersonsList.push({
+          name: acc.name,
+          role: `Accused / आरोपी #${idx + 1}`,
+          phone: acc.phone,
+          address: acc.address,
+        });
+      });
+
+      const processedRecord: ProcessedComplaintDocumentRecord = {
+        id: recId,
+        documentId: attachedDocId || recId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        rawDocument: {
+          fileName: classifiedName,
+          fileSize: file.size,
+          fileType: file.type || "application/octet-stream",
+          dataUrl,
+          rawExtractedText: rawText,
+          detectedLanguage: detectedLang,
+        },
+        processedData: {
+          classifiedDocumentName: classifiedName,
+          verifiedDocumentTitle: verifiedTitle,
+          typeLabel,
+          category,
+          complainant: {
+            name: extractedName,
+            relationType: extractedRelationType,
+            relativeName: extractedRelativeName,
+            gender: extractedGender,
+            age: extractedAge,
+            mobile: extractedMobile,
+            presentAddress: extractedAddress,
+            city: extractedCity,
+            district: extractedDistrict,
+            state: extractedState,
+            nationality: c.nationality || "Indian",
+          },
+          isAccusedKnown: isKnown,
+          accusedList: validAccusedCards,
+          incident: {
+            place: inc.place ? String(inc.place).trim() : "",
+            landmark: inc.landmark ? String(inc.landmark).trim() : "",
+            date: inc.date ? String(inc.date).trim() : "",
+            time: inc.time ? String(inc.time).trim() : "",
+            isDateTimeKnown: Boolean(inc.isDateTimeKnown && inc.date),
+            category: inc.category || incidentCategory,
+            details: fullVerbatimComplaint,
+          },
+          complaint: {
+            mode: comp.mode || intakeMode,
+            subject: comp.subject ? String(comp.subject).trim() : "",
+            description: summaryText,
+            type: comp.type || complaintAgeType,
+            isFirRegistered: Boolean(comp.isFirRegistered),
+            firNumber: comp.firNumber,
+            classification: comp.classification || complaintClassification,
+            purpose: comp.purpose || complaintPurpose,
+          },
+          analysis: {
+            overviewSummary: summaryText,
+            allegationsBrief: summaryText,
+            identifiedPersons: identifiedPersonsList,
+          },
+        },
+      };
+
+      complaintAutoFillService.save(processedRecord);
+      setCurrentProcessedRecord(processedRecord);
+
       // Set success notice
       setAutofillSuccessNotice({
         fileName: classifiedName,
@@ -1514,7 +1636,7 @@ export default function RegisterComplaintPage() {
       console.warn("Gemini AI API Error:", err);
       // STRICT: Never fabricate fake names or addresses when document processing fails!
       if (textContent && textContent.trim().length > 20) {
-        extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel);
+        extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel, attachedDocId);
       } else {
         alert(`Document Processing Notice: ${err?.message || "Could not extract fields from document"}. Please enter complaint details manually.`);
       }
@@ -1529,7 +1651,8 @@ export default function RegisterComplaintPage() {
     fileName: string,
     category: string,
     dataUrl?: string,
-    typeLabel?: string
+    typeLabel?: string,
+    attachedDocId?: string
   ) => {
     // 1. Mobile number: match 10-digit Indian mobile
     const mobMatch = textContent.match(/(?:मो[0o०\.]*\s*नं[0o०\.]*|mob|phone|mobile)?\s*[:\-]?\s*([6-9]\d{9})/i);
@@ -1654,6 +1777,100 @@ export default function RegisterComplaintPage() {
     setAutofilledFieldKeys(filledKeys);
     setAutofillProgress(100);
     setAutofillStepText("Fields extracted strictly from verified document text without fabrication!");
+
+    // Build and save persistent processed document record in Database / localStorage
+    const recId = attachedDocId || `proc_doc_${Date.now()}`;
+    const isHindi = /[\u0900-\u097F]/.test(textContent);
+    const isEnglish = /[a-zA-Z]/.test(textContent);
+    const detectedLang: "hindi" | "english" | "bilingual" = isHindi && isEnglish ? "bilingual" : isHindi ? "hindi" : "english";
+
+    const identifiedPersonsList: Array<{
+      name: string;
+      role: string;
+      fatherOrSpouse?: string;
+      phone?: string;
+      address?: string;
+    }> = [];
+
+    if (extractedName) {
+      identifiedPersonsList.push({
+        name: extractedName,
+        role: "Complainant / प्रार्थी",
+        fatherOrSpouse: extractedRelative,
+        phone: extractedMobile,
+        address: extractedAddr,
+      });
+    }
+
+    extractedAccused.forEach((acc, idx) => {
+      identifiedPersonsList.push({
+        name: acc.name,
+        role: `Accused / आरोपी #${idx + 1}`,
+        phone: acc.phone,
+        address: acc.address,
+      });
+    });
+
+    const processedRecord: ProcessedComplaintDocumentRecord = {
+      id: recId,
+      documentId: attachedDocId || recId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      rawDocument: {
+        fileName,
+        fileSize: textContent.length,
+        fileType: "text/plain",
+        dataUrl: dataUrl || `data:text/plain;charset=utf-8,${encodeURIComponent(textContent)}`,
+        rawExtractedText: textContent,
+        detectedLanguage: detectedLang,
+      },
+      processedData: {
+        classifiedDocumentName: fileName,
+        verifiedDocumentTitle: typeLabel || "Verified Text Application",
+        typeLabel: typeLabel || "Verified Document",
+        category,
+        complainant: {
+          name: extractedName,
+          relationType: extractedRelation,
+          relativeName: extractedRelative,
+          gender: extractedRelation === "W/O" || extractedRelation === "D/O" ? "FEMALE" : "MALE",
+          mobile: extractedMobile,
+          presentAddress: extractedAddr,
+          nationality: "Indian",
+        },
+        isAccusedKnown: isKnown,
+        accusedList: extractedAccused,
+        incident: {
+          details: textContent,
+        },
+        complaint: {
+          subject: extractedSub,
+          description: localSummary,
+        },
+        analysis: {
+          overviewSummary: localSummary,
+          allegationsBrief: localSummary,
+          identifiedPersons: identifiedPersonsList,
+        },
+      },
+    };
+
+    complaintAutoFillService.save(processedRecord);
+    setCurrentProcessedRecord(processedRecord);
+
+    // Tag attachment with processed flags
+    setAttachments((prev) =>
+      prev.map((a) =>
+        a.id === attachedDocId || a.name === fileName
+          ? {
+              ...a,
+              isAutoFilled: true,
+              isProcessed: true,
+              processedRecordId: processedRecord.id,
+            }
+          : a
+      )
+    );
 
     // Set success banner notice - strictly truthful, explicit Not Mentioned
     setAutofillSuccessNotice({
@@ -1794,23 +2011,12 @@ export default function RegisterComplaintPage() {
     return Object.keys(errors).length === 0;
   };
 
-  // Step 1: When user clicks "Confirm & Register Complaint", validate and show Auto-Preview Modal
-  const handleInitiateRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) {
-      setTimeout(() => {
-        const firstErrorEl = document.querySelector(".border-red-500, [aria-invalid='true']");
-        if (firstErrorEl) {
-          firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }, 50);
-      return;
-    }
-
+  // Helper: Assemble preview data from currently filled form fields
+  const buildPreviewData = (): ComplaintPreviewData => {
     const primaryComp = complainants[0];
     const selectedEo = selectedEoId ? MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId) : undefined;
 
-    const previewData: ComplaintPreviewData = {
+    return {
       sourceChannel,
       priorityLevel,
       complainants: complainants.map((c) => ({
@@ -1859,14 +2065,39 @@ export default function RegisterComplaintPage() {
       district: currentUser.district,
       registeredBy: currentUser.name,
     };
+  };
 
-    setPreviewVerificationData(previewData);
+  // Preview Button Handler: Opens clean preview modal with NO other action buttons inside
+  const handleOpenPreviewOnly = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const data = buildPreviewData();
+    setPreviewVerificationData(data);
+    setIsReadOnlyPreview(true);
     setShowVerificationModal(true);
   };
 
-  // Step 2: When user clicks "Submit & Register Complaint" from the Preview Modal
-  const handleFinalSubmit = async () => {
-    if (!previewVerificationData) return;
+  // Step 1: When user clicks "Confirm & Register Complaint", validate and register directly
+  const handleInitiateRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      setTimeout(() => {
+        const firstErrorEl = document.querySelector(".border-red-500, [aria-invalid='true']");
+        if (firstErrorEl) {
+          firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
+      return;
+    }
+
+    const previewData = buildPreviewData();
+    setPreviewVerificationData(previewData);
+    await handleFinalSubmit(previewData);
+  };
+
+  // Step 2: Creates the complaint and saves official registered complaint PDF document in documents subtab
+  const handleFinalSubmit = async (customPreviewData?: ComplaintPreviewData) => {
+    const activePreviewData = customPreviewData || previewVerificationData;
+    if (!activePreviewData) return;
     setIsSubmitting(true);
     const primaryComp = complainants[0];
     const otherComplainants = complainants.slice(1);
@@ -1895,6 +2126,11 @@ export default function RegisterComplaintPage() {
           fileUrl: att.dataUrl,
           dataUrl: att.dataUrl,
           description: att.description || "Uploaded during complaint registration",
+          isAutoFilled: att.isAutoFilled,
+          isProcessed: att.isProcessed,
+          processedRecordId: att.processedRecordId,
+          rawExtractedText: att.isProcessed && currentProcessedRecord ? currentProcessedRecord.rawDocument?.rawExtractedText : undefined,
+          detectedLanguage: att.isProcessed && currentProcessedRecord ? currentProcessedRecord.rawDocument?.detectedLanguage : undefined,
         })),
       ];
 
@@ -1915,6 +2151,11 @@ export default function RegisterComplaintPage() {
           fileUrl: autofillSuccessNotice.dataUrl,
           dataUrl: autofillSuccessNotice.dataUrl,
           description: `Original ${autofillSuccessNotice.typeLabel || "Document"} uploaded during intake`,
+          isAutoFilled: true,
+          isProcessed: true,
+          processedRecordId: currentProcessedRecord?.id,
+          rawExtractedText: currentProcessedRecord?.rawDocument?.rawExtractedText,
+          detectedLanguage: currentProcessedRecord?.rawDocument?.detectedLanguage,
         });
       }
 
@@ -1986,6 +2227,7 @@ export default function RegisterComplaintPage() {
           isCrossComplaint: isCrossCaseTagged || undefined,
           attachments,
           documents: documentsToSave,
+          processedDocuments: currentProcessedRecord ? [currentProcessedRecord] : [],
         } as any,
         currentUser.name,
         currentUser.stationName,
@@ -1993,22 +2235,110 @@ export default function RegisterComplaintPage() {
         currentUser.pno
       );
 
-      // 2. Generate the verified preview HTML document and save it in complaint.documents synchronously
+      // Permanently bind processed document records in the database with the registered complaint ID & Number
+      if (currentProcessedRecord) {
+        complaintAutoFillService.bindToComplaint(
+          currentProcessedRecord.id,
+          complaint.id,
+          complaint.complaintNumber
+        );
+        if (currentProcessedRecord.documentId) {
+          complaintAutoFillService.bindToComplaint(
+            currentProcessedRecord.documentId,
+            complaint.id,
+            complaint.complaintNumber
+          );
+        }
+      }
+      documentsToSave.forEach((doc) => {
+        if (doc.isProcessed || doc.processedRecordId) {
+          complaintAutoFillService.bindToComplaint(
+            doc.processedRecordId || doc.id,
+            complaint.id,
+            complaint.complaintNumber
+          );
+        }
+      });
+
+      // 2. Generate the verified registered complaint PDF document and save it in complaint.documents synchronously
       try {
-        const previewHtml = generateComplaintIntakeHtml(previewVerificationData, complaint.complaintNumber);
+        const previewHtml = generateComplaintIntakeHtml(activePreviewData, complaint.complaintNumber);
+        const cleanNo = complaint.complaintNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const docFileName = `Registered_Complaint_${cleanNo}.pdf`;
         const previewDataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+        const regDocRecordId = `proc_reg_${complaint.id}`;
+
+        // Save into complaintAutoFillService so this registered complaint document is already processed and cached in DB
+        const regDocProcessedRecord: ProcessedComplaintDocumentRecord = {
+          id: regDocRecordId,
+          documentId: `doc_reg_${complaint.id}`,
+          relatedComplaintId: complaint.id,
+          relatedComplaintNumber: complaint.complaintNumber,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          rawDocument: {
+            fileName: docFileName,
+            fileSize: previewHtml.length,
+            fileType: "application/pdf",
+            dataUrl: previewDataUrl,
+            rawExtractedText: `${complaint.subject || ""}\n${complaint.complaintDescription || ""}\n${complaint.incidentDetails || ""}`,
+            detectedLanguage: "bilingual",
+          },
+          processedData: {
+            classifiedDocumentName: docFileName,
+            verifiedDocumentTitle: "Official Registered Complaint Form (PDF)",
+            typeLabel: "Official Registered Complaint Form (PDF)",
+            category: "DOCUMENT",
+            complainant: {
+              name: primaryComp.name,
+              relationType: primaryComp.relationType,
+              relativeName: primaryComp.relativeName,
+              gender: primaryComp.gender,
+              age: primaryComp.age ? String(primaryComp.age) : undefined,
+              mobile: primaryComp.mobile,
+              presentAddress: primaryComp.presentAddress,
+              city: primaryComp.presentCity,
+              district: primaryComp.presentDistrict,
+              state: primaryComp.presentState,
+            },
+            isAccusedKnown,
+            accusedList: formattedAccusedList,
+            incident: {
+              place: incidentPlace,
+              date: incidentDate,
+              time: incidentTime,
+              details: incidentDetails,
+            },
+            complaint: {
+              subject: complaintSubject,
+              description: complaintDescription,
+            },
+            analysis: {
+              overviewSummary: complaintDescription,
+              allegationsBrief: complaintDescription,
+            },
+          },
+        };
+        complaintAutoFillService.save(regDocProcessedRecord);
+
         await ComplaintService.addDocument(complaint.id, {
-          fileName: `Intake_Verification_Proforma_${complaint.complaintNumber}.html`,
-          fileCategory: "INTAKE VERIFICATION PROFORMA",
+          fileName: docFileName,
+          fileCategory: "REGISTERED COMPLAINT DOCKET",
           uploadedBy: currentUser.name,
           fileSize: `${(previewHtml.length / 1024).toFixed(1)} KB`,
           dataUrl: previewDataUrl,
           fileUrl: previewDataUrl,
           contentHtml: previewHtml,
-          description: "Official Citizen Complaint Verification & Intake Proforma saved upon registration",
-        });
+          description: "Permanent Official Registered Complaint Docket (PDF Form) generated upon registration",
+          isAutoFilled: true,
+          isProcessed: true,
+          processedRecordId: regDocRecordId,
+          rawExtractedText: regDocProcessedRecord.rawDocument.rawExtractedText,
+          detectedLanguage: "bilingual",
+          isPermanentRegistrationDoc: true,
+        } as any);
       } catch (docErr) {
-        console.error("Failed to auto-save intake verification proforma document:", docErr);
+        console.error("Failed to auto-save registered complaint document:", docErr);
       }
 
       setShowVerificationModal(false);
@@ -2643,11 +2973,6 @@ export default function RegisterComplaintPage() {
                         <label className="text-xs font-semibold text-slate-700">
                           Complainant Full Name *
                         </label>
-                        {isAutofilled("complainantName") && idx === 0 && (
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                            ✨ Auto-filled
-                          </span>
-                        )}
                       </div>
                       <input
                         type="text"
@@ -2661,7 +2986,7 @@ export default function RegisterComplaintPage() {
                           validationErrors[`comp_${idx}_name`]
                             ? "border-red-500 bg-red-50"
                             : isAutofilled("complainantName") && idx === 0
-                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                             : "bg-slate-50 border-slate-300"
                         }`}
                       />
@@ -2675,11 +3000,6 @@ export default function RegisterComplaintPage() {
                         <label className="block text-xs font-semibold text-slate-700 truncate" title="Relation (Optional)">
                           Relation
                         </label>
-                        {isAutofilled("complainantRelationType") && idx === 0 && (
-                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                            ✨ Auto
-                          </span>
-                        )}
                       </div>
                       <select
                         value={comp.relationType}
@@ -2687,9 +3007,9 @@ export default function RegisterComplaintPage() {
                           handleComplainantChange(idx, "relationType", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantRelationType");
                         }}
-                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center ${
+                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center transition-all ${
                           isAutofilled("complainantRelationType") && idx === 0
-                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                             : "bg-slate-50 border-slate-300"
                         }`}
                       >
@@ -2715,11 +3035,6 @@ export default function RegisterComplaintPage() {
                         <label className="text-xs font-semibold text-slate-700">
                           Relative Name {comp.relationType ? `(${comp.relationType})` : ""}
                         </label>
-                        {isAutofilled("complainantRelativeName") && idx === 0 && (
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                            ✨ Auto
-                          </span>
-                        )}
                       </div>
                       <input
                         type="text"
@@ -2731,7 +3046,7 @@ export default function RegisterComplaintPage() {
                         placeholder="e.g. Sh. Balwant Rai (Optional)"
                         className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                           isAutofilled("complainantRelativeName") && idx === 0
-                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                             : "bg-slate-50 border-slate-300"
                         }`}
                       />
@@ -2742,11 +3057,6 @@ export default function RegisterComplaintPage() {
                         <label className="block text-xs font-semibold text-slate-700 truncate" title="Age (Years, Optional)">
                           Age
                         </label>
-                        {isAutofilled("complainantAge") && idx === 0 && (
-                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                            ✨ Auto
-                          </span>
-                        )}
                       </div>
                       <input
                         type="number"
@@ -2758,11 +3068,11 @@ export default function RegisterComplaintPage() {
                           if (idx === 0) markFieldAsEdited("complainantAge");
                         }}
                         placeholder="35"
-                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center ${
+                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center transition-all ${
                           validationErrors[`comp_${idx}_age`]
                             ? "border-red-500 bg-red-50"
                             : isAutofilled("complainantAge") && idx === 0
-                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                             : "bg-slate-50 border-slate-300"
                         }`}
                       />
@@ -2776,11 +3086,6 @@ export default function RegisterComplaintPage() {
                         <label className="block text-xs font-semibold text-slate-700">
                           Gender
                         </label>
-                        {isAutofilled("complainantGender") && idx === 0 && (
-                          <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                            ✨ Auto
-                          </span>
-                        )}
                       </div>
                       <select
                         value={comp.gender || "MALE"}
@@ -2788,9 +3093,9 @@ export default function RegisterComplaintPage() {
                           handleComplainantChange(idx, "gender", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantGender");
                         }}
-                        className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold ${
+                        className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold transition-all ${
                           isAutofilled("complainantGender") && idx === 0
-                            ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                            ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                             : "bg-slate-50 border-slate-300"
                         }`}
                       >
@@ -2855,11 +3160,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-700">
                             Address (House / Street / Mohalla) *
                           </label>
-                          {isAutofilled("complainantPresentAddress") && idx === 0 && (
-                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                              ✨ Auto-filled
-                            </span>
-                          )}
                         </div>
                         <input
                           type="text"
@@ -2873,7 +3173,7 @@ export default function RegisterComplaintPage() {
                             validationErrors[`comp_${idx}_presentAddress`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentAddress") && idx === 0
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                               : "bg-slate-50 border-slate-300"
                           }`}
                         />
@@ -2890,11 +3190,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-700">
                             Village / City *
                           </label>
-                          {isAutofilled("complainantPresentCity") && idx === 0 && (
-                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                              ✨ Auto-filled
-                            </span>
-                          )}
                         </div>
                         <input
                           type="text"
@@ -2908,7 +3203,7 @@ export default function RegisterComplaintPage() {
                             validationErrors[`comp_${idx}_presentCity`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentCity") && idx === 0
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                               : "bg-slate-50 border-slate-300"
                           }`}
                         />
@@ -2925,11 +3220,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-700">
                             District *
                           </label>
-                          {isAutofilled("complainantPresentDistrict") && idx === 0 && (
-                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                              ✨ Auto-filled
-                            </span>
-                          )}
                         </div>
                         <input
                           type="text"
@@ -2943,7 +3233,7 @@ export default function RegisterComplaintPage() {
                             validationErrors[`comp_${idx}_presentDistrict`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentDistrict") && idx === 0
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                               : "bg-slate-50 border-slate-300"
                           }`}
                         />
@@ -2960,11 +3250,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-700">
                             State *
                           </label>
-                          {isAutofilled("complainantPresentState") && idx === 0 && (
-                            <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                              ✨ Auto-filled
-                            </span>
-                          )}
                         </div>
                         <input
                           type="text"
@@ -2978,7 +3263,7 @@ export default function RegisterComplaintPage() {
                             validationErrors[`comp_${idx}_presentState`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentState") && idx === 0
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                               : "bg-slate-50 border-slate-300"
                           }`}
                         />
@@ -3024,11 +3309,6 @@ export default function RegisterComplaintPage() {
                         <label className="text-xs font-semibold text-slate-700">
                           Mobile Number {comp.nationalityChoice === "Indian" ? "(Strictly 10 Digits)" : "(Contact Phone)"} *
                         </label>
-                        {isAutofilled("complainantMobile") && idx === 0 && (
-                          <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                            ✨ Auto-filled
-                          </span>
-                        )}
                       </div>
                       <div className="max-w-md flex items-center gap-2">
                         {comp.nationalityChoice === "Indian" ? (
@@ -3049,7 +3329,7 @@ export default function RegisterComplaintPage() {
                                 validationErrors[`comp_${idx}_mobile`]
                                   ? "border-red-500 bg-red-50"
                                   : isAutofilled("complainantMobile") && idx === 0
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3079,7 +3359,7 @@ export default function RegisterComplaintPage() {
                                 validationErrors[`comp_${idx}_mobile`]
                                   ? "border-red-500 bg-red-50"
                                   : isAutofilled("complainantMobile") && idx === 0
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3231,14 +3511,11 @@ export default function RegisterComplaintPage() {
                 </div>
 
                 {/* Accused Known Toggle: Default NO */}
-                <div className="flex items-center gap-2 bg-white/90 p-1 rounded-lg border border-amber-200 shadow-2xs">
+                <div className={`flex items-center gap-2 bg-white/90 p-1 rounded-lg border shadow-2xs transition-all ${
+                  isAutofilled("isAccusedKnown") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : "border-amber-200"
+                }`}>
                   <div className="flex items-center gap-1.5 px-2">
                     <span className="text-xs font-bold text-slate-700">Accused Known?</span>
-                    {isAutofilled("isAccusedKnown") && (
-                      <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                        ✨ Auto
-                      </span>
-                    )}
                   </div>
                   <button
                     type="button"
@@ -3321,11 +3598,6 @@ export default function RegisterComplaintPage() {
                               <label className="text-xs font-semibold text-slate-700">
                                 Accused Name *
                               </label>
-                              {(isAutofilled(`accused_${idx}_name`) || (idx === 0 && isAutofilled("accused_0_name"))) && (
-                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                                  ✨ Auto-filled
-                                </span>
-                              )}
                             </div>
                             <input
                               type="text"
@@ -3339,7 +3611,7 @@ export default function RegisterComplaintPage() {
                                 validationErrors[`acc_${idx}_name`]
                                   ? "border-red-500 bg-red-50"
                                   : (isAutofilled(`accused_${idx}_name`) || (idx === 0 && isAutofilled("accused_0_name")))
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3355,11 +3627,6 @@ export default function RegisterComplaintPage() {
                               <label className="text-xs font-semibold text-slate-700">
                                 Accused Address *
                               </label>
-                              {(isAutofilled(`accused_${idx}_address`) || (idx === 0 && isAutofilled("accused_0_address"))) && (
-                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                                  ✨ Auto-filled
-                                </span>
-                              )}
                             </div>
                             <input
                               type="text"
@@ -3373,7 +3640,7 @@ export default function RegisterComplaintPage() {
                                 validationErrors[`acc_${idx}_address`]
                                   ? "border-red-500 bg-red-50"
                                   : (isAutofilled(`accused_${idx}_address`) || (idx === 0 && isAutofilled("accused_0_address")))
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3389,11 +3656,6 @@ export default function RegisterComplaintPage() {
                               <label className="text-xs font-semibold text-slate-700">
                                 Contact Phone (If Known)
                               </label>
-                              {(isAutofilled(`accused_${idx}_phone`) || (idx === 0 && isAutofilled("accused_0_phone"))) && (
-                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                                  ✨ Auto-filled
-                                </span>
-                              )}
                             </div>
                             <input
                               type="tel"
@@ -3405,7 +3667,7 @@ export default function RegisterComplaintPage() {
                               placeholder="e.g. 9416000000"
                               className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg font-mono focus:ring-2 focus:ring-[#0b192c] transition-all ${
                                 (isAutofilled(`accused_${idx}_phone`) || (idx === 0 && isAutofilled("accused_0_phone")))
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3416,11 +3678,6 @@ export default function RegisterComplaintPage() {
                               <label className="text-xs font-semibold text-slate-700">
                                 Alias / Nickname / Relation (If Known)
                               </label>
-                              {(isAutofilled(`accused_${idx}_alias`) || (idx === 0 && isAutofilled("accused_0_alias"))) && (
-                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                                  ✨ Auto-filled
-                                </span>
-                              )}
                             </div>
                             <input
                               type="text"
@@ -3432,7 +3689,7 @@ export default function RegisterComplaintPage() {
                               placeholder="e.g. alias Vicky / Business Partner"
                               className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                                 (isAutofilled(`accused_${idx}_alias`) || (idx === 0 && isAutofilled("accused_0_alias")))
-                                  ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                                  ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                                   : "bg-slate-50 border-slate-300"
                               }`}
                             />
@@ -3471,11 +3728,6 @@ export default function RegisterComplaintPage() {
                     <label className="text-xs font-semibold text-slate-700">
                       (a) Place of Incident (Crime Spot) *
                     </label>
-                    {isAutofilled("incidentPlace") && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                        ✨ Auto-filled
-                      </span>
-                    )}
                   </div>
                   <input
                     type="text"
@@ -3496,7 +3748,7 @@ export default function RegisterComplaintPage() {
                       validationErrors.incidentPlace
                         ? "border-red-500 bg-red-50"
                         : isAutofilled("incidentPlace")
-                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                         : "bg-white border-slate-300"
                     }`}
                   />
@@ -3510,11 +3762,6 @@ export default function RegisterComplaintPage() {
                     <label className="text-xs font-semibold text-slate-700">
                       (b) Class of Incident (Crime Category) *
                     </label>
-                    {isAutofilled("incidentCategory") && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                        ✨ Auto-filled
-                      </span>
-                    )}
                   </div>
                   <select
                     value={incidentCategory}
@@ -3524,7 +3771,7 @@ export default function RegisterComplaintPage() {
                     }}
                     className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
                       isAutofilled("incidentCategory")
-                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                         : "bg-white border-slate-300"
                     }`}
                   >
@@ -3589,11 +3836,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-600">
                             Date *
                           </label>
-                          {isAutofilled("incidentDate") && (
-                            <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                              ✨ Auto
-                            </span>
-                          )}
                         </div>
                         <DatePickerDDMMYYYY
                           value={incidentDate}
@@ -3603,7 +3845,7 @@ export default function RegisterComplaintPage() {
                           }}
                           placeholder="DD/MM/YYYY"
                           size="sm"
-                          className={isAutofilled("incidentDate") ? "bg-blue-50/80 border-blue-400" : ""}
+                          className={isAutofilled("incidentDate") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : ""}
                         />
                       </div>
                       <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
@@ -3611,11 +3853,6 @@ export default function RegisterComplaintPage() {
                           <label className="text-xs font-semibold text-slate-600">
                             Time
                           </label>
-                          {isAutofilled("incidentTime") && (
-                            <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                              ✨ Auto
-                            </span>
-                          )}
                         </div>
                         <input
                           type="time"
@@ -3626,7 +3863,7 @@ export default function RegisterComplaintPage() {
                           }}
                           className={`w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             isAutofilled("incidentTime")
-                              ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                               : "border-slate-300"
                           }`}
                         />
@@ -3657,11 +3894,6 @@ export default function RegisterComplaintPage() {
                     <label className="text-xs font-semibold text-slate-700 truncate" title="Mode of Intake">
                       Mode of Intake *
                     </label>
-                    {isAutofilled("intakeMode") && (
-                      <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                        ✨ Auto
-                      </span>
-                    )}
                   </div>
                   <select
                     value={intakeMode}
@@ -3672,7 +3904,7 @@ export default function RegisterComplaintPage() {
                     }}
                     className={`w-full px-2.5 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
                       isAutofilled("intakeMode")
-                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                         : "bg-white border-slate-300"
                     }`}
                   >
@@ -3692,11 +3924,6 @@ export default function RegisterComplaintPage() {
                     <label className="text-xs font-semibold text-slate-700 truncate" title="Subject Headline">
                       Subject (Brief Headline) *
                     </label>
-                    {isAutofilled("complaintSubject") && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1 py-0.2 rounded">
-                        ✨ Auto
-                      </span>
-                    )}
                   </div>
                   <input
                     type="text"
@@ -3717,7 +3944,7 @@ export default function RegisterComplaintPage() {
                       validationErrors.complaintSubject
                         ? "border-red-500 bg-red-50"
                         : isAutofilled("complaintSubject")
-                        ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                         : "border-slate-300"
                     }`}
                   />
@@ -3826,11 +4053,6 @@ export default function RegisterComplaintPage() {
                     <label className="text-xs font-bold text-slate-800">
                       Description of Incident / Full Complaint (घटना का संपूर्ण विवरण / पूरी शिकायत) *
                     </label>
-                    {isAutofilled("incidentDetails") && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                        ✨ Auto-filled
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
                     <span className="italic text-slate-500">
@@ -3860,7 +4082,7 @@ export default function RegisterComplaintPage() {
                   placeholder="पूरी शिकायत का संपूर्ण विवरण (Full verbatim text of the complaint / incident as received in document or verbal report)..."
                   className={`w-full min-h-[260px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all leading-relaxed shadow-2xs ${
                     isAutofilled("incidentDetails")
-                      ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                      ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                       : "bg-white border-slate-300"
                   }`}
                 />
@@ -3870,18 +4092,13 @@ export default function RegisterComplaintPage() {
                 </p>
               </div>
 
-              {/* Row 5: Description of Complaint (Brief Summary / संक्षिप्त सार) */}
+              {/* Row 5: Summary of Complaint (Brief Summary / संक्षिप्त सार) */}
               <div className="space-y-1">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-bold text-slate-800">
-                      Description of Complaint / Summary (शिकायत का संक्षिप्त विवरण / सारांश) *
+                      Summary of Complaint (शिकायत का संक्षिप्त विवरण / सारांश) *
                     </label>
-                    {isAutofilled("complaintDescription") && (
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded">
-                        ✨ Auto-filled
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
                     <span className="italic text-slate-500">
@@ -3892,7 +4109,7 @@ export default function RegisterComplaintPage() {
                     </span>
                     <VoiceInputButton
                       preferredLang={voiceLang}
-                      fieldLabel="Description of Complaint / Summary"
+                      fieldLabel="Summary of Complaint"
                       currentValue={complaintDescription}
                       onTranscript={(val) => {
                         setComplaintDescription((prev) => (prev ? `${prev} ${val}` : val));
@@ -3920,7 +4137,7 @@ export default function RegisterComplaintPage() {
                     validationErrors.complaintDescription
                       ? "border-red-500 bg-red-50"
                       : isAutofilled("complaintDescription")
-                      ? "bg-blue-50/80 border-blue-400 ring-1 ring-blue-200"
+                      ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                       : "bg-white border-slate-300"
                   }`}
                 />
@@ -4462,127 +4679,32 @@ export default function RegisterComplaintPage() {
                   </div>
                 </div>
 
-                <div className="p-4 sm:p-5 bg-white border border-teal-200 rounded-xl space-y-4 animate-in fade-in-50 shadow-2xs">
+                <div className="p-4 sm:p-5 bg-white border border-teal-200 rounded-xl space-y-3 animate-in fade-in-50 shadow-2xs">
                   {/* Enquiry Officer Selection */}
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-800">
                       Select Enquiry Officer (From Active Station Roster)
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <select
-                          value={selectedEoId}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedEoId(val);
-                            setShouldAssignEoNow(Boolean(val));
-                          }}
-                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
-                        >
-                          <option value="">Select EO</option>
-                          {MOCK_ENQUIRY_OFFICERS.map((eo) => (
-                            <option key={eo.id} value={eo.id}>
-                              {eo.rank} {eo.name}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-[10px] text-slate-500 mt-1">
-                          Officer will receive instant dispatch alert and case docket access upon submission.
-                        </p>
-                      </div>
-
-                      {/* Selected Officer Preview Card or Unassigned Notice */}
-                      {selectedEoId ? (
-                        (() => {
-                          const currentEo = MOCK_ENQUIRY_OFFICERS.find((e) => e.id === selectedEoId);
-                          if (!currentEo) return null;
-                          return (
-                            <div className="p-3 bg-white border border-emerald-300 rounded-lg text-xs space-y-1 shadow-2xs">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900">
-                                  {currentEo.rank} {currentEo.name}
-                                </span>
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
-                                  {currentEo.availability}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-600">
-                                <strong>Roster Duty:</strong> {currentEo.rosterDuty}
-                              </p>
-                              <p className="text-[11px] text-slate-600">
-                                <strong>Shift:</strong> {currentEo.shift} • <strong>Beat:</strong> {currentEo.beatZone}
-                              </p>
-                              <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px] text-slate-500">
-                                <span>PNO: {currentEo.pno}</span>
-                                <span>
-                                  Current Load: <strong>{currentEo.activeCases} Active Enquiries</strong>
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })()
-                      ) : (
-                        <div className="p-3 bg-white/80 border border-slate-200 rounded-lg text-xs text-slate-600 flex items-center">
-                          <p className="text-[11px] text-slate-500">
-                            <strong>Note:</strong> If left as &ldquo;Select EO&rdquo;, the complaint will be registered without assigning an EO. The SHO can allocate an officer later from the Complaint Register.
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <select
+                      value={selectedEoId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedEoId(val);
+                        setShouldAssignEoNow(Boolean(val));
+                      }}
+                      className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
+                    >
+                      <option value="">Select EO</option>
+                      {MOCK_ENQUIRY_OFFICERS.map((eo) => (
+                        <option key={eo.id} value={eo.id}>
+                          {eo.rank} {eo.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Officer will receive instant dispatch alert and case docket access upon submission.
+                    </p>
                   </div>
-
-                  {/* Direction template & Supervisory directions when EO is selected */}
-                  {selectedEoId && (
-                    <div className="pt-3 border-t border-emerald-200/60 space-y-3 animate-in fade-in-50">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Directions Template
-                          </label>
-                          <select
-                            value={directionTemplate}
-                            onChange={(e) => handleTemplateChange(e.target.value)}
-                            className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-medium text-slate-800"
-                          >
-                            {DIRECTION_TEMPLATES.map((tmpl) => (
-                              <option key={tmpl.key} value={tmpl.key}>
-                                {tmpl.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Target Completion Timeline
-                          </label>
-                          <select
-                            value={targetDays}
-                            onChange={(e) => setTargetDays(Number(e.target.value))}
-                            className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-medium text-slate-800"
-                          >
-                            <option value={3}>3 Days - Urgent Priority</option>
-                            <option value={7}>7 Days - Standard Spot Inquiry</option>
-                            <option value={10}>10 Days - Complex / Witness Verification</option>
-                            <option value={14}>14 Days - Statutory Inquiry Period</option>
-                            <option value={30}>30 Days - Extended Multi-party Inquiry</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 mb-1">
-                          Supervisory Directions for Assigned Officer
-                        </label>
-                        <textarea
-                          rows={2}
-                          value={assignedDirections}
-                          onChange={(e) => setAssignedDirections(e.target.value)}
-                          className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 text-slate-800 font-sans"
-                          placeholder="Enter supervisory instructions for the enquiry officer..."
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -4621,18 +4743,31 @@ export default function RegisterComplaintPage() {
                   </Button>
                 </Link>
 
-                <Button
-                  type="submit"
-                  variant="danger"
-                  size="lg"
-                  isLoading={isSubmitting}
-                  className="text-xs sm:text-sm font-bold gap-2 bg-[#b8001f] hover:bg-[#990000] w-full sm:w-auto px-6 py-2.5 shadow-md transition-all active:scale-98"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {isSho && shouldAssignEoNow
-                    ? "Confirm, Register & Assign EO (PPR Rule 22.48)"
-                    : "Confirm & Register Complaint (PPR Rule 22.48)"}
-                </Button>
+                <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={handleOpenPreviewOnly}
+                    className="text-xs sm:text-sm font-bold gap-2 border-slate-300 text-slate-800 hover:bg-slate-100 w-full sm:w-auto px-5 py-2.5 shadow-xs transition-all active:scale-98 cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4 text-blue-600" />
+                    Preview (पूर्वावलोकन)
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    variant="danger"
+                    size="lg"
+                    isLoading={isSubmitting}
+                    className="text-xs sm:text-sm font-bold gap-2 bg-[#b8001f] hover:bg-[#990000] w-full sm:w-auto px-6 py-2.5 shadow-md transition-all active:scale-98 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {isSho && shouldAssignEoNow
+                      ? "Confirm, Register & Assign EO (PPR Rule 22.48)"
+                      : "Confirm & Register Complaint (PPR Rule 22.48)"}
+                  </Button>
+                </div>
               </div>
             </div>
           </form>
@@ -5153,6 +5288,7 @@ export default function RegisterComplaintPage() {
         isSubmitting={isSubmitting}
         onEdit={() => setShowVerificationModal(false)}
         onSubmit={handleFinalSubmit}
+        readOnlyPreview={isReadOnlyPreview}
       />
     </div>
   );

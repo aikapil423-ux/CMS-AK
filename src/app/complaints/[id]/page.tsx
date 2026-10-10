@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
+import { complaintAutoFillService } from "@/services/complaintAutoFillService";
 import {
   ComplaintItem,
   ComplaintEvidenceAttachment,
@@ -1336,10 +1337,15 @@ export default function ComplaintProfilePage() {
       }
     }
 
-    if (!confirm("Are you sure you want to remove this document from the official repository?")) {
+    if (!confirm("Are you sure you want to remove this document from the official repository? Any cached AI-processed analysis associated with this document will also be permanently deleted from the database.")) {
       return;
     }
     try {
+      complaintAutoFillService.deleteByDocumentId(docId);
+      complaintAutoFillService.deleteByDocumentId(cleanDocId);
+      if (targetDoc?.fileName) {
+        complaintAutoFillService.deleteByFileName(targetDoc.fileName, complaint.id);
+      }
       const updated = await ComplaintService.deleteDocument(complaint.id, docId, currentUser.name, currentUser);
       setComplaint(updated);
     } catch (err: any) {
@@ -3014,6 +3020,13 @@ Certified official record copy.`;
                     <tbody className="divide-y divide-slate-100">
                       {combinedDocuments.map((doc) => {
                         const cat = detectCategory(doc.fileName, doc.fileCategory);
+                        const cleanDocId = doc.id?.replace(/^(?:att_|doc_|doc_att_)/, "");
+                        const isCached =
+                          Boolean(doc.isProcessed) ||
+                          Boolean(complaintAutoFillService.getByDocumentId(doc.id)) ||
+                          Boolean(cleanDocId && complaintAutoFillService.getByDocumentId(cleanDocId)) ||
+                          Boolean(doc.fileName && complaintAutoFillService.getByFileName(doc.fileName, complaint.id));
+
                         return (
                           <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-3 px-4 font-semibold text-slate-900">
@@ -3036,9 +3049,17 @@ Certified official record copy.`;
                                   {cat === "other" && <Paperclip className="w-4 h-4" />}
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="truncate font-semibold text-slate-900" title={doc.fileName}>
-                                    {doc.fileName}
-                                  </p>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className="truncate font-semibold text-slate-900" title={doc.fileName}>
+                                      {doc.fileName}
+                                    </p>
+                                    {isCached && (
+                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs">
+                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                        AI Processed & Saved in DB
+                                      </span>
+                                    )}
+                                  </div>
                                   {doc.description && (
                                     <p className="text-[10px] text-slate-500 truncate" title={doc.description}>
                                       {doc.description}
@@ -3077,15 +3098,21 @@ Certified official record copy.`;
                                   <Download className="w-3.5 h-3.5 text-slate-600" />
                                   <span>Download</span>
                                 </button>
-                                {complaint && canDeleteDocument(currentUser, doc, complaint).allowed && (
-                                  <button
-                                    onClick={() => handleDeleteDocument(doc.id)}
-                                    className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
-                                    title="Delete document"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
+                                {complaint &&
+                                  !doc.isPermanentRegistrationDoc &&
+                                  doc.fileCategory !== "REGISTERED COMPLAINT DOCKET" &&
+                                  doc.fileCategory !== "INTAKE VERIFICATION PROFORMA" &&
+                                  !doc.fileName?.toLowerCase().includes("registered_complaint") &&
+                                  !doc.fileName?.toLowerCase().includes("intake_verification") &&
+                                  canDeleteDocument(currentUser, doc, complaint).allowed && (
+                                    <button
+                                      onClick={() => handleDeleteDocument(doc.id)}
+                                      className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
+                                      title="Delete document"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                               </div>
                             </td>
                           </tr>

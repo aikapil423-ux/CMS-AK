@@ -1,5 +1,6 @@
 import { ComplaintItem, ComplaintDocumentItem, ComplaintEvidenceAttachment, UserSession } from "@/types";
 import { ComplaintService } from "./complaintService";
+import { complaintAutoFillService } from "./complaintAutoFillService";
 import { convertKrutiDevIfDetected } from "@/utils/universalDocumentParser";
 
 export interface IdentifiedPerson {
@@ -332,8 +333,61 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
   );
 
   for (const doc of uniqueDocs) {
-    const res = await extractTextFromDocumentItem(doc);
+    // Check if this document has already been processed and cached in complaintAutoFillService
+    const cleanId = doc.id?.replace(/^(?:att_|doc_|doc_att_)/, "");
+    const cachedRecord =
+      (doc.id ? complaintAutoFillService.getByDocumentId(doc.id) : null) ||
+      (cleanId ? complaintAutoFillService.getByDocumentId(cleanId) : null) ||
+      ((doc as any).processedRecordId ? complaintAutoFillService.getByDocumentId((doc as any).processedRecordId) : null) ||
+      (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.id) : null) ||
+      (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.complaintNumber) : null);
+
     let docPersons: IdentifiedPerson[] = [];
+
+    if (cachedRecord && cachedRecord.rawDocument?.rawExtractedText) {
+      const cachedText = cachedRecord.rawDocument.rawExtractedText;
+      // If cached analysis already identified persons, use them; otherwise extract from cached text
+      if (
+        Array.isArray(cachedRecord.processedData?.analysis?.identifiedPersons) &&
+        cachedRecord.processedData.analysis.identifiedPersons.length > 0
+      ) {
+        cachedRecord.processedData.analysis.identifiedPersons.forEach((p, idx) => {
+          let role: IdentifiedPerson["role"] = "Other / Related";
+          const rLow = (p.role || "").toLowerCase();
+          if (rLow.includes("complainant") || rLow.includes("प्रार्थी")) role = "Complainant";
+          else if (rLow.includes("accused") || rLow.includes("आरोपी")) role = "Respondent / Accused";
+          else if (rLow.includes("witness") || rLow.includes("गवाह")) role = "Witness";
+
+          docPersons.push({
+            id: `p_cached_${doc.id}_${idx}`,
+            name: p.name,
+            role,
+            fatherOrSpouse: p.fatherOrSpouse,
+            phone: p.phone,
+            address: p.address,
+            source: "Document",
+            documentName: doc.fileName,
+            details: `Extracted from cached AI processed document "${doc.fileName}".`,
+          });
+        });
+      } else {
+        docPersons = extractPersonsFromText(cachedText, doc.fileName);
+      }
+
+      docPersons.forEach((dp) => identifiedPersons.push(dp));
+
+      extractedDocuments.push({
+        id: doc.id,
+        fileName: doc.fileName,
+        fileCategory: doc.fileCategory || "DOCUMENT",
+        isReadable: true,
+        extractedText: cachedText,
+        identifiedPersonsCount: docPersons.length,
+      });
+      continue;
+    }
+
+    const res = await extractTextFromDocumentItem(doc);
 
     if (res.isReadable && res.text) {
       docPersons = extractPersonsFromText(res.text, doc.fileName);
