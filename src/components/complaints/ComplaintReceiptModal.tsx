@@ -9,10 +9,12 @@ import {
   Building,
   UserCheck,
   AlertCircle,
+  FileDown,
 } from "lucide-react";
 import { ComplaintItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface ComplaintReceiptModalProps {
   complaint: ComplaintItem | null;
@@ -40,7 +42,15 @@ export function ComplaintReceiptModal({
   })();
 
   const handlePrint = () => {
-    window.print();
+    printA4Element("printable-receipt", `Receipt_${complaint.complaintNumber}`);
+  };
+
+  const handleDownload = () => {
+    downloadA4DocumentAsHtml(
+      "printable-receipt",
+      `Receipt_${complaint.complaintNumber}`,
+      `Complaint Receipt - ${complaint.complaintNumber}`
+    );
   };
 
   // Determine if Enquiry Officer (EO / IO) is currently assigned
@@ -90,50 +100,34 @@ export function ComplaintReceiptModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/75 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      {/* Print styles to only print the receipt area formatted as Page 2 */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-receipt,
-          #printable-receipt * {
-            visibility: visible;
-          }
-          #printable-receipt {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 24px;
-            box-shadow: none !important;
-            border: 2px solid #000 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[94vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]">
         {/* Top Control Bar (Hidden in Print) */}
-        <div className="no-print flex items-center justify-between px-5 py-3.5 bg-[#0b192c] text-white border-b border-slate-700">
+        <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-700">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-              <FileCheck2 className="w-4 h-4 text-amber-400" />
+            <div className="w-7 h-7 rounded bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
+              <FileCheck2 className="w-3.5 h-3.5 text-amber-400" />
             </div>
             <div>
               <h3 className="font-bold text-sm leading-tight text-white">
                 Receipt of registered complaints
               </h3>
               <p className="text-[11px] text-slate-300">
-                Page 2 Official Notice Document • PPR 22.48 &amp; BNSS 173(3)
+                Official Proforma • PPR 22.48 &amp; BNSS 173(3)
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Download A4</span>
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -147,7 +141,7 @@ export function ComplaintReceiptModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
               title="Close modal"
             >
               <X className="w-5 h-5" />
@@ -155,227 +149,197 @@ export function ComplaintReceiptModal({
           </div>
         </div>
 
-        {/* Scrollable Receipt Body - Exact Page 2 Format from Templates */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100/70 flex justify-center">
+        {/* Scrollable Receipt Body - Clean A4 Proforma */}
+        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
           <div
             id="printable-receipt"
             ref={receiptRef}
-            className="w-full bg-white border-2 border-slate-900 rounded-2xl p-6 sm:p-8 shadow-md text-slate-900 space-y-6 font-sans relative"
-            style={{ minHeight: "750px", lineHeight: "1.7" }}
+            className="w-full max-w-[800px] bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative"
+            style={{ minHeight: "750px", lineHeight: "1.6" }}
           >
             {/* Header Title */}
-            <div className="text-center pb-4 border-b-2 border-slate-900">
+            <div className="text-center pb-3 border-b-2 border-slate-900">
               <div className="flex items-center justify-center gap-2 mb-1">
-                <Shield className="w-8 h-8 text-[#0b192c]" />
-                <span className="text-sm font-black tracking-widest uppercase text-[#0b192c]">
-                  HARYANA POLICE
+                <Shield className="w-7 h-7 text-[#0b192c]" />
+                <span className="text-xs font-bold tracking-widest uppercase text-[#0b192c]">
+                  HARYANA POLICE • हरियाणा पुलिस
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wide text-slate-950 font-serif">
-                Receipt of registered complaints
+              <h1 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-slate-950">
+                Receipt of Registered Complaints
               </h1>
-              <p className="text-xs font-bold uppercase text-slate-700 tracking-wider mt-0.5">
+              <p className="text-xs font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
                 {complaint.policeStation || "PS City Thanesar"}, District {complaint.district || "Kurukshetra"}
               </p>
-              <p className="text-[11px] text-slate-500 italic mt-0.5">
+              <p className="text-[11px] text-slate-600 italic mt-0.5">
                 (Statutory Intake Slip under PPR Rule 22.48 &amp; Section 173(3) BNSS, 2023)
               </p>
             </div>
 
             {/* Acknowledgement No & Date Time */}
-            <div className="p-3.5 bg-slate-50 border border-slate-300 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
+            <div className="border border-slate-400 p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm font-sans">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900">Acknowledgement no:</span>
-                <span className="font-mono font-black text-blue-900 bg-blue-100 px-2 py-0.5 rounded text-sm sm:text-base border border-blue-300">
+                <span className="font-bold text-slate-900">Acknowledgement No:</span>
+                <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2 py-0.5 bg-slate-50">
                   {complaint.complaintNumber}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <span className="font-bold text-slate-900">date time:</span>
-                <span className="font-semibold text-slate-800">
+                <span className="font-bold text-slate-800">Date &amp; Time:</span>
+                <span className="font-mono text-slate-950 font-semibold">
                   {formattedDateTime}
                 </span>
               </div>
             </div>
 
             {/* Citizen Particulars */}
-            <div className="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl space-y-3 text-xs sm:text-sm">
+            <div className="border border-slate-400 p-3.5 bg-white space-y-2 text-xs sm:text-sm font-sans">
               <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
-                <span className="font-bold text-slate-900 min-w-[170px] shrink-0">
-                  Complainant Name –
+                <span className="font-bold text-slate-800 min-w-[170px] shrink-0">
+                  Complainant Name:
                 </span>
-                <span className="font-semibold text-slate-950 break-words">
+                <span className="font-bold text-slate-950 break-words">
                   {complainantFullName}
                 </span>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
-                <span className="font-bold text-slate-900 min-w-[170px] shrink-0">
-                  Address –
+                <span className="font-bold text-slate-800 min-w-[170px] shrink-0">
+                  Address:
                 </span>
-                <span className="text-slate-800">
+                <span className="text-slate-900">
                   {fullAddress || "Not specified"}
                 </span>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
-                <span className="font-bold text-slate-900 min-w-[170px] shrink-0">
-                  Mobile no –
+                <span className="font-bold text-slate-800 min-w-[170px] shrink-0">
+                  Mobile No:
                 </span>
-                <span className="font-mono font-bold text-slate-900">
+                <span className="font-mono font-bold text-slate-950">
                   +91 {complaint.complainantMobile || "—"}
                 </span>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 pt-2 border-t border-slate-150">
-                <span className="font-bold text-slate-900 min-w-[170px] shrink-0 uppercase tracking-wide">
-                  SUBJECT -
+              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 pt-2 border-t border-slate-300">
+                <span className="font-bold text-slate-800 min-w-[170px] shrink-0 uppercase tracking-wide">
+                  Subject:
                 </span>
-                <span className="font-bold text-slate-950 flex-1">
+                <span className="font-bold text-slate-950 flex-1 leading-snug">
                   {complaint.subject || complaint.complaintSubject || complaint.categoryDisplay || "Formal Written Citizen Complaint"}
                 </span>
               </div>
             </div>
 
-            {/* Officer Particulars: Assigned IO / Station SHO & MHC */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Assigned IO Details (or Station SHO In-charge if IO not assigned) */}
-              <div
-                className={`p-4 rounded-xl space-y-2 text-xs border ${
-                  isEoAssigned
-                    ? "bg-emerald-50/70 border-emerald-300"
-                    : "bg-amber-50/70 border-amber-300"
-                }`}
-              >
-                <div className="flex items-center justify-between pb-1.5 border-b border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <UserCheck
-                      className={`w-4 h-4 ${
-                        isEoAssigned ? "text-emerald-800" : "text-amber-800"
-                      }`}
-                    />
-                    <h4
-                      className={`font-black uppercase tracking-wider text-[11px] ${
-                        isEoAssigned ? "text-emerald-950" : "text-amber-950"
-                      }`}
-                    >
+            {/* Officer Particulars */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-sans">
+              {/* Assigned IO Details */}
+              <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-slate-700" />
+                    <h4 className="font-bold uppercase tracking-wider text-[11px] text-slate-950">
                       {isEoAssigned ? "Assigned IO Details" : "Station SHO In-Charge"}
                     </h4>
                   </div>
-                  {!isEoAssigned ? (
-                    <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded border border-amber-300">
-                      IO Not Assigned
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded border border-emerald-300">
-                      EO Assigned
-                    </span>
-                  )}
+                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2">
+                    {isEoAssigned ? "EO Assigned" : "IO Not Assigned"}
+                  </span>
                 </div>
-                <div className="space-y-1 text-slate-800">
+                <div className="space-y-0.5 text-slate-900">
                   <p>
-                    <span className="font-bold text-slate-700">Rank:</span>{" "}
-                    <span className="font-semibold text-slate-950">
+                    <span className="font-semibold text-slate-700">Rank:</span>{" "}
+                    <span className="text-slate-950">
                       {isEoAssigned ? ioRank : shoRank}
                     </span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Name:</span>{" "}
-                    <span className="font-semibold text-slate-950">
+                    <span className="font-semibold text-slate-700">Name:</span>{" "}
+                    <span className="font-bold text-slate-950">
                       {isEoAssigned ? ioName : shoName}
                     </span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Belt number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">
+                    <span className="font-semibold text-slate-700">Belt Number:</span>{" "}
+                    <span className="font-mono text-slate-950">
                       {isEoAssigned ? ioBeltNumber : shoBeltNumber}
                     </span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Mobile number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">
+                    <span className="font-semibold text-slate-700">Mobile Number:</span>{" "}
+                    <span className="font-mono text-slate-950">
                       +91 {isEoAssigned ? ioMobile : shoMobile}
                     </span>
                   </p>
                 </div>
               </div>
 
-              {/* MHC Details (Auto-picked) */}
-              <div className="p-4 bg-blue-50/70 border border-blue-300 rounded-xl space-y-2 text-xs">
-                <div className="flex items-center justify-between pb-1.5 border-b border-blue-200">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-blue-800" />
-                    <h4 className="font-black text-blue-950 uppercase tracking-wider text-[11px]">
-                      Mhc details
+              {/* MHC Details */}
+              <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-slate-700" />
+                    <h4 className="font-bold uppercase tracking-wider text-[11px] text-slate-950">
+                      MHC Desk
                     </h4>
                   </div>
-                  <span className="text-[9px] font-bold bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded font-mono">
-                    Auto uthaye
+                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2">
+                    Station Staff
                   </span>
                 </div>
-                <div className="space-y-1 text-slate-800">
+                <div className="space-y-0.5 text-slate-900">
                   <p>
-                    <span className="font-bold text-slate-700">Rank:</span>{" "}
-                    <span className="font-semibold text-slate-950">{mhcRank}</span>
+                    <span className="font-semibold text-slate-700">Rank:</span>{" "}
+                    <span className="text-slate-950">{mhcRank}</span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Name:</span>{" "}
-                    <span className="font-semibold text-slate-950">{mhcName}</span>
+                    <span className="font-semibold text-slate-700">Name:</span>{" "}
+                    <span className="font-bold text-slate-950">{mhcName}</span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Belt number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">{mhcBeltNumber}</span>
+                    <span className="font-semibold text-slate-700">Belt Number:</span>{" "}
+                    <span className="font-mono text-slate-950">{mhcBeltNumber}</span>
                   </p>
                   <p>
-                    <span className="font-bold text-slate-700">Mobile number:</span>{" "}
-                    <span className="font-mono font-bold text-slate-900">+91 {mhcMobile}</span>
+                    <span className="font-semibold text-slate-700">Mobile Number:</span>{" "}
+                    <span className="font-mono text-slate-950">+91 {mhcMobile}</span>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Dynamic IO Not Assigned Alert - Disappears automatically as soon as EO is assigned */}
+            {/* Note if IO not assigned */}
             {!isEoAssigned && (
-              <div className="p-3.5 bg-amber-50/90 border-2 border-amber-300 rounded-xl text-xs text-amber-950 flex items-start gap-2.5 animate-in fade-in-50">
-                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="font-bold text-amber-950 flex items-center gap-2">
-                    <span>Note: IO not assigned</span>
-                    <span className="text-[10px] bg-amber-200 text-amber-950 px-2 py-0.2 rounded font-semibold border border-amber-300">
-                      जांच अधिकारी (IO) अभी नियुक्त नहीं है
-                    </span>
-                  </p>
-                  <p className="text-[11px] text-amber-900 leading-relaxed">
-                    यह शिकायत थाना पंजिका में विधिवत दर्ज हो चुकी है और वर्तमान में थाना प्रभारी (SHO) के सीधे पर्यवेक्षण में है। जैसे ही SHO द्वारा जांच अधिकारी (EO/IO) नियुक्त किया जाएगा, इस रसीद पर SHO के स्थान पर जांच अधिकारी का विवरण प्रदर्शित हो जाएगा तथा &lsquo;IO not assigned&rsquo; नोट हट जाएगा।
-                  </p>
-                </div>
+              <div className="border border-slate-300 p-2.5 bg-slate-50 text-xs text-slate-800 font-sans">
+                <p className="font-bold text-slate-900 mb-0.5">
+                  सूचना: जांच अधिकारी (IO) अभी नियुक्त नहीं है
+                </p>
+                <p className="text-[11px] text-slate-700 leading-relaxed">
+                  यह शिकायत थाना पंजिका में दर्ज हो चुकी है और वर्तमान में थाना प्रभारी (SHO) के सीधे पर्यवेक्षण में है। जैसे ही जांच अधिकारी (EO/IO) नियुक्त किया जाएगा, इस रसीद पर जांच अधिकारी का विवरण प्रदर्शित हो जाएगा।
+                </p>
               </div>
             )}
 
             {/* Statutory Note */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 leading-relaxed font-sans">
-              <p className="font-bold text-slate-800">Legal Note / वैधानिक सूचना:</p>
-              <p>
-                यह रसीद थाना दैनिकी (Roznamcha GD) और केंद्रीय शिकायत पंजिका में विधिवत प्रविष्टि के उपरांत जारी की गई है।
-                धारा 173(3) BNSS के अंतर्गत 14 दिनों के भीतर प्रारंभिक जांच पूर्ण कर निष्पक्ष अग्रिम कार्यवाही अमल में लाई जाएगी।
-              </p>
+            <div className="border border-slate-300 p-2.5 bg-slate-50 text-[10px] text-slate-600 leading-relaxed font-sans">
+              <strong className="text-slate-800">Legal Note / वैधानिक सूचना:</strong> यह रसीद थाना दैनिकी (Roznamcha GD) और केंद्रीय शिकायत पंजिका में विधिवत प्रविष्टि के उपरांत जारी की गई है। धारा 173(3) BNSS के अंतर्गत 14 दिनों के भीतर प्रारंभिक जांच पूर्ण कर निष्पक्ष अग्रिम कार्यवाही अमल में लाई जाएगी।
             </div>
 
             {/* Stamp & Signature Footer */}
-            <div className="pt-6 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
+            <div className="pt-4 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
               <div className="text-center w-36">
-                <div className="h-14 border border-dashed border-slate-400 rounded flex items-center justify-center text-[10px] text-slate-400">
+                <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
                   Station Seal
                 </div>
-                <p className="mt-1 font-bold text-slate-700">POLICE STATION SEAL</p>
+                <p className="mt-1 font-bold text-slate-800">POLICE STATION SEAL</p>
               </div>
 
-              <div className="text-right space-y-1">
+              <div className="text-right space-y-0.5">
                 <p className="text-slate-400">______________________________________</p>
-                <p className="font-bold text-slate-900">
+                <p className="font-bold text-slate-950">
                   {mhcName} ({mhcRank})
                 </p>
-                <p className="text-slate-600 text-[11px]">
+                <p className="text-slate-700 text-[11px]">
                   Moharrir Head Constable / Duty Officer
                 </p>
                 <p className="text-slate-600 font-mono text-[11px]">
@@ -387,11 +351,21 @@ export function ComplaintReceiptModal({
         </div>
 
         {/* Footer Actions (Hidden in Print) */}
-        <div className="no-print p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
-          <p className="text-xs text-slate-500">
-            A copy has been recorded in the station diary and archived in the CMS Haryana database.
+        <div className="no-print p-3 bg-slate-100 border-t border-slate-300 flex items-center justify-between">
+          <p className="text-xs text-slate-600">
+            Recorded in the station diary and archived in CMS Haryana database.
           </p>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="text-xs cursor-pointer flex items-center gap-1.5"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>Download A4</span>
+            </Button>
             <Button
               type="button"
               variant="outline"

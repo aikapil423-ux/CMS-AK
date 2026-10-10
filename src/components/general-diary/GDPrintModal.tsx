@@ -17,6 +17,7 @@ import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
+import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface GDPrintModalProps {
   isOpen: boolean;
@@ -141,12 +142,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 
   if (!isOpen) return null;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // Standalone HTML Download (Offline printable official document)
-  const handleDownload = () => {
+  const generateRegisterHtml = () => {
     const policeStation = records[0]?.policeStation || "PS City Thanesar";
     const district = records[0]?.district || "Kurukshetra";
     const dateRangeLabel =
@@ -255,17 +251,23 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 </body>
 </html>`;
 
-    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    return { fullHtml, policeStation, dateRangeLabel };
+  };
+
+  const handlePrint = () => {
+    const { fullHtml } = generateRegisterHtml();
+    printHtmlContent(fullHtml, "Roznamcha_General_Diary_Register");
+  };
+
+  const handleDownload = () => {
+    const { fullHtml } = generateRegisterHtml();
     const safeStart = startDate ? startDate.replace(/[^0-9-]/g, "") : "all";
     const safeEnd = endDate ? endDate.replace(/[^0-9-]/g, "") : "latest";
-    a.download = `GD_Register_${safeStart}_to_${safeEnd}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadA4DocumentAsHtml(
+      fullHtml,
+      `GD_Register_${safeStart}_to_${safeEnd}.html`,
+      "Roznamcha General Diary Register"
+    );
   };
 
   return (

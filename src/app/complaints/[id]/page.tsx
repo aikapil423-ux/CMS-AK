@@ -79,6 +79,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
@@ -3535,20 +3536,13 @@ Certified official record copy.`;
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              const printWindow = window.open("", "_blank", "width=900,height=800");
-                              if (!printWindow) {
-                                alert("Please allow popups to print report.");
-                                return;
-                              }
-                              const html = report.contentHtml || `<pre style="font-family: Arial; padding: 20px; white-space: pre-wrap;">${report.content || ""}</pre>`;
-                              printWindow.document.write(`
-                                <!DOCTYPE html>
-                                <html>
-                                  <head><title>${report.title}</title><style>@media print { body { margin: 15mm; } @page { size: A4; margin: 15mm; } }</style></head>
-                                  <body>${html}<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; };</script></body>
-                                </html>
-                              `);
-                              printWindow.document.close();
+                              const html =
+                                report.contentHtml ||
+                                `<div style="font-family: 'Times New Roman', serif; padding: 25px; line-height: 1.6; color: #000;">
+                                  <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">${report.title}</h2>
+                                  <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${report.content || report.conclusionSummary || ""}</div>
+                                </div>`;
+                              printHtmlContent(html, report.title);
                             }}
                             className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
                             title="Print official report"
@@ -5028,7 +5022,15 @@ Certified official record copy.`;
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    if (previewModalFile.dataUrl) {
+                      if (previewModalFile.dataUrl.startsWith("data:image/") || /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(previewModalFile.name)) {
+                        printHtmlContent(`<div style="text-align:center; padding: 20px;"><img src="${previewModalFile.dataUrl}" style="max-width: 100%; height: auto;" /></div>`, previewModalFile.name);
+                        return;
+                      }
+                    }
+                    window.print();
+                  }}
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                   title="Print document"
                 >

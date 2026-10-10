@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useRef } from "react";
-import { Printer, X, Download } from "lucide-react";
+import { Printer, X, Download, FileDown } from "lucide-react";
 import { FIRItem } from "@/types";
 import { Button } from "@/components/ui/button";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface FIRReceiptModalProps {
   fir: FIRItem | null;
@@ -15,10 +16,6 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !fir) return null;
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   // Format date DD/MM/YYYY
   const formatDateDMY = (dateStr?: string) => {
@@ -75,40 +72,21 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
     "INDIA"
   ].filter(Boolean).join(", ");
 
+  const handlePrint = () => {
+    printA4Element("cctns-printable-fir", `FIR_${firNumberDisplay}`);
+  };
+
+  const handleDownload = () => {
+    downloadA4DocumentAsHtml(
+      "cctns-printable-fir",
+      `FIR_${firNumberDisplay}`,
+      `FIRST INFORMATION REPORT - ${firNumberDisplay}`
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          #cctns-printable-fir,
-          #cctns-printable-fir * {
-            visibility: visible !important;
-          }
-          #cctns-printable-fir {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 28px !important;
-            background: #fff !important;
-            box-shadow: none !important;
-            border: none !important;
-            font-size: 11pt !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          @page {
-            size: A4;
-            margin: 15mm;
-          }
-        }
-      `}</style>
-
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[96vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[96vh]">
         {/* Top Floating Control Bar */}
         <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-700">
           <div>
@@ -116,21 +94,31 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
               Official FIR Preview (I.I.F.-I) • Haryana Police
             </h3>
             <p className="text-[11px] text-slate-300">
-              Statutory 15-Section Form under Section 173 B.N.S.S.
+              Statutory Form under Section 173 B.N.S.S.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
+              onClick={handleDownload}
+              size="sm"
+              variant="outline"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 font-medium text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+              Download A4
+            </Button>
+            <Button
               onClick={handlePrint}
               size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white font-medium text-xs flex items-center gap-1.5 shadow-sm"
+              className="bg-red-600 hover:bg-red-700 text-white font-medium text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               Print FIR (A4)
             </Button>
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Close modal"
             >
               <X className="w-5 h-5" />
             </button>

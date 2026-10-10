@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
 import { Button } from "@/components/ui/button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem } from "@/types";
@@ -899,7 +900,11 @@ function TemplateDraftBuilderContent() {
 
   // ================= PRINT & EXPORT =================
   const handlePrint = () => {
-    window.print();
+    if (editorRef.current) {
+      printA4Element(editorRef.current, docName || "Enquiry_Document");
+    } else {
+      window.print();
+    }
   };
 
   const handleDownloadWord = () => {

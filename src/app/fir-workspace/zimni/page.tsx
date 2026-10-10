@@ -33,6 +33,7 @@ import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { formatDate } from "@/lib/utils";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface HeaderLine {
   id: string;
@@ -386,7 +387,16 @@ function ZimniWorkspaceContent() {
 
   // Print
   const handlePrint = () => {
-    window.print();
+    printA4Element("zimni-printable-canvas", `Zimni_${selectedFirId || "Draft"}`);
+  };
+
+  // Download
+  const handleDownload = () => {
+    downloadA4DocumentAsHtml(
+      "zimni-printable-canvas",
+      `Zimni_${selectedFirId || "Draft"}`,
+      `Zimni Case Diary - ${selectedFirId || "Draft"}`
+    );
   };
 
   // Copy Plain Text
@@ -714,6 +724,17 @@ function ZimniWorkspaceContent() {
           >
             <Save className="w-3.5 h-3.5 text-blue-600" />
             <span>ड्राफ्ट सहेजें (Save)</span>
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleDownload}
+            variant="outline"
+            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
+            title="Download clean offline A4 document"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-600" />
+            <span>डाउनलोड A4</span>
           </Button>
 
           <Button

@@ -40,6 +40,7 @@ import {
 import { ComplaintService } from "@/services/complaintService";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface RecommendationReportModalProps {
   isOpen: boolean;
@@ -287,47 +288,47 @@ Dated: ${reportDateStr}
 `;
 
     const htmlContent = `
-<div class="haryana-police-report-document" style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 820px; margin: 0 auto; padding: 24px; background: #ffffff;">
-  <div style="border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+<div class="haryana-police-report-document" style="font-family: 'Times New Roman', Times, Georgia, serif; line-height: 1.6; color: #000000; max-width: 800px; margin: 0 auto; padding: 28px; background: #ffffff;">
+  <div style="border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 18px;">
     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
       <div>
-        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">POLICE DEPARTMENT</h4>
-        <p style="margin: 2px 0 0; font-size: 12px; font-weight: 700; color: #1e293b;">${station}</p>
+        <h4 style="margin: 0; font-size: 13px; font-weight: bold; color: #111827; text-transform: uppercase;">POLICE DEPARTMENT, HARYANA</h4>
+        <p style="margin: 2px 0 0; font-size: 12px; font-weight: bold; color: #111827;">${station}</p>
       </div>
       <div style="text-align: right;">
-        <h4 style="margin: 0; font-size: 13px; font-weight: 800; color: #475569; text-transform: uppercase;">DISTRICT ${district}</h4>
-        <p style="margin: 2px 0 0; font-size: 11px; font-family: monospace; color: #64748b;">${dispatchNo}</p>
+        <h4 style="margin: 0; font-size: 13px; font-weight: bold; color: #111827; text-transform: uppercase;">DISTRICT ${district}</h4>
+        <p style="margin: 2px 0 0; font-size: 11px; font-family: monospace; color: #374151;">${dispatchNo}</p>
       </div>
     </div>
     
     <div style="text-align: center; margin-top: 14px;">
-      <h2 style="margin: 0; font-size: 16px; font-weight: 900; color: #0b192c; letter-spacing: 0.5px; text-decoration: underline;">${title}</h2>
-      <p style="margin: 6px 0 0; font-size: 13px; font-weight: 800; color: #1e293b;">${subject}</p>
+      <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #000000; text-transform: uppercase; text-decoration: underline;">${title}</h2>
+      <p style="margin: 6px 0 0; font-size: 13px; font-weight: bold; color: #000000;">${subject}</p>
     </div>
   </div>
 
-  <div style="display: flex; flex-direction: column; gap: 16px;">
+  <div style="display: flex; flex-direction: column; gap: 14px;">
     ${sections
       .map(
         (sec) => `
-    <div class="report-section-block" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; background: #f8fafc;">
-      <h3 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 800; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">${sec.heading}</h3>
-      <div style="font-size: 12.5px; color: #334155; white-space: pre-wrap; word-break: break-word;">${sec.content}</div>
+    <div class="report-section-block" style="border: 1px solid #64748b; padding: 12px 14px; background: #ffffff;">
+      <h3 style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000000; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px;">${sec.heading}</h3>
+      <div style="font-size: 12.5px; color: #111827; white-space: pre-wrap; word-break: break-word; font-family: Arial, sans-serif; line-height: 1.5;">${sec.content}</div>
     </div>`
       )
       .join("")}
   </div>
 
-  <div style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed #94a3b8; display: flex; justify-content: space-between; align-items: flex-end;">
+  <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #000000; display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
-      <p style="margin: 0; font-size: 11px; color: #64748b; font-style: italic;">${closingLine}</p>
-      <p style="margin: 4px 0 0; font-size: 11px; font-weight: bold; color: #334155;">दिनांक: ${reportDateStr} | स्थान: ${station}</p>
+      <p style="margin: 0; font-size: 11px; color: #4b5563; font-style: italic;">${closingLine}</p>
+      <p style="margin: 4px 0 0; font-size: 11px; font-weight: bold; color: #111827;">दिनांक: ${reportDateStr} | स्थान: ${station}</p>
     </div>
     <div style="text-align: right; min-width: 220px;">
       <div style="height: 35px;"></div>
-      <p style="margin: 0; font-size: 12px; font-weight: 800; color: #0f172a;">(${officerName})</p>
-      <p style="margin: 2px 0 0; font-size: 11px; color: #475569;">${officerRank} (${officerPno})</p>
-      <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">${station}</p>
+      <p style="margin: 0; font-size: 12px; font-weight: bold; color: #000000;">(${officerName})</p>
+      <p style="margin: 2px 0 0; font-size: 11px; color: #374151;">${officerRank} (${officerPno})</p>
+      <p style="margin: 2px 0 0; font-size: 11px; color: #4b5563;">${station}</p>
     </div>
   </div>
 </div>`;
@@ -391,49 +392,17 @@ Dated: ${reportDateStr}
   // Print Handler
   const handlePrint = () => {
     const { htmlContent } = assembleCurrentReportData();
-    const printWindow = window.open("", "_blank", "width=900,height=800");
-    if (!printWindow) {
-      alert("Please allow popups to print official report.");
-      return;
-    }
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${title || "Official Police Report"}</title>
-          <style>
-            @media print {
-              body { margin: 15mm; }
-              @page { size: A4; margin: 15mm; }
-            }
-          </style>
-        </head>
-        <body style="font-family: Arial, sans-serif; margin: 20px;">
-          ${htmlContent}
-          <script>
-            window.onload = function() {
-              window.print();
-              window.onafterprint = function() { window.close(); };
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    printHtmlContent(htmlContent, title || "Official Police Report");
   };
 
   // Download Handler
   const handleDownload = () => {
-    const { plainText } = assembleCurrentReportData();
-    const blob = new Blob([plainText], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${title.replace(/[^a-zA-Z0-9_-]/g, "_") || "Enquiry_Report"}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const { htmlContent } = assembleCurrentReportData();
+    downloadA4DocumentAsHtml(
+      htmlContent,
+      `${title.replace(/[^a-zA-Z0-9_-]/g, "_") || "Enquiry_Report"}.html`,
+      title || "Official Police Report"
+    );
   };
 
   if (!isOpen) return null;
@@ -853,7 +822,7 @@ Dated: ${reportDateStr}
             </div>
           ) : (
             /* ============= OFFICIAL FORMATTED PREVIEW MODE ============= */
-            <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md border border-slate-300 p-6 sm:p-8">
+            <div className="max-w-[800px] mx-auto bg-white border border-slate-400 p-6 sm:p-10 shadow-sm">
               <div
                 ref={printAreaRef}
                 dangerouslySetInnerHTML={{

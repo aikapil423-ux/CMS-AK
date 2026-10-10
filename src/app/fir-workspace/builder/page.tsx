@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1027,7 +1028,11 @@ function FIRTemplateBuilderContent() {
 
   // ================= EXPORT & PRINT =================
   const handlePrint = () => {
-    window.print();
+    if (editorRef.current) {
+      printA4Element(editorRef.current, docName || "FIR_Document");
+    } else {
+      window.print();
+    }
   };
 
   const handleDownloadWord = () => {

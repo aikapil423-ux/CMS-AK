@@ -58,6 +58,7 @@ import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate } from "@/lib/utils";
+import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
 
@@ -700,32 +701,41 @@ export default function FIRProfilePage() {
       link.click();
       document.body.removeChild(link);
     } else {
-      const html = report.contentHtml || report.content || report.conclusionSummary || "";
-      const blob = new Blob([html], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = report.fileName || `${(report.dispatchNo || "POLICE_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const html =
+        report.contentHtml ||
+        `
+        <div style="font-family: 'Times New Roman', Times, serif; padding: 25px; line-height: 1.6; color: #000;">
+          <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
+            <h2 style="margin: 0; text-transform: uppercase;">Haryana Police</h2>
+            <h3 style="margin: 5px 0; color: #111;">${report.title}</h3>
+            <p style="margin: 0; font-size: 12px; font-family: monospace;">Dispatch: ${
+              report.dispatchNo || "N/A"
+            } • Date: ${formatDate(report.generatedDate)}</p>
+            <p style="margin: 0; font-size: 12px;">FIR No: ${fir?.firNumber || ""} • PS: ${
+              fir?.policeStation || ""
+            }</p>
+          </div>
+          <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${
+            report.content || report.conclusionSummary || ""
+          }</div>
+        </div>
+      `;
+      downloadA4DocumentAsHtml(
+        html,
+        report.fileName || `${(report.dispatchNo || "POLICE_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.html`,
+        report.title
+      );
     }
   };
 
   const handlePrintReport = (report: ComplaintReportItem) => {
-    const printWindow = window.open("", "_blank", "width=900,height=800");
-    if (!printWindow) {
-      alert("Please allow popups to print report.");
-      return;
-    }
     const html =
       report.contentHtml ||
       `
-      <div style="font-family: Arial, sans-serif; padding: 25px; line-height: 1.6;">
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+      <div style="font-family: 'Times New Roman', Times, serif; padding: 25px; line-height: 1.6; color: #000;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
           <h2 style="margin: 0; text-transform: uppercase;">Haryana Police</h2>
-          <h3 style="margin: 5px 0; color: #333;">${report.title}</h3>
+          <h3 style="margin: 5px 0; color: #111;">${report.title}</h3>
           <p style="margin: 0; font-size: 12px; font-family: monospace;">Dispatch: ${
             report.dispatchNo || "N/A"
           } • Date: ${formatDate(report.generatedDate)}</p>
@@ -733,22 +743,12 @@ export default function FIRProfilePage() {
             fir?.policeStation || ""
           }</p>
         </div>
-        <div style="white-space: pre-wrap; font-size: 14px;">${
+        <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${
           report.content || report.conclusionSummary || ""
         }</div>
       </div>
     `;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${report.title}</title>
-          <style>@media print { body { margin: 15mm; } @page { size: A4; margin: 15mm; } }</style>
-        </head>
-        <body>${html}<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; };</script></body>
-      </html>
-    `);
-    printWindow.document.close();
+    printHtmlContent(html, report.title);
   };
 
   const handleCreateNewVersion = (report: ComplaintReportItem) => {

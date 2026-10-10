@@ -14,9 +14,11 @@ import {
   Phone,
   AlertCircle,
   FileCheck2,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
+import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 export interface ComplaintPreviewData {
   sourceChannel: string;
@@ -94,57 +96,50 @@ export function ComplaintVerificationModal({
   if (!isOpen || !previewData) return null;
 
   const handlePrint = () => {
-    window.print();
+    printA4Element("printable-complaint-preview", `Verification_${previewData.policeStation}`);
+  };
+
+  const handleDownload = () => {
+    downloadA4DocumentAsHtml(
+      "printable-complaint-preview",
+      `Complaint_Verification_${previewData.policeStation}`,
+      "Complaint Intake Verification Proforma"
+    );
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          #printable-complaint-preview,
-          #printable-complaint-preview * {
-            visibility: visible;
-          }
-          #printable-complaint-preview {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 20px;
-            box-shadow: none !important;
-            border: 2px solid #000 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[94vh]">
+      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]">
         {/* Header Bar */}
-        <div className="no-print flex items-center justify-between px-5 py-3.5 bg-[#0b192c] text-white border-b border-slate-800">
+        <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-amber-400" />
+            <div className="w-7 h-7 rounded bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
             </div>
             <div>
               <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
                 <span>Complaint Verification &amp; Final Review</span>
-                <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase">
+                <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.2 rounded uppercase">
                   Pre-Registration Check
                 </span>
               </h3>
               <p className="text-[11px] text-slate-300">
-                Please verify all details carefully before final registration into the central police register.
+                Verify details before official registration.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Download A4</span>
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -158,7 +153,7 @@ export function ComplaintVerificationModal({
             <button
               type="button"
               onClick={onEdit}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
               title="Close and edit form"
             >
               <X className="w-5 h-5" />
@@ -167,71 +162,71 @@ export function ComplaintVerificationModal({
         </div>
 
         {/* Scrollable Preview Sheet */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100/70 flex justify-center">
+        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
           <div
             id="printable-complaint-preview"
             ref={printRef}
-            className="w-full bg-white border-2 border-slate-900 rounded-2xl p-6 sm:p-8 shadow-sm text-slate-900 space-y-6 font-sans relative"
-            style={{ minHeight: "800px", lineHeight: "1.65" }}
+            className="w-full max-w-[800px] bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative"
+            style={{ minHeight: "800px", lineHeight: "1.6" }}
           >
             {/* Seal & Department Title */}
-            <div className="text-center pb-4 border-b-2 border-slate-900">
+            <div className="text-center pb-3 border-b-2 border-slate-900">
               <div className="flex items-center justify-center gap-2 mb-1">
-                <Shield className="w-8 h-8 text-[#0b192c]" />
-                <span className="text-sm font-black tracking-widest uppercase text-[#0b192c]">
-                  HARYANA POLICE
+                <Shield className="w-7 h-7 text-[#0b192c]" />
+                <span className="text-xs font-bold tracking-widest uppercase text-[#0b192c]">
+                  HARYANA POLICE • हरियाणा पुलिस
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wide text-slate-950 font-serif">
+              <h1 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-slate-950">
                 Citizen Complaint Intake Verification Proforma
               </h1>
-              <p className="text-xs font-bold uppercase text-slate-700 tracking-wider mt-0.5">
+              <p className="text-xs font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
                 {previewData.policeStation}, District {previewData.district}
               </p>
-              <p className="text-[11px] text-slate-500 italic mt-0.5">
+              <p className="text-[11px] text-slate-600 italic mt-0.5">
                 (Under PPR Rule 22.48 &amp; Section 173(3) of Bharatiya Nagarik Suraksha Sanhita, 2023)
               </p>
             </div>
 
-            {/* Quick Badges: Channel, Priority, Category */}
-            <div className="p-3 bg-slate-50 border border-slate-300 rounded-xl grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            {/* Quick Summary Grid */}
+            <div className="border border-slate-400 p-3 bg-white grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-sans">
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px] uppercase">Channel:</span>
-                <span className="font-bold text-slate-900">{previewData.sourceChannel}</span>
+                <span className="text-slate-600 font-semibold block text-[10px] uppercase">Channel:</span>
+                <span className="font-bold text-slate-950">{previewData.sourceChannel}</span>
               </div>
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px] uppercase">Priority:</span>
-                <span className="font-bold text-slate-900">{previewData.priorityLevel}</span>
+                <span className="text-slate-600 font-semibold block text-[10px] uppercase">Priority:</span>
+                <span className="font-bold text-slate-950">{previewData.priorityLevel}</span>
               </div>
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px] uppercase">Crime / Category:</span>
-                <span className="font-bold text-slate-900">{previewData.incidentCategory}</span>
+                <span className="text-slate-600 font-semibold block text-[10px] uppercase">Crime / Category:</span>
+                <span className="font-bold text-slate-950">{previewData.incidentCategory}</span>
               </div>
               <div>
-                <span className="text-slate-500 font-semibold block text-[10px] uppercase">Date of Intake:</span>
-                <span className="font-mono font-bold text-slate-900">{formatDate(new Date())}</span>
+                <span className="text-slate-600 font-semibold block text-[10px] uppercase">Date of Intake:</span>
+                <span className="font-mono font-bold text-slate-950">{formatDate(new Date())}</span>
               </div>
             </div>
 
             {/* 1. Complainant Details */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 border-b border-slate-300 pb-1">
-                <User className="w-4 h-4 text-blue-700" />
-                <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5 font-sans">
+              <div className="flex items-center gap-1.5 border-b border-slate-400 pb-1">
+                <User className="w-3.5 h-3.5 text-slate-700" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-950">
                   1. Complainant Particulars ({previewData.complainants.length} Person{previewData.complainants.length > 1 ? "s" : ""})
                 </h3>
               </div>
               {previewData.complainants.map((comp, idx) => (
-                <div key={idx} className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl text-xs space-y-1.5">
+                <div key={idx} className="border border-slate-300 p-3 bg-white text-xs space-y-1">
                   <div className="flex flex-wrap items-center justify-between gap-1">
-                    <span className="font-bold text-sm text-slate-950">
+                    <span className="font-bold text-slate-950">
                       #{idx + 1} {comp.name} {comp.relativeName ? `(${comp.relationType || "S/o"} ${comp.relativeName})` : ""}
                     </span>
-                    <span className="font-mono font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded border border-blue-200">
-                      Mobile: +91 {comp.mobile}
+                    <span className="font-mono font-bold text-slate-900 border border-slate-300 px-1.5 py-0.2">
+                      Mob: +91 {comp.mobile}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-700 pt-1 border-t border-slate-200/60">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-slate-700 pt-1 border-t border-slate-200">
                     <div>
                       <strong>Gender / Age:</strong> {comp.gender || "—"} / {comp.age ? `${comp.age} Yrs` : "—"}
                     </div>
@@ -247,22 +242,22 @@ export function ComplaintVerificationModal({
             </div>
 
             {/* 2. Accused Details */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 border-b border-slate-300 pb-1">
-                <Shield className="w-4 h-4 text-red-700" />
-                <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5 font-sans">
+              <div className="flex items-center gap-1.5 border-b border-slate-400 pb-1">
+                <Shield className="w-3.5 h-3.5 text-slate-700" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-950">
                   2. Accused / Suspect Particulars
                 </h3>
               </div>
               {previewData.isAccusedKnown && previewData.accusedList.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {previewData.accusedList.map((acc, idx) => (
-                    <div key={idx} className="p-3 bg-red-50/50 border border-red-200 rounded-xl text-xs space-y-1">
+                    <div key={idx} className="border border-slate-300 p-3 bg-white text-xs space-y-0.5">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">
+                        <span className="font-bold text-slate-950">
                           #{idx + 1} {acc.name} {acc.alias ? `(Alias: ${acc.alias})` : ""}
                         </span>
-                        {acc.phone && <span className="font-mono text-slate-700 font-semibold">Mob: {acc.phone}</span>}
+                        {acc.phone && <span className="font-mono text-slate-800">Mob: {acc.phone}</span>}
                       </div>
                       <p className="text-[11px] text-slate-700">
                         <strong>Address:</strong> {acc.address || "Not specified"}
@@ -276,21 +271,21 @@ export function ComplaintVerificationModal({
                   ))}
                 </div>
               ) : (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 italic">
+                <div className="border border-slate-300 p-2.5 bg-slate-50 text-xs text-slate-700 italic">
                   Accused is unknown at this preliminary intake stage (अज्ञात / To be identified during enquiry).
                 </div>
               )}
             </div>
 
             {/* 3. Incident Place, Date & Details */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 border-b border-slate-300 pb-1">
-                <MapPin className="w-4 h-4 text-emerald-700" />
-                <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5 font-sans">
+              <div className="flex items-center gap-1.5 border-b border-slate-400 pb-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-700" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-950">
                   3. Occurrence &amp; Allegation Particulars
                 </h3>
               </div>
-              <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-xl text-xs space-y-2.5">
+              <div className="border border-slate-400 p-3.5 bg-white text-xs space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-800">
                   <div>
                     <strong>Place of Incident:</strong> {previewData.incidentPlace}
@@ -304,8 +299,8 @@ export function ComplaintVerificationModal({
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200">
-                  <strong className="block text-slate-900 mb-0.5 uppercase tracking-wide text-[11px]">
+                <div className="pt-2 border-t border-slate-300">
+                  <strong className="block text-slate-800 mb-0.5 uppercase tracking-wide text-[11px]">
                     Subject / विषय:
                   </strong>
                   <p className="text-slate-950 font-bold text-xs sm:text-sm">
@@ -313,21 +308,21 @@ export function ComplaintVerificationModal({
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200">
-                  <strong className="block text-slate-900 mb-0.5 uppercase tracking-wide text-[11px]">
+                <div className="pt-2 border-t border-slate-300">
+                  <strong className="block text-slate-800 mb-0.5 uppercase tracking-wide text-[11px]">
                     Brief Synopsis / विवरण:
                   </strong>
-                  <p className="text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
+                  <p className="text-slate-900 text-xs leading-relaxed whitespace-pre-wrap">
                     {previewData.complaintDescription}
                   </p>
                 </div>
 
                 {previewData.incidentDetails && previewData.incidentDetails !== previewData.complaintDescription && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <strong className="block text-slate-900 mb-0.5 uppercase tracking-wide text-[11px]">
+                  <div className="pt-2 border-t border-slate-300">
+                    <strong className="block text-slate-800 mb-0.5 uppercase tracking-wide text-[11px]">
                       Additional Incident Notes:
                     </strong>
-                    <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap">
+                    <p className="text-slate-800 text-xs leading-relaxed whitespace-pre-wrap">
                       {previewData.incidentDetails}
                     </p>
                   </div>
@@ -336,40 +331,25 @@ export function ComplaintVerificationModal({
             </div>
 
             {/* 4. Direct Send to FIR Status */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 border-b border-slate-300 pb-1">
-                <Shield className="w-4 h-4 text-[#0b192c]" />
-                <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900">
+            <div className="space-y-1.5 font-sans">
+              <div className="flex items-center gap-1.5 border-b border-slate-400 pb-1">
+                <Shield className="w-3.5 h-3.5 text-slate-700" />
+                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-950">
                   4. Direct Send to FIR Decision
                 </h3>
               </div>
-              <div
-                className={`p-3.5 rounded-xl border text-xs ${
-                  previewData.directSendToFir
-                    ? "bg-rose-50 border-rose-300 text-rose-950"
-                    : "bg-blue-50 border-blue-200 text-blue-950"
-                }`}
-              >
+              <div className="border border-slate-300 p-3 bg-white text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold">
-                    Direct send to FIR?:{" "}
-                    <span className={previewData.directSendToFir ? "text-rose-700" : "text-blue-700"}>
-                      {previewData.directSendToFir ? "YES" : "NO"}
-                    </span>
+                  <span className="font-bold text-slate-950">
+                    Direct Send to FIR?: {previewData.directSendToFir ? "YES" : "NO"}
                   </span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      previewData.directSendToFir
-                        ? "bg-rose-600 text-white"
-                        : "bg-blue-600 text-white"
-                    }`}
-                  >
+                  <span className="text-[10px] font-bold border border-slate-400 px-1.5 py-0.2">
                     {previewData.directSendToFir ? "Direct FIR Route" : "Standard Enquiry Route"}
                   </span>
                 </div>
                 <p className="text-[11px] mt-1 text-slate-700">
                   {previewData.directSendToFir
-                    ? "Preliminary enquiry bypassed. Complaint will appear with status “FIR Register” in the register and sent to SHO for direct FIR registration."
+                    ? "Preliminary enquiry bypassed. Complaint will appear with status “FIR Register” in register for SHO direct FIR registration."
                     : "Standard enquiry workflow with Enquiry Officer preliminary spot verification and findings report."}
                 </p>
               </div>
@@ -377,24 +357,24 @@ export function ComplaintVerificationModal({
 
             {/* 5. EO Allocation Preview */}
             {!previewData.directSendToFir && previewData.isSho && previewData.shouldAssignEoNow && previewData.selectedEoName && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 border-b border-slate-300 pb-1">
-                  <FileCheck2 className="w-4 h-4 text-purple-700" />
-                  <h3 className="font-black text-xs sm:text-sm uppercase tracking-wider text-slate-900">
+              <div className="space-y-1.5 font-sans">
+                <div className="flex items-center gap-1.5 border-b border-slate-400 pb-1">
+                  <FileCheck2 className="w-3.5 h-3.5 text-slate-700" />
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-950">
                     5. Immediate Enquiry Officer (EO) Allocation
                   </h3>
                 </div>
-                <div className="p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl text-xs space-y-1.5">
+                <div className="border border-slate-300 p-3 bg-white text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-purple-950">
+                    <span className="font-bold text-slate-950">
                       Assigned Officer: {previewData.selectedEoName} ({previewData.selectedEoRank})
                     </span>
-                    <span className="font-mono text-purple-800 text-[11px]">
+                    <span className="font-mono text-slate-800 text-[11px]">
                       PNO: {previewData.selectedEoPno || "—"} • Target: {previewData.targetDays || 14} Days
                     </span>
                   </div>
                   {previewData.assignedDirections && (
-                    <p className="text-[11px] text-purple-900 italic pt-1 border-t border-purple-200">
+                    <p className="text-[11px] text-slate-800 italic pt-1 border-t border-slate-200">
                       &ldquo;{previewData.assignedDirections}&rdquo;
                     </p>
                   )}
@@ -403,20 +383,20 @@ export function ComplaintVerificationModal({
             )}
 
             {/* Footer Signatures */}
-            <div className="pt-8 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
+            <div className="pt-4 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
               <div className="text-center w-40">
-                <div className="h-14 border border-dashed border-slate-400 rounded flex items-center justify-center text-[10px] text-slate-400">
+                <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
                   Complainant Sign / Thumb
                 </div>
-                <p className="mt-1 font-bold text-slate-700">COMPLAINANT SIGNATURE</p>
+                <p className="mt-1 font-bold text-slate-800">COMPLAINANT SIGNATURE</p>
               </div>
 
-              <div className="text-right space-y-1">
+              <div className="text-right space-y-0.5">
                 <p className="text-slate-400">______________________________________</p>
-                <p className="font-bold text-slate-900">
+                <p className="font-bold text-slate-950">
                   {previewData.registeredBy}
                 </p>
-                <p className="text-slate-600 text-[11px]">
+                <p className="text-slate-700 text-[11px]">
                   Intake Officer / Duty Clerk
                 </p>
                 <p className="text-slate-600 font-mono text-[11px]">
