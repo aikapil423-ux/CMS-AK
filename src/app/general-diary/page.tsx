@@ -137,12 +137,12 @@ function GeneralDiaryContent() {
   };
 
   const GD_COLUMN_WIDTHS: Record<string, string> = {
-    gdNumber: "w-28",
-    officer: "w-44",
-    gdType: "w-32",
-    subject: "w-44",
-    activityDateTime: "w-44",
-    narrative: "min-w-[200px]",
+    gdNumber: "w-32 min-w-[120px]",
+    officer: "w-48 min-w-[180px]",
+    gdType: "w-36 min-w-[140px]",
+    subject: "w-60 min-w-[220px]",
+    activityDateTime: "w-40 min-w-[145px]",
+    narrative: "min-w-[300px]",
   };
 
   const [columnOrder, setColumnOrder] = useState<GDColKey[]>(() => {
@@ -625,7 +625,7 @@ function GeneralDiaryContent() {
     switch (col) {
       case "gdNumber":
         return (
-          <td key="gdNumber" className="py-3.5 px-3.5 align-top">
+          <td key="gdNumber" className="py-3.5 px-3.5 align-top w-32 min-w-[120px]">
             <div className="space-y-0.5">
               <span className="font-mono font-black text-sm text-blue-950 block">
                 {rec.isLocked ? rec.sequencePerDay : "—"}
@@ -639,7 +639,7 @@ function GeneralDiaryContent() {
 
       case "officer":
         return (
-          <td key="officer" className="py-3.5 px-3.5 align-top">
+          <td key="officer" className="py-3.5 px-3.5 align-top w-48 min-w-[180px]">
             <div className="space-y-0.5">
               <p className="font-bold text-slate-900 text-xs">
                 {rec.entryForOfficer.name}
@@ -653,7 +653,7 @@ function GeneralDiaryContent() {
 
       case "gdType":
         return (
-          <td key="gdType" className="py-3.5 px-3 align-top">
+          <td key="gdType" className="py-3.5 px-3.5 align-top w-36 min-w-[140px]">
             <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
               {rec.typeDisplay}
             </span>
@@ -662,8 +662,8 @@ function GeneralDiaryContent() {
 
       case "subject":
         return (
-          <td key="subject" className="py-3.5 px-3.5 align-top w-32">
-            <p className="font-bold text-slate-950 text-xs break-words whitespace-normal leading-snug">
+          <td key="subject" className="py-3.5 px-3.5 align-top w-60 min-w-[220px]">
+            <p className="font-bold text-slate-950 text-xs break-words whitespace-normal leading-relaxed">
               {rec.subject}
             </p>
           </td>
@@ -671,7 +671,7 @@ function GeneralDiaryContent() {
 
       case "activityDateTime":
         return (
-          <td key="activityDateTime" className="py-3.5 px-3 align-top font-mono">
+          <td key="activityDateTime" className="py-3.5 px-3.5 align-top font-mono whitespace-nowrap w-40 min-w-[145px]">
             <div className="space-y-0.5 text-xs text-slate-800">
               <p className="font-bold">
                 {toDDMMYYYY(
@@ -691,7 +691,7 @@ function GeneralDiaryContent() {
 
       case "narrative":
         return (
-          <td key="narrative" className="py-3.5 px-3.5 align-top">
+          <td key="narrative" className="py-3.5 px-3.5 align-top min-w-[300px]">
             <div
               onClick={() => openBriefModal(rec)}
               className="cursor-pointer group p-1 -m-1 rounded-md hover:bg-blue-50/70 transition-colors"
@@ -712,7 +712,7 @@ function GeneralDiaryContent() {
       default: {
         const customDef = customCols.find((c) => c.key === col);
         return (
-          <td key={col} className="py-3.5 px-3.5 align-top text-xs text-slate-700">
+          <td key={col} className="py-3.5 px-3.5 align-top text-xs text-slate-700 w-36 min-w-[130px]">
             <span className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
               {customDef?.defaultValue || "—"}
             </span>
@@ -906,8 +906,9 @@ function GeneralDiaryContent() {
         />
       ) : (
         <div className="space-y-4">
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-            <table className="w-full table-fixed text-xs text-left">
+          <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto w-full">
+              <table className="min-w-[1100px] w-full text-xs text-left">
               <thead className="bg-[#0b192c] text-white uppercase text-[11px] tracking-wider font-sans">
                 <tr>
                   {columnOrder.map((col) => {
@@ -956,7 +957,7 @@ function GeneralDiaryContent() {
                       </th>
                     );
                   })}
-                  <th className="py-3 px-3 w-36 text-right align-top pt-3.5">Actions</th>
+                  <th className="py-3 px-3.5 w-36 min-w-[140px] text-right align-top pt-3.5 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -995,7 +996,7 @@ function GeneralDiaryContent() {
                       {columnOrder.map((col) => renderGDCell(col, rec))}
 
                       {/* 7. Actions */}
-                      <td className="py-3.5 px-3 align-top text-right">
+                      <td className="py-3.5 px-3.5 align-top text-right w-36 min-w-[140px]">
                         {isSuggested || isDraft ? (
                           <div className="inline-flex flex-col items-stretch gap-1.5 min-w-[140px]">
                             <Button
@@ -1071,6 +1072,7 @@ function GeneralDiaryContent() {
               </tbody>
             </table>
           </div>
+        </div>
 
           {/* Pagination Footer */}
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 pt-2">
