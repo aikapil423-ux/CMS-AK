@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -74,6 +74,11 @@ import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
+import {
+  getStatesList,
+  getDistrictsForState,
+  getPoliceStationsForDistrict,
+} from "@/lib/jurisdictionData";
 
 // Sub-dialogs and Inline Form Sections
 import { GDLookupDialog, GDLookupResult } from "@/components/fir/dialogs/GDLookupDialog";
@@ -178,6 +183,35 @@ function RegisterFIRForm() {
   const [policeStation, setPoliceStation] = useState("Sector 29 Police Station");
   const [firDate, setFirDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [firTime, setFirTime] = useState(() => new Date().toTimeString().slice(0, 5));
+
+  // Cascading Jurisdiction Lists and Handlers
+  const availableStates = useMemo(() => getStatesList(), []);
+  const availableDistricts = useMemo(() => getDistrictsForState(state), [state]);
+  const availablePoliceStations = useMemo(
+    () => getPoliceStationsForDistrict(state, district),
+    [state, district]
+  );
+
+  const handleStateChange = (newState: string) => {
+    setState(newState);
+    const districts = getDistrictsForState(newState);
+    const nextDistrict = districts.includes(district) ? district : (districts[0] || "");
+    setDistrict(nextDistrict);
+    const pss = getPoliceStationsForDistrict(newState, nextDistrict);
+    const nextPs = pss.includes(policeStation) ? policeStation : (pss[0] || "");
+    setPoliceStation(nextPs);
+  };
+
+  const handleDistrictChange = (newDistrict: string) => {
+    setDistrict(newDistrict);
+    const pss = getPoliceStationsForDistrict(state, newDistrict);
+    const nextPs = pss.includes(policeStation) ? policeStation : (pss[0] || "");
+    setPoliceStation(nextPs);
+  };
+
+  const handlePoliceStationChange = (newPs: string) => {
+    setPoliceStation(newPs);
+  };
 
   // Dialog Visibility & Edit States
   const [showGDLookupDialog, setShowGDLookupDialog] = useState(false);
@@ -1247,30 +1281,51 @@ function RegisterFIRForm() {
         <CardContent className="p-4 grid grid-cols-2 sm:grid-cols-6 gap-3 text-xs bg-slate-50/70 border-b border-slate-200">
           <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">State</label>
-            <input
-              type="text"
+            <select
               value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs"
-            />
+              onChange={(e) => handleStateChange(e.target.value)}
+              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            >
+              {availableStates.map((st: string) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">District</label>
-            <input
-              type="text"
+            <select
               value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs"
-            />
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-medium text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            >
+              {district && !availableDistricts.includes(district) && (
+                <option value={district}>{district}</option>
+              )}
+              {availableDistricts.map((dst: string) => (
+                <option key={dst} value={dst}>
+                  {dst}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Police Station</label>
-            <input
-              type="text"
+            <select
               value={policeStation}
-              onChange={(e) => setPoliceStation(e.target.value)}
-              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-semibold text-xs text-slate-900"
-            />
+              onChange={(e) => handlePoliceStationChange(e.target.value)}
+              className="w-full mt-0.5 p-1.5 rounded border border-slate-300 bg-white font-semibold text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            >
+              {policeStation && !availablePoliceStations.includes(policeStation) && (
+                <option value={policeStation}>{policeStation}</option>
+              )}
+              {availablePoliceStations.map((ps: string) => (
+                <option key={ps} value={ps}>
+                  {ps}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-[10px] uppercase font-bold text-slate-500 block">FIR Number</label>
