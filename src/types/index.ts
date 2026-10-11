@@ -592,6 +592,7 @@ export interface ComplaintDocumentItem {
   contentHtml?: string;
   mimeType?: string;
   description?: string;
+  originalName?: string;
 
   // Immutable Ownership & Transfer History
   createdByUserId?: string;

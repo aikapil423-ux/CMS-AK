@@ -49,6 +49,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
 import { complaintAutoFillService, ProcessedComplaintDocumentRecord } from "@/services/complaintAutoFillService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import {
   ComplaintItem,
@@ -1188,7 +1189,7 @@ export default function RegisterComplaintPage() {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
 
-      // 1. Seal this document into the complaint docket attachments
+      // 1. Seal this document into the complaint docket attachments with original name
       const attachedDoc: ComplaintEvidenceAttachment = {
         id: `ev_draft_${Date.now()}`,
         name: file.name,
@@ -1199,6 +1200,24 @@ export default function RegisterComplaintPage() {
         uploadedAt: new Date().toISOString(),
         description: "",
       };
+      (attachedDoc as any).originalName = file.name;
+
+      // Persist original binary into IndexedDB immediately
+      evidenceBlobStore.put(attachedDoc.id, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
+      evidenceBlobStore.put(file.name, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
+
+      // Register with universal evidence service
+      universalEvidenceService
+        .registerAndProcess({
+          file,
+          dataUrl,
+          fileName: file.name,
+          fileId: attachedDoc.id,
+          module: "COMPLAINTS",
+          uploadedBy: currentUser?.name || "Intake Officer",
+        })
+        .catch((err) => console.warn("Background evidence registration warning:", err));
+
       setAttachments((prev) => [attachedDoc, ...prev.filter((a) => a.name !== file.name)]);
 
       // Check if it's a readable text file
@@ -1258,18 +1277,23 @@ export default function RegisterComplaintPage() {
 
       const geminiData = resJson.data;
 
-      // Automatically rename and classify the document based on verified inner contents
+      // Automatically detect verified classification and suggested title
       const classifiedName = geminiData.classifiedDocumentName || file.name;
       const verifiedTitle = geminiData.verifiedDocumentTitle || typeLabel;
 
-      // Update the sealed attachment with the classified, verified filename, description, and processed flags
+      if (classifiedName && classifiedName !== file.name) {
+        evidenceBlobStore.put(classifiedName, dataUrl, { fileName: classifiedName, fileSize: file.size, mimeType: file.type });
+      }
+
+      // Keep original document with its ORIGINAL name so officer knows what was uploaded
       setAttachments((prev) =>
         prev.map((a) =>
           a.id === attachedDocId || a.name === file.name
             ? {
                 ...a,
-                name: classifiedName,
-                description: "",
+                name: file.name, // Original name preserved
+                originalName: file.name,
+                description: classifiedName !== file.name ? `Verified: ${classifiedName}` : "",
                 isAutoFilled: true,
                 isProcessed: true,
                 processedRecordId: attachedDocId || `proc_${Date.now()}`,
@@ -2157,8 +2181,10 @@ export default function RegisterComplaintPage() {
           id: `doc_${att.id}`,
           complaintId: "",
           fileName: att.name,
+          originalName: (att as any).originalName || att.name,
           fileCategory: att.category.toUpperCase(),
           uploadedBy: currentUser.name,
+          createdByUserId: currentUser.id || currentUser.pno,
           uploadedAt: att.uploadedAt || new Date().toISOString(),
           fileSize: typeof att.size === "number" ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || "10 KB"),
           fileUrl: att.dataUrl,
@@ -2172,6 +2198,18 @@ export default function RegisterComplaintPage() {
         })),
       ];
 
+      // Also persist all attachments to IndexedDB store right before registration
+      for (const att of attachments) {
+        if (att.dataUrl) {
+          evidenceBlobStore.put(att.id, att.dataUrl, { fileName: att.name, fileSize: att.size, mimeType: att.type });
+          evidenceBlobStore.put(`doc_${att.id}`, att.dataUrl, { fileName: att.name, fileSize: att.size, mimeType: att.type });
+          evidenceBlobStore.put(att.name, att.dataUrl, { fileName: att.name, fileSize: att.size, mimeType: att.type });
+          if ((att as any).originalName) {
+            evidenceBlobStore.put((att as any).originalName, att.dataUrl, { fileName: (att as any).originalName, fileSize: att.size, mimeType: att.type });
+          }
+        }
+      }
+
       // If an autofill document was processed and is not yet in documentsToSave, add it as application copy
       if (
         autofillSuccessNotice &&
@@ -2182,8 +2220,10 @@ export default function RegisterComplaintPage() {
           id: `doc_autofill_${Date.now()}`,
           complaintId: "",
           fileName: autofillSuccessNotice.fileName,
+          originalName: autofillSuccessNotice.fileName,
           fileCategory: "APPLICATION / COMPLAINT COPY",
           uploadedBy: currentUser.name,
+          createdByUserId: currentUser.id || currentUser.pno,
           uploadedAt: new Date().toISOString(),
           fileSize: "120 KB",
           fileUrl: autofillSuccessNotice.dataUrl,
@@ -2195,6 +2235,9 @@ export default function RegisterComplaintPage() {
           rawExtractedText: currentProcessedRecord?.rawDocument?.rawExtractedText,
           detectedLanguage: currentProcessedRecord?.rawDocument?.detectedLanguage,
         });
+        if (autofillSuccessNotice.dataUrl) {
+          evidenceBlobStore.put(autofillSuccessNotice.fileName, autofillSuccessNotice.dataUrl, { fileName: autofillSuccessNotice.fileName });
+        }
       }
 
       // 1. Create Complaint

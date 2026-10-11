@@ -171,6 +171,16 @@ export function canDeleteDocument(
     };
   }
 
+  // SHO, Super Admin, or Duty Officer can manage and delete case evidence / uploaded documents
+  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER") {
+    return { allowed: true };
+  }
+
+  // If complaint is assigned to this EO, EO can delete documents in their case docket
+  if (complaint && isUserAssignedEo(user, complaint)) {
+    return { allowed: true };
+  }
+
   const creatorId = doc.createdByUserId;
   if (creatorId && (creatorId === user.id || (user.pno && creatorId === user.pno))) {
     return { allowed: true };

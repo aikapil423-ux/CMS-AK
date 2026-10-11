@@ -66,6 +66,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
 import { complaintAutoFillService } from "@/services/complaintAutoFillService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 import { CaseEvidenceDataModal } from "@/components/evidence/CaseEvidenceDataModal";
 import {
@@ -1384,6 +1385,18 @@ export default function ComplaintProfilePage() {
         complaintAutoFillService.deleteByFileName(targetDoc.fileName, complaint.id);
         await universalEvidenceService.deleteByDocumentId(targetDoc.fileName);
       }
+      if (typeof window !== "undefined") {
+        evidenceBlobStore.delete(docId);
+        evidenceBlobStore.delete(cleanDocId);
+        if (targetDoc?.fileName) {
+          evidenceBlobStore.delete(targetDoc.fileName);
+          evidenceBlobStore.delete(`${complaint.id}_${targetDoc.fileName}`);
+        }
+        if (targetDoc?.originalName) {
+          evidenceBlobStore.delete(targetDoc.originalName);
+          evidenceBlobStore.delete(`${complaint.id}_${targetDoc.originalName}`);
+        }
+      }
       const updated = await ComplaintService.deleteDocument(complaint.id, docId, currentUser.name, currentUser);
       setComplaint(updated);
     } catch (err: any) {
@@ -1896,41 +1909,70 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
   }, [complaint]);
 
   // Handle instant preview for any document
-  const handlePreviewDocument = (doc: ComplaintDocumentItem) => {
+  const handlePreviewDocument = async (doc: ComplaintDocumentItem) => {
     const cat = detectCategory(doc.fileName, doc.fileCategory);
     let dataUrl = doc.dataUrl || doc.fileUrl;
+
+    const isPlaceholder = dataUrl && dataUrl.includes("HARYANA%20POLICE%20OFFICIAL%20DOCKET");
+    if (!dataUrl || isPlaceholder) {
+      // 1. Resolve from persistent storage (IndexedDB / Memory / Server)
+      const resolved = await ComplaintService.resolveDocumentDataUrl(complaint?.id || "", doc);
+      if (resolved) {
+        dataUrl = resolved;
+      }
+    }
+
+    if (!dataUrl || dataUrl.includes("HARYANA%20POLICE%20OFFICIAL%20DOCKET")) {
+      // 2. Fallback to universal evidence service
+      const evRec =
+        universalEvidenceService.getByFileName(doc.fileName, complaint?.id) ||
+        (doc.originalName ? universalEvidenceService.getByFileName(doc.originalName, complaint?.id) : null) ||
+        (complaint ? universalEvidenceService.getByCase(complaint.id).find((r) => r.rawDocument?.fileName === doc.fileName) : undefined);
+      if (evRec?.rawDocument?.dataUrl) {
+        dataUrl = evRec.rawDocument.dataUrl;
+      }
+    }
+
     if (!dataUrl) {
       const sampleText = `HARYANA POLICE OFFICIAL DOCKET RECORD\nComplaint: ${complaint?.complaintNumber || "N/A"}\nDocument: ${doc.fileName}\nCategory: ${doc.fileCategory}\nUploaded By: ${doc.uploadedBy}\nTimestamp: ${formatDateTime(doc.uploadedAt)}\n\nThis record is officially sealed under BNSS Section 173(3).`;
       dataUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(sampleText)}`;
     }
+
+    // Convert PDF dataUrls to native Blob URL for reliable, high-performance <iframe> rendering in all browsers
+    let displayUrl = dataUrl;
+    if (dataUrl && (dataUrl.startsWith("data:application/pdf") || doc.fileName.toLowerCase().endsWith(".pdf"))) {
+      displayUrl = evidenceBlobStore.createBlobUrl(dataUrl);
+    }
+
     setPreviewModalFile({
       name: doc.fileName,
       category: cat,
-      dataUrl,
+      dataUrl: displayUrl,
       size: doc.fileSize,
     });
   };
 
   // Handle instant download for any document
-  const handleDownloadDocument = (doc: ComplaintDocumentItem) => {
-    const url = doc.dataUrl || doc.fileUrl;
+  const handleDownloadDocument = async (doc: ComplaintDocumentItem) => {
+    let url = doc.dataUrl || doc.fileUrl;
+    const isPlaceholder = url && url.includes("HARYANA%20POLICE%20OFFICIAL%20DOCKET");
+    if (!url || isPlaceholder) {
+      const resolved = await ComplaintService.resolveDocumentDataUrl(complaint?.id || "", doc);
+      if (resolved) url = resolved;
+    }
     if (url && (url.startsWith("data:") || url.startsWith("blob:") || url.startsWith("http"))) {
+      const downloadHref = url.startsWith("data:") ? evidenceBlobStore.createBlobUrl(url) : url;
       const a = document.createElement("a");
-      a.href = url;
+      a.href = downloadHref;
       a.download = doc.fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      if (downloadHref.startsWith("blob:") && downloadHref !== url) {
+        setTimeout(() => URL.revokeObjectURL(downloadHref), 10000);
+      }
     } else {
-      const content = `HARYANA POLICE - CMS CASE RECORD
-Complaint Number: ${complaint?.complaintNumber || "N/A"}
-Document Name: ${doc.fileName}
-Category: ${doc.fileCategory}
-Uploaded By: ${doc.uploadedBy}
-Date: ${formatDateTime(doc.uploadedAt)}
-Description: ${doc.description || "Official police docket attachment"}
---------------------------------------------------
-Certified official record copy.`;
+      const content = `HARYANA POLICE - CMS CASE RECORD\nComplaint Number: ${complaint?.complaintNumber || "N/A"}\nDocument Name: ${doc.fileName}\nCategory: ${doc.fileCategory}\nUploaded By: ${doc.uploadedBy}\nDate: ${formatDateTime(doc.uploadedAt)}\nDescription: ${doc.description || "Official police docket attachment"}\n--------------------------------------------------\nCertified official record copy.`;
       const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -3191,11 +3233,13 @@ Certified official record copy.`;
                                   !doc.fileName?.toLowerCase().includes("intake_verification") &&
                                   canDeleteDocument(currentUser, doc, complaint).allowed && (
                                     <button
+                                      type="button"
                                       onClick={() => handleDeleteDocument(doc.id)}
-                                      className="text-slate-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                                       title="Delete document"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                                      <span>Delete</span>
                                     </button>
                                   )}
                               </div>

@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
     const recordId = searchParams.get("id");
     const moduleType = searchParams.get("module");
 
+    const fileName = searchParams.get("fileName");
+
     const store = readEvidenceStore();
 
     if (recordId) {
@@ -53,6 +55,19 @@ export async function GET(req: NextRequest) {
     if (fileId) {
       const record = store.find((r) => r.fileId === fileId || r.id === fileId);
       return NextResponse.json({ success: true, record: record || null });
+    }
+
+    if (fileName) {
+      const cleanName = fileName.toLowerCase().trim();
+      const record = store.find(
+        (r) =>
+          (r.rawDocument?.fileName || "").toLowerCase().trim() === cleanName ||
+          ((r.rawDocument as any)?.originalFileName || "").toLowerCase().trim() === cleanName ||
+          (r.structuredData?.classifiedDocumentName || "").toLowerCase().trim() === cleanName
+      );
+      if (record) {
+        return NextResponse.json({ success: true, record });
+      }
     }
 
     if (sha256Hash) {

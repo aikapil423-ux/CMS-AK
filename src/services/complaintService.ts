@@ -45,6 +45,7 @@ import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
 import { complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
+import { evidenceBlobStore } from "./evidenceBlobStore";
 
 // In-memory store initialized with localStorage if available, or fallback to MOCK_COMPLAINTS
 const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
@@ -60,6 +61,12 @@ function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
       if (att.dataUrl && att.dataUrl.length > 30000) {
         globalDataUrlCache.set(`att_${att.id}`, att.dataUrl);
         globalDataUrlCache.set(`${item.id}_${att.name}`, att.dataUrl);
+        globalDataUrlCache.set(att.name, att.dataUrl);
+        if (typeof window !== "undefined") {
+          evidenceBlobStore.put(`att_${att.id}`, att.dataUrl, { fileName: att.name });
+          evidenceBlobStore.put(`${item.id}_${att.name}`, att.dataUrl, { fileName: att.name });
+          evidenceBlobStore.put(att.name, att.dataUrl, { fileName: att.name });
+        }
         return { ...att, dataUrl: "" };
       }
       return att;
@@ -69,6 +76,20 @@ function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
       if (url && url.length > 30000) {
         globalDataUrlCache.set(doc.id, url);
         globalDataUrlCache.set(`${item.id}_${doc.fileName}`, url);
+        globalDataUrlCache.set(doc.fileName, url);
+        if (doc.originalName) {
+          globalDataUrlCache.set(doc.originalName, url);
+          globalDataUrlCache.set(`${item.id}_${doc.originalName}`, url);
+        }
+        if (typeof window !== "undefined") {
+          evidenceBlobStore.put(doc.id, url, { fileName: doc.fileName });
+          evidenceBlobStore.put(`${item.id}_${doc.fileName}`, url, { fileName: doc.fileName });
+          evidenceBlobStore.put(doc.fileName, url, { fileName: doc.fileName });
+          if (doc.originalName) {
+            evidenceBlobStore.put(doc.originalName, url, { fileName: doc.originalName });
+            evidenceBlobStore.put(`${item.id}_${doc.originalName}`, url, { fileName: doc.originalName });
+          }
+        }
         return {
           ...doc,
           dataUrl: "",
@@ -82,6 +103,9 @@ function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
       const url = rep.dataUrl || rep.fileUrl;
       if (url && url.length > 30000) {
         globalDataUrlCache.set(rep.id, url);
+        if (typeof window !== "undefined") {
+          evidenceBlobStore.put(rep.id, url, { fileName: rep.fileName || rep.title });
+        }
         return { ...rep, dataUrl: "", fileUrl: "" };
       }
       return rep;
@@ -2023,6 +2047,87 @@ export const ComplaintService = {
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
     return complaintsStore[index];
+  },
+
+  /**
+   * Resolves full-fidelity dataUrl for any document across Memory, IndexedDB, and Server Evidence Store.
+   */
+  async resolveDocumentDataUrl(
+    complaintId: string,
+    doc: { id?: string; fileName?: string; originalName?: string; dataUrl?: string; fileUrl?: string }
+  ): Promise<string | null> {
+    // 1. Direct valid dataUrl on the document
+    if (doc.dataUrl && doc.dataUrl.length > 50 && !doc.dataUrl.includes("HARYANA%20POLICE%20OFFICIAL%20DOCKET")) {
+      return doc.dataUrl;
+    }
+    if (doc.fileUrl && doc.fileUrl.length > 50 && !doc.fileUrl.includes("HARYANA%20POLICE%20OFFICIAL%20DOCKET")) {
+      return doc.fileUrl;
+    }
+
+    // 2. In-memory Map cache
+    if (doc.id && globalDataUrlCache.has(doc.id)) {
+      return globalDataUrlCache.get(doc.id)!;
+    }
+    if (doc.fileName) {
+      if (globalDataUrlCache.has(`${complaintId}_${doc.fileName}`)) {
+        return globalDataUrlCache.get(`${complaintId}_${doc.fileName}`)!;
+      }
+      if (globalDataUrlCache.has(doc.fileName)) {
+        return globalDataUrlCache.get(doc.fileName)!;
+      }
+    }
+    if (doc.originalName && globalDataUrlCache.has(doc.originalName)) {
+      return globalDataUrlCache.get(doc.originalName)!;
+    }
+
+    // 3. Persistent IndexedDB Blob Store
+    if (typeof window !== "undefined") {
+      if (doc.id) {
+        const idb = await evidenceBlobStore.get(doc.id);
+        if (idb) return idb;
+      }
+      if (doc.fileName) {
+        const idbByCase = await evidenceBlobStore.get(`${complaintId}_${doc.fileName}`);
+        if (idbByCase) return idbByCase;
+        const idbByName = await evidenceBlobStore.get(doc.fileName);
+        if (idbByName) return idbByName;
+      }
+      if (doc.originalName) {
+        const idbOrig = await evidenceBlobStore.get(doc.originalName);
+        if (idbOrig) return idbOrig;
+      }
+    }
+
+    // 4. Universal Evidence Service local cache
+    if (doc.fileName) {
+      const evRec = universalEvidenceService.getByFileName(doc.fileName, complaintId) ||
+        (doc.originalName ? universalEvidenceService.getByFileName(doc.originalName, complaintId) : null);
+      if (evRec?.rawDocument?.dataUrl && evRec.rawDocument.dataUrl.length > 50) {
+        return evRec.rawDocument.dataUrl;
+      }
+    }
+
+    // 5. Query persistent server store API
+    try {
+      if (typeof window !== "undefined" && doc.fileName) {
+        const url = `/api/evidence/store?fileName=${encodeURIComponent(doc.fileName)}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.record?.rawDocument?.dataUrl) {
+            const serverUrl = json.record.rawDocument.dataUrl;
+            if (serverUrl && serverUrl.length > 50) {
+              evidenceBlobStore.put(doc.fileName, serverUrl);
+              return serverUrl;
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
   },
 
   async addConfidentialDossier(
