@@ -43,6 +43,7 @@ import {
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
+import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
@@ -654,7 +655,7 @@ export const ComplaintService = {
       attachments: input.attachments || [],
       documents: [
         ...((input as any).documents || []),
-        ...(input.attachments || []).map((att) => ({
+        ...(input.attachments || []).map((att: any) => ({
           id: `doc_${att.id}`,
           complaintId: generatedComplaintNumber,
           fileName: att.name,
@@ -3162,6 +3163,129 @@ ${reportBody}
     }
 
     return complaintsStore[index];
+  },
+
+  async getComplaintByNumber(complaintNumber: string): Promise<ComplaintItem | undefined> {
+    return this.getComplaintById(complaintNumber);
+  },
+
+  async createFirCriminalCaseGdEntry(
+    complaintId: string,
+    options?: {
+      caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
+      actsAndSections?: string;
+      majorAct?: string;
+      officerName?: string;
+      officerPno?: string;
+      officerBelt?: string;
+      officerRank?: string;
+    }
+  ): Promise<{ gdRecord: GeneralDiaryRecord; complaint: ComplaintItem }> {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) throw new Error("Complaint not found");
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+    const caseType = options?.caseType || complaint.caseType || "ADULT";
+    const majorAct = options?.majorAct || "Bharatiya Nyaya Sanhita, 2023 (BNS)";
+    const actsAndSections =
+      options?.actsAndSections ||
+      complaint.firSections ||
+      "Section 303(2), 115(2), 3(5) BNS, 2023";
+
+    const officerName = options?.officerName || "Inspector Rajesh Kumar (SHO)";
+    const officerPno = options?.officerPno || "HR-04291882";
+    const officerRank = options?.officerRank || "Inspector / SHO";
+    const officerBelt = options?.officerBelt || "04291882";
+
+    // EO / IO Details
+    const eoIoName = complaint.assignedEoName || officerName;
+    const eoIoRank = complaint.assignedEoRank || "Sub-Inspector";
+    const eoIoPno = complaint.assignedEoPno || officerPno;
+    const eoIoBelt = complaint.assignedEoBeltNumber || officerBelt;
+    const eoIoPhone = complaint.assignedEoPhone || "N/A";
+
+    const narrative = `[रोजनामचा आमद / आपराधिक मामला प्रविष्टि (RUKKA / CRIMINAL CASE ENTRY)]
+शिकायत संख्या (Complaint No.): ${complaint.complaintNumber}
+वादी / शिकायतकर्ता (Complainant): ${complaint.complainantName} (पिता/पति: ${complaint.complainantFatherSpouse || "N/A"}, संपर्क: ${complaint.complainantMobile || "N/A"}, पता: ${complaint.complainantAddress || "N/A"}, जिला: ${complaint.complainantDistrict || "Gurugram"}).
+घटना का विवरण व स्थान (Occurrence Details): दिनांक ${complaint.incidentDate || "N/A"}, समय ${complaint.incidentTime || "N/A"}, स्थान: ${complaint.incidentPlace || "थाना क्षेत्र"}.
+केस प्रकार (Case Type): ${caseType}
+लागू अधिनियम व धाराएं (Acts & Sections): ${actsAndSections} (प्रमुख अधिनियम: ${majorAct})
+जांच अधिकारी / अनुसंधान अधिकारी (Enquiry / Investigating Officer - EO/IO):
+- नाम (Name): ${eoIoName}
+- पद (Rank): ${eoIoRank}
+- PNO: ${eoIoPno}
+- बेल्ट नंबर (Belt No): ${eoIoBelt}
+- संपर्क नंबर (Phone): ${eoIoPhone}
+शिकायत का संक्षिप्त विवरण (Brief Narrative of Complaint):
+"${complaint.incidentDetails || "संज्ञेय अपराध बाबत शिकायत प्राप्त हुई।"}"
+वैधानिक आदेश (Statutory Order): प्राथमिक जांच / संज्ञेय अपराध के आधार पर धारा 173(3) BNSS, 2023 के तहत प्रथम सूचना रिपोर्ट (FIR) दर्ज की जा रही है। रुकका तैयार कर रोजनामचा में प्रविष्टि दर्ज की गई। अब CCTNS FIR रजिस्टर में विधिवत FIR दर्ज करने हेतु प्रेषित।`;
+
+    const gdRecord = await GeneralDiaryService.addEntry({
+      typeCode: "CRIMINAL_CASE",
+      category: "INVESTIGATION_PROCESS",
+      typeDisplay: "Criminal case",
+      typeDisplayHi: "आपराधिक मामला",
+      subject: `आपराधिक मामला: FIR दर्ज करने बाबत (शिकायत: ${complaint.complaintNumber})`,
+      narrative,
+      caseType,
+      actsAndSections,
+      majorAct,
+      policeStation: complaint.policeStation,
+      district: complaint.district || "Kurukshetra",
+      entryForOfficer: {
+        name: eoIoName,
+        rank: eoIoRank,
+        pno: eoIoPno,
+        beltNumber: eoIoBelt,
+      },
+      actualAuthor: {
+        name: officerName,
+        rank: officerRank,
+        pno: officerPno,
+        beltNumber: officerBelt,
+      },
+      relatedRecords: {
+        complaintNumber: complaint.complaintNumber,
+        caseType,
+        actsAndSections,
+        majorAct,
+      },
+    });
+
+    complaintsStore[index] = {
+      ...complaint,
+      gdEntryNumber: gdRecord.gdNumber,
+      caseType,
+      firSections: actsAndSections,
+      updatedAt: nowIso,
+    };
+
+    this.addAuditRecord(complaint.id, {
+      action: "GD_CRIMINAL_CASE_LOGGED",
+      actionLabel: `Criminal Case GD Entry: ${gdRecord.gdNumber}`,
+      performedBy: officerName,
+      userRole: "SHO",
+      timestamp: nowIso,
+      details: `General Diary Criminal Case Entry ${gdRecord.gdNumber} recorded. Case Type: ${caseType}, Sections: ${actsAndSections}. Forwarded to FIR Registration Form.`,
+    });
+
+    this.addTimelineEvent(complaint.id, {
+      title: `Roznamcha GD Logged: ${gdRecord.gdNumber}`,
+      description: `Criminal Case GD entry logged in Roznamcha for regular FIR registration under ${actsAndSections}. Case Type: ${caseType}. Assigned IO: ${eoIoName}.`,
+      category: "STATUS_CHANGE",
+      officerName,
+      timestamp: nowIso,
+    });
+
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+    }
+
+    return { gdRecord, complaint: complaintsStore[index] };
   },
 
   async sendReportToShoForFir(

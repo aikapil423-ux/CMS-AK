@@ -672,14 +672,35 @@ function GeneralDiaryContent() {
           </td>
         );
 
-      case "gdType":
+      case "gdType": {
+        const caseTypeVal = rec.caseType || rec.relatedRecords?.caseType;
+        const actsVal = rec.actsAndSections || rec.relatedRecords?.actsAndSections;
         return (
-          <td key="gdType" className="py-3.5 px-3.5 align-top w-36 min-w-[140px]">
-            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">
-              {rec.typeDisplay}
-            </span>
+          <td key="gdType" className="py-3.5 px-3.5 align-top w-44 min-w-[150px]">
+            <div className="space-y-1">
+              <span
+                className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                  rec.typeCode === "CRIMINAL_CASE" || rec.typeDisplay.toLowerCase().includes("criminal")
+                    ? "bg-red-100 text-red-900 border border-red-300"
+                    : "bg-slate-100 text-slate-800 border border-slate-200"
+                }`}
+              >
+                {rec.typeDisplay}
+              </span>
+              {caseTypeVal && (
+                <div className="text-[10px] text-red-700 font-bold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                  केस: {caseTypeVal}
+                </div>
+              )}
+              {actsVal && (
+                <div className="text-[10px] text-slate-700 font-mono line-clamp-1" title={actsVal}>
+                  धारा: {actsVal}
+                </div>
+              )}
+            </div>
           </td>
         );
+      }
 
       case "subject":
         return (

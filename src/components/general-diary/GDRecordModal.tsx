@@ -21,6 +21,7 @@ import {
   Image as ImageIcon,
   FileDown,
   Eye,
+  Scale,
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
@@ -307,6 +308,38 @@ export function GDRecordModal({
                 </div>
               </div>
             </div>
+
+            {/* Criminal Case Details Strip (Case Type & Acts & Sections) */}
+            {(record.caseType || record.actsAndSections || record.relatedRecords?.caseType || record.relatedRecords?.actsAndSections) && (
+              <div className="border-2 border-red-300 p-3 bg-red-50/50 space-y-2 text-xs font-sans rounded-md">
+                <div className="flex items-center justify-between border-b border-red-200 pb-1.5">
+                  <h5 className="font-bold text-red-950 uppercase text-[11px] flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5 text-red-600" />
+                    <span>आपराधिक मामला विवरण (Criminal Case &amp; FIR Specification):</span>
+                  </h5>
+                  <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded border border-red-200">
+                    BNSS Sec 173 / BNS
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                  <div className="p-2 bg-white rounded border border-red-200">
+                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">1. Case Type (केस प्रकार):</span>
+                    <strong className="text-red-950 text-xs tracking-wide">
+                      {record.caseType || record.relatedRecords?.caseType || "ADULT"}
+                    </strong>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-red-200">
+                    <span className="text-slate-600 block text-[10px] font-semibold uppercase">2. Acts &amp; Sections (अधिनियम व धाराएं):</span>
+                    <strong className="text-slate-900 font-mono text-xs">
+                      {record.actsAndSections || record.relatedRecords?.actsAndSections || "Section 303(2), 115(2), 3(5) BNS, 2023"}
+                    </strong>
+                    {record.majorAct && (
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Major Act: {record.majorAct}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Related Records Cross-Reference Strip */}
             {record.relatedRecords && Object.values(record.relatedRecords).some(Boolean) && (

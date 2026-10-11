@@ -493,8 +493,9 @@ export default function ComplaintProfilePage() {
   const [ncrSections, setNcrSections] = useState("Section 174 BNSS / 352 BNS");
 
   const [firModalOpen, setFirModalOpen] = useState(false);
-  const [firNumber, setFirNumber] = useState("");
-  const [firSections, setFirSections] = useState("Section 115(2), 351(2) BNS");
+  const [firCaseType, setFirCaseType] = useState<string>("ADULT");
+  const [firMajorAct, setFirMajorAct] = useState<string>("Bharatiya Nyaya Sanhita, 2023 (BNS)");
+  const [firSections, setFirSections] = useState("Section 303(2), 115(2), 3(5) BNS, 2023");
 
   const [aiReportModalOpen, setAiReportModalOpen] = useState(false);
   const [aiReportText, setAiReportText] = useState("");
@@ -1272,7 +1273,7 @@ export default function ComplaintProfilePage() {
     }
   };
 
-  // Register FIR Submit (SHO or authorized officer, strictly blocked for MHC)
+  // Register FIR Submit (Logs Criminal Case GD entry & routes to FIR Register form)
   const handleFirSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!complaint) return;
@@ -1287,14 +1288,25 @@ export default function ComplaintProfilePage() {
       return;
     }
 
-    const num = firNumber || `HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`;
-    const sections = firSections || complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023";
+    try {
+      const sections = firSections || complaint.firSections || "Section 303(2), 115(2), 3(5) BNS, 2023";
+      const { gdRecord } = await ComplaintService.createFirCriminalCaseGdEntry(
+        complaint.id,
+        {
+          caseType: firCaseType,
+          actsAndSections: sections,
+          majorAct: firMajorAct,
+          officerName: currentUser.name,
+          officerPno: currentUser.pno || "HR-04291882",
+        }
+      );
 
-    await ComplaintService.registerFir(complaint.id, num, sections, currentUser.name, currentUser.role);
-
-    setFirModalOpen(false);
-    await loadComplaint();
-    setActiveTab("history");
+      setFirModalOpen(false);
+      router.push(`/fir/register?gdNumber=${encodeURIComponent(gdRecord.gdNumber)}&complaintId=${encodeURIComponent(complaint.id)}`);
+    } catch (err: any) {
+      console.error("Error creating FIR GD entry:", err);
+      alert("Error: " + (err.message || "Failed to log Roznamcha GD entry"));
+    }
   };
 
   // Supervisory Request Progress Report Handler (SHO & Superior Officers)
@@ -2239,8 +2251,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               variant="primary"
               size="sm"
               onClick={() => {
-                setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
-                setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
+                setFirCaseType(complaint.caseType || "ADULT");
+                setFirSections(complaint.firSections || "Section 303(2), 115(2), 3(5) BNS, 2023");
                 setFirModalOpen(true);
               }}
               className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
@@ -2392,17 +2404,20 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href={`/fir/register?complaintId=${complaint.id}`}>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
-              >
-                <Scale className="w-4 h-4" />
-                <span>Register FIR in FIR Module</span>
-              </Button>
-            </Link>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                setFirCaseType(complaint.caseType || "ADULT");
+                setFirSections(complaint.firSections || "Section 303(2), 115(2), 3(5) BNS, 2023");
+                setFirModalOpen(true);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shrink-0 shadow-sm cursor-pointer animate-pulse"
+            >
+              <Scale className="w-4 h-4" />
+              <span>Register FIR</span>
+            </Button>
           </div>
         </div>
       )}
@@ -2966,8 +2981,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 size="sm"
                                 variant="primary"
                                 onClick={() => {
-                                  setFirSections(complaint.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
-                                  setFirNumber(`HAR-KKR-2026-FIR-${Math.floor(100 + Math.random() * 900)}`);
+                                  setFirCaseType(complaint.caseType || "ADULT");
+                                  setFirSections(complaint.firSections || "Section 303(2), 115(2), 3(5) BNS, 2023");
                                   setFirModalOpen(true);
                                 }}
                                 className="w-full text-xs font-bold gap-1 bg-red-600 hover:bg-red-700 text-white shadow-xs justify-center"
@@ -5051,7 +5066,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 8: FIR LINKAGE                                                      */}
+      {/* MODAL 8: ROZNAMCHA GD ENTRY (CRIMINAL CASE) & REGISTER FIR                */}
       {/* ========================================================================= */}
       {firModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -5060,34 +5075,48 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                 <Scale className="w-4 h-4 text-red-600" />
-                <span>Link to FIR / Recommend Registration</span>
+                <span>Roznamcha GD Entry &amp; Register FIR</span>
               </h3>
               <button onClick={() => setFirModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleFirSubmit} className="space-y-3 text-xs">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700">FIR Number</label>
-                  <VoiceInputButton
-                    onTranscript={(txt) => setFirNumber((p) => (p ? p + " " + txt : txt))}
-                    fieldLabel="FIR number"
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={firNumber}
-                  onChange={(e) => setFirNumber(e.target.value)}
-                  placeholder="e.g. FIR-118/2026"
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 font-mono"
-                />
+            <form onSubmit={handleFirSubmit} className="space-y-3.5 text-xs">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
+                <p><strong>Complaint No:</strong> <span className="font-mono text-red-950 font-bold">{complaint.complaintNumber}</span></p>
+                <p><strong>Complainant:</strong> {complaint.complainantName} ({complaint.complainantMobile || "N/A"})</p>
+                <p><strong>Police Station:</strong> {complaint.policeStation}</p>
+                <p>
+                  <strong>Enquiry/Investigating Officer:</strong>{" "}
+                  {complaint.assignedEoName ? `${complaint.assignedEoName} (${complaint.assignedEoRank || "EO"}, PNO: ${complaint.assignedEoPno || "HR-04291882"})` : `${currentUser.name} (SHO)`}
+                </p>
               </div>
 
+              {/* 1. Case Type dropdown */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  1. Case Type (केस प्रकार) <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={firCaseType}
+                  onChange={(e) => setFirCaseType(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 bg-white"
+                >
+                  <option value="">Select</option>
+                  <option value="ADULT">ADULT</option>
+                  <option value="JUVENILE & ADULT">JUVENILE & ADULT</option>
+                  <option value="ONLY JUVENILE">ONLY JUVENILE</option>
+                </select>
+                <span className="text-[10px] text-slate-500">Classification of offenders in Roznamcha GD entry.</span>
+              </div>
+
+              {/* 2. Acts & Sections Applicable */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="font-semibold text-slate-700">Substantiated Penal Sections (BNS)</label>
+                  <label className="font-semibold text-slate-700">
+                    2. Acts &amp; Sections Applicable (अधिनियम व धाराएं) <span className="text-red-500">*</span>
+                  </label>
                   <VoiceInputButton
                     onTranscript={(txt) => setFirSections((p) => (p ? p + " " + txt : txt))}
                     fieldLabel="FIR penal sections"
@@ -5097,20 +5126,46 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   type="text"
                   value={firSections}
                   onChange={(e) => setFirSections(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 font-mono"
+                  placeholder="e.g. Section 303(2), 115(2), 3(5) BNS, 2023"
+                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-900 font-mono font-bold"
                 />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  <span className="text-[10px] text-slate-500">Quick add:</span>
+                  {["Sec 303(2) BNS", "Sec 115(2) BNS", "Sec 351(2) BNS", "Sec 3(5) BNS", "Sec 305 BNS", "Sec 316 BNS"].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => {
+                        setFirSections((prev) => {
+                          if (!prev.trim()) return sec;
+                          if (prev.includes(sec)) return prev;
+                          return `${prev}, ${sec}`;
+                        });
+                      }}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-red-50 hover:border-red-300 border border-slate-200 text-[10px] rounded font-mono text-slate-700 cursor-pointer"
+                    >
+                      + {sec}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
-                Cognizable offence verified through inquiry. Status will be updated to <strong>RECOMMENDED FOR FIR</strong> and logged in the Station General Diary.
+                A <strong>Criminal case (आपराधिक मामला)</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
                 <Button variant="outline" size="sm" type="button" onClick={() => setFirModalOpen(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary" size="sm" type="submit" className="bg-red-600 hover:bg-red-700">
-                  Confirm FIR Linkage
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  disabled={!firCaseType}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
+                >
+                  Log Roznamcha GD &amp; Register FIR
                 </Button>
               </div>
             </form>

@@ -892,6 +892,9 @@ export const GeneralDiaryService = {
     actualAuthor?: GDOfficerParticulars;
     policeStation?: string;
     district?: string;
+    caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
+    actsAndSections?: string;
+    majorAct?: string;
     relatedRecords?: GDRelatedRecords;
     attachments?: GDUploadedDocument[];
   }): Promise<GeneralDiaryRecord> {
@@ -992,6 +995,9 @@ export const GeneralDiaryService = {
       typeDisplayHi: entry.typeDisplayHi || typeDef.nameHi,
       subject: entry.subject,
       narrative,
+      caseType: entry.caseType || entry.relatedRecords?.caseType,
+      actsAndSections: entry.actsAndSections || entry.relatedRecords?.actsAndSections,
+      majorAct: entry.majorAct || entry.relatedRecords?.majorAct,
       activityDateTime,
       officialCreationTimestamp: nowIso,
       status: "DRAFT",
@@ -1152,6 +1158,9 @@ export const GeneralDiaryService = {
       typeDisplayHi: typeDef.nameHi,
       subject: payload.subject,
       narrative: payload.narrative,
+      caseType: payload.caseType || payload.relatedRecords?.caseType,
+      actsAndSections: payload.actsAndSections || payload.relatedRecords?.actsAndSections,
+      majorAct: payload.majorAct || payload.relatedRecords?.majorAct,
       activityDateTime: payload.activityDateTime || `${activityDate} ${now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
       officialCreationTimestamp: nowIso,
       verificationTimestamp: nowIso,
@@ -1376,6 +1385,9 @@ export const GeneralDiaryService = {
           policeStation?: string;
           district?: string;
           source?: any;
+          caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
+          actsAndSections?: string;
+          majorAct?: string;
           relatedRecords?: GDRelatedRecords;
           attachments?: GDUploadedDocument[];
         }
@@ -1404,6 +1416,9 @@ export const GeneralDiaryService = {
           policeStation: payload.policeStation,
           district: payload.district,
           source: payload.source,
+          caseType: payload.caseType,
+          actsAndSections: payload.actsAndSections,
+          majorAct: payload.majorAct,
           relatedRecords: payload.relatedRecords,
           attachments: payload.attachments,
           activityDate: payload.activityDate,
@@ -1417,7 +1432,7 @@ export const GeneralDiaryService = {
       const author: GDOfficerParticulars = payload.actualAuthor || {
         name: "HC Devinder Kumar",
         rank: "Head Constable (MHC)",
-        pno: "05192834",
+        pno: "HR-05192834",
         beltNumber: "889/KKR",
       };
       return this.verifyAndLockEntry(
@@ -1428,6 +1443,9 @@ export const GeneralDiaryService = {
           category: payload.category || typeDef.category,
           typeDisplay: payload.typeDisplay || typeDef.nameEn,
           typeDisplayHi: payload.typeDisplayHi || typeDef.nameHi,
+          caseType: payload.caseType,
+          actsAndSections: payload.actsAndSections,
+          majorAct: payload.majorAct,
           activityDateTime:
             payload.activityDate && payload.activityTime
               ? formatGDActivityDateTime(

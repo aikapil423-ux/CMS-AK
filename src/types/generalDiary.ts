@@ -55,6 +55,9 @@ export interface GDRelatedRecords {
   purpose?: string;
   linkedDepartureGdNumber?: string;
   departureTime?: string;
+  caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
+  actsAndSections?: string;
+  majorAct?: string;
   attachments?: GDUploadedDocument[];
 }
 
@@ -87,6 +90,11 @@ export interface GeneralDiaryRecord {
   typeDisplayHi: string;
   subject: string; // विषय
   narrative: string; // विवरण (हिंदी / English / Mixed)
+
+  // Criminal Case specific fields (BNSS Sec 173 / Rukka FIR GD)
+  caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
+  actsAndSections?: string;
+  majorAct?: string;
 
   // Separate Timestamps (Crucial requirement #2)
   activityDateTime: string; // User-entered activity time (e.g. 2026-10-05 14:30)

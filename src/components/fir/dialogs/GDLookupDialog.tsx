@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Search, Check, Calendar, FileText, User, Filter, RotateCcw } from "lucide-react";
 import { GeneralDiaryItem } from "@/types";
 import { MOCK_GD_ENTRIES } from "@/lib/mockData";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 
@@ -18,6 +19,10 @@ export interface GDLookupResult {
   brief?: string;
   entryType?: string;
   officer?: string;
+  caseType?: string;
+  actsAndSections?: string;
+  majorAct?: string;
+  complaintNumber?: string;
 }
 
 export interface GDLookupDialogProps {
@@ -41,11 +46,57 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
   const [subjectQuery, setSubjectQuery] = useState("");
 
   const [selectedGdId, setSelectedGdId] = useState<string | null>(null);
+  const [allEntries, setAllEntries] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let alive = true;
+    GeneralDiaryService.getEntries()
+      .then((liveGd) => {
+        if (!alive) return;
+        const mappedLive = liveGd.map((e) => {
+          const parts = (e.activityDateTime || "").split(" ");
+          return {
+            id: e.id,
+            gdNumber: e.gdNumber,
+            entryDate: parts[0] || "",
+            entryTime: parts.slice(1).join(" ") || "",
+            subject: e.subject,
+            narrative: e.narrative,
+            entryType: e.typeCode,
+            entryTypeDisplay: e.typeDisplay || e.typeCode,
+            loggedByOfficer: e.entryForOfficer?.name || e.actualAuthor?.name || "",
+            caseType: e.caseType || e.relatedRecords?.caseType,
+            actsAndSections: e.actsAndSections || e.relatedRecords?.actsAndSections,
+            majorAct: e.majorAct || e.relatedRecords?.majorAct,
+            complaintNumber: e.relatedRecords?.complaintNumber,
+          };
+        });
+
+        // Merge live entries and mock entries, ensuring unique gdNumbers (live entries first)
+        const seen = new Set<string>();
+        const combined: any[] = [];
+        for (const item of [...mappedLive, ...MOCK_GD_ENTRIES]) {
+          if (!seen.has(item.gdNumber)) {
+            seen.add(item.gdNumber);
+            combined.push(item);
+          }
+        }
+        setAllEntries(combined);
+      })
+      .catch(() => {
+        if (alive) setAllEntries(MOCK_GD_ENTRIES);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   // Filter records based on search criteria
-  const filteredRecords = MOCK_GD_ENTRIES.filter((gd) => {
+  const filteredRecords = allEntries.filter((gd) => {
     if (diaryNumberQuery.trim()) {
       if (!gd.gdNumber.toLowerCase().includes(diaryNumberQuery.toLowerCase().trim())) {
         return false;
@@ -66,7 +117,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
       }
     }
     if (subjectQuery.trim()) {
-      const subMatch = gd.subject.toLowerCase().includes(subjectQuery.toLowerCase().trim());
+      const subMatch = gd.subject?.toLowerCase().includes(subjectQuery.toLowerCase().trim());
       const narMatch = gd.narrative?.toLowerCase().includes(subjectQuery.toLowerCase().trim());
       if (!subMatch && !narMatch) return false;
     }
@@ -88,7 +139,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
       alert("Please select a General Diary record from the table.");
       return;
     }
-    const found = MOCK_GD_ENTRIES.find((g) => g.id === selectedGdId);
+    const found = allEntries.find((g) => g.id === selectedGdId);
     if (found) {
       const result: GDLookupResult = {
         diaryNumber: found.gdNumber,
@@ -101,6 +152,10 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
         brief: found.narrative,
         entryType: found.entryTypeDisplay || found.entryType,
         officer: found.loggedByOfficer,
+        caseType: found.caseType,
+        actsAndSections: found.actsAndSections,
+        majorAct: found.majorAct,
+        complaintNumber: found.complaintNumber,
       };
       if (onSelectRecord) onSelectRecord(result);
       if (onSelectEntry) onSelectEntry(result);

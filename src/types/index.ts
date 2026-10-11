@@ -292,6 +292,8 @@ export interface ComplaintItem {
   firDate?: string;
   firRegisteredBy?: string;
   firRegisteredAt?: string;
+  caseType?: 'ADULT' | 'JUVENILE & ADULT' | 'ONLY JUVENILE' | string;
+  gdEntryNumber?: string;
   complaintAgeType?: 'FRESH' | 'OLD';
   complaintClassification?: string;
   complaintPurpose?: string;
@@ -496,7 +498,8 @@ export interface ComplaintAuditRecord {
     | 'SHO_APPROVED'
     | 'SHO_RE_ENQUIRY'
     | 'SHO_REJECTED'
-    | 'FIR_REGISTERED';
+    | 'FIR_REGISTERED'
+    | 'GD_CRIMINAL_CASE_LOGGED';
   actionLabel: string;
   performedBy: string;
   userPno?: string;
@@ -1421,6 +1424,7 @@ export interface FIRItem {
   typeOfInformation: 'WRITTEN' | 'ORAL' | 'E_COMPLAINT';
   actsAndSectionsList?: FIRActSectionEntry[];
   majorMinorHeadsList?: FIRMajorMinorHeadEntry[];
+  caseType?: 'ADULT' | 'JUVENILE & ADULT' | 'ONLY JUVENILE' | string;
 
   // Legacy/Compatibility fields
   actsAndSections: string;

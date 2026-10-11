@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Filter,
@@ -135,6 +135,7 @@ const DIRECTION_TEMPLATES = [
 
 function ComplaintListContent() {
   const { currentUser } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPriority = searchParams.get("priority") || "ALL";
   const unassignedComplaintNo = searchParams.get("unassigned");
@@ -363,6 +364,8 @@ function ComplaintListContent() {
   const [firRegisterModalComplaint, setFirRegisterModalComplaint] = useState<ComplaintItem | null>(null);
   const [firNumberInput, setFirNumberInput] = useState("");
   const [firSectionsInput, setFirSectionsInput] = useState("");
+  const [firCaseTypeInput, setFirCaseTypeInput] = useState<string>("ADULT");
+  const [firMajorActInput, setFirMajorActInput] = useState<string>("Bharatiya Nyaya Sanhita, 2023 (BNS)");
   const [firDateInput, setFirDateInput] = useState("");
   const [isRegisteringFir, setIsRegisteringFir] = useState(false);
 
@@ -587,33 +590,33 @@ function ComplaintListContent() {
   };
 
   const handleOpenFirRegisterModal = (c: ComplaintItem) => {
-    const defaultFirNo = `HAR-KKR-2026-FIR-${String(Math.floor(100 + Math.random() * 900))}`;
-    setFirNumberInput(defaultFirNo);
-    setFirSectionsInput(c.firSections || "Section 115(2), 351(2), 3(5) BNS, 2023");
-    setFirDateInput(new Date().toISOString().split("T")[0]);
+    setFirCaseTypeInput(c.caseType || "ADULT");
+    setFirSectionsInput(c.firSections || "Section 303(2), 115(2), 3(5) BNS, 2023");
+    setFirMajorActInput("Bharatiya Nyaya Sanhita, 2023 (BNS)");
     setFirRegisterModalComplaint(c);
   };
 
   const handleRegisterFirSubmit = async () => {
-    if (!firRegisterModalComplaint || !firNumberInput.trim()) {
-      alert("Please enter a valid FIR Number.");
-      return;
-    }
+    if (!firRegisterModalComplaint) return;
     setIsRegisteringFir(true);
     try {
-      await ComplaintService.registerFir(
+      const { gdRecord } = await ComplaintService.createFirCriminalCaseGdEntry(
         firRegisterModalComplaint.id,
-        firNumberInput.trim(),
-        firSectionsInput.trim(),
-        currentUser.name,
-        currentUser.role,
-        firDateInput
+        {
+          caseType: firCaseTypeInput,
+          actsAndSections: firSectionsInput.trim() || "Section 303(2), 115(2), 3(5) BNS, 2023",
+          majorAct: firMajorActInput,
+          officerName: currentUser.name,
+          officerPno: currentUser.pno || "HR-04291882",
+        }
       );
+      const targetComplaintId = firRegisterModalComplaint.id;
       setFirRegisterModalComplaint(null);
       fetchComplaints();
+      router.push(`/fir/register?gdNumber=${encodeURIComponent(gdRecord.gdNumber)}&complaintId=${encodeURIComponent(targetComplaintId)}`);
     } catch (e) {
       console.error(e);
-      alert("Error registering FIR");
+      alert("Error logging GD / preparing FIR");
     } finally {
       setIsRegisteringFir(false);
     }
@@ -2533,14 +2536,17 @@ function ComplaintListContent() {
         </div>
       )}
 
-      {/* SHO Register FIR Modal */}
+      {/* SHO Register FIR Modal: Roznamcha Criminal Case GD Entry */}
       {firRegisterModalComplaint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
             <div className="p-4 bg-red-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                <h3 className="font-bold text-sm">Register Regular FIR (BNSS / BNS)</h3>
+                <Scale className="w-5 h-5" />
+                <div>
+                  <h3 className="font-bold text-sm">Roznamcha GD Entry &amp; Register FIR</h3>
+                  <p className="text-[11px] text-red-100">Criminal Case GD entry will be logged before opening FIR form</p>
+                </div>
               </div>
               <button onClick={() => setFirRegisterModalComplaint(null)} className="text-white hover:opacity-80">
                 <X className="w-4 h-4" />
@@ -2548,47 +2554,71 @@ function ComplaintListContent() {
             </div>
             <div className="p-5 space-y-4 text-xs">
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-                <p><strong>Complaint No:</strong> {firRegisterModalComplaint.complaintNumber}</p>
-                <p><strong>Complainant:</strong> {firRegisterModalComplaint.complainantName}</p>
-                <p><strong>Station:</strong> {firRegisterModalComplaint.policeStation}</p>
+                <p><strong>Complaint No:</strong> <span className="font-mono text-red-950 font-bold">{firRegisterModalComplaint.complaintNumber}</span></p>
+                <p><strong>Complainant:</strong> {firRegisterModalComplaint.complainantName} ({firRegisterModalComplaint.complainantMobile || "N/A"})</p>
+                <p><strong>Police Station:</strong> {firRegisterModalComplaint.policeStation}</p>
+                <p>
+                  <strong>Enquiry/Investigating Officer:</strong>{" "}
+                  {firRegisterModalComplaint.assignedEoName ? `${firRegisterModalComplaint.assignedEoName} (${firRegisterModalComplaint.assignedEoRank || "EO"}, PNO: ${firRegisterModalComplaint.assignedEoPno || "HR-04291882"})` : `${currentUser.name} (SHO)`}
+                </p>
               </div>
 
+              {/* 1. Case Type dropdown */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  FIR Number <span className="text-red-500">*</span>
+                  1. Case Type (केस प्रकार) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
-                  value={firNumberInput}
-                  onChange={(e) => setFirNumberInput(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
-                  placeholder="e.g. HAR-KKR-2026-FIR-0042"
-                />
+                <select
+                  value={firCaseTypeInput}
+                  onChange={(e) => setFirCaseTypeInput(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 bg-white"
+                >
+                  <option value="">Select</option>
+                  <option value="ADULT">ADULT</option>
+                  <option value="JUVENILE & ADULT">JUVENILE & ADULT</option>
+                  <option value="ONLY JUVENILE">ONLY JUVENILE</option>
+                </select>
+                <span className="text-[10px] text-slate-500">Classification of accused/offenders in Roznamcha entry.</span>
               </div>
 
+              {/* 2. Acts & Sections Applicable (mirroring FIR register form) */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Sections of Law <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-700">
+                    2. Acts &amp; Sections Applicable (अधिनियम व धाराएं) <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-red-600 font-mono">BNS, 2023</span>
+                </div>
                 <input
                   type="text"
                   value={firSectionsInput}
                   onChange={(e) => setFirSectionsInput(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
-                  placeholder="e.g. Section 115(2), 351(2), 3(5) BNS, 2023"
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                  placeholder="e.g. Section 303(2), 115(2), 3(5) BNS, 2023"
                 />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  <span className="text-[10px] text-slate-500">Quick add:</span>
+                  {["Sec 303(2) BNS", "Sec 115(2) BNS", "Sec 351(2) BNS", "Sec 3(5) BNS", "Sec 305 BNS", "Sec 316 BNS"].map((sec) => (
+                    <button
+                      key={sec}
+                      type="button"
+                      onClick={() => {
+                        setFirSectionsInput((prev) => {
+                          if (!prev.trim()) return sec;
+                          if (prev.includes(sec)) return prev;
+                          return `${prev}, ${sec}`;
+                        });
+                      }}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-red-50 hover:border-red-300 border border-slate-200 text-[10px] rounded font-mono text-slate-700 cursor-pointer"
+                    >
+                      + {sec}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Registration Date
-                </label>
-                <DatePickerDDMMYYYY
-                  value={firDateInput}
-                  onChange={(e) => setFirDateInput(e.target.value)}
-                  placeholder="DD/MM/YYYY"
-                  size="sm"
-                />
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
+                A <strong>Criminal case (आपराधिक मामला)</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
@@ -2599,10 +2629,10 @@ function ComplaintListContent() {
                 variant="primary"
                 size="sm"
                 onClick={handleRegisterFirSubmit}
-                disabled={isRegisteringFir || !firNumberInput.trim()}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                disabled={isRegisteringFir || !firCaseTypeInput}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
               >
-                {isRegisteringFir ? "Registering..." : "Confirm FIR Registration"}
+                {isRegisteringFir ? "Logging GD & Opening FIR Form..." : "Log Roznamcha GD & Register FIR"}
               </Button>
             </div>
           </div>

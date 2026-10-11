@@ -48,6 +48,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
 import { ComplaintService } from "@/services/complaintService";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ActsService } from "@/services/actsService";
 import {
   firAutoFillService,
@@ -79,7 +80,7 @@ import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { MOCK_ENQUIRY_OFFICERS, MOCK_GD_ENTRIES } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import {
   getStatesList,
@@ -166,6 +167,7 @@ function RegisterFIRForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const complaintIdParam = searchParams.get("complaintId");
+  const gdNumberParam = searchParams.get("gdNumber");
 
   const [activeTab, setActiveTab] = useState<MainTabKey>("act_section");
   const [complainantSubtab, setComplainantSubtab] = useState<"personal" | "address" | "other">("personal");
@@ -288,6 +290,7 @@ function RegisterFIRForm() {
 
   // TAB 1: Act & Section
   const [gdEntryNumber, setGdEntryNumber] = useState("");
+  const [caseType, setCaseType] = useState<string>("ADULT");
   const [gdDate, setGdDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [gdTime, setGdTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [sourceOfComplaint, setSourceOfComplaint] = useState("Citizen/General Public");
@@ -492,6 +495,176 @@ function RegisterFIRForm() {
     }
   }, [tempPropCategory]);
 
+  // Search and auto-fill details from General Diary (Roznamcha Rukka / Criminal Case Entry)
+  const handleSearchAndAutofillGD = async (targetGdNumber?: string) => {
+    const query = (targetGdNumber || gdEntryNumber || "").trim();
+    if (!query) {
+      setShowGDLookupDialog(true);
+      return;
+    }
+
+    try {
+      const allGd = await GeneralDiaryService.getEntries();
+      const cleanQ = query.toLowerCase();
+      const found = allGd.find(
+        (g) =>
+          g.gdNumber.toLowerCase() === cleanQ ||
+          g.id.toLowerCase() === cleanQ ||
+          g.gdNumber.toLowerCase().includes(cleanQ)
+      );
+
+      if (!found) {
+        const mockFound = MOCK_GD_ENTRIES.find((g) => g.gdNumber.toLowerCase().includes(cleanQ));
+        if (!mockFound) {
+          setShowGDLookupDialog(true);
+          return;
+        }
+        setGdEntryNumber(mockFound.gdNumber);
+        if (mockFound.entryDate) setGdDate(mockFound.entryDate);
+        if (mockFound.entryTime) setGdTime(mockFound.entryTime);
+        if (mockFound.subject) {
+          setActRemarks((prev) => (prev ? `${prev}; GD Ref: ${mockFound.subject}` : `GD Ref: ${mockFound.subject}`));
+        }
+        return;
+      }
+
+      // Found in General Diary
+      setGdEntryNumber(found.gdNumber);
+      const dtParts = (found.activityDateTime || "").split(" ");
+      if (dtParts[0]) setGdDate(dtParts[0]);
+      if (dtParts[1]) setGdTime(dtParts[1]);
+
+      const foundCaseType = found.caseType || found.relatedRecords?.caseType;
+      if (foundCaseType) {
+        setCaseType(foundCaseType);
+      }
+
+      const foundSections = found.actsAndSections || found.relatedRecords?.actsAndSections;
+      const foundMajorAct = found.majorAct || found.relatedRecords?.majorAct || "Bharatiya Nyaya Sanhita, 2023 (BNS)";
+      if (foundSections) {
+        setActsAndSectionsList([
+          {
+            id: `act-gd-${Date.now()}`,
+            srNo: 1,
+            act: foundMajorAct,
+            sections: foundSections,
+          },
+        ]);
+        setActRemarks((prev) =>
+          prev
+            ? `${prev}; GD: ${found.gdNumber} (${found.typeDisplay})`
+            : `GD: ${found.gdNumber} (${found.typeDisplay})`
+        );
+      }
+
+      // Resolve linked complaint
+      let linkedCompNo = found.relatedRecords?.complaintNumber || complaintIdParam;
+      if (!linkedCompNo) {
+        const fullText = `${found.narrative} ${found.subject}`;
+        const match = fullText.match(/(?:CMP-[A-Za-z0-9-]+|COMP\/[A-Za-z0-9/-]+|COMP-[A-Za-z0-9-]+)/i);
+        if (match) {
+          linkedCompNo = match[0];
+        }
+      }
+
+      if (linkedCompNo) {
+        const c = await ComplaintService.getComplaintById(linkedCompNo);
+        if (c) {
+          setLinkedComplaint(c);
+          setComplaintNumber(c.complaintNumber);
+          setSourceOfComplaint("Haryana Police Grievance Portal");
+          const names = (c.complainantName || "").split(" ");
+          setComplainantFirstName(names[0] || "");
+          setComplainantLastName(names.slice(1).join(" ") || "");
+          setComplainantRelativeName(c.complainantFatherSpouse || c.complainantRelativeName || "");
+          setComplainantGender((c.complainantGender as any) || "MALE");
+          if (c.complainantAge) setComplainantAge(String(c.complainantAge));
+          setComplainantMobile(c.complainantMobile || "");
+          setPermHouseNo(c.complainantAddress || "");
+          setPermCity(c.complainantCity || "Gurugram");
+          setPermDistrict(c.complainantDistrict || "Gurugram");
+          setFirContentText(c.incidentDetails || found.narrative || "");
+          setBriefFacts(c.incidentDetails?.slice(0, 300) || found.narrative?.slice(0, 300) || "");
+          if (c.assignedEoId) setAssignedIoId(c.assignedEoId);
+
+          if (!foundSections) {
+            if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
+              const acts = c.legalAnalysis.suggestedSections.map((s: any, idx: number) => ({
+                id: `act-pre-${idx}`,
+                srNo: idx + 1,
+                act: s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+                sections: `Sec ${s.sectionNumber}`,
+              }));
+              setActsAndSectionsList(acts);
+            } else if (c.firSections) {
+              setActsAndSectionsList([
+                {
+                  id: "act-1",
+                  srNo: 1,
+                  act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+                  sections: c.firSections,
+                },
+              ]);
+            }
+          }
+
+          setOccurrencesList([
+            {
+              id: "occ-1",
+              srNo: 1,
+              day: "Monday",
+              dateFrom: c.incidentDate || new Date().toISOString().split("T")[0],
+              dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
+              timeFrom: c.incidentTime || "10:00",
+              timeTo: "12:00",
+              timePeriod: "Morning / Pahar 1",
+              directionFromPs: "EAST",
+              distanceKm: "1.5",
+              area: c.incidentPlace || "Commercial Area",
+              city: c.complainantCity || "Gurugram",
+              beatNo: "Beat No. 2",
+              isKnownDate: true,
+              isForestPlace: false,
+            },
+          ]);
+
+          setAutoFilledFields({
+            complaintNumber: true,
+            sourceOfComplaint: true,
+            complainantFirstName: Boolean(names[0]),
+            complainantLastName: Boolean(names.slice(1).join(" ")),
+            complainantRelativeName: Boolean(c.complainantFatherSpouse || c.complainantRelativeName),
+            complainantGender: true,
+            complainantAge: Boolean(c.complainantAge),
+            complainantMobile: Boolean(c.complainantMobile),
+            permHouseNo: Boolean(c.complainantAddress),
+            permCity: true,
+            permDistrict: true,
+            firContentText: Boolean(c.incidentDetails),
+            briefFacts: Boolean(c.incidentDetails),
+            actsAndSections: true,
+            occurrence: true,
+            gdEntryNumber: true,
+            gdDate: true,
+            gdTime: true,
+          });
+        }
+      } else {
+        setFirContentText(found.narrative);
+        setBriefFacts(found.narrative?.slice(0, 300) || "");
+        setAutoFilledFields((prev) => ({
+          ...prev,
+          gdEntryNumber: true,
+          gdDate: true,
+          gdTime: true,
+          actsAndSections: true,
+        }));
+      }
+    } catch (err) {
+      console.warn("GD Lookup error:", err);
+    }
+  };
+
   // Load Draft or Linked Complaint on Mount
   useEffect(() => {
     ActsService.getAllActsAsync()
@@ -500,7 +673,9 @@ function RegisterFIRForm() {
       })
       .catch(() => {});
 
-    if (complaintIdParam) {
+    if (gdNumberParam) {
+      handleSearchAndAutofillGD(gdNumberParam);
+    } else if (complaintIdParam) {
       ComplaintService.getComplaintById(complaintIdParam)
         .then((c) => {
           if (c) {
@@ -592,7 +767,7 @@ function RegisterFIRForm() {
         );
       }
     }
-  }, [complaintIdParam]);
+  }, [complaintIdParam, gdNumberParam]);
 
   // Restore Draft Action
   const handleRestoreDraft = () => {
@@ -1102,6 +1277,7 @@ function RegisterFIRForm() {
       originalDateTime,
       remarks: actRemarks,
       typeOfInformation: typeOfInfo,
+      caseType,
       actsAndSections: actsStr,
       actsAndSectionsList,
       majorMinorHeadsList,
@@ -1588,6 +1764,12 @@ function RegisterFIRForm() {
                       placeholder="e.g. GD-0042/28-03-2026"
                       value={gdEntryNumber}
                       onChange={(e) => setGdEntryNumber(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSearchAndAutofillGD(gdEntryNumber);
+                        }
+                      }}
                       className={`flex-1 p-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-1 focus:ring-blue-600 ${getFieldHighlightClass("gdEntryNumber")}`}
                       required
                     />
@@ -1595,12 +1777,28 @@ function RegisterFIRForm() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowGDLookupDialog(true)}
-                      className="text-xs text-blue-700 border-blue-300 hover:bg-blue-50 shrink-0"
+                      onClick={() => handleSearchAndAutofillGD(gdEntryNumber)}
+                      className="text-xs text-blue-700 border-blue-300 hover:bg-blue-50 shrink-0 font-bold"
                     >
                       Search
                     </Button>
                   </div>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Case Type (केस प्रकार) <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={caseType}
+                    onChange={(e) => setCaseType(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 bg-white"
+                  >
+                    <option value="Select">Select</option>
+                    <option value="ADULT">ADULT</option>
+                    <option value="JUVENILE & ADULT">JUVENILE & ADULT</option>
+                    <option value="ONLY JUVENILE">ONLY JUVENILE</option>
+                  </select>
                 </div>
 
                 <div>
@@ -4044,14 +4242,7 @@ function RegisterFIRForm() {
         isOpen={showGDLookupDialog}
         onClose={() => setShowGDLookupDialog(false)}
         onSelectEntry={(entry: GDLookupResult) => {
-          setGdEntryNumber(entry.diaryNumber);
-          setGdDate(entry.entryDate);
-          setGdTime(entry.entryTime);
-          if (entry.subject) {
-            setActRemarks((prev) =>
-              prev ? `${prev}; GD Ref: ${entry.subject}` : `GD Ref: ${entry.subject}`
-            );
-          }
+          handleSearchAndAutofillGD(entry.diaryNumber);
         }}
       />
 
