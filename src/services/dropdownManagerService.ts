@@ -75,12 +75,12 @@ export const DROPDOWN_CATEGORIES: DropdownCategory[] = [
     description: "Officers available for complaint enquiry and investigation assignment.",
     usageLocation: "Assign EO Modal, Officer Dropdown",
     defaultItems: [
-      { code: "SI_MALKEET", label: "SI Malkeet", description: "Belt: 512/KKR · PNO: 08192841 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "512/KKR", pno: "08192841" }, isActive: true },
-      { code: "SI_VIKRAM_SINGH", label: "SI Vikram Singh", description: "Belt: 742/KKR · PNO: 07182930 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "742/KKR", pno: "07182930" }, isActive: true },
-      { code: "ASI_RAMESH_CHANDER", label: "ASI Ramesh Chander", description: "Belt: 614/KKR · PNO: 06281923 · Assistant Sub-Inspector", metadata: { rank: "ASI", beltNumber: "614/KKR", pno: "06281923" }, isActive: true },
-      { code: "SI_POOJA_RANI", label: "SI Pooja Rani", description: "Belt: 819/KKR · PNO: 07291845 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "819/KKR", pno: "07291845" }, isActive: true },
-      { code: "ASI_SURENDER_PAL", label: "ASI Surender Pal", description: "Belt: 419/KKR · PNO: 09384712 · Assistant Sub-Inspector", metadata: { rank: "ASI", beltNumber: "419/KKR", pno: "09384712" }, isActive: true },
-      { code: "HC_DEVINDER_KUMAR", label: "HC Devinder Kumar", description: "Belt: 889/KKR · PNO: 05192834 · Head Constable (MHC)", metadata: { rank: "Head Constable", beltNumber: "889/KKR", pno: "05192834" }, isActive: true },
+      { code: "SI_MALKEET", label: "SI Malkeet", description: "Belt: 512/KKR · PNO: HR-08192841 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "512/KKR", pno: "HR-08192841" }, isActive: true },
+      { code: "SI_VIKRAM_SINGH", label: "SI Vikram Singh", description: "Belt: 742/KKR · PNO: HR-07182930 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "742/KKR", pno: "HR-07182930" }, isActive: true },
+      { code: "ASI_RAMESH_CHANDER", label: "ASI Ramesh Chander", description: "Belt: 614/KKR · PNO: HR-06281923 · Assistant Sub-Inspector", metadata: { rank: "ASI", beltNumber: "614/KKR", pno: "HR-06281923" }, isActive: true },
+      { code: "SI_POOJA_RANI", label: "SI Pooja Rani", description: "Belt: 819/KKR · PNO: HR-07291845 · Sub-Inspector", metadata: { rank: "Sub-Inspector", beltNumber: "819/KKR", pno: "HR-07291845" }, isActive: true },
+      { code: "ASI_SURENDER_PAL", label: "ASI Surender Pal", description: "Belt: 419/KKR · PNO: HR-09384712 · Assistant Sub-Inspector", metadata: { rank: "ASI", beltNumber: "419/KKR", pno: "HR-09384712" }, isActive: true },
+      { code: "HC_DEVINDER_KUMAR", label: "HC Devinder Kumar", description: "Belt: 889/KKR · PNO: HR-05192834 · Head Constable (MHC)", metadata: { rank: "Head Constable", beltNumber: "889/KKR", pno: "HR-05192834" }, isActive: true },
     ],
   },
   {

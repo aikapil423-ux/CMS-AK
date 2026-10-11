@@ -10,7 +10,7 @@ import { DEMO_USERS, MOCK_POLICE_STATIONS } from "@/lib/mockData";
 export default function LoginPage() {
   const router = useRouter();
   const { login, switchUser } = useAuth();
-  const [pno, setPno] = useState("04291882");
+  const [pno, setPno] = useState("HR-04291882");
   const [pin, setPin] = useState("123456");
   const [station, setStation] = useState(MOCK_POLICE_STATIONS[0]);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +102,7 @@ export default function LoginPage() {
                   type="text"
                   value={pno}
                   onChange={(e) => setPno(e.target.value)}
-                  placeholder="e.g. 04291882"
+                  placeholder="e.g. HR-04291882"
                   required
                   className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-mono"
                 />

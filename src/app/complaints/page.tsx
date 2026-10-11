@@ -523,7 +523,7 @@ function ComplaintListContent() {
       await ComplaintService.shoApprove(
         shoApproveModalComplaint.id,
         currentUser.name,
-        currentUser.pno || "04291882",
+        currentUser.pno || "HR-04291882",
         payload?.remarks ?? shoApproveRemarks,
         payload?.finalCategory
       );
@@ -548,7 +548,7 @@ function ComplaintListContent() {
       await ComplaintService.shoReEnquiry(
         shoReEnquiryModalComplaint.id,
         currentUser.name,
-        currentUser.pno || "04291882",
+        currentUser.pno || "HR-04291882",
         reEnquiryReason
       );
       setShoReEnquiryModalComplaint(null);
@@ -572,7 +572,7 @@ function ComplaintListContent() {
       await ComplaintService.shoReject(
         shoRejectModalComplaint.id,
         currentUser.name,
-        currentUser.pno || "04291882",
+        currentUser.pno || "HR-04291882",
         rejectionReason.trim()
       );
       setShoRejectModalComplaint(null);
@@ -626,7 +626,7 @@ function ComplaintListContent() {
       await ComplaintService.sendReportToSho(
         eoSendToShoModalComplaint.id,
         currentUser.name,
-        currentUser.pno || "04291882",
+        currentUser.pno || "HR-04291882",
         payload?.remarks ?? eoSendRemarks,
         {
           recommendedCategory: payload?.recommendedCategory,

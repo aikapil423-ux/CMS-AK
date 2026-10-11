@@ -38,7 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = (pno: string, _pin: string) => {
-    const found = DEMO_USERS.find((u) => u.pno === pno) || DEMO_USERS[0];
+    const clean = pno.trim().toLowerCase();
+    const cleanAlphaNum = clean.replace(/[^a-z0-9]/gi, "");
+    const found =
+      DEMO_USERS.find(
+        (u) =>
+          u.pno.toLowerCase() === clean ||
+          u.pno.toLowerCase().replace(/[^a-z0-9]/gi, "") === cleanAlphaNum ||
+          u.pno.toLowerCase().endsWith(clean) ||
+          clean.endsWith(u.pno.toLowerCase())
+      ) || DEMO_USERS[0];
     setCurrentUser(found);
     setIsAuthenticated(true);
     localStorage.setItem("haryana_police_cms_user", found.id);

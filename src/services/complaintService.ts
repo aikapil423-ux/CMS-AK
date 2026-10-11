@@ -577,7 +577,7 @@ export const ComplaintService = {
     officerName: string,
     station: string,
     district: string,
-    officerPno: string = "04291882"
+    officerPno: string = "HR-04291882"
   ): Promise<ComplaintItem> {
     const isDirectFir = Boolean(input.directSendToFir || input.directSendToFirChoice === "YES");
     const initialStatus: ComplaintStatus = isDirectFir ? "FIR_REGISTER" : "REGISTERED";
@@ -826,7 +826,7 @@ export const ComplaintService = {
       `At ${nowTime} hours, Citizen Complaint ${updated.complaintNumber} (${updated.categoryDisplay}) was officially assigned to Enquiry Officer ${eoName}, ${eoRank}, PNO ${eoPno} (Roster: ${eoRoster?.rosterDuty || "Investigation"}). Supervisory Directions: "${directions}". Resolution timeline targeted for ${targetDays} days (${targetDate.toISOString().split("T")[0]}). Assigned by ${assignedByName}. Notification dispatched to EO desk.`,
       "COMPLAINT_RECEIPT",
       assignedByName,
-      "04291882",
+      "HR-04291882",
       updated.policeStation,
       updated.complaintNumber
     );
@@ -2451,7 +2451,7 @@ export const ComplaintService = {
     if (wasRejected && outcome === "Complete") {
       const shoNotif: OfficerNotification = {
         id: `notif_${Date.now()}_sho_resubmitted`,
-        recipientPno: "04291882",
+        recipientPno: "HR-04291882",
         recipientName: "Station House Officer (SHO)",
         complaintId: complaint.id,
         complaintNumber: complaint.complaintNumber,
@@ -2509,7 +2509,7 @@ export const ComplaintService = {
   async sendReportToSho(
     complaintId: string,
     officerName: string,
-    officerPno: string = "04291882",
+    officerPno: string = "HR-04291882",
     remarks?: string,
     options?: {
       recommendedCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string;
@@ -2616,7 +2616,7 @@ export const ComplaintService = {
     // Officer Notification for SHO
     const shoNotif: OfficerNotification = {
       id: `notif_${Date.now()}_sho_action`,
-      recipientPno: "04291882",
+      recipientPno: "HR-04291882",
       recipientName: "Station House Officer (SHO)",
       complaintId: complaint.id,
       complaintNumber: complaint.complaintNumber,
@@ -2641,7 +2641,7 @@ export const ComplaintService = {
   async shoApprove(
     complaintId: string,
     shoName: string,
-    shoPno: string = "04291882",
+    shoPno: string = "HR-04291882",
     remarks?: string,
     finalCategory?: 'NCR' | 'FIR_RECOMMEND' | 'CLOSURE' | string
   ): Promise<ComplaintItem> {
@@ -2784,7 +2784,7 @@ export const ComplaintService = {
         const reportTitle = targetReport?.title || "जांच आख्या (Enquiry Report - NCR u/s 174 BNSS)";
         const eoName = complaint.assignedEoName || targetReport?.officerName || "Enquiry Officer";
         const eoRank = complaint.assignedEoRank || targetReport?.officerRank || "ASI/SI";
-        const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "04291882";
+        const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "HR-04291882";
         const psName = complaint.policeStation || "PS City Thanesar";
         const distName = complaint.district || "Kurukshetra";
         const dateStr = nowIso.split("T")[0];
@@ -2895,7 +2895,7 @@ ${reportBody}
   async shoReEnquiry(
     complaintId: string,
     shoName: string,
-    shoPno: string = "04291882",
+    shoPno: string = "HR-04291882",
     reason: string
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
@@ -2976,7 +2976,7 @@ ${reportBody}
   async shoReject(
     complaintId: string,
     shoName: string,
-    shoPno: string = "04291882",
+    shoPno: string = "HR-04291882",
     reason: string
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
@@ -3109,7 +3109,7 @@ ${reportBody}
         `Pursuant to preliminary enquiry under Section 173(3) BNSS, FIR No. ${firNumber} was officially registered under ${sections} at ${complaint.policeStation}. Complainant: ${complaint.complainantName}. Registered by ${officerName}.`,
         "FIR_REGISTERED_ENTRY",
         officerName,
-        "04291882",
+        "HR-04291882",
         complaint.policeStation,
         complaint.complaintNumber
       );

@@ -3,7 +3,7 @@ import { ComplaintItem, GeneralDiaryItem, UserSession, HistoricalFirItem } from 
 export const DEMO_USERS: UserSession[] = [
   {
     id: "usr_sho_1",
-    pno: "04291882",
+    pno: "HR-04291882",
     name: "Inspector Rajesh Kumar",
     rank: "INSPECTOR",
     rankDisplay: "Inspector / SHO",
@@ -16,7 +16,7 @@ export const DEMO_USERS: UserSession[] = [
   },
   {
     id: "usr_eo_1",
-    pno: "07182930",
+    pno: "HR-07182930",
     name: "Sub-Inspector Vikram Singh",
     rank: "SUB_INSPECTOR",
     rankDisplay: "Sub-Inspector",
@@ -28,7 +28,7 @@ export const DEMO_USERS: UserSession[] = [
   },
   {
     id: "usr_eo_2",
-    pno: "06281923",
+    pno: "HR-06281923",
     name: "ASI Ramesh Chander",
     rank: "ASSISTANT_SUB_INSPECTOR",
     rankDisplay: "ASI",
@@ -40,7 +40,7 @@ export const DEMO_USERS: UserSession[] = [
   },
   {
     id: "usr_duty_1",
-    pno: "09384712",
+    pno: "HR-09384712",
     name: "ASI Surender Pal",
     rank: "ASSISTANT_SUB_INSPECTOR",
     rankDisplay: "ASI",
@@ -52,7 +52,7 @@ export const DEMO_USERS: UserSession[] = [
   },
   {
     id: "usr_mhc_1",
-    pno: "05192834",
+    pno: "HR-05192834",
     name: "HC Devinder Kumar",
     rank: "HEAD_CONSTABLE",
     rankDisplay: "Head Constable",
@@ -64,7 +64,7 @@ export const DEMO_USERS: UserSession[] = [
   },
   {
     id: "usr_dsp_1",
-    pno: "02198301",
+    pno: "HPS-02198301",
     name: "Amit Dahiya, HPS",
     rank: "DEPUTY_SP",
     rankDisplay: "Deputy SP (Sub-Division)",
@@ -91,7 +91,7 @@ export const MOCK_ENQUIRY_OFFICERS = [
   {
     id: "eo_1",
     name: "SI Vikram Singh",
-    pno: "07182930",
+    pno: "HR-07182930",
     beltNumber: "742/KKR",
     phone: "9812034567",
     rank: "SI",
@@ -105,7 +105,7 @@ export const MOCK_ENQUIRY_OFFICERS = [
   {
     id: "eo_2",
     name: "ASI Ramesh Chander",
-    pno: "06281923",
+    pno: "HR-06281923",
     beltNumber: "628/KKR",
     phone: "9812045678",
     rank: "ASI",
@@ -119,7 +119,7 @@ export const MOCK_ENQUIRY_OFFICERS = [
   {
     id: "eo_3",
     name: "ASI Surender Pal",
-    pno: "09384712",
+    pno: "HR-09384712",
     beltNumber: "938/KKR",
     phone: "9812056789",
     rank: "ASI",
@@ -133,7 +133,7 @@ export const MOCK_ENQUIRY_OFFICERS = [
   {
     id: "eo_4",
     name: "SI Meenakshi Sharma",
-    pno: "08234190",
+    pno: "HR-08234190",
     beltNumber: "823/KKR",
     phone: "9812067890",
     rank: "SI (Women Desk)",
@@ -197,7 +197,7 @@ export const MOCK_COMPLAINTS: ComplaintItem[] = [
     district: "Kurukshetra",
     registeredBy: "ASI Surender Pal",
     assignedEoName: "SI Vikram Singh",
-    assignedEoPno: "07182930",
+    assignedEoPno: "HR-07182930",
     assignedEoRank: "SI",
     assignedAt: "2026-09-29T10:30:00Z",
     daysPending: 4,
@@ -238,7 +238,7 @@ export const MOCK_COMPLAINTS: ComplaintItem[] = [
     district: "Kurukshetra",
     registeredBy: "ASI Surender Pal",
     assignedEoName: "ASI Ramesh Chander",
-    assignedEoPno: "06281923",
+    assignedEoPno: "HR-06281923",
     assignedEoRank: "ASI",
     assignedAt: "2026-09-26T11:00:00Z",
     daysPending: 7,
@@ -281,7 +281,7 @@ export const MOCK_COMPLAINTS: ComplaintItem[] = [
     district: "Kurukshetra",
     registeredBy: "ASI Surender Pal",
     assignedEoName: "SI Vikram Singh",
-    assignedEoPno: "07182930",
+    assignedEoPno: "HR-07182930",
     assignedEoRank: "SI",
     assignedAt: "2026-10-01T21:30:00Z",
     daysPending: 2,
@@ -423,7 +423,7 @@ export const MOCK_GD_ENTRIES: GeneralDiaryItem[] = [
       "At 00:05 hours, Daily General Diary (Roznamcha Aam) of Police Station City Thanesar opened in accordance with Punjab Police Rules 22.48. Sentry duty handed over to Constable Vikas No. 892/KKR. Arms, ammunition, lock-up prisoners (2 males in custody) and Malkhana seals verified and intact.",
     policeStation: "PS City Thanesar",
     loggedByOfficer: "HC Devinder Kumar",
-    loggedByPno: "05192834",
+    loggedByPno: "HR-05192834",
     isLocked: true,
   },
   {
@@ -439,7 +439,7 @@ export const MOCK_GD_ENTRIES: GeneralDiaryItem[] = [
       "PCR Van 04 (In-charge ASI Mahipal with Driver Constable Sunil) returned after completing night domination patrol across Railway Road, Pipli Road and Brahma Sarovar outer perimeter. No untoward incident noticed. 18 suspicious vehicles checked; 2 challaned for high-beam/tint.",
     policeStation: "PS City Thanesar",
     loggedByOfficer: "HC Devinder Kumar",
-    loggedByPno: "05192834",
+    loggedByPno: "HR-05192834",
     isLocked: true,
   },
   {
@@ -455,7 +455,7 @@ export const MOCK_GD_ENTRIES: GeneralDiaryItem[] = [
       "Dr. Ashok Mehta s/o Late Sh. K.L. Mehta r/o DD Colony Kurukshetra submitted a written complaint regarding online banking fraud of Rs. 84,200/- via APK phishing link. Complaint registered in CMS under CMP No. HAR-KKR-2026-CMP-00486 and placed before SHO for assignment.",
     policeStation: "PS City Thanesar",
     loggedByOfficer: "ASI Surender Pal",
-    loggedByPno: "09384712",
+    loggedByPno: "HR-09384712",
     relatedComplaintNumber: "HAR-KKR-2026-CMP-00486",
     isLocked: true,
   },
@@ -472,7 +472,7 @@ export const MOCK_GD_ENTRIES: GeneralDiaryItem[] = [
       "Sub-Inspector Vikram Singh departed along with Constable Naresh No. 412 on government motorcycle for spot verification and witness statements in CMP No. HAR-KKR-2026-CMP-00482 at Sector 7 Kurukshetra.",
     policeStation: "PS City Thanesar",
     loggedByOfficer: "HC Devinder Kumar",
-    loggedByPno: "05192834",
+    loggedByPno: "HR-05192834",
     relatedComplaintNumber: "HAR-KKR-2026-CMP-00482",
     isLocked: true,
   },

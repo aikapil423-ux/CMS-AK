@@ -820,7 +820,7 @@ export default function StationProfilePage() {
                     required
                     value={formData.pno}
                     onChange={(e) => setFormData({ ...formData, pno: e.target.value })}
-                    placeholder="e.g. 12040051"
+                    placeholder="e.g. HR-12040051 / PNO-14060012"
                     className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[#0b192c] focus:outline-none font-mono"
                   />
                 </div>
