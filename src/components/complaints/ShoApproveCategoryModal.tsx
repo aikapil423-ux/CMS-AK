@@ -75,8 +75,8 @@ export function ShoApproveCategoryModal({
     {
       value: "NCR",
       label: "1. NCR",
-      description: "Non-Cognizable Report — असंज्ञेय अपराध होने पर।",
-      statusEffect: "Final Status: Complete (मामला संपन्न होकर बंद हो जाएगा)",
+      description: "Non-Cognizable Report — असंज्ञेय अपराध होने पर (रोजनामचा में सम्पूर्ण जांच रिपोर्ट सहित स्वतः GD Entry दर्ज होगी)।",
+      statusEffect: "Final Status: Complete (रोजनामचा आम में सम्पूर्ण जांच आख्या व Brief Description सहित स्वतः GD प्रविष्टि दर्ज होगी)",
       badgeClass: "border-blue-300 bg-blue-50/70 text-blue-900",
       icon: FileCheck,
     },

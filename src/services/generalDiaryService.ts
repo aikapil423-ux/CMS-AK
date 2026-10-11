@@ -1161,6 +1161,7 @@ export const GeneralDiaryService = {
       verificationAuditId: auditId,
       verifiedBy: verifier,
       relatedRecords: payload.relatedRecords || {},
+      attachments: payload.attachments || [],
       auditTrail: [
         {
           action: "CREATED",
@@ -1439,6 +1440,7 @@ export const GeneralDiaryService = {
           district: payload.district || "Kurukshetra",
           source: payload.source || "MANUAL_ENTRY",
           relatedRecords: payload.relatedRecords || {},
+          attachments: payload.attachments || [],
         },
         author,
         "Direct verified entry"

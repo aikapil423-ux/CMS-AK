@@ -2738,6 +2738,150 @@ export const ComplaintService = {
       saveNotificationsToStorage(officerNotificationsStore);
     }
 
+    // Auto-record in Roznamcha General Diary if NCR is Approved by SHO (BNSS Section 174)
+    if (isNcr) {
+      try {
+        const targetReport =
+          (complaint.reports || []).find(
+            (r) => r.id === complaint.eoRecommendedReportId || r.sentToSho || r.recommendationType === "NCR"
+          ) || (complaint.reports && complaint.reports[0]);
+
+        let reportBody = targetReport?.content?.trim() || "";
+        if (!reportBody && targetReport?.contentHtml) {
+          reportBody = targetReport.contentHtml
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+            .replace(/<\/p>|<\/div>|<br\s*\/?>/gi, "\n")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/\n\s*\n/g, "\n\n")
+            .trim();
+        }
+        if (!reportBody && targetReport?.conclusionSummary) {
+          reportBody = targetReport.conclusionSummary.trim();
+        }
+
+        // If no pre-existing saved report body, dynamically generate the complete 8-section official draft
+        if (!reportBody) {
+          try {
+            const { RecommendationReportService } = await import("./recommendationReportService");
+            const generatedDraft = RecommendationReportService.generateDraft(complaint, "NCR", {
+              name: complaint.assignedEoName,
+              rank: complaint.assignedEoRank,
+              pno: complaint.assignedEoPno,
+              station: complaint.policeStation,
+            });
+            reportBody = generatedDraft.plainText;
+          } catch {
+            reportBody = complaint.incidentDetails?.trim() || "कोई पृथक जांच आख्या विवरण उपलब्ध नहीं।";
+          }
+        }
+
+        const reportTitle = targetReport?.title || "जांच आख्या (Enquiry Report - NCR u/s 174 BNSS)";
+        const eoName = complaint.assignedEoName || targetReport?.officerName || "Enquiry Officer";
+        const eoRank = complaint.assignedEoRank || targetReport?.officerRank || "ASI/SI";
+        const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "04291882";
+        const psName = complaint.policeStation || "PS City Thanesar";
+        const distName = complaint.district || "Kurukshetra";
+        const dateStr = nowIso.split("T")[0];
+        const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+        const ncrSubject = `असंज्ञेय अपराध रपट (NCR स्वीकृत) - शिकायत सं. ${complaint.complaintNumber} [BNSS धारा 174]`;
+
+        const ncrNarrative = `================================================================================
+रोजनामचा आम रपट (General Diary Entry) - असंज्ञेय अपराध (Non-Cognizable Report)
+थाना: ${psName}, जिला: ${distName} | दिनांक: ${dateStr} समय: ${timeStr}
+कानूनी प्रावधान: भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023 धारा 174
+================================================================================
+वक्त बाबत: आज दिनांक ${dateStr} को समय ${timeStr} बजे, नागरिक शिकायत सं. ${complaint.complaintNumber} (${complaint.categoryDisplay || "General"}) की जांच रिपोर्ट SHO ${shoName} (PNO: ${shoPno}) द्वारा अवलोकित व स्वीकृत की गई। जांच अधिकारी ${eoName} (${eoRank}) द्वारा प्रस्तुत आख्या के आधार पर मामला असंज्ञेय (Non-Cognizable) अपराध की श्रेणी में पाया गया, जिसके फलस्वरूप इसे NCR के रूप में निस्तारित किया जाता है।
+
+1. शिकायतकर्ता का विवरण (Complainant Particulars):
+- नाम: ${complaint.complainantName || "नागरिक"}
+- मोबाइल: ${complaint.complainantMobile || "N/A"}
+- पता: ${complaint.complainantAddress || "N/A"}, ${complaint.complainantCity || ""}
+
+2. घटना स्थल व समय (Occurrence Details):
+- घटनास्थल: ${complaint.incidentPlace || "थाना क्षेत्र"}
+- घटना दिनांक: ${complaint.incidentDate || dateStr}
+
+3. जांच अधिकारी (Enquiry Officer Details):
+- नाम व पद: ${eoName} (${eoRank})
+- PNO: ${eoPno}
+
+4. SHO आदेश व टिप्पणी (SHO Final Order & Remarks):
+- ${remarks ? remarks.trim() : "जांच रिपोर्ट का गहनता से अवलोकन किया गया। संज्ञेय अपराध नहीं बनता, अतः रिपोर्ट अनुसार NCR स्वीकृत कर शिकायत निस्तारित की जाती है।"}
+
+5. सम्पूर्ण जांच रिपोर्ट / आख्या (Complete Enquiry Report Body - ${reportTitle}):
+--------------------------------------------------------------------------------
+${reportBody}
+--------------------------------------------------------------------------------
+
+6. वैधानिक निर्देश व कार्यवाही (Statutory Directive under Section 174(2) BNSS):
+चूंकि मामला असंज्ञेय अपराध का है, अतः पुलिस द्वारा सीधे अन्वेषण अपेक्षित नहीं है। शिकायतकर्ता को BNSS धारा 174(2) के तहत सक्षम इलाका मजिस्ट्रेट के समक्ष परिवाद दायर करने की वैधानिक हिदायत दी गई। रपट रोजनामचा में दर्ज की जाकर तस्दीक की गई।`;
+
+        const ncrAttachments: any[] = [];
+        if (targetReport?.contentHtml || targetReport?.dataUrl) {
+          ncrAttachments.push({
+            id: `att_${Date.now()}_ncr`,
+            name: targetReport.fileName || `NCR_Report_${complaint.complaintNumber}.html`,
+            size: targetReport.contentHtml?.length || targetReport.dataUrl?.length || 2048,
+            type: "text/html",
+            dataUrl:
+              targetReport.dataUrl ||
+              (targetReport.contentHtml
+                ? `data:text/html;charset=utf-8,${encodeURIComponent(targetReport.contentHtml)}`
+                : undefined),
+            uploadedAt: nowIso,
+          });
+        }
+
+        const gdRecord = await GeneralDiaryService.addEntry({
+          typeCode: "NON_COGNIZABLE_REPORT",
+          category: "COURT_DOCUMENTATION",
+          typeDisplay: "Non-Cognizable Report",
+          typeDisplayHi: "असंज्ञेय अपराध रपट",
+          subject: ncrSubject,
+          narrative: ncrNarrative,
+          policeStation: psName,
+          district: distName,
+          actualAuthor: {
+            name: shoName,
+            rank: "Station House Officer (SHO)",
+            pno: shoPno,
+            beltNumber: `${shoPno.slice(-3)}/KKR`,
+          },
+          entryForOfficer: {
+            name: eoName,
+            rank: eoRank,
+            pno: eoPno,
+            beltNumber: `${eoPno.slice(-3)}/KKR`,
+          },
+          relatedRecords: {
+            complaintNumber: complaint.complaintNumber,
+          },
+          attachments: ncrAttachments.length > 0 ? ncrAttachments : undefined,
+        });
+
+        if (gdRecord && (gdRecord.gdNumber || gdRecord.id)) {
+          const recordedGdNumber = gdRecord.gdNumber || `GD-${gdRecord.id.slice(-4)}`;
+          complaintsStore[index].ncrNumber = recordedGdNumber;
+          this.addTimelineEvent(complaint.id, {
+            title: `Roznamcha GD Entry Logged: ${recordedGdNumber}`,
+            description: `Station General Diary Entry ${recordedGdNumber} automatically recorded for NCR under Section 174 BNSS containing complete enquiry report narrative.`,
+            category: "STATUS_CHANGE",
+            officerName: shoName,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } catch (gdErr) {
+        console.warn("Could not auto-log NCR to Roznamcha GD:", gdErr);
+      }
+    }
+
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 
