@@ -539,9 +539,17 @@ function RegisterFIRForm() {
         setCaseType(foundCaseType);
       }
 
+      const foundSectionsList = found.actsAndSectionsList || found.relatedRecords?.actsAndSectionsList;
       const foundSections = found.actsAndSections || found.relatedRecords?.actsAndSections;
       const foundMajorAct = found.majorAct || found.relatedRecords?.majorAct || "Bharatiya Nyaya Sanhita, 2023 (BNS)";
-      if (foundSections) {
+      if (foundSectionsList && Array.isArray(foundSectionsList) && foundSectionsList.length > 0) {
+        setActsAndSectionsList(foundSectionsList);
+        setActRemarks((prev) =>
+          prev
+            ? `${prev}; GD: ${found.gdNumber} (${found.typeDisplay})`
+            : `GD: ${found.gdNumber} (${found.typeDisplay})`
+        );
+      } else if (foundSections) {
         setActsAndSectionsList([
           {
             id: `act-gd-${Date.now()}`,

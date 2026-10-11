@@ -11,6 +11,7 @@ import {
   GDStatus,
   GDUploadedDocument,
 } from "@/types/generalDiary";
+import { FIRActSectionEntry } from "@/types";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { formatGDActivityDateTime } from "@/lib/gdDateTime";
 
@@ -894,6 +895,7 @@ export const GeneralDiaryService = {
     district?: string;
     caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
     actsAndSections?: string;
+    actsAndSectionsList?: FIRActSectionEntry[];
     majorAct?: string;
     relatedRecords?: GDRelatedRecords;
     attachments?: GDUploadedDocument[];
@@ -915,6 +917,10 @@ export const GeneralDiaryService = {
         actualAuthor: entry.actualAuthor,
         policeStation: entry.policeStation,
         district: entry.district,
+        caseType: entry.caseType,
+        actsAndSections: entry.actsAndSections,
+        actsAndSectionsList: entry.actsAndSectionsList,
+        majorAct: entry.majorAct,
         relatedRecords: entry.relatedRecords,
         attachments: entry.attachments,
       });
@@ -1387,6 +1393,7 @@ export const GeneralDiaryService = {
           source?: any;
           caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
           actsAndSections?: string;
+          actsAndSectionsList?: FIRActSectionEntry[];
           majorAct?: string;
           relatedRecords?: GDRelatedRecords;
           attachments?: GDUploadedDocument[];
@@ -1418,6 +1425,7 @@ export const GeneralDiaryService = {
           source: payload.source,
           caseType: payload.caseType,
           actsAndSections: payload.actsAndSections,
+          actsAndSectionsList: payload.actsAndSectionsList,
           majorAct: payload.majorAct,
           relatedRecords: payload.relatedRecords,
           attachments: payload.attachments,

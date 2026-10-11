@@ -1,3 +1,5 @@
+import type { FIRActSectionEntry } from "./index";
+
 // Comprehensive Data Models for Haryana Police Roznamcha GD (General Diary - Register No. II)
 // Under Punjab Police Rules (PPR) 1934 / Rule 22.48 & BNSS 2023
 
@@ -57,6 +59,7 @@ export interface GDRelatedRecords {
   departureTime?: string;
   caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
   actsAndSections?: string;
+  actsAndSectionsList?: FIRActSectionEntry[];
   majorAct?: string;
   attachments?: GDUploadedDocument[];
 }
@@ -94,6 +97,7 @@ export interface GeneralDiaryRecord {
   // Criminal Case specific fields (BNSS Sec 173 / Rukka FIR GD)
   caseType?: "ADULT" | "JUVENILE & ADULT" | "ONLY JUVENILE" | string;
   actsAndSections?: string;
+  actsAndSectionsList?: FIRActSectionEntry[];
   majorAct?: string;
 
   // Separate Timestamps (Crucial requirement #2)

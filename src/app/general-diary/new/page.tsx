@@ -42,8 +42,11 @@ import {
   Image as ImageIcon,
   X,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ActsService } from "@/services/actsService";
+import { getUnifiedActsCatalog, UnifiedActOption } from "@/lib/cctnsActsData";
+import { FIRActSectionEntry } from "@/types";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
@@ -409,8 +412,112 @@ function NewGDEntryContent() {
 
   // Criminal Case specific fields (mirrors FIR register)
   const [caseType, setCaseType] = useState<string>("ADULT");
-  const [actsAndSections, setActsAndSections] = useState<string>("Section 303(2), 115(2), 3(5) BNS, 2023");
+  const [actsAndSections, setActsAndSections] = useState<string>("");
   const [majorAct, setMajorAct] = useState<string>("Bharatiya Nyaya Sanhita, 2023 (BNS)");
+  const [actsAndSectionsList, setActsAndSectionsList] = useState<FIRActSectionEntry[]>([]);
+
+  // Unified Acts & Sections Selector state (mirrors FIR Register exactly)
+  const [unifiedActs, setUnifiedActs] = useState<UnifiedActOption[]>(() =>
+    getUnifiedActsCatalog(ActsService.getAllActs())
+  );
+  const [selectedActId, setSelectedActId] = useState<string>("act_bns_2023");
+  const [actSearchQuery, setActSearchQuery] = useState("");
+  const [isActDropdownOpen, setIsActDropdownOpen] = useState(false);
+  const actDropdownRef = useRef<HTMLDivElement | null>(null);
+  const actSearchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
+  const [sectionSearchQuery, setSectionSearchQuery] = useState("");
+  const [isSectionDropdownOpen, setIsSectionDropdownOpen] = useState(false);
+  const sectionDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Synchronize actsAndSections string with actsAndSectionsList
+  useEffect(() => {
+    if (actsAndSectionsList.length > 0) {
+      const formatted = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ");
+      setActsAndSections(formatted);
+      if (actsAndSectionsList[0]?.act) {
+        setMajorAct(actsAndSectionsList[0].act);
+      }
+    } else {
+      setActsAndSections("");
+    }
+  }, [actsAndSectionsList]);
+
+  // Load unified acts catalog asynchronously
+  useEffect(() => {
+    ActsService.getAllActsAsync()
+      .then((acts) => {
+        setUnifiedActs(getUnifiedActsCatalog(acts));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Click-outside listener for act & section dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(event.target as Node)) {
+        setIsSectionDropdownOpen(false);
+      }
+      if (actDropdownRef.current && !actDropdownRef.current.contains(event.target as Node)) {
+        setIsActDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelectAct = (actId: string) => {
+    setSelectedActId(actId);
+    const found = unifiedActs.find((a) => a.id === actId);
+    if (found) setMajorAct(found.name);
+    setSelectedSections([]);
+    setSectionSearchQuery("");
+  };
+
+  const handleToggleSection = (secNum: string) => {
+    setSelectedSections((prev) =>
+      prev.includes(secNum) ? prev.filter((s) => s !== secNum) : [...prev, secNum]
+    );
+  };
+
+  const handleAddCustomSection = (rawInput: string) => {
+    const trimmed = rawInput.trim().replace(/^Sec(tion)?\.?\s*/i, "");
+    if (!trimmed) return;
+    if (!selectedSections.includes(trimmed)) {
+      setSelectedSections((prev) => [...prev, trimmed]);
+    }
+    setSectionSearchQuery("");
+  };
+
+  const handleAddActSectionInline = () => {
+    const finalSections = [...selectedSections];
+    if (sectionSearchQuery.trim()) {
+      const typed = sectionSearchQuery.trim().replace(/^Sec(tion)?\.?\s*/i, "");
+      if (typed && !finalSections.includes(typed)) finalSections.push(typed);
+    }
+
+    if (finalSections.length === 0) {
+      alert("Please select or type at least one section number for this Act.");
+      return;
+    }
+
+    const currentActObj = unifiedActs.find((a) => a.id === selectedActId) || unifiedActs[0];
+    const actName = currentActObj?.name || majorAct;
+
+    const newEntry: FIRActSectionEntry = {
+      id: `act-${Date.now()}`,
+      srNo: actsAndSectionsList.length + 1,
+      act: actName,
+      sections: finalSections.join(", "),
+    };
+    setActsAndSectionsList((prev) => [...prev, newEntry]);
+    setSelectedSections([]);
+    setSectionSearchQuery("");
+    setIsSectionDropdownOpen(false);
+  };
 
   // Auto-resize narrative textarea as content changes so all typed lines are visible
   const adjustTextareaHeight = () => {
@@ -792,8 +899,21 @@ function NewGDEntryContent() {
       if (draft.caseType || draft.relatedRecords?.caseType) {
         setCaseType(draft.caseType || draft.relatedRecords?.caseType || "ADULT");
       }
-      if (draft.actsAndSections || draft.relatedRecords?.actsAndSections) {
-        setActsAndSections(draft.actsAndSections || draft.relatedRecords?.actsAndSections || "");
+      if (draft.relatedRecords?.actsAndSectionsList && Array.isArray(draft.relatedRecords.actsAndSectionsList) && draft.relatedRecords.actsAndSectionsList.length > 0) {
+        setActsAndSectionsList(draft.relatedRecords.actsAndSectionsList);
+      } else if (draft.actsAndSections || draft.relatedRecords?.actsAndSections) {
+        const sec = draft.actsAndSections || draft.relatedRecords?.actsAndSections || "";
+        setActsAndSections(sec);
+        if (sec) {
+          setActsAndSectionsList([
+            {
+              id: `act-draft-1`,
+              srNo: 1,
+              act: draft.majorAct || draft.relatedRecords?.majorAct || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+              sections: sec,
+            },
+          ]);
+        }
       }
       if (draft.majorAct || draft.relatedRecords?.majorAct) {
         setMajorAct(draft.majorAct || draft.relatedRecords?.majorAct || "");
@@ -865,10 +985,12 @@ function NewGDEntryContent() {
         source: "MANUAL_ENTRY",
         caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
         actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,
+        actsAndSectionsList: (selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case")) && actsAndSectionsList.length > 0 ? actsAndSectionsList : undefined,
         majorAct: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? majorAct : undefined,
         relatedRecords: {
           caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
           actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,
+          actsAndSectionsList: (selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case")) && actsAndSectionsList.length > 0 ? actsAndSectionsList : undefined,
           majorAct: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? majorAct : undefined,
           attachments: attachments.length > 0 ? attachments : undefined,
         },
@@ -915,6 +1037,7 @@ function NewGDEntryContent() {
         narrative: narrative.trim(),
         caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
         actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,
+        actsAndSectionsList: (selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case")) && actsAndSectionsList.length > 0 ? actsAndSectionsList : undefined,
         majorAct: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? majorAct : undefined,
         activityDate,
         activityTime: activityTime24,
@@ -923,6 +1046,7 @@ function NewGDEntryContent() {
         relatedRecords: {
           caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
           actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,
+          actsAndSectionsList: (selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case")) && actsAndSectionsList.length > 0 ? actsAndSectionsList : undefined,
           majorAct: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? majorAct : undefined,
           attachments: attachments.length > 0 ? attachments : undefined,
         },
@@ -1349,30 +1473,21 @@ function NewGDEntryContent() {
             </div>
           </div>
 
-          {/* Criminal Case Specific Fields: 2 Columns */}
+          {/* Criminal Case Specific Fields: Case Type & Acts and Sections Applicable */}
           {(selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case")) && (
-            <div className="p-4 bg-red-50/70 border-2 border-red-300 rounded-xl space-y-3 shadow-xs animate-in fade-in-50">
-              <div className="flex items-center justify-between border-b border-red-200 pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-red-600 text-white flex items-center justify-center">
-                    <Scale className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-bold text-xs uppercase tracking-wide text-red-950">
-                    Criminal Case Details (आपराधिक मामला विवरण • BNSS / BNS FIR Entry)
-                  </span>
-                </div>
-                <span className="text-[11px] font-semibold text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded">
-                  Mirrors FIR Register
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                {/* Column 1: Case Type dropdown */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>1. Case Type (केस प्रकार) *</span>
-                    <span className="text-[10px] text-slate-500 font-medium">Age &amp; Offender status</span>
+            <div className="space-y-4 animate-in fade-in-50">
+              {/* 1. Case Type dropdown */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5 text-red-600" />
+                    <span>Case Type (केस प्रकार) *</span>
                   </label>
+                  <p className="text-[11px] text-slate-500">
+                    Age &amp; Offender status: Adult, Juvenile or Mixed group
+                  </p>
+                </div>
+                <div className="w-full sm:w-72">
                   <select
                     value={caseType}
                     onChange={(e) => setCaseType(e.target.value)}
@@ -1383,54 +1498,419 @@ function NewGDEntryContent() {
                     <option value="JUVENILE & ADULT">JUVENILE & ADULT</option>
                     <option value="ONLY JUVENILE">ONLY JUVENILE</option>
                   </select>
-                  <p className="text-[10px] text-slate-500">
-                    Designation of accused offenders: Adult, Juvenile or Mixed group.
-                  </p>
-                </div>
-
-                {/* Column 2: Acts & Sections Applicable */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                    <span>2. Acts &amp; Sections Applicable (अधिनियम व धाराएं) *</span>
-                    <span className="text-[10px] text-red-600 font-medium font-mono">BNS, 2023 / Special Acts</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={actsAndSections}
-                    onChange={(e) => setActsAndSections(e.target.value)}
-                    placeholder="e.g. Section 303(2), 115(2), 3(5) BNS, 2023"
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-[#0b192c]"
-                  />
-                  {/* Quick selection chips mirroring FIR quick presets */}
-                  <div className="flex flex-wrap gap-1.5 items-center pt-0.5">
-                    <span className="text-[10px] text-slate-500 font-medium">Quick Add:</span>
-                    {[
-                      "Sec 303(2) BNS",
-                      "Sec 115(2) BNS",
-                      "Sec 351(2) BNS",
-                      "Sec 3(5) BNS",
-                      "Sec 305 BNS",
-                      "Sec 316 BNS",
-                      "Sec 318(4) BNS",
-                    ].map((sec) => (
-                      <button
-                        key={sec}
-                        type="button"
-                        onClick={() => {
-                          setActsAndSections((prev) => {
-                            if (!prev.trim()) return sec;
-                            if (prev.includes(sec)) return prev;
-                            return `${prev}, ${sec}`;
-                          });
-                        }}
-                        className="px-2 py-0.5 bg-white border border-slate-300 hover:border-red-400 hover:bg-red-50 text-[10px] rounded font-mono text-slate-700 transition-colors cursor-pointer"
-                      >
-                        + {sec}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
+
+              {/* 2. Acts and Sections Repeatable Panel - Matches FIR Register & Image exactly */}
+              <Card className="border-slate-200 overflow-visible relative z-20">
+                <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
+                  <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-red-600" />
+                    ACTS AND SECTIONS APPLICABLE
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      {actsAndSectionsList.length} Act(s) Added
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4 space-y-4 text-xs overflow-visible">
+                  {/* Inline Acts and Sections Selection */}
+                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-3 items-end relative overflow-visible z-20">
+                    <div className="md:col-span-5 relative z-50" ref={actDropdownRef}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Select Act</label>
+                        {selectedActId && (
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            {(() => {
+                              const act = unifiedActs.find((a) => a.id === selectedActId);
+                              return act ? `${act.sections.length} Sections available` : "";
+                            })()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div
+                        onClick={() => {
+                          setIsActDropdownOpen((prev) => {
+                            const nextState = !prev;
+                            if (nextState) {
+                              setIsSectionDropdownOpen(false);
+                              setTimeout(() => actSearchInputRef.current?.focus(), 50);
+                            }
+                            return nextState;
+                          });
+                        }}
+                        className="w-full min-h-[38px] p-2 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
+                      >
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          {(() => {
+                            const act = unifiedActs.find((a) => a.id === selectedActId) || unifiedActs[0];
+                            if (!act) return <span className="text-slate-400">Select an Act...</span>;
+                            return (
+                              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                <span className="font-semibold text-slate-800 truncate">
+                                  {act.name}
+                                </span>
+                                <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0">
+                                  {act.sections.length} Sec
+                                </span>
+                                {act.isCustom && (
+                                  <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[9px] font-semibold shrink-0">
+                                    Custom
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${
+                            isActDropdownOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </div>
+
+                      {isActDropdownOpen && (
+                        <div
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute left-0 w-full sm:min-w-[420px] md:min-w-[480px] max-w-[calc(100vw-2.5rem)] top-full mt-1.5 bg-white border border-slate-300 rounded-xl shadow-2xl z-50 p-2.5 space-y-2.5"
+                        >
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                            <input
+                              ref={actSearchInputRef}
+                              type="text"
+                              placeholder="Type to search Act name or category..."
+                              value={actSearchQuery}
+                              onChange={(e) => setActSearchQuery(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Escape") {
+                                  setIsActDropdownOpen(false);
+                                }
+                              }}
+                              className="w-full pl-8 pr-7 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-[#0b192c]"
+                            />
+                            {actSearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => setActSearchQuery("")}
+                                className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {(() => {
+                            const q = actSearchQuery.toLowerCase().trim();
+                            const filtered = unifiedActs.filter((a) => {
+                              if (!q) return true;
+                              return (
+                                a.name.toLowerCase().includes(q) ||
+                                a.title.toLowerCase().includes(q) ||
+                                a.category.toLowerCase().includes(q) ||
+                                a.id.toLowerCase().includes(q)
+                              );
+                            });
+
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="p-4 text-center text-xs text-slate-500">
+                                  No matching acts found for &quot;{actSearchQuery}&quot;
+                                </div>
+                              );
+                            }
+
+                            const categories = Array.from(new Set(filtered.map((a) => a.category)));
+
+                            return (
+                              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg bg-white">
+                                {categories.map((cat) => {
+                                  const actsInCat = filtered.filter((a) => a.category === cat);
+                                  return (
+                                    <div key={cat} className="p-1">
+                                      <div className="px-2 py-1 text-[10px] font-bold tracking-wider uppercase text-slate-400 bg-slate-50/80 rounded">
+                                        {cat}
+                                      </div>
+                                      <div className="space-y-0.5 mt-0.5">
+                                        {actsInCat.map((act) => {
+                                          const isSelected = selectedActId === act.id;
+                                          return (
+                                            <div
+                                              key={act.id}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSelectAct(act.id);
+                                                setIsActDropdownOpen(false);
+                                                setActSearchQuery("");
+                                              }}
+                                              className={`p-2 flex items-center justify-between cursor-pointer text-xs rounded-md transition-colors ${
+                                                isSelected
+                                                  ? "bg-blue-50 text-blue-950 font-semibold border border-blue-200"
+                                                  : "hover:bg-slate-50 text-slate-700"
+                                              }`}
+                                            >
+                                              <div className="min-w-0 pr-2">
+                                                <div className="font-semibold text-slate-800 leading-tight">
+                                                  {act.name}
+                                                </div>
+                                                <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                                                  <span className="font-mono text-blue-700 font-bold">
+                                                    {act.sections.length} Sections
+                                                  </span>
+                                                  {act.isCustom && (
+                                                    <span className="text-amber-700 font-medium">
+                                                      • [Custom Bare Act]
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              {isSelected && (
+                                                <Check className="w-4 h-4 text-blue-600 shrink-0 font-bold" />
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-5 relative z-40" ref={sectionDropdownRef}>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-bold text-slate-700 block">Select Section &amp; Sub Section</label>
+                        {selectedSections.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSections([]);
+                            }}
+                            className="text-[10px] text-red-600 hover:underline font-semibold"
+                          >
+                            Clear ({selectedSections.length})
+                          </button>
+                        )}
+                      </div>
+
+                      <div
+                        onClick={() => {
+                          setIsSectionDropdownOpen((prev) => {
+                            if (!prev) setIsActDropdownOpen(false);
+                            return !prev;
+                          });
+                        }}
+                        className="w-full min-h-[38px] p-1.5 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
+                      >
+                        <div className="flex flex-wrap gap-1 items-center flex-1 min-w-0">
+                          {selectedSections.length > 0 ? (
+                            selectedSections.map((sec) => (
+                              <span
+                                key={sec}
+                                className="inline-flex items-center gap-1 bg-[#0b192c] text-white px-2 py-0.5 rounded text-[11px] font-mono font-bold shrink-0"
+                              >
+                                <span>Sec {sec}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleSection(sec);
+                                  }}
+                                  className="hover:text-red-300 ml-0.5"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400">Click to select sections...</span>
+                          )}
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                      </div>
+
+                      {isSectionDropdownOpen && (
+                        <div
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute left-0 w-full sm:min-w-[420px] md:min-w-[480px] max-w-[calc(100vw-2.5rem)] top-full mt-1.5 bg-white border border-slate-300 rounded-xl shadow-2xl z-50 p-2.5 space-y-2.5"
+                        >
+                          <div className="relative">
+                            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                            <input
+                              type="text"
+                              placeholder="Type to filter or add custom section..."
+                              value={sectionSearchQuery}
+                              onChange={(e) => setSectionSearchQuery(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  if (sectionSearchQuery.trim()) {
+                                    handleAddCustomSection(sectionSearchQuery);
+                                  }
+                                }
+                              }}
+                              className="w-full pl-8 pr-16 py-1.5 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-[#0b192c]"
+                            />
+                            {sectionSearchQuery.trim() && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddCustomSection(sectionSearchQuery);
+                                }}
+                                className="absolute right-1 top-1 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold"
+                              >
+                                + Add
+                              </button>
+                            )}
+                          </div>
+
+                          {(() => {
+                            const activeObj = unifiedActs.find((a) => a.id === selectedActId) || unifiedActs[0];
+                            const secList = activeObj?.sections || [];
+                            const q = sectionSearchQuery.toLowerCase().trim();
+                            const filtered = secList.filter((s) => {
+                              if (!q) return true;
+                              return (
+                                s.sectionNumber.toLowerCase().includes(q) ||
+                                (s.title && s.title.toLowerCase().includes(q))
+                              );
+                            });
+
+                            return (
+                              <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg bg-white">
+                                {filtered.length > 0 ? (
+                                  filtered.map((sec, secIdx) => {
+                                    const isSelected = selectedSections.includes(sec.sectionNumber);
+                                    return (
+                                      <div
+                                        key={`${sec.sectionNumber}-${secIdx}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleSection(sec.sectionNumber);
+                                        }}
+                                        className={`p-2 flex items-center justify-between cursor-pointer text-xs rounded-md transition-colors ${
+                                          isSelected
+                                            ? "bg-blue-50 text-blue-950 font-semibold border border-blue-200"
+                                            : "hover:bg-slate-50 text-slate-700"
+                                        }`}
+                                      >
+                                        <div className="flex items-start gap-2 min-w-0">
+                                          <div
+                                            className={`w-3.5 h-3.5 mt-0.5 rounded flex items-center justify-center shrink-0 text-[10px] border ${
+                                              isSelected
+                                                ? "bg-blue-600 text-white border-blue-600 font-bold"
+                                                : "border-slate-300"
+                                            }`}
+                                          >
+                                            {isSelected ? "✓" : ""}
+                                          </div>
+                                          <div className="min-w-0 leading-tight">
+                                            <span className="font-mono font-bold text-blue-900 mr-1.5">
+                                              {sec.sectionNumber}
+                                            </span>
+                                            {sec.title && (
+                                              <span className="text-[11px] text-slate-600 font-normal">
+                                                — {sec.title}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <div className="p-3 text-center text-slate-500 text-xs">
+                                    <p>No section found for &ldquo;{sectionSearchQuery}&rdquo;.</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          <div className="pt-1.5 flex items-center justify-between border-t border-slate-100 text-[11px]">
+                            <span className="text-slate-600 font-medium">
+                              {selectedSections.length} section(s) selected
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsSectionDropdownOpen(false);
+                              }}
+                              className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold shadow-xs"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <Button
+                        type="button"
+                        onClick={handleAddActSectionInline}
+                        className="w-full bg-[#0b192c] hover:bg-slate-800 text-white text-xs flex items-center justify-center gap-1 h-[38px]"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Add Act
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  {actsAndSectionsList.length > 0 ? (
+                    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                          <tr>
+                            <th className="p-2.5 w-14">S.No.</th>
+                            <th className="p-2.5">Acts</th>
+                            <th className="p-2.5">Sections</th>
+                            <th className="p-2.5 w-20 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {actsAndSectionsList.map((row, idx) => (
+                            <tr key={row.id} className="hover:bg-slate-50">
+                              <td className="p-2.5 font-bold text-slate-500">{row.srNo || idx + 1}</td>
+                              <td className="p-2.5 font-semibold text-slate-900">{row.act}</td>
+                              <td className="p-2.5 font-mono text-blue-900 font-bold">{row.sections}</td>
+                              <td className="p-2.5 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setActsAndSectionsList((prev) =>
+                                      prev.filter((_, i) => i !== idx).map((it, i) => ({ ...it, srNo: i + 1 }))
+                                    )
+                                  }
+                                  className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+                      No acts &amp; sections added yet. Click &quot;Add Acts &amp; Sections (Dialog)&quot; or use the inline selector above.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
