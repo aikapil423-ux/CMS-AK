@@ -419,3 +419,105 @@ export function downloadA4DocumentAsHtml(
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Returns the standalone, fully styled HTML string of the given element.
+ */
+export function getA4DocumentHtml(
+  elementOrId: HTMLElement | string,
+  documentTitle?: string
+): string {
+  if (typeof window === "undefined") return "";
+
+  const el =
+    typeof elementOrId === "string"
+      ? document.getElementById(elementOrId)
+      : elementOrId;
+
+  if (!el) {
+    console.warn("Target element not found:", elementOrId);
+    return "";
+  }
+
+  let stylesHtml = "";
+  document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
+    if (node.tagName.toLowerCase() === "style") {
+      const text = node.textContent || "";
+      if (text.includes("visibility: hidden") || text.includes("visibility:hidden")) {
+        return;
+      }
+    }
+    stylesHtml += node.outerHTML;
+  });
+
+  const title = documentTitle || "Police Legal Document";
+  const cloned = preparePrintableClone(el);
+  const contentHtml = cloned.outerHTML;
+
+  return `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <title>${title}</title>
+  ${stylesHtml}
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 15mm 15mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      background: #f8fafc;
+      color: #000000;
+      margin: 0;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+    }
+    .a4-wrapper {
+      max-width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 18mm 16mm;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    @media print {
+      body {
+        padding: 0 !important;
+        background: #ffffff !important;
+      }
+      .a4-wrapper {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+      }
+      .no-print, [data-no-print] {
+        display: none !important;
+      }
+    }
+    table {
+      border-collapse: collapse !important;
+      width: 100% !important;
+    }
+    th, td {
+      border-color: #000000 !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="a4-wrapper">
+    ${contentHtml}
+  </div>
+</body>
+</html>`;
+}
+

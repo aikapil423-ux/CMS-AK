@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Printer,
   Copy,
@@ -24,16 +24,23 @@ import {
   Clock,
   User,
   Shield,
+  ShieldCheck,
+  Loader2,
+  ArrowRight,
+  ExternalLink,
+  CheckCircle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
-import { FIRItem } from "@/types";
+import { FIRItem, FIRCaseDiaryItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { formatDate } from "@/lib/utils";
-import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml } from "@/utils/printElement";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 
 interface HeaderLine {
   id: string;
@@ -240,6 +247,7 @@ const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
 };
 
 function ZimniWorkspaceContent() {
+  const router = useRouter();
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const urlFirId = searchParams.get("firId");
@@ -250,6 +258,14 @@ function ZimniWorkspaceContent() {
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<"compact" | "normal" | "large">("normal");
+  const [isSavingToFir, setIsSavingToFir] = useState(false);
+  const [savedSuccessModal, setSavedSuccessModal] = useState<{
+    open: boolean;
+    firNumber: string;
+    firId: string;
+    zimniNumber: number;
+    fileName: string;
+  } | null>(null);
 
   // Load all FIRs
   useEffect(() => {
@@ -370,6 +386,112 @@ function ZimniWorkspaceContent() {
     setData(DEFAULT_IMAGE_ZIMNI_DATA);
     setSaveStatus("Reset to Official Sample from Image!");
     setTimeout(() => setSaveStatus(null), 3000);
+  };
+
+  // Save directly to selected FIR Case Diaries (Zimni) Tab & Index in Database
+  const handleSaveToFir = async () => {
+    if (!activeFir) {
+      alert("कृपया पहले सक्रिय एफ.आई.आर. (Active FIR) का चयन करें!");
+      return;
+    }
+
+    setIsSavingToFir(true);
+    try {
+      // 1. Generate standalone self-contained A4 HTML matching exact visual proforma
+      const docTitle = `Zimni Case Diary - ${activeFir.firNumber}`;
+      const htmlContent = getA4DocumentHtml("zimni-printable-canvas", docTitle);
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+
+      // 2. Extract Zimni number from right header line (e.g. 'जिमनी न० 17') or fallback
+      let zimniNum = (activeFir.caseDiaries?.length || 0) + 1;
+      const rhZimni = data.rightHeaderLines.find(
+        (l) => l.text.includes("जिमनी न") || l.text.toLowerCase().includes("zimni")
+      );
+      if (rhZimni) {
+        const match = rhZimni.text.match(/\d+/);
+        if (match) zimniNum = parseInt(match[0], 10);
+      }
+
+      const caseDiaryId = `cd_${Date.now()}`;
+      const safeFirNum = activeFir.firNumber.replace(/[\/\s]/g, "_");
+      const fileName = `Zimni_No_${zimniNum}_${safeFirNum}.html`;
+
+      // 3. Persist HTML in browser IndexedDB binary store for multi-MB stability & instant offline preview
+      if (typeof window !== "undefined") {
+        await evidenceBlobStore.put(caseDiaryId, dataUrl, { fileName });
+        await evidenceBlobStore.put(`${activeFir.id}_${fileName}`, dataUrl, { fileName });
+        await evidenceBlobStore.put(fileName, dataUrl, { fileName });
+      }
+
+      // 4. Create FIRCaseDiaryItem
+      const summaryText =
+        data.entries[0]?.narration
+          ? `Zimni No. ${zimniNum}: ${data.entries[0].narration.slice(0, 80)}...`
+          : `Zimni No. ${zimniNum}: Case Diary Entry Recorded`;
+
+      const fullDetails = data.entries
+        .map((e) => `[${e.srNo}] ${e.dateTime ? `${e.dateTime}: ` : ""}${e.narration}`)
+        .join("\n\n");
+
+      const caseDiaryItem: FIRCaseDiaryItem = {
+        id: caseDiaryId,
+        firId: activeFir.id,
+        zimniNumber: zimniNum,
+        date: data.signDate.replace(/^[^\d]*/, "") || new Date().toISOString().split("T")[0],
+        time: new Date().toTimeString().slice(0, 5),
+        officer: data.officerNameRank || activeFir.assignedIoName || currentUser?.name || "Investigating Officer",
+        officerRole: "INVESTIGATING_OFFICER",
+        summary: summaryText,
+        details: fullDetails,
+        contentHtml: htmlContent,
+        dataUrl: dataUrl,
+        fileName: fileName,
+        fileUrl: dataUrl,
+        fileSize: `${(new Blob([htmlContent]).size / 1024).toFixed(1)} KB`,
+        proformaData: data,
+        isUploaded: false,
+        uploadedAt: new Date().toISOString(),
+        createdBy: currentUser?.name || "Investigating Officer",
+      };
+
+      // 5. Save directly into FIR record
+      const updatedFir = firService.addCaseDiary(activeFir.id, caseDiaryItem);
+      if (updatedFir) {
+        setFirs((prev) => prev.map((f) => (f.id === updatedFir.id ? updatedFir : f)));
+      }
+
+      // 6. Process & store into Universal Evidence persistent database (Process Once, Remember Everything)
+      try {
+        await universalEvidenceService.registerAndProcess({
+          fileId: caseDiaryId,
+          fileName: fileName,
+          dataUrl: dataUrl,
+          text: `${data.stateLine}\n${data.accusedLine}\n${data.ioLine}\n\n${fullDetails}`,
+          caseId: activeFir.id,
+          caseNumber: activeFir.firNumber,
+          module: "FIR",
+          uploadedBy: currentUser?.name || "IO",
+        });
+      } catch (evErr) {
+        console.warn("Evidence persistent registration warning:", evErr);
+      }
+
+      setSaveStatus(`Zimni No. ${zimniNum} saved to FIR ${activeFir.firNumber}!`);
+      setTimeout(() => setSaveStatus(null), 4000);
+
+      setSavedSuccessModal({
+        open: true,
+        firNumber: activeFir.firNumber,
+        firId: activeFir.id,
+        zimniNumber: zimniNum,
+        fileName: fileName,
+      });
+    } catch (err: any) {
+      console.error("Save to FIR failed:", err);
+      alert("Error saving Zimni to FIR: " + (err.message || "Unknown error"));
+    } finally {
+      setIsSavingToFir(false);
+    }
   };
 
   // Save to LocalStorage
@@ -684,6 +806,26 @@ function ZimniWorkspaceContent() {
 
           <Button
             size="sm"
+            onClick={handleSaveToFir}
+            disabled={isSavingToFir}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+            title="Save directly to the selected FIR's Case Diaries (Zimni) tab"
+          >
+            {isSavingToFir ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>सहेज रहे हैं...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-200" />
+                <span>एफ.आई.आर. में सहेजें (Save to FIR)</span>
+              </>
+            )}
+          </Button>
+
+          <Button
+            size="sm"
             onClick={handleSaveDraft}
             variant="outline"
             className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
@@ -748,8 +890,23 @@ function ZimniWorkspaceContent() {
             </select>
           </div>
 
-          {/* Quick Buttons for Auto-Fill and Reset */}
+          {/* Quick Buttons for Auto-Fill, Save to FIR and Reset */}
           <div className="lg:col-span-6 flex items-center gap-2 flex-wrap justify-start lg:justify-end">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSaveToFir}
+              disabled={isSavingToFir}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-xs"
+            >
+              {isSavingToFir ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <ShieldCheck className="w-3.5 h-3.5" />
+              )}
+              <span>केस डायरी FIR में सहेजें (Save)</span>
+            </Button>
+
             <Button
               type="button"
               size="sm"
@@ -1545,6 +1702,69 @@ function ZimniWorkspaceContent() {
           </div>
         </div>
       </div>
+
+      {/* Saved Success Confirmation Modal */}
+      {savedSuccessModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900">
+                  केस डायरी सफलतापूर्वक FIR में सहेजी गई!
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  FIR No: <span className="font-mono font-bold text-blue-700">{savedSuccessModal.firNumber}</span> • जिमनी #{savedSuccessModal.zimniNumber}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>मूल दस्तावेज़ सुरक्षित (Original Preserved):</strong> संबंधित FIR के <strong>Case Diaries (Zimni)</strong> सब-टैब में सम्पूर्ण प्रोफार्मा ओरिजिनल फॉर्मेट में सुरक्षित हो गया है।
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>डेटाबेस में प्रोसेस व इंडेक्स (AI Database Indexed):</strong> केस डायरी के सभी अनुसंधान तथ्य, गवाह पूछताछ, अभियुक्त तलाश व कानूनी धाराएं डेटाबेस में स्थायी रूप से प्रोसेस हो गई हैं।
+                </span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                <span>
+                  <strong>सुविधाएं:</strong> FIR केस डायरी सब-टैब में <strong>Preview</strong>, <strong>Download</strong> और <strong>Delete</strong> के विकल्प सक्रिय हैं।
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSavedSuccessModal(null)}
+                className="text-xs font-bold"
+              >
+                यहाँ संपादन जारी रखें (Continue Editing)
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => router.push(`/fir/${savedSuccessModal.firId}?tab=case_diaries`)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold gap-1.5 shadow-sm"
+              >
+                <span>FIR केस डायरी सब-टैब खोलें</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

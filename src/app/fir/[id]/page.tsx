@@ -45,6 +45,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import {
   FIRItem,
   FIRCaseDiaryItem,
@@ -173,6 +174,10 @@ export default function FIRProfilePage() {
   const [uploadZimniFileDataUrl, setUploadZimniFileDataUrl] = useState("");
   const [uploadZimniFileSize, setUploadZimniFileSize] = useState("");
   const [uploadZimniSubmitting, setUploadZimniSubmitting] = useState(false);
+
+  // Case Diary (Zimni) Preview State
+  const [caseDiaryPreviewItem, setCaseDiaryPreviewItem] = useState<FIRCaseDiaryItem | null>(null);
+  const [caseDiaryPreviewUrl, setCaseDiaryPreviewUrl] = useState<string>("");
 
   // Add Document Modal
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
@@ -373,6 +378,88 @@ export default function FIRProfilePage() {
       console.error("Error uploading Zimni:", err);
     } finally {
       setUploadZimniSubmitting(false);
+    }
+  };
+
+  // Case Diary (Zimni) Action Handlers: Preview, Download, Delete
+  const handlePreviewCaseDiary = async (cd: FIRCaseDiaryItem) => {
+    let displayUrl = cd.dataUrl || cd.fileUrl || "";
+
+    if (!displayUrl && typeof window !== "undefined") {
+      const idb = (await evidenceBlobStore.get(cd.id)) || (cd.fileName ? await evidenceBlobStore.get(cd.fileName) : null);
+      if (idb) displayUrl = idb;
+    }
+
+    if (!displayUrl && cd.contentHtml) {
+      displayUrl = `data:text/html;charset=utf-8,${encodeURIComponent(cd.contentHtml)}`;
+    }
+
+    setCaseDiaryPreviewUrl(displayUrl);
+    setCaseDiaryPreviewItem(cd);
+  };
+
+  const handleDownloadCaseDiary = async (cd: FIRCaseDiaryItem) => {
+    let content = cd.contentHtml;
+    let url = cd.dataUrl || cd.fileUrl;
+
+    if (!content && !url && typeof window !== "undefined") {
+      const idb = (await evidenceBlobStore.get(cd.id)) || (cd.fileName ? await evidenceBlobStore.get(cd.fileName) : null);
+      if (idb) url = idb;
+    }
+
+    if (content) {
+      const blob = new Blob([content], { type: "text/html;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = cd.fileName || `Zimni_${cd.zimniNumber || 1}_${fir?.firNumber.replace(/[\/\s]/g, "_")}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      return;
+    }
+
+    if (url) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = cd.fileName || `Zimni_${cd.zimniNumber || 1}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    const text = `HARYANA POLICE - CASE DIARY (SECTION 175 BNSS)\nFIR: ${fir?.firNumber}\nZimni #${cd.zimniNumber || 1}\nOfficer: ${cd.officer}\nDate: ${cd.date} ${cd.time}\nSummary: ${cd.summary}\n----------------------------------------\n${cd.details}`;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = `Zimni_${cd.zimniNumber || 1}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const handleDeleteCaseDiary = async (cdId: string) => {
+    if (!fir) return;
+    if (!confirm("क्या आप इस केस डायरी (जिमनी) को आधिकारिक रिकॉर्ड से हटाना चाहते हैं?")) {
+      return;
+    }
+
+    try {
+      const updated = firService.deleteCaseDiary(fir.id, cdId, currentUser.name);
+      if (updated) {
+        setFir(updated);
+      }
+      if (typeof window !== "undefined") {
+        evidenceBlobStore.delete(cdId);
+      }
+      await universalEvidenceService.deleteByDocumentId(cdId);
+      fetchFir();
+    } catch (err: any) {
+      alert("Delete failed: " + err.message);
     }
   };
 
@@ -1272,26 +1359,43 @@ export default function FIRProfilePage() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] text-slate-500 font-mono">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <span className="text-[11px] text-slate-500 font-mono hidden md:inline">
                           {cd.date} at {cd.time} • {cd.officer}
                         </span>
-                        {cd.fileUrl && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              const link = document.createElement("a");
-                              link.href = cd.fileUrl!;
-                              link.download = cd.fileName || `${cd.summary}.pdf`;
-                              link.click();
-                            }}
-                            className="text-[11px] h-6 px-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50 flex items-center gap-1"
-                          >
-                            <Download className="w-3 h-3" />
-                            <span>Download</span>
-                          </Button>
-                        )}
+
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => handlePreviewCaseDiary(cd)}
+                          className="text-xs h-7 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-semibold gap-1 shadow-2xs cursor-pointer"
+                          title="Instant preview of original case diary"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Preview</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => handleDownloadCaseDiary(cd)}
+                          className="text-xs h-7 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg font-semibold gap-1 shadow-2xs cursor-pointer"
+                          title="Download original case diary document"
+                        >
+                          <Download className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Download</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          type="button"
+                          onClick={() => handleDeleteCaseDiary(cd.id)}
+                          className="text-xs h-7 px-2.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-semibold gap-1 shadow-2xs cursor-pointer"
+                          title="Delete this case diary record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                          <span>Delete</span>
+                        </Button>
                       </div>
                     </div>
                     <p className="text-slate-700 whitespace-pre-wrap leading-relaxed font-serif pt-1">
@@ -2801,6 +2905,134 @@ export default function FIRProfilePage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CASE DIARY PREVIEW */}
+      {caseDiaryPreviewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => {
+              setCaseDiaryPreviewItem(null);
+              setCaseDiaryPreviewUrl("");
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="min-w-0 pr-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                    Case Diary Zimni #{caseDiaryPreviewItem.zimniNumber || 1}
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">
+                    FIR: {fir?.firNumber}
+                  </span>
+                </div>
+                <h3 className="font-bold text-sm sm:text-base text-white truncate mt-1">
+                  {caseDiaryPreviewItem.summary || "Case Diary Record"}
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const iframe = document.getElementById("case-diary-preview-iframe") as HTMLIFrameElement;
+                    if (iframe && iframe.contentWindow) {
+                      iframe.contentWindow.focus();
+                      iframe.contentWindow.print();
+                    } else {
+                      window.print();
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                  title="Print case diary"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCaseDiary(caseDiaryPreviewItem)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                  title="Download file"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCaseDiaryPreviewItem(null);
+                    setCaseDiaryPreviewUrl("");
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/60 flex items-center justify-center min-h-[420px]">
+              {caseDiaryPreviewItem.contentHtml ? (
+                <iframe
+                  id="case-diary-preview-iframe"
+                  srcDoc={caseDiaryPreviewItem.contentHtml}
+                  className="w-full h-[72vh] rounded-xl border border-slate-300 shadow-md bg-white"
+                  title="Case Diary Document Preview"
+                />
+              ) : caseDiaryPreviewUrl && (caseDiaryPreviewUrl.startsWith("data:application/pdf") || caseDiaryPreviewUrl.toLowerCase().endsWith(".pdf")) ? (
+                <iframe
+                  src={caseDiaryPreviewUrl}
+                  className="w-full h-[72vh] rounded-xl border border-slate-300 shadow-md bg-white"
+                  title="PDF Preview"
+                />
+              ) : (
+                <div className="w-full max-w-3xl bg-white p-8 rounded-xl border border-slate-300 shadow-sm font-sans text-xs sm:text-sm text-slate-900 leading-relaxed space-y-4">
+                  <div className="text-center pb-3 border-b border-slate-300">
+                    <div className="font-mono text-xs font-bold text-slate-500 uppercase tracking-widest">
+                      HARYANA POLICE • STATUTORY CASE DIARY RECORD
+                    </div>
+                    <h3 className="font-black text-base text-slate-900 mt-1">
+                      {caseDiaryPreviewItem.summary || "Case Diary (Zimni)"}
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Under Section 175 of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 &amp; PPR 25.54
+                    </p>
+                    <div className="flex items-center justify-center gap-4 mt-2 text-[11px] font-mono text-slate-600 border-t border-slate-100 pt-2">
+                      <span><strong>FIR:</strong> {fir?.firNumber}</span>
+                      <span><strong>PS:</strong> {fir?.policeStation}</span>
+                      <span><strong>Date:</strong> {caseDiaryPreviewItem.date} {caseDiaryPreviewItem.time}</span>
+                      <span><strong>IO:</strong> {caseDiaryPreviewItem.officer}</span>
+                    </div>
+                  </div>
+
+                  <div className="whitespace-pre-wrap font-serif text-slate-800 leading-relaxed text-sm pt-2 bg-slate-50/50 p-4 rounded-lg border border-slate-200">
+                    {caseDiaryPreviewItem.details}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+              <span className="font-mono">
+                Date: {caseDiaryPreviewItem.date} {caseDiaryPreviewItem.time} • Recorded by: {caseDiaryPreviewItem.officer}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCaseDiaryPreviewItem(null);
+                  setCaseDiaryPreviewUrl("");
+                }}
+              >
+                Close Preview
+              </Button>
+            </div>
           </div>
         </div>
       )}

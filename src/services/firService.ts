@@ -642,6 +642,27 @@ export const firService = {
     });
   },
 
+  deleteCaseDiary(firId: string, caseDiaryId: string, officerName?: string): FIRItem | undefined {
+    const fir = this.getFirById(firId);
+    if (!fir) return undefined;
+
+    const targetCd = (fir.caseDiaries || []).find((cd) => cd.id === caseDiaryId);
+    const caseDiaries = (fir.caseDiaries || []).filter((cd) => cd.id !== caseDiaryId);
+    const timelineItem: FIRTimelineEvent = {
+      id: `tl-${Date.now()}`,
+      date: new Date().toISOString().replace("T", " ").slice(0, 16),
+      title: "Case Diary (Zimni) Removed",
+      description: `Case Diary #${targetCd?.zimniNumber || ""} "${targetCd?.summary || ""}" deleted by ${officerName || "Investigating Officer"}.`,
+      actor: officerName || "IO",
+      stage: "FIELD_ENQUIRY",
+    };
+
+    return this.updateFir(firId, {
+      caseDiaries,
+      timeline: [timelineItem, ...(fir.timeline || [])],
+    });
+  },
+
   addDocument(firId: string, doc: FIRDocumentItem): FIRItem | undefined {
     const fir = this.getFirById(firId);
     if (!fir) return undefined;
