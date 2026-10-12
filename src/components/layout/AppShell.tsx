@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -124,6 +125,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Role Switcher Modal */}
       <RoleSwitcherModal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} />
+
+      {/* Floating Draggable CMS AI Agent */}
+      <DraggableAgentButton />
     </div>
   );
 }
