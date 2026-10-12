@@ -278,12 +278,27 @@ function RegisterFIRForm() {
   // Accused Inline Handlers
   const handleAddAccused = (item: ExtendedAccusedPerson) => {
     setAccusedList((prev) => [...prev, item]);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.accused;
+      return next;
+    });
   };
   const handleUpdateAccused = (item: ExtendedAccusedPerson) => {
     setAccusedList((prev) => prev.map((it) => (it.id === item.id ? item : it)));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.accused;
+      return next;
+    });
   };
   const handleDeleteAccused = (id: string) => {
     setAccusedList((prev) => prev.filter((it) => it.id !== id));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.accused;
+      return next;
+    });
   };
 
   // Common Action Confirmation Modal
@@ -1523,6 +1538,35 @@ function RegisterFIRForm() {
     if (!actionType || !actionType.trim()) {
       newErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
     }
+    if (isAccusedKnown && accusedList.length > 0) {
+      const invalidAccused = accusedList.find((acc) => {
+        const isKnownAcc =
+          acc.isKnown !== false &&
+          acc.name !== "Accused is not known" &&
+          acc.name !== "Unknown Accused" &&
+          acc.accusedType !== "Unknown-Seen";
+        if (!isKnownAcc) return false;
+        const hasName = Boolean(acc.name?.trim());
+        const hasGender = Boolean(acc.gender?.trim());
+        const hasAge = Boolean(
+          (acc.dob && acc.dob.trim()) ||
+          (acc.yearOfBirth && acc.yearOfBirth.trim()) ||
+          (acc.ageYears && acc.ageYears.trim()) ||
+          (acc.ageRangeFrom && acc.ageRangeFrom.trim()) ||
+          acc.age
+        );
+        const firstAddr = acc.addressesList?.[0];
+        const hasCity = Boolean((acc.city && acc.city.trim()) || (firstAddr?.city && firstAddr.city.trim()));
+        const hasDistrict = Boolean((acc.district && acc.district.trim()) || (firstAddr?.district && firstAddr.district.trim()));
+        const hasState = Boolean((acc.state && acc.state.trim()) || (firstAddr?.state && firstAddr.state.trim()));
+        const hasCountry = Boolean((acc.country && acc.country.trim()) || (firstAddr?.country && firstAddr.country.trim()));
+        const hasNationality = Boolean(acc.nationality && acc.nationality.trim());
+        return !hasName || !hasGender || !hasAge || !hasCity || !hasDistrict || !hasState || !hasCountry || !hasNationality;
+      });
+      if (invalidAccused) {
+        newErrors.accused = "In Accused panel: First Name, Gender, Age Determination, Village/Town/City, District, State, Country, and Country of Nationality are mandatory for known accused.";
+      }
+    }
 
     setErrors(newErrors);
 
@@ -1540,6 +1584,7 @@ function RegisterFIRForm() {
       ) setActiveTab("complainant");
       else if (newErrors.fir_content) setActiveTab("fir_content");
       else if (newErrors.actionType) setActiveTab("action_taken");
+      else if (newErrors.accused) setActiveTab("accused");
       return false;
     }
     return true;
@@ -1667,6 +1712,42 @@ function RegisterFIRForm() {
       const tabErrors: Record<string, string> = {};
       if (!actionType || !actionType.trim()) {
         tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
+    if (activeTab === "accused") {
+      const tabErrors: Record<string, string> = {};
+      if (isAccusedKnown && accusedList.length > 0) {
+        const invalidAccused = accusedList.find((acc) => {
+          const isKnownAcc =
+            acc.isKnown !== false &&
+            acc.name !== "Accused is not known" &&
+            acc.name !== "Unknown Accused" &&
+            acc.accusedType !== "Unknown-Seen";
+          if (!isKnownAcc) return false;
+          const hasName = Boolean(acc.name?.trim());
+          const hasGender = Boolean(acc.gender?.trim());
+          const hasAge = Boolean(
+            (acc.dob && acc.dob.trim()) ||
+            (acc.yearOfBirth && acc.yearOfBirth.trim()) ||
+            (acc.ageYears && acc.ageYears.trim()) ||
+            (acc.ageRangeFrom && acc.ageRangeFrom.trim()) ||
+            acc.age
+          );
+          const firstAddr = acc.addressesList?.[0];
+          const hasCity = Boolean((acc.city && acc.city.trim()) || (firstAddr?.city && firstAddr.city.trim()));
+          const hasDistrict = Boolean((acc.district && acc.district.trim()) || (firstAddr?.district && firstAddr.district.trim()));
+          const hasState = Boolean((acc.state && acc.state.trim()) || (firstAddr?.state && firstAddr.state.trim()));
+          const hasCountry = Boolean((acc.country && acc.country.trim()) || (firstAddr?.country && firstAddr.country.trim()));
+          const hasNationality = Boolean(acc.nationality && acc.nationality.trim());
+          return !hasName || !hasGender || !hasAge || !hasCity || !hasDistrict || !hasState || !hasCountry || !hasNationality;
+        });
+        if (invalidAccused) {
+          tabErrors.accused = "In Accused panel: First Name, Gender, Age Determination, Village/Town/City, District, State, Country, and Country of Nationality are mandatory for known accused.";
+        }
       }
       if (Object.keys(tabErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...tabErrors }));
@@ -4054,6 +4135,12 @@ function RegisterFIRForm() {
         {/* ========================================================================= */}
         {activeTab === "accused" && (
           <div className={`space-y-4 animate-in fade-in-30 ${autoFilledFields.accused ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+            {errors.accused && (
+              <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-red-700 flex items-center gap-2 font-semibold text-xs shadow-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{errors.accused}</span>
+              </div>
+            )}
             <InlineAccusedSection
               accusedList={accusedList}
               isAccusedKnown={isAccusedKnown}

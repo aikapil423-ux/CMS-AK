@@ -64,6 +64,10 @@ export interface ExtendedAccusedPerson extends AccusedPerson {
   // Aliases
   aliases?: FIRAliasEntry[];
   // Address
+  city?: string;
+  district?: string;
+  state?: string;
+  country?: string;
   addressesList?: Array<{
     id: string;
     houseNo?: string;
@@ -209,6 +213,17 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const clearFieldError = (field: string) => {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   const handleClear = () => {
     setEditingId(null);
@@ -272,6 +287,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setClothingDescription("");
     setDistinguishingMarks("");
     setErrorMsg(null);
+    setErrors({});
   };
 
   const handleEdit = (acc: ExtendedAccusedPerson) => {
@@ -310,6 +326,23 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setAgeRangeFrom(acc.ageRangeFrom || "");
     setAgeRangeTo(acc.ageRangeTo || "");
     setAddressesList(acc.addressesList || []);
+
+    const firstAddr = acc.addressesList?.[0];
+    if (firstAddr) {
+      setHouseNo(firstAddr.houseNo || "");
+      setStreetName(firstAddr.streetName || "");
+      setColony(firstAddr.colony || "");
+      setCity(firstAddr.city || acc.city || "Gurugram");
+      setDistrict(firstAddr.district || acc.district || "Gurugram");
+      setState(firstAddr.state || acc.state || "Haryana");
+      setCountry(firstAddr.country || acc.country || "India");
+    } else {
+      setCity(acc.city || "Gurugram");
+      setDistrict(acc.district || "Gurugram");
+      setState(acc.state || "Haryana");
+      setCountry(acc.country || "India");
+    }
+
     setOccupation(acc.occupation || "Self Employed / Business");
     setNationality(acc.nationality || "Indian");
     setPassportNumber(acc.passportNumber || "");
@@ -334,11 +367,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setClothingDescription(acc.clothingDescription || "");
     setDistinguishingMarks(acc.distinguishingMarks || acc.physicalDescription || "");
     setErrorMsg(null);
+    setErrors({});
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
   const handleDobChange = (val: string) => {
     setDob(val);
+    clearFieldError("age");
     if (val) {
       const birth = new Date(val);
       const now = new Date();
@@ -414,10 +449,43 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setSuccessNotice(null);
 
     const isKnown = accusedType === "Known";
-    if (isKnown && !firstName.trim()) {
-      setErrorMsg("First Name is mandatory for Known Accused. If identity is not established, select 'Unknown-Seen'.");
+    const newErrors: Record<string, string> = {};
+
+    if (isKnown) {
+      if (!firstName.trim()) {
+        newErrors.firstName = "First Name is mandatory.";
+      }
+      if (!gender || !gender.trim()) {
+        newErrors.gender = "Gender is mandatory.";
+      }
+      if (!dob?.trim() && !yearOfBirth?.trim() && !ageYears?.trim() && !ageRangeFrom?.trim()) {
+        newErrors.age = "Age Determination (DOB, Year of Birth, Age in Years, or Age Range) is mandatory.";
+      }
+      if (!city?.trim()) {
+        newErrors.city = "Village / Town / City is mandatory in Address Details.";
+      }
+      if (!district?.trim()) {
+        newErrors.district = "District is mandatory in Address Details.";
+      }
+      if (!state?.trim()) {
+        newErrors.state = "State is mandatory in Address Details.";
+      }
+      if (!country?.trim()) {
+        newErrors.country = "Country is mandatory in Address Details.";
+      }
+      if (!nationality?.trim()) {
+        newErrors.nationality = "Country of Nationality is mandatory in Other Information.";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      setErrorMsg(firstError || "Please fill all mandatory fields marked with an asterisk (*).");
       return;
     }
+
+    setErrors({});
 
     const calculatedName = isKnown
       ? [firstName.trim(), middleName.trim(), lastName.trim()].filter(Boolean).join(" ")
@@ -433,8 +501,22 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       .filter(Boolean)
       .join(", ");
 
-    const formattedAddress = isKnown && addressesList[0]
-      ? [addressesList[0].houseNo, addressesList[0].colony, addressesList[0].city]
+    const finalAddresses = [...addressesList];
+    if (isKnown && finalAddresses.length === 0 && (city.trim() || district.trim() || state.trim() || country.trim())) {
+      finalAddresses.push({
+        id: `addr-${Date.now()}`,
+        houseNo: houseNo.trim() || undefined,
+        streetName: streetName.trim() || undefined,
+        colony: colony.trim() || undefined,
+        city: city.trim(),
+        district: district.trim(),
+        state: state.trim(),
+        country: country.trim(),
+      });
+    }
+
+    const formattedAddress = isKnown && finalAddresses[0]
+      ? [finalAddresses[0].houseNo, finalAddresses[0].colony, finalAddresses[0].city, finalAddresses[0].district, finalAddresses[0].state, finalAddresses[0].country]
           .filter(Boolean)
           .join(", ")
       : undefined;
@@ -469,8 +551,11 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       ageYears: isKnown ? (ageYears || undefined) : undefined,
       ageMonths: isKnown ? (ageMonths || undefined) : undefined,
       ageRangeFrom: isKnown ? (ageRangeFrom || undefined) : undefined,
-      ageRangeTo: isKnown ? (ageRangeTo || undefined) : undefined,
-      addressesList: isKnown ? addressesList : [],
+      addressesList: isKnown ? finalAddresses : [],
+      city: isKnown ? city.trim() : undefined,
+      district: isKnown ? district.trim() : undefined,
+      state: isKnown ? state.trim() : undefined,
+      country: isKnown ? country.trim() : undefined,
       occupation: isKnown ? (occupation.trim() || undefined) : undefined,
       nationality: isKnown ? (nationality.trim() || undefined) : undefined,
       passportNumber: isKnown ? (passportNumber.trim() || undefined) : undefined,
@@ -934,7 +1019,10 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       First Name {accusedType === "Known" && <span className="text-red-500">*</span>}
                     </label>
                     <VoiceInputButton
-                      onTranscript={(text) => setFirstName((prev) => (prev ? `${prev} ${text}` : text))}
+                      onTranscript={(text) => {
+                        setFirstName((prev) => (prev ? `${prev} ${text}` : text));
+                        clearFieldError("firstName");
+                      }}
                       iconOnly={true}
                     />
                   </div>
@@ -942,9 +1030,17 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     type="text"
                     placeholder={accusedType === "Known" ? "e.g. Ramesh" : "Unknown"}
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-red-600"
+                    onChange={(e) => {
+                      setFirstName(e.target.value);
+                      clearFieldError("firstName");
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs focus:ring-1 focus:ring-red-600 ${
+                      errors.firstName ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                    }`}
                   />
+                  {errors.firstName && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1041,18 +1137,29 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               {/* Gender, Marital Status, Relative, Contacts, Category */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Gender</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Gender {accusedType === "Known" && <span className="text-red-500">*</span>}
+                  </label>
                   <select
                     value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                    onChange={(e) => {
+                      setGender(e.target.value);
+                      clearFieldError("gender");
+                    }}
+                    className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                      errors.gender ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                    }`}
                   >
+                    <option value="">-- Select Gender --</option>
                     {getDynamicGenderOptions().map((g) => (
                       <option key={g} value={g}>
                         {g}
                       </option>
                     ))}
                   </select>
+                  {errors.gender && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.gender}</p>
+                  )}
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Marital Status</label>
@@ -1184,11 +1291,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               </div>
 
               {/* Age Panel */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div
+                className={`p-3.5 bg-slate-50 border rounded-xl space-y-3 ${
+                  errors.age ? "border-red-500 bg-red-50/30 ring-1 ring-red-400" : "border-slate-200"
+                }`}
+              >
                 <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
                   <span className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                     <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                    Age Determination Panel (आयु निर्धारण)
+                    Age Determination Panel (आयु निर्धारण) {accusedType === "Known" && <span className="text-red-500">*</span>}
                   </span>
                   <button
                     type="button"
@@ -1199,6 +1310,10 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     Reset Age
                   </button>
                 </div>
+
+                {errors.age && (
+                  <p className="text-[11px] text-red-600 font-semibold">{errors.age}</p>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
@@ -1216,7 +1331,10 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       type="number"
                       placeholder="e.g. 1994"
                       value={yearOfBirth}
-                      onChange={(e) => setYearOfBirth(e.target.value)}
+                      onChange={(e) => {
+                        setYearOfBirth(e.target.value);
+                        clearFieldError("age");
+                      }}
                       className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                     />
                   </div>
@@ -1227,14 +1345,20 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         type="number"
                         placeholder="Yrs"
                         value={ageYears}
-                        onChange={(e) => setAgeYears(e.target.value)}
+                        onChange={(e) => {
+                          setAgeYears(e.target.value);
+                          clearFieldError("age");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                       <input
                         type="number"
                         placeholder="Mos"
                         value={ageMonths}
-                        onChange={(e) => setAgeMonths(e.target.value)}
+                        onChange={(e) => {
+                          setAgeMonths(e.target.value);
+                          clearFieldError("age");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                     </div>
@@ -1246,14 +1370,20 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         type="number"
                         placeholder="From"
                         value={ageRangeFrom}
-                        onChange={(e) => setAgeRangeFrom(e.target.value)}
+                        onChange={(e) => {
+                          setAgeRangeFrom(e.target.value);
+                          clearFieldError("age");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                       <input
                         type="number"
                         placeholder="To"
                         value={ageRangeTo}
-                        onChange={(e) => setAgeRangeTo(e.target.value)}
+                        onChange={(e) => {
+                          setAgeRangeTo(e.target.value);
+                          clearFieldError("age");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                     </div>
@@ -1321,63 +1451,107 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">City / Town</label>
+                      <label className="font-semibold text-slate-700">
+                        Village / Town / City {accusedType === "Known" && <span className="text-red-500">*</span>}
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setCity((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setCity((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("city");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        clearFieldError("city");
+                      }}
+                      className={`w-full p-2 rounded-lg border text-xs ${
+                        errors.city ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                      }`}
                     />
+                    {errors.city && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.city}</p>}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">District</label>
+                      <label className="font-semibold text-slate-700">
+                        District {accusedType === "Known" && <span className="text-red-500">*</span>}
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setDistrict((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setDistrict((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("district");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={district}
-                      onChange={(e) => setDistrict(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setDistrict(e.target.value);
+                        clearFieldError("district");
+                      }}
+                      className={`w-full p-2 rounded-lg border text-xs ${
+                        errors.district ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                      }`}
                     />
+                    {errors.district && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.district}</p>}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">State</label>
+                      <label className="font-semibold text-slate-700">
+                        State {accusedType === "Known" && <span className="text-red-500">*</span>}
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setState((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setState((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("state");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setState(e.target.value);
+                        clearFieldError("state");
+                      }}
+                      className={`w-full p-2 rounded-lg border text-xs ${
+                        errors.state ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                      }`}
                     />
+                    {errors.state && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.state}</p>}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">Country</label>
+                      <label className="font-semibold text-slate-700">
+                        Country {accusedType === "Known" && <span className="text-red-500">*</span>}
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setCountry((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setCountry((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("country");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setCountry(e.target.value);
+                        clearFieldError("country");
+                      }}
+                      className={`w-full p-2 rounded-lg border text-xs ${
+                        errors.country ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                      }`}
                     />
+                    {errors.country && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.country}</p>}
                   </div>
                 </div>
 
@@ -1455,18 +1629,29 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-slate-700">Nationality</label>
+                    <label className="font-bold text-slate-700">
+                      Country of Nationality {accusedType === "Known" && <span className="text-red-500">*</span>}
+                    </label>
                     <VoiceInputButton
-                      onTranscript={(text) => setNationality((prev) => (prev ? `${prev} ${text}` : text))}
+                      onTranscript={(text) => {
+                        setNationality((prev) => (prev ? `${prev} ${text}` : text));
+                        clearFieldError("nationality");
+                      }}
                       iconOnly={true}
                     />
                   </div>
                   <input
                     type="text"
                     value={nationality}
-                    onChange={(e) => setNationality(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                    onChange={(e) => {
+                      setNationality(e.target.value);
+                      clearFieldError("nationality");
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs ${
+                      errors.nationality ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                    }`}
                   />
+                  {errors.nationality && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.nationality}</p>}
                 </div>
               </div>
 
