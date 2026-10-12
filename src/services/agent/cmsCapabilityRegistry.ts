@@ -1,4 +1,13 @@
-import { CMSCapability, AgentModule } from "@/types/cmsAgent";
+import {
+  CMSCapability,
+  AgentModule,
+  FieldMetadata,
+  ActionMetadata,
+  WorkflowMetadata,
+  OperationClassification,
+  CandidateCapabilityMatch,
+  PageSchema,
+} from "@/types/cmsAgent";
 
 export interface WebsiteRouteInfo {
   path: string;
@@ -11,6 +20,9 @@ export interface WebsiteRouteInfo {
   databaseEntities: string[];
 }
 
+// ============================================================================
+// 1. COMPLETE CMS APPLICATION ROUTE & PAGE ARCHITECTURE
+// ============================================================================
 export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
   {
     path: "/",
@@ -65,7 +77,7 @@ export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
     title: "शिकायत वर्कस्पेस (Complaint Detail & Investigation Workspace)",
     category: "Complaints",
     description: "शिकायत की संपूर्ण पत्रावली - Overview, EO Enquiry Report, Evidence Store, Case Timeline, SHO Review & Final Decision Modal (FIR / NCR / Closure)।",
-    supportedActions: ["जांच आख्या देखना", "SHO अप्रूवल देना", "साक्ष्य डाउनलोड करना", "टाइमलाइन देखना"],
+    supportedActions: ["जांच आख्या देखना", "SHO अप्रूवल देना", "साक्ष्य डाउनलोड करना", "टाइमलाइन देखना", "EO असाइन करना", "थाना ट्रांसफर करना"],
     primaryApis: ["/api/complaints", "/api/evidence/store"],
     databaseEntities: ["Complaint", "EnquiryReport", "ComplaintEvidence", "AuditLog"],
   },
@@ -173,6 +185,654 @@ export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
   },
 ];
 
+// ============================================================================
+// 2. COMPLETE CMS FORM FIELD METADATA KNOWLEDGE GRAPH
+// ============================================================================
+export const CMS_FIELDS: FieldMetadata[] = [
+  // --- Citizen Complaint Registration Form ---
+  {
+    id: "comp_complainant_name",
+    formId: "complaint_register_form",
+    fieldName: "complainantName",
+    label: "शिकायतकर्ता का नाम (Complainant Name)",
+    semanticMeaning: "नागरिक या पीड़ित व्यक्ति जिसने थाने में दरख्वास्त या शिकायत प्रस्तुत की है।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["कम से कम 3 अक्षर होने चाहिए", "केवल अक्षरों व सामान्य विराम चिह्नों की अनुमति"],
+    databaseMapping: { entity: "Complaint", field: "complainantName" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["shikayatkarta", "complainant", "prarthi", "muddayi", "applicant", "naam"],
+  },
+  {
+    id: "comp_complainant_phone",
+    formId: "complaint_register_form",
+    fieldName: "complainantPhone",
+    label: "शिकायतकर्ता मोबाइल नंबर (Mobile Number)",
+    semanticMeaning: "शिकायतकर्ता का 10-अंकीय संपर्क नंबर जिससे SMS अपडेट व IO द्वारा संपर्क किया जा सके।",
+    dataType: "string",
+    validFormat: "^[6-9][0-9]{9}$",
+    isRequired: true,
+    validationRules: ["10 अंक का वैध भारतीय मोबाइल नंबर"],
+    databaseMapping: { entity: "Complaint", field: "complainantPhone" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["mobile", "phone", "contact", "number", "sampark"],
+  },
+  {
+    id: "comp_complainant_address",
+    formId: "complaint_register_form",
+    fieldName: "complainantAddress",
+    label: "पता (Address)",
+    semanticMeaning: "शिकायतकर्ता का वर्तमान व स्थायी निवास स्थान (मकान सं., गली, गांव/शहर, जिला)।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["पता खाली नहीं होना चाहिए"],
+    databaseMapping: { entity: "Complaint", field: "complainantAddress" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["address", "pata", "niwas", "mohalla", "gao", "city"],
+  },
+  {
+    id: "comp_incident_date",
+    formId: "complaint_register_form",
+    fieldName: "incidentDate",
+    label: "घटना की तारीख व समय (Date & Time of Incident)",
+    semanticMeaning: "घटना घटित होने की दिनांक व समय जब अपराध या विवाद हुआ।",
+    dataType: "datetime",
+    isRequired: true,
+    validationRules: ["भविष्य की तारीख नहीं हो सकती (Cannot be future date)"],
+    databaseMapping: { entity: "Complaint", field: "incidentDate" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["incident date", "ghatna tarikh", "waqt", "samay", "date"],
+  },
+  {
+    id: "comp_incident_place",
+    formId: "complaint_register_form",
+    fieldName: "incidentPlace",
+    label: "घटना स्थल (Place of Incident)",
+    semanticMeaning: "वह भौतिक स्थान, बीट अथवा इलाका जहां घटना घटी। बीट व थाना क्षेत्राधिकार तय करने हेतु अनिवार्य।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["घटना स्थल का स्पष्ट विवरण अनिवार्य है"],
+    databaseMapping: { entity: "Complaint", field: "incidentPlace" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["place of incident", "ghatna sthal", "mauka", "location", "area"],
+  },
+  {
+    id: "comp_category",
+    formId: "complaint_register_form",
+    fieldName: "category",
+    label: "शिकायत की श्रेणी (Category)",
+    semanticMeaning: "अपराध या शिकायत का विधिक वर्गीकरण (चोरी, साइबर, ज़मीनी विवाद, धोखाधड़ी आदि)।",
+    dataType: "select",
+    optionsSource: "THEFT | CYBER_FRAUD | PROPERTY_DISPUTE | ASSAULT | HARASSMENT | MISSING_PERSON | OTHER",
+    isRequired: true,
+    defaultValue: "THEFT",
+    validationRules: ["मान्य श्रेणियों में से एक होना अनिवार्य"],
+    databaseMapping: { entity: "Complaint", field: "category" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["category", "shreni", "kism", "matter type", "apradh prakar"],
+  },
+  {
+    id: "comp_subject",
+    formId: "complaint_register_form",
+    fieldName: "subject",
+    label: "विषय (Subject)",
+    semanticMeaning: "शिकायत का संक्षिप्त एक-पंक्ति विषय सारांश।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["विषय 10 से 150 अक्षरों के बीच होना चाहिए"],
+    databaseMapping: { entity: "Complaint", field: "subject" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["subject", "vishay", "khulasa", "shikayat vishay", "title"],
+  },
+  {
+    id: "comp_narrative",
+    formId: "complaint_register_form",
+    fieldName: "narrative",
+    label: "मजमून / विस्तृत विवरण (Detailed Narrative)",
+    semanticMeaning: "नागरिक द्वारा दी गई तहरीर या घटना का सिलसिलेवार संपूर्ण विवरण।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["विस्तृत विवरण न्यूनतम 20 अक्षर"],
+    databaseMapping: { entity: "Complaint", field: "narrative" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["narrative", "majmoon", "tahreer", "bayan", "description", "details"],
+  },
+
+  // --- Regular FIR Registration Form ---
+  {
+    id: "fir_number",
+    formId: "fir_register_form",
+    fieldName: "firNumber",
+    label: "मुकद्दमा नंबर (FIR Number)",
+    semanticMeaning: "थाने के FIR रजिस्टर का क्रमबद्ध आधिकारिक नंबर, प्रारूप FIR/XXXX/YYYY।",
+    dataType: "string",
+    validFormat: "^FIR/[0-9]{4}/[0-9]{4}$",
+    isRequired: true,
+    validationRules: ["अद्वितीय होना चाहिए, चालू वर्ष में पूर्व दर्ज नहीं"],
+    databaseMapping: { entity: "FIRItem", field: "firNumber" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["fir no", "mukaddma number", "case no", "fir sankhya"],
+  },
+  {
+    id: "fir_acts_sections",
+    formId: "fir_register_form",
+    fieldName: "actsAndSections",
+    label: "अधिनियम व धाराएं (Acts & Sections)",
+    semanticMeaning: "BNS, BNSS, विशेष अधिनियमों की कानूनी धाराएं जिनके तहत मुकद्दमा दर्ज किया गया।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["मान्य कानूनी धाराएं (जैसे BNS 303(2), 305)"],
+    databaseMapping: { entity: "FIRItem", field: "actsAndSections" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["sections", "dhara", "acts", "bns sections", "kanuni dharayein"],
+  },
+  {
+    id: "fir_accused_name",
+    formId: "fir_register_form",
+    fieldName: "accusedName",
+    label: "अभियुक्त / नामजद का नाम (Accused Name)",
+    semanticMeaning: "मुकद्दमे में आरोपित या गिरफ़्तार व्यक्ति का नाम।",
+    dataType: "string",
+    isRequired: false,
+    defaultValue: "Unknown / नामजद नहीं",
+    validationRules: ["यदि ज्ञात हो तो पूरा नाम"],
+    databaseMapping: { entity: "AccusedPerson", field: "name" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["accused", "abhiyukt", "aaropi", "mulzim", "suspect"],
+  },
+  {
+    id: "fir_io_id",
+    formId: "fir_register_form",
+    fieldName: "assignedIoId",
+    label: "अन्वेषण अधिकारी (Investigating Officer - IO)",
+    semanticMeaning: "मुकद्दमे की तफ्तीश हेतु SHO द्वारा नियुक्त सब-इंस्पेक्टर अथवा सहायक सब-इंस्पेक्टर।",
+    dataType: "select",
+    optionsSource: "STATION_STAFF_ACTIVE_ROSTER",
+    isRequired: true,
+    validationRules: ["थाने का अधिकृत IO अधिकारी होना चाहिए"],
+    databaseMapping: { entity: "FIRItem", field: "assignedIoId" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["io", "investigating officer", "tafteesh adhikari", "assigned io"],
+  },
+
+  // --- General Diary Entry Form ---
+  {
+    id: "gd_type_code",
+    formId: "gd_new_entry_form",
+    fieldName: "typeCode",
+    label: "रोजनामचा मद / प्रकार (GD Type Category)",
+    semanticMeaning: "PPR 22.48 के अनुसार 54 वैधानिक श्रेणियों में से रपट का प्रकार (रवानगी, वापसी, गश्त आदि)।",
+    dataType: "select",
+    optionsSource: "PPR_GD_CATEGORIES",
+    isRequired: true,
+    validationRules: ["मान्य 54 श्रेणियों में से एक होना अनिवार्य"],
+    databaseMapping: { entity: "GDRecord", field: "typeCode" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["gd type", "rapat type", "category", "kism rapat", "mad"],
+  },
+  {
+    id: "gd_activity_date",
+    formId: "gd_new_entry_form",
+    fieldName: "activityDate",
+    label: "इंद्राज दिनांक (Activity Date)",
+    semanticMeaning: "वह वास्तविक तारीख जब पुलिस कार्यवाही संपन्न हुई।",
+    dataType: "date",
+    validFormat: "YYYY-MM-DD",
+    isRequired: true,
+    validationRules: ["वर्तमान या भूतकाल की तिथि; भविष्य की अनुमति नहीं"],
+    databaseMapping: { entity: "GDRecord", field: "activityDate" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["gd date", "rapat tarikh", "activity date", "tarikh"],
+  },
+  {
+    id: "gd_officer_id",
+    formId: "gd_new_entry_form",
+    fieldName: "selectedOfficerId",
+    label: "संबंधित अधिकारी (Officer Concerned)",
+    semanticMeaning: "जिस पुलिस अधिकारी के आवागमन, गश्त या आदेश बाबत रपट दर्ज की जा रही है।",
+    dataType: "select",
+    optionsSource: "STATION_OFFICERS",
+    isRequired: true,
+    validationRules: ["थाना नफरी का सदस्य होना चाहिए"],
+    databaseMapping: { entity: "GDRecord", field: "officerId" },
+    aiAutofillable: true,
+    requiresOfficerVerification: false,
+    synonyms: ["officer", "adhikari", "police karmchari", "sentry", "patrol officer"],
+  },
+  {
+    id: "gd_narrative",
+    formId: "gd_new_entry_form",
+    fieldName: "narrative",
+    label: "रपट का मजमून (GD Narrative Text)",
+    semanticMeaning: "रोजनामचा आम में दर्ज की जाने वाली आधिकारिक रपट की विस्तृत इबारत।",
+    dataType: "string",
+    isRequired: true,
+    validationRules: ["रपट का विवरण खाली नहीं हो सकता"],
+    databaseMapping: { entity: "GDRecord", field: "narrative" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["rapat", "gd text", "majmoon", "ibarat", "rapat content"],
+  },
+
+  // --- Supervisory Actions (EO Assignment) ---
+  {
+    id: "eo_assignment_officer",
+    formId: "assign_eo_form",
+    fieldName: "eoId",
+    label: "जांच अधिकारी (Enquiry Officer - EO)",
+    semanticMeaning: "शिकायत की प्रारंभिक जांच (Section 173(3) BNSS) हेतु SHO द्वारा नियुक्त अधिकारी।",
+    dataType: "select",
+    optionsSource: "MOCK_ENQUIRY_OFFICERS",
+    isRequired: true,
+    validationRules: ["अधिकृत EO होना अनिवार्य"],
+    databaseMapping: { entity: "Complaint", field: "assignedEoId" },
+    aiAutofillable: true,
+    requiresOfficerVerification: true,
+    synonyms: ["eo", "enquiry officer", "janch adhikari", "investigator"],
+  },
+];
+
+// ============================================================================
+// 3. COMPLETE ACTION & BUTTON METADATA KNOWLEDGE GRAPH
+// ============================================================================
+export const CMS_ACTIONS: ActionMetadata[] = [
+  // --- READ-ONLY NAVIGATION & OPENING ACTIONS (Zero Permission Required) ---
+  {
+    id: "act_nav_complaint_register",
+    label: "शिकायत पंजीकरण फॉर्म खोलें",
+    module: "COMPLAINTS",
+    route: "/complaints/register",
+    operationType: "READ_ONLY",
+    description: "नागरिक नई शिकायत दर्ज करने का फॉर्म स्क्रीन पर तुरंत खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "कोई बैकएंड म्यूटेशन नहीं। केवल UI व्यू लोड होता है।",
+    databaseEntities: ["Complaint"],
+    confirmationRequired: false,
+    synonyms: ["register complaint form kholo", "nayi shikayat form", "complaint registration kholo", "open complaint form"],
+  },
+  {
+    id: "act_nav_fir_register",
+    label: "नियमित मुकद्दमा फॉर्म खोलें",
+    module: "FIR_WORKSPACE",
+    route: "/fir/register",
+    operationType: "READ_ONLY",
+    description: "नियमित FIR दर्ज करने का स्क्रीन फॉर्म खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "कोई डेटाबेस बदलाव नहीं।",
+    databaseEntities: ["FIRItem"],
+    confirmationRequired: false,
+    synonyms: ["fir register form kholo", "nayi fir kholo", "regular fir form", "open fir register"],
+  },
+  {
+    id: "act_nav_gd_new",
+    label: "Add Entry GD फॉर्म खोलें",
+    module: "GENERAL_DIARY",
+    route: "/general-diary/new",
+    operationType: "READ_ONLY",
+    description: "रोजनामचा आम में नई रपट दर्ज करने का फॉर्म या डायलॉग बॉक्स खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "कोई डेटाबेस बदलाव नहीं।",
+    databaseEntities: ["GDRecord"],
+    confirmationRequired: false,
+    synonyms: ["add entry daailogue box kholo", "add entry dialogue box kholo", "nayi gd entry kholo", "rapat entry form kholo"],
+  },
+  {
+    id: "act_open_role_switcher",
+    label: "रोल स्विचर डायलॉग बॉक्स खोलें",
+    module: "UNIVERSAL",
+    route: "MODAL:ROLE_SWITCHER",
+    operationType: "READ_ONLY",
+    description: "थाना पदभार व भूमिकाएं (SHO, MHC, IO, EO) बदलने का पॉपअप स्क्रीन पर खोलता है।",
+    invokes: { handler: "window.dispatchEvent('cms-open-role-switcher')", service: "AuthContext" },
+    backendEffects: "कोई डेटाबेस म्यूटेशन नहीं।",
+    databaseEntities: ["User"],
+    confirmationRequired: false,
+    synonyms: ["role switcher dialogue kholo", "role modal kholo", "change role dialog", "switch persona dialog"],
+  },
+  {
+    id: "act_close_dialog",
+    label: "सक्रिय डायलॉग बंद करें",
+    module: "UNIVERSAL",
+    route: "CURRENT_ACTIVE_MODAL",
+    operationType: "READ_ONLY",
+    description: "वर्तमान में खुली किसी भी स्क्रीन विंडो या डायलॉग बॉक्स को बंद करता है।",
+    invokes: { handler: "onClose", service: "UIModalController" },
+    backendEffects: "UI विंडो बंद होती है।",
+    databaseEntities: [],
+    confirmationRequired: false,
+    synonyms: ["dialog band karo", "close dialog", "popup band karo", "dialogue close karo"],
+  },
+  {
+    id: "act_nav_general_diary",
+    label: "रोजनामचा आम रजिस्टर खोलें",
+    module: "GENERAL_DIARY",
+    route: "/general-diary",
+    operationType: "READ_ONLY",
+    description: "थाने का डिजिटल रोजनामचा रजिस्टर खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "रीड-ओनली।",
+    databaseEntities: ["GDRecord"],
+    confirmationRequired: false,
+    synonyms: ["general diary register par chalo", "roznamcha kholo", "gd desk dikhao", "general diary page"],
+  },
+  {
+    id: "act_nav_arrest_docs",
+    label: "गिरफ़्तारी प्रपत्र वर्कस्पेस खोलें",
+    module: "ARREST_DOCS",
+    route: "/fir-workspace/arrest-docs",
+    operationType: "READ_ONLY",
+    description: "4-पृष्ठीय गिरफ़्तारी मेमो व प्रपत्र वर्कस्पेस खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "रीड-ओनली।",
+    databaseEntities: ["FIRItem"],
+    confirmationRequired: false,
+    synonyms: ["arrest docs workspace kholo", "arrest memo page", "form 26.8 desk", "arrest documents kholo"],
+  },
+  {
+    id: "act_nav_zimni",
+    label: "केस डायरी वर्कस्पेस खोलें",
+    module: "ZIMNI",
+    route: "/fir-workspace/zimni",
+    operationType: "READ_ONLY",
+    description: "केस डायरी (Zimni) लिखने का वर्कस्पेस खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "रीड-ओनली।",
+    databaseEntities: ["FIRCaseDiaryItem"],
+    confirmationRequired: false,
+    synonyms: ["zimni desk kholo", "case diary workspace", "zimni likhne ka page", "open zimni"],
+  },
+
+  // --- PREPARATION ACTIONS (Drafts, Pre-fills, Document Generation - Explicit Approval Required) ---
+  {
+    id: "act_prepare_arrest_docs",
+    label: "गिरफ़्तारी प्रपत्र तैयार करें (Form 26.8)",
+    module: "ARREST_DOCS",
+    route: "/fir-workspace/arrest-docs",
+    operationType: "PREPARATION",
+    description: "अभियुक्त के 6 वैधानिक गिरफ़्तारी प्रपत्र तैयार करता है और प्रिव्यू प्रस्तुत करता है।",
+    invokes: { handler: "AgentDocumentEngine.generateArrestDossierHtml", service: "AgentDocumentEngine" },
+    backendEffects: "ड्राफ्ट तैयार करता है। जब तक उपयोगकर्ता स्वीकृत न करे तब तक केस फाइल में सेव नहीं होता।",
+    databaseEntities: ["FIRDocumentItem", "AccusedPerson"],
+    confirmationRequired: true,
+    synonyms: ["arrest memo banao", "arrest documents taiyar karo", "form 26.8 banao", "jamatalashi memo banao"],
+  },
+  {
+    id: "act_prepare_gd_draft",
+    label: "रोजनामचा इंद्राज ड्राफ्ट बनाएं",
+    module: "GENERAL_DIARY",
+    route: "/general-diary?tab=SUGGESTIONS_DRAFTS",
+    operationType: "PREPARATION",
+    description: "Smart GD के ड्राफ्ट्स व सुझाव टैब में नई रपट का ड्राफ्ट तैयार करता है।",
+    invokes: { handler: "GeneralDiaryService.addSuggestionDraft", service: "GeneralDiaryService" },
+    backendEffects: "GD Auto-Suggestions टैब में अनलॉक्ड ड्राफ्ट सेव करता है जिसे मुंशी वेरीफाई करता है।",
+    databaseEntities: ["GDRecord"],
+    confirmationRequired: true,
+    synonyms: ["gd draft karo", "roznamcha me entry draft karo", "gd suggestion banao", "rapat draft karo"],
+  },
+  {
+    id: "act_prepare_zimni_draft",
+    label: "केस डायरी (Zimni) ड्राफ्ट बनाएं",
+    module: "ZIMNI",
+    route: "/fir-workspace/zimni",
+    operationType: "PREPARATION",
+    description: "धारा 192 BNSS के तहत दैनिक तफ्तीश ज़िमनी का ड्राफ्ट तैयार करता है।",
+    invokes: { handler: "AgentDocumentEngine.generateZimniHtml", service: "AgentDocumentEngine" },
+    backendEffects: "केस डायरी ड्राफ्ट बनाता है।",
+    databaseEntities: ["FIRCaseDiaryItem"],
+    confirmationRequired: true,
+    synonyms: ["zimni draft karo", "case diary likho", "zimni entry banao", "tafteesh zimni draft"],
+  },
+  {
+    id: "act_prepare_notice_35",
+    label: "हाजिरी नोटिस तैयार करें (धारा 35(3) BNSS)",
+    module: "FIR_WORKSPACE",
+    route: "/fir/[id]",
+    operationType: "PREPARATION",
+    description: "अन्वेषण में हाजिरी हेतु धारा 35(3) BNSS नोटिस का कानूनी ड्राफ्ट तैयार करता है।",
+    invokes: { handler: "AgentDocumentEngine.generateNotice35BnssHtml", service: "AgentDocumentEngine" },
+    backendEffects: "नोटिस ड्राफ्ट तैयार करता है।",
+    databaseEntities: ["FIRDocumentItem"],
+    confirmationRequired: true,
+    synonyms: ["dhara 35 notice banao", "35(3) bnss notice", "notice of appearance banao", "41a crpc / 35 bnss notice"],
+  },
+  {
+    id: "act_prepare_notice_91",
+    label: "दस्तावेज़ तलब नोटिस तैयार करें (धारा 91 BNSS)",
+    module: "FIR_WORKSPACE",
+    route: "/fir/[id]",
+    operationType: "PREPARATION",
+    description: "दस्तावेज़/रिकॉर्ड प्रस्तुत करने हेतु धारा 91 BNSS नोटिस तैयार करता है।",
+    invokes: { handler: "AgentDocumentEngine.generateNotice91BnssHtml", service: "AgentDocumentEngine" },
+    backendEffects: "दस्तावेज़ तलब नोटिस ड्राफ्ट तैयार करता है।",
+    databaseEntities: ["FIRDocumentItem"],
+    confirmationRequired: true,
+    synonyms: ["dhara 91 notice banao", "document talab notice", "summons u/s 91 bnss", "bank statement talab notice"],
+  },
+
+  // --- STATE-CHANGING ACTIONS (Strict User Approval Required) ---
+  {
+    id: "act_assign_eo",
+    label: "जांच अधिकारी (EO) नियुक्त करें",
+    module: "COMPLAINTS",
+    route: "/complaints/[id]",
+    operationType: "STATE_CHANGING",
+    description: "शिकायत पर नए जांच अधिकारी (EO) का आधिकारिक आवंटन करता है।",
+    invokes: { handler: "ComplaintService.assignEnquiryOfficer", service: "ComplaintService", apiEndpoint: "/api/complaints" },
+    backendEffects: "शिकायत डेटाबेस में `assignedEoId`, `assignedEoName` अपडेट करता है, स्टेटस `UNDER_ENQUIRY` करता है व ऑडिट लॉग दर्ज करता है।",
+    databaseEntities: ["Complaint", "AuditLog"],
+    requiredRoles: ["SHO", "SUPER_ADMIN"],
+    confirmationRequired: true,
+    synonyms: ["eo assign karo", "enquiry officer allot karo", "is complaint ko eo do", "janch adhikari niyukt karo"],
+  },
+  {
+    id: "act_execute_multi_step_workflow",
+    label: "संयुक्त बहु-चरणीय कार्य निष्पादन",
+    module: "UNIVERSAL",
+    route: "/fir/[id]",
+    operationType: "STATE_CHANGING",
+    description: "केस लोड, अरेस्ट प्रपत्र जनरेशन, GD ड्राफ्ट और केस फ़ाइल अपडेट एक साथ निष्पादित करता है।",
+    invokes: { handler: "CmsAgentService.executeActionPlan", service: "CmsAgentService" },
+    backendEffects: "बहु-टेबल म्यूटेशन: FIR दस्तावेज संग्रह व General Diary सुझाव में प्रविष्टियां सुरक्षित करता है।",
+    databaseEntities: ["FIRItem", "FIRDocumentItem", "GDRecord", "AuditLog"],
+    confirmationRequired: true,
+    requiresOfficialApproval: true,
+    synonyms: ["saare required documents taiyar karo", "arrest docs aur gd draft banao", "composite case workflow"],
+  },
+  {
+    id: "act_comp_create",
+    label: "नागरिक शिकायत दर्ज करें",
+    module: "COMPLAINTS",
+    route: "/complaints/register",
+    operationType: "STATE_CHANGING",
+    description: "नागरिक की नई शिकायत को आधिकारिक रिकॉर्ड में दर्ज करता है।",
+    invokes: { handler: "ComplaintService.createComplaint", service: "ComplaintService", apiEndpoint: "/api/complaints" },
+    backendEffects: "डेटाबेस में नई Complaint आईडी बनाता है और स्टेटस REGISTERED करता है।",
+    databaseEntities: ["Complaint", "AuditLog"],
+    confirmationRequired: true,
+    requiresOfficialApproval: true,
+    synonyms: ["register complaint", "shikayat darj karo", "complaint likho", "save complaint"],
+  },
+  {
+    id: "act_comp_transfer",
+    label: "शिकायत थाना स्थानांतरण",
+    module: "COMPLAINTS",
+    route: "/complaints/[id]",
+    operationType: "STATE_CHANGING",
+    description: "शिकायत को क्षेत्राधिकार अनुसार अन्य थाने में स्थानांतरित करता है।",
+    invokes: { handler: "ComplaintService.transferComplaint", service: "ComplaintService", apiEndpoint: "/api/complaints" },
+    backendEffects: "शिकायत की स्थिति TRANSFERRED_OTHER_PS करता है और स्थानांतरण इतिहास दर्ज करता है।",
+    databaseEntities: ["Complaint", "AuditLog"],
+    requiredRoles: ["SHO", "SUPER_ADMIN"],
+    confirmationRequired: true,
+    requiresOfficialApproval: true,
+    synonyms: ["transfer complaint", "doosre thane bhejo", "dusre thane bhejo", "sadar thane bhejo", "sadar karnal transfer", "thane transfer karo", "transfer"],
+  },
+];
+
+// ============================================================================
+// 4. COMPLETE MULTI-STEP WORKFLOW METADATA KNOWLEDGE GRAPH
+// ============================================================================
+export const CMS_WORKFLOWS: WorkflowMetadata[] = [
+  {
+    id: "wf_arrest_and_gd",
+    title: "गिरफ़्तारी प्रपत्र व रोजनामचा इंद्राज संयुक्त प्रवाह (Arrest Dossier & GD Workflow)",
+    description: "अभियुक्त की गिरफ़्तारी पर आवश्यक सभी 6 कानूनी प्रपत्र (Form 26.8, फर्द जामातालाशी, BNSS 47, 48, 53, 187) तैयार करना और थाने के GD में दाखिला रपट ड्राफ्ट करना।",
+    primaryModule: "ARREST_DOCS",
+    prerequisites: ["वैध FIR नंबर", "अभियुक्त का नाम"],
+    synonyms: [
+      "arrest documents aur gd banao",
+      "arrest memo aur roznamcha entry",
+      "anil kumar arrest docs aur gd",
+      "is case ke saare required documents taiyar karo",
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        actionId: "act_search_records",
+        description: "केस फ़ाइल व अभियुक्त रिकॉर्ड सत्यापन",
+        isStateChanging: false,
+        handler: "firService.getAllFirs",
+      },
+      {
+        stepNumber: 2,
+        actionId: "act_prepare_arrest_docs",
+        description: "4-पृष्ठीय गिरफ़्तारी मेमो व जामातालाशी फर्द तैयार करना",
+        isStateChanging: false,
+        handler: "AgentDocumentEngine.generateArrestDossierHtml",
+      },
+      {
+        stepNumber: 3,
+        actionId: "act_prepare_gd_draft",
+        description: "रोजनामचा दाखिला गिरफ़्तारी रपट ड्राफ्ट तैयार करना",
+        isStateChanging: false,
+        handler: "GeneralDiaryService.addSuggestionDraft",
+      },
+      {
+        stepNumber: 4,
+        actionId: "act_execute_multi_step_workflow",
+        description: "अधिकारी की स्वीकृति के पश्चात केस फाइल व GD में सेव करना",
+        isStateChanging: true,
+        handler: "CmsAgentService.executeActionPlan",
+      },
+    ],
+  },
+  {
+    id: "wf_complaint_to_eo",
+    title: "नागरिक शिकायत पंजीकरण से EO आवंटन प्रवाह (Complaint Intake & EO Assignment)",
+    description: "नागरिक दरख्वास्त का सत्यापन, संज्ञेयता जांच, शिकायत पंजीकरण और उपयुक्त जांच अधिकारी (EO) का आवंटन।",
+    primaryModule: "COMPLAINTS",
+    prerequisites: ["शिकायतकर्ता का नाम", "मोबाइल नंबर", "घटना विवरण"],
+    synonyms: [
+      "shikayat darj karke eo assign karo",
+      "nayi complaint lo aur eo lagao",
+      "intake complaint and assign eo",
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        actionId: "act_nav_complaint_register",
+        description: "शिकायत पंजीकरण फॉर्म लोड करना",
+        isStateChanging: false,
+        handler: "router.push",
+      },
+      {
+        stepNumber: 2,
+        actionId: "act_autofill_form",
+        description: "शिकायतकर्ता व घटना विवरण प्री-फिल करना",
+        isStateChanging: false,
+        handler: "CmsAgentService.fillRegisteredForm",
+      },
+      {
+        stepNumber: 3,
+        actionId: "act_assign_eo",
+        description: "जांच अधिकारी (EO) का आवंटन करना",
+        isStateChanging: true,
+        handler: "ComplaintService.assignEnquiryOfficer",
+      },
+    ],
+  },
+  {
+    id: "wf_legal_notice_issuance",
+    title: "वैधानिक नोटिस निर्गमन प्रवाह (Statutory Legal Notice Issuance)",
+    description: "केस रिकॉर्ड्स से अभियुक्त/गवाह को धारा 35(3) या 91 BNSS का नोटिस तैयार करना व केस पत्रावली में संलग्न करना।",
+    primaryModule: "FIR_WORKSPACE",
+    prerequisites: ["सक्रिय FIR", "लक्षित व्यक्ति का नाम"],
+    synonyms: [
+      "notice banao aur dispatch karo",
+      "35 bnss notice dispatch",
+      "dhara 91 notice dispatch",
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        actionId: "act_prepare_notice_35",
+        description: "कानूनी प्रारूप के अनुसार नोटिस तैयार करना",
+        isStateChanging: false,
+        handler: "AgentDocumentEngine.generateNotice35BnssHtml",
+      },
+      {
+        stepNumber: 2,
+        actionId: "act_save_notice",
+        description: "स्वीकृति पश्चात केस पत्रावली में संलग्न करना",
+        isStateChanging: true,
+        handler: "firService.addDocument",
+      },
+    ],
+  },
+  {
+    id: "wf_transfer_complaint_and_gd",
+    title: "थाना स्थानांतरण व रवानगी रपट संयुक्त प्रवाह (Complaint Transfer & GD Dispatch Workflow)",
+    description: "शिकायत को क्षेत्राधिकार अनुसार अन्य थाने में स्थानांतरित करना और रोजनामचा में रवानगी प्रविष्टि दर्ज करना।",
+    primaryModule: "COMPLAINTS",
+    prerequisites: ["शिकायत संख्या", "गंतव्य थाना"],
+    synonyms: [
+      "complaint transfer aur gd",
+      "doosre thane bhejo aur gd draft karo",
+      "sadar thane transfer aur rapat",
+    ],
+    steps: [
+      {
+        stepNumber: 1,
+        actionId: "act_search_records",
+        description: "शिकायत रिकॉर्ड का सत्यापन",
+        isStateChanging: false,
+        handler: "ComplaintService.getComplaints",
+      },
+      {
+        stepNumber: 2,
+        actionId: "act_comp_transfer",
+        description: "शिकायत का आधिकारिक स्थानांतरण",
+        isStateChanging: true,
+        handler: "ComplaintService.transferComplaint",
+      },
+      {
+        stepNumber: 3,
+        actionId: "act_prepare_gd_draft",
+        description: "रोजनामचा रवानगी रपट ड्राफ्ट तैयार करना",
+        isStateChanging: false,
+        handler: "GeneralDiaryService.addSuggestionDraft",
+      },
+    ],
+  },
+];
+
+// ============================================================================
+// 5. APPLICATION CAPABILITIES LIST
+// ============================================================================
 export const CMS_CAPABILITIES: CMSCapability[] = [
   {
     id: "search_records",
@@ -242,66 +902,6 @@ export const CMS_CAPABILITIES: CMSCapability[] = [
     ],
   },
   {
-    id: "prepare_complaint_report",
-    name: "जांच आख्या तैयार करना (Generate Enquiry Report)",
-    module: "ENQUIRY_WORKSPACE",
-    description: "8-सेक्शन वैधानिक जांच आख्या (FIR / NCR / Closure) तैयार करना।",
-    isMutation: true,
-    requiresExplicitApproval: true,
-    exampleQueries: ["Complaint enquiry report draft karo", "FIR recommendation report banao", "NCR report prepare karo"],
-  },
-  {
-    id: "navigate_to_module",
-    name: "वेबसाइट नेविगेशन (Navigate to Website Pages & Forms)",
-    module: "UNIVERSAL",
-    description: "उपयोगकर्ता के निर्देशानुसार वेबसाइट के किसी भी पेज, फॉर्म या वर्कस्पेस पर सीधे ले जाना।",
-    isMutation: false,
-    requiresExplicitApproval: false,
-    exampleQueries: [
-      "Arrest docs page kholo",
-      "General diary register par chalo",
-      "FIR register form par jao",
-      "Complaints register form kholo",
-    ],
-  },
-  {
-    id: "get_acts_and_sections",
-    name: "कानूनी धाराएं व सलाह (Legal Code Reference - BNS/BNSS/BSA)",
-    module: "ACTS_SECTIONS",
-    description: "BNS, BNSS, BSA की धाराओं, परिभाषाओं, सज़ा, ज़मानत (Bailable/Non-Bailable) व संज्ञेयता का विश्लेषण।",
-    isMutation: false,
-    requiresExplicitApproval: false,
-    exampleQueries: [
-      "BNS section 303(2) kya hai",
-      "Grounds of arrest kis section me aate hain",
-      "Theft sections in BNS",
-      "Section 47 BNSS kya hai",
-    ],
-  },
-  {
-    id: "get_system_architecture",
-    name: "वेबसाइट ज्ञान व प्रणाली समझ (Website Knowledge & Guidance)",
-    module: "UNIVERSAL",
-    description: "वेबसाइट के किसी भी मॉड्यूल, पेज, डेटाबेस टेबल या बैकएंड कार्यप्रणाली की पूरी जानकारी देना।",
-    isMutation: false,
-    requiresExplicitApproval: false,
-    exampleQueries: [
-      "Website me kahan kya hota hai",
-      "GD kaise verify hoti hai",
-      "SHO review workflow kya hai",
-      "Modules ki list dikhao",
-    ],
-  },
-  {
-    id: "get_staff_duty",
-    name: "थाना स्टाफ व ड्यूटी रोस्टर (Staff & Duty Roster)",
-    module: "STAFF",
-    description: "थाने के ऑन-ड्यूटी अधिकारी, SHO, MHC, EOs और संपर्क विवरण निकालना।",
-    isMutation: false,
-    requiresExplicitApproval: false,
-    exampleQueries: ["Duty officer koun hai", "MHC kon hai", "Staff list dikhao", "SHO sahab ka number"],
-  },
-  {
     id: "assign_eo_complaint",
     name: "जांच अधिकारी (EO) असाइन करना (Assign Enquiry Officer)",
     module: "COMPLAINTS",
@@ -329,15 +929,6 @@ export const CMS_CAPABILITIES: CMSCapability[] = [
     exampleQueries: ["Dhara 91 BNSS ka notice banao", "Bank details talab karne ka notice", "Notice to produce documents"],
   },
   {
-    id: "get_pending_complaints_report",
-    name: "लंबित शिकायत रिपोर्ट (Pending Complaints Roster Report)",
-    module: "COMPLAINTS",
-    description: "थाने की सभी लंबित शिकायतों की आधिकारिक प्रगति आख्या व रोस्टर तैयार करना।",
-    isMutation: false,
-    requiresExplicitApproval: false,
-    exampleQueries: ["Pichhle mahine ki pending complaints ka report banao", "Pending complaints report", "Shikayat register report"],
-  },
-  {
     id: "close_current_dialog",
     name: "डायलॉग बॉक्स बंद करना (Close Dialog & Return)",
     module: "UNIVERSAL",
@@ -360,6 +951,9 @@ export const CMS_CAPABILITIES: CMSCapability[] = [
   },
 ];
 
+// ============================================================================
+// 6. CMS CAPABILITY REGISTRY & INTROSPECTION ENGINE
+// ============================================================================
 export class CmsCapabilityRegistry {
   public static getAll(): CMSCapability[] {
     return CMS_CAPABILITIES;
@@ -369,6 +963,172 @@ export class CmsCapabilityRegistry {
     return WEBSITE_ARCHITECTURE;
   }
 
+  public static getFields(): FieldMetadata[] {
+    return CMS_FIELDS;
+  }
+
+  public static getActions(): ActionMetadata[] {
+    return CMS_ACTIONS;
+  }
+
+  public static getWorkflows(): WorkflowMetadata[] {
+    return CMS_WORKFLOWS;
+  }
+
+  public static getFieldMetadata(fieldId: string): FieldMetadata | null {
+    return CMS_FIELDS.find((f) => f.id === fieldId || f.fieldName === fieldId) || null;
+  }
+
+  public static getActionMetadata(actionId: string): ActionMetadata | null {
+    return CMS_ACTIONS.find((a) => a.id === actionId) || null;
+  }
+
+  public static getWorkflowMetadata(workflowId: string): WorkflowMetadata | null {
+    return CMS_WORKFLOWS.find((w) => w.id === workflowId) || null;
+  }
+
+  public static understandPageSchema(routePath: string): PageSchema {
+    const route = WEBSITE_ARCHITECTURE.find((r) => r.path === routePath) || WEBSITE_ARCHITECTURE[0];
+    const clean = routePath.replace(/\//g, "_").replace(/^_/, "").replace(/s_/, "_");
+    const fields = CMS_FIELDS.filter(
+      (f) =>
+        f.formId.includes(clean) ||
+        (routePath.includes("complaint") && f.formId.includes("complaint")) ||
+        (routePath.includes("fir") && f.formId.includes("fir")) ||
+        (routePath.includes("general-diary") && f.formId.includes("gd"))
+    );
+    const actions = CMS_ACTIONS.filter(
+      (a) =>
+        a.route === routePath ||
+        (routePath.includes("complaint") && a.module === "COMPLAINTS") ||
+        (routePath.includes("fir") && (a.module === "FIR_WORKSPACE" || a.module === "ARREST_DOCS")) ||
+        (routePath.includes("general-diary") && a.module === "GENERAL_DIARY")
+    );
+
+    return {
+      route: route.path,
+      title: route.title,
+      category: route.category,
+      description: route.description,
+      forms: [
+        {
+          formId: `form_${route.path.replace(/\//g, "_")}`,
+          title: route.title,
+          fields,
+        },
+      ],
+      availableActions: actions,
+      supportedRoles: route.requiredRoles,
+    };
+  }
+
+  public static classifyOperation(actionId: string): OperationClassification {
+    const action = this.getActionMetadata(actionId);
+    if (action) return action.operationType;
+    if (actionId.startsWith("nav_") || actionId.startsWith("get_") || actionId.startsWith("search_")) {
+      return "READ_ONLY";
+    }
+    if (actionId.startsWith("prepare_") || actionId.startsWith("draft_") || actionId.startsWith("autofill_")) {
+      return "PREPARATION";
+    }
+    return "STATE_CHANGING";
+  }
+
+  /**
+   * Deep Semantic Intent Matching & Candidate Ranking Pipeline
+   * Takes user's natural query + current path context and scores all capabilities
+   */
+  public static semanticMatch(query: string, currentPath?: string): CandidateCapabilityMatch[] {
+    const q = (query || "").toLowerCase().trim();
+    if (!q) return [];
+
+    const candidates: CandidateCapabilityMatch[] = [];
+
+    // 1. Match against Workflows
+    for (const wf of CMS_WORKFLOWS) {
+      let score = 0;
+      let matchedSyn = "";
+      for (const syn of wf.synonyms) {
+        if (q.includes(syn.toLowerCase())) {
+          score = Math.max(score, 0.95);
+          matchedSyn = syn;
+        }
+      }
+      if (score === 0) {
+        const tokens = q.split(/\s+/);
+        const matchCount = tokens.filter((t) => t.length > 2 && wf.description.toLowerCase().includes(t)).length;
+        if (matchCount >= 3) {
+          score = Math.min(0.85, 0.5 + matchCount * 0.1);
+        }
+      }
+      if (score > 0.4) {
+        candidates.push({
+          capabilityId: wf.id,
+          type: "WORKFLOW",
+          title: wf.title,
+          confidenceScore: score,
+          matchedSynonym: matchedSyn,
+          operationType: "STATE_CHANGING",
+          requiresApproval: true,
+          reasoning: `Matched multi-step workflow: '${wf.title}' with score ${score.toFixed(2)}`,
+        });
+      }
+    }
+
+    // 2. Match against Actions
+    for (const act of CMS_ACTIONS) {
+      let score = 0;
+      let matchedSyn = "";
+      for (const syn of act.synonyms) {
+        if (q.includes(syn.toLowerCase())) {
+          score = Math.max(score, 0.92);
+          matchedSyn = syn;
+        }
+      }
+      if (score === 0) {
+        if (q.includes(act.label.toLowerCase())) {
+          score = 0.85;
+        }
+      }
+      // Context boost if action matches current route
+      if (score > 0 && currentPath && act.route === currentPath) {
+        score = Math.min(1.0, score + 0.08);
+      }
+      if (score > 0.5) {
+        candidates.push({
+          capabilityId: act.id,
+          type: "ACTION",
+          title: act.label,
+          confidenceScore: score,
+          matchedSynonym: matchedSyn,
+          operationType: act.operationType,
+          requiresApproval: act.confirmationRequired,
+          reasoning: `Matched action '${act.label}' (${act.operationType}) with score ${score.toFixed(2)}`,
+        });
+      }
+    }
+
+    // 3. Match against Routes (Navigation)
+    const targetRoute = this.findRoute(query);
+    if (targetRoute) {
+      candidates.push({
+        capabilityId: targetRoute.path,
+        type: "ROUTE",
+        title: targetRoute.title,
+        confidenceScore: 0.9,
+        operationType: "READ_ONLY",
+        requiresApproval: false,
+        reasoning: `Matched website page/dialogue route: '${targetRoute.title}' (${targetRoute.path})`,
+      });
+    }
+
+    // Sort descending by confidenceScore
+    return candidates.sort((a, b) => b.confidenceScore - a.confidenceScore);
+  }
+
+  /**
+   * Fast robust route finder with comprehensive police synonyms and variations
+   */
   public static findRoute(query: string): WebsiteRouteInfo | null {
     const q = query.toLowerCase();
 
@@ -383,7 +1143,8 @@ export class CmsCapabilityRegistry {
       q.includes("role badlo") ||
       q.includes("role badalne") ||
       q.includes("change role") ||
-      q.includes("switch role")
+      q.includes("switch role") ||
+      q.includes("switch persona")
     ) {
       return (
         WEBSITE_ARCHITECTURE.find((r) => r.path === "MODAL:ROLE_SWITCHER") || {

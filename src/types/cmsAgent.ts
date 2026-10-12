@@ -114,6 +114,7 @@ export interface AgentMessage {
     activeComplaintId?: string;
     activeComplaintNumber?: string;
     activePersonName?: string;
+    activeEoName?: string;
   };
 }
 
@@ -129,6 +130,7 @@ export interface AgentSessionContext {
   lastGeneratedDocType?: string;
   lastActionPlanId?: string;
   activeActionPlan?: AgentActionPlan;
+  attachments?: AgentAttachment[];
   conversationHistory?: AgentMessage[];
 }
 
@@ -141,4 +143,104 @@ export interface CMSCapability {
   isMutation: boolean;
   requiresExplicitApproval: boolean;
   exampleQueries: string[];
+}
+
+export type OperationClassification = "READ_ONLY" | "PREPARATION" | "STATE_CHANGING";
+
+export interface FieldMetadata {
+  id: string;
+  formId: string;
+  fieldName: string;
+  label: string;
+  semanticMeaning: string;
+  dataType: "string" | "number" | "date" | "time" | "datetime" | "select" | "file" | "array";
+  validFormat?: string;
+  isRequired: boolean;
+  defaultValue?: any;
+  validationRules: string[];
+  optionsSource?: string;
+  dependencies?: string[];
+  databaseMapping: {
+    entity: string;
+    field: string;
+  };
+  aiAutofillable: boolean;
+  requiresOfficerVerification: boolean;
+  synonyms: string[];
+}
+
+export interface ActionMetadata {
+  id: string;
+  label: string;
+  module: AgentModule;
+  route: string;
+  componentId?: string;
+  operationType: OperationClassification;
+  description: string;
+  invokes: {
+    handler: string;
+    service: string;
+    apiEndpoint?: string;
+  };
+  enabledWhen?: string;
+  backendEffects: string;
+  databaseEntities: string[];
+  requiredRoles?: string[];
+  confirmationRequired: boolean;
+  requiresOfficialApproval?: boolean;
+  synonyms: string[];
+}
+
+export interface WorkflowStepMetadata {
+  stepNumber: number;
+  actionId: string;
+  description: string;
+  isStateChanging: boolean;
+  handler: string;
+}
+
+export interface WorkflowMetadata {
+  id: string;
+  title: string;
+  description: string;
+  primaryModule: AgentModule;
+  steps: WorkflowStepMetadata[];
+  prerequisites: string[];
+  synonyms: string[];
+}
+
+export interface UIContextState {
+  currentPath: string;
+  activeDialog?: string;
+  selectedRecordId?: string;
+  selectedRecordType?: "FIR" | "COMPLAINT" | "GD" | "OFFICER";
+  activeTab?: string;
+  activeFormId?: string;
+  filledFields: Record<string, any>;
+  hasUnsavedChanges?: boolean;
+}
+
+export interface CandidateCapabilityMatch {
+  capabilityId: string;
+  type: "ACTION" | "ROUTE" | "FIELD" | "WORKFLOW";
+  title: string;
+  confidenceScore: number;
+  matchedSynonym?: string;
+  operationType: OperationClassification;
+  requiresApproval: boolean;
+  reasoning: string;
+}
+
+export interface PageSchema {
+  route: string;
+  title: string;
+  category: string;
+  description: string;
+  forms: Array<{
+    formId: string;
+    title: string;
+    fields: FieldMetadata[];
+  }>;
+  availableActions: ActionMetadata[];
+  supportedRoles?: string[];
 }

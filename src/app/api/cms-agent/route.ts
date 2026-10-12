@@ -7,14 +7,36 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const action = body.action || "PROCESS_MESSAGE";
 
-    if (action === "GET_CAPABILITIES") {
+    if (action === "GET_CAPABILITIES" || action === "GET_APPLICATION_CAPABILITIES") {
       const capabilities = CmsCapabilityRegistry.getAll();
-      return NextResponse.json({ success: true, capabilities });
+      const summary = CmsAgentService.getApplicationCapabilities();
+      return NextResponse.json({ success: true, capabilities, summary });
+    }
+
+    if (action === "UNDERSTAND_PAGE_SCHEMA") {
+      const schema = CmsAgentService.understandPageSchema(body.path || "/");
+      return NextResponse.json({ success: true, schema });
+    }
+
+    if (action === "GET_FIELD_METADATA") {
+      const field = CmsAgentService.getFieldMetadata(body.fieldId || "");
+      return NextResponse.json({ success: true, field });
+    }
+
+    if (action === "GET_ACTION_METADATA") {
+      const actionMeta = CmsAgentService.getActionMetadata(body.actionId || "");
+      return NextResponse.json({ success: true, action: actionMeta });
+    }
+
+    if (action === "SEARCH_RECORDS") {
+      const records = await CmsAgentService.searchAuthorisedRecords(body.module || "complaints", body.query || "", body.filters);
+      return NextResponse.json({ success: true, records });
     }
 
     if (action === "GET_CONTEXT") {
       const context = CmsAgentService.getContext();
-      return NextResponse.json({ success: true, context });
+      const uiContext = CmsAgentService.getCurrentUIContext(body.currentPath);
+      return NextResponse.json({ success: true, context, uiContext });
     }
 
     if (action === "EXECUTE_PLAN") {
