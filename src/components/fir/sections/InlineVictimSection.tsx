@@ -121,7 +121,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [lastName, setLastName] = useState("");
   const [aliases, setAliases] = useState<FIRAliasEntry[]>([]);
   const [tempAlias, setTempAlias] = useState("");
-  const [gender, setGender] = useState<string>("Female");
+  const [gender, setGender] = useState<string>("");
   const [maritalStatus, setMaritalStatus] = useState("Married");
   const [relationType, setRelationType] = useState("Father");
   const [relativeName, setRelativeName] = useState("");
@@ -130,8 +130,8 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [landline, setLandline] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState("GENERAL");
-  const [victimClassification, setVictimClassification] = useState<"Adult" | "Child">("Adult");
-  const [medicalExamRequiredForAge, setMedicalExamRequiredForAge] = useState(false);
+  const [victimClassification, setVictimClassification] = useState<"Adult" | "Child" | "">("");
+  const [medicalExamRequiredForAge, setMedicalExamRequiredForAge] = useState<boolean | null>(null);
 
   // Age Panel
   const [dob, setDob] = useState("");
@@ -172,8 +172,19 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   // Statements
   const [statementText, setStatementText] = useState("");
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  const clearFieldError = (fieldName: string) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[fieldName];
+        return next;
+      });
+    }
+  };
 
   const handleClear = () => {
     setEditingId(null);
@@ -183,7 +194,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setLastName("");
     setAliases([]);
     setTempAlias("");
-    setGender("Female");
+    setGender("");
     setMaritalStatus("Married");
     setRelationType("Father");
     setRelativeName("");
@@ -192,8 +203,8 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setLandline("");
     setEmail("");
     setCategory("GENERAL");
-    setVictimClassification("Adult");
-    setMedicalExamRequiredForAge(false);
+    setVictimClassification("");
+    setMedicalExamRequiredForAge(null);
     setDob("");
     setYearOfBirth("");
     setAgeYears("");
@@ -225,6 +236,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setTempIdNumber("");
     setStatementText("");
     setErrorMsg(null);
+    setErrors({});
   };
 
   const handleEdit = (vic: VictimItemData) => {
@@ -235,7 +247,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setMiddleName(vic.middleName || (parts.length > 2 ? parts.slice(1, -1).join(" ") : ""));
     setLastName(vic.lastName || (parts.length > 1 ? parts[parts.length - 1] : ""));
     setAliases(vic.aliases || []);
-    setGender(vic.gender || "Female");
+    setGender(vic.gender || "");
     setMaritalStatus(vic.maritalStatus || "Married");
     setRelationType(vic.relationType || "Father");
     setRelativeName(vic.relativeName || "");
@@ -245,7 +257,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setEmail(vic.email || "");
     setCategory(vic.category || "GENERAL");
     setVictimClassification(vic.victimClassification || "Adult");
-    setMedicalExamRequiredForAge(vic.medicalExamRequiredForAge || false);
+    setMedicalExamRequiredForAge(vic.medicalExamRequiredForAge !== undefined ? vic.medicalExamRequiredForAge : null);
     setDob(vic.dob || "");
     setYearOfBirth(vic.yearOfBirth || "");
     setAgeYears(vic.ageYears || (vic.age ? String(vic.age) : ""));
@@ -275,6 +287,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setIdentifications(vic.identifications || []);
     setStatementText(vic.statementText || (vic.statements?.[0]?.text || ""));
     setErrorMsg(null);
+    setErrors({});
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
@@ -334,8 +347,40 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setErrorMsg(null);
     setSuccessNotice(null);
 
+    const newErrors: Record<string, string> = {};
+
     if (!firstName.trim()) {
-      setErrorMsg("Victim First Name is mandatory.");
+      newErrors.firstName = "Victim First Name is mandatory.";
+    }
+    if (!gender || !gender.trim()) {
+      newErrors.gender = "Victim Gender is mandatory.";
+    }
+    if (!victimClassification) {
+      newErrors.victimClassification = "Victim Classification is mandatory.";
+    }
+    if (medicalExamRequiredForAge === null || medicalExamRequiredForAge === undefined) {
+      newErrors.medicalExamRequiredForAge = "Medical Examination Required to Determine Age is mandatory.";
+    }
+    if (!permCity.trim()) {
+      newErrors.permCity = "Village / Town / City is mandatory in Address Details.";
+    }
+    if (!permDistrict.trim()) {
+      newErrors.permDistrict = "District is mandatory in Address Details.";
+    }
+    if (!permState.trim()) {
+      newErrors.permState = "State is mandatory in Address Details.";
+    }
+    if (!permCountry.trim()) {
+      newErrors.permCountry = "Country is mandatory in Address Details.";
+    }
+    if (!nationality.trim()) {
+      newErrors.nationality = "Country of Nationality is mandatory in Other Information.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstError = Object.values(newErrors)[0];
+      setErrorMsg(firstError || "Please fill all mandatory fields marked with an asterisk (*).");
       return;
     }
 
@@ -371,9 +416,9 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
       landline: landline.trim() || undefined,
       email: email.trim() || undefined,
       category,
-      victimClassification,
+      victimClassification: (victimClassification as "Adult" | "Child") || "Adult",
       victimType: "Victim",
-      medicalExamRequiredForAge,
+      medicalExamRequiredForAge: medicalExamRequiredForAge ?? false,
       age: ageYears || undefined,
       dob: dob || undefined,
       yearOfBirth: yearOfBirth || undefined,
@@ -499,7 +544,10 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       First Name <span className="text-red-500">*</span>
                     </label>
                     <VoiceInputButton
-                      onTranscript={(t) => setFirstName(t)}
+                      onTranscript={(t) => {
+                        setFirstName(t);
+                        clearFieldError("firstName");
+                      }}
                       currentValue={firstName}
                       fieldLabel="Victim First Name"
                       iconOnly={true}
@@ -509,10 +557,18 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     type="text"
                     value={firstName}
                     placeholder="e.g. Meena"
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-pink-600"
+                    onChange={(e) => {
+                      setFirstName(e.target.value);
+                      clearFieldError("firstName");
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs focus:ring-1 focus:ring-pink-600 ${
+                      errors.firstName ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                    }`}
                     required
                   />
+                  {errors.firstName && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -615,18 +671,30 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
               {/* Gender, Marital Status, Relative, Contacts, Classification */}
               <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Gender</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                    onChange={(e) => {
+                      setGender(e.target.value);
+                      clearFieldError("gender");
+                    }}
+                    className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                      errors.gender ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                    }`}
+                    required
                   >
+                    <option value="">-- Select Gender --</option>
                     {getDynamicGenderOptions().map((g) => (
                       <option key={g} value={g}>
                         {g}
                       </option>
                     ))}
                   </select>
+                  {errors.gender && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.gender}</p>
+                  )}
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Marital Status</label>
@@ -741,14 +809,21 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
               {/* Victim Classification & Medical Examination */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-pink-50/60 rounded-xl border border-pink-200">
                 <div>
-                  <label className="font-bold text-slate-800 block mb-1">Victim Classification</label>
-                  <div className="flex items-center gap-4 mt-1">
+                  <label className="font-bold text-slate-800 block mb-1">
+                    Victim Classification <span className="text-red-500">*</span>
+                  </label>
+                  <div className={`flex items-center gap-4 mt-1 p-1.5 rounded-lg ${
+                    errors.victimClassification ? "border border-red-500 bg-red-50/50" : ""
+                  }`}>
                     <label className="flex items-center gap-1.5 cursor-pointer font-semibold">
                       <input
                         type="radio"
                         name="victimClassInline"
                         checked={victimClassification === "Adult"}
-                        onChange={() => setVictimClassification("Adult")}
+                        onChange={() => {
+                          setVictimClassification("Adult");
+                          clearFieldError("victimClassification");
+                        }}
                       />
                       <span>Adult (वयस्क)</span>
                     </label>
@@ -757,24 +832,35 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                         type="radio"
                         name="victimClassInline"
                         checked={victimClassification === "Child"}
-                        onChange={() => setVictimClassification("Child")}
+                        onChange={() => {
+                          setVictimClassification("Child");
+                          clearFieldError("victimClassification");
+                        }}
                       />
                       <span>Child (नाबालिग / POCSO)</span>
                     </label>
                   </div>
+                  {errors.victimClassification && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.victimClassification}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="font-bold text-slate-800 block mb-1">
-                    Medical Examination Required to Determine Age?
+                    Medical Examination Required to Determine Age? <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex items-center gap-4 mt-1">
+                  <div className={`flex items-center gap-4 mt-1 p-1.5 rounded-lg ${
+                    errors.medicalExamRequiredForAge ? "border border-red-500 bg-red-50/50" : ""
+                  }`}>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
                         name="medExamInline"
-                        checked={medicalExamRequiredForAge}
-                        onChange={() => setMedicalExamRequiredForAge(true)}
+                        checked={medicalExamRequiredForAge === true}
+                        onChange={() => {
+                          setMedicalExamRequiredForAge(true);
+                          clearFieldError("medicalExamRequiredForAge");
+                        }}
                       />
                       <span>Yes</span>
                     </label>
@@ -782,12 +868,18 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       <input
                         type="radio"
                         name="medExamInline"
-                        checked={!medicalExamRequiredForAge}
-                        onChange={() => setMedicalExamRequiredForAge(false)}
+                        checked={medicalExamRequiredForAge === false}
+                        onChange={() => {
+                          setMedicalExamRequiredForAge(false);
+                          clearFieldError("medicalExamRequiredForAge");
+                        }}
                       />
                       <span>No</span>
                     </label>
                   </div>
+                  {errors.medicalExamRequiredForAge && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.medicalExamRequiredForAge}</p>
+                  )}
                 </div>
               </div>
 
@@ -929,18 +1021,32 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">Village / Town / City</label>
+                      <label className="font-semibold text-slate-700">
+                        Village / Town / City <span className="text-red-500">*</span>
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setPermCity((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setPermCity((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("permCity");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={permCity}
-                      onChange={(e) => setPermCity(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setPermCity(e.target.value);
+                        clearFieldError("permCity");
+                      }}
+                      className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                        errors.permCity ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                      }`}
+                      required
                     />
+                    {errors.permCity && (
+                      <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.permCity}</p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
@@ -959,51 +1065,93 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">Country</label>
+                      <label className="font-semibold text-slate-700">
+                        Country <span className="text-red-500">*</span>
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setPermCountry((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setPermCountry((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("permCountry");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={permCountry}
-                      onChange={(e) => setPermCountry(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setPermCountry(e.target.value);
+                        clearFieldError("permCountry");
+                      }}
+                      className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                        errors.permCountry ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                      }`}
+                      required
                     />
+                    {errors.permCountry && (
+                      <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.permCountry}</p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">State</label>
+                      <label className="font-semibold text-slate-700">
+                        State <span className="text-red-500">*</span>
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setPermState((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setPermState((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("permState");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={permState}
-                      onChange={(e) => setPermState(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setPermState(e.target.value);
+                        clearFieldError("permState");
+                      }}
+                      className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                        errors.permState ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                      }`}
+                      required
                     />
+                    {errors.permState && (
+                      <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.permState}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700">District</label>
+                      <label className="font-semibold text-slate-700">
+                        District <span className="text-red-500">*</span>
+                      </label>
                       <VoiceInputButton
-                        onTranscript={(text) => setPermDistrict((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => {
+                          setPermDistrict((prev) => (prev ? `${prev} ${text}` : text));
+                          clearFieldError("permDistrict");
+                        }}
                         iconOnly={true}
                       />
                     </div>
                     <input
                       type="text"
                       value={permDistrict}
-                      onChange={(e) => setPermDistrict(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      onChange={(e) => {
+                        setPermDistrict(e.target.value);
+                        clearFieldError("permDistrict");
+                      }}
+                      className={`w-full p-2 rounded-lg border bg-white text-xs ${
+                        errors.permDistrict ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                      }`}
+                      required
                     />
+                    {errors.permDistrict && (
+                      <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.permDistrict}</p>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
@@ -1160,13 +1308,24 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Country of Nationality</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Country of Nationality <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={nationality}
-                    onChange={(e) => setNationality(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                    onChange={(e) => {
+                      setNationality(e.target.value);
+                      clearFieldError("nationality");
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs ${
+                      errors.nationality ? "border-red-500 bg-red-50/50 ring-1 ring-red-400" : "border-slate-300"
+                    }`}
+                    required
                   />
+                  {errors.nationality && (
+                    <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.nationality}</p>
+                  )}
                 </div>
               </div>
 

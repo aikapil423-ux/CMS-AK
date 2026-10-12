@@ -1250,11 +1250,21 @@ function RegisterFIRForm() {
 
   // Link Complainant as Victim (Tab 6)
   const handleLinkComplainantAsVictim = () => {
-    const compVictim = {
+    const compVictim: VictimItemData = {
       id: `vic-${Date.now()}`,
       srNo: victimsList.length + 1,
       name: `${complainantFirstName} ${complainantLastName}`.trim() || "Complainant",
-      gender: complainantGender,
+      fullName: `${complainantFirstName} ${complainantLastName}`.trim() || "Complainant",
+      firstName: complainantFirstName || "Complainant",
+      lastName: complainantLastName || undefined,
+      gender: complainantGender || "Male",
+      victimClassification: "Adult",
+      medicalExamRequiredForAge: false,
+      permCity: permCity || "Gurugram",
+      permDistrict: permDistrict || "Gurugram",
+      permState: permState || "Haryana",
+      permCountry: permCountry || "India",
+      nationality: complainantNationality || "Indian",
       age: complainantAge || "Adult",
       victimType: "Complainant",
       address: permHouseNo ? `${permHouseNo}, ${permCity}, ${permDistrict}` : "As per Complainant Record",
