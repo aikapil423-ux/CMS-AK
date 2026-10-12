@@ -1217,7 +1217,7 @@ export const GeneralDiaryService = {
   // 7. System Event & AI Suggestion Generator (Workflow #1)
   // -------------------------------------------------------------
   async generateSuggestionFromSystemEvent(event: {
-    eventType: "COMPLAINT_REGISTERED" | "FIR_LODGED" | "OFFICER_DISPATCHED" | "MALKHANA_SEIZURE";
+    eventType: "COMPLAINT_REGISTERED" | "COMPLAINT_CLOSURE" | "FIR_LODGED" | "OFFICER_DISPATCHED" | "MALKHANA_SEIZURE";
     subject: string;
     narrative: string;
     officer: GDOfficerParticulars;
@@ -1225,6 +1225,26 @@ export const GeneralDiaryService = {
     district: string;
     relatedRecords: GDRelatedRecords;
   }): Promise<GeneralDiaryRecord> {
+    // 1. Try server persistence first
+    try {
+      const json = await gdApiPost<{ success: boolean; suggestion: GeneralDiaryRecord }>({
+        action: "SYSTEM_EVENT_SUGGESTION",
+        event,
+      });
+      if (json?.suggestion) {
+        memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== json.suggestion.id);
+        memoryRecordsStore.unshift(json.suggestion);
+        saveRecordsToStorage(memoryRecordsStore);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("cms-gd-updated"));
+        }
+        return json.suggestion;
+      }
+    } catch (apiErr) {
+      console.warn("Backend suggestion API error, falling back to local:", apiErr);
+    }
+
+    // 2. Local fallback
     memoryRecordsStore = loadRecordsFromStorage();
     const today = new Date().toISOString().split("T")[0];
     const nowTime = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -1232,6 +1252,7 @@ export const GeneralDiaryService = {
 
     const typeCodeMap: Record<string, string> = {
       COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
+      COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
       FIR_LODGED: "CRIMINAL_CASE",
       OFFICER_DISPATCHED: "DEPARTURE",
       MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
@@ -1254,15 +1275,28 @@ export const GeneralDiaryService = {
         pno: "00000000",
       },
       typeCode,
-      category: typeDef.category,
-      typeDisplay: typeDef.nameEn,
-      typeDisplayHi: typeDef.nameHi,
+      category: typeDef?.category || (event.eventType === "COMPLAINT_CLOSURE" ? "INVESTIGATION_PROCESS" : "ROUTINE_ADMINISTRATION"),
+      typeDisplay:
+        event.eventType === "COMPLAINT_REGISTERED"
+          ? "Citizen Information/Tip Received"
+          : event.eventType === "COMPLAINT_CLOSURE"
+          ? "Investigation Reports"
+          : (typeDef?.nameEn || typeCode),
+      typeDisplayHi:
+        event.eventType === "COMPLAINT_REGISTERED"
+          ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
+          : event.eventType === "COMPLAINT_CLOSURE"
+          ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+          : (typeDef?.nameHi || typeCode),
       subject: event.subject,
       narrative: event.narrative,
       activityDateTime: `${today} ${nowTime}`,
       officialCreationTimestamp: nowIso,
       status: "SUGGESTED",
-      source: "SYSTEM_EVENT",
+      source:
+        event.eventType === "COMPLAINT_REGISTERED" || event.eventType === "COMPLAINT_CLOSURE"
+          ? "COMPLAINT_INTEGRATION"
+          : "SYSTEM_EVENT",
       isLocked: false,
       relatedRecords: event.relatedRecords,
       auditTrail: [
@@ -1280,6 +1314,9 @@ export const GeneralDiaryService = {
 
     memoryRecordsStore.unshift(suggestionRecord);
     saveRecordsToStorage(memoryRecordsStore);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cms-gd-updated"));
+    }
     return suggestionRecord;
   },
 

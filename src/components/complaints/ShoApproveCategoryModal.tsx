@@ -92,7 +92,7 @@ export function ShoApproveCategoryModal({
       value: "CLOSURE",
       label: "3. Closure",
       description: "Closure / Compromise / Civil Dispute — राजीनामा / दीवानी विवाद / असत्यापित।",
-      statusEffect: "Final Status: Complete (मामला निस्तारित होकर बंद हो जाएगा)",
+      statusEffect: "Final Status: Complete (मामला निस्तारित होकर बंद होगा व रोजनामचा GD ऑटो-सुझाव ड्राफ्ट में जाएगा)",
       badgeClass: "border-emerald-300 bg-emerald-50/70 text-emerald-900",
       icon: ShieldCheck,
     },
