@@ -753,7 +753,13 @@ function EnquiryDraftsContent() {
       ]);
     }
 
-    if (found.assignedEoName || currentUser.name) {
+    const isShoMode = searchParams.get("shoReport") === "true" || currentUser.role === "SHO";
+    if (isShoMode) {
+      setOfficerName(`(${currentUser.name || found.shoApprovedBy || "Station House Officer"})`);
+      setOfficerRank(currentUser.rankDisplay || "Inspector (Station House Officer)");
+      setOfficerLocation(found.policeStation || `Police Station ${districtName}`);
+      setTitle(`SHO SUPERVISORY ORDER ON COMPLAINT NO. ${found.complaintNumber} DATED ${formatDate(new Date())}`);
+    } else if (found.assignedEoName || currentUser.name) {
       setOfficerName(`(${found.assignedEoName || currentUser.name})`);
       setOfficerRank(found.assignedEoRank || currentUser.rankDisplay || "Assistant Superintendent of Police");
       setOfficerLocation(found.policeStation || `Headquarters ${districtName}`);
@@ -797,6 +803,10 @@ function EnquiryDraftsContent() {
           ? "Closure"
           : "NCR";
 
+      const pData = getProformaData();
+      const reportHtml = generateHaryanaPoliceProformaHtml(pData);
+      const docText = documentRef.current?.innerText || "";
+
       await ComplaintService.sendReportToSho(
         complaint.id,
         officerName || currentUser.name || "Enquiry Officer",
@@ -806,6 +816,8 @@ function EnquiryDraftsContent() {
           recommendedCategory: data.recommendedCategory,
           eoId: currentUser.id,
           reportTitle: title || "Enquiry Report",
+          content: docText,
+          contentHtml: reportHtml,
         }
       );
       setEoSendModalOpen(false);
@@ -1210,15 +1222,32 @@ function EnquiryDraftsContent() {
         analysisRationale: analysisResult?.rationaleHindi,
       };
 
-      const updatedComp = await ComplaintService.submitEoReportWithOutcome(
-        targetComp.id,
-        reportPayload,
-        outcome,
-        officerName || currentUser.name || "Enquiry Officer",
-        officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
-        currentUser.pno || "PNO-23841",
-        currentUser.role
-      );
+      let updatedComp: ComplaintItem;
+      const isShoUser = searchParams.get("shoReport") === "true" || currentUser.role === "SHO";
+      if (isShoUser) {
+        updatedComp = await ComplaintService.addComplaintReport(
+          targetComp.id,
+          {
+            ...reportPayload,
+            officerName: currentUser.name || "Station House Officer",
+            officerRank: currentUser.rankDisplay || "Inspector (SHO)",
+            officerPno: currentUser.pno || "HR-04291882",
+            createdByRole: "SHO",
+          },
+          { isNewVersion: isNewVersionMode },
+          currentUser
+        );
+      } else {
+        updatedComp = await ComplaintService.submitEoReportWithOutcome(
+          targetComp.id,
+          reportPayload,
+          outcome,
+          officerName || currentUser.name || "Enquiry Officer",
+          officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+          currentUser.pno || "PNO-23841",
+          currentUser.role
+        );
+      }
 
       setComplaint(updatedComp || targetComp);
       setSelectComplaintModalOpen(false);

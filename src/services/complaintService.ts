@@ -38,6 +38,7 @@ import {
   canTransferJustification,
   canCreateShoReport,
   isUserAssignedEo,
+  isShoOrSuperior,
   AuthUserContext,
 } from "@/utils/complaintPermissions";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
@@ -2517,6 +2518,8 @@ export const ComplaintService = {
       eoId?: string;
       reportId?: string;
       reportTitle?: string;
+      content?: string;
+      contentHtml?: string;
     }
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
@@ -2536,14 +2539,16 @@ export const ComplaintService = {
     const targetReportId = options?.reportId;
     const targetReportTitle = options?.reportTitle;
 
+    let foundTarget = false;
     const updatedReports = (complaint.reports || []).map((r, i) => {
       const isTarget = targetReportId
         ? r.id === targetReportId
         : targetReportTitle
         ? r.title === targetReportTitle
-        : i === 0;
+        : (!targetReportId && !targetReportTitle && complaint.reports && complaint.reports.length === 1 && i === 0);
 
       if (isTarget) {
+        foundTarget = true;
         return {
           ...r,
           sentToSho: true,
@@ -2554,6 +2559,57 @@ export const ComplaintService = {
       }
       return r;
     });
+
+    // If report is not yet in complaint.reports, auto-save it now into reports list
+    if (!foundTarget) {
+      const newReportId = targetReportId || `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const reportTitle = targetReportTitle || `जांच आख्या / Enquiry Report (${displayCategory})`;
+      const repType =
+        recommendedCategory === "FIR_RECOMMEND"
+          ? "FIR_RECOMMENDED"
+          : recommendedCategory === "CLOSURE"
+          ? "CLOSURE_REPORT"
+          : "NCR";
+
+      const autoSavedReport: ComplaintReportItem = {
+        id: newReportId,
+        complaintId: complaint.id,
+        versionNumber: (complaint.reports?.length || 0) + 1,
+        title: reportTitle,
+        reportType: repType,
+        reportTypeLabel: `Enquiry Report (${displayCategory})`,
+        dispatchNo: complaint.complaintNumber,
+        generatedDate: nowIso.split("T")[0],
+        officerName: officerName,
+        officerRank: complaint.assignedEoRank || "Enquiry Officer (EO)",
+        officerPno: officerPno,
+        conclusionSummary: remarks || `Enquiry report submitted by EO ${officerName} with recommendation ${displayCategory}.`,
+        content: remarks || `Enquiry report submitted by EO ${officerName} recommending ${displayCategory}. Case forwarded for SHO review and supervisory decision.`,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        createdBy: officerName,
+        lastModifiedBy: officerName,
+        createdByUserId: options?.eoId || complaint.assignedEoId || officerPno,
+        createdByRole: "ENQUIRY_OFFICER",
+        createdByName: officerName,
+        currentOwnerUserId: options?.eoId || complaint.assignedEoId || officerPno,
+        source: "GENERATED",
+        status: "Saved in Complaint",
+        recommendationType:
+          recommendedCategory === "FIR_RECOMMEND"
+            ? "FIR_RECOMMENDED"
+            : recommendedCategory === "CLOSURE"
+            ? "GAMINI"
+            : "NCR",
+        isFirRecommended: recommendedCategory === "FIR_RECOMMEND",
+        selectedOutcome: recommendedCategory === "FIR_RECOMMEND" ? "FIR Recommend" : "Complete",
+        sentToSho: true,
+        sentToShoAt: nowIso,
+        sentToShoBy: officerName,
+      };
+
+      updatedReports.unshift(autoSavedReport);
+    }
 
     let nextStatus: ComplaintStatus = "REPORT_SUBMITTED";
     let isRecommendedForFir = complaint.isRecommendedForFir;
@@ -2675,8 +2731,88 @@ export const ComplaintService = {
       isFirApprovedBySho = false;
     }
 
+    // Auto-generate SHO Supervisory Endorsement Report under SHO's name for selected category
+    const shoReportId = `rep_sho_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const shoReportTitle = isFir
+      ? `SHO संज्ञान व एफआईआर संस्तुति आदेश (FIR Registration Approval) - ${complaint.complaintNumber}`
+      : isNcr
+      ? `SHO असंज्ञेय अपराध स्वीकृति आदेश (NCR u/s 174 BNSS) - ${complaint.complaintNumber}`
+      : `SHO शिकायत निस्तारण व दाखिल दफ्तर आदेश (Closure Order) - ${complaint.complaintNumber}`;
+
+    const shoRecommendationType = isFir ? "FIR" : isNcr ? "NCR" : "RAZINAMA";
+
+    const shoReportNarrative = `================================================================================
+कार्यालय थाना प्रभारी (OFFICE OF STATION HOUSE OFFICER)
+थाना: ${complaint.policeStation || "थाना क्षेत्र"}, जिला: ${complaint.district || "District"}
+शिकायत संदर्भ सं.: ${complaint.complaintNumber} | दिनांक: ${nowIso.split("T")[0]}
+================================================================================
+विषय: जांच आख्या अवलोकन उपरांत SHO का अंतिम वैधानिक निर्णय व पर्यवेक्षीय आदेश (${displayFinalCategory})
+
+1. शिकायत व पक्षकारों का विवरण:
+- शिकायत सं.: ${complaint.complaintNumber} (${complaint.categoryDisplay || "General"})
+- शिकायतकर्ता: ${complaint.complainantName || "नागरिक"} (मो.: ${complaint.complainantMobile || "N/A"})
+- पता: ${complaint.complainantAddress || "थाना क्षेत्र"}, ${complaint.complainantCity || ""}
+- विपक्षी: ${complaint.accusedList?.[0]?.name || "विपक्षी पक्ष"}
+
+2. जांच अधिकारी (EO) विवरण व संस्तुति:
+- जांच अधिकारी: ${complaint.assignedEoName || "Enquiry Officer"} (${complaint.assignedEoRank || "ASI/SI"})
+- EO संस्तुति श्रेणी: ${complaint.eoRecommendedCategory || displayFinalCategory}
+- EO जांच सारांश: ${complaint.eoRecommendedRemarks || "जांच अधिकारी द्वारा प्रस्तुत आख्या का अवलोकन किया गया।"}
+
+3. SHO अंतिम वैधानिक आदेश व पर्यवेक्षीय टिप्पणी:
+${remarks ? remarks.trim() : `जांच अधिकारी द्वारा प्रस्तुत संपूर्ण जांच आख्या, संकलित साक्ष्यों एवं बयानों का गहनता से पर्यवेक्षण किया गया। प्राप्त साक्ष्यों के आधार पर मामला ${displayFinalCategory} की श्रेणी में स्वीकृत किया जाता है। तदनुसार नियमानुसार अग्रिम वैधानिक कार्यवाही अमल में लाई जाए।`}
+
+4. वैधानिक कार्यवाही व आदेश:
+${
+  isFir
+    ? "प्रकरण में संज्ञेय अपराध घटित होना पाया जाता है। अतः अपराध की धाराओं के अंतर्गत अभियोग (FIR) तत्काल दर्ज कर अन्वेषण योग्य अधिकारी को सौंपा जाए।"
+    : isNcr
+    ? "प्रकरण असंज्ञेय अपराध (Non-Cognizable Offence) से संबंधित है। अतः BNSS धारा 174 के अंतर्गत NCR दर्ज कर शिकायतकर्ता को सक्षम न्यायालय की हिदायत दी जाए।"
+    : "प्रकरण में दोनों पक्षों के मध्य विवाद निस्तारित/राजीनामा/दीवानी स्वरूप का होने के कारण शिकायत दाखिल दफ्तर (Close) की जाती है।"
+}
+
+हस्ताक्षर / आदेशकर्ता:
+(${shoName})
+थाना प्रभारी (Station House Officer)
+PNO: ${shoPno}
+थाना: ${complaint.policeStation || "थाना क्षेत्र"}
+`;
+
+    const shoReportItem: ComplaintReportItem = {
+      id: shoReportId,
+      complaintId: complaint.id,
+      versionNumber: (complaint.reports?.length || 0) + 1,
+      title: shoReportTitle,
+      reportType: "SHO_SUPERVISORY_ENDORSEMENT",
+      reportTypeLabel: `SHO आदेश (${displayFinalCategory})`,
+      dispatchNo: `SHO/ORD/${complaint.complaintNumber}`,
+      generatedDate: nowIso.split("T")[0],
+      officerName: shoName,
+      officerRank: "Station House Officer (SHO)",
+      officerPno: shoPno,
+      conclusionSummary: remarks || `SHO approved final category: ${displayFinalCategory}`,
+      content: shoReportNarrative,
+      fileFormat: "TXT",
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      createdBy: shoName,
+      createdByName: shoName,
+      createdByUserId: shoPno,
+      createdByRole: "SHO",
+      currentOwnerUserId: shoPno,
+      source: "GENERATED",
+      status: "Saved in Complaint",
+      recommendationType: shoRecommendationType as any,
+      isFirRecommended: isFir,
+      selectedOutcome: isFir ? "FIR Recommend" : "Complete",
+    };
+
+    const existingReports = complaint.reports || [];
+    const updatedReports = [shoReportItem, ...existingReports];
+
     complaintsStore[index] = {
       ...complaint,
+      reports: updatedReports,
       status: nextStatus,
       workflowState: nextWorkflowState,
       shoFinalCategory: chosenCategory,
@@ -2692,6 +2828,7 @@ export const ComplaintService = {
       firApprovedAt: isFirApprovedBySho ? nowIso : undefined,
       firApprovedBy: isFirApprovedBySho ? shoName : undefined,
       shoActionRequired: isFir,
+      eoRecommendedReportId: complaint.eoRecommendedReportId || (existingReports[0]?.id),
       updatedAt: nowIso,
     };
 
@@ -3308,6 +3445,9 @@ ${reportBody}
 
     const report = (complaintsStore[index].reports || []).find((r) => r.id === reportId);
     if (user && report) {
+      if (report.sentToSho && isShoOrSuperior(user.role)) {
+        throw new Error("Access Denied: SHO cannot delete enquiry reports submitted by the Enquiry Officer.");
+      }
       const perm = canDeleteDocument(user, report, complaintsStore[index]);
       if (!perm.allowed) {
         throw new Error(perm.reason || "Access Denied: Only the creator of this report can delete it.");

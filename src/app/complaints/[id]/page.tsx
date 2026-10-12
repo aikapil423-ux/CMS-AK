@@ -500,6 +500,9 @@ export default function ComplaintProfilePage() {
     if (!complaint) return;
     setGenerateReportDropdownOpen(false);
     let url = `/enquiry-workspace/drafts?complaintId=${encodeURIComponent(complaint.id)}&recommendation=${encodeURIComponent(recType)}`;
+    if (isSho) {
+      url += `&shoReport=true`;
+    }
     if (reportItem) {
       url += `&reportId=${encodeURIComponent(reportItem.id)}`;
       if (isNewVersion) {
@@ -698,9 +701,9 @@ export default function ComplaintProfilePage() {
   const docCreationPerm = complaint ? canCreateDocument(currentUser, complaint) : { allowed: false };
   const canUploadDocument = docCreationPerm.allowed;
   const canGenerateDocument = docCreationPerm.allowed;
-  // When complaint is assigned to an EO, only the assigned EO can generate reports
+  // When complaint is assigned to an EO, assigned EO can generate reports, or SHO can generate supervisory reports once submitted or approved
   const canGenerateReport = isComplaintAssigned
-    ? isAssignedEo
+    ? (isAssignedEo || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false))
     : (docCreationPerm.allowed || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false));
 
   const canAssign = isSho && !isMhc && complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
@@ -1189,8 +1192,26 @@ export default function ComplaintProfilePage() {
       setComplaint(updated);
       setShoApproveRemarks("");
       setShoApproveModalOpen(false);
-      alert(`Enquiry report approved with authoritative final category: ${displayCat}. Final status updated.`);
-      await loadComplaint();
+
+      // Map selected category to recommendation type for report auto-generation workspace
+      const recType =
+        data.finalCategory === "FIR_RECOMMEND"
+          ? "FIR"
+          : data.finalCategory === "NCR"
+          ? "NCR"
+          : "RAZINAMA";
+
+      const shoReport = (updated.reports || []).find(
+        (r) => r.createdByRole === "SHO" || r.officerName === currentUser.name
+      );
+
+      alert(`जांच रिपोर्ट ${displayCat} श्रेणी में स्वीकृत की गई। SHO पर्यवेक्षीय आदेश (${displayCat}) स्वतः तैयार कर दिया गया है। अब SHO रिपोर्ट जनरेटर खोला जा रहा है।`);
+
+      let draftUrl = `/enquiry-workspace/drafts?complaintId=${encodeURIComponent(complaint.id)}&recommendation=${encodeURIComponent(recType)}&shoReport=true`;
+      if (shoReport?.id) {
+        draftUrl += `&reportId=${encodeURIComponent(shoReport.id)}`;
+      }
+      router.push(draftUrl);
     } catch (err) {
       console.error(err);
       alert("Failed to approve report.");
@@ -1335,9 +1356,13 @@ export default function ComplaintProfilePage() {
 
   const handleDeleteEvidence = async (evidenceId: string) => {
     if (!complaint) return;
-    if (!canModifyCase) {
-      alert(`Access Denied: Only the assigned Enquiry Officer (${complaint.assignedEoName || "Assigned Officer"}) can delete evidence.`);
-      return;
+    const targetEv = (complaint.attachments || []).find((e) => e.id === evidenceId);
+    if (targetEv) {
+      const perm = canDeleteDocument(currentUser, targetEv as any, complaint);
+      if (!perm.allowed) {
+        alert(perm.reason || "Access Denied: Only the officer/user who uploaded this evidence can delete it.");
+        return;
+      }
     }
     if (!confirm("Are you sure you want to remove this evidence file from the case docket?")) {
       return;

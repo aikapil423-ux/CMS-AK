@@ -153,6 +153,9 @@ export function canDeleteDocument(
     fileCategory?: string;
     fileName?: string;
     isPermanentRegistrationDoc?: boolean;
+    sentToSho?: boolean;
+    authorRole?: string;
+    authorId?: string;
   },
   complaint?: ComplaintItem
 ): PermissionResult {
@@ -171,30 +174,52 @@ export function canDeleteDocument(
     };
   }
 
-  // SHO, Super Admin, or Duty Officer can manage and delete case evidence / uploaded documents
-  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER") {
-    return { allowed: true };
+  // Strict Rule: SHO cannot delete enquiry reports submitted by the Enquiry Officer
+  if (doc.sentToSho && isShoOrSuperior(user.role)) {
+    return {
+      allowed: false,
+      reason: "Access Denied: SHO cannot delete enquiry reports submitted by the Enquiry Officer.",
+    };
   }
 
-  // If complaint is assigned to this EO, EO can delete documents in their case docket
-  if (complaint && isUserAssignedEo(user, complaint)) {
-    return { allowed: true };
-  }
+  // Strict Ownership: Only the user/ID who saved/uploaded the document/report can delete it. No one else!
+  const creatorId = doc.createdByUserId || doc.authorId || (doc as any)?.userId;
+  if (creatorId) {
+    const matchesId = Boolean(user.id && (creatorId === user.id || String(creatorId).toLowerCase() === String(user.id).toLowerCase()));
+    const normCreator = String(creatorId).replace(/[^0-9a-zA-Z]/g, "").toLowerCase();
+    const normPno = user.pno ? String(user.pno).replace(/[^0-9a-zA-Z]/g, "").toLowerCase() : "";
+    const matchesPno = Boolean(normPno && (normCreator === normPno || normCreator.includes(normPno) || normPno.includes(normCreator)));
+    const matchesBelt = Boolean(user.beltNumber && creatorId === user.beltNumber);
 
-  const creatorId = doc.createdByUserId;
-  if (creatorId && (creatorId === user.id || (user.pno && creatorId === user.pno))) {
-    return { allowed: true };
+    if (matchesId || matchesPno || matchesBelt) {
+      return { allowed: true };
+    }
+
+    return {
+      allowed: false,
+      reason: "Access Denied: Only the officer/user who created or uploaded this document can delete it. No other user can delete it.",
+    };
   }
 
   // Fallback for legacy documents without createdByUserId
-  const creatorName = doc.uploadedBy || doc.createdBy || doc.officerName || "";
-  if (!creatorId && creatorName && user.name && creatorName.toLowerCase().includes(user.name.toLowerCase())) {
-    return { allowed: true };
+  const creatorName = (doc.uploadedBy || doc.createdBy || doc.officerName || (doc as any)?.createdByName || "").trim().toLowerCase();
+  const currentUserName = (user.name || "").trim().toLowerCase();
+  const currentUserPno = (user.pno || "").trim().toLowerCase();
+  const currentUserId = (user.id || "").trim().toLowerCase();
+
+  if (creatorName) {
+    if (
+      (currentUserName && (creatorName === currentUserName || creatorName.includes(currentUserName) || currentUserName.includes(creatorName))) ||
+      (currentUserPno && creatorName.includes(currentUserPno)) ||
+      (currentUserId && creatorName.includes(currentUserId))
+    ) {
+      return { allowed: true };
+    }
   }
 
   return {
     allowed: false,
-    reason: "Access Denied: Only the officer who created or uploaded this document can delete it.",
+    reason: "Access Denied: Only the officer/user who created or uploaded this document can delete it. No other user can delete it.",
   };
 }
 
@@ -276,17 +301,35 @@ export function canTransferJustification(user: AuthUserContext, complaint: Compl
  * Only when unassigned or review stage can SHO create supervisory reports.
  */
 export function canCreateShoReport(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  if (!isShoOrSuperior(user.role)) {
+    return {
+      allowed: false,
+      reason: "Access Denied: Only SHO or Supervisory Officers can create supervisory reports.",
+    };
+  }
+
+  // Once a complaint is sent to SHO for review or approved by SHO, SHO is fully authorized to generate/save their own report
+  if (
+    complaint.isSentToSho ||
+    complaint.shoDecision === "APPROVE" ||
+    complaint.shoApprovedAt ||
+    complaint.workflowState === "SENT_TO_SHO" ||
+    complaint.workflowState === "COMPLETE" ||
+    complaint.workflowState === "FIR_REGISTRATION_PENDING" ||
+    complaint.status === "REPORT_SUBMITTED" ||
+    complaint.status === "RECOMMENDED_FOR_FIR" ||
+    complaint.status === "FIR_RECOMMEND" ||
+    complaint.status === "COMPLETE"
+  ) {
+    return { allowed: true };
+  }
+
   if (isComplaintAssignedToEo(complaint)) {
     return {
       allowed: false,
-      reason: "Access Denied: Complaint is currently assigned to Enquiry Officer. Only the assigned EO can generate reports.",
+      reason: "Access Denied: Complaint is currently assigned to Enquiry Officer. SHO supervisory report can be generated once submitted or approved.",
     };
   }
-  if (isShoOrSuperior(user.role)) {
-    return { allowed: true };
-  }
-  return {
-    allowed: false,
-    reason: "Access Denied: Only SHO or Supervisory Officers can create supervisory reports.",
-  };
+
+  return { allowed: true };
 }
