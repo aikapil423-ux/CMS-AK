@@ -175,7 +175,6 @@ function RegisterFIRForm() {
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 
   const [activeTab, setActiveTab] = useState<MainTabKey>("act_section");
-  const [complainantSubtab, setComplainantSubtab] = useState<"personal" | "address" | "other">("personal");
 
   // Linked Complaint & Status
   const [linkedComplaint, setLinkedComplaint] = useState<ComplaintItem | null>(null);
@@ -2652,51 +2651,19 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: COMPLAINANT (3 SUBTABS) */}
+        {/* TAB 3: COMPLAINANT (ALL DETAILS IN SINGLE PANEL) */}
         {/* ========================================================================= */}
         {activeTab === "complainant" && (
-          <div className="space-y-4 animate-in fade-in-30">
-            {/* Subtab Navigation */}
-            <div className="flex border-b border-slate-200 gap-2">
-              <button
-                type="button"
-                onClick={() => setComplainantSubtab("personal")}
-                className={`py-2 px-4 text-xs font-bold border-b-2 transition-all ${
-                  complainantSubtab === "personal"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                3.1 Personal Information
-              </button>
-              <button
-                type="button"
-                onClick={() => setComplainantSubtab("address")}
-                className={`py-2 px-4 text-xs font-bold border-b-2 transition-all ${
-                  complainantSubtab === "address"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                3.2 Address Details
-              </button>
-              <button
-                type="button"
-                onClick={() => setComplainantSubtab("other")}
-                className={`py-2 px-4 text-xs font-bold border-b-2 transition-all ${
-                  complainantSubtab === "other"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                3.3 Other Information &amp; IDs
-              </button>
-            </div>
-
-            {/* Subtab 3.1: Personal */}
-            {complainantSubtab === "personal" && (
-              <Card className="border-slate-200">
-                <CardContent className="p-4 space-y-4 text-xs">
+          <div className="space-y-5 animate-in fade-in-30">
+            {/* Section 3.1: Personal Information */}
+            <Card className="border-slate-200 shadow-xs">
+              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
+                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-600" />
+                  3.1 Personal Information (व्यक्तिगत विवरण)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-1">
@@ -3032,12 +2999,16 @@ function RegisterFIRForm() {
                   </label>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Subtab 3.2: Address */}
-            {complainantSubtab === "address" && (
-              <Card className="border-slate-200">
-                <CardContent className="p-4 space-y-4 text-xs">
+            {/* Section 3.2: Address Details */}
+            <Card className="border-slate-200 shadow-xs">
+              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
+                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  3.2 Address Details (पते का विवरण)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4 text-xs">
                   <div>
                     <h4 className="font-bold text-slate-800 uppercase text-[11px] mb-2 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-blue-600" />
@@ -3270,12 +3241,16 @@ function RegisterFIRForm() {
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Subtab 3.3: Other Information & IDs */}
-            {complainantSubtab === "other" && (
-              <Card className="border-slate-200">
-                <CardContent className="p-4 space-y-4 text-xs">
+            {/* Section 3.3: Other Information & IDs */}
+            <Card className="border-slate-200 shadow-xs">
+              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
+                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-purple-600" />
+                  3.3 Other Information &amp; Identification (अन्य विवरण एवं पहचान पत्र)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4 text-xs">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="font-bold text-slate-700 block mb-1">Occupation</label>
@@ -3467,7 +3442,6 @@ function RegisterFIRForm() {
                   </div>
                 </CardContent>
               </Card>
-            )}
           </div>
         )}
 
