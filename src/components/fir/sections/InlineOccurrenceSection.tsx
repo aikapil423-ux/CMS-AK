@@ -53,7 +53,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   const [isDateKnown, setIsDateKnown] = useState(true);
   const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeFrom, setTimeFrom] = useState("10:00");
-  const [dateTo, setDateTo] = useState("");
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
   const [timeTo, setTimeTo] = useState("12:00");
   const [day, setDay] = useState("Monday");
   const [infoReceivedDate, setInfoReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -93,8 +93,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     setIsDateKnown(true);
     setDateFrom(new Date().toISOString().split("T")[0]);
     setTimeFrom("10:00");
-    setDateTo("");
-    setTimeTo("");
+    setDateTo(new Date().toISOString().split("T")[0]);
+    setTimeTo("12:00");
     setDay("Monday");
     setInfoReceivedDate(new Date().toISOString().split("T")[0]);
     setInfoReceivedTime(new Date().toTimeString().slice(0, 5));
@@ -156,8 +156,52 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
 
   const handleSaveOccurrence = () => {
     setErrorMsg(null);
-    if (!area.trim() && !streetName.trim() && !city.trim()) {
-      setErrorMsg("Please specify the Colony / Locality / Area or City for the occurrence place.");
+
+    // Mandatory Date/Time From
+    if (!dateFrom.trim()) {
+      setErrorMsg("Date From (दिनांक से) is mandatory.");
+      return;
+    }
+    if (!timeFrom.trim()) {
+      setErrorMsg("Time From (समय से) is mandatory.");
+      return;
+    }
+
+    // Mandatory Date/Time To
+    if (!dateTo.trim()) {
+      setErrorMsg("Date To (दिनांक तक) is mandatory.");
+      return;
+    }
+    if (!timeTo.trim()) {
+      setErrorMsg("Time To (समय तक) is mandatory.");
+      return;
+    }
+
+    // Mandatory Information Received Date/Time
+    if (!infoReceivedDate.trim()) {
+      setErrorMsg("Info Received Date (सूचना प्राप्त दिनांक) is mandatory.");
+      return;
+    }
+    if (!infoReceivedTime.trim()) {
+      setErrorMsg("Info Received Time (समय) is mandatory.");
+      return;
+    }
+
+    // Mandatory Place of Occurrence: Village/Town/City
+    if (!city.trim()) {
+      setErrorMsg("Village / Town / City (गाँव / कस्बा / शहर) is mandatory.");
+      return;
+    }
+
+    // Mandatory Direction from Police Station
+    if (!directionFromPs || !directionFromPs.trim()) {
+      setErrorMsg("Direction from Police Station (थाने से दिशा) is mandatory.");
+      return;
+    }
+
+    // Mandatory Distance from Police Station
+    if (!distanceKm || !String(distanceKm).trim()) {
+      setErrorMsg("Distance from Police Station (थाने से दूरी) is mandatory.");
       return;
     }
 
@@ -288,32 +332,41 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Time From (समय से)</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Time From (समय से) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="time"
                   value={timeFrom}
                   onChange={(e) => setTimeFrom(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  required
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Date To (दिनांक तक)</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Date To (दिनांक तक) <span className="text-red-500">*</span>
+                </label>
                 <DatePickerDDMMYYYY
                   disabled={!isDateKnown}
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
+                  required
                 />
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Time To (समय तक)</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Time To (समय तक) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="time"
                   disabled={!isDateKnown}
                   value={timeTo}
                   onChange={(e) => setTimeTo(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs disabled:opacity-50"
+                  required
                 />
               </div>
               <div>
@@ -495,7 +548,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-bold text-slate-700 block">
-                    Colony / Locality / Area <span className="text-red-500">*</span>
+                    Colony / Locality / Area
                   </label>
                   <VoiceInputButton
                     onTranscript={(t) => setArea(t)}
@@ -506,11 +559,10 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 </div>
                 <input
                   type="text"
-                  placeholder="e.g. Sector 29 Huda Ground"
+                  placeholder="e.g. Sector 29 Huda Ground (Optional)"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  required
                 />
               </div>
             </div>
@@ -518,7 +570,9 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="font-bold text-slate-700 block">Village / Town / City</label>
+                  <label className="font-bold text-slate-700 block">
+                    Village / Town / City (गाँव / कस्बा / शहर) <span className="text-red-500">*</span>
+                  </label>
                   <VoiceInputButton
                     onTranscript={(t) => setCity(t)}
                     currentValue={city}
@@ -528,9 +582,11 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 </div>
                 <input
                   type="text"
+                  placeholder="e.g. Gurugram"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  required
                 />
               </div>
               <div>
@@ -583,12 +639,16 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
             {/* Distance, Direction, Beat Number */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Direction from Police Station</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Direction from Police Station (थाने से दिशा) <span className="text-red-500">*</span>
+                </label>
                 <select
                   value={directionFromPs}
                   onChange={(e) => setDirectionFromPs(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                  required
                 >
+                  <option value="">-- Select Direction --</option>
                   {getDynamicDirectionFromPs().map((dir) => (
                     <option key={dir} value={dir}>
                       {dir}
@@ -598,13 +658,17 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Distance from PS (in KM)</label>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Distance from PS (in KM) (थाने से दूरी) <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="number"
                   step="0.1"
+                  placeholder="e.g. 1.5"
                   value={distanceKm}
                   onChange={(e) => setDistanceKm(e.target.value)}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  required
                 />
               </div>
 

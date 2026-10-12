@@ -247,9 +247,19 @@ function RegisterFIRForm() {
   // Occurrence Inline Handlers
   const handleAddOccurrence = (item: ExtendedFIROccurrenceItem) => {
     setOccurrencesList((prev) => [...prev, item]);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.occurrence;
+      return next;
+    });
   };
   const handleUpdateOccurrence = (item: ExtendedFIROccurrenceItem) => {
     setOccurrencesList((prev) => prev.map((it) => (it.id === item.id ? item : it)));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.occurrence;
+      return next;
+    });
   };
   const handleDeleteOccurrence = (id: string) => {
     setOccurrencesList((prev) => prev.filter((it) => it.id !== id));
@@ -356,7 +366,27 @@ function RegisterFIRForm() {
   };
 
   // TAB 2: Occurrence
-  const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>([]);
+  const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>(() => [
+    {
+      id: "occ-1",
+      srNo: 1,
+      day: "Monday",
+      dateFrom: new Date().toISOString().split("T")[0],
+      dateTo: new Date().toISOString().split("T")[0],
+      timeFrom: "10:00",
+      timeTo: "12:00",
+      timePeriod: "Morning / General",
+      infoReceivedDate: new Date().toISOString().split("T")[0],
+      infoReceivedTime: new Date().toTimeString().slice(0, 5),
+      directionFromPs: "EAST",
+      distanceKm: "1.5",
+      area: "",
+      city: "Gurugram",
+      beatNo: "Beat No. 2",
+      isKnownDate: true,
+      isForestPlace: false,
+    },
+  ]);
 
   // TAB 3: Complainant (3 Subtabs)
   // 3.1 Personal
@@ -630,7 +660,9 @@ function RegisterFIRForm() {
               dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
               timeFrom: c.incidentTime || "10:00",
               timeTo: "12:00",
-              timePeriod: "Morning / Pahar 1",
+              timePeriod: "Morning / General",
+              infoReceivedDate: new Date().toISOString().split("T")[0],
+              infoReceivedTime: new Date().toTimeString().slice(0, 5),
               directionFromPs: "EAST",
               distanceKm: "1.5",
               area: c.incidentPlace || "Commercial Area",
@@ -740,7 +772,9 @@ function RegisterFIRForm() {
                 dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
                 timeFrom: "10:00",
                 timeTo: "12:00",
-                timePeriod: "Morning / Pahar 1",
+                timePeriod: "Morning / General",
+                infoReceivedDate: new Date().toISOString().split("T")[0],
+                infoReceivedTime: new Date().toTimeString().slice(0, 5),
                 directionFromPs: "EAST",
                 distanceKm: "1.5",
                 area: c.incidentPlace || "Commercial Area",
@@ -1430,6 +1464,25 @@ function RegisterFIRForm() {
     if (actsAndSectionsList.length === 0) {
       newErrors.act_section = "At least one Act and Section must be added.";
     }
+    if (occurrencesList.length === 0) {
+      newErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
+    } else {
+      const invalidOcc = occurrencesList.find(
+        (occ) =>
+          !occ.dateFrom?.trim() ||
+          !occ.timeFrom?.trim() ||
+          !occ.dateTo?.trim() ||
+          !occ.timeTo?.trim() ||
+          !occ.infoReceivedDate?.trim() ||
+          !occ.infoReceivedTime?.trim() ||
+          !occ.city?.trim() ||
+          !occ.directionFromPs?.trim() ||
+          !String(occ.distanceKm ?? "").trim()
+      );
+      if (invalidOcc) {
+        newErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
+      }
+    }
     if (!complainantFirstName.trim()) {
       newErrors.complainant = "Complainant First Name is mandatory.";
     }
@@ -1444,6 +1497,7 @@ function RegisterFIRForm() {
 
     if (Object.keys(newErrors).length > 0) {
       if (newErrors.sourceOfComplaint || newErrors.actRemarks || newErrors.act_section) setActiveTab("act_section");
+      else if (newErrors.occurrence) setActiveTab("occurrence");
       else if (newErrors.complainant || newErrors.complainantMobile) setActiveTab("complainant");
       else if (newErrors.fir_content) setActiveTab("fir_content");
       return false;
@@ -1499,6 +1553,32 @@ function RegisterFIRForm() {
       }
       if (actsAndSectionsList.length === 0) {
         tabErrors.act_section = "At least one Act and Section must be added.";
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
+    if (activeTab === "occurrence") {
+      const tabErrors: Record<string, string> = {};
+      if (occurrencesList.length === 0) {
+        tabErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
+      } else {
+        const invalidOcc = occurrencesList.find(
+          (occ) =>
+            !occ.dateFrom?.trim() ||
+            !occ.timeFrom?.trim() ||
+            !occ.dateTo?.trim() ||
+            !occ.timeTo?.trim() ||
+            !occ.infoReceivedDate?.trim() ||
+            !occ.infoReceivedTime?.trim() ||
+            !occ.city?.trim() ||
+            !occ.directionFromPs?.trim() ||
+            !String(occ.distanceKm ?? "").trim()
+        );
+        if (invalidOcc) {
+          tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
+        }
       }
       if (Object.keys(tabErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...tabErrors }));
@@ -2556,6 +2636,12 @@ function RegisterFIRForm() {
         {/* ========================================================================= */}
         {activeTab === "occurrence" && (
           <div className={`space-y-5 animate-in fade-in-30 ${autoFilledFields.occurrence ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+            {errors.occurrence && (
+              <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errors.occurrence}</span>
+              </div>
+            )}
             <InlineOccurrenceSection
               occurrencesList={occurrencesList}
               onAddOccurrence={handleAddOccurrence}
