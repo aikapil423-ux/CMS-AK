@@ -95,13 +95,13 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
         {
           id: "welcome_msg",
           sender: "agent",
-          text: `जय हिन्द! मैं **हरियाणा पुलिस CMS AI Agent** हूँ। मुझे इस वेबसाइट के संपूर्ण फ्रंटएंड (मॉड्यूल्स, पेजेस, फॉर्म्स), बैकएंड APIs और डेटाबेस की पूर्ण समझ है।\n\nआप किसी भी केस, FIR, गिरफ़्तारी, ज़िमनी, रोजनामचा (GD), शिकायत, या कानूनी धाराओं के संबंध में बोलकर अथवा लिखकर निर्देश दे सकते हैं।\n\n*नोट: अधूरा विवरण होने पर मैं स्पष्टीकरण के लिए आपसे दोबारा पूछूँगा, और किसी भी कार्य को आपकी स्पष्ट अनुमति (Permission) के पश्चात ही निष्पादित करूँगा।*`,
+          text: `जय हिन्द! मैं **हरियाणा पुलिस CMS Universal AI Operating Agent (संचालित: Gemini 3.6 Flash)** हूँ। मुझे इस वेबसाइट के संपूर्ण फ्रंटएंड (मॉड्यूल्स, पेजेस, फॉर्म्स), बैकएंड APIs और डेटाबेस की पूर्ण समझ है।\n\nआप किसी भी केस, FIR, गिरफ़्तारी, ज़िमनी, रोजनामचा (GD), शिकायत, या कानूनी धाराओं के संबंध में बोलकर अथवा लिखकर निर्देश दे सकते हैं।\n\n* **फॉर्म / डायलॉग खोलना:** सीधे बोलें, यह बिना किसी अनुमति के तुरंत खुल जाएगा।\n* **कानूनी दस्तावेज़ तैयार करना:** आपकी स्पष्ट स्वीकृति (Approval) के बाद ही सुरक्षित किया जाएगा।*`,
           timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
           suggestedPrompts: [
-            "Website me kahan kya hota hai samjhao",
+            "Register complaint form kholo",
+            "Add entry daailogue box kholo",
             "FIR 125: Anil Kumar arrest docs banao",
-            "Complaints register form kholo",
-            "Is case ki GD draft karo",
+            "Role switcher dialogue kholo",
           ],
         },
       ]);
@@ -274,7 +274,7 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-xs tracking-tight">Haryana Police CMS AI Agent</span>
               <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/30 text-blue-200 border border-blue-400/30 font-mono">
-                v2.0
+                Gemini 3.6 Flash
               </span>
             </div>
             <p className="text-[10px] text-slate-300 flex items-center gap-1">

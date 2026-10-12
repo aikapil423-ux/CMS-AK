@@ -174,7 +174,7 @@ export interface UniversalEvidenceRecord {
   processingStatus: EvidenceProcessingStatus;
   verificationStatus: EvidenceVerificationStatus;
   processingVersion: number;
-  processingEngine: string; // e.g. "Gemini-3.5-Flash" | "OCR-Local"
+  processingEngine: string; // e.g. "Gemini-3.6-Flash" | "OCR-Local"
   processedAt?: string;
   errorMessage?: string;
   retryCount: number;

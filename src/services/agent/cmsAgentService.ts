@@ -128,6 +128,34 @@ export class CmsAgentService {
     }
 
     // -------------------------------------------------------------
+    // INTENT: AI MODEL INQUIRY (Gemini 3.6 Flash)
+    // -------------------------------------------------------------
+    if (
+      q.includes("kis model") ||
+      q.includes("kaun sa model") ||
+      q.includes("kaunsa model") ||
+      q.includes("model kya hai") ||
+      q.includes("model se juda") ||
+      q.includes("which model") ||
+      q.includes("ai model") ||
+      q.includes("gemini model") ||
+      q.includes("gemini 3.6")
+    ) {
+      return {
+        id: `msg_model_${Date.now()}`,
+        sender: "agent",
+        text: `🤖 **CMS AI Operating Agent मॉडल विवरण:**\n\n* **सक्रिय AI मॉडल:** **Google Gemini 3.6 Flash** (\`gemini-3.6-flash\`)\n* **आर्किटेक्चर:** Hybrid Neural-Domain Architecture\n  * **LLM Engine:** Gemini 3.6 Flash (हाई-स्पीड कॉम्प्रिहेंशन, वॉयस डिक्टेशन व मल्टी-मॉडल एनालिसिस)\n  * **कानूनी व डोमेन इंजन:** Haryana Police Case Management Operating Engine (BNS 2023, BNSS 2023, BSA 2023 व Punjab Police Rules 1934)\n* **एपीआई प्रोवाइडर:** Google AI Studio / Gemini API\n* **एक्सेस स्टेटस:** ✅ सक्रिय (Active & Ready)\n\nआप किसी भी फॉर्म को खोलने, FIR/शिकायत विश्लेषण करने, या कानूनी प्रपत्र तैयार करने का निर्देश दे सकते हैं।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        suggestedPrompts: [
+          "register complaint form kholo",
+          "Add entry daailogue box kholo",
+          "FIR 125 kholo",
+          "Role switcher dialogue kholo",
+        ],
+      };
+    }
+
+    // -------------------------------------------------------------
     // INTENT A: WEBSITE ARCHITECTURE & SYSTEM STRUCTURE
     // -------------------------------------------------------------
     if (
