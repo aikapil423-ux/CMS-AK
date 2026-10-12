@@ -113,7 +113,6 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   onLinkComplainantAsVictim,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [activeSubtab, setActiveSubtab] = useState<"personal" | "address" | "other" | "statements">("personal");
 
   // Personal Info
   const [uid, setUid] = useState("");
@@ -337,7 +336,6 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
 
     if (!firstName.trim()) {
       setErrorMsg("Victim First Name is mandatory.");
-      setActiveSubtab("personal");
       return;
     }
 
@@ -462,59 +460,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
           </div>
         </CardHeader>
 
-        {/* 4 Subtabs Navigation */}
-        <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-100/70 p-2 text-xs overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("personal")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "personal"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-blue-600" />
-            Personal Information
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("address")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "address"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-            Address Details
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("other")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "other"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-purple-600" />
-            Other Information
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveSubtab("statements")}
-            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-              activeSubtab === "statements"
-                ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 text-amber-600" />
-            Statements
-          </button>
-        </div>
-
-        <CardContent className="p-4 space-y-4 text-xs">
+        <CardContent className="p-4 space-y-6 text-xs">
           {errorMsg && (
             <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-2 font-medium">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -529,9 +475,12 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
             </div>
           )}
 
-          {/* SUBTAB 1: PERSONAL INFORMATION */}
-          {activeSubtab === "personal" && (
-            <div className="space-y-4 animate-in fade-in-30">
+          {/* 1. PERSONAL INFORMATION */}
+          <div className="space-y-4">
+            <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+              <User className="w-3.5 h-3.5 text-blue-600" />
+              1. Personal Information (व्यक्तिगत विवरण)
+            </h4>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">UID (Aadhaar Number)</label>
@@ -920,13 +869,15 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 </div>
               </div>
             </div>
-          )}
 
-          {/* SUBTAB 2: ADDRESS */}
-          {activeSubtab === "address" && (
-            <div className="space-y-4 animate-in fade-in-30">
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <span className="font-bold text-slate-800 text-xs block">Permanent Address (स्थायी पता)</span>
+          {/* 2. ADDRESS DETAILS */}
+          <div className="pt-4 border-t border-slate-200 space-y-4">
+            <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              2. Address Details (पते का विवरण)
+            </h4>
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <span className="font-bold text-slate-800 text-xs block">Permanent Address (स्थायी पता)</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
@@ -1191,12 +1142,14 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 </div>
               )}
             </div>
-          )}
 
-          {/* SUBTAB 3: OTHER INFORMATION */}
-          {activeSubtab === "other" && (
-            <div className="space-y-4 animate-in fade-in-30">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* 3. OTHER INFORMATION & IDENTIFICATION */}
+          <div className="pt-4 border-t border-slate-200 space-y-4">
+            <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              3. Other Information &amp; Identification (अन्य विवरण एवं पहचान पत्र)
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Occupation</label>
                   <input
@@ -1283,12 +1236,14 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 )}
               </div>
             </div>
-          )}
 
-          {/* SUBTAB 4: STATEMENTS */}
-          {activeSubtab === "statements" && (
-            <div className="space-y-3 animate-in fade-in-30">
-              <div className="flex items-center justify-between">
+          {/* 4. STATEMENTS */}
+          <div className="pt-4 border-t border-slate-200 space-y-3">
+            <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+              <FileText className="w-3.5 h-3.5 text-amber-600" />
+              4. Victim Statement (पीड़िता / पीड़ित का बयान)
+            </h4>
+            <div className="flex items-center justify-between">
                 <label className="font-bold text-slate-800 text-xs">
                   Victim Statement (पीड़िता / पीड़ित का बयान)
                 </label>
@@ -1322,7 +1277,6 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                 inputClassName="p-3 rounded-xl border-slate-300 bg-white text-xs leading-relaxed focus:ring-2 focus:ring-pink-500"
               />
             </div>
-          )}
 
           {/* ACTIONS: ADD / UPDATE / CLEAR */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
