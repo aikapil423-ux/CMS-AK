@@ -216,12 +216,12 @@ export default function FIRProfilePage() {
   const [finalFormSummary, setFinalFormSummary] = useState("");
   const [finalFormSubmitting, setFinalFormSubmitting] = useState(false);
 
-  const isSho = currentUser.role === "SHO" || currentUser.id === "usr_sho_1";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
   const isSuperior =
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||
     currentUser.role === "SUPER_ADMIN";
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
   const isIo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
 
   const fetchFir = () => {
@@ -271,6 +271,10 @@ export default function FIRProfilePage() {
   }, []);
 
   const handleConfirmAssign = () => {
+    if (isMhc || (!isSho && !isSuperior)) {
+      alert("Access Denied: MHC cannot assign EO/IO. Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
+      return;
+    }
     if (!fir || !selectedIoId) return;
     const selectedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === selectedIoId);
     if (!selectedOfficer) return;
@@ -1215,7 +1219,7 @@ export default function FIRProfilePage() {
                 ) : (
                   <div className="text-center py-4 text-slate-500">
                     <p>No Investigating Officer assigned yet.</p>
-                    {(isSho || isSuperior) && (
+                    {(isSho || isSuperior) && !isMhc ? (
                       <Button
                         size="sm"
                         onClick={() => setIsAssignModalOpen(true)}
@@ -1223,7 +1227,12 @@ export default function FIRProfilePage() {
                       >
                         Assign IO Now
                       </Button>
-                    )}
+                    ) : isMhc ? (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-800 text-[11px] text-left">
+                        <span className="font-bold block">PPR Rule 22.48 Statutory Authority:</span>
+                        MHC cannot assign EO/IO. Allocation must be formally executed by SHO upon review.
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </CardContent>

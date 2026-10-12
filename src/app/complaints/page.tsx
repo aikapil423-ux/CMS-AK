@@ -415,6 +415,11 @@ function ComplaintListContent() {
   }, [assignDropdownComplaintId]);
 
   const handleQuickAssignEO = async (complaintId: string, eo: (typeof MOCK_ENQUIRY_OFFICERS)[0]) => {
+    if (isMhc || !isSho) {
+      setAssignToast("Access Denied: MHC cannot assign EO/IO. Allocation must be done by SHO only (PPR Rule 22.48).");
+      setTimeout(() => setAssignToast(null), 4000);
+      return;
+    }
     try {
       setIsQuickAssigning(true);
       const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
@@ -424,7 +429,10 @@ function ComplaintListContent() {
         eo.name,
         eo.rank,
         eo.pno,
-        currentUser.name
+        currentUser.name,
+        "Conduct preliminary spot verification & verify facts as per Section 173(3) BNSS.",
+        14,
+        currentUser
       );
       setAssignDropdownComplaintId(null);
       await fetchComplaints();

@@ -294,8 +294,8 @@ export default function RegisterComplaintPage() {
 
   // Permissions: Only MHC, SHO, and Superior officers can register complaints
   const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
-  const isSho = currentUser ? (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") : false;
   const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
+  const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
   const canRegisterComplaint = isMhc || isSho || isSuperior;
   const [shouldAssignEoNow, setShouldAssignEoNow] = useState(false);
   const [selectedEoId, setSelectedEoId] = useState("");
@@ -2458,8 +2458,8 @@ export default function RegisterComplaintPage() {
 
       setShowVerificationModal(false);
 
-      if (selectedEoId) {
-        // If registered with an EO selected, immediately allocate to selected officer
+      if (isSho && !isMhc && selectedEoId) {
+        // If registered by SHO with an EO selected, immediately allocate to selected officer
         const eo = MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId);
         if (eo) {
           const assignRes = await ComplaintService.assignEnquiryOfficer(
@@ -4966,7 +4966,7 @@ export default function RegisterComplaintPage() {
                 </div>
               )}
             </div>
-            {isSho && (
+            {isSho && !isMhc ? (
               <div id="sec-assign-eo" className="space-y-4 p-4 sm:p-6 bg-teal-50/60 border border-teal-200 rounded-2xl shadow-2xs">
                 <div className="border-b border-teal-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
@@ -5013,7 +5013,20 @@ export default function RegisterComplaintPage() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : isMhc ? (
+              <div id="sec-assign-eo-notice" className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="w-4 h-4 text-slate-500 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-800 block text-xs">6. Enquiry Officer Allocation (PPR Rule 22.48)</span>
+                    <span className="text-[11px] text-slate-500">MHC cannot assign EO/IO. Allocation will be made by SHO upon review.</span>
+                  </div>
+                </div>
+                <span className="font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-full text-[10px] shrink-0 self-start sm:self-auto">
+                  Pending SHO Allocation
+                </span>
+              </div>
+            ) : null}
 
             {/* =========================================================================
                 7. STATUTORY CERTIFICATION & FORM SUBMISSION

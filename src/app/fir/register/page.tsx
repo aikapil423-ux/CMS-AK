@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Shield,
+  ShieldAlert,
   User,
   MapPin,
   FileText,
@@ -168,6 +169,10 @@ function RegisterFIRForm() {
   const searchParams = useSearchParams();
   const complaintIdParam = searchParams.get("complaintId");
   const gdNumberParam = searchParams.get("gdNumber");
+
+  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
+  const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
+  const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 
   const [activeTab, setActiveTab] = useState<MainTabKey>("act_section");
   const [complainantSubtab, setComplainantSubtab] = useState<"personal" | "address" | "other">("personal");
@@ -418,7 +423,7 @@ function RegisterFIRForm() {
   // TAB 5: Action Taken
   const [isSecretFir, setIsSecretFir] = useState(false);
   const [actionType, setActionType] = useState<string>("Investigation/Assign IO");
-  const [assignedIoId, setAssignedIoId] = useState("eo_3");
+  const [assignedIoId, setAssignedIoId] = useState("");
   const [refusedReason, setRefusedReason] = useState("");
   const [transferredPs, setTransferredPs] = useState("");
   const [transferredDistrict, setTransferredDistrict] = useState("");
@@ -593,7 +598,7 @@ function RegisterFIRForm() {
           setPermDistrict(c.complainantDistrict || "Gurugram");
           setFirContentText(c.incidentDetails || found.narrative || "");
           setBriefFacts(c.incidentDetails?.slice(0, 300) || found.narrative?.slice(0, 300) || "");
-          if (c.assignedEoId) setAssignedIoId(c.assignedEoId);
+          if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
 
           if (!foundSections) {
             if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
@@ -703,7 +708,7 @@ function RegisterFIRForm() {
             setFirContentText(c.incidentDetails || "");
             setBriefFacts(c.incidentDetails?.slice(0, 300) || "");
             if ((c as any).gdEntryNumber) setGdEntryNumber((c as any).gdEntryNumber);
-            if (c.assignedEoId) setAssignedIoId(c.assignedEoId);
+            if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
 
             // Legal analysis prefill
             if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
@@ -1242,8 +1247,9 @@ function RegisterFIRForm() {
 
   // Build full FIR object for Draft / Submit / Preview
   const buildCurrentFirItem = (): FIRItem => {
+    const canAssignIo = (isSho || isSuperior) && !isMhc;
     const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || "Sec 173 BNSS";
-    const selectedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === assignedIoId);
+    const selectedOfficer = canAssignIo ? MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === assignedIoId) : undefined;
 
     const primaryOcc = occurrencesList[0] || {
       dateFrom: firDate,
@@ -1344,27 +1350,30 @@ function RegisterFIRForm() {
       incidentDetails: firContentText || briefFacts,
       reasonsForDelay,
       registeredBy: `${officerName} (${officerRank})`,
-      assignedIoId: actionType === "Investigation/Assign IO" ? selectedOfficer?.id : undefined,
-      assignedIoName:
-        actionType === "Investigation/Assign IO"
-          ? selectedOfficer?.name
-          : actionType === "Self Investigation"
-          ? officerName
-          : undefined,
-      assignedIoRank:
-        actionType === "Investigation/Assign IO"
-          ? selectedOfficer?.rank
-          : actionType === "Self Investigation"
-          ? officerRank
-          : undefined,
-      assignedIoBeltNumber:
-        actionType === "Investigation/Assign IO"
-          ? selectedOfficer?.pno || selectedOfficer?.beltNumber
-          : actionType === "Self Investigation"
-          ? officerNumber
-          : undefined,
-      assignedIoPhone: actionType === "Investigation/Assign IO" ? selectedOfficer?.phone : undefined,
-      assignedDirections,
+      assignedIoId: canAssignIo && actionType === "Investigation/Assign IO" ? selectedOfficer?.id : undefined,
+      assignedIoName: canAssignIo
+        ? (actionType === "Investigation/Assign IO"
+            ? selectedOfficer?.name
+            : actionType === "Self Investigation"
+            ? officerName
+            : undefined)
+        : undefined,
+      assignedIoRank: canAssignIo
+        ? (actionType === "Investigation/Assign IO"
+            ? selectedOfficer?.rank
+            : actionType === "Self Investigation"
+            ? officerRank
+            : undefined)
+        : undefined,
+      assignedIoBeltNumber: canAssignIo
+        ? (actionType === "Investigation/Assign IO"
+            ? selectedOfficer?.pno || selectedOfficer?.beltNumber
+            : actionType === "Self Investigation"
+            ? officerNumber
+            : undefined)
+        : undefined,
+      assignedIoPhone: canAssignIo && actionType === "Investigation/Assign IO" ? selectedOfficer?.phone : undefined,
+      assignedDirections: canAssignIo ? assignedDirections : "",
       actionTakenData: {
         actionType,
         isSecretFir,
@@ -3486,44 +3495,69 @@ function RegisterFIRForm() {
 
                 {/* IO Assignment Box */}
                 {actionType === "Investigation/Assign IO" && (
-                  <div className="bg-blue-50/60 p-3 rounded-lg border border-blue-200 space-y-3 animate-in fade-in-30">
-                    <label className="font-bold text-blue-900 block text-xs">
-                      Select Investigating Officer (IO)
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <select
-                          value={assignedIoId}
-                          onChange={(e) => setAssignedIoId(e.target.value)}
-                          className="w-full p-2.5 rounded-lg border border-blue-300 bg-white font-semibold text-xs"
-                        >
-                          {MOCK_ENQUIRY_OFFICERS.map((eo) => (
-                            <option key={eo.id} value={eo.id}>
-                              {eo.name} ({eo.rank}) - PNO: {eo.pno} [{eo.activeCases} Active Cases]
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[11px] text-slate-600 font-medium">Directions / Guidelines to IO</span>
-                          <VoiceInputButton
-                            onTranscript={(t) => setAssignedDirections((prev) => (prev ? prev + " " + t : t))}
-                            currentValue={assignedDirections}
-                            fieldLabel="Directions to IO"
-                            iconOnly={true}
+                  (isSho || isSuperior) && !isMhc ? (
+                    <div className="bg-blue-50/60 p-3 rounded-lg border border-blue-200 space-y-3 animate-in fade-in-30">
+                      <label className="font-bold text-blue-900 block text-xs">
+                        Select Investigating Officer (IO)
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <select
+                            value={assignedIoId}
+                            onChange={(e) => setAssignedIoId(e.target.value)}
+                            className="w-full p-2.5 rounded-lg border border-blue-300 bg-white font-semibold text-xs"
+                          >
+                            <option value="">-- Select Investigating Officer --</option>
+                            {MOCK_ENQUIRY_OFFICERS.map((eo) => (
+                              <option key={eo.id} value={eo.id}>
+                                {eo.name} ({eo.rank}) - PNO: {eo.pno} [{eo.activeCases} Active Cases]
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[11px] text-slate-600 font-medium">Directions / Guidelines to IO</span>
+                            <VoiceInputButton
+                              onTranscript={(t) => setAssignedDirections((prev) => (prev ? prev + " " + t : t))}
+                              currentValue={assignedDirections}
+                              fieldLabel="Directions to IO"
+                              iconOnly={true}
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Directions / Guidelines to IO"
+                            value={assignedDirections}
+                            onChange={(e) => setAssignedDirections(e.target.value)}
+                            className="w-full p-2.5 rounded-lg border border-blue-300 bg-white text-xs"
                           />
                         </div>
-                        <input
-                          type="text"
-                          placeholder="Directions / Guidelines to IO"
-                          value={assignedDirections}
-                          onChange={(e) => setAssignedDirections(e.target.value)}
-                          className="w-full p-2.5 rounded-lg border border-blue-300 bg-white text-xs"
-                        />
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-amber-50/90 border border-amber-300 p-3.5 rounded-lg space-y-2 animate-in fade-in-30">
+                      <div className="flex items-start gap-2.5">
+                        <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-amber-900">
+                              Statutory Authority (PPR Rule 22.48 / 22.49)
+                            </h4>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-200 text-amber-900">
+                              Pending SHO Assignment
+                            </span>
+                          </div>
+                          <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                            MHC / GD Incharge cannot assign EO/IO. Allocation of the Investigating Officer (IO) must be formally executed by the <strong>Station House Officer (SHO)</strong> or Superior Officers upon review.
+                          </p>
+                          <p className="text-[11px] text-amber-700 italic mt-1">
+                            This FIR will be registered with IO pending allocation and placed in the SHO&apos;s supervisory queue.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 )}
 
                 {/* Refused Reason Box */}

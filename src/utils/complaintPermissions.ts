@@ -199,14 +199,16 @@ export function canDeleteDocument(
 }
 
 /**
- * 5. Can Reassign EO
- * Available to SHO and Superior users when EO is assigned or needs assignment.
+ * 5. Can Reassign EO / Assign EO
+ * Under PPR Rules 22.48 / 22.49 & statutory procedure:
+ * MHC cannot assign EO/IO. Only SHO (or Supervisory Officers) can assign or reassign.
  */
 export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
-  if (user.role === "MHC_GD_INCHARGE" || user.role === "ENQUIRY_OFFICER") {
+  const isMhc = user.role === "MHC_GD_INCHARGE" || user.role === "DUTY_OFFICER";
+  if (isMhc || user.role === "ENQUIRY_OFFICER") {
     return {
       allowed: false,
-      reason: "Access Denied: Only SHO or Supervisory Officers can reassign Enquiry Officers.",
+      reason: "Access Denied: MHC cannot assign EO/IO. Under PPR Rule 22.48 / 22.49, Enquiry/Investigating Officers must be assigned by SHO only.",
     };
   }
 
@@ -216,7 +218,7 @@ export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): 
 
   return {
     allowed: false,
-    reason: "Access Denied: Supervisory authority required to reassign officer.",
+    reason: "Access Denied: Supervisory authority required. Only SHO can assign EO/IO.",
   };
 }
 

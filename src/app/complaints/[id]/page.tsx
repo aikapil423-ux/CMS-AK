@@ -705,7 +705,7 @@ export default function ComplaintProfilePage() {
   }, [selectedEoId]);
 
   // Role & Permission Computations
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
   const isSuperior = isSuperiorToSho(currentUser.role);
   const isShoOrSuper = isShoOrSuperior(currentUser.role);
   const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
@@ -725,7 +725,7 @@ export default function ComplaintProfilePage() {
     ? isAssignedEo
     : (docCreationPerm.allowed || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false));
 
-  const canAssign = complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
+  const canAssign = isSho && !isMhc && complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
   const canAskProgress = complaint ? canAskProgressReport(currentUser, complaint).allowed && !isDirectFirCase : false;
   const canTransferJustify = complaint ? canTransferJustification(currentUser, complaint).allowed : false;
   const canModifyCase = isAssignedEo; // Strictly assigned EO has write/modification access
@@ -749,7 +749,7 @@ export default function ComplaintProfilePage() {
   const handleOpenAssign = () => {
     if (!complaint) return;
     if (!canAssign) {
-      alert("Access Denied: Only SHO or Supervisory Officers can assign or reassign Enquiry Officers.");
+      alert("Access Denied: MHC cannot assign EO/IO. Allocation must be done by SHO only (PPR Rule 22.48).");
       return;
     }
     setAssignSuccess(false);
@@ -796,7 +796,7 @@ export default function ComplaintProfilePage() {
   const handleConfirmAssign = async () => {
     if (!complaint) return;
     if (!canAssign) {
-      alert("Access Denied: Only SHO or Supervisory Officers can assign or reassign Enquiry Officers.");
+      alert("Access Denied: MHC cannot assign EO/IO. Allocation must be done by SHO only (PPR Rule 22.48).");
       return;
     }
     setIsAssigning(true);
@@ -836,7 +836,7 @@ export default function ComplaintProfilePage() {
   const handleQuickAssignEO = async (eo: (typeof MOCK_ENQUIRY_OFFICERS)[0]) => {
     if (!complaint) return;
     if (!canAssign) {
-      alert("Access Denied: Only SHO or Supervisory Officers can assign or reassign Enquiry Officers.");
+      alert("Access Denied: MHC cannot assign EO/IO. Allocation must be done by SHO only (PPR Rule 22.48).");
       return;
     }
     setIsQuickAssigning(true);
@@ -3073,9 +3073,15 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   ) : (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-2 text-xs">
                       <p className="font-bold text-amber-900">Enquiry Officer Not Yet Assigned</p>
-                      <p className="text-amber-700 text-[11px]">
-                        Allocate an officer from active duty roster with specific directions.
-                      </p>
+                      {isMhc ? (
+                        <p className="text-amber-800 text-[11px] font-semibold bg-amber-100/70 p-2 rounded border border-amber-200">
+                          PPR Rule 22.48: MHC cannot assign EO/IO. Enquiry Officer must be assigned by SHO only.
+                        </p>
+                      ) : (
+                        <p className="text-amber-700 text-[11px]">
+                          Allocate an officer from active duty roster with specific directions.
+                        </p>
+                      )}
                       {canAssign && (
                         <div className="relative w-full" data-assign-eo-dropdown>
                           <Button
