@@ -3020,6 +3020,53 @@ ${reportBody}
       }
     }
 
+    // Auto-suggest in Roznamcha General Diary (Suggestions & Drafts) if CLOSURE is selected & approved by SHO
+    if (isClosure) {
+      try {
+        const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+        const psName = complaint.policeStation || "PS City Thanesar";
+        const distName = complaint.district || "Kurukshetra";
+        const eoName = complaint.assignedEoName || "जांच अधिकारी";
+        const eoRank = complaint.assignedEoRank || "EO";
+        const eoPno = complaint.assignedEoPno || "HR-00000000";
+        const compSubject = complaint.subject || complaint.complaintSubject || complaint.categoryDisplay || "दरख्वास्त शिकायत";
+
+        const closureSubject = `फैसला / अंतिम निस्तारण शिकायत - ${complaint.complaintNumber} (${complaint.complainantName})`;
+
+        const closureNarrative = `बवक्त हाजा (${timeStr}), दरख्वास्त शिकायत क्रमांक ${complaint.complaintNumber} मनजानिब ${complaint.complainantName} (मोबाइल: ${complaint.complainantMobile || "N/A"}) निवासी ${complaint.complainantAddress || complaint.incidentPlace || "इलाका थाना"} बाबत '${compSubject}' की जांच आख्या जांच अधिकारी ${eoName} (${eoRank}, PNO: ${eoPno}) द्वारा प्रस्तुत की गई। थाना प्रभारी (SHO) ${shoName} (PNO: ${shoPno}) द्वारा पत्रावली व जांच आख्या का पूर्ण अवलोकन किया गया। मामले में कोई संज्ञेय अपराध घटित होना नहीं पाया गया / दोनों पक्षों के मध्य राजीनामा अथवा तथ्य निराधार पाए जाने के फलस्वरूप SHO महोदय द्वारा अंतिम निर्णय 'Closure (निस्तारण / फाइल दाखिल)' अनुमोदित किया गया। SHO आदेश/टिप्पणी: "${remarks ? remarks.trim() : "जांच आख्या अनुसार मामले में कोई संज्ञेय अपराध नहीं बनता। दोनों पक्षों में राजीनामा / शिकायत निराधार पाई गई। अतः दरख्वास्त शिकायत को निस्तारित (Closed) किया जाता है।"}" शिकायत पत्रावली को केंद्रीय शिकायत रजिस्टर में 'Complete / Closed' दर्ज किया गया तथा रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया। [नोट: मुंशी (MHC) इस सुझाव को जांचकर रोजनामचा में शामिल (Verify & Lock), संशोधित (Edit) अथवा निरस्त (Delete) कर सकते हैं।]`;
+
+        await GeneralDiaryService.generateSuggestionFromSystemEvent({
+          eventType: "COMPLAINT_CLOSURE",
+          subject: closureSubject,
+          narrative: closureNarrative,
+          officer: {
+            name: shoName,
+            rank: "Inspector / SHO",
+            beltNumber: `${shoPno.slice(-3)}/KKR`,
+            pno: shoPno,
+          },
+          policeStation: psName,
+          district: distName,
+          relatedRecords: {
+            complaintNumber: complaint.complaintNumber,
+            personName: complaint.complainantName,
+            destinationLocation: complaint.incidentPlace,
+            purpose: compSubject,
+          },
+        });
+
+        this.addTimelineEvent(complaint.id, {
+          title: `Roznamcha GD Suggestion Created (Closure)`,
+          description: `General Diary auto-suggestion generated for complaint closure. Available in Suggestions & Drafts for MHC (Munshi) review and disposal.`,
+          category: "STATUS_CHANGE",
+          officerName: shoName,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (suggErr) {
+        console.warn("Could not generate GD closure auto-suggestion:", suggErr);
+      }
+    }
+
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
 

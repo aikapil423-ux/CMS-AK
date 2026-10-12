@@ -541,6 +541,9 @@ function ComplaintListContent() {
       setShoApproveModalComplaint(null);
       setShoApproveRemarks("");
       fetchComplaints();
+      if (payload?.finalCategory === "CLOSURE") {
+        alert("Enquiry report approved with final category: Closure. Complaint marked Complete and Roznamcha GD entry sent to Auto Suggestions & Drafts for Munshi (MHC).");
+      }
     } catch (e) {
       console.error(e);
       alert("Error approving report");

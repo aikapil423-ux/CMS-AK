@@ -530,25 +530,48 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
   const officer = buildOfficer(event.officer, FALLBACK_OFFICER);
   const typeCodeMap: Record<string, string> = {
     COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
+    COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
     FIR_LODGED: "CRIMINAL_CASE",
     OFFICER_DISPATCHED: "DEPARTURE",
     MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
   };
   const eventType = String(event.eventType || "");
-  const typeCode = typeCodeMap[eventType] || "OTHERS";
+  const typeCode = typeCodeMap[eventType] || String(event.typeCode || "OTHERS");
+
+  const defaultDisplayEn =
+    eventType === "COMPLAINT_REGISTERED"
+      ? "Citizen Information/Tip Received"
+      : eventType === "COMPLAINT_CLOSURE"
+      ? "Investigation Reports"
+      : eventType === "FIR_LODGED"
+      ? "Criminal case"
+      : typeCode;
+  const defaultDisplayHi =
+    eventType === "COMPLAINT_REGISTERED"
+      ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
+      : eventType === "COMPLAINT_CLOSURE"
+      ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+      : eventType === "FIR_LODGED"
+      ? "पंजीकरण मुकद्दमा / FIR (PPR 22.48)"
+      : typeCode;
 
   const row = await prisma.gDRecord.create({
     data: {
-      gdNumber: `GD-SUGG-${Date.now()}`,
+      gdNumber: `GD-SUGG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       sequencePerDay: 0,
       gdDate: startOfDay(now),
       entryDateTime: now,
       policeStation: String(event.policeStation || DEFAULT_STATION),
       district: String(event.district || DEFAULT_DISTRICT),
       typeCode,
-      category: "ROUTINE_ADMINISTRATION",
-      typeDisplay: typeCode,
-      typeDisplayHi: typeCode,
+      category: String(
+        event.category ||
+          (eventType === "COMPLAINT_REGISTERED" || eventType === "COMPLAINT_CLOSURE"
+            ? "INVESTIGATION_PROCESS"
+            : "ROUTINE_ADMINISTRATION")
+      ),
+      typeDisplay: String(event.typeDisplay || defaultDisplayEn),
+      typeDisplayHi: String(event.typeDisplayHi || defaultDisplayHi),
       subject: String(event.subject || "System Suggested Entry"),
       narrative: String(event.narrative || ""),
       entryForOfficerJson: JSON.stringify(officer),
@@ -559,9 +582,12 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
         pno: "00000000",
       }),
       status: "SUGGESTED",
-      source: "SYSTEM_EVENT",
+      source:
+        eventType === "COMPLAINT_REGISTERED" || eventType === "COMPLAINT_CLOSURE"
+          ? "COMPLAINT_INTEGRATION"
+          : "SYSTEM_EVENT",
       isLocked: false,
-      isDraft: false,
+      isDraft: true,
       relatedRecordsJson: JSON.stringify((event.relatedRecords || {}) as GDRelatedRecords),
       auditTrailJson: JSON.stringify([
         {

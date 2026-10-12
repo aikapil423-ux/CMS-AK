@@ -1192,7 +1192,6 @@ export default function ComplaintProfilePage() {
       setComplaint(updated);
       setShoApproveRemarks("");
       setShoApproveModalOpen(false);
-
       // Map selected category to recommendation type for report auto-generation workspace
       const recType =
         data.finalCategory === "FIR_RECOMMEND"
@@ -1205,7 +1204,11 @@ export default function ComplaintProfilePage() {
         (r) => r.createdByRole === "SHO" || r.officerName === currentUser.name
       );
 
-      alert(`जांच रिपोर्ट ${displayCat} श्रेणी में स्वीकृत की गई। SHO पर्यवेक्षीय आदेश (${displayCat}) स्वतः तैयार कर दिया गया है। अब SHO रिपोर्ट जनरेटर खोला जा रहा है।`);
+      if (data.finalCategory === "CLOSURE") {
+        alert("Enquiry report approved with final category: Closure. Complaint marked Complete and Roznamcha GD entry sent to Auto Suggestions & Drafts for Munshi (MHC).");
+      } else {
+        alert(`जांच रिपोर्ट ${displayCat} श्रेणी में स्वीकृत की गई। SHO पर्यवेक्षीय आदेश (${displayCat}) स्वतः तैयार कर दिया गया है। अब SHO रिपोर्ट जनरेटर खोला जा रहा है।`);
+      }
 
       let draftUrl = `/enquiry-workspace/drafts?complaintId=${encodeURIComponent(complaint.id)}&recommendation=${encodeURIComponent(recType)}&shoReport=true`;
       if (shoReport?.id) {

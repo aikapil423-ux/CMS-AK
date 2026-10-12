@@ -31,6 +31,7 @@ import {
   Image as ImageIcon,
   Loader2,
   ChevronDown,
+  Pencil,
 } from "lucide-react";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { useAuth } from "@/context/AuthContext";
@@ -138,7 +139,7 @@ function GeneralDiaryContent() {
   };
 
   const GD_COLUMN_WIDTHS: Record<string, string> = {
-    gdNumber: "w-32 min-w-[120px]",
+    gdNumber: "w-24 min-w-[85px]",
     officer: "w-48 min-w-[180px]",
     gdType: "w-36 min-w-[140px]",
     subject: "w-60 min-w-[220px]",
@@ -233,7 +234,6 @@ function GeneralDiaryContent() {
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
   const [inspectModalOpen, setInspectModalOpen] = useState(false);
   const [inspectAutoPrint, setInspectAutoPrint] = useState(false);
-  const [openViewActionMenuId, setOpenViewActionMenuId] = useState<string | null>(null);
   const [printDailyRegisterOpen, setPrintDailyRegisterOpen] = useState(false);
   const [selectedPrintDate, setSelectedPrintDate] = useState<string>("");
 
@@ -496,15 +496,12 @@ function GeneralDiaryContent() {
 
   }, [paginatedData.records, columnSearch, sortField, sortOrder]);
 
-  // Close column search input and view action menu on click outside
+  // Close column search input on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement;
       if (!target.closest("[data-column-search-box]")) {
         setActiveSearchCol(null);
-      }
-      if (!target.closest("[data-view-action-menu]")) {
-        setOpenViewActionMenuId(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -646,13 +643,19 @@ function GeneralDiaryContent() {
     switch (col) {
       case "gdNumber":
         return (
-          <td key="gdNumber" className="py-3.5 px-3.5 align-top w-32 min-w-[120px]">
-            <div className="space-y-0.5">
-              <span className="font-mono font-black text-sm text-blue-950 block">
-                {rec.isLocked ? rec.sequencePerDay : "—"}
+          <td key="gdNumber" className="py-3 px-2.5 align-top w-24 min-w-[85px]">
+            <div className="flex flex-col gap-0.5 font-mono text-left leading-tight">
+              {/* Daily GD Rapat Sequence */}
+              <span className="font-black text-xs text-blue-950 block">
+                {rec.isLocked ? `GD #${rec.sequencePerDay}` : "—"}
               </span>
-              <span className="text-[10px] text-slate-500 font-mono block">
-                {rec.isLocked ? rec.gdNumber : "No GD No. (not added)"}
+
+              {/* Unique GD Number */}
+              <span
+                className="text-[9px] text-slate-600 font-semibold block truncate max-w-[85px]"
+                title={rec.isLocked ? rec.gdNumber : "No GD No. (not added)"}
+              >
+                {rec.isLocked ? rec.gdNumber : "No GD"}
               </span>
             </div>
           </td>
@@ -999,7 +1002,7 @@ function GeneralDiaryContent() {
                           setDraggedCol(null);
                           setDragOverCol(null);
                         }}
-                        className={`py-3 px-3.5 align-top transition-all select-none cursor-grab active:cursor-grabbing ${
+                        className={`py-3 ${col === "gdNumber" ? "px-2.5" : "px-3.5"} align-top transition-all select-none cursor-grab active:cursor-grabbing ${
                           GD_COLUMN_WIDTHS[col] || ""
                         } ${
                           isDragging ? "opacity-30 bg-slate-800" : ""
@@ -1011,7 +1014,7 @@ function GeneralDiaryContent() {
                       </th>
                     );
                   })}
-                  <th className="py-3 px-3.5 w-36 min-w-[140px] text-right align-top pt-3.5 whitespace-nowrap">Actions</th>
+                  <th className="py-3 px-2.5 w-24 min-w-[88px] text-right align-top pt-3.5 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -1050,115 +1053,42 @@ function GeneralDiaryContent() {
                       {columnOrder.map((col) => renderGDCell(col, rec))}
 
                       {/* 7. Actions */}
-                      <td className="py-3.5 px-3.5 align-top text-right w-36 min-w-[140px]">
+                      <td className="py-3.5 px-2.5 align-top text-right w-24 min-w-[88px]">
                         {isSuggested || isDraft ? (
-                          <div className="inline-flex flex-col items-stretch gap-1.5 min-w-[140px]">
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={addingRecordId === rec.id}
-                              onClick={() => handleAddToGd(rec)}
-                              className="bg-[#0b192c] hover:bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1 gap-1 justify-center cursor-pointer"
-                            >
-                              <PlusCircle className="w-3 h-3" />
-                              <span>{addingRecordId === rec.id ? "Adding…" : "Add to GD"}</span>
-                            </Button>
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Link href={`/general-diary/new?editDraft=${rec.id}`}>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-[11px] font-bold px-2 py-1 cursor-pointer"
-                                >
-                                  Edit
-                                </Button>
-                              </Link>
-                              <Button
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link href={`/general-diary/new?editDraft=${rec.id}`}>
+                              <button
                                 type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={deletingRecordId === rec.id}
-                                onClick={() => handleDeleteDraftRow(rec)}
-                                className="text-[11px] font-bold px-2 py-1 text-red-700 border-red-300 hover:bg-red-50 gap-1 cursor-pointer"
+                                className="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-colors shadow-2xs cursor-pointer flex items-center justify-center"
+                                title="Edit suggestion / draft"
                               >
-                                <Trash2 className="w-3 h-3" />
-                                <span>{deletingRecordId === rec.id ? "…" : "Delete"}</span>
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="relative inline-block text-right" data-view-action-menu={rec.id}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </Link>
                             <button
                               type="button"
-                              onClick={() => setOpenViewActionMenuId(openViewActionMenuId === rec.id ? null : rec.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-blue-50/70 text-slate-700 hover:text-blue-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
-                              title="View entry options"
+                              disabled={deletingRecordId === rec.id}
+                              onClick={() => handleDeleteDraftRow(rec)}
+                              className="p-1.5 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors shadow-2xs cursor-pointer disabled:opacity-50 flex items-center justify-center"
+                              title="Delete suggestion / draft"
                             >
-                              <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                              <span>View</span>
-                              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${openViewActionMenuId === rec.id ? "rotate-180 text-blue-600" : ""}`} />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-
-                            {openViewActionMenuId === rec.id && (
-                              <div
-                                className={`absolute right-0 ${
-                                  displayedRecords.indexOf(rec) >= displayedRecords.length - 2 && displayedRecords.length > 2
-                                    ? "bottom-full mb-1.5"
-                                    : "top-full mt-1.5"
-                                } w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5 text-xs animate-in fade-in-50 zoom-in-95 text-left divide-y divide-slate-100`}
-                              >
-                                <div className="pb-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setOpenViewActionMenuId(null);
-                                      setSelectedRecord(rec);
-                                      setInspectAutoPrint(false);
-                                      setInspectModalOpen(true);
-                                    }}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
-                                  >
-                                    <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                    <span>Preview</span>
-                                  </button>
-                                </div>
-
-                                <div className="pt-1 space-y-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setOpenViewActionMenuId(null);
-                                      setSelectedRecord(rec);
-                                      setInspectAutoPrint(true);
-                                      setInspectModalOpen(true);
-                                    }}
-                                    className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-amber-50 hover:text-amber-800 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
-                                  >
-                                    <Printer className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                                    <span>Print</span>
-                                  </button>
-
-                                  {Boolean(
-                                    (rec.attachments && rec.attachments.length > 0) ||
-                                      (rec.relatedRecords?.attachments && rec.relatedRecords.attachments.length > 0)
-                                  ) && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOpenViewActionMenuId(null);
-                                        setDocModalRecord(rec);
-                                      }}
-                                      className="w-full text-left px-2.5 py-1.5 rounded-md text-slate-700 hover:bg-indigo-50 hover:text-indigo-800 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
-                                    >
-                                      <Paperclip className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                                      <span>Documents</span>
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            )}
                           </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRecord(rec);
+                              setInspectAutoPrint(false);
+                              setInspectModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-blue-50/80 text-slate-700 hover:text-blue-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                            title="Preview Roznamcha Record"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                            <span>Preview</span>
+                          </button>
                         )}
                       </td>
                     </tr>
