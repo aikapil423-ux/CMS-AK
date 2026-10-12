@@ -2520,6 +2520,13 @@ export const ComplaintService = {
       reportTitle?: string;
       content?: string;
       contentHtml?: string;
+      dataUrl?: string;
+      fileName?: string;
+      fileFormat?: string;
+      fileSize?: string;
+      dispatchNo?: string;
+      officerRank?: string;
+      recommendationType?: any;
     }
   ): Promise<ComplaintItem> {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
@@ -2555,6 +2562,12 @@ export const ComplaintService = {
           sentToShoAt: nowIso,
           sentToShoBy: officerName,
           status: "Saved in Complaint" as const,
+          content: options?.content || r.content,
+          contentHtml: options?.contentHtml || r.contentHtml,
+          dataUrl: options?.dataUrl || r.dataUrl,
+          fileName: options?.fileName || r.fileName,
+          fileFormat: options?.fileFormat || r.fileFormat,
+          fileSize: options?.fileSize || r.fileSize,
         };
       }
       return r;
@@ -2578,13 +2591,18 @@ export const ComplaintService = {
         title: reportTitle,
         reportType: repType,
         reportTypeLabel: `Enquiry Report (${displayCategory})`,
-        dispatchNo: complaint.complaintNumber,
+        dispatchNo: options?.dispatchNo || complaint.complaintNumber,
         generatedDate: nowIso.split("T")[0],
         officerName: officerName,
-        officerRank: complaint.assignedEoRank || "Enquiry Officer (EO)",
+        officerRank: options?.officerRank || complaint.assignedEoRank || "Enquiry Officer (EO)",
         officerPno: officerPno,
         conclusionSummary: remarks || `Enquiry report submitted by EO ${officerName} with recommendation ${displayCategory}.`,
-        content: remarks || `Enquiry report submitted by EO ${officerName} recommending ${displayCategory}. Case forwarded for SHO review and supervisory decision.`,
+        content: options?.content || remarks || `Enquiry report submitted by EO ${officerName} recommending ${displayCategory}. Case forwarded for SHO review and supervisory decision.`,
+        contentHtml: options?.contentHtml,
+        dataUrl: options?.dataUrl,
+        fileName: options?.fileName || `${reportTitle.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
+        fileFormat: options?.fileFormat || "HTML",
+        fileSize: options?.fileSize || (options?.contentHtml ? `${Math.round(options.contentHtml.length / 1024) || 4} KB` : "4 KB"),
         createdAt: nowIso,
         updatedAt: nowIso,
         createdBy: officerName,
@@ -2596,11 +2614,12 @@ export const ComplaintService = {
         source: "GENERATED",
         status: "Saved in Complaint",
         recommendationType:
-          recommendedCategory === "FIR_RECOMMEND"
+          options?.recommendationType ||
+          (recommendedCategory === "FIR_RECOMMEND"
             ? "FIR_RECOMMENDED"
             : recommendedCategory === "CLOSURE"
             ? "GAMINI"
-            : "NCR",
+            : "NCR"),
         isFirRecommended: recommendedCategory === "FIR_RECOMMEND",
         selectedOutcome: recommendedCategory === "FIR_RECOMMEND" ? "FIR Recommend" : "Complete",
         sentToSho: true,

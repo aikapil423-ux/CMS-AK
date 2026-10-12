@@ -1184,6 +1184,15 @@ export default function ComplaintProfilePage() {
           eoId: currentUser.id || complaint.assignedEoId,
           reportId: selectedReportForSho?.id,
           reportTitle: selectedReportForSho?.title || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
+          content: selectedReportForSho?.content,
+          contentHtml: selectedReportForSho?.contentHtml,
+          dataUrl: selectedReportForSho?.dataUrl,
+          fileName: selectedReportForSho?.fileName,
+          fileFormat: selectedReportForSho?.fileFormat,
+          fileSize: selectedReportForSho?.fileSize,
+          dispatchNo: selectedReportForSho?.dispatchNo,
+          officerRank: selectedReportForSho?.officerRank,
+          recommendationType: selectedReportForSho?.recommendationType,
         }
       );
       setComplaint(updated);

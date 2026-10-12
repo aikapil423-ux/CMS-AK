@@ -774,9 +774,136 @@ function EnquiryDraftsContent() {
 
   const isAssignedEo = complaint ? isUserAssignedEo(currentUser, complaint) : false;
 
+  // Construct Data for HTML Generator
+  const getProformaData = (): HaryanaPoliceProformaData => ({
+    headerLeft: showHeader ? headerLeft : undefined,
+    headerRight: showHeader ? headerRight : undefined,
+    subHeaderLeft: showSubHeader ? subHeaderLeft : undefined,
+    title,
+    subTitle: subTitle || undefined,
+    columns: columns.length > 0 ? columns : undefined,
+    rows: rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      cells: r.cells,
+    })),
+    closingLine: showClosingLine ? closingLine : undefined,
+    officerName: showSignatures ? officerName : undefined,
+    officerRank: showSignatures ? officerRank : undefined,
+    officerLocation: showSignatures ? officerLocation : undefined,
+    reportDate: showSignatures ? reportDate : undefined,
+    borderStyle,
+  });
+
+  // Save the full drafted enquiry report into the complaint's reports docket
+  const executeSaveReport = async (targetComp: ComplaintItem, eoCategory?: EOCategoryOption) => {
+    const data = getProformaData();
+    const reportHtml = generateHaryanaPoliceProformaHtml(data);
+    const docText = documentRef.current?.innerText || "";
+    const reportTitle = `${title} - ${targetComp.complaintNumber}`;
+
+    const isFir =
+      eoCategory === "FIR_RECOMMEND" ||
+      (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" ||
+      selectedClassification === "FIR";
+    const outcome: EOOutcome = isFir ? "FIR Recommend" : "Complete";
+
+    const findingSummary =
+      rows.find((r) => r.id === "row_findings")?.cells[0]?.substring(0, 300) ||
+      rows[rows.length - 1]?.cells[0]?.substring(0, 300) ||
+      "Enquiry completed";
+
+    const reportId = editingReportId && !isNewVersionMode
+      ? editingReportId
+      : `rep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
+    const recType =
+      eoCategory === "FIR_RECOMMEND"
+        ? "FIR"
+        : eoCategory === "CLOSURE"
+        ? "GAMINI"
+        : eoCategory === "NCR"
+        ? "NCR"
+        : (selectedClassification as any) || analysisResult?.classification || (isFir ? "FIR" : "GAMINI");
+
+    const reportPayload = {
+      id: reportId,
+      complaintId: targetComp.id,
+      title: reportTitle,
+      reportType: activeFormat,
+      reportTypeLabel:
+        activeFormat === "standard_4row"
+          ? "1. Standard 4-Row Enquiry Report"
+          : customDrafts[activeFormat]?.name ||
+            TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name ||
+            "Enquiry Report",
+      dispatchNo: title,
+      generatedDate: new Date().toISOString().split("T")[0],
+      officerName: officerName || currentUser.name || "Enquiry Officer",
+      officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+      officerPno: currentUser.pno || "PNO-23841",
+      conclusionSummary: findingSummary,
+      content: docText,
+      contentHtml: reportHtml,
+      fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
+      fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
+      fileFormat: "HTML",
+      dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
+      isUploaded: false,
+      recommendationType: recType,
+      isFirRecommended: isFir,
+      analysisClassification: analysisResult?.titleHindi || (isFir ? "संज्ञेय अपराध - एफआईआर की सिफारिश" : "जांच रिपोर्ट"),
+      analysisRationale: analysisResult?.rationaleHindi,
+    };
+
+    let updatedComp: ComplaintItem;
+    const isShoUser = searchParams.get("shoReport") === "true" || currentUser.role === "SHO";
+    if (isShoUser) {
+      updatedComp = await ComplaintService.addComplaintReport(
+        targetComp.id,
+        {
+          ...reportPayload,
+          officerName: currentUser.name || "Station House Officer",
+          officerRank: currentUser.rankDisplay || "Inspector (SHO)",
+          officerPno: currentUser.pno || "HR-04291882",
+          createdByRole: "SHO",
+        },
+        { isNewVersion: isNewVersionMode },
+        currentUser
+      );
+    } else {
+      updatedComp = await ComplaintService.submitEoReportWithOutcome(
+        targetComp.id,
+        reportPayload,
+        outcome,
+        officerName || currentUser.name || "Enquiry Officer",
+        officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
+        currentUser.pno || "PNO-23841",
+        currentUser.role
+      );
+    }
+
+    setComplaint(updatedComp || targetComp);
+    setSaveSuccess(true);
+    if (isFir) {
+      setIsSavedAndFirRecommended(true);
+    }
+    setTimeout(() => setSaveSuccess(false), 5000);
+
+    const savedReport =
+      (updatedComp.reports || []).find((r) => r.id === reportPayload.id || r.title === reportPayload.title) ||
+      updatedComp.reports?.[0] ||
+      reportPayload;
+
+    return { updatedComp, savedReport };
+  };
+
   // Open Send to SHO Modal
   const handleSendToSho = () => {
-    if (!complaint) return;
+    if (!complaint) {
+      setSelectComplaintModalOpen(true);
+      return;
+    }
     if (!isAssignedEo) {
       alert("Access Denied: Only the assigned Enquiry Officer can send the enquiry report to SHO.");
       return;
@@ -784,7 +911,7 @@ function EnquiryDraftsContent() {
     setEoSendModalOpen(true);
   };
 
-  // Submit EO Recommendation to SHO
+  // Submit EO Recommendation to SHO: First saves the report, then sends the exact saved report to SHO
   const handleEoSendModalSubmit = async (data: {
     recommendedCategory: EOCategoryOption;
     remarks: string;
@@ -803,26 +930,34 @@ function EnquiryDraftsContent() {
           ? "Closure"
           : "NCR";
 
-      const pData = getProformaData();
-      const reportHtml = generateHaryanaPoliceProformaHtml(pData);
-      const docText = documentRef.current?.innerText || "";
+      // 1. FIRST: Save the entire generated enquiry report into the complaint's reports docket!
+      const { updatedComp, savedReport } = await executeSaveReport(complaint, data.recommendedCategory);
 
+      // 2. SECOND: Send the exact saved report to SHO with all its rich content!
       await ComplaintService.sendReportToSho(
-        complaint.id,
+        updatedComp.id,
         officerName || currentUser.name || "Enquiry Officer",
         currentUser.pno || "PNO-23841",
-        data.remarks || `Enquiry report "${title}" submitted with EO recommendation: ${displayCat}. Forwarded for SHO decision.`,
+        data.remarks || `Enquiry report "${savedReport.title}" submitted with EO recommendation: ${displayCat}. Forwarded for SHO decision.`,
         {
           recommendedCategory: data.recommendedCategory,
           eoId: currentUser.id,
-          reportTitle: title || "Enquiry Report",
-          content: docText,
-          contentHtml: reportHtml,
+          reportId: savedReport.id,
+          reportTitle: savedReport.title,
+          content: savedReport.content,
+          contentHtml: savedReport.contentHtml,
+          dataUrl: savedReport.dataUrl,
+          fileName: savedReport.fileName,
+          fileFormat: savedReport.fileFormat,
+          fileSize: savedReport.fileSize,
+          dispatchNo: savedReport.dispatchNo,
+          officerRank: savedReport.officerRank,
+          recommendationType: savedReport.recommendationType,
         }
       );
       setEoSendModalOpen(false);
-      alert(`शिकायत ${complaint.complaintNumber} सफलतापूर्वक SHO ID को भेज दी गई है (${displayCat} सिफारिश सहित)।`);
-      router.push("/complaints");
+      alert(`जांच आख्या पहले Reports में सेव कर दी गई है और वही पूर्ण रिपोर्ट (${displayCat} सिफारिश सहित) SHO ID को भेज दी गई है।`);
+      router.push(`/complaints/${updatedComp.id}?tab=reports`);
     } catch (err) {
       console.error("Failed to forward report to SHO:", err);
       alert("Error sending report to SHO. Please try again.");
@@ -1122,27 +1257,6 @@ function EnquiryDraftsContent() {
     });
   };
 
-  // Construct Data for HTML Generator
-  const getProformaData = (): HaryanaPoliceProformaData => ({
-    headerLeft: showHeader ? headerLeft : undefined,
-    headerRight: showHeader ? headerRight : undefined,
-    subHeaderLeft: showSubHeader ? subHeaderLeft : undefined,
-    title,
-    subTitle: subTitle || undefined,
-    columns: columns.length > 0 ? columns : undefined,
-    rows: rows.map((r) => ({
-      id: r.id,
-      label: r.label,
-      cells: r.cells,
-    })),
-    closingLine: showClosingLine ? closingLine : undefined,
-    officerName: showSignatures ? officerName : undefined,
-    officerRank: showSignatures ? officerRank : undefined,
-    officerLocation: showSignatures ? officerLocation : undefined,
-    reportDate: showSignatures ? reportDate : undefined,
-    borderStyle,
-  });
-
   const handlePrint = () => {
     window.print();
   };
@@ -1178,84 +1292,8 @@ function EnquiryDraftsContent() {
     }
     setSaveLoading(true);
     try {
-      const data = getProformaData();
-      const reportHtml = generateHaryanaPoliceProformaHtml(data);
-      const docText = documentRef.current?.innerText || "";
-      const reportTitle = `${title} - ${targetComp.complaintNumber}`;
-
-      const isFir =
-        (selectedClassification || analysisResult?.classification) === "FIR_RECOMMENDED" ||
-        selectedClassification === "FIR";
-      const outcome: EOOutcome = isFir ? "FIR Recommend" : "Complete";
-
-      const findingSummary =
-        rows.find((r) => r.id === "row_findings")?.cells[0]?.substring(0, 300) ||
-        rows[rows.length - 1]?.cells[0]?.substring(0, 300) ||
-        "Enquiry completed";
-
-      const reportPayload = {
-        id: editingReportId && !isNewVersionMode ? editingReportId : undefined,
-        title: reportTitle,
-        reportType: activeFormat,
-        reportTypeLabel:
-          activeFormat === "standard_4row"
-            ? "1. Standard 4-Row Enquiry Report"
-            : customDrafts[activeFormat]?.name ||
-              TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name ||
-              "Enquiry Report",
-        dispatchNo: title,
-        generatedDate: new Date().toISOString().split("T")[0],
-        officerName: officerName || currentUser.name || "Enquiry Officer",
-        officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
-        officerPno: currentUser.pno || "PNO-23841",
-        conclusionSummary: findingSummary,
-        content: docText,
-        contentHtml: reportHtml,
-        fileName: `${title.replace(/[\/\\?%*:|"<> ]/g, "_")}.html`,
-        fileSize: `${Math.round(reportHtml.length / 1024) || 4} KB`,
-        fileFormat: "HTML",
-        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(reportHtml)}`,
-        isUploaded: false,
-        recommendationType: (selectedClassification as any) || analysisResult?.classification || (isFir ? "FIR" : "GAMINI"),
-        isFirRecommended: isFir,
-        analysisClassification: analysisResult?.titleHindi || (isFir ? "संज्ञेय अपराध - एफआईआर की सिफारिश" : "जांच रिपोर्ट"),
-        analysisRationale: analysisResult?.rationaleHindi,
-      };
-
-      let updatedComp: ComplaintItem;
-      const isShoUser = searchParams.get("shoReport") === "true" || currentUser.role === "SHO";
-      if (isShoUser) {
-        updatedComp = await ComplaintService.addComplaintReport(
-          targetComp.id,
-          {
-            ...reportPayload,
-            officerName: currentUser.name || "Station House Officer",
-            officerRank: currentUser.rankDisplay || "Inspector (SHO)",
-            officerPno: currentUser.pno || "HR-04291882",
-            createdByRole: "SHO",
-          },
-          { isNewVersion: isNewVersionMode },
-          currentUser
-        );
-      } else {
-        updatedComp = await ComplaintService.submitEoReportWithOutcome(
-          targetComp.id,
-          reportPayload,
-          outcome,
-          officerName || currentUser.name || "Enquiry Officer",
-          officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
-          currentUser.pno || "PNO-23841",
-          currentUser.role
-        );
-      }
-
-      setComplaint(updatedComp || targetComp);
+      await executeSaveReport(targetComp);
       setSelectComplaintModalOpen(false);
-      setSaveSuccess(true);
-      if (isFir) {
-        setIsSavedAndFirRecommended(true);
-      }
-      setTimeout(() => setSaveSuccess(false), 5000);
     } catch (err) {
       console.error("Failed to save report to complaint:", err);
       alert("Error saving report. Please try again.");
