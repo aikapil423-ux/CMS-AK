@@ -116,8 +116,13 @@ function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
 }
 
 function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
+  const isMhcInvalid = !item.mhcName || item.mhcName.includes("Rajesh") || item.mhcName.includes("Inspector");
   return {
     ...item,
+    mhcName: isMhcInvalid ? "HC Devinder Kumar" : item.mhcName,
+    mhcRank: isMhcInvalid ? "Head Constable (MHC)" : (item.mhcRank || "Head Constable (MHC)"),
+    mhcBeltNumber: isMhcInvalid || item.mhcBeltNumber === "882/KKR" ? "889/KKR" : (item.mhcBeltNumber || "889/KKR"),
+    mhcPhone: isMhcInvalid ? "9813098765" : (item.mhcPhone || "9813098765"),
     attachments: item.attachments?.map((att) => {
       if (!att.dataUrl) {
         const cached = globalDataUrlCache.get(`att_${att.id}`) || globalDataUrlCache.get(`${item.id}_${att.name}`);
@@ -671,9 +676,9 @@ export const ComplaintService = {
       ].filter((doc, idx, arr) => arr.findIndex((d) => d.fileName.toLowerCase() === doc.fileName.toLowerCase()) === idx),
       daysPending: 0,
       workflowState: initialWorkflow,
-      mhcName: officerName || "HC Devinder Kumar",
+      mhcName: "HC Devinder Kumar",
       mhcRank: "Head Constable (MHC)",
-      mhcBeltNumber: officerPno === "05192834" ? "889/KKR" : (officerPno ? `${officerPno.slice(-3)}/KKR` : "889/KKR"),
+      mhcBeltNumber: "889/KKR",
       mhcPhone: "9813098765",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -745,10 +750,10 @@ export const ComplaintService = {
       assignedEoPno: eoPno,
       assignedEoBeltNumber: (eoRoster as any)?.beltNumber || eoPno,
       assignedEoPhone: (eoRoster as any)?.phone || "9812034567",
-      mhcName: currentComplaint.mhcName || assignedByName || "HC Devinder Kumar",
-      mhcRank: currentComplaint.mhcRank || "Head Constable (MHC)",
-      mhcBeltNumber: currentComplaint.mhcBeltNumber || "889/KKR",
-      mhcPhone: currentComplaint.mhcPhone || "9813098765",
+      mhcName: (currentComplaint.mhcName && !currentComplaint.mhcName.includes("Rajesh") && !currentComplaint.mhcName.includes("Inspector")) ? currentComplaint.mhcName : "HC Devinder Kumar",
+      mhcRank: "Head Constable (MHC)",
+      mhcBeltNumber: "889/KKR",
+      mhcPhone: "9813098765",
       assignedAt: nowIso,
       assignedDirections: directions,
       assignedRosterDuty: eoRoster?.rosterDuty || "Investigation Duty",
