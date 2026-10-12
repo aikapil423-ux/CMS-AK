@@ -446,4 +446,103 @@ export class AgentDocumentEngine {
       </div>
     `;
   }
+
+  /**
+   * Generates Statutory Notice of Appearance u/s 35(3) BNSS 2023 (formerly 41A CrPC)
+   */
+  public static generateNotice35BnssHtml(caseNumber: string, personName: string, address: string, ps = "Sector 14 Hisar"): string {
+    const today = new Date().toISOString().split("T")[0];
+    return `
+      <div style="font-family: serif; padding: 24px; color: #111; line-height: 1.6; max-width: 800px; margin: auto; background: #fff; border: 1px solid #ccc;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 18px;">हरियाणा पुलिस - हाजिरी नोटिस (Notice of Appearance)</h2>
+          <p style="margin: 4px 0 0; font-size: 13px;">(भारतीय नागरिक सुरक्षा संहिता 2023, धारा 35 उप-धारा 3)</p>
+        </div>
+        <p><strong>क्रमांक:</strong> नोटिस/35(3)/${Date.now().toString().slice(-4)} | <strong>दिनांक:</strong> ${today}</p>
+        <p>सेवा में,<br/><strong>श्री ${personName}</strong><br/>पता: ${address || "अज्ञात / हिसार, हरियाणा"}</p>
+        <p>विषय: मुकद्दमा सं. / दरख्वास्त सं. <strong>${caseNumber}</strong> की तफ्तीश में शामिल तफ्तीश होने बाबत।</p>
+        <p>महोदय,<br/>थाना <strong>${ps}</strong> में दर्ज उपरोक्त मुकद्दमे/शिकायत के संबंध में यह पाया गया है कि मामले के तथ्यों व परिस्थितियों से आपका अवगत होना प्रतीत होता है। भारतीय नागरिक सुरक्षा संहिता, 2023 की धारा 35(3) के अंतर्गत प्रदत्त शक्तियों का प्रयोग करते हुए आपको निर्देशित किया जाता है कि:</p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+          <li>आप दिनांक <strong>${today}</strong> को पूर्वाह्न 10:00 बजे थाना ${ps} में अधोहस्ताक्षरी के समक्ष उपस्थित हों।</li>
+          <li>मामले से संबंधित सभी आवश्यक तथ्य व अभिलेख प्रस्तुत करें।</li>
+          <li>जांच में पूर्ण सहयोग करें एवं साक्ष्यों से छेड़छाड़ न करें।</li>
+        </ol>
+        <p style="font-size: 12px; color: #555;">*चेतावनी: इस नोटिस की अनुपालना न करने की दशा में सक्षम न्यायालय से आपकी गिरफ़्तारी हेतु वारंट प्राप्त करने की कार्यवाही की जा सकती है।*</p>
+        <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+          <div>प्राप्तकर्ता के हस्ताक्षर: ____________<br/><span style="font-size: 11px;">(पावती प्राप्त की)</span></div>
+          <div style="text-align: right;">जांच अधिकारी (IO): ____________<br/><span style="font-size: 11px;">थाना ${ps}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates Statutory Notice to Produce Documents u/s 91 BNSS 2023 (formerly 91 CrPC)
+   */
+  public static generateNotice91BnssHtml(caseNumber: string, recipientName: string, requestedDocs = "बैंक खाता विवरण, पहचान पत्र व संबंधित पत्रावली", ps = "Sector 14 Hisar"): string {
+    const today = new Date().toISOString().split("T")[0];
+    return `
+      <div style="font-family: serif; padding: 24px; color: #111; line-height: 1.6; max-width: 800px; margin: auto; background: #fff; border: 1px solid #ccc;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 18px;">हरियाणा पुलिस - दस्तावेज़ तलब नोटिस (Summons to Produce Documents)</h2>
+          <p style="margin: 4px 0 0; font-size: 13px;">(भारतीय नागरिक सुरक्षा संहिता 2023, धारा 91)</p>
+        </div>
+        <p><strong>संदर्भ:</strong> मुकद्दमा सं. ${caseNumber} | <strong>दिनांक:</strong> ${today}</p>
+        <p>सेवा में,<br/><strong>${recipientName}</strong></p>
+        <p>महोदय,<br/>थाना <strong>${ps}</strong> में विचाराधीन उपरोक्त मुकद्दमे के साक्ष्य संकलन हेतु निम्नलिखित दस्तावेज़ों / इलेक्ट्रॉनिक अभिलेखों का अवलोकन अत्यंत आवश्यक है:</p>
+        <div style="background: #f8fafc; padding: 12px; border-left: 4px solid #2563eb; margin: 12px 0; font-family: sans-serif; font-size: 13px;">
+          ${requestedDocs}
+        </div>
+        <p>अतः BNSS 2023 की धारा 91 के तहत आपको आदेश दिया जाता है कि उक्त दस्तावेज़ 48 घंटे के भीतर व्यक्तिगत रूप से अथवा प्राधिकृत प्रतिनिधि के माध्यम से थाना ${ps} में प्रस्तुत करें।</p>
+        <div style="margin-top: 40px; text-align: right;">
+          <p style="margin: 0; font-weight: bold;">अन्वेषण अधिकारी</p>
+          <p style="margin: 0; font-size: 12px;">थाना ${ps}, हरियाणा पुलिस</p>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates Official Departmental Report on Pending Complaints
+   */
+  public static generatePendingComplaintsSummaryHtml(complaints: any[], stationName = "Sector 14 Hisar"): string {
+    const today = new Date().toISOString().split("T")[0];
+    const pendingList = complaints.filter((c: any) => c.status !== "COMPLETE" && c.status !== "CLOSED");
+    return `
+      <div style="font-family: sans-serif; padding: 24px; color: #0f172a; line-height: 1.5; max-width: 850px; margin: auto; background: #fff; border: 1px solid #e2e8f0;">
+        <div style="text-align: center; border-bottom: 2px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 18px; color: #0f172a;">कार्यालय थाना प्रभारी, थाना ${stationName}</h2>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #475569;">दैनिक प्रगति विवरण - लंबित नागरिक शिकायतें (Pending Complaints Roster)</p>
+          <p style="margin: 2px 0 0; font-size: 11px; color: #64748b;">दिनांक: ${today} | कुल लंबित: ${pendingList.length} शिकायतें</p>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px;">
+          <thead>
+            <tr style="background: #f1f5f9; text-align: left;">
+              <th style="padding: 8px; border: 1px solid #cbd5e1;">शिकायत सं.</th>
+              <th style="padding: 8px; border: 1px solid #cbd5e1;">शिकायतकर्ता</th>
+              <th style="padding: 8px; border: 1px solid #cbd5e1;">श्रेणी</th>
+              <th style="padding: 8px; border: 1px solid #cbd5e1;">जांच अधिकारी (EO)</th>
+              <th style="padding: 8px; border: 1px solid #cbd5e1;">स्थिति (Status)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pendingList.map((c: any) => `
+              <tr>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">#${c.complaintNumber}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${c.complainantName}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${c.categoryDisplay || c.category || "General"}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;">${c.assignedEoName || "Not Assigned"}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1;"><span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${c.status}</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div style="margin-top: 32px; display: flex; justify-content: space-between; font-size: 11px;">
+          <div>रिपोर्ट जनरेटेड बाय: CMS AI Agent System</div>
+          <div style="text-align: right;">हस्ताक्षर थाना प्रभारी (SHO): ____________</div>
+        </div>
+      </div>
+    `;
+  }
 }
+

@@ -148,6 +148,32 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
     try {
       const response = await CmsAgentService.processUserInput(text.trim(), pathname);
       setMessages((prev) => [...prev, response]);
+
+      // Immediate auto-execution for Navigation or Modal Open/Close commands (Zero Permission Required)
+      const plan = response.actionPlan;
+      if (plan) {
+        const toolName = plan.executablePayload?.toolName;
+        const targetUrl = plan.executablePayload?.parameters?.url || plan.targetRecords?.[0]?.url;
+
+        if (toolName === "navigate" || (targetUrl && !targetUrl.startsWith("MODAL:"))) {
+          if (targetUrl) {
+            setTimeout(() => {
+              router.push(targetUrl);
+              onClose();
+            }, 400);
+          }
+        } else if (toolName === "open_modal" || targetUrl === "MODAL:ROLE_SWITCHER") {
+          const modalEvent = plan.executablePayload?.parameters?.modalEvent || "cms-open-role-switcher";
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent(modalEvent));
+            onClose();
+          }, 400);
+        } else if (toolName === "close_modal") {
+          setTimeout(() => {
+            onClose();
+          }, 400);
+        }
+      }
     } catch (err) {
       console.error("Agent error:", err);
       setMessages((prev) => [
@@ -409,60 +435,84 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
 
                           return (
                             <>
-                              {isNavigation || isModal ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
-                                  className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  {isModal
-                                    ? "डायलॉग बॉक्स खोलें (Open Dialog) ➜"
-                                    : "फॉर्म / पेज अभी खोलें (Open Form Now) ➜"}
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
-                                  disabled={isLoading}
-                                  className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                                >
-                                  {executingPlanId === msg.actionPlan!.id ? (
-                                    <>
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      सुरक्षित किया जा रहा है...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CheckCircle2 className="w-3.5 h-3.5" />
-                                      Approve (स्वीकृत करें)
-                                    </>
+                              {msg.actionPlan!.status === "EXECUTED" ? (
+                                <div className="flex items-center justify-between w-full p-2 bg-emerald-50 rounded-xl border border-emerald-200">
+                                  <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                    {isModal ? "डायलॉग बॉक्स खोला गया (Executed)" : isNavigation ? "पेज / फॉर्म खोला गया (Opened)" : "कार्यवाही पूर्ण (Executed & Saved)"}
+                                  </span>
+                                  {targetUrl && !isModal && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        router.push(targetUrl);
+                                        onClose();
+                                      }}
+                                      className="py-1 px-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      पेज पर जाएं
+                                    </button>
                                   )}
-                                </button>
-                              )}
+                                </div>
+                              ) : (
+                                <>
+                                  {isNavigation || isModal ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
+                                      className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      {isModal
+                                        ? "डायलॉग बॉक्स खोलें (Open Dialog) ➜"
+                                        : "फॉर्म / पेज अभी खोलें (Open Form Now) ➜"}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
+                                      disabled={isLoading}
+                                      className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    >
+                                      {executingPlanId === msg.actionPlan!.id ? (
+                                        <>
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          सुरक्षित किया जा रहा है...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                          Approve (स्वीकृत करें)
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
 
-                              {targetUrl && !isModal && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    router.push(targetUrl);
-                                    onClose();
-                                  }}
-                                  className="py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-semibold text-xs transition flex items-center gap-1 cursor-pointer border border-blue-300"
-                                  title="Open directly and close modal"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  पेज पर जाएं
-                                </button>
-                              )}
+                                  {targetUrl && !isModal && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        router.push(targetUrl);
+                                        onClose();
+                                      }}
+                                      className="py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-semibold text-xs transition flex items-center gap-1 cursor-pointer border border-blue-300"
+                                      title="Open directly and close modal"
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      पेज पर जाएं
+                                    </button>
+                                  )}
 
-                              <button
-                                type="button"
-                                onClick={() => handleCancelPlan(msg.actionPlan!.id)}
-                                className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-xs transition cursor-pointer"
-                              >
-                                Cancel (रद्द करें)
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelPlan(msg.actionPlan!.id)}
+                                    className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-xs transition cursor-pointer"
+                                  >
+                                    Cancel (रद्द करें)
+                                  </button>
+                                </>
+                              )}
                             </>
                           );
                         })()}

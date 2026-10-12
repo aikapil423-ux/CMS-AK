@@ -14,6 +14,18 @@ export type AgentModule =
   | "SETTINGS"
   | "UNIVERSAL";
 
+export interface FrontendAction {
+  type: "NAVIGATE" | "OPEN_MODAL" | "CLOSE_MODAL" | "SWITCH_TAB" | "PREFILL_FORM" | "TRIGGER_PRINT";
+  target: string;
+  payload?: Record<string, any>;
+}
+
+export interface BackendAction {
+  service: "FIR" | "COMPLAINTS" | "GENERAL_DIARY" | "ACTS" | "EVIDENCE" | "STAFF" | "BUILDER";
+  operation: string;
+  parameters: Record<string, any>;
+}
+
 export interface AgentActionItem {
   id: string;
   stepNumber: number;
@@ -40,12 +52,21 @@ export interface ProposedDocument {
   status: "DRAFT" | "READY" | "SAVED";
 }
 
+export interface ExecutionVerification {
+  isVerified: boolean;
+  verifiedAt: string;
+  verifiedRecordId?: string;
+  verifiedRecordLabel?: string;
+  verificationDetails: string[];
+}
+
 export interface AgentActionPlan {
   id: string;
   title: string;
   understoodIntent: string;
   confidenceScore: number;
   primaryModule: AgentModule;
+  isMultiStep?: boolean;
   targetRecords: Array<{
     type: string;
     id: string;
@@ -55,6 +76,8 @@ export interface AgentActionPlan {
   steps: AgentActionItem[];
   missingInformation?: string[];
   proposedDocuments?: ProposedDocument[];
+  frontendActions?: FrontendAction[];
+  backendActions?: BackendAction[];
   status: "AWAITING_APPROVAL" | "APPROVED" | "REJECTED" | "EXECUTED" | "PARTIALLY_EXECUTED";
   rejectionReason?: string;
   createdAt: string;
@@ -63,6 +86,7 @@ export interface AgentActionPlan {
     toolName: string;
     parameters: Record<string, any>;
   };
+  verification?: ExecutionVerification;
 }
 
 export interface AgentAttachment {
@@ -99,6 +123,7 @@ export interface AgentSessionContext {
   activeComplaintId?: string;
   activeComplaintNumber?: string;
   activePersonName?: string;
+  activeEoName?: string;
   activePoliceStation?: string;
   activeDistrict?: string;
   lastGeneratedDocType?: string;
