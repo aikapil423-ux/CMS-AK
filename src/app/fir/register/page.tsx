@@ -479,6 +479,7 @@ function RegisterFIRForm() {
 
   // TAB 8: Property of Interest (Excluding Nature of Property)
   const [propertiesList, setPropertiesList] = useState<FIRPropertyItem[]>([]);
+  const [showAddPropertyForm, setShowAddPropertyForm] = useState(false);
   const [tempPropCategory, setTempPropCategory] = useState<string>(PROPERTY_CATEGORIES[0]);
   const [tempPropType, setTempPropType] = useState<string>(PROPERTY_TYPES_BY_CATEGORY[PROPERTY_CATEGORIES[0]][0]);
   const [tempPropDescription, setTempPropDescription] = useState("");
@@ -1007,6 +1008,7 @@ function RegisterFIRForm() {
         setVictimsList([]);
         setAccusedList([]);
         setPropertiesList([]);
+        setShowAddPropertyForm(false);
         setDepartmentList([]);
         setIdentificationsList([]);
         setComplainantAliases([]);
@@ -1292,6 +1294,7 @@ function RegisterFIRForm() {
     setPropertiesList([...propertiesList, newProp]);
     setTempPropDescription("");
     setTempPropValue("");
+    setShowAddPropertyForm(false);
   };
 
   // Build full FIR object for Draft / Submit / Preview
@@ -4075,8 +4078,21 @@ function RegisterFIRForm() {
                   <Package className="w-4 h-4 text-amber-600" />
                   Particulars of Properties of Interest (Printed Sections 9 &amp; 10)
                 </CardTitle>
-                <div className="font-mono text-xs font-bold text-red-900 bg-red-50 border border-red-200 px-2.5 py-1 rounded">
-                  Total Value: ₹{propertiesList.reduce((acc, p) => acc + (Number(p.estimatedValue) || 0), 0).toLocaleString("en-IN")}/-
+                <div className="flex items-center gap-3">
+                  <div className="font-mono text-xs font-bold text-red-900 bg-red-50 border border-red-200 px-2.5 py-1 rounded">
+                    Total Value: ₹{propertiesList.reduce((acc, p) => acc + (Number(p.estimatedValue) || 0), 0).toLocaleString("en-IN")}/-
+                  </div>
+                  {!showAddPropertyForm && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setShowAddPropertyForm(true)}
+                      className="bg-[#0b192c] hover:bg-slate-800 text-white text-xs h-7 px-3 flex items-center gap-1 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-0.5" />
+                      Add New
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-xs">
@@ -4119,92 +4135,150 @@ function RegisterFIRForm() {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-slate-400 bg-slate-50/50 rounded border border-dashed border-slate-200">
-                    No property added. If any property was involved, stolen, or recovered, add particulars below.
-                  </div>
-                )}
-
-                {/* Add Property Form - Dependent Type Mapping, No Nature of Property */}
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
-                  <span className="font-bold text-slate-800 block text-[11px] uppercase">
-                    Add Property Particulars
-                  </span>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Property Category</span>
-                      <select
-                        value={tempPropCategory}
-                        onChange={(e) => setTempPropCategory(e.target.value)}
-                        className="w-full p-2 rounded border border-slate-300 bg-white font-medium text-xs"
-                      >
-                        {PROPERTY_CATEGORIES.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Property Type</span>
-                      <select
-                        value={tempPropType}
-                        onChange={(e) => setTempPropType(e.target.value)}
-                        className="w-full p-2 rounded border border-slate-300 bg-white font-medium text-xs"
-                      >
-                        {(PROPERTY_TYPES_BY_CATEGORY[tempPropCategory] || []).map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-slate-500 block mb-0.5">Estimated Value (₹)</span>
-                      <input
-                        type="number"
-                        placeholder="e.g. 45000"
-                        value={tempPropValue}
-                        onChange={(e) => setTempPropValue(e.target.value)}
-                        className="w-full p-2 rounded border border-slate-300 bg-white font-mono text-xs"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[10px] text-slate-500 block">
-                          Description (Make, Model, Serial, Specs, Registration)
-                        </span>
-                        <VoiceInputButton
-                          onTranscript={(t) => setTempPropDescription((prev) => (prev ? prev + " " + t : t))}
-                          currentValue={tempPropDescription}
-                          fieldLabel="Property Description"
-                          iconOnly={true}
-                        />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="e.g. Samsung Galaxy S23 Ultra, IMEI 3589410291..., Black Color"
-                        value={tempPropDescription}
-                        onChange={(e) => setTempPropDescription(e.target.value)}
-                        className="w-full p-2 rounded border border-slate-300 bg-white text-xs"
-                      />
-                    </div>
-
-                    <div className="flex items-end">
+                  <div className="text-center py-6 text-slate-500 bg-slate-50/50 rounded-lg border border-dashed border-slate-200 space-y-2.5">
+                    <p className="text-xs">No property added. If any property was involved, stolen, or recovered, click Add New below.</p>
+                    {!showAddPropertyForm && (
                       <Button
                         type="button"
                         size="sm"
-                        onClick={handleAddProperty}
-                        className="w-full bg-[#0b192c] hover:bg-slate-800 text-white text-xs h-[38px]"
+                        onClick={() => setShowAddPropertyForm(true)}
+                        className="bg-[#0b192c] hover:bg-slate-800 text-white text-xs inline-flex items-center gap-1.5 shadow-xs"
                       >
-                        <Plus className="w-3.5 h-3.5 mr-1" />
-                        Add Property
+                        <Plus className="w-3.5 h-3.5" />
+                        Add New
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Bottom Add New button when properties exist and form is hidden */}
+                {!showAddPropertyForm && propertiesList.length > 0 && (
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setShowAddPropertyForm(true)}
+                      className="bg-[#0b192c] hover:bg-slate-800 text-white text-xs px-3.5 py-1.5 flex items-center gap-1.5 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add New
+                    </Button>
+                  </div>
+                )}
+
+                {/* Add Property Form - Dependent Type Mapping, visible only when showAddPropertyForm is true */}
+                {showAddPropertyForm && (
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-3.5 animate-in fade-in-50">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <span className="font-bold text-slate-800 block text-xs uppercase flex items-center gap-1.5">
+                        <Plus className="w-3.5 h-3.5 text-amber-600" />
+                        Add Property Particulars
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowAddPropertyForm(false);
+                          setTempPropDescription("");
+                          setTempPropValue("");
+                        }}
+                        className="h-6 px-2 text-slate-500 hover:text-slate-800 text-[11px]"
+                      >
+                        Cancel
                       </Button>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">Property Category</span>
+                        <select
+                          value={tempPropCategory}
+                          onChange={(e) => setTempPropCategory(e.target.value)}
+                          className="w-full p-2 rounded border border-slate-300 bg-white font-medium text-xs"
+                        >
+                          {PROPERTY_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">Property Type</span>
+                        <select
+                          value={tempPropType}
+                          onChange={(e) => setTempPropType(e.target.value)}
+                          className="w-full p-2 rounded border border-slate-300 bg-white font-medium text-xs"
+                        >
+                          {(PROPERTY_TYPES_BY_CATEGORY[tempPropCategory] || []).map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">Estimated Value (₹)</span>
+                        <input
+                          type="number"
+                          placeholder="e.g. 45000"
+                          value={tempPropValue}
+                          onChange={(e) => setTempPropValue(e.target.value)}
+                          className="w-full p-2 rounded border border-slate-300 bg-white font-mono text-xs"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] text-slate-500 block">
+                            Description (Make, Model, Serial, Specs, Registration)
+                          </span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setTempPropDescription((prev) => (prev ? prev + " " + t : t))}
+                            currentValue={tempPropDescription}
+                            fieldLabel="Property Description"
+                            iconOnly={true}
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="e.g. Samsung Galaxy S23 Ultra, IMEI 3589410291..., Black Color"
+                          value={tempPropDescription}
+                          onChange={(e) => setTempPropDescription(e.target.value)}
+                          className="w-full p-2 rounded border border-slate-300 bg-white text-xs"
+                        />
+                      </div>
+
+                      <div className="flex items-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddProperty}
+                          className="flex-1 bg-[#0b192c] hover:bg-slate-800 text-white text-xs h-[38px]"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          Add Property
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowAddPropertyForm(false);
+                            setTempPropDescription("");
+                            setTempPropValue("");
+                          }}
+                          className="h-[38px] px-3 text-slate-600 border-slate-300 hover:bg-slate-100 text-xs"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
