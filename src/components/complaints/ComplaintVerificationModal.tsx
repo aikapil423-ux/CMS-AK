@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   FileText,
   Printer,
@@ -94,6 +94,13 @@ export function ComplaintVerificationModal({
   readOnlyPreview = false,
 }: ComplaintVerificationModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [isOpen]);
 
   if (!isOpen || !previewData) return null;
 
@@ -110,10 +117,16 @@ export function ComplaintVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/75 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-hidden animate-in fade-in-50"
+      onClick={onEdit}
+    >
+      <div
+        className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl border border-slate-400 overflow-hidden flex flex-col my-auto max-h-[95vh] h-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header Bar */}
-        <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-800">
+        <div className="no-print shrink-0 flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
               <Shield className="w-3.5 h-3.5 text-amber-400" />
@@ -168,7 +181,7 @@ export function ComplaintVerificationModal({
         </div>
 
         {/* Scrollable Preview Sheet */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
+        <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 p-4 sm:p-6 bg-slate-200/70 flex justify-center">
           <div
             id="printable-complaint-preview"
             ref={printRef}
@@ -415,7 +428,7 @@ export function ComplaintVerificationModal({
 
         {/* Footer Actions: Edit Form OR Confirm & Register (Hidden in Read-Only Preview mode) */}
         {!readOnlyPreview && (
-          <div className="no-print p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="no-print shrink-0 p-4 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-xs text-slate-600">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
