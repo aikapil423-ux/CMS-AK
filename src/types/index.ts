@@ -418,6 +418,8 @@ export interface ComplaintItem {
   shoApprovedAt?: string;
 
   shoActionRequired?: boolean;
+  isReportViewedBySho?: boolean;
+  shoReportViewedAt?: string;
   auditTrail?: ComplaintAuditRecord[];
 
   // Current Complaint Owner & RBAC tracking
@@ -553,6 +555,7 @@ export interface ComplaintReportItem {
   isFirRecommended?: boolean;
   selectedOutcome?: EOOutcome;
   sentToSho?: boolean;
+  isSentToSho?: boolean;
   analysisClassification?: string;
   analysisRationale?: string;
   sentToShoAt?: string;

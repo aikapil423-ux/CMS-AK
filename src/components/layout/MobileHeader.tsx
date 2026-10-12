@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
+import { TopBarNotifications } from "./TopBarNotifications";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
@@ -47,6 +48,9 @@ export function MobileHeader() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
+            {/* Officer Notifications Bell */}
+            <TopBarNotifications isMobile={true} />
+
             {/* Switch Module Icon for Mobile */}
             <TopBarModuleSwitcher isMobile={true} />
 

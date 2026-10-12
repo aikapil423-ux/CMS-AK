@@ -538,6 +538,17 @@ export default function ComplaintProfilePage() {
   const [shoApproveRemarks, setShoApproveRemarks] = useState("");
   const [isShoApproving, setIsShoApproving] = useState(false);
   const [shoApproveModalOpen, setShoApproveModalOpen] = useState(false);
+  const [isReportViewed, setIsReportViewed] = useState(false);
+
+  const handleViewReport = (report: ComplaintReportItem) => {
+    setReportPreviewItem(report);
+    if (isSho) {
+      setIsReportViewed(true);
+      if (complaint) {
+        ComplaintService.markReportViewedBySho(complaint.id, currentUser.name || "Station House Officer");
+      }
+    }
+  };
 
   // EO Send to SHO Modal State
   const [eoSendToShoModalOpen, setEoSendToShoModalOpen] = useState(false);
@@ -649,6 +660,31 @@ export default function ComplaintProfilePage() {
   useEffect(() => {
     loadComplaint();
   }, [complaintId]);
+
+  useEffect(() => {
+    if (complaint?.isReportViewedBySho) {
+      setIsReportViewed(true);
+    }
+  }, [complaint?.isReportViewedBySho]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !complaint) return;
+    const params = new URLSearchParams(window.location.search);
+    const shouldAutoView = params.get("autoView") === "true";
+    const requestedTab = params.get("tab");
+    if (requestedTab === "reports") {
+      setActiveTab("reports");
+    }
+    if (shouldAutoView && complaint.reports && complaint.reports.length > 0) {
+      const targetReport =
+        [...complaint.reports].reverse().find(
+          (r) => r.sentToSho || r.isSentToSho || r.reportType === "enquiry_report" || r.officerRank !== "SHO"
+        ) || complaint.reports[complaint.reports.length - 1];
+      if (targetReport) {
+        handleViewReport(targetReport);
+      }
+    }
+  }, [complaint?.id]);
 
   useEffect(() => {
     const handleEvidenceUpdate = () => setEvidenceRefreshTrigger((c) => c + 1);
@@ -2331,58 +2367,88 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         </div>
       )}
 
-      {/* 4. SHO REPORT REVIEW BANNER (APPROVE & REJECT BUTTONS) */}
+      {/* 4. SHO REPORT REVIEW BANNER (VIEW REPORT -> APPROVE & REJECT) */}
       {isSho && !isMhc && !complaint.isFirRegistered && !complaint.directSendToFir && complaint.status !== "FIR_REGISTER" && (
         complaint.status === "COMPLETE" ||
         complaint.workflowState === "COMPLETE" ||
         complaint.eoOutcome === "Complete" ||
         (complaint.isSentToSho && !complaint.isFirApprovedBySho)
       ) && complaint.workflowState !== "CORRECTION_REQUIRED" && complaint.status !== "CORRECTION_REQUIRED" && complaint.shoDecision !== "REJECT" && complaint.shoDecision !== "APPROVE" && (
-        <div className="bg-blue-50 border-2 border-blue-400 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50">
+        <div className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50 border-2 ${
+          !isReportViewed ? "bg-amber-50/90 border-amber-400" : "bg-blue-50 border-blue-400"
+        }`}>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider bg-blue-700 text-white px-2.5 py-0.5 rounded-full shadow-2xs animate-pulse">
-                SHO Approval Required
+              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs ${
+                !isReportViewed ? "bg-amber-600 text-white animate-pulse" : "bg-blue-700 text-white"
+              }`}>
+                {!isReportViewed ? "जांच आख्या समीक्षा आवश्यक (Review Pending)" : "SHO Approval Required"}
               </span>
-              <h3 className="font-bold text-sm text-blue-950">
+              <h3 className={`font-bold text-sm ${!isReportViewed ? "text-amber-950" : "text-blue-950"}`}>
                 Enquiry Report Ready for SHO Decision ({complaint.assignedEoName || complaint.eoRecommendedBy || "Enquiry Officer"})
               </h3>
             </div>
-            <p className="text-xs text-blue-900 leading-relaxed">
-              EO Recommendation: <strong className="font-bold uppercase text-blue-900 bg-white px-2 py-0.5 rounded border border-blue-300">
+            <p className={`text-xs leading-relaxed ${!isReportViewed ? "text-amber-900" : "text-blue-900"}`}>
+              EO Recommendation: <strong className="font-bold uppercase bg-white px-2 py-0.5 rounded border border-current">
                 {complaint.eoRecommendedCategory
                   ? (complaint.eoRecommendedCategory === "FIR_RECOMMEND" ? "FIR Recommend" : complaint.eoRecommendedCategory === "CLOSURE" ? "Closure" : "NCR")
                   : (complaint.eoOutcome || "Pending")}
               </strong>.
-              Review the enquiry report below and decide: <strong>Approve (Choose Final Category)</strong> or <strong>Reject</strong>.
+              {!isReportViewed
+                ? " कृपया पहले जांच आख्या (Enquiry Report) देखें। रिपोर्ट देखने के बाद ही Approve या Reject का विकल्प उपलब्ध होगा।"
+                : " जांच आख्या का अवलोकन पूर्ण हुआ। अब आप रिपोर्ट को Approve (अंतिम श्रेणी चयन) या Reject कर सकते हैं।"}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={handleOpenShoApproveModal}
-              disabled={isShoApproving}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
-            >
-              <CheckCircle className="w-4 h-4" />
-              <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                setShoRejectReason("");
-                setShoRejectModalOpen(true);
-              }}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-              <span>Reject Report</span>
-            </Button>
+            {!isReportViewed ? (
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  const targetReport = [...(complaint.reports || [])].reverse().find(
+                    (r) => r.sentToSho || r.isSentToSho || r.reportType === "enquiry_report" || r.officerRank !== "SHO"
+                  ) || complaint.reports?.[0];
+                  if (targetReport) {
+                    handleViewReport(targetReport);
+                  } else {
+                    setActiveTab("reports");
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+              >
+                <Eye className="w-4 h-4" />
+                <span>जांच रिपोर्ट देखें (View Report)</span>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={handleOpenShoApproveModal}
+                  disabled={isShoApproving}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setShoRejectReason("");
+                    setShoRejectModalOpen(true);
+                  }}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Reject Report</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -3809,7 +3875,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setReportPreviewItem(report)}
+                            onClick={() => handleViewReport(report)}
                             className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
                             title="View report details"
                           >
@@ -6248,11 +6314,50 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               )}
             </div>
 
-            <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+            <div className="p-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
               <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
-              <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
-                Close Preview
-              </Button>
+              <div className="flex items-center gap-2">
+                {isSho && !isMhc && !complaint?.isFirRegistered && !complaint?.directSendToFir && complaint?.status !== "FIR_REGISTER" && (
+                  complaint?.status === "COMPLETE" ||
+                  complaint?.workflowState === "COMPLETE" ||
+                  complaint?.eoOutcome === "Complete" ||
+                  (complaint?.isSentToSho && !complaint?.isFirApprovedBySho)
+                ) && complaint?.workflowState !== "CORRECTION_REQUIRED" && complaint?.status !== "CORRECTION_REQUIRED" && complaint?.shoDecision !== "REJECT" && complaint?.shoDecision !== "APPROVE" && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setReportPreviewItem(null);
+                        handleOpenShoApproveModal();
+                      }}
+                      disabled={isShoApproving}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setReportPreviewItem(null);
+                        setShoRejectReason("");
+                        setShoRejectModalOpen(true);
+                      }}
+                      className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Reject Report</span>
+                    </Button>
+                  </>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
+                  Close Preview
+                </Button>
+              </div>
             </div>
           </div>
         </div>

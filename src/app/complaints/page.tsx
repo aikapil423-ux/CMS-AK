@@ -1811,34 +1811,45 @@ function ComplaintListContent() {
                               </div>
                             )}
 
-                            {/* SHO: Action on Completed EO Report -> Approve and Reject buttons */}
+                            {/* SHO: Action on Completed EO Report -> View Report first, then Approve / Reject */}
                             {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
                               c.status === "COMPLETE" ||
                               c.workflowState === "COMPLETE" ||
                               c.eoOutcome === "Complete" ||
                               (c.isSentToSho && !c.isFirApprovedBySho)
                             ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
-                              <div className="flex items-center gap-1 w-full">
-                                <Button
-                                  size="sm"
-                                  onClick={() => setShoApproveModalComplaint(c)}
-                                  className="flex-1 text-[11px] font-bold justify-center bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-7 px-1.5"
+                              !c.isReportViewedBySho ? (
+                                <Link
+                                  href={`/complaints/${c.id}?tab=reports&autoView=true`}
+                                  className="w-full inline-flex items-center justify-center gap-1.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md h-7 px-2 shadow-2xs transition-colors cursor-pointer"
+                                  title="View enquiry report before approving or rejecting"
                                 >
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  <span>Approve</span>
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    setShoRejectModalComplaint(c);
-                                    setRejectionReason("");
-                                  }}
-                                  className="flex-1 text-[11px] font-bold justify-center bg-rose-600 hover:bg-rose-700 text-white cursor-pointer h-7 px-1.5"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  <span>Reject</span>
-                                </Button>
-                              </div>
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Report</span>
+                                </Link>
+                              ) : (
+                                <div className="flex items-center gap-1 w-full">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => setShoApproveModalComplaint(c)}
+                                    className="flex-1 text-[11px] font-bold justify-center bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer h-7 px-1.5"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setShoRejectModalComplaint(c);
+                                      setRejectionReason("");
+                                    }}
+                                    className="flex-1 text-[11px] font-bold justify-center bg-rose-600 hover:bg-rose-700 text-white cursor-pointer h-7 px-1.5"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </Button>
+                                </div>
+                              )
                             )}
 
                             {/* SHO: Regular FIR Registration when recommended & approved */}
@@ -2067,25 +2078,34 @@ function ComplaintListContent() {
                       c.eoOutcome === "Complete" ||
                       (c.isSentToSho && !c.isFirApprovedBySho)
                     ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => setShoApproveModalComplaint(c)}
-                          className="flex-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                      !c.isReportViewedBySho ? (
+                        <Link
+                          href={`/complaints/${c.id}?tab=reports&autoView=true`}
+                          className="w-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-1.5 px-3 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                         >
-                          <CheckCircle className="w-3.5 h-3.5 mr-1 inline" /> Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setShoRejectModalComplaint(c);
-                            setRejectionReason("");
-                          }}
-                          className="flex-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white"
-                        >
-                          <X className="w-3.5 h-3.5 mr-1 inline" /> Reject
-                        </Button>
-                      </div>
+                          <Eye className="w-3.5 h-3.5 inline" /> View Report
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setShoApproveModalComplaint(c)}
+                            className="flex-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 mr-1 inline" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setShoRejectModalComplaint(c);
+                              setRejectionReason("");
+                            }}
+                            className="flex-1 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white"
+                          >
+                            <X className="w-3.5 h-3.5 mr-1 inline" /> Reject
+                          </Button>
+                        </div>
+                      )
                     )}
 
                     {isSho && !isMhc && (

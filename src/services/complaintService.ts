@@ -2639,6 +2639,8 @@ export const ComplaintService = {
       eoRecommendedReportTitle: targetReportTitle || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
       eoRecommendedRemarks: remarks,
       shoActionRequired: true,
+      isReportViewedBySho: false,
+      shoReportViewedAt: undefined,
       isRecommendedForFir,
       recommendedAction,
       updatedAt: nowIso,
@@ -2677,10 +2679,11 @@ export const ComplaintService = {
       recipientName: "Station House Officer (SHO)",
       complaintId: complaint.id,
       complaintNumber: complaint.complaintNumber,
-      title: `ACTION REQUIRED: Report Submitted (${complaint.complaintNumber})`,
-      message: `EO ${officerName} submitted report with recommendation "${displayCategory}". Action required: Review and select final category (NCR, FIR Recommend, Closure).`,
+      title: `View Complaint Report: ${complaint.complaintNumber}`,
+      message: `EO ${officerName} submitted enquiry report for Complaint #${complaint.complaintNumber} (${displayCategory}). Click to view report before taking action.`,
       createdAt: nowIso,
       priority: complaint.priority === "ROUTINE" ? "URGENT" : "CRITICAL",
+      read: false,
     };
     officerNotificationsStore.unshift(shoNotif);
     saveNotificationsToStorage(officerNotificationsStore);
@@ -2690,6 +2693,7 @@ export const ComplaintService = {
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+      window.dispatchEvent(new CustomEvent("officer_notifications_updated", { detail: shoNotif }));
     }
 
     return complaintsStore[index];
@@ -3237,6 +3241,63 @@ ${reportBody}
     }
 
     return complaintsStore[index];
+  },
+
+  markReportViewedBySho(complaintId: string, shoName: string = "Station House Officer"): ComplaintItem | undefined {
+    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (index === -1) return undefined;
+
+    const complaint = complaintsStore[index];
+    const nowIso = new Date().toISOString();
+
+    complaintsStore[index] = {
+      ...complaint,
+      isReportViewedBySho: true,
+      shoReportViewedAt: nowIso,
+      updatedAt: nowIso,
+    };
+
+    // Mark corresponding SHO notification as read
+    officerNotificationsStore = officerNotificationsStore.map((n) => {
+      if (n.complaintId === complaint.id || n.complaintNumber === complaint.complaintNumber) {
+        return { ...n, read: true };
+      }
+      return n;
+    });
+
+    saveNotificationsToStorage(officerNotificationsStore);
+    saveComplaintsToStorage(complaintsStore);
+    syncComplaintsToServer(complaintsStore);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("complaints_updated", { detail: complaintsStore[index] }));
+      window.dispatchEvent(new CustomEvent("officer_notifications_updated"));
+    }
+
+    return complaintsStore[index];
+  },
+
+  markNotificationAsRead(notificationId: string): void {
+    officerNotificationsStore = officerNotificationsStore.map((n) =>
+      n.id === notificationId ? { ...n, read: true } : n
+    );
+    saveNotificationsToStorage(officerNotificationsStore);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("officer_notifications_updated"));
+    }
+  },
+
+  markAllNotificationsAsRead(pno?: string): void {
+    officerNotificationsStore = officerNotificationsStore.map((n) => {
+      if (!pno || n.recipientPno === pno) {
+        return { ...n, read: true };
+      }
+      return n;
+    });
+    saveNotificationsToStorage(officerNotificationsStore);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("officer_notifications_updated"));
+    }
   },
 
   async registerFir(

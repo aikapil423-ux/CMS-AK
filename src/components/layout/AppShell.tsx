@@ -8,6 +8,7 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
+import { TopBarNotifications } from "./TopBarNotifications";
 import { useAuth } from "@/context/AuthContext";
 import {
   PlusCircle,
@@ -72,6 +73,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-2.5">
+            {/* Officer Notifications Bell Icon */}
+            <TopBarNotifications />
+
             {/* Universal Police Dictation (Hindi & English Voice Input) */}
             <TopBarDictation />
 
