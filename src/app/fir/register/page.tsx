@@ -1157,6 +1157,11 @@ function RegisterFIRForm() {
       sections: finalSections.join(", "),
     };
     setActsAndSectionsList([...actsAndSectionsList, newEntry]);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.act_section;
+      return next;
+    });
     setSelectedSections([]);
     setSectionSearchQuery("");
     setCurrentSection("");
@@ -1416,6 +1421,12 @@ function RegisterFIRForm() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
+      newErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
+    }
+    if (!actRemarks.trim()) {
+      newErrors.actRemarks = "Remarks in Act & Section panel are mandatory.";
+    }
     if (actsAndSectionsList.length === 0) {
       newErrors.act_section = "At least one Act and Section must be added.";
     }
@@ -1432,7 +1443,7 @@ function RegisterFIRForm() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      if (newErrors.act_section) setActiveTab("act_section");
+      if (newErrors.sourceOfComplaint || newErrors.actRemarks || newErrors.act_section) setActiveTab("act_section");
       else if (newErrors.complainant || newErrors.complainantMobile) setActiveTab("complainant");
       else if (newErrors.fir_content) setActiveTab("fir_content");
       return false;
@@ -1478,6 +1489,22 @@ function RegisterFIRForm() {
   // Tab Navigation Helpers
   const currentTabIndex = TAB_CONFIG.findIndex((t) => t.key === activeTab);
   const handleNextTab = () => {
+    if (activeTab === "act_section") {
+      const tabErrors: Record<string, string> = {};
+      if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
+        tabErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
+      }
+      if (!actRemarks.trim()) {
+        tabErrors.actRemarks = "Remarks in Act & Section panel are mandatory.";
+      }
+      if (actsAndSectionsList.length === 0) {
+        tabErrors.act_section = "At least one Act and Section must be added.";
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
     if (currentTabIndex < TAB_CONFIG.length - 1) {
       setActiveTab(TAB_CONFIG[currentTabIndex + 1].key);
     }
@@ -1840,18 +1867,38 @@ function RegisterFIRForm() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Source of Complaint</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Source of Complaint <span className="text-red-600">*</span>
+                  </label>
                   <select
                     value={sourceOfComplaint}
-                    onChange={(e) => setSourceOfComplaint(e.target.value)}
-                    className={`w-full p-2 rounded-lg border border-slate-300 text-xs ${getFieldHighlightClass("sourceOfComplaint")}`}
+                    onChange={(e) => {
+                      setSourceOfComplaint(e.target.value);
+                      if (errors.sourceOfComplaint) {
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.sourceOfComplaint;
+                          return n;
+                        });
+                      }
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs ${
+                      errors.sourceOfComplaint ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                    } ${getFieldHighlightClass("sourceOfComplaint")}`}
+                    required
                   >
+                    <option value="">-- Select Source of Complaint --</option>
                     {sourceOfComplaintList.map((source) => (
                       <option key={source} value={source}>
                         {source}
                       </option>
                     ))}
                   </select>
+                  {errors.sourceOfComplaint && (
+                    <p className="text-red-600 text-[11px] font-bold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {errors.sourceOfComplaint}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1935,9 +1982,20 @@ function RegisterFIRForm() {
 
                 <div className="md:col-span-2">
                   <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-slate-700 block">Remarks</label>
+                    <label className="font-bold text-slate-700 block">
+                      Remarks <span className="text-red-600">*</span>
+                    </label>
                     <VoiceInputButton
-                      onTranscript={(t) => setActRemarks((prev) => (prev ? prev + " " + t : t))}
+                      onTranscript={(t) => {
+                        setActRemarks((prev) => (prev ? prev + " " + t : t));
+                        if (errors.actRemarks) {
+                          setErrors((prev) => {
+                            const n = { ...prev };
+                            delete n.actRemarks;
+                            return n;
+                          });
+                        }
+                      }}
                       currentValue={actRemarks}
                       fieldLabel="GD Remarks"
                       iconOnly={true}
@@ -1945,11 +2003,28 @@ function RegisterFIRForm() {
                   </div>
                   <input
                     type="text"
-                    placeholder="GD reference or administrative remarks"
+                    placeholder="GD reference or administrative remarks (Mandatory)"
                     value={actRemarks}
-                    onChange={(e) => setActRemarks(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs"
+                    onChange={(e) => {
+                      setActRemarks(e.target.value);
+                      if (errors.actRemarks) {
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.actRemarks;
+                          return n;
+                        });
+                      }
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs ${
+                      errors.actRemarks ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                    }`}
+                    required
                   />
+                  {errors.actRemarks && (
+                    <p className="text-red-600 text-[11px] font-bold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {errors.actRemarks}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1959,9 +2034,12 @@ function RegisterFIRForm() {
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
-                  Acts and Sections Applicable
+                  Acts and Sections Applicable <span className="text-red-600">*</span>
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded border border-red-200">
+                    Mandatory *
+                  </span>
                   <span className="text-[11px] font-semibold text-slate-500">
                     {actsAndSectionsList.length} Act(s) Added
                   </span>
@@ -2358,12 +2436,16 @@ function RegisterFIRForm() {
                     </table>
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-slate-400 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
-                    No acts &amp; sections added yet. Click &quot;Add Acts &amp; Sections (Dialog)&quot; or use the inline selector above.
+                  <div className={`text-center py-4 rounded-lg border border-dashed ${
+                    errors.act_section
+                      ? "text-red-700 bg-red-50/70 border-red-300 font-semibold"
+                      : "text-slate-400 bg-slate-50/50 border-slate-200"
+                  }`}>
+                    No acts &amp; sections added yet. Please select an Act and Section(s) above and click &quot;Add Act&quot;.
                   </div>
                 )}
                 {errors.act_section && (
-                  <p className="text-red-600 text-[11px] font-bold flex items-center gap-1">
+                  <p className="text-red-600 text-[11px] font-bold flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3.5 h-3.5" /> {errors.act_section}
                   </p>
                 )}
