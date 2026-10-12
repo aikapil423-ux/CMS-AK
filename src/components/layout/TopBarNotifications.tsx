@@ -89,7 +89,7 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
 
     if (notif.complaintId || notif.complaintNumber) {
       const targetId = notif.complaintId || notif.complaintNumber;
-      router.push(`/complaints/${targetId}?tab=reports&autoView=true`);
+      router.push(`/complaints/${targetId}?tab=reports`);
     }
   };
 

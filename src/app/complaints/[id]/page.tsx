@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -352,12 +352,21 @@ function VoiceInputButton({
 export default function ComplaintProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { currentUser } = useAuth();
   const complaintId = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
 
   const [complaint, setComplaint] = useState<ComplaintItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+
+  useEffect(() => {
+    const tabParam = searchParams?.get("tab");
+    if (tabParam && ["overview", "documents", "reports", "evidence", "history", "analytics", "dossier", "notices", "summons"].includes(tabParam)) {
+      setActiveTab(tabParam as ActiveTab);
+    }
+  }, [searchParams]);
+
   const [historySortOrder, setHistorySortOrder] = useState<"asc" | "desc">("asc");
 
   // More Actions dropdown state
@@ -542,11 +551,10 @@ export default function ComplaintProfilePage() {
 
   const handleViewReport = (report: ComplaintReportItem) => {
     setReportPreviewItem(report);
-    if (isSho) {
-      setIsReportViewed(true);
-      if (complaint) {
-        ComplaintService.markReportViewedBySho(complaint.id, currentUser.name || "Station House Officer");
-      }
+    setIsReportViewed(true);
+    if (complaint) {
+      setComplaint((prev) => (prev ? { ...prev, isReportViewedBySho: true } : prev));
+      ComplaintService.markReportViewedBySho(complaint.id, currentUser.name || "Station House Officer");
     }
   };
 
@@ -726,6 +734,28 @@ export default function ComplaintProfilePage() {
   const isSuperior = isSuperiorToSho(currentUser.role);
   const isShoOrSuper = isShoOrSuperior(currentUser.role);
   const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
+
+  const isReportReviewPending = Boolean(
+    complaint &&
+    !complaint.isFirApprovedBySho &&
+    complaint.shoDecision !== "APPROVE" &&
+    complaint.shoDecision !== "REJECT" &&
+    complaint.status !== "FIR_REGISTER" &&
+    !complaint.isFirRegistered &&
+    (
+      complaint.isSentToSho ||
+      complaint.status === "COMPLETE" ||
+      complaint.workflowState === "COMPLETE" ||
+      complaint.status === "REPORT_SUBMITTED" ||
+      complaint.status === "RECOMMENDED_FOR_FIR" ||
+      complaint.workflowState === "SENT_TO_SHO" ||
+      complaint.workflowState === "FIR_RECOMMENDED" ||
+      complaint.eoOutcome === "Complete" ||
+      complaint.eoOutcome === "FIR Recommend" ||
+      Boolean(complaint.eoRecommendedCategory) ||
+      (complaint.reports && complaint.reports.some((r) => r.sentToSho || r.isSentToSho))
+    )
+  );
 
   const isAssignedEo = complaint ? isUserAssignedEo(currentUser, complaint) : false;
   const isEoPersona = currentUser.role === "ENQUIRY_OFFICER" || isAssignedEo;
@@ -2377,12 +2407,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       )}
 
       {/* 4. SHO REPORT REVIEW BANNER (VIEW REPORT -> APPROVE & REJECT) */}
-      {isSho && !isMhc && !complaint.isFirRegistered && !complaint.directSendToFir && complaint.status !== "FIR_REGISTER" && (
-        complaint.status === "COMPLETE" ||
-        complaint.workflowState === "COMPLETE" ||
-        complaint.eoOutcome === "Complete" ||
-        (complaint.isSentToSho && !complaint.isFirApprovedBySho)
-      ) && complaint.workflowState !== "CORRECTION_REQUIRED" && complaint.status !== "CORRECTION_REQUIRED" && complaint.shoDecision !== "REJECT" && complaint.shoDecision !== "APPROVE" && (
+      {isSho && !isMhc && isReportReviewPending && (
         <div className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50 border-2 ${
           !isReportViewed ? "bg-amber-50/90 border-amber-400" : "bg-blue-50 border-blue-400"
         }`}>
@@ -3879,18 +3904,74 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
                         {/* Action buttons: View, Edit, Download, Print, Create New Version */}
                         <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
-                          {/* 1. View / Preview */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewReport(report)}
-                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                            title="View report details"
-                          >
-                            <Eye className="w-3 h-3 text-blue-600" />
-                            <span>View</span>
-                          </Button>
+                          {/* 1. View / Preview and SHO Decision Buttons */}
+                          {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
+                            !isReportViewed && !complaint?.isReportViewedBySho ? (
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleViewReport(report)}
+                                className="text-[11px] h-7 px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shadow-xs animate-pulse"
+                                title="View enquiry report before approving or rejecting"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>जांच रिपोर्ट देखें (View Report)</span>
+                              </Button>
+                            ) : (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewReport(report)}
+                                  className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                  title="View report details"
+                                >
+                                  <Eye className="w-3 h-3 text-blue-600" />
+                                  <span>View</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={handleOpenShoApproveModal}
+                                  disabled={isShoApproving}
+                                  className="text-[11px] h-7 px-2.5 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
+                                  title="Approve report (Choose final category)"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => {
+                                    setShoRejectReason("");
+                                    setShoRejectModalOpen(true);
+                                  }}
+                                  className="text-[11px] h-7 px-2.5 gap-1 bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer shadow-xs"
+                                  title="Reject / Return report to EO"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Reject Report</span>
+                                </Button>
+                              </>
+                            )
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewReport(report)}
+                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                              title="View report details"
+                            >
+                              <Eye className="w-3 h-3 text-blue-600" />
+                              <span>View</span>
+                            </Button>
+                          )}
 
                           {/* 2. Edit (Re-opens in Draft Editor) */}
                           {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
@@ -6326,12 +6407,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             <div className="p-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
               <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
               <div className="flex items-center gap-2">
-                {isSho && !isMhc && !complaint?.isFirRegistered && !complaint?.directSendToFir && complaint?.status !== "FIR_REGISTER" && (
-                  complaint?.status === "COMPLETE" ||
-                  complaint?.workflowState === "COMPLETE" ||
-                  complaint?.eoOutcome === "Complete" ||
-                  (complaint?.isSentToSho && !complaint?.isFirApprovedBySho)
-                ) && complaint?.workflowState !== "CORRECTION_REQUIRED" && complaint?.status !== "CORRECTION_REQUIRED" && complaint?.shoDecision !== "REJECT" && complaint?.shoDecision !== "APPROVE" && (
+                {isSho && !isMhc && isReportReviewPending && (
                   <>
                     <Button
                       type="button"

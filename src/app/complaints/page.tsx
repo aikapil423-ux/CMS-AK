@@ -1813,14 +1813,21 @@ function ComplaintListContent() {
 
                             {/* SHO: Action on Completed EO Report -> View Report first, then Approve / Reject */}
                             {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
+                              c.isSentToSho ||
                               c.status === "COMPLETE" ||
                               c.workflowState === "COMPLETE" ||
+                              c.status === "REPORT_SUBMITTED" ||
+                              c.status === "RECOMMENDED_FOR_FIR" ||
+                              c.workflowState === "SENT_TO_SHO" ||
+                              c.workflowState === "FIR_RECOMMENDED" ||
                               c.eoOutcome === "Complete" ||
-                              (c.isSentToSho && !c.isFirApprovedBySho)
-                            ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
+                              c.eoOutcome === "FIR Recommend" ||
+                              Boolean(c.eoRecommendedCategory) ||
+                              (c.reports && c.reports.some((r) => r.sentToSho || r.isSentToSho))
+                            ) && !c.isFirApprovedBySho && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
                               !c.isReportViewedBySho ? (
                                 <Link
-                                  href={`/complaints/${c.id}?tab=reports&autoView=true`}
+                                  href={`/complaints/${c.id}?tab=reports`}
                                   className="w-full inline-flex items-center justify-center gap-1.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md h-7 px-2 shadow-2xs transition-colors cursor-pointer"
                                   title="View enquiry report before approving or rejecting"
                                 >
@@ -2073,14 +2080,21 @@ function ComplaintListContent() {
 
                     {/* SHO: Approve / Reject buttons on Mobile */}
                     {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
+                      c.isSentToSho ||
                       c.status === "COMPLETE" ||
                       c.workflowState === "COMPLETE" ||
+                      c.status === "REPORT_SUBMITTED" ||
+                      c.status === "RECOMMENDED_FOR_FIR" ||
+                      c.workflowState === "SENT_TO_SHO" ||
+                      c.workflowState === "FIR_RECOMMENDED" ||
                       c.eoOutcome === "Complete" ||
-                      (c.isSentToSho && !c.isFirApprovedBySho)
-                    ) && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
+                      c.eoOutcome === "FIR Recommend" ||
+                      Boolean(c.eoRecommendedCategory) ||
+                      (c.reports && c.reports.some((r) => r.sentToSho || r.isSentToSho))
+                    ) && !c.isFirApprovedBySho && c.workflowState !== "CORRECTION_REQUIRED" && c.status !== "CORRECTION_REQUIRED" && c.shoDecision !== "REJECT" && c.shoDecision !== "APPROVE" && (
                       !c.isReportViewedBySho ? (
                         <Link
-                          href={`/complaints/${c.id}?tab=reports&autoView=true`}
+                          href={`/complaints/${c.id}?tab=reports`}
                           className="w-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-1.5 px-3 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                         >
                           <Eye className="w-3.5 h-3.5 inline" /> View Report
