@@ -95,13 +95,13 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
         {
           id: "welcome_msg",
           sender: "agent",
-          text: `जय हिन्द! मैं **हरियाणा पुलिस CMS AI Agent** हूँ।\n\nआप किसी भी केस, FIR, गिरफ़्तारी प्रपत्र, केस डायरी (Zimni) अथवा रोजनामचा (GD) के संबंध में बोलकर या लिखकर निर्देश दे सकते हैं।\n\n*उदाहरण:* **"Aaj main Anil Kumar ko Sector 14 Hisar se arrest karke laya hoon. FIR number 125/2026 hai. Case ke documents check karo aur arrest ke saare required documents bana do."**`,
+          text: `जय हिन्द! मैं **हरियाणा पुलिस CMS AI Agent** हूँ। मुझे इस वेबसाइट के संपूर्ण फ्रंटएंड (मॉड्यूल्स, पेजेस, फॉर्म्स), बैकएंड APIs और डेटाबेस की पूर्ण समझ है।\n\nआप किसी भी केस, FIR, गिरफ़्तारी, ज़िमनी, रोजनामचा (GD), शिकायत, या कानूनी धाराओं के संबंध में बोलकर अथवा लिखकर निर्देश दे सकते हैं।\n\n*नोट: अधूरा विवरण होने पर मैं स्पष्टीकरण के लिए आपसे दोबारा पूछूँगा, और किसी भी कार्य को आपकी स्पष्ट अनुमति (Permission) के पश्चात ही निष्पादित करूँगा।*`,
           timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
           suggestedPrompts: [
+            "Website me kahan kya hota hai samjhao",
             "FIR 125: Anil Kumar arrest docs banao",
-            "FIR 125 kholo",
+            "Complaints register form kholo",
             "Is case ki GD draft karo",
-            "Zimni number 2 likho",
           ],
         },
       ]);

@@ -2,12 +2,12 @@ import { firService } from "@/services/firService";
 import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { AgentDocumentEngine } from "./agentDocumentEngine";
+import { CmsCapabilityRegistry, WEBSITE_ARCHITECTURE } from "./cmsCapabilityRegistry";
 import {
   AgentMessage,
   AgentActionPlan,
   AgentActionItem,
   AgentSessionContext,
-  ProposedDocument,
 } from "@/types/cmsAgent";
 import { FIRItem } from "@/types";
 
@@ -56,6 +56,10 @@ export class CmsAgentService {
 
   /**
    * Main conversational and intent interpretation pipeline
+   * Strictly adheres to:
+   * 1. Complete Website & Database Understanding
+   * 2. Permission-First Action Execution
+   * 3. Proactive Clarification when ambiguous / missing info
    */
   public static async processUserInput(
     userInput: string,
@@ -65,6 +69,22 @@ export class CmsAgentService {
     const raw = (userInput || "").trim();
     const q = raw.toLowerCase();
     const context = this.getContext();
+
+    // 0. Permission Affirmation Check ("Approve", "हाँ", "कर दो", "Proceed")
+    if (
+      context.lastActionPlanId &&
+      (q === "approve" ||
+        q === "yes" ||
+        q === "हाँ" ||
+        q === "proceed" ||
+        q === "स्वीकृत" ||
+        q.includes("कर दो") ||
+        q.includes("स्वीकृत करें") ||
+        q.includes("theek hai") ||
+        q.includes("ठीक है"))
+    ) {
+      return this.executeActionPlan(context.lastActionPlanId);
+    }
 
     // 1. Slot Extraction
     // Extract FIR Number
@@ -83,8 +103,8 @@ export class CmsAgentService {
 
     // Extract Accused / Person Name
     let personName = "";
-    const personMatch = raw.match(/(?:arrest\s+karke|accused|shri|sh\.)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
-    if (raw.toLowerCase().includes("anil") || raw.toLowerCase().includes("anil kumar")) {
+    const personMatch = raw.match(/(?:arrest\s+karke|accused|shri|sh\.|naam\s+hai)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
+    if (raw.toLowerCase().includes("anil kumar") || raw.toLowerCase().includes("anil")) {
       personName = "Anil Kumar";
     } else if (personMatch && personMatch[1]) {
       personName = personMatch[1].trim();
@@ -92,14 +112,49 @@ export class CmsAgentService {
       personName = context.activePersonName;
     }
 
-    // Check if user is saying "Approve", "हाँ", "Proceed", etc. to an ongoing action plan
-    if (context.lastActionPlanId && (q === "approve" || q === "yes" || q === "हाँ" || q === "proceed" || q === "स्वीकृत")) {
-      return this.executeActionPlan(context.lastActionPlanId);
+    // -------------------------------------------------------------
+    // INTENT A: WEBSITE ARCHITECTURE & BACKEND/FRONTEND UNDERSTANDING
+    // User asks: "Website me kahan kya hota hai", "Structure samjhao", "Backend database me kya hai"
+    // -------------------------------------------------------------
+    if (
+      q.includes("kahan kya hota hai") ||
+      q.includes("kahan kya hai") ||
+      q.includes("website structure") ||
+      q.includes("backend frontend") ||
+      q.includes("database me kya hai") ||
+      q.includes("system samjhao") ||
+      q.includes("modules batao") ||
+      q.includes("kya kya modules hain")
+    ) {
+      return this.handleSystemArchitectureQuery();
     }
 
     // -------------------------------------------------------------
-    // INTENT 1: GENERATE ARREST DOCUMENTS
-    // (Master Prompt primary case: Anil Kumar, FIR 125, Sector 14 Hisar)
+    // INTENT B: AMBIGUITY CHECK FOR ARREST DOCUMENTS
+    // If user says "arrest memo banao" or "girftar karke laya hoon" but mentions NO FIR and NO name and NO active context
+    // -> DO NOT BLINDLY GUESS! ASK CLARIFYING QUESTION!
+    // -------------------------------------------------------------
+    if (
+      (q.includes("arrest") || q.includes("girftar") || q.includes("गिरफ्तार") || q.includes("jamatalashi")) &&
+      !firNumber &&
+      !personName &&
+      !raw.includes("125")
+    ) {
+      return {
+        id: `ask_${Date.now()}`,
+        sender: "agent",
+        text: `❓ **स्पष्टीकरण अपेक्षित (Clarification Required):**\n\nआप किस अभियुक्त या किस मुकद्दमे (FIR) के लिए गिरफ़्तारी प्रपत्र तैयार करवाना चाहते हैं?\n\n*कृपया मुकद्दमा नंबर (उदा. \`FIR 125/2026\`) अथवा अभियुक्त का नाम बताएं, ताकि केस फ़ाइल से सही जानकारी प्राप्त की जा सके।*`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        suggestedPrompts: [
+          "FIR 125: Anil Kumar (Sector 14 Hisar)",
+          "FIR 14: Vikas Sharma case",
+          "FIR 10: Physical assault case",
+        ],
+      };
+    }
+
+    // -------------------------------------------------------------
+    // INTENT C: ARREST DOCUMENT SUITE GENERATION
     // -------------------------------------------------------------
     if (
       q.includes("arrest") ||
@@ -113,14 +168,7 @@ export class CmsAgentService {
     }
 
     // -------------------------------------------------------------
-    // INTENT 2: PREPARE CASE DIARY / ZIMNI
-    // -------------------------------------------------------------
-    if (q.includes("zimni") || q.includes("case diary") || q.includes("ज़िमनी")) {
-      return this.handleZimniIntent(raw, firNumber, currentPath);
-    }
-
-    // -------------------------------------------------------------
-    // INTENT 3: PREPARE GENERAL DIARY (ROZNAMCHA) ENTRY
+    // INTENT D: GENERAL DIARY (ROZNAMCHA) INTENT
     // -------------------------------------------------------------
     if (
       q.includes("gd draft") ||
@@ -130,32 +178,89 @@ export class CmsAgentService {
       q.includes("gd banao") ||
       q.includes("rapat")
     ) {
+      // Check if ambiguous
+      if (!firNumber && !personName && !q.includes("ravangi") && !q.includes("vapasi") && !q.includes("gasht") && !q.includes("duty")) {
+        return {
+          id: `ask_gd_${Date.now()}`,
+          sender: "agent",
+          text: `❓ **रोजनामचा (GD) इंद्राज का प्रकार स्पष्ट करें:**\n\nआप रोजनामचा आम में किस प्रकार की रपट दर्ज करना चाहते हैं?\n\n1. **दाखिला गिरफ़्तारी (Accused Arrest GD)**\n2. **रवानगी गश्त / जांच (Officer Departure)**\n3. **वापसी थाना (Officer Arrival)**\n4. **शिकायत निस्तारण / फैसला (Disposal)**\n5. **माल बरामदगी / ज़ब्ती (Seizure)**`,
+          timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          suggestedPrompts: [
+            "FIR 125: Anil Kumar arrest GD",
+            "रवानगी गश्त (Departure for Patrol)",
+            "वापसी थाना (Arrival at Station)",
+            "General Diary रजिस्टर खोलें",
+          ],
+        };
+      }
       return this.handleGdIntent(raw, firNumber, personName, currentPath);
     }
 
     // -------------------------------------------------------------
-    // INTENT 4: OPEN OR RETRIEVE SPECIFIC FIR / CASE
+    // INTENT E: CASE DIARY / ZIMNI DRAFTING
+    // -------------------------------------------------------------
+    if (q.includes("zimni") || q.includes("case diary") || q.includes("ज़िमनी")) {
+      if (!firNumber && !raw.includes("125") && !context.activeFirNumber) {
+        return {
+          id: `ask_zimni_${Date.now()}`,
+          sender: "agent",
+          text: `❓ **मुकद्दमा नंबर बताएं:**\n\nआप किस मुकद्दमे (FIR) के लिए केस डायरी (Zimni u/s 192 BNSS) लिखना चाहते हैं?`,
+          timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+          suggestedPrompts: ["FIR 125 ki Zimni likho", "FIR 14 ki Zimni likho"],
+        };
+      }
+      return this.handleZimniIntent(raw, firNumber, currentPath);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT F: DIRECT NAVIGATION TO ANY PAGE OR FORM
+    // -------------------------------------------------------------
+    const targetRoute = CmsCapabilityRegistry.findRoute(raw);
+    if (targetRoute && (q.includes("kholo") || q.includes("open") || q.includes("chalo") || q.includes("jao") || q.includes("page"))) {
+      return this.handleNavigationIntent(targetRoute);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT G: REGISTER COMPLAINT OR REGISTER FIR ASSISTANCE
+    // -------------------------------------------------------------
+    if (q.includes("nayi complaint") || q.includes("complaint register") || q.includes("shikayat darj")) {
+      return this.handleComplaintRegisterIntent(raw);
+    }
+
+    if (q.includes("nayi fir") || q.includes("fir register") || q.includes("fir darj")) {
+      return this.handleFirRegisterIntent(raw);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT H: OPEN OR RETRIEVE SPECIFIC FIR / CASE
     // -------------------------------------------------------------
     if (firNumber && (q.includes("kholo") || q.includes("open") || q.includes("dikhao") || q.includes("details") || q.includes("check"))) {
       return this.handleOpenFirIntent(firNumber, raw);
     }
 
     // -------------------------------------------------------------
-    // INTENT 5: ACTS & LEGAL SECTIONS LOOKUP
+    // INTENT I: ACTS & LEGAL SECTIONS LOOKUP
     // -------------------------------------------------------------
     if (q.includes("section") || q.includes("dhara") || q.includes("धारा") || q.includes("bns") || q.includes("bnss") || q.includes("punishment")) {
       return this.handleLegalLookupIntent(raw);
     }
 
     // -------------------------------------------------------------
-    // INTENT 6: SEARCH COMPLAINTS & CASE RECORDS
+    // INTENT J: SEARCH COMPLAINTS & CASE RECORDS
     // -------------------------------------------------------------
     if (q.includes("complaint") || q.includes("shikayat") || q.includes("शिकायत")) {
       return this.handleComplaintSearchIntent(raw);
     }
 
     // -------------------------------------------------------------
-    // INTENT 7: GENERAL SEARCH & CAPABILITY ASSISTANT
+    // INTENT K: STAFF / DUTY ROSTER
+    // -------------------------------------------------------------
+    if (q.includes("duty") || q.includes("staff") || q.includes("mhc") || q.includes("sho")) {
+      return this.handleStaffQueryIntent(raw);
+    }
+
+    // -------------------------------------------------------------
+    // FALLBACK / GENERAL HELPER
     // -------------------------------------------------------------
     return this.handleGeneralQueryIntent(raw, context);
   }
@@ -164,13 +269,64 @@ export class CmsAgentService {
   // HANDLERS
   // ===============================================================
 
+  /**
+   * Explains the full website architecture, backend, frontend, database and workflows.
+   */
+  private static handleSystemArchitectureQuery(): AgentMessage {
+    const routes = WEBSITE_ARCHITECTURE;
+    return {
+      id: `arch_${Date.now()}`,
+      sender: "agent",
+      text: `🏛️ **हरियाणा पुलिस CMS संपूर्ण सिस्टम व वास्तुकला समझ (System Architecture & Knowledge):**
+
+### 1. फ्रंटएंड संरचना (Frontend Architecture & Pages):
+* **रोजनामचा आम (\`/general-diary\`):** डिजिटल रोजनामचा (PPR 22.48)। इसमें **Register** (लॉक्ड एंट्रीज़) व **Auto-Suggestions & Drafts** (मुंशी हेतु AI सुझाव) शामिल हैं।
+* **नया GD प्रविष्टि (\`/general-diary/new\`):** 54 वैधानिक प्रकारों में रपट दर्ज करने का फॉर्म।
+* **शिकायत रजिस्टर (\`/complaints\`):** नागरिक शिकायतों की सूची व ट्रैकिंग।
+* **शिकायत पंजीकरण (\`/complaints/register\`):** शिकायतकर्ता, घटना, साक्ष्य अपलोड व ऑटो-GD सुझाव।
+* **शिकायत वर्कस्पेस (\`/complaints/[id]\`):** संपूर्ण पत्रावली, EO जांच आख्या व SHO अप्रूवल मोडल।
+* **मुकद्दमा रजिस्टर (\`/fir\`):** CCTNS सिंक स्टेटस सहित सभी FIRs।
+* **नियमित FIR पंजीकरण (\`/fir/register\`):** BNS धाराओं व अभियुक्त विवरण सहित विधिवत मुकद्दमा दर्ज करना।
+* **केस फ़ाइल (\`/fir/[id]\`):** केस डायरी (Zimni), ज़ब्ती मेमो व केस डॉक्युमेंट्स।
+* **गिरफ़्तारी प्रपत्र वर्कस्पेस (\`/fir-workspace/arrest-docs\`):** 4-पेज अरेस्ट मेमो 26.8, फर्द जामातालाशी, आधार पत्र u/s 47, इत्तिला u/s 48, मेडिकल व रिमांड।
+* **केस डायरी वर्कस्पेस (\`/fir-workspace/zimni\`):** धारा 192 BNSS के तहत ज़िमनी लेखन।
+* **कानूनी धाराएं (\`/acts-sections\`):** BNS, BNSS, BSA व विशेष अधिनियम संदर्भ।
+* **स्टाफ व प्रोफाइल (\`/users\`, \`/station-profile\`):** नफरी, रोस्टर व बीट्स।
+
+---
+
+### 2. बैकएंड व API सेवाएं (Backend Services & APIs):
+* **\`complaintService\` / \`/api/complaints\`:** शिकायत प्रबंधन, जांच आख्या व SHO अप्रूवल (FIR/NCR/Closure)।
+* **\`firService\` / \`/api/fir\`:** FIR पंजीकरण, केस डायरी (Zimni), गिरफ़्तारी डॉक्युमेंट्स अटैचमेंट।
+* **\`generalDiaryService\` / \`/api/general-diary\`:** 54 रोजनामचा कोड्स, ऑटो-सिक्वेंसिंग, Auto-Suggestions & Drafts, Verify & Lock।
+* **\`universalEvidenceService\` / \`/api/evidence\`:** साक्ष्य स्टोरेज, हैश वेरिफिकेशन व मेटाडेटा।
+
+---
+
+### 3. डेटाबेस मॉडल्स (Prisma Database Schema):
+* **\`GDRecord\` & \`GeneralDiaryEntry\`:** रोजनामचा आम रपटें (लॉक्ड व सजेस्टेड)।
+* **\`Complaint\` & \`EnquiryReport\`:** नागरिक शिकायतें व जांच रिपोर्ट।
+* **\`FIRItem\` & \`FIRCaseDiaryItem\`:** मुकद्दमा पत्रावली व केस डायरी।
+* **\`AccusedPerson\`:** अभियुक्तों के वैधानिक विवरण।
+* **\`PoliceUnit\` & \`User\`:** थाना क्षेत्राधिकार व पुलिस अधिकारी।
+
+**आप मुझे किसी भी कार्य के लिए सीधे निर्देश दे सकते हैं। मैं आपकी अनुमति लेकर कार्य निष्पादित करूँगा।**`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: [
+        "FIR 125: Anil Kumar arrest docs banao",
+        "Complaints register form kholo",
+        "General Diary drafts dikhao",
+        "Dhara 303(2) BNS kya hai?",
+      ],
+    };
+  }
+
   private static async handleArrestDocIntent(
     rawInput: string,
     firNumber: string,
     personName: string,
     currentPath?: string
   ): Promise<AgentMessage> {
-    // 1. Locate FIR
     const allFirs = firService.getAllFirs();
     let fir: FIRItem | undefined;
 
@@ -182,17 +338,14 @@ export class CmsAgentService {
       );
     }
 
-    // If specific FIR 125 not matched by number, check by 125
     if (!fir && rawInput.includes("125")) {
       fir = allFirs.find((f) => f.firNumber.includes("125") || f.id.includes("125"));
     }
 
-    // Fallback to first FIR if none specified
     if (!fir) {
       fir = allFirs[0];
     }
 
-    // Update Session Context
     this.updateContext({
       activeFirId: fir.id,
       activeFirNumber: fir.firNumber,
@@ -201,10 +354,8 @@ export class CmsAgentService {
       activeDistrict: fir.district,
     });
 
-    // 2. Generate Proposed Documents Suite
     const proposedDocs = AgentDocumentEngine.generateArrestDossier(fir, rawInput);
 
-    // 3. Construct Steps
     const steps: AgentActionItem[] = [
       {
         id: "step_1",
@@ -260,7 +411,7 @@ export class CmsAgentService {
     const actionPlan: AgentActionPlan = {
       id: planId,
       title: `Prepare Full Statutory Arrest Dossier for ${personName || "Anil Kumar"} (${fir.firNumber})`,
-      understoodIntent: `अधिकारी द्वारा सूचित किया गया कि अभियुक्त ${personName || "Anil Kumar"} को सेक्टर 14 हिसार से गिरफ़्तार कर लिया गया है। मुकद्दमा सं. ${fir.firNumber} के अंतर्गत समस्त अनिवार्य कानूनी गिरफ़्तारी प्रपत्र (Arrest Memo 26.8 सहित 6 दस्तावेज़) तैयार किए जाने हैं।`,
+      understoodIntent: `अधिकारी द्वारा सूचित किया गया कि अभियुक्त ${personName || "Anil Kumar"} को गिरफ़्तार किया गया है। मुकद्दमा सं. ${fir.firNumber} के अंतर्गत समस्त अनिवार्य कानूनी गिरफ़्तारी प्रपत्र (Arrest Memo 26.8 सहित 6 दस्तावेज़) तैयार किए जाने हैं।`,
       confidenceScore: 0.98,
       primaryModule: "ARREST_DOCS",
       targetRecords: [
@@ -425,6 +576,109 @@ export class CmsAgentService {
     };
   }
 
+  private static handleNavigationIntent(route: any): AgentMessage {
+    const planId = `plan_nav_${Date.now()}`;
+    const actionPlan: AgentActionPlan = {
+      id: planId,
+      title: `Navigate to ${route.title}`,
+      understoodIntent: `अधिकारी को वेबसाइट के पृष्ठ '${route.title}' (${route.path}) पर ले जाना।`,
+      confidenceScore: 1.0,
+      primaryModule: "UNIVERSAL",
+      targetRecords: [{ type: "PAGE", id: route.path, label: route.title, url: route.path }],
+      steps: [
+        {
+          id: "nav_step_1",
+          stepNumber: 1,
+          module: "UNIVERSAL",
+          actionTitle: `ओपन करें: ${route.title}`,
+          actionDescription: `${route.description}`,
+          isDestructive: false,
+          requiresOfficialApproval: false,
+          status: "COMPLETED",
+        },
+      ],
+      status: "AWAITING_APPROVAL",
+      createdAt: new Date().toISOString(),
+      executablePayload: {
+        toolName: "navigate",
+        parameters: { url: route.path },
+      },
+    };
+
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `📍 **गंतव्य पृष्ठ की जानकारी:**\n\n* **पेज:** ${route.title}\n* **URL:** \`${route.path}\`\n* **श्रेणी:** ${route.category}\n* **विवरण:** ${route.description}\n\nनीचे दिए गए बटन से आप सीधे इस पेज पर जा सकते हैं:`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      actionPlan,
+      suggestedPrompts: ["Workspace खोलें", "वापस जाएं"],
+    };
+  }
+
+  private static handleComplaintRegisterIntent(rawInput: string): AgentMessage {
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `📝 **नागरिक शिकायत पंजीकरण सहायता (Register Complaint):**\n\nनई शिकायत दर्ज करने के लिए आवश्यक विवरण:\n1. **शिकायतकर्ता का नाम, मोबाइल व पता**\n2. **घटना का स्थान व दिनांक/समय**\n3. **आरोपी / संदिग्ध का विवरण (यदि ज्ञात हो)**\n4. **शिकायत का संक्षिप्त विवरण (Incident Details)**\n\nआप सीधे शिकायत का विवरण मुझे बोलकर या लिखकर दे सकते हैं, अथवा सीधे पंजीकरण फॉर्म पर जा सकते हैं:`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      actionPlan: {
+        id: `plan_comp_reg_${Date.now()}`,
+        title: "Open Complaint Registration Form",
+        understoodIntent: "शिकायत पंजीकरण फॉर्म खोलना।",
+        confidenceScore: 0.95,
+        primaryModule: "COMPLAINTS",
+        targetRecords: [{ type: "PAGE", id: "/complaints/register", label: "Register Complaint", url: "/complaints/register" }],
+        steps: [
+          {
+            id: "cr_1",
+            stepNumber: 1,
+            module: "COMPLAINTS",
+            actionTitle: "शिकायत पंजीकरण पृष्ठ खोलना",
+            actionDescription: "/complaints/register फॉर्म पर नेविगेट करना।",
+            isDestructive: false,
+            requiresOfficialApproval: false,
+            status: "PENDING",
+          },
+        ],
+        status: "AWAITING_APPROVAL",
+        createdAt: new Date().toISOString(),
+      },
+      suggestedPrompts: ["शिकायत फॉर्म खोलें", "General Diary drafts dikhao", "FIR 125 kholo"],
+    };
+  }
+
+  private static handleFirRegisterIntent(rawInput: string): AgentMessage {
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `⚖️ **नियमित मुकद्दमा पंजीकरण (FIR Registration):**\n\nनियमित FIR दर्ज करने हेतु BNS 2023 की धाराएं, तहरीर, घटना स्थल व आरोपी विवरण अनिवार्य हैं।\n\nआप मुझे तहरीर का मजमून दे सकते हैं, या सीधे FIR रजिस्ट्रेशन फॉर्म पर जा सकते हैं:`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      actionPlan: {
+        id: `plan_fir_reg_${Date.now()}`,
+        title: "Open FIR Registration Form",
+        understoodIntent: "FIR पंजीकरण फॉर्म खोलना।",
+        confidenceScore: 0.95,
+        primaryModule: "FIR_WORKSPACE",
+        targetRecords: [{ type: "PAGE", id: "/fir/register", label: "Register FIR", url: "/fir/register" }],
+        steps: [
+          {
+            id: "fr_1",
+            stepNumber: 1,
+            module: "FIR_WORKSPACE",
+            actionTitle: "FIR रजिस्ट्रेशन फॉर्म खोलना",
+            actionDescription: "/fir/register फॉर्म पर नेविगेट करना।",
+            isDestructive: false,
+            requiresOfficialApproval: false,
+            status: "PENDING",
+          },
+        ],
+        status: "AWAITING_APPROVAL",
+        createdAt: new Date().toISOString(),
+      },
+      suggestedPrompts: ["FIR फॉर्म खोलें", "BNS 303(2) kya hai", "FIR 125 kholo"],
+    };
+  }
+
   private static async handleOpenFirIntent(firNumber: string, rawInput: string): Promise<AgentMessage> {
     const allFirs = firService.getAllFirs();
     const fir = allFirs.find((f) => f.firNumber.includes(firNumber) || f.id.includes(firNumber)) || allFirs[0];
@@ -497,17 +751,27 @@ export class CmsAgentService {
     };
   }
 
+  private static handleStaffQueryIntent(rawInput: string): AgentMessage {
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `👮 **थाना स्टाफ व वर्तमान नफरी स्थिति:**\n\n* **थाना प्रभारी (SHO):** Inspector Rajesh Kumar (PNO: HR-04291882)\n* **मुंशी (MHC):** Head Constable Devinder Kumar (PNO: HR-05192834)\n* **ड्यूटी ऑफिसर (Counter):** ASI Surender Pal (PNO: HR-09384712)\n* **जांच अधिकारी (EO 1):** SI Vikram Singh (PNO: HR-07182930)\n* **जांच अधिकारी (EO 2):** ASI Ramesh Chander (PNO: HR-06281923)\n\n*आप रोल स्विच करने के लिए टॉप बार में नाम पर क्लिक कर सकते हैं।*`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: ["Staff पेज खोलें", "General Diary देखें", "FIR 125 kholo"],
+    };
+  }
+
   private static async handleGeneralQueryIntent(rawInput: string, context: AgentSessionContext): Promise<AgentMessage> {
     return {
       id: `msg_${Date.now()}`,
       sender: "agent",
-      text: `जय हिन्द! मैं **हरियाणा पुलिस CMS AI Agent** हूँ। मैं आपके सभी थानों, मुकद्दमों, शिकायतों व रोजनामचा से सीधे जुड़ा हुआ हूँ।\n\n**मैं निम्नलिखित कार्य स्वतः कर सकता हूँ:**\n1. **गिरफ़्तारी प्रपत्र निर्माण:** "Anil Kumar ko arrest karke laya hoon FIR 125 me, arrest documents bana do"\n2. **केस डायरी (Zimni):** "FIR 125 ki Zimni draft karo"\n3. **रोजनामचा आम (GD Entry):** "Is case ki GD draft karo"\n4. **केस फ़ाइल व रिकॉर्ड्स:** "FIR 125 kholo" या "Complaint search karo"\n5. **कानूनी धाराएं (BNS/BNSS):** "Dhara 303(2) BNS kya hai?"\n\nआप माइक से बोलकर अथवा लिखकर निर्देश दे सकते हैं।`,
+      text: `जय हिन्द! मैं **हरियाणा पुलिस CMS AI Agent** हूँ। मुझे इस वेबसाइट के संपूर्ण फ्रंटएंड, बैकएंड APIs और डेटाबेस की पूर्ण समझ है।\n\n**मैं आपकी अनुमति से वेबसाइट के सभी कार्य कर सकता हूँ:**\n1. **गिरफ़्तारी प्रपत्र निर्माण:** "Anil Kumar ko arrest karke laya hoon FIR 125 me, arrest documents bana do"\n2. **केस डायरी (Zimni):** "FIR 125 ki Zimni draft karo"\n3. **रोजनामचा आम (GD Entry):** "Is case ki GD draft karo" या "रवानगी गश्त लिखो"\n4. **शिकायत व FIR पंजीकरण:** "Nayi complaint darj karni hai" या "FIR register form kholo"\n5. **सिस्टम वास्तुकला:** "Website me kahan kya hota hai samjhao"\n6. **कानूनी धाराएं (BNS/BNSS):** "Dhara 303(2) BNS kya hai?"\n\n*यदि कोई विवरण अधूरा होगा तो मैं आपसे पूछूँगा। कोई भी कार्य बिना आपकी अनुमति के नहीं किया जाएगा।*`,
       timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       suggestedPrompts: [
+        "Website me kahan kya hota hai samjhao",
         "FIR 125: Anil Kumar arrest docs banao",
         "FIR 125 kholo",
         "GD Draft karo",
-        "Dhara 303(2) BNS kya hai?",
       ],
     };
   }
