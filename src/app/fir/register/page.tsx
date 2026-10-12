@@ -395,7 +395,7 @@ function RegisterFIRForm() {
   const [complainantLastName, setComplainantLastName] = useState("");
   const [complainantAliases, setComplainantAliases] = useState<FIRAliasEntry[]>([]);
   const [tempAlias, setTempAlias] = useState("");
-  const [complainantGender, setComplainantGender] = useState<string>("Male");
+  const [complainantGender, setComplainantGender] = useState<string>("");
   const [complainantMaritalStatus, setComplainantMaritalStatus] = useState<string>("Married");
   const [complainantCategory, setComplainantCategory] = useState<string>("GENERAL");
   const [complainantMobile, setComplainantMobile] = useState("");
@@ -1485,8 +1485,23 @@ function RegisterFIRForm() {
     if (!complainantFirstName.trim()) {
       newErrors.complainant = "Complainant First Name is mandatory.";
     }
+    if (!complainantGender || !complainantGender.trim()) {
+      newErrors.complainantGender = "Complainant Gender is mandatory.";
+    }
+    if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
+      newErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
+    }
     if (!complainantMobile.trim()) {
       newErrors.complainantMobile = "Complainant Mobile number is mandatory.";
+    }
+    if (!permDistrict || !permDistrict.trim()) {
+      newErrors.permDistrict = "Complainant District is mandatory in Address Details.";
+    }
+    if (!permState || !permState.trim()) {
+      newErrors.permState = "Complainant State is mandatory in Address Details.";
+    }
+    if (!complainantNationality || !complainantNationality.trim()) {
+      newErrors.complainantNationality = "Complainant Nationality is mandatory.";
     }
     if (!firContentText.trim() && !briefFacts.trim()) {
       newErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
@@ -1497,7 +1512,15 @@ function RegisterFIRForm() {
     if (Object.keys(newErrors).length > 0) {
       if (newErrors.sourceOfComplaint || newErrors.actRemarks || newErrors.act_section) setActiveTab("act_section");
       else if (newErrors.occurrence) setActiveTab("occurrence");
-      else if (newErrors.complainant || newErrors.complainantMobile) setActiveTab("complainant");
+      else if (
+        newErrors.complainant ||
+        newErrors.complainantGender ||
+        newErrors.complainantAge ||
+        newErrors.complainantMobile ||
+        newErrors.permDistrict ||
+        newErrors.permState ||
+        newErrors.complainantNationality
+      ) setActiveTab("complainant");
       else if (newErrors.fir_content) setActiveTab("fir_content");
       return false;
     }
@@ -1578,6 +1601,34 @@ function RegisterFIRForm() {
         if (invalidOcc) {
           tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
         }
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
+    if (activeTab === "complainant") {
+      const tabErrors: Record<string, string> = {};
+      if (!complainantFirstName.trim()) {
+        tabErrors.complainant = "Complainant First Name is mandatory.";
+      }
+      if (!complainantGender || !complainantGender.trim()) {
+        tabErrors.complainantGender = "Complainant Gender is mandatory.";
+      }
+      if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
+        tabErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
+      }
+      if (!complainantMobile.trim()) {
+        tabErrors.complainantMobile = "Complainant Mobile number is mandatory.";
+      }
+      if (!permDistrict || !permDistrict.trim()) {
+        tabErrors.permDistrict = "Complainant District is mandatory in Address Details.";
+      }
+      if (!permState || !permState.trim()) {
+        tabErrors.permState = "Complainant State is mandatory in Address Details.";
+      }
+      if (!complainantNationality || !complainantNationality.trim()) {
+        tabErrors.complainantNationality = "Complainant Nationality is mandatory.";
       }
       if (Object.keys(tabErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...tabErrors }));
@@ -2654,16 +2705,25 @@ function RegisterFIRForm() {
         {/* TAB 3: COMPLAINANT (ALL DETAILS IN SINGLE PANEL) */}
         {/* ========================================================================= */}
         {activeTab === "complainant" && (
-          <div className="space-y-5 animate-in fade-in-30">
-            {/* Section 3.1: Personal Information */}
+          <div className="space-y-4 animate-in fade-in-30">
+            {/* Unified Complainant Details Card */}
             <Card className="border-slate-200 shadow-xs">
-              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
+              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <User className="w-4 h-4 text-blue-600" />
-                  3.1 Personal Information (व्यक्तिगत विवरण)
+                  Complainant Details (शिकायतकर्ता का विवरण)
                 </CardTitle>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Fields marked with <span className="text-red-600 font-bold">*</span> are mandatory
+                </span>
               </CardHeader>
-              <CardContent className="p-4 space-y-4 text-xs">
+              <CardContent className="p-4 space-y-6 text-xs">
+                {/* 1. Personal Information */}
+                <div>
+                  <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-600" />
+                    Personal Information (व्यक्तिगत विवरण)
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-1">
@@ -2671,7 +2731,16 @@ function RegisterFIRForm() {
                           First Name <span className="text-red-600">*</span>
                         </label>
                         <VoiceInputButton
-                          onTranscript={(t) => setComplainantFirstName(t)}
+                          onTranscript={(t) => {
+                            setComplainantFirstName(t);
+                            if (errors.complainant) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.complainant;
+                                return next;
+                              });
+                            }
+                          }}
                           currentValue={complainantFirstName}
                           fieldLabel="Complainant First Name"
                           iconOnly={true}
@@ -2681,8 +2750,19 @@ function RegisterFIRForm() {
                         type="text"
                         placeholder="Complainant First Name"
                         value={complainantFirstName}
-                        onChange={(e) => setComplainantFirstName(e.target.value)}
-                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-semibold ${getFieldHighlightClass("complainantFirstName")}`}
+                        onChange={(e) => {
+                          setComplainantFirstName(e.target.value);
+                          if (errors.complainant) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.complainant;
+                              return next;
+                            });
+                          }
+                        }}
+                        className={`w-full p-2.5 rounded-lg border font-semibold ${
+                          errors.complainant ? "border-red-500 bg-red-50 ring-1 ring-red-400" : "border-slate-300"
+                        } ${getFieldHighlightClass("complainantFirstName")}`}
                         required
                       />
                       {errors.complainant && (
@@ -2732,15 +2812,31 @@ function RegisterFIRForm() {
                       </label>
                       <select
                         value={complainantGender}
-                        onChange={(e) => setComplainantGender(e.target.value)}
-                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-medium ${getFieldHighlightClass("complainantGender")}`}
+                        onChange={(e) => {
+                          setComplainantGender(e.target.value);
+                          if (errors.complainantGender) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.complainantGender;
+                              return next;
+                            });
+                          }
+                        }}
+                        className={`w-full p-2.5 rounded-lg border font-medium ${
+                          errors.complainantGender ? "border-red-500 bg-red-50 ring-1 ring-red-400" : "border-slate-300"
+                        } ${getFieldHighlightClass("complainantGender")}`}
+                        required
                       >
+                        <option value="">-- Select Gender --</option>
                         {GENDER_OPTIONS.map((g) => (
                           <option key={g} value={g}>
                             {g}
                           </option>
                         ))}
                       </select>
+                      {errors.complainantGender && (
+                        <p className="text-red-600 text-[10px] mt-0.5">{errors.complainantGender}</p>
+                      )}
                     </div>
 
                     <div>
@@ -2827,11 +2923,13 @@ function RegisterFIRForm() {
                   </div>
 
                   {/* Comprehensive Age Panel with Reset */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                  <div className={`p-3.5 rounded-xl border space-y-3 transition-colors ${
+                    errors.complainantAge ? "bg-red-50/50 border-red-500 ring-1 ring-red-400" : "bg-slate-50 border-slate-200"
+                  }`}>
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 uppercase text-[11px] flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                        Age &amp; Date of Birth Particulars
+                        Age &amp; Date of Birth Particulars <span className="text-red-600">*</span>
                       </span>
                       <button
                         type="button"
@@ -2842,6 +2940,12 @@ function RegisterFIRForm() {
                         Reset Age
                       </button>
                     </div>
+                    {errors.complainantAge && (
+                      <p className="text-red-600 text-[11px] font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{errors.complainantAge}</span>
+                      </p>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                       <div>
                         <span className="text-[11px] text-slate-500 block">Date of Birth (DOB)</span>
@@ -2850,6 +2954,13 @@ function RegisterFIRForm() {
                             value={complainantDob}
                             onChange={(e) => {
                               setComplainantDob(e.target.value);
+                              if (errors.complainantAge) {
+                                setErrors((prev) => {
+                                  const next = { ...prev };
+                                  delete next.complainantAge;
+                                  return next;
+                                });
+                              }
                               if (e.target.value) {
                                 const birthYear = new Date(e.target.value).getFullYear();
                                 setComplainantYearOfBirth(String(birthYear));
@@ -2876,6 +2987,13 @@ function RegisterFIRForm() {
                           value={complainantYearOfBirth}
                           onChange={(e) => {
                             setComplainantYearOfBirth(e.target.value);
+                            if (errors.complainantAge) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.complainantAge;
+                                return next;
+                              });
+                            }
                             if (e.target.value.length === 4) {
                               const calcAge = Math.max(0, new Date().getFullYear() - Number(e.target.value));
                               setComplainantAge(String(calcAge));
@@ -2890,7 +3008,16 @@ function RegisterFIRForm() {
                           type="number"
                           placeholder="e.g. 35"
                           value={complainantAge}
-                          onChange={(e) => setComplainantAge(e.target.value)}
+                          onChange={(e) => {
+                            setComplainantAge(e.target.value);
+                            if (errors.complainantAge) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.complainantAge;
+                                return next;
+                              });
+                            }
+                          }}
                           className={`w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs ${getFieldHighlightClass("complainantAge")}`}
                         />
                       </div>
@@ -2997,23 +3124,19 @@ function RegisterFIRForm() {
                     />
                     <span>Complainant is also the Victim in this offence</span>
                   </label>
-                </CardContent>
-              </Card>
+                </div>
 
-            {/* Section 3.2: Address Details */}
-            <Card className="border-slate-200 shadow-xs">
-              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
-                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  3.2 Address Details (पते का विवरण)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4 text-xs">
+                {/* 2. Address Details */}
+                <div className="pt-4 border-t border-slate-200">
+                  <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    Address Details (पते का विवरण)
+                  </h4>
                   <div>
-                    <h4 className="font-bold text-slate-800 uppercase text-[11px] mb-2 flex items-center gap-1.5">
+                    <h5 className="font-bold text-slate-800 uppercase text-[11px] mb-2 flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-blue-600" />
                       Permanent Address (स्थाई पता)
-                    </h4>
+                    </h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
@@ -3123,9 +3246,20 @@ function RegisterFIRForm() {
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="font-bold text-slate-700 block">District</label>
+                          <label className="font-bold text-slate-700 block">
+                            District <span className="text-red-600">*</span>
+                          </label>
                           <VoiceInputButton
-                            onTranscript={(t) => setPermDistrict(t)}
+                            onTranscript={(t) => {
+                              setPermDistrict(t);
+                              if (errors.permDistrict) {
+                                setErrors((prev) => {
+                                  const next = { ...prev };
+                                  delete next.permDistrict;
+                                  return next;
+                                });
+                              }
+                            }}
                             currentValue={permDistrict}
                             fieldLabel="District"
                             iconOnly={true}
@@ -3134,15 +3268,41 @@ function RegisterFIRForm() {
                         <input
                           type="text"
                           value={permDistrict}
-                          onChange={(e) => setPermDistrict(e.target.value)}
-                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permDistrict")}`}
+                          onChange={(e) => {
+                            setPermDistrict(e.target.value);
+                            if (errors.permDistrict) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.permDistrict;
+                                return next;
+                              });
+                            }
+                          }}
+                          className={`w-full p-2 rounded border font-semibold ${
+                            errors.permDistrict ? "border-red-500 bg-red-50 ring-1 ring-red-400" : "border-slate-300"
+                          } ${getFieldHighlightClass("permDistrict")}`}
+                          required
                         />
+                        {errors.permDistrict && (
+                          <p className="text-red-600 text-[10px] mt-0.5">{errors.permDistrict}</p>
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="font-bold text-slate-700 block">State</label>
+                          <label className="font-bold text-slate-700 block">
+                            State <span className="text-red-600">*</span>
+                          </label>
                           <VoiceInputButton
-                            onTranscript={(t) => setPermState(t)}
+                            onTranscript={(t) => {
+                              setPermState(t);
+                              if (errors.permState) {
+                                setErrors((prev) => {
+                                  const next = { ...prev };
+                                  delete next.permState;
+                                  return next;
+                                });
+                              }
+                            }}
                             currentValue={permState}
                             fieldLabel="State"
                             iconOnly={true}
@@ -3151,9 +3311,24 @@ function RegisterFIRForm() {
                         <input
                           type="text"
                           value={permState}
-                          onChange={(e) => setPermState(e.target.value)}
-                          className={`w-full p-2 rounded border border-slate-300 ${getFieldHighlightClass("permState")}`}
+                          onChange={(e) => {
+                            setPermState(e.target.value);
+                            if (errors.permState) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.permState;
+                                return next;
+                              });
+                            }
+                          }}
+                          className={`w-full p-2 rounded border font-semibold ${
+                            errors.permState ? "border-red-500 bg-red-50 ring-1 ring-red-400" : "border-slate-300"
+                          } ${getFieldHighlightClass("permState")}`}
+                          required
                         />
+                        {errors.permState && (
+                          <p className="text-red-600 text-[10px] mt-0.5">{errors.permState}</p>
+                        )}
                       </div>
                       <div>
                         <label className="font-bold text-slate-700 block mb-1">Pincode</label>
@@ -3239,18 +3414,14 @@ function RegisterFIRForm() {
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-            {/* Section 3.3: Other Information & IDs */}
-            <Card className="border-slate-200 shadow-xs">
-              <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
-                <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-purple-600" />
-                  3.3 Other Information &amp; Identification (अन्य विवरण एवं पहचान पत्र)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4 text-xs">
+                {/* 3. Other Information & Identification */}
+                <div className="pt-4 border-t border-slate-200">
+                  <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                    <FileText className="w-3.5 h-3.5 text-purple-600" />
+                    Other Information &amp; Identification (अन्य विवरण एवं पहचान पत्र)
+                  </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="font-bold text-slate-700 block mb-1">Occupation</label>
@@ -3273,9 +3444,20 @@ function RegisterFIRForm() {
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="font-bold text-slate-700 block">Nationality</label>
+                        <label className="font-bold text-slate-700 block">
+                          Nationality <span className="text-red-600">*</span>
+                        </label>
                         <VoiceInputButton
-                          onTranscript={(t) => setComplainantNationality(t)}
+                          onTranscript={(t) => {
+                            setComplainantNationality(t);
+                            if (errors.complainantNationality) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.complainantNationality;
+                                return next;
+                              });
+                            }
+                          }}
                           currentValue={complainantNationality}
                           fieldLabel="Nationality"
                           iconOnly={true}
@@ -3283,10 +3465,26 @@ function RegisterFIRForm() {
                       </div>
                       <input
                         type="text"
+                        placeholder="e.g. Indian"
                         value={complainantNationality}
-                        onChange={(e) => setComplainantNationality(e.target.value)}
-                        className="w-full p-2 rounded border border-slate-300"
+                        onChange={(e) => {
+                          setComplainantNationality(e.target.value);
+                          if (errors.complainantNationality) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.complainantNationality;
+                              return next;
+                            });
+                          }
+                        }}
+                        className={`w-full p-2 rounded border font-semibold ${
+                          errors.complainantNationality ? "border-red-500 bg-red-50 ring-1 ring-red-400" : "border-slate-300"
+                        } ${getFieldHighlightClass("complainantNationality")}`}
+                        required
                       />
+                      {errors.complainantNationality && (
+                        <p className="text-red-600 text-[10px] mt-0.5">{errors.complainantNationality}</p>
+                      )}
                     </div>
                     <div>
                       <label className="font-bold text-slate-700 block mb-1">Aadhaar (UID) Number</label>
@@ -3440,8 +3638,9 @@ function RegisterFIRForm() {
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
