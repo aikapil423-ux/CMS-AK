@@ -345,30 +345,8 @@ function VoiceInputButton({
     }
   };
 
-  return (
-    <button
-      type="button"
-      onClick={toggleListening}
-      title={isListening ? "Listening... Click to stop" : `Voice dictation for ${fieldLabel}`}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold transition-all select-none cursor-pointer ${
-        isListening
-          ? "bg-red-500 text-white animate-pulse shadow-xs ring-2 ring-red-300"
-          : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-      } ${className}`}
-    >
-      {isListening ? (
-        <>
-          <MicOff className="w-3 h-3 text-white" />
-          <span>Listening...</span>
-        </>
-      ) : (
-        <>
-          <Mic className="w-3 h-3 text-blue-600" />
-          <span>Voice</span>
-        </>
-      )}
-    </button>
-  );
+  // Voice input buttons on form fields hidden as per user requirement
+  return null;
 }
 
 export default function ComplaintProfilePage() {
