@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -67,7 +67,7 @@ const FIR_STATUS_OPTIONS = [
 
 const ALL_FIR_STATUS_KEYS = FIR_STATUS_OPTIONS.map((o) => o.key);
 
-export default function FIRRegisterPage() {
+function FIRRegisterPageContent() {
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
 
@@ -1309,5 +1309,13 @@ export default function FIRRegisterPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function FIRRegisterPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading FIR Register...</div>}>
+      <FIRRegisterPageContent />
+    </Suspense>
   );
 }

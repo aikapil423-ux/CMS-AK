@@ -130,7 +130,57 @@ export class CmsAgentService {
     }
 
     // -------------------------------------------------------------
-    // INTENT B: AMBIGUITY CHECK FOR ARREST DOCUMENTS
+    // INTENT B: OPEN FORM / DIALOGUE BOX / PAGE / WORKSPACE NAVIGATION
+    // e.g., "Add entry daailogue box kholo", "register complaint form kholo",
+    // "role switcher kholo", "dialogue box kholo", "page par jao", etc.
+    // -------------------------------------------------------------
+    const targetRoute = CmsCapabilityRegistry.findRoute(raw);
+    const isOpenOrNavQuery =
+      q.includes("kholo") ||
+      q.includes("khol") ||
+      q.includes("open") ||
+      q.includes("chalo") ||
+      q.includes("jao") ||
+      q.includes("jana") ||
+      q.includes("le chalo") ||
+      q.includes("dikhao") ||
+      q.includes("show") ||
+      q.includes("form") ||
+      q.includes("dialogue") ||
+      q.includes("daailogue") ||
+      q.includes("dialog") ||
+      q.includes("box") ||
+      q.includes("modal") ||
+      q.includes("window") ||
+      q.includes("desk") ||
+      q.includes("workspace") ||
+      q.includes("tab");
+
+    if (targetRoute && (isOpenOrNavQuery || q.includes("register") || q.includes("new") || q.includes("nayi") || q.includes("add"))) {
+      return this.handleNavigationIntent(targetRoute, raw);
+    }
+
+    // Proactive clarification if user asks to open a dialog/form but didn't specify which one
+    if (
+      (q.includes("dialogue box") || q.includes("daailogue box") || q.includes("dialog box") || q.includes("form kholo") || q.includes("kise page pr jana") || q.includes("page par jana")) &&
+      !targetRoute
+    ) {
+      return {
+        id: `ask_dialog_${Date.now()}`,
+        sender: "agent",
+        text: `❓ **आप कौन सा फॉर्म या डायलॉग बॉक्स खोलना चाहते हैं?**\n\nकृपया नीचे दिए गए विकल्पों में से चुनें या मुझे निर्देश दें:\n\n1. **नया रोजनामचा इंद्राज (New GD Entry Form)** - \`/general-diary/new\`\n2. **नागरिक शिकायत पंजीकरण (Register Complaint Form)** - \`/complaints/register\`\n3. **नियमित मुकद्दमा पंजीकरण (Regular FIR Form)** - \`/fir/register\`\n4. **रोल स्विचर डायलॉग बॉक्स (Role Switcher Dialog)**\n5. **गिरफ़्तारी प्रपत्र वर्कस्पेस (Arrest Docs Workspace - Form 26.8)**\n6. **केस डायरी (Zimni Desk - Section 192 BNSS)**`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        suggestedPrompts: [
+          "Add entry daailogue box kholo",
+          "register complaint form kholo",
+          "FIR register form kholo",
+          "Role switcher dialogue kholo",
+        ],
+      };
+    }
+
+    // -------------------------------------------------------------
+    // INTENT C: AMBIGUITY CHECK FOR ARREST DOCUMENTS
     // If user says "arrest memo banao" or "girftar karke laya hoon" but mentions NO FIR and NO name and NO active context
     // -> DO NOT BLINDLY GUESS! ASK CLARIFYING QUESTION!
     // -------------------------------------------------------------
@@ -212,13 +262,6 @@ export class CmsAgentService {
       return this.handleZimniIntent(raw, firNumber, currentPath);
     }
 
-    // -------------------------------------------------------------
-    // INTENT F: DIRECT NAVIGATION TO ANY PAGE OR FORM
-    // -------------------------------------------------------------
-    const targetRoute = CmsCapabilityRegistry.findRoute(raw);
-    if (targetRoute && (q.includes("kholo") || q.includes("open") || q.includes("chalo") || q.includes("jao") || q.includes("page"))) {
-      return this.handleNavigationIntent(targetRoute);
-    }
 
     // -------------------------------------------------------------
     // INTENT G: REGISTER COMPLAINT OR REGISTER FIR ASSISTANCE
@@ -576,42 +619,71 @@ export class CmsAgentService {
     };
   }
 
-  private static handleNavigationIntent(route: any): AgentMessage {
+  private static handleNavigationIntent(route: any, rawInput?: string): AgentMessage {
+    const isModal = route.path === "MODAL:ROLE_SWITCHER" || route.path.startsWith("MODAL:");
     const planId = `plan_nav_${Date.now()}`;
+
     const actionPlan: AgentActionPlan = {
       id: planId,
-      title: `Navigate to ${route.title}`,
-      understoodIntent: `अधिकारी को वेबसाइट के पृष्ठ '${route.title}' (${route.path}) पर ले जाना।`,
+      title: isModal ? `Open ${route.title}` : `Open ${route.title} (${route.path})`,
+      understoodIntent: isModal
+        ? `उपयोगकर्ता द्वारा '${route.title}' स्क्रीन पर खोलने का निर्देश दिया गया है।`
+        : `उपयोगकर्ता द्वारा वेबसाइट के फॉर्म / पेज '${route.title}' (${route.path}) को खोलने का निर्देश दिया गया है।`,
       confidenceScore: 1.0,
       primaryModule: "UNIVERSAL",
-      targetRecords: [{ type: "PAGE", id: route.path, label: route.title, url: route.path }],
+      targetRecords: [
+        {
+          type: isModal ? "MODAL" : "PAGE",
+          id: route.path,
+          label: route.title,
+          url: isModal ? undefined : route.path,
+        },
+      ],
       steps: [
         {
           id: "nav_step_1",
           stepNumber: 1,
           module: "UNIVERSAL",
-          actionTitle: `ओपन करें: ${route.title}`,
+          actionTitle: isModal ? `डायलॉग बॉक्स खोलना: ${route.title}` : `फॉर्म / पेज खोलना: ${route.title}`,
           actionDescription: `${route.description}`,
           isDestructive: false,
           requiresOfficialApproval: false,
-          status: "COMPLETED",
+          status: "PENDING",
         },
       ],
       status: "AWAITING_APPROVAL",
       createdAt: new Date().toISOString(),
       executablePayload: {
-        toolName: "navigate",
-        parameters: { url: route.path },
+        toolName: isModal ? "open_modal" : "navigate",
+        parameters: {
+          url: isModal ? undefined : route.path,
+          modalEvent: isModal ? "cms-open-role-switcher" : undefined,
+          title: route.title,
+        },
       },
     };
+
+    this.updateContext({ lastActionPlanId: planId, activeActionPlan: actionPlan });
+
+    const text = isModal
+      ? `🟢 **${route.title} खोलने का अनुरोध:**\n\n* **प्रकार:** स्क्रीन डायलॉग बॉक्स (Modal)\n* **उद्देश्य:** ${route.description}\n\nडायलॉग बॉक्स खोलने के लिए नीचे **"डायलॉग बॉक्स खोलें (Open Dialog)"** पर क्लिक करें अथवा "हाँ / खोल दो" कहें।`
+      : `📍 **${route.title} खोलने का अनुरोध:**\n\n* **पेज / फॉर्म:** ${route.title}\n* **URL:** \`${route.path}\`\n* **श्रेणी:** ${route.category}\n* **विवरण:** ${route.description}\n\nइस फॉर्म / पेज पर जाने के लिए नीचे **"फॉर्म खोलें (Open Form Now) ➜"** पर क्लिक करें अथवा "स्वीकृत करें / हाँ" कहें।`;
 
     return {
       id: `msg_${Date.now()}`,
       sender: "agent",
-      text: `📍 **गंतव्य पृष्ठ की जानकारी:**\n\n* **पेज:** ${route.title}\n* **URL:** \`${route.path}\`\n* **श्रेणी:** ${route.category}\n* **विवरण:** ${route.description}\n\nनीचे दिए गए बटन से आप सीधे इस पेज पर जा सकते हैं:`,
+      text,
       timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       actionPlan,
-      suggestedPrompts: ["Workspace खोलें", "वापस जाएं"],
+      suggestedPrompts: [
+        isModal ? "डायलॉग बॉक्स खोलें" : "फॉर्म खोलें (Open Form)",
+        "General Diary रजिस्टर पर जाएं",
+        "रद्द करें (Cancel)",
+      ],
+      moduleContext: {
+        currentPath: route.path,
+        moduleName: "UNIVERSAL",
+      },
     };
   }
 
@@ -781,9 +853,71 @@ export class CmsAgentService {
    */
   public static async executeActionPlan(planId: string): Promise<AgentMessage> {
     const context = this.getContext();
-    const fir = firService.getAllFirs().find((f) => f.id === context.activeFirId || f.firNumber === context.activeFirNumber) || firService.getAllFirs()[0];
+    const activePlan = context.activeActionPlan;
+    const toolName = activePlan?.executablePayload?.toolName;
+    const params = activePlan?.executablePayload?.parameters || {};
 
-    // 1. Save document to FIR documents
+    // 1. Navigation execution
+    if (toolName === "navigate") {
+      const url = params.url || activePlan?.targetRecords?.[0]?.url || "/";
+      const title = params.title || activePlan?.title || "पेज";
+      this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
+      return {
+        id: `msg_${Date.now()}`,
+        sender: "agent",
+        text: `✅ **फॉर्म / पेज खोला जा रहा है!**\n\n* **पेज:** ${title}\n* **URL:** \`${url}\`\n\nस्क्रीन को निर्देशित फॉर्म / पेज पर ले जाया जा रहा है।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        actionPlan: activePlan ? { ...activePlan, status: "APPROVED" } : undefined,
+        suggestedPrompts: ["New Entry दर्ज करें", "वापस जाएं"],
+      };
+    }
+
+    // 2. Open Modal execution
+    if (toolName === "open_modal") {
+      this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
+      return {
+        id: `msg_${Date.now()}`,
+        sender: "agent",
+        text: `✅ **डायलॉग बॉक्स सक्रिय कर दिया गया है!**\n\nस्क्रीन पर रोल स्विचर डायलॉग बॉक्स खोल दिया गया है।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        actionPlan: activePlan ? { ...activePlan, status: "APPROVED" } : undefined,
+        suggestedPrompts: ["ठीक है", "वापस जाएं"],
+      };
+    }
+
+    // 3. Save GD Suggestion execution
+    if (toolName === "save_gd_suggestion") {
+      const fir = firService.getAllFirs().find((f) => f.id === params.firId || f.id === context.activeFirId) || firService.getAllFirs()[0];
+      await GeneralDiaryService.generateSuggestionFromSystemEvent({
+        eventType: "OFFICER_DISPATCHED",
+        subject: params.subject || "रोजनामcha आम इंद्राज",
+        narrative: params.narrative || "",
+        policeStation: fir.policeStation,
+        district: fir.district,
+        officer: {
+          name: fir.assignedIoName || "SI Neeraj Kumar",
+          rank: fir.assignedIoRank || "Sub Inspector",
+          beltNumber: fir.assignedIoBeltNumber || "SI/8821",
+          pno: "HR-04291882",
+        },
+        relatedRecords: {
+          firNumber: fir.firNumber,
+          personName: context.activePersonName || "Anil Kumar",
+        },
+      });
+      this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
+      return {
+        id: `msg_${Date.now()}`,
+        sender: "agent",
+        text: `✅ **रोजनामचा इंद्राज सफलतापूर्वक भेजा गया!**\n\nयह Smart General Diary के **"Auto-Suggestions & Drafts"** टैब में मुंशी (MHC) के संज्ञानार्थ जोड़ दिया गया है।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        actionPlan: activePlan ? { ...activePlan, status: "APPROVED" } : undefined,
+        suggestedPrompts: ["GD Drafts देखें", "General Diary खोलें"],
+      };
+    }
+
+    // 4. Default: Save Arrest Dossier & Form 26.8 Memo
+    const fir = firService.getAllFirs().find((f) => f.id === context.activeFirId || f.firNumber === context.activeFirNumber) || firService.getAllFirs()[0];
     try {
       firService.addDocument(fir.id, {
         id: `doc_arrest_${Date.now()}`,
@@ -794,7 +928,6 @@ export class CmsAgentService {
         uploadedAt: new Date().toISOString(),
       });
 
-      // 2. Add Timeline Event
       const timelineEvent = {
         id: `tl_arrest_${Date.now()}`,
         date: new Date().toISOString().split("T")[0],
@@ -807,7 +940,6 @@ export class CmsAgentService {
         timeline: [timelineEvent, ...(fir.timeline || [])],
       });
 
-      // 3. Send Auto-Suggestion to General Diary
       const data = AgentDocumentEngine.extractArrestData(fir);
       const { subject, narrative } = AgentDocumentEngine.generateArrestGDEntry(data);
 
@@ -832,7 +964,7 @@ export class CmsAgentService {
       console.warn("Error executing action plan:", err);
     }
 
-    this.updateContext({ lastActionPlanId: undefined });
+    this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
 
     return {
       id: `msg_${Date.now()}`,

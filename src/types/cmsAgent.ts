@@ -103,6 +103,7 @@ export interface AgentSessionContext {
   activeDistrict?: string;
   lastGeneratedDocType?: string;
   lastActionPlanId?: string;
+  activeActionPlan?: AgentActionPlan;
   conversationHistory?: AgentMessage[];
 }
 

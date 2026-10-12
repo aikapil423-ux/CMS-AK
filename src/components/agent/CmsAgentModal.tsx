@@ -164,12 +164,40 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
     }
   };
 
-  const handleApprovePlan = async (planId: string) => {
+  const handleApprovePlan = async (planId: string, actionPlan?: any) => {
+    const toolName = actionPlan?.executablePayload?.toolName;
+    const targetUrl = actionPlan?.executablePayload?.parameters?.url || actionPlan?.targetRecords?.[0]?.url;
+
+    if (toolName === "open_modal" || targetUrl === "MODAL:ROLE_SWITCHER") {
+      const modalEvent = actionPlan?.executablePayload?.parameters?.modalEvent || "cms-open-role-switcher";
+      window.dispatchEvent(new CustomEvent(modalEvent));
+      onClose();
+      return;
+    }
+
+    if (toolName === "navigate" || (targetUrl && !targetUrl.startsWith("MODAL:"))) {
+      if (targetUrl) {
+        router.push(targetUrl);
+        onClose();
+        return;
+      }
+    }
+
     setExecutingPlanId(planId);
     setIsLoading(true);
     try {
       const resultMsg = await CmsAgentService.executeActionPlan(planId);
       setMessages((prev) => [...prev, resultMsg]);
+      if (resultMsg.actionPlan?.executablePayload?.toolName === "navigate") {
+        const dest = resultMsg.actionPlan.executablePayload.parameters.url;
+        if (dest) {
+          router.push(dest);
+          onClose();
+        }
+      } else if (resultMsg.actionPlan?.executablePayload?.toolName === "open_modal") {
+        window.dispatchEvent(new CustomEvent("cms-open-role-switcher"));
+        onClose();
+      }
     } catch (err) {
       console.error("Plan execution error:", err);
     } finally {
@@ -366,41 +394,78 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
 
                       {/* Action Plan Approval Buttons */}
                       <div className="pt-2 flex items-center gap-2 flex-wrap">
-                        <button
-                          type="button"
-                          onClick={() => handleApprovePlan(msg.actionPlan!.id)}
-                          disabled={isLoading}
-                          className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {executingPlanId === msg.actionPlan.id ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              सुरक्षित किया जा रहा है...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Approve (स्वीकृत करें)
-                            </>
-                          )}
-                        </button>
+                        {(() => {
+                          const toolName = msg.actionPlan!.executablePayload?.toolName;
+                          const targetUrl =
+                            msg.actionPlan!.executablePayload?.parameters?.url ||
+                            msg.actionPlan!.targetRecords?.[0]?.url;
+                          const isModal =
+                            toolName === "open_modal" ||
+                            targetUrl === "MODAL:ROLE_SWITCHER" ||
+                            targetUrl?.startsWith("MODAL:");
+                          const isNavigation =
+                            toolName === "navigate" ||
+                            (Boolean(targetUrl) && !isModal);
 
-                        <button
-                          type="button"
-                          onClick={() => router.push(`/fir-workspace/arrest-docs?firId=${msg.moduleContext?.activeFirId || "fir-125"}`)}
-                          className="py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-semibold text-xs transition flex items-center gap-1 cursor-pointer border border-blue-300"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Workspace
-                        </button>
+                          return (
+                            <>
+                              {isNavigation || isModal ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
+                                  className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  {isModal
+                                    ? "डायलॉग बॉक्स खोलें (Open Dialog) ➜"
+                                    : "फॉर्म / पेज अभी खोलें (Open Form Now) ➜"}
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
+                                  disabled={isLoading}
+                                  className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                >
+                                  {executingPlanId === msg.actionPlan!.id ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      सुरक्षित किया जा रहा है...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      Approve (स्वीकृत करें)
+                                    </>
+                                  )}
+                                </button>
+                              )}
 
-                        <button
-                          type="button"
-                          onClick={() => handleCancelPlan(msg.actionPlan!.id)}
-                          className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-xs transition cursor-pointer"
-                        >
-                          Cancel (रद्द करें)
-                        </button>
+                              {targetUrl && !isModal && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    router.push(targetUrl);
+                                    onClose();
+                                  }}
+                                  className="py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl font-semibold text-xs transition flex items-center gap-1 cursor-pointer border border-blue-300"
+                                  title="Open directly and close modal"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                  पेज पर जाएं
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleCancelPlan(msg.actionPlan!.id)}
+                                className="py-2 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-semibold text-xs transition cursor-pointer"
+                              >
+                                Cancel (रद्द करें)
+                              </button>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}

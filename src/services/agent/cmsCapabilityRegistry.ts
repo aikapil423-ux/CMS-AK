@@ -162,6 +162,15 @@ export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
     primaryApis: ["/api/users"],
     databaseEntities: ["User"],
   },
+  {
+    path: "MODAL:ROLE_SWITCHER",
+    title: "रोल स्विचर डायलॉग बॉक्स (Role Switcher Dialog)",
+    category: "Administration",
+    description: "थाना अधिकारियों (SHO, MHC, IO, EO, Counter Duty Officer) के बीच भूमिका व पदभार बदलने का स्क्रीन डायलॉग बॉक्स।",
+    supportedActions: ["रोल बदलना", "पदभार स्विच करना"],
+    primaryApis: ["/api/users"],
+    databaseEntities: ["User"],
+  },
 ];
 
 export const CMS_CAPABILITIES: CMSCapability[] = [
@@ -305,36 +314,151 @@ export class CmsCapabilityRegistry {
 
   public static findRoute(query: string): WebsiteRouteInfo | null {
     const q = query.toLowerCase();
-    if (q.includes("arrest") || q.includes("girftar")) {
-      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/arrest-docs") || null;
+
+    // 0. Role Switcher Modal / Dialog Box
+    if (
+      q.includes("role switcher") ||
+      q.includes("role modal") ||
+      q.includes("role dialogue") ||
+      q.includes("role daailogue") ||
+      q.includes("role dialog") ||
+      q.includes("role box") ||
+      q.includes("role badlo") ||
+      q.includes("role badalne") ||
+      q.includes("change role") ||
+      q.includes("switch role")
+    ) {
+      return (
+        WEBSITE_ARCHITECTURE.find((r) => r.path === "MODAL:ROLE_SWITCHER") || {
+          path: "MODAL:ROLE_SWITCHER",
+          title: "रोल स्विचर डायलॉग बॉक्स (Role Switcher Dialog)",
+          category: "Administration",
+          description: "थाना अधिकारियों (SHO, MHC, IO, EO, Counter Duty Officer) के बीच भूमिका व पदभार बदलने का स्क्रीन डायलॉग बॉक्स।",
+          supportedActions: ["रोल बदलना", "पदभार स्विच करना"],
+          primaryApis: ["/api/users"],
+          databaseEntities: ["User"],
+        }
+      );
     }
-    if (q.includes("zimni") || q.includes("case diary")) {
-      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/zimni") || null;
-    }
-    if (q.includes("complaint register") || q.includes("shikayat register") || q.includes("nayi complaint")) {
-      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/complaints/register") || null;
-    }
-    if (q.includes("fir register") || q.includes("nayi fir")) {
-      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir/register") || null;
-    }
-    if (q.includes("gd draft") || q.includes("suggestions") || q.includes("auto-suggestions")) {
-      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/general-diary") || null;
-    }
-    if (q.includes("new gd") || q.includes("nayi gd") || q.includes("gd entry")) {
+
+    // 1. Add Entry / New GD Entry Form / Dialog Box
+    if (
+      q.includes("add entry") ||
+      q.includes("new entry") ||
+      q.includes("entry daailogue") ||
+      q.includes("entry dialogue") ||
+      q.includes("entry dialog") ||
+      q.includes("entry box") ||
+      q.includes("entry form") ||
+      q.includes("gd entry form") ||
+      q.includes("gd form") ||
+      q.includes("nayi gd") ||
+      q.includes("naya roznamcha") ||
+      q.includes("rapat form") ||
+      (q.includes("entry") && (q.includes("kholo") || q.includes("open") || q.includes("box") || q.includes("form") || q.includes("dialog") || q.includes("daailogue")))
+    ) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/general-diary/new") || null;
     }
-    if (q.includes("acts") || q.includes("dhara") || q.includes("section")) {
+
+    // 2. Register Complaint Form / Dialog
+    if (
+      (q.includes("complaint") || q.includes("shikayat") || q.includes("शिकायत")) &&
+      (q.includes("register") || q.includes("form") || q.includes("nayi") || q.includes("darj") || q.includes("box") || q.includes("dialog") || q.includes("daailogue"))
+    ) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/complaints/register") || null;
+    }
+
+    // 3. Register Regular FIR Form
+    if (
+      (q.includes("fir") || q.includes("mukaddma") || q.includes("मुकद्दमा")) &&
+      (q.includes("register") || q.includes("form") || q.includes("nayi") || q.includes("darj") || q.includes("box") || q.includes("dialog") || q.includes("daailogue"))
+    ) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir/register") || null;
+    }
+
+    // 4. Arrest Docs Workspace / Form 26.8
+    if (
+      (q.includes("arrest") || q.includes("girftar") || q.includes("गिरफ्तार") || q.includes("jamatalashi") || q.includes("जामातालाशी") || q.includes("26.8")) &&
+      (q.includes("form") || q.includes("page") || q.includes("workspace") || q.includes("kholo") || q.includes("open") || q.includes("box") || q.includes("desk"))
+    ) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/arrest-docs") || null;
+    }
+
+    // 5. Case Diary / Zimni Workspace (Section 192 BNSS)
+    if (
+      (q.includes("zimni") || q.includes("case diary") || q.includes("ज़िमनी")) &&
+      (q.includes("form") || q.includes("page") || q.includes("workspace") || q.includes("kholo") || q.includes("open") || q.includes("box") || q.includes("desk"))
+    ) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/zimni") || null;
+    }
+
+    // 6. General Diary Auto-Suggestions & Drafts Tab
+    if (
+      q.includes("suggestion") ||
+      q.includes("auto-suggestion") ||
+      q.includes("gd draft tab") ||
+      q.includes("draft tab") ||
+      q.includes("drafts tab") ||
+      q.includes("sujhav tab")
+    ) {
+      return (
+        {
+          path: "/general-diary?tab=SUGGESTIONS_DRAFTS",
+          title: "रोजनामचा ऑटो-सुझाव व ड्राफ्ट्स (Smart GD Suggestions & Drafts)",
+          category: "General Diary",
+          description: "मुंशी (MHC) के संज्ञानार्थ AI एवं सिस्टम इवेंट्स से आए GD सुझाव डेस्क।",
+          supportedActions: ["Verify & Lock (Add to GD)", "Edit Draft", "Delete Draft"],
+          primaryApis: ["/api/general-diary"],
+          databaseEntities: ["GDRecord"],
+        } as WebsiteRouteInfo
+      );
+    }
+
+    // 7. General Diary Register
+    if (q.includes("general diary") || q.includes("roznamcha") || q.includes("gd register") || q.includes("gd desk")) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/general-diary") || null;
+    }
+
+    // 8. Complaints List / Desk
+    if (q.includes("complaints desk") || q.includes("shikayat list") || q.includes("complaints list") || (q.includes("complaint") && (q.includes("kholo") || q.includes("desk") || q.includes("register")))) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/complaints") || null;
+    }
+
+    // 9. FIR List / Cases
+    if (q.includes("fir desk") || q.includes("cases list") || q.includes("mukaddma register") || (q.includes("fir") && (q.includes("list") || q.includes("desk") || q.includes("register")))) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir") || null;
+    }
+
+    // 10. Acts & Sections Explorer
+    if (q.includes("acts") || q.includes("dhara explorer") || q.includes("section explorer") || q.includes("bns explorer")) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/acts-sections") || null;
     }
-    if (q.includes("staff") || q.includes("nafri") || q.includes("users")) {
+
+    // 11. Staff / Duty Roster
+    if (q.includes("staff") || q.includes("nafri") || q.includes("users") || q.includes("roster") || q.includes("duty roster")) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/users") || null;
     }
-    if (q.includes("station") || q.includes("beat")) {
+
+    // 12. Station Profile & Beats
+    if (q.includes("station profile") || q.includes("thana profile") || q.includes("beat list") || q.includes("beats")) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/station-profile") || null;
     }
-    if (q.includes("enquiry") || q.includes("report")) {
+
+    // 13. Enquiry Workspace / Drafts
+    if (q.includes("enquiry") || q.includes("report workspace") || q.includes("janch aakhya")) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/enquiry-workspace/drafts") || null;
     }
+
+    // 14. Non-Cognizable Report (NCR) Workspace
+    if (q.includes("ncr") || q.includes("asangey") || q.includes("174 bnss")) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/enquiry-workspace/ncr") || null;
+    }
+
+    // 15. Home Dashboard
+    if (q.includes("home") || q.includes("dashboard") || q.includes("mukhya page")) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/") || null;
+    }
+
     return null;
   }
 }

@@ -28,6 +28,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { currentUser, isAuthenticated } = useAuth();
   const [roleModalOpen, setRoleModalOpen] = useState(false);
 
+  React.useEffect(() => {
+    const handleOpenRoleModal = () => setRoleModalOpen(true);
+    window.addEventListener("cms-open-role-switcher", handleOpenRoleModal);
+    return () => window.removeEventListener("cms-open-role-switcher", handleOpenRoleModal);
+  }, []);
+
   // If on login page or unauthenticated, render without shell
   if (!isAuthenticated) {
     return <>{children}</>;
