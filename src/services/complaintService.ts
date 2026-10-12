@@ -2899,7 +2899,7 @@ PNO: ${shoPno}
       saveNotificationsToStorage(officerNotificationsStore);
     }
 
-    // Auto-record in Roznamcha General Diary if NCR is Approved by SHO (BNSS Section 174)
+    // Auto-suggest in Roznamcha General Diary (Suggestions & Drafts) if NCR is Approved by SHO (BNSS Section 174)
     if (isNcr) {
       try {
         const targetReport =
@@ -2954,7 +2954,7 @@ PNO: ${shoPno}
         const ncrSubject = `असंज्ञेय अपराध रपट (NCR स्वीकृत) - शिकायत सं. ${complaint.complaintNumber} [BNSS धारा 174]`;
 
         const ncrNarrative = `================================================================================
-रोजनामचा आम रपट (General Diary Entry) - असंज्ञेय अपराध (Non-Cognizable Report)
+रोजनामचा आम सुझाव (General Diary Draft) - असंज्ञेय अपराध (Non-Cognizable Report)
 थाना: ${psName}, जिला: ${distName} | दिनांक: ${dateStr} समय: ${timeStr}
 कानूनी प्रावधान: भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023 धारा 174
 ================================================================================
@@ -2982,7 +2982,7 @@ ${reportBody}
 --------------------------------------------------------------------------------
 
 6. वैधानिक निर्देश व कार्यवाही (Statutory Directive under Section 174(2) BNSS):
-चूंकि मामला असंज्ञेय अपराध का है, अतः पुलिस द्वारा सीधे अन्वेषण अपेक्षित नहीं है। शिकायतकर्ता को BNSS धारा 174(2) के तहत सक्षम इलाका मजिस्ट्रेट के समक्ष परिवाद दायर करने की वैधानिक हिदायत दी गई। रपट रोजनामचा में दर्ज की जाकर तस्दीक की गई।`;
+चूंकि मामला असंज्ञेय अपराध का है, अतः पुलिस द्वारा सीधे अन्वेषण अपेक्षित नहीं है। शिकायतकर्ता को BNSS धारा 174(2) के तहत सक्षम इलाका मजिस्ट्रेट के समक्ष परिवाद दायर करने की वैधानिक हिदायत दी गई। [नोट: मुंशी (MHC) इस सुझाव को जांचकर रोजनामचा में शामिल (Verify & Lock), संशोधित (Edit) अथवा निरस्त (Delete) कर सकते हैं।]`;
 
         const ncrAttachments: any[] = [];
         if (targetReport?.contentHtml || targetReport?.dataUrl) {
@@ -3000,46 +3000,171 @@ ${reportBody}
           });
         }
 
-        const gdRecord = await GeneralDiaryService.addEntry({
-          typeCode: "NON_COGNIZABLE_REPORT",
+        await GeneralDiaryService.generateSuggestionFromSystemEvent({
+          eventType: "COMPLAINT_NCR",
           category: "COURT_DOCUMENTATION",
+          typeCode: "NON_COGNIZABLE_REPORT",
           typeDisplay: "Non-Cognizable Report",
-          typeDisplayHi: "असंज्ञेय अपराध रपट",
+          typeDisplayHi: "असंज्ञेय अपराध रपट (BNSS धारा 174)",
           subject: ncrSubject,
           narrative: ncrNarrative,
           policeStation: psName,
           district: distName,
-          actualAuthor: {
+          officer: {
             name: shoName,
             rank: "Station House Officer (SHO)",
             pno: shoPno,
             beltNumber: `${shoPno.slice(-3)}/KKR`,
           },
-          entryForOfficer: {
-            name: eoName,
-            rank: eoRank,
-            pno: eoPno,
-            beltNumber: `${eoPno.slice(-3)}/KKR`,
-          },
           relatedRecords: {
             complaintNumber: complaint.complaintNumber,
+            personName: complaint.complainantName,
+            destinationLocation: complaint.incidentPlace,
+            purpose: ncrSubject,
           },
           attachments: ncrAttachments.length > 0 ? ncrAttachments : undefined,
         });
 
-        if (gdRecord && (gdRecord.gdNumber || gdRecord.id)) {
-          const recordedGdNumber = gdRecord.gdNumber || `GD-${gdRecord.id.slice(-4)}`;
-          complaintsStore[index].ncrNumber = recordedGdNumber;
-          this.addTimelineEvent(complaint.id, {
-            title: `Roznamcha GD Entry Logged: ${recordedGdNumber}`,
-            description: `Station General Diary Entry ${recordedGdNumber} automatically recorded for NCR under Section 174 BNSS containing complete enquiry report narrative.`,
-            category: "STATUS_CHANGE",
-            officerName: shoName,
-            timestamp: new Date().toISOString(),
+        this.addTimelineEvent(complaint.id, {
+          title: `Roznamcha GD Suggestion Created (NCR)`,
+          description: `General Diary auto-suggestion generated for Non-Cognizable Report (BNSS u/s 174) with complete enquiry report narrative. Sent to Auto-Suggestions & Drafts for MHC (Munshi) review and disposal.`,
+          category: "STATUS_CHANGE",
+          officerName: shoName,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (gdErr) {
+        console.warn("Could not auto-suggest NCR to Roznamcha GD:", gdErr);
+      }
+    }
+
+    // Auto-suggest in Roznamcha General Diary (Suggestions & Drafts) if FIR is Recommended & approved by SHO (BNSS Section 173)
+    if (isFir) {
+      try {
+        const targetReport =
+          (complaint.reports || []).find(
+            (r) => r.id === complaint.eoRecommendedReportId || r.sentToSho || r.recommendationType === "FIR"
+          ) || (complaint.reports && complaint.reports[0]);
+
+        let reportBody = targetReport?.content?.trim() || "";
+        if (!reportBody && targetReport?.contentHtml) {
+          reportBody = targetReport.contentHtml
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+            .replace(/<\/p>|<\/div>|<br\s*\/?>/gi, "\n")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .replace(/&amp;/g, "&")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&quot;/g, '"')
+            .replace(/\n\s*\n/g, "\n\n")
+            .trim();
+        }
+        if (!reportBody && targetReport?.conclusionSummary) {
+          reportBody = targetReport.conclusionSummary.trim();
+        }
+
+        if (!reportBody) {
+          try {
+            const { RecommendationReportService } = await import("./recommendationReportService");
+            const generatedDraft = RecommendationReportService.generateDraft(complaint, "FIR", {
+              name: complaint.assignedEoName,
+              rank: complaint.assignedEoRank,
+              pno: complaint.assignedEoPno,
+              station: complaint.policeStation,
+            });
+            reportBody = generatedDraft.plainText;
+          } catch {
+            reportBody = complaint.incidentDetails?.trim() || "संज्ञेय अपराध घटित होना पाया गया।";
+          }
+        }
+
+        const reportTitle = targetReport?.title || "जांच आख्या (Enquiry Report - Recommended for FIR)";
+        const eoName = complaint.assignedEoName || targetReport?.officerName || "Enquiry Officer";
+        const eoRank = complaint.assignedEoRank || targetReport?.officerRank || "ASI/SI";
+        const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "HR-04291882";
+        const psName = complaint.policeStation || "PS City Thanesar";
+        const distName = complaint.district || "Kurukshetra";
+        const dateStr = nowIso.split("T")[0];
+        const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+        const compSubject = complaint.subject || complaint.complaintSubject || complaint.categoryDisplay || "दरख्वास्त शिकायत";
+
+        const firSubject = `संज्ञेय अपराध / FIR पंजीकरण अनुशंसा - शिकायत सं. ${complaint.complaintNumber} (${complaint.complainantName}) [BNSS धारा 173]`;
+
+        const firNarrative = `================================================================================
+रोजनामचा आम सुझाव (General Diary Draft) - संज्ञेय अपराध / प्राथमिकी अनुशंसा
+थाना: ${psName}, जिला: ${distName} | दिनांक: ${dateStr} समय: ${timeStr}
+कानूनी प्रावधान: भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023 धारा 173
+================================================================================
+वक्त बाबत: आज दिनांक ${dateStr} को समय ${timeStr} बजे, दरख्वास्त शिकायत क्रमांक ${complaint.complaintNumber} मनजानिब ${complaint.complainantName} (मोबाइल: ${complaint.complainantMobile || "N/A"}) निवासी ${complaint.complainantAddress || complaint.incidentPlace || "इलाका थाना"} बाबत '${compSubject}' की जांच आख्या जांच अधिकारी ${eoName} (${eoRank}, PNO: ${eoPno}) द्वारा प्रस्तुत की गई।
+
+थाना प्रभारी (SHO) ${shoName} (PNO: ${shoPno}) द्वारा पत्रावली व प्राथमिक जांच आख्या का सूक्ष्मता से अवलोकन किया गया। मामले में संज्ञेय अपराध (Cognizable Offence) का घटित होना प्रथम दृष्टया प्रमाणित पाया गया। अतः SHO महोदय द्वारा नियमित FIR पंजीकृत करने की अनुशंसा (Recommended for FIR) स्वीकृत की गई।
+
+1. घटना विवरण (Occurrence Details):
+- घटनास्थल: ${complaint.incidentPlace || "थाना क्षेत्र"}
+- दिनांक व समय: ${complaint.incidentDate || dateStr}
+
+2. SHO आदेश व कानूनी निर्देश (SHO Order & Legal Directives):
+- ${remarks ? remarks.trim() : "जांच आख्या के आधार पर संज्ञेय अपराध बनता है। नियमित मुकद्दमा दर्ज कर तफ्तीश अमल में लाई जाए।"}
+
+3. प्राथमिक जांच आख्या का सारांश (Enquiry Report Narrative - ${reportTitle}):
+--------------------------------------------------------------------------------
+${reportBody}
+--------------------------------------------------------------------------------
+
+4. अग्रिम कार्यवाही:
+मुंशी (MHC) इस सुझाव का अवलोकन कर रोजनामचा में संज्ञेय अपराध इंद्राज तस्दीक (Verify & Lock) करें तथा विधिवत FIR पंजीकरण की प्रक्रिया अमल में लाएं।`;
+
+        const firAttachments: any[] = [];
+        if (targetReport?.contentHtml || targetReport?.dataUrl) {
+          firAttachments.push({
+            id: `att_${Date.now()}_fir`,
+            name: targetReport.fileName || `FIR_Recommendation_${complaint.complaintNumber}.html`,
+            size: targetReport.contentHtml?.length || targetReport.dataUrl?.length || 2048,
+            type: "text/html",
+            dataUrl:
+              targetReport.dataUrl ||
+              (targetReport.contentHtml
+                ? `data:text/html;charset=utf-8,${encodeURIComponent(targetReport.contentHtml)}`
+                : undefined),
+            uploadedAt: nowIso,
           });
         }
-      } catch (gdErr) {
-        console.warn("Could not auto-log NCR to Roznamcha GD:", gdErr);
+
+        await GeneralDiaryService.generateSuggestionFromSystemEvent({
+          eventType: "COMPLAINT_FIR_RECOMMENDED",
+          category: "INVESTIGATION_PROCESS",
+          typeCode: "CRIMINAL_CASE",
+          typeDisplay: "Cognizable Crime / FIR Recommendation",
+          typeDisplayHi: "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)",
+          subject: firSubject,
+          narrative: firNarrative,
+          policeStation: psName,
+          district: distName,
+          officer: {
+            name: shoName,
+            rank: "Station House Officer (SHO)",
+            pno: shoPno,
+            beltNumber: `${shoPno.slice(-3)}/KKR`,
+          },
+          relatedRecords: {
+            complaintNumber: complaint.complaintNumber,
+            personName: complaint.complainantName,
+            destinationLocation: complaint.incidentPlace,
+            purpose: compSubject,
+          },
+          attachments: firAttachments.length > 0 ? firAttachments : undefined,
+        });
+
+        this.addTimelineEvent(complaint.id, {
+          title: `Roznamcha GD Suggestion Created (FIR Recommendation)`,
+          description: `General Diary auto-suggestion generated for Cognizable Crime / FIR Recommendation under Section 173 BNSS with enquiry report narrative. Sent to Auto-Suggestions & Drafts for MHC (Munshi) review and disposal.`,
+          category: "STATUS_CHANGE",
+          officerName: shoName,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (suggErr) {
+        console.warn("Could not generate GD FIR recommendation auto-suggestion:", suggErr);
       }
     }
 

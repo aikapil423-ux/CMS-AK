@@ -1281,6 +1281,10 @@ export default function ComplaintProfilePage() {
 
       if (data.finalCategory === "CLOSURE") {
         alert("Enquiry report approved with final category: Closure. Complaint marked Complete and Roznamcha GD entry sent to Auto Suggestions & Drafts for Munshi (MHC).");
+      } else if (data.finalCategory === "NCR") {
+        alert(`जांच रिपोर्ट NCR श्रेणी में स्वीकृत की गई। रोजनामचा GD इंद्राज सुझाव Smart General Diary के "Auto-Suggestions & Drafts" में भेज दिया गया है। अब SHO पर्यवेक्षीय आख्या खोली जा रही है।`);
+      } else if (data.finalCategory === "FIR_RECOMMEND") {
+        alert(`जांच रिपोर्ट FIR Recommend श्रेणी में स्वीकृत की गई। रोजनामचा GD इंद्राज सुझाव Smart General Diary के "Auto-Suggestions & Drafts" में भेज दिया गया है। अब SHO पर्यवेक्षीय आख्या खोली जा रही है।`);
       } else {
         alert(`जांच रिपोर्ट ${displayCat} श्रेणी में स्वीकृत की गई। SHO पर्यवेक्षीय आदेश (${displayCat}) स्वतः तैयार कर दिया गया है। अब SHO रिपोर्ट जनरेटर खोला जा रहा है।`);
       }

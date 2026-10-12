@@ -1217,13 +1217,25 @@ export const GeneralDiaryService = {
   // 7. System Event & AI Suggestion Generator (Workflow #1)
   // -------------------------------------------------------------
   async generateSuggestionFromSystemEvent(event: {
-    eventType: "COMPLAINT_REGISTERED" | "COMPLAINT_CLOSURE" | "FIR_LODGED" | "OFFICER_DISPATCHED" | "MALKHANA_SEIZURE";
+    eventType:
+      | "COMPLAINT_REGISTERED"
+      | "COMPLAINT_CLOSURE"
+      | "COMPLAINT_NCR"
+      | "COMPLAINT_FIR_RECOMMENDED"
+      | "FIR_LODGED"
+      | "OFFICER_DISPATCHED"
+      | "MALKHANA_SEIZURE";
     subject: string;
     narrative: string;
     officer: GDOfficerParticulars;
     policeStation: string;
     district: string;
+    category?: string;
+    typeCode?: string;
+    typeDisplay?: string;
+    typeDisplayHi?: string;
     relatedRecords: GDRelatedRecords;
+    attachments?: GDUploadedDocument[];
   }): Promise<GeneralDiaryRecord> {
     // 1. Try server persistence first
     try {
@@ -1253,13 +1265,20 @@ export const GeneralDiaryService = {
     const typeCodeMap: Record<string, string> = {
       COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
       COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
+      COMPLAINT_NCR: "NON_COGNIZABLE_REPORT",
+      COMPLAINT_FIR_RECOMMENDED: "CRIMINAL_CASE",
       FIR_LODGED: "CRIMINAL_CASE",
       OFFICER_DISPATCHED: "DEPARTURE",
       MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
     };
 
-    const typeCode = typeCodeMap[event.eventType] || "OTHERS";
+    const typeCode = event.typeCode || typeCodeMap[event.eventType] || "OTHERS";
     const typeDef = memoryTypesStore.find((t) => t.code === typeCode) || memoryTypesStore[0];
+
+    const relRecords: GDRelatedRecords = { ...event.relatedRecords };
+    if (event.attachments && Array.isArray(event.attachments)) {
+      relRecords.attachments = event.attachments;
+    }
 
     const suggestionRecord: GeneralDiaryRecord = {
       id: `gd_sugg_${Date.now()}`,
@@ -1275,30 +1294,48 @@ export const GeneralDiaryService = {
         pno: "00000000",
       },
       typeCode,
-      category: typeDef?.category || (event.eventType === "COMPLAINT_CLOSURE" ? "INVESTIGATION_PROCESS" : "ROUTINE_ADMINISTRATION"),
+      category:
+        (event.category as GDEntryCategory) ||
+        typeDef?.category ||
+        (event.eventType === "COMPLAINT_NCR"
+          ? "COURT_DOCUMENTATION"
+          : event.eventType === "COMPLAINT_CLOSURE" || event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+          ? "INVESTIGATION_PROCESS"
+          : "ROUTINE_ADMINISTRATION"),
       typeDisplay:
-        event.eventType === "COMPLAINT_REGISTERED"
+        event.typeDisplay ||
+        (event.eventType === "COMPLAINT_REGISTERED"
           ? "Citizen Information/Tip Received"
           : event.eventType === "COMPLAINT_CLOSURE"
           ? "Investigation Reports"
-          : (typeDef?.nameEn || typeCode),
+          : event.eventType === "COMPLAINT_NCR"
+          ? "Non-Cognizable Report"
+          : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+          ? "Cognizable Crime / FIR Recommendation"
+          : (typeDef?.nameEn || typeCode)),
       typeDisplayHi:
-        event.eventType === "COMPLAINT_REGISTERED"
+        event.typeDisplayHi ||
+        (event.eventType === "COMPLAINT_REGISTERED"
           ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
           : event.eventType === "COMPLAINT_CLOSURE"
           ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
-          : (typeDef?.nameHi || typeCode),
+          : event.eventType === "COMPLAINT_NCR"
+          ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
+          : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+          ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
+          : (typeDef?.nameHi || typeCode)),
       subject: event.subject,
       narrative: event.narrative,
       activityDateTime: `${today} ${nowTime}`,
       officialCreationTimestamp: nowIso,
       status: "SUGGESTED",
       source:
-        event.eventType === "COMPLAINT_REGISTERED" || event.eventType === "COMPLAINT_CLOSURE"
+        event.eventType.startsWith("COMPLAINT_")
           ? "COMPLAINT_INTEGRATION"
           : "SYSTEM_EVENT",
       isLocked: false,
-      relatedRecords: event.relatedRecords,
+      relatedRecords: relRecords,
+      attachments: event.attachments,
       auditTrail: [
         {
           action: "SUGGESTED",

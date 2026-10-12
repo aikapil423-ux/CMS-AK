@@ -543,6 +543,10 @@ function ComplaintListContent() {
       fetchComplaints();
       if (payload?.finalCategory === "CLOSURE") {
         alert("Enquiry report approved with final category: Closure. Complaint marked Complete and Roznamcha GD entry sent to Auto Suggestions & Drafts for Munshi (MHC).");
+      } else if (payload?.finalCategory === "NCR") {
+        alert("Enquiry report approved with final category: NCR. Roznamcha GD suggestion sent to Auto Suggestions & Drafts for Munshi (MHC).");
+      } else if (payload?.finalCategory === "FIR_RECOMMEND") {
+        alert("Enquiry report approved with final category: Recommended for FIR. Roznamcha GD suggestion sent to Auto Suggestions & Drafts for Munshi (MHC).");
       }
     } catch (e) {
       console.error(e);

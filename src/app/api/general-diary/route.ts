@@ -531,18 +531,24 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
   const typeCodeMap: Record<string, string> = {
     COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
     COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
+    COMPLAINT_NCR: "NON_COGNIZABLE_REPORT",
+    COMPLAINT_FIR_RECOMMENDED: "CRIMINAL_CASE",
     FIR_LODGED: "CRIMINAL_CASE",
     OFFICER_DISPATCHED: "DEPARTURE",
     MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
   };
   const eventType = String(event.eventType || "");
-  const typeCode = typeCodeMap[eventType] || String(event.typeCode || "OTHERS");
+  const typeCode = String(event.typeCode || typeCodeMap[eventType] || "OTHERS");
 
   const defaultDisplayEn =
     eventType === "COMPLAINT_REGISTERED"
       ? "Citizen Information/Tip Received"
       : eventType === "COMPLAINT_CLOSURE"
       ? "Investigation Reports"
+      : eventType === "COMPLAINT_NCR"
+      ? "Non-Cognizable Report"
+      : eventType === "COMPLAINT_FIR_RECOMMENDED"
+      ? "Cognizable Crime / FIR Recommendation"
       : eventType === "FIR_LODGED"
       ? "Criminal case"
       : typeCode;
@@ -551,9 +557,18 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
       : eventType === "COMPLAINT_CLOSURE"
       ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+      : eventType === "COMPLAINT_NCR"
+      ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
+      : eventType === "COMPLAINT_FIR_RECOMMENDED"
+      ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
       : eventType === "FIR_LODGED"
       ? "पंजीकरण मुकद्दमा / FIR (PPR 22.48)"
       : typeCode;
+
+  const relatedRecords = ((event.relatedRecords || {}) as Record<string, unknown>);
+  if (Array.isArray(event.attachments)) {
+    relatedRecords.attachments = event.attachments;
+  }
 
   const row = await prisma.gDRecord.create({
     data: {
@@ -566,7 +581,11 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       typeCode,
       category: String(
         event.category ||
-          (eventType === "COMPLAINT_REGISTERED" || eventType === "COMPLAINT_CLOSURE"
+          (eventType === "COMPLAINT_NCR"
+            ? "COURT_DOCUMENTATION"
+            : eventType === "COMPLAINT_REGISTERED" ||
+              eventType === "COMPLAINT_CLOSURE" ||
+              eventType === "COMPLAINT_FIR_RECOMMENDED"
             ? "INVESTIGATION_PROCESS"
             : "ROUTINE_ADMINISTRATION")
       ),
@@ -583,12 +602,12 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       }),
       status: "SUGGESTED",
       source:
-        eventType === "COMPLAINT_REGISTERED" || eventType === "COMPLAINT_CLOSURE"
+        eventType.startsWith("COMPLAINT_")
           ? "COMPLAINT_INTEGRATION"
           : "SYSTEM_EVENT",
       isLocked: false,
       isDraft: true,
-      relatedRecordsJson: JSON.stringify((event.relatedRecords || {}) as GDRelatedRecords),
+      relatedRecordsJson: JSON.stringify(relatedRecords as GDRelatedRecords),
       auditTrailJson: JSON.stringify([
         {
           action: "SUGGESTED",
