@@ -127,7 +127,6 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   const [accusedType, setAccusedType] = useState<"Known" | "Unknown-Seen">(
     isAccusedKnown ? "Known" : "Unknown-Seen"
   );
-  const [activeSubtab, setActiveSubtab] = useState<"personal" | "address" | "other" | "physical">("personal");
 
   // Personal Info
   const [isCaseAgainstPolice, setIsCaseAgainstPolice] = useState(false);
@@ -285,9 +284,6 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     const type: "Known" | "Unknown-Seen" = isKnown ? "Known" : "Unknown-Seen";
     setAccusedType(type);
     setIsAccusedKnown(isKnown);
-    if (isKnown) {
-      setActiveSubtab("personal");
-    }
     setIsCaseAgainstPolice(acc.isCaseAgainstPolice || acc.hasCaseAgainstPolice || false);
     setPolicePersonnelName(acc.policePersonnelName || "");
     setUid(acc.uid || "");
@@ -420,7 +416,6 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     const isKnown = accusedType === "Known";
     if (isKnown && !firstName.trim()) {
       setErrorMsg("First Name is mandatory for Known Accused. If identity is not established, select 'Unknown-Seen'.");
-      setActiveSubtab("personal");
       return;
     }
 
@@ -737,7 +732,6 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               onChange={() => {
                 setIsAccusedKnown(true);
                 setAccusedType("Known");
-                setActiveSubtab("personal");
               }}
               className="text-red-600"
             />
@@ -809,7 +803,6 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   onChange={() => {
                     setAccusedType("Known");
                     setIsAccusedKnown(true);
-                    setActiveSubtab("personal");
                   }}
                 />
                 <span>Known</span>
@@ -835,59 +828,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
           </div>
         </CardHeader>
 
-        {/* Subtabs Navigation (Only for Known accused; for Unknown-Seen it shows only 'Accused is not known') */}
-        {accusedType === "Known" ? (
-          <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-100/70 p-2 text-xs overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setActiveSubtab("personal")}
-              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                activeSubtab === "personal"
-                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <User className="w-3.5 h-3.5 text-blue-600" />
-              Personal Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubtab("address")}
-              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                activeSubtab === "address"
-                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              Address Details
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubtab("other")}
-              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                activeSubtab === "other"
-                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 text-purple-600" />
-              Other Information
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubtab("physical")}
-              className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors whitespace-nowrap ${
-                activeSubtab === "physical"
-                  ? "bg-white text-[#0b192c] shadow-2xs border border-slate-200"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5 text-red-600" />
-              Physical Traits &amp; Description
-            </button>
-          </div>
-        ) : (
+        {accusedType === "Unknown-Seen" && (
           <div className="flex items-center justify-between border-b border-amber-200 bg-amber-50/80 px-4 py-2.5 text-xs">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-red-700 border border-red-800 text-white font-bold text-xs shadow-2xs">
@@ -916,9 +857,15 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
             </div>
           )}
 
-          {/* SUBTAB 1: PERSONAL INFORMATION */}
-          {accusedType === "Known" && activeSubtab === "personal" && (
-            <div className="space-y-4 animate-in fade-in-30">
+          {/* ALL SUB-PANELS IN ONE (KNOWN ACCUSED) */}
+          {accusedType === "Known" && (
+            <div className="space-y-6">
+              {/* 1. PERSONAL INFORMATION */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                  <User className="w-3.5 h-3.5 text-blue-600" />
+                  1. Personal Information (व्यक्तिगत विवरण)
+                </h4>
               {/* Case Against Police Toggle */}
               <div className="p-3 bg-red-50/60 border border-red-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -1314,11 +1261,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 </div>
               </div>
             </div>
-          )}
 
-          {/* SUBTAB 2: ADDRESS */}
-          {accusedType === "Known" && activeSubtab === "address" && (
-            <div className="space-y-4 animate-in fade-in-30">
+            {/* 2. ADDRESS DETAILS */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                2. Address Details (पते का विवरण)
+              </h4>
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <span className="font-bold text-slate-800 text-xs block">Add Known Address for Suspect</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1481,11 +1430,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 </div>
               )}
             </div>
-          )}
 
-          {/* SUBTAB 3: OTHER INFORMATION */}
-          {accusedType === "Known" && activeSubtab === "other" && (
-            <div className="space-y-4 animate-in fade-in-30">
+            {/* 3. OTHER INFORMATION & OFFICIAL IDS */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                <Layers className="w-3.5 h-3.5 text-purple-600" />
+                3. Other Information &amp; Official IDs (अन्य विवरण एवं पहचान पत्र)
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -1625,14 +1576,17 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                 )}
               </div>
             </div>
-          )}
 
-          {/* SUBTAB 4: PHYSICAL TRAITS (For Known Accused) */}
-          {accusedType === "Known" && activeSubtab === "physical" && (
-            <div className="space-y-4 animate-in fade-in-30">
+            {/* 4. PHYSICAL TRAITS & DESCRIPTION */}
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <h4 className="font-bold text-slate-800 uppercase text-xs mb-3 flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                <Eye className="w-3.5 h-3.5 text-red-600" />
+                4. Physical Traits &amp; Description (शारीरिक हुलिया एवं पहचान चिन्ह)
+              </h4>
               {renderPhysicalTraitsForm()}
             </div>
-          )}
+          </div>
+        )}
 
           {/* VIEW FOR UNKNOWN-SEEN ACCUSED (Accused not known) */}
           {accusedType === "Unknown-Seen" && (
