@@ -19,11 +19,24 @@ import {
   MapPin,
   ClipboardList,
   FileText,
+  Save,
+  Eye,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  X,
 } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
-import { FIRItem, NoticeFormData } from "@/types";
+import { universalEvidenceService } from "@/services/universalEvidenceService";
+import { evidenceBlobStore } from "@/services/evidenceBlobStore";
+import {
+  ArrestMemoForm268,
+  generateArrestMemo4PageHtml,
+} from "@/components/fir-workspace/ArrestMemoForm268";
+import { FIRItem, NoticeFormData, FIRDocumentItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
@@ -119,6 +132,99 @@ export type ArrestDocsFormData = Omit<Partial<NoticeFormData>, "arrestWitnesses"
   hospitalName?: string;
   medicalOfficerName?: string;
 
+  // Form 26.8(1) Specific Fields
+  headerVersion?: string;
+  arrestYear?: string;
+  arrestGdNo?: string;
+  arrestPlace?: string;
+  arrestThana?: string;
+  arrestDistrict?: string;
+  courtNameSurrender?: string;
+  accusedGender?: string;
+  userIdentificationNo?: string;
+  occupation?: string;
+  noticeeCity?: string;
+  noticeeDistrict?: string;
+  noticeeState?: string;
+  permanentAddress?: string;
+  permanentCity?: string;
+  permanentDistrict?: string;
+  permanentState?: string;
+  custodyIntimationDate?: string;
+  custodyIntimationTime?: string;
+  custodyPlace?: string;
+  warisanName?: string;
+  warisanRelation?: string;
+  warisanDate?: string;
+  warisanTime?: string;
+  warisanMobile?: string;
+  familyMember1?: string;
+  familyMember2?: string;
+  familyMember3?: string;
+  groundsSections?: string;
+  groundsRole?: string;
+  groundsEvidence?: string;
+  groundsOther?: string;
+  accusedSign1?: string;
+  witnessSign1?: string;
+  witnessSign2?: string;
+  accusedSign2?: string;
+  signPlace?: string;
+  signDate?: string;
+  pehchanThana?: string;
+  pehchanDistrict?: string;
+  accusedPhotoUrl?: string;
+  stateVsName?: string;
+  caseYear?: string;
+  caseSections?: string;
+  caseThana?: string;
+  caseBanam?: string;
+  trait1Height?: string;
+  trait2Build?: string;
+  trait3Color?: string;
+  trait4Eyes?: string;
+  trait5Hair?: string;
+  trait6BeardMustache?: string;
+  trait7Nose?: string;
+  trait8Face?: string;
+  trait9Teeth?: string;
+  trait10Mole?: string;
+  trait11Scars?: string;
+  trait12Deformities?: string;
+  trait13Tattoo?: string;
+  trait14Language?: string;
+  trait15Dress?: string;
+  trait16Habits?: string;
+  trait17Voice?: string;
+  trait18PehchanChinh?: string;
+  otherTraitsDetails?: string;
+  fingerprintsTaken?: string;
+  livingStandard?: string;
+  education?: string;
+  socioOccupation?: string;
+  incomeGroup?: string;
+  isDangerous?: string;
+  escapedBailEarlier?: string;
+  carriesWeapon?: string;
+  activeWithAssociates?: string;
+  isListedCriminal?: string;
+  isHabitualCriminal?: string;
+  escapeRiskDuringBail?: string;
+  threatRiskAfterBail?: string;
+  wantedInOtherCrime?: string;
+  caseReferenceIfYes?: string;
+  previousRecord1?: string;
+  previousRecord2?: string;
+  previousRecord3?: string;
+  eagleCriminalId?: string;
+  mhcName?: string;
+  mhcRank?: string;
+  mhcBeltNo?: string;
+  articlesHandedOverToMhc?: string;
+  mhcSignRankPno?: string;
+  mhcDepositDate?: string;
+  grounds47Other?: string;
+
   // Dynamic Lists with Add & Delete
   groundsPoints?: DynamicPointItem[];
   rightsPoints?: DynamicPointItem[];
@@ -132,6 +238,8 @@ export type ArrestDocsFormData = Omit<Partial<NoticeFormData>, "arrestWitnesses"
   recoveryItems?: RecoveryItem[];
   arrestWitnesses?: ArrestWitnessItem[];
   jamaTalashiItems?: JamaTalashiItem[];
+
+  [key: string]: any;
 };
 
 const TEMPLATE_CONFIG: Record<
@@ -239,23 +347,47 @@ const DEFAULT_SAMPLE_DATA: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
     arrestTime: "11:30 प्रात:",
     arrestGdNo: "रपट न0 24",
     arrestPlace: "रेलवे रोड चौक, पानीपत",
+    arrestThana: "थाना शहर पानीपत",
+    arrestDistrict: "पानीपत",
+    courtNameSurrender: "लागू नहीं (पुलिस द्वारा हिरासत में लिया गया)",
     noticeeName: "विकास शर्मा",
     noticeeFather: "रमेश चंद शर्मा",
     noticeeAlias1: "विक्की",
     noticeeNationality: "भारतीय",
     noticeeAge: "34 वर्ष",
+    noticeeDob: "12.05.1992",
+    noticeeBirthPlace: "पानीपत",
     accusedGender: "पुरुष",
     userIdentificationNo: "8492-3810-4921",
     noticeePhone: "9812044551",
-    noticeeAddress: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत",
+    occupation: "दुकानदार / खुदरा व्यापार",
+    noticeeAddress: "मकान न0 412, सेक्टर 7",
+    noticeeCity: "अर्बन एस्टेट, पानीपत",
+    noticeeDistrict: "पानीपत",
+    noticeeState: "हरियाणा",
+    permanentAddress: "मकान न0 412, सेक्टर 7",
+    permanentCity: "अर्बन एस्टेट, पानीपत",
+    permanentDistrict: "पानीपत",
+    permanentState: "हरियाणा",
     physicalConditionOrInjuries: "शारीरिक दशा सामान्य है। कोई ताजा जाहिरा चोट नहीं है। (सामान्य डाक्टरी मुलाहिजा करवाया गया)",
 
-    relativeName: "अमित शर्मा",
-    relativeRelation: "भाई",
-    intimationDate: "18.09.2026",
-    intimationTime: "11:45 प्रात:",
-    relativeMobile: "9812099881",
-    grounds47Other: "परिवादी के साथ 4,50,000/- रुपये की धोखाधड़ी करने एवं जान से मारने की धमकी देने में मुख्य भूमिका। आरोपी द्वारा गवाहों को धमकाने एवं फरार होने की संभावना को रोकने हेतु।",
+    custodyIntimationDate: "18.09.2026",
+    custodyIntimationTime: "11:30 प्रात:",
+    custodyPlace: "रेलवे रोड चौक, पानीपत",
+
+    warisanName: "अमित शर्मा",
+    warisanRelation: "भाई",
+    warisanDate: "18.09.2026",
+    warisanTime: "11:45 प्रात:",
+    warisanMobile: "9812099881",
+    familyMember1: "रमेश चंद शर्मा (पिता), उम्र 62 वर्ष, निवासी पानीपत",
+    familyMember2: "शांति देवी (माता), उम्र 58 वर्ष, निवासी पानीपत",
+    familyMember3: "अमित शर्मा (भाई), उम्र 31 वर्ष, मोबाइल 9812099881",
+
+    groundsSections: "धारा 318(4), 316(2), 351(2) BNS, 2023",
+    groundsRole: "परिवादी के साथ 4,50,000/- रुपये की धोखाधड़ी करने एवं अमानत में खयानत करने तथा जान से मारने की धमकी देने में मुख्य भूमिका।",
+    groundsEvidence: "प्रत्यक्षदर्शी परिवादी का बयान, बैंक खाता ट्रांजेक्शन विवरण व तकनीकी कॉल डिटेल रिकॉर्ड (CDR)",
+    groundsOther: "आरोपी द्वारा गवाहों को धमकाने एवं फरार होने की संभावना को रोकने हेतु।",
 
     arrestWitnesses: [
       { id: "wit_1", name: "बलजीत सिंह सुपुत्र हरनाम सिंह", address: "वार्ड न0 5, पानीपत", signature: "बलजीत सिंह" },
@@ -264,33 +396,78 @@ const DEFAULT_SAMPLE_DATA: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
 
     jamaTalashiItems: [
       { id: "jt_1", srNo: "1.", description: "नकदी रुपये 1,450/- (एक हजार चार सौ पचास रुपये)", quantity: "1,450/-" },
-      { id: "jt_2", srNo: "2.", description: "एक मोबाइल फोन सैमसंग (नीला रंग, चालू हालत)", quantity: "1" },
+      { id: "jt_2", srNo: "2.", description: "एक मोबाइल फोन सैमसंग गैलेक्सी (नीला रंग, चालू हालत)", quantity: "1" },
       { id: "jt_3", srNo: "3.", description: "पर्स चमड़ा भूरा रंग मय आधार कार्ड व ड्राइविंग लाइसेंस", quantity: "1" },
     ],
 
-    traitsList: [
-      { id: "tr_1", label: "1. कद (Height)", value: "173 सेमी (5 फीट 8 इंच)" },
-      { id: "tr_2", label: "2. रंग (Complexion)", value: "गेहुंआ" },
-      { id: "tr_3", label: "3. शारीरिक गठन (Build)", value: "मध्यम" },
-      { id: "tr_4", label: "4. आंखें (Eyes)", value: "काली" },
-      { id: "tr_5", label: "5. बाल (Hair)", value: "काले छोटे" },
-      { id: "tr_6", label: "6. दांत (Teeth)", value: "सामान्य" },
-      { id: "tr_7", label: "7. तिल का निशान (Mole)", value: "बाएं गाल पर काला तिल" },
-      { id: "tr_8", label: "8. कटे/घाव के निशान (Scar)", value: "दाहिनी भौंह पर पुराना 1 इंच कट का निशान" },
-      { id: "tr_9", label: "9. टैटू / गोदना (Tattoo)", value: "दाहिने हाथ की कलाई पर 'ॐ' गुदा हुआ" },
-      { id: "tr_10", label: "10. बोली/भाषा (Language)", value: "हिन्दी / हरियाणवी" },
-      { id: "tr_11", label: "11. पहनावा (Dress)", value: "नीली जींस व सफेद शर्ट" },
-      { id: "tr_12", label: "12. फिंगरप्रिंट दर्ज", value: "हाँ (सभी 10 उंगलियां)" },
-    ],
-
-    articlesHandedOverToMhc: "उपरोक्त जामातलाशी का सम्पूर्ण सामान बमुताबिक फर्द थाना मालखाना मोहर्रिर (MHC) को सुरक्षित रखवाया गया।",
-    mhcSignRankPno: "MHC HC रमेश कुमार, PNO-23114, थाना शहर पानीपत",
-    mhcDepositDate: "18.09.2026",
+    accusedSign1: "विकास शर्मा",
+    witnessSign1: "बलजीत सिंह",
+    witnessSign2: "रमेश लाल",
+    accusedSign2: "विकास शर्मा",
+    signPlace: "थाना शहर पानीपत",
+    signDate: "18.09.2026",
 
     officerName: "सुरेंद्र पाल",
     officerRank: "उप-निरीक्षक (SI)",
     officerPno: "04291885",
     officerPhone: "9812034567",
+
+    pehchanThana: "थाना शहर पानीपत",
+    pehchanDistrict: "पानीपत",
+    stateVsName: "सरकार बनाम विकास शर्मा",
+    caseYear: "2026",
+    caseSections: "धारा 318(4), 316(2), 351(2) BNS, 2023",
+    caseThana: "थाना शहर पानीपत",
+    caseBanam: "विकास शर्मा सुपुत्र रमेश चंद शर्मा",
+
+    trait1Height: "5 फीट 8 इंच (173 सेमी)",
+    trait2Build: "मध्यम मजबूत",
+    trait3Color: "गेहुंआ",
+    trait4Eyes: "काली",
+    trait5Hair: "काले छोटे",
+    trait6BeardMustache: "हल्की दाढ़ी व मूंछ",
+    trait7Nose: "सीधी मध्यम",
+    trait8Face: "गोल-अंडाकार",
+    trait9Teeth: "सामान्य सफेद",
+    trait10Mole: "बाएं गाल पर काला तिल",
+    trait11Scars: "दाहिनी भौंह पर पुराना 1 इंच कट का निशान",
+    trait12Deformities: "कोई विकृति नहीं",
+    trait13Tattoo: "दाहिने हाथ की कलाई पर 'ॐ' गुदा हुआ",
+    trait14Language: "हिन्दी / हरियाणवी",
+    trait15Dress: "नीली जींस व सफेद शर्ट",
+    trait16Habits: "साधारण / कोई विशेष आदत नहीं",
+    trait17Voice: "सामान्य भारी",
+    trait18PehchanChinh: "बाएं गाल पर तिल व दाहिनी भौंह पर कट का निशान",
+    otherTraitsDetails: "चाल सामान्य, कोई लंगड़ाहट नहीं",
+
+    fingerprintsTaken: "हाँ",
+    livingStandard: "मध्यम वर्गीय",
+    education: "स्नातक (B.Com)",
+    socioOccupation: "दुकानदार / खुदरा व्यापार",
+    incomeGroup: "मध्यम आय (वार्षिक आय लगभग ₹ 4-5 लाख)",
+
+    isDangerous: "नही",
+    escapedBailEarlier: "नही",
+    carriesWeapon: "नही",
+    activeWithAssociates: "हाँ",
+    isListedCriminal: "नही",
+    isHabitualCriminal: "नही",
+    escapeRiskDuringBail: "नही",
+    threatRiskAfterBail: "हाँ",
+    wantedInOtherCrime: "नही",
+    caseReferenceIfYes: "लागू नहीं",
+
+    previousRecord1: "कोई पूर्व आपराधिक मामला दर्ज नहीं है (Clean Record)",
+    previousRecord2: "-",
+    previousRecord3: "-",
+    eagleCriminalId: "EAGLE-HR-2026-08492",
+    mhcName: "रमेश कुमार",
+    mhcRank: "हेड कांस्टेबल (MHC)",
+    mhcBeltNo: "23114/पानीपत",
+
+    articlesHandedOverToMhc: "उपरोक्त जामातलाशी का सम्पूर्ण सामान बमुताबिक फर्द थाना मालखाना मोहर्रिर (MHC) को सुरक्षित रखवाया गया।",
+    mhcSignRankPno: "MHC HC रमेश कुमार, PNO-23114, थाना शहर पानीपत",
+    mhcDepositDate: "18.09.2026",
     customClauses: [],
   },
 
@@ -606,6 +783,18 @@ function ArrestDocsContent() {
   const [fontSize, setFontSize] = useState<"compact" | "standard" | "large">("standard");
   const [copied, setCopied] = useState(false);
 
+  // Accused selection & Save to FIR states
+  const [selectedAccusedId, setSelectedAccusedId] = useState<string>("");
+  const [isSavingToFir, setIsSavingToFir] = useState<boolean>(false);
+  const [saveSuccessInfo, setSaveSuccessInfo] = useState<{
+    firId: string;
+    firNumber: string;
+    docId: string;
+    docTitle: string;
+  } | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
+  const [previewHtml, setPreviewHtml] = useState<string>("");
+
   const witnessTableResize = useTableResize({
     initialColWidths: { 0: 44, 1: 220, 2: 240, 3: 150, 4: 44 },
   });
@@ -630,7 +819,7 @@ function ArrestDocsContent() {
 
   const activeFir = firs.find((f) => f.id === selectedFirId || f.firNumber === selectedFirId);
 
-  // Sync active FIR with current template
+  // Sync active FIR with current template and selected accused
   useEffect(() => {
     const baseSample = DEFAULT_SAMPLE_DATA[selectedTemplate] || DEFAULT_SAMPLE_DATA.arrest_memo;
     if (!activeFir) {
@@ -638,7 +827,14 @@ function ArrestDocsContent() {
       return;
     }
 
-    const primaryAccused = activeFir.accusedList?.[0];
+    const accusedList = activeFir.accusedList || [];
+    const matchedAccused = selectedAccusedId
+      ? accusedList.find((a, idx) => (a.id || `acc_${idx}`) === selectedAccusedId)
+      : accusedList[0];
+
+    const noticeeName = matchedAccused?.name || baseSample.noticeeName;
+    const noticeeFather = matchedAccused?.relativeName || matchedAccused?.fatherName || baseSample.noticeeFather;
+    const noticeeAddress = matchedAccused?.address || baseSample.noticeeAddress;
 
     setFormData({
       ...baseSample,
@@ -651,20 +847,44 @@ function ArrestDocsContent() {
       complainantName: activeFir.complainantName || baseSample.complainantName,
       complainantAddress: (activeFir as any)?.complainantAddress || baseSample.complainantAddress,
 
-      noticeeName: primaryAccused?.name || baseSample.noticeeName,
-      noticeeFather: primaryAccused?.relativeName || primaryAccused?.fatherName || baseSample.noticeeFather,
-      noticeeAge: (primaryAccused as any)?.age ? `${(primaryAccused as any).age} वर्ष` : baseSample.noticeeAge,
-      noticeeAddress: primaryAccused?.address || baseSample.noticeeAddress,
-      noticeePhone: primaryAccused?.phone || baseSample.noticeePhone,
-      noticeeAlias1: primaryAccused?.alias || baseSample.noticeeAlias1,
-      accusedGender: (primaryAccused as any)?.gender || baseSample.accusedGender,
+      noticeeName,
+      noticeeFather,
+      noticeeAge: (matchedAccused as any)?.age ? `${(matchedAccused as any).age} वर्ष` : baseSample.noticeeAge,
+      noticeeAddress,
+      noticeePhone: matchedAccused?.phone || baseSample.noticeePhone,
+      noticeeAlias1: matchedAccused?.alias || baseSample.noticeeAlias1,
+      accusedGender: (matchedAccused as any)?.gender || baseSample.accusedGender,
+
+      caseBanam: noticeeName ? `${noticeeName}${noticeeFather ? ` सुपुत्र ${noticeeFather}` : ""}` : baseSample.caseBanam,
+      stateVsName: noticeeName ? `सरकार बनाम ${noticeeName}` : baseSample.stateVsName,
+      accusedSign1: noticeeName || baseSample.accusedSign1,
+      accusedSign2: noticeeName || baseSample.accusedSign2,
 
       officerName: activeFir.assignedIoName || currentUser.name || baseSample.officerName,
       officerRank: activeFir.assignedIoRank || currentUser.rank || baseSample.officerRank,
       officerPno: activeFir.assignedIoBeltNumber || currentUser.pno || baseSample.officerPno,
       officerPhone: activeFir.assignedIoPhone || (currentUser as any)?.phone || baseSample.officerPhone,
     });
-  }, [activeFir, selectedTemplate, currentUser]);
+  }, [activeFir, selectedTemplate, selectedAccusedId, currentUser]);
+
+  const handleSelectAccused = (accusedId: string) => {
+    setSelectedAccusedId(accusedId);
+    if (!activeFir) return;
+    const accused = activeFir.accusedList?.find((a, idx) => (a.id || `acc_${idx}`) === accusedId);
+    if (!accused) return;
+    setFormData((prev) => ({
+      ...prev,
+      noticeeName: accused.name,
+      noticeeFather: accused.fatherName || accused.relativeName || prev.noticeeFather,
+      noticeeAlias1: accused.alias || prev.noticeeAlias1,
+      noticeeAddress: accused.address || prev.noticeeAddress,
+      noticeePhone: accused.phone || prev.noticeePhone,
+      caseBanam: `${accused.name}${accused.fatherName || accused.relativeName ? ` सुपुत्र ${accused.fatherName || accused.relativeName}` : ""}`,
+      stateVsName: `सरकार बनाम ${accused.name}`,
+      accusedSign1: accused.name,
+      accusedSign2: accused.name,
+    }));
+  };
 
   const handleFieldChange = (field: keyof ArrestDocsFormData, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
@@ -839,14 +1059,145 @@ function ArrestDocsContent() {
   };
 
   const handlePrint = () => {
+    if (selectedTemplate === "arrest_memo") {
+      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      let iframe = document.getElementById("cms-print-iframe") as HTMLIFrameElement | null;
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.id = "cms-print-iframe";
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        iframe.style.visibility = "hidden";
+        document.body.appendChild(iframe);
+      }
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(html);
+        doc.close();
+        setTimeout(() => {
+          iframe?.contentWindow?.focus();
+          iframe?.contentWindow?.print();
+        }, 400);
+        return;
+      }
+    }
     const title = `${selectedTemplate.toUpperCase()}_FIR_${formData.complaintNo || "Case"}`;
     printA4Element("arrest-printable-doc", title);
   };
 
   const handleDownload = () => {
+    if (selectedTemplate === "arrest_memo") {
+      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `arrest_memo_26_8_1_${(formData.noticeeName || "accused").toLowerCase().replace(/\s+/g, "_")}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
     const title = `${selectedTemplate.toUpperCase()}_FIR_${formData.complaintNo || "Case"}`;
     const docTitle = TEMPLATE_CONFIG[selectedTemplate]?.label || "Arrest Document";
     downloadA4DocumentAsHtml("arrest-printable-doc", title, docTitle);
+  };
+
+  const handleOpenPreview = () => {
+    if (selectedTemplate === "arrest_memo") {
+      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      setPreviewHtml(html);
+    } else {
+      const el = document.getElementById("arrest-printable-doc");
+      setPreviewHtml(`<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`);
+    }
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleSaveToFir = async () => {
+    if (!activeFir) {
+      alert("कृपया पहले एक सक्रिय FIR केस चुनें।");
+      return;
+    }
+
+    setIsSavingToFir(true);
+    try {
+      let htmlContent = "";
+      let docTitle = "";
+      let docFileBase = "";
+
+      if (selectedTemplate === "arrest_memo") {
+        htmlContent = generateArrestMemo4PageHtml(formData, activeFir);
+        docTitle = `गिरफ्तारी फार्म संख्या 26.8(1) (4 पृष्ठ) - ${formData.noticeeName || "अभियुक्त"}`;
+        docFileBase = `arrest_memo_26_8_1_${(formData.noticeeName || "accused").toLowerCase().replace(/\s+/g, "_")}`;
+      } else {
+        const el = document.getElementById("arrest-printable-doc");
+        htmlContent = `<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`;
+        docTitle = `${TEMPLATE_CONFIG[selectedTemplate].label} - ${formData.noticeeName || "अभियुक्त"}`;
+        docFileBase = `${selectedTemplate}_${(formData.noticeeName || "accused").toLowerCase().replace(/\s+/g, "_")}`;
+      }
+
+      const docId = `doc-${Date.now()}`;
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+      const fileName = `${docFileBase}_${Date.now()}.html`;
+
+      // 1. IndexedDB Blob Store persistence
+      if (typeof window !== "undefined") {
+        await evidenceBlobStore.put(docId, dataUrl, { mimeType: "text/html", fileName });
+      }
+
+      // 2. Register & Universal Evidence AI Analysis and indexing
+      await universalEvidenceService.registerAndProcess({
+        dataUrl,
+        fileName,
+        fileId: docId,
+        caseId: activeFir.id,
+        caseNumber: activeFir.firNumber,
+        module: "FIR",
+        uploadedBy: currentUser.name || "IO",
+      });
+
+      // 3. Save to FIR documents
+      const newDoc: FIRDocumentItem = {
+        id: docId,
+        title: docTitle,
+        fileName,
+        category: "FIELD_REPORT",
+        uploadedBy: `${currentUser.name || "IO"} (${currentUser.rank || "SI"})`,
+        uploadedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+        dataUrl,
+        fileSize: `${(htmlContent.length / 1024).toFixed(1)} KB`,
+      };
+
+      firService.addDocument(activeFir.id, newDoc);
+
+      // 4. Audit Trail entry
+      firService.addAuditRecord(
+        activeFir.id,
+        "ARREST_DOC_SAVED",
+        `${docTitle} generated and saved to FIR Profile Documents by ${currentUser.name}`,
+        currentUser.name,
+        currentUser.rank
+      );
+
+      setSaveSuccessInfo({
+        firId: activeFir.id,
+        firNumber: activeFir.firNumber,
+        docId,
+        docTitle,
+      });
+    } catch (err: any) {
+      console.error("Save to FIR failed:", err);
+      alert("दस्तावेज सहेजने में समस्या: " + (err.message || "अज्ञात त्रुटि"));
+    } finally {
+      setIsSavingToFir(false);
+    }
   };
 
   const handleCopy = () => {
@@ -1150,7 +1501,29 @@ function ArrestDocsContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleSaveToFir}
+            disabled={isSavingToFir}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 shadow-sm"
+            title="Save this document to FIR Profile Documents with Universal Evidence processing"
+          >
+            {isSavingToFir ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            <span>{isSavingToFir ? "सहेजा जा रहा है..." : "FIR Profile में सहेजें"}</span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenPreview}
+            className="border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-blue-800 font-bold text-xs gap-1.5"
+            title="4-पृष्ठ पूर्वावलोकन (Preview exact 4 A4 pages)"
+          >
+            <Eye className="w-3.5 h-3.5 text-blue-700" />
+            <span>4-पृष्ठ पूर्वावलोकन</span>
+          </Button>
+
           <Button
             size="sm"
             onClick={handlePrint}
@@ -1185,7 +1558,7 @@ function ArrestDocsContent() {
 
       {/* Case & Template Selector Header Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
               Select Active FIR Case *
@@ -1197,9 +1570,30 @@ function ArrestDocsContent() {
             >
               {firs.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.firNumber} — {f.actsAndSections.slice(0, 45)} ({f.complainantName})
+                  {f.firNumber} — {f.actsAndSections.slice(0, 40)} ({f.complainantName})
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
+              Select Accused Person (अभियुक्त चुनें) *
+            </label>
+            <select
+              value={selectedAccusedId}
+              onChange={(e) => handleSelectAccused(e.target.value)}
+              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
+            >
+              {(activeFir?.accusedList && activeFir.accusedList.length > 0) ? (
+                activeFir.accusedList.map((acc, idx) => (
+                  <option key={acc.id || `acc_${idx}`} value={acc.id || `acc_${idx}`}>
+                    {acc.name} {acc.alias ? `(${acc.alias})` : ""} {acc.fatherName ? `s/o ${acc.fatherName}` : ""}
+                  </option>
+                ))
+              ) : (
+                <option value="">{formData.noticeeName || "विकास शर्मा (डिफ़ॉल्ट अभियुक्त)"}</option>
+              )}
             </select>
           </div>
 
@@ -1259,413 +1653,27 @@ function ArrestDocsContent() {
       <div className="flex justify-center">
         <div
           id="arrest-printable-doc"
-          className={`w-full max-w-4xl bg-white border border-slate-400 p-6 sm:p-12 transition-all text-slate-950 font-serif ${
-            fontSize === "compact" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
+          className={`w-full max-w-4xl transition-all ${
+            selectedTemplate === "arrest_memo"
+              ? "bg-transparent p-0 border-none shadow-none"
+              : `bg-white border border-slate-400 p-6 sm:p-12 text-slate-950 font-serif ${
+                  fontSize === "compact" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
+                }`
           }`}
-          style={{ minHeight: "1050px", lineHeight: "1.7" }}
+          style={selectedTemplate === "arrest_memo" ? {} : { minHeight: "1050px", lineHeight: "1.7" }}
         >
           {/* ================= 1. ARREST MEMO FORM 26.8(1) (4 PAGES) ================= */}
           {selectedTemplate === "arrest_memo" && (
-            <div className="space-y-10">
-              {/* PAGE 1 */}
-              <div className="border border-slate-400 p-6 sm:p-8 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-300">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    पृष्ठ 1 / 4: गिरफ्तारी/ न्यायालय में समर्पण फार्म - भाग-1 (फार्म संख्या 26.8(1))
-                  </span>
-                  <input
-                    type="text"
-                    value={formData.headerVersion || "v3.0 dt 07.04.2025"}
-                    onChange={(e) => handleFieldChange("headerVersion", e.target.value)}
-                    className="font-mono text-xs font-bold text-slate-700 text-right outline-none bg-transparent"
-                  />
-                </div>
-
-                <div className="text-center space-y-0.5 py-1">
-                  <input
-                    type="text"
-                    value={formData.docTitle || "गिरफ्तारी/ न्यायालय में समर्पण फार्म"}
-                    onChange={(e) => handleFieldChange("docTitle", e.target.value)}
-                    className="w-full text-center font-bold text-base sm:text-lg text-slate-950 underline underline-offset-4 bg-transparent outline-none"
-                  />
-                  <input
-                    type="text"
-                    value={formData.docSubTitle || "भाग-1 फार्म संख्या 26.8(1)"}
-                    onChange={(e) => handleFieldChange("docSubTitle", e.target.value)}
-                    className="w-full text-center font-bold text-sm text-slate-900 bg-transparent outline-none"
-                  />
-                </div>
-
-                {/* Point 1 */}
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold">1. जिला:</span>
-                    <input
-                      type="text"
-                      value={formData.district || ""}
-                      onChange={(e) => handleFieldChange("district", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none min-w-[140px]"
-                    />
-                    <span className="font-bold">थाना:</span>
-                    <input
-                      type="text"
-                      value={formData.policeStation || ""}
-                      onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none min-w-[140px]"
-                    />
-                    <span className="font-bold">वर्ष:</span>
-                    <input
-                      type="text"
-                      value={formData.arrestYear || "2026"}
-                      onChange={(e) => handleFieldChange("arrestYear", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none w-20"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pl-4">
-                    <span className="font-bold">FIR/ रोजनामचा रपट संख्या:</span>
-                    <input
-                      type="text"
-                      value={formData.complaintNo || ""}
-                      onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none min-w-[180px]"
-                    />
-                    <span className="font-bold">दिनांक:</span>
-                    <input
-                      type="text"
-                      value={formData.issueDate || ""}
-                      onChange={(e) => handleFieldChange("issueDate", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none w-28"
-                    />
-                  </div>
-                </div>
-
-                {/* Point 2 */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="font-bold">2. धारा/ धाराएं:</span>
-                  <input
-                    type="text"
-                    value={formData.sectionsOfLaw || ""}
-                    onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
-                    className="font-bold border-b border-dotted border-slate-700 px-1 outline-none flex-1 min-w-[260px]"
-                  />
-                </div>
-
-                {/* Point 3 */}
-                <div className="space-y-1 pt-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold">3. गिरफ्तारी की तिथि:</span>
-                    <input
-                      type="text"
-                      value={formData.arrestDate || ""}
-                      onChange={(e) => handleFieldChange("arrestDate", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none w-32"
-                    />
-                    <span className="font-bold">समय:</span>
-                    <input
-                      type="text"
-                      value={formData.arrestTime || ""}
-                      onChange={(e) => handleFieldChange("arrestTime", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none w-28"
-                    />
-                    <span className="font-bold">रपट न0:</span>
-                    <input
-                      type="text"
-                      value={formData.arrestGdNo || ""}
-                      onChange={(e) => handleFieldChange("arrestGdNo", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none w-28"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 pl-4">
-                    <span className="font-bold">स्थान:</span>
-                    <input
-                      type="text"
-                      value={formData.arrestPlace || ""}
-                      onChange={(e) => handleFieldChange("arrestPlace", e.target.value)}
-                      className="font-bold border-b border-dotted border-slate-700 px-1 outline-none flex-1 min-w-[240px]"
-                    />
-                  </div>
-                </div>
-
-                {/* Point 4 */}
-                <div className="space-y-1.5 pt-1 border-t border-slate-200">
-                  <span className="font-bold block">4. अभियुक्त का विवरण:</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-xs font-semibold">नाम:</span>
-                      <input
-                        type="text"
-                        value={formData.noticeeName || ""}
-                        onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
-                        className="font-bold border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-xs font-semibold">उपनाम:</span>
-                      <input
-                        type="text"
-                        value={formData.noticeeAlias1 || ""}
-                        onChange={(e) => handleFieldChange("noticeeAlias1", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-xs font-semibold">पिता का नाम:</span>
-                      <input
-                        type="text"
-                        value={formData.noticeeFather || ""}
-                        onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
-                        className="font-bold border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-28 text-xs font-semibold">उम्र:</span>
-                      <input
-                        type="text"
-                        value={formData.noticeeAge || ""}
-                        onChange={(e) => handleFieldChange("noticeeAge", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 sm:col-span-2">
-                      <span className="w-28 text-xs font-semibold">स्थायी पता:</span>
-                      <input
-                        type="text"
-                        value={formData.noticeeAddress || ""}
-                        onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Point 5 */}
-                <div className="pt-1">
-                  <span className="font-bold block">5. शारीरिक दशा / जाहिरा चोट:</span>
-                  <input
-                    type="text"
-                    value={formData.physicalConditionOrInjuries || ""}
-                    onChange={(e) => handleFieldChange("physicalConditionOrInjuries", e.target.value)}
-                    className="w-full border-b border-dotted border-slate-700 px-1 outline-none mt-1"
-                  />
-                </div>
-
-                {/* Point 6: Witnesses */}
-                {renderWitnessesSection()}
-              </div>
-
-              {/* PAGE 2 */}
-              <div className="border border-slate-400 p-6 sm:p-8 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-300">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    पृष्ठ 2 / 4: सूचना, आधार व जामातलाशी
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">फार्म संख्या 26.8(1) भाग-2</span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <span className="font-bold block underline">
-                    7. रिश्तेदार को सूचना (धारा 48 BNSS / धारा 50A Cr.P.C.):
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4 text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="w-32">सूचित व्यक्ति:</span>
-                      <input
-                        type="text"
-                        value={formData.relativeName || ""}
-                        onChange={(e) => handleFieldChange("relativeName", e.target.value)}
-                        className="font-bold border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-24">रिश्ता:</span>
-                      <input
-                        type="text"
-                        value={formData.relativeRelation || ""}
-                        onChange={(e) => handleFieldChange("relativeRelation", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-32">दिनांक व समय:</span>
-                      <input
-                        type="text"
-                        value={`${formData.intimationDate || ""} ${formData.intimationTime || ""}`}
-                        onChange={(e) => handleFieldChange("intimationDate", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="w-24">मोबाइल:</span>
-                      <input
-                        type="text"
-                        value={formData.relativeMobile || ""}
-                        onChange={(e) => handleFieldChange("relativeMobile", e.target.value)}
-                        className="border-b border-dotted border-slate-700 px-1 outline-none flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 pt-2">
-                  <span className="font-bold block underline">
-                    8. गिरफ्तारी के आधार (धारा 47 BNSS / धारा 50 Cr.P.C.):
-                  </span>
-                  <textarea
-                    rows={3}
-                    value={formData.grounds47Other || ""}
-                    onChange={(e) => handleFieldChange("grounds47Other", e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-400 outline-none leading-relaxed"
-                  />
-                </div>
-
-                {/* Jama Talashi Table */}
-                <div className="space-y-2 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold underline">
-                      9. जामातलाशी का विवरण (धारा 50 BNSS):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleAddJamaTalashiRow}
-                      className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> सामान जोड़ें
-                    </button>
-                  </div>
-                  <table className="w-full border-collapse border border-slate-400 text-xs">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th className="border border-slate-400 p-1.5 w-10 text-center">क्र0</th>
-                        <th className="border border-slate-400 p-1.5 text-left">सामान का विवरण</th>
-                        <th className="border border-slate-400 p-1.5 w-28 text-center">तादाद</th>
-                        <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(formData.jamaTalashiItems || []).map((it, idx) => (
-                        <tr key={it.id}>
-                          <td className="border border-slate-400 p-1.5 text-center">{idx + 1}</td>
-                          <td className="border border-slate-400 p-1.5">
-                            <input
-                              type="text"
-                              value={it.description}
-                              onChange={(e) => handleUpdateJamaTalashiRow(it.id, "description", e.target.value)}
-                              className="w-full bg-transparent outline-none"
-                            />
-                          </td>
-                          <td className="border border-slate-400 p-1.5 text-center">
-                            <input
-                              type="text"
-                              value={it.quantity}
-                              onChange={(e) => handleUpdateJamaTalashiRow(it.id, "quantity", e.target.value)}
-                              className="w-full text-center bg-transparent outline-none"
-                            />
-                          </td>
-                          <td className="no-print border border-slate-400 p-1.5 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteJamaTalashiRow(it.id)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {renderCustomClausesSection()}
-                {renderOfficerSignBlock()}
-              </div>
-
-              {/* PAGE 3: PHYSICAL TRAITS */}
-              <div className="border border-slate-400 p-6 sm:p-8 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-300">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    पृष्ठ 3 / 4: शारीरिक हुलिया व पहचान लक्षण
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAddTraitRow}
-                    className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> लक्षण जोड़ें
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {(formData.traitsList || []).map((tr) => (
-                    <div key={tr.id} className="border border-slate-300 p-2 relative group flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={tr.label}
-                        onChange={(e) => handleUpdateTraitRow(tr.id, "label", e.target.value)}
-                        className="font-bold text-slate-700 w-36 outline-none bg-transparent border-b border-dotted border-slate-400"
-                      />
-                      <input
-                        type="text"
-                        value={tr.value}
-                        onChange={(e) => handleUpdateTraitRow(tr.id, "value", e.target.value)}
-                        className="w-full outline-none bg-transparent"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteTraitRow(tr.id)}
-                        className="no-print text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* PAGE 4: MHC */}
-              <div className="border border-slate-400 p-6 sm:p-8 space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-300">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    पृष्ठ 4 / 4: मालखाना मोहर्रिर (MHC) सुपुर्दगी
-                  </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">थाना मालखाना रिकॉर्ड</span>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="font-bold block">10. मालखाना जमा करवाने का विवरण:</span>
-                    <textarea
-                      rows={2}
-                      value={formData.articlesHandedOverToMhc || ""}
-                      onChange={(e) => handleFieldChange("articlesHandedOverToMhc", e.target.value)}
-                      className="w-full border border-slate-400 p-2 outline-none mt-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <span className="font-bold block text-slate-700">MHC का नाम व पद:</span>
-                      <input
-                        type="text"
-                        value={formData.mhcSignRankPno || ""}
-                        onChange={(e) => handleFieldChange("mhcSignRankPno", e.target.value)}
-                        className="w-full border-b border-dotted border-slate-700 outline-none font-bold"
-                      />
-                    </div>
-                    <div>
-                      <span className="font-bold block text-slate-700">जमा तिथि:</span>
-                      <input
-                        type="text"
-                        value={formData.mhcDepositDate || ""}
-                        onChange={(e) => handleFieldChange("mhcDepositDate", e.target.value)}
-                        className="w-full border-b border-dotted border-slate-700 outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {renderOfficerSignBlock()}
-              </div>
-            </div>
+            <ArrestMemoForm268
+              formData={formData}
+              onChangeField={handleFieldChange}
+              onUpdateWitness={handleUpdateWitnessRow}
+              onAddWitness={handleAddWitnessRow}
+              onDeleteWitness={handleDeleteWitnessRow}
+              onUpdateJamaTalashi={handleUpdateJamaTalashiRow}
+              onAddJamaTalashi={handleAddJamaTalashiRow}
+              onDeleteJamaTalashi={handleDeleteJamaTalashiRow}
+            />
           )}
 
           {/* ================= 2. FARD JAMATALASHI ================= */}
@@ -2536,6 +2544,100 @@ function ArrestDocsContent() {
           )}
         </div>
       </div>
+
+      {/* 4 A4 Pages Preview Modal */}
+      {isPreviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-xs" onClick={() => setIsPreviewModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 overflow-hidden animate-in fade-in-0 zoom-in-95">
+            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold bg-rose-600/30 text-rose-300 px-2 py-0.5 rounded border border-rose-500/40">
+                  A4 4-पेज पूर्वावलोकन
+                </span>
+                <h3 className="font-bold text-sm sm:text-base text-white">
+                  {TEMPLATE_CONFIG[selectedTemplate]?.label || "गिरफ्तारी प्रपत्र"} • FIR: {formData.complaintNo}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={handlePrint}
+                  className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs gap-1.5"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  प्रिंट करें (Print)
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
+              <iframe
+                title="Arrest Memo 4 Page Preview"
+                srcDoc={previewHtml}
+                className="w-full min-h-[700px] h-[78vh] bg-white rounded-xl border border-slate-300 shadow-md"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Success to FIR Profile Modal */}
+      {saveSuccessInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSaveSuccessInfo(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 max-w-lg w-full p-6 space-y-4 z-10 animate-in fade-in-0 zoom-in-95 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                दस्तावेज FIR प्रोफाइल में सुरक्षित सहेजा गया!
+              </h3>
+              <p className="text-xs text-slate-600 mt-1">
+                दस्तावेज को IndexedDB एवं Universal Evidence AI Pipeline में प्रोसेस व इंडेक्स कर दिया गया है। मूल स्वरूप में देखा जा सकता है।
+              </p>
+            </div>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-left text-xs space-y-1 font-sans">
+              <div className="flex justify-between">
+                <span className="text-slate-500">दस्तावेज शीर्षक:</span>
+                <span className="font-bold text-slate-900 truncate max-w-[240px]">{saveSuccessInfo.docTitle}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">FIR सं.:</span>
+                <span className="font-bold text-slate-900">{saveSuccessInfo.firNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">दस्तावेज ID:</span>
+                <span className="font-mono text-slate-600">{saveSuccessInfo.docId}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSaveSuccessInfo(null)}
+                className="text-xs font-semibold"
+              >
+                बंद करें (Close)
+              </Button>
+              <Link
+                href={`/fir/${saveSuccessInfo.firId}?tab=documents`}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>FIR Profile के Documents में देखें</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2496,9 +2496,22 @@ export default function FIRProfilePage() {
             </div>
 
             <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 flex items-center justify-center min-h-[350px]">
-              {docPreviewItem.dataUrl &&
-              (docPreviewItem.dataUrl.startsWith("data:text/plain") ||
-                docPreviewItem.dataUrl.startsWith("data:text/html")) ? (
+              {docPreviewItem.dataUrl && docPreviewItem.dataUrl.startsWith("data:text/html") ? (
+                <div className="w-full h-full flex flex-col p-1 sm:p-2">
+                  <iframe
+                    title={docPreviewItem.title}
+                    srcDoc={(() => {
+                      try {
+                        const raw = docPreviewItem.dataUrl.split(",")[1] || "";
+                        return decodeURIComponent(raw);
+                      } catch (e) {
+                        return docPreviewItem.dataUrl;
+                      }
+                    })()}
+                    className="w-full min-h-[680px] h-[78vh] bg-white rounded-xl border border-slate-300 shadow-md"
+                  />
+                </div>
+              ) : docPreviewItem.dataUrl && docPreviewItem.dataUrl.startsWith("data:text/plain") ? (
                 <div className="w-full max-w-3xl bg-white p-8 rounded-xl border border-slate-300 shadow-sm font-sans text-xs sm:text-sm text-slate-900 leading-relaxed space-y-4">
                   <div className="text-center pb-3 border-b border-slate-300">
                     <h3 className="font-black text-sm tracking-wider uppercase text-slate-900">
