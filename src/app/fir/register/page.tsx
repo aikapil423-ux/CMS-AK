@@ -451,7 +451,7 @@ function RegisterFIRForm() {
 
   // TAB 5: Action Taken
   const [isSecretFir, setIsSecretFir] = useState(false);
-  const [actionType, setActionType] = useState<string>("Investigation/Assign IO");
+  const [actionType, setActionType] = useState<string>("");
   const [assignedIoId, setAssignedIoId] = useState("");
   const [refusedReason, setRefusedReason] = useState("");
   const [transferredPs, setTransferredPs] = useState("");
@@ -1029,6 +1029,7 @@ function RegisterFIRForm() {
         setPermPincode("");
         setFirContentText("");
         setBriefFacts("");
+        setActionType("");
         setReasonsForDelay("");
         setCountDeceased("0");
         setCountSeriouslyHurt("0");
@@ -1506,6 +1507,9 @@ function RegisterFIRForm() {
     if (!firContentText.trim() && !briefFacts.trim()) {
       newErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
     }
+    if (!actionType || !actionType.trim()) {
+      newErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
+    }
 
     setErrors(newErrors);
 
@@ -1522,6 +1526,7 @@ function RegisterFIRForm() {
         newErrors.complainantNationality
       ) setActiveTab("complainant");
       else if (newErrors.fir_content) setActiveTab("fir_content");
+      else if (newErrors.actionType) setActiveTab("action_taken");
       return false;
     }
     return true;
@@ -1629,6 +1634,26 @@ function RegisterFIRForm() {
       }
       if (!complainantNationality || !complainantNationality.trim()) {
         tabErrors.complainantNationality = "Complainant Nationality is mandatory.";
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
+    if (activeTab === "fir_content") {
+      const tabErrors: Record<string, string> = {};
+      if (!firContentText.trim() && !briefFacts.trim()) {
+        tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
+      }
+      if (Object.keys(tabErrors).length > 0) {
+        setErrors((prev) => ({ ...prev, ...tabErrors }));
+        return;
+      }
+    }
+    if (activeTab === "action_taken") {
+      const tabErrors: Record<string, string> = {};
+      if (!actionType || !actionType.trim()) {
+        tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
       }
       if (Object.keys(tabErrors).length > 0) {
         setErrors((prev) => ({ ...prev, ...tabErrors }));
@@ -3808,15 +3833,19 @@ function RegisterFIRForm() {
                 {/* Action Taken Options */}
                 <div>
                   <label className="font-bold text-slate-700 block mb-2">
-                    Action Taken by Station House Officer (SHO)
+                    Action Taken by Station House Officer (SHO) <span className="text-red-600">*</span>
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1 rounded-xl transition-all ${
+                    errors.actionType ? "border border-red-500 bg-red-50/40 ring-1 ring-red-400 p-2" : ""
+                  }`}>
                     {actionTakenList.map((opt) => (
                       <label
                         key={opt}
                         className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-lg border transition-all ${
                           actionType === opt
                             ? "border-blue-500 bg-blue-50/50 text-blue-950 font-bold shadow-xs"
+                            : errors.actionType
+                            ? "border-red-300 hover:bg-red-50/50 text-slate-800"
                             : "border-slate-200 hover:bg-slate-50 text-slate-800"
                         }`}
                       >
@@ -3825,13 +3854,29 @@ function RegisterFIRForm() {
                           name="actionType"
                           value={opt}
                           checked={actionType === opt}
-                          onChange={() => setActionType(opt)}
+                          onChange={() => {
+                            setActionType(opt);
+                            if (errors.actionType) {
+                              setErrors((prev) => {
+                                const next = { ...prev };
+                                delete next.actionType;
+                                return next;
+                              });
+                            }
+                          }}
                           className="text-blue-600"
+                          required
                         />
                         <span className="text-xs">{opt}</span>
                       </label>
                     ))}
                   </div>
+                  {errors.actionType && (
+                    <p className="text-red-600 text-xs font-bold mt-1.5 flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{errors.actionType}</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* IO Assignment Box */}
