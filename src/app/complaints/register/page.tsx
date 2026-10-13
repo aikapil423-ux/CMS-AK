@@ -3135,50 +3135,6 @@ export default function RegisterComplaintPage() {
         </div>
       )}
 
-      {/* Draft Restoration Alert Banner (When stored draft exists and not yet dismissed) */}
-      {hasStoredDraft && !draftBannerDismissed && (
-        <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
-          <div className="flex items-start gap-2.5">
-            <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-amber-950 text-xs sm:text-sm">
-                Saved Draft Available / सुरक्षित ड्राफ्ट उपलब्ध है
-              </p>
-              <p className="text-[11px] text-amber-800 leading-relaxed">
-                A previously filled complaint draft is saved in this browser{draftSavedAt ? ` (Saved at: ${draftSavedAt})` : ""}. Your entered data is preserved automatically even when navigating to other pages. Click &ldquo;Restore Last Filled Draft&rdquo; anytime to recover your entries.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleRestoreDraft}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-xs"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Restore Last Filled Draft</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleDiscardDraft}
-              className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 cursor-pointer"
-            >
-              Discard Draft
-            </Button>
-            <button
-              type="button"
-              onClick={() => setDraftBannerDismissed(true)}
-              className="p-1 text-amber-700 hover:text-amber-950 rounded cursor-pointer"
-              title="Dismiss banner"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Draft Status & Actions Control Bar + Voice Dictation Bar */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
