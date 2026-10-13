@@ -1,0 +1,13 @@
+#!/bin/sh
+# Automatically sync and commit any pending database, schema, or seed file changes before git push.
+
+node scripts/export-seed.mjs
+
+DB_FILES="prisma/dev.db prisma/seed.mjs prisma/seed-data.json prisma/schema.prisma prisma/schema.postgresql.prisma prisma/complaints-store.json prisma/gd-dismissed-suggestions.json prisma/processed-evidence-store.json"
+
+git add $DB_FILES 2>/dev/null || true
+
+if ! git diff --cached --quiet -- $DB_FILES; then
+  echo "[pre-push] Detected uncommitted database/schema/seed changes. Auto-committing before push..."
+  git commit --no-verify -m "chore(db): sync database, schema, and seed data" -- $DB_FILES
+fi

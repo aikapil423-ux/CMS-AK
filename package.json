@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:export-seed": "node scripts/export-seed.mjs",
+    "db:seed": "node prisma/seed.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.4.1",

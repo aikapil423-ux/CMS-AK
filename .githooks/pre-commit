@@ -1,0 +1,15 @@
+#!/bin/sh
+# Automatically export latest SQLite database into prisma/seed-data.json
+# and stage database, schema, and seed files on every commit.
+
+node scripts/export-seed.mjs
+
+git add \
+  prisma/dev.db \
+  prisma/seed.mjs \
+  prisma/seed-data.json \
+  prisma/schema.prisma \
+  prisma/schema.postgresql.prisma \
+  prisma/complaints-store.json \
+  prisma/gd-dismissed-suggestions.json \
+  prisma/processed-evidence-store.json 2>/dev/null || true
