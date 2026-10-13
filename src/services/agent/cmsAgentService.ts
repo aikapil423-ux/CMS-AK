@@ -894,13 +894,14 @@ export class CmsAgentService {
       }
     }
 
-    // 2. Match against all 99 CCTNS_OFFICIAL_GD_TYPES by exact label, code, orHindi label (longest label first)
+    // 2. Match against all 99 CCTNS_OFFICIAL_GD_TYPES by exact nameEn, code, or nameHi (longest nameEn first)
     const sortedTypes = [...CCTNS_OFFICIAL_GD_TYPES].sort(
-      (a, b) => b.label.length - a.label.length
+      (a, b) => (b.nameEn || "").length - (a.nameEn || "").length
     );
 
     for (const gdType of sortedTypes) {
-      const labelLower = gdType.label.toLowerCase();
+      const labelLower = (gdType.nameEn || "").toLowerCase();
+      if (!labelLower) continue;
       const codeLower = gdType.code.toLowerCase().replace(/_/g, " ");
       const escapedLabel = labelLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const labelRegex = new RegExp(`\\b${escapedLabel}\\b`, "i");
@@ -1018,8 +1019,8 @@ export class CmsAgentService {
 
     return {
       typeCode: matchedType?.code,
-      typeLabel: matchedType?.label,
-      typeLabelHi: matchedType?.labelHi,
+      typeLabel: matchedType?.nameEn,
+      typeLabelHi: matchedType?.nameHi,
       officerName,
       subject,
       caseType,
