@@ -102,12 +102,12 @@ const STATES_LIST = [
 ];
 
 const TRANSFER_REASON_PRESETS = [
-  "घटना स्थल अन्य थाना अधिकार क्षेत्र में स्थित पाया गया (Jurisdiction of destination station)",
-  "शिकायतकर्ता के स्थायी निवास / निकटतम थाना क्षेत्र में स्थानांतरण अनुरोध",
-  "समान मामले व आरोपी की जांच गंतव्य जिले में पहले से प्रचलित है",
-  "अंतरराज्यीय साइबर व आर्थिक धोखाधड़ी होने के कारण विशेष सेल / राज्य को अंतरण",
-  "पुलिस आयुक्त / पुलिस अधीक्षक कार्यालय के प्रशासनिक आदेशानुसार",
-  "सक्षम न्यायालय के निर्देशानुसार क्षेत्राधिकार अंतरण",
+  "Place of occurrence falls under the jurisdiction of the destination police station",
+  "Transfer requested to the complainant's permanent residence / nearest police station",
+  "Investigation of a connected matter / same accused is already underway in the destination district",
+  "Inter-state cyber or financial fraud requiring transfer to specialized cell / state",
+  "Administrative transfer order issued by Office of the Commissioner / Superintendent of Police",
+  "Jurisdiction transfer pursuant to directions of the Competent Court",
 ];
 
 export function TransferComplaintModal({
@@ -250,7 +250,7 @@ export function TransferComplaintModal({
   const handleSubmitTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedComplaint) {
-      alert("कृपया स्थानांतरित की जाने वाली शिकायत का चयन करें। (Please select a complaint to transfer)");
+      alert("Please select a complaint to transfer.");
       return;
     }
 
@@ -260,22 +260,22 @@ export function TransferComplaintModal({
         : targetPoliceStation.trim();
 
     if (!finalStation) {
-      alert("कृपया गंतव्य थाना (Destination Police Station) दर्ज करें।");
+      alert("Please enter the Destination Police Station.");
       return;
     }
 
     if (!targetDistrict.trim()) {
-      alert("कृपया गंतव्य ज़िला (Target District) दर्ज करें।");
+      alert("Please enter the Target District.");
       return;
     }
 
     if (!targetState.trim()) {
-      alert("कृपया गंतव्य राज्य (Target State) दर्ज करें।");
+      alert("Please enter the Target State.");
       return;
     }
 
     if (!transferReason.trim()) {
-      alert("कृपया स्थानांतरण का कारण (Transfer Reason) दर्ज करें।");
+      alert("Please enter the Transfer Reason.");
       return;
     }
 
@@ -296,7 +296,7 @@ export function TransferComplaintModal({
         remarks: remarks.trim() || undefined,
       });
 
-      setSuccessToast(`शिकायत ${selectedComplaint.complaintNumber} सफलतापूर्वक स्थानांतरित कर दी गई है!`);
+      setSuccessToast(`Complaint ${selectedComplaint.complaintNumber} has been transferred successfully!`);
       loadHistory();
       onTransferSuccess(updated);
 
@@ -306,7 +306,7 @@ export function TransferComplaintModal({
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      alert(`स्थानांतरण में त्रुटि: ${err.message || "अज्ञात समस्या"}`);
+      alert(`Transfer failed: ${err.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -327,14 +327,14 @@ export function TransferComplaintModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold tracking-tight">
-                  शिकायत स्थानांतरण / Transfer Complaint
+                  Transfer Complaint
                 </h2>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full">
                   BNSS / Police Jurisdiction
                 </span>
               </div>
               <p className="text-xs text-slate-300">
-                अन्य थाना, अन्य ज़िला या अन्य राज्य में क्षेत्राधिकार अनुसार शिकायत अंतरित करें
+                Transfer complaint to another police station, district, or state by jurisdiction
               </p>
             </div>
           </div>
@@ -359,7 +359,7 @@ export function TransferComplaintModal({
             }`}
           >
             <Send className="w-4 h-4 text-blue-600" />
-            <span>नया स्थानांतरण (Transfer Complaint)</span>
+            <span>Transfer Complaint</span>
           </button>
           <button
             type="button"
@@ -371,7 +371,7 @@ export function TransferComplaintModal({
             }`}
           >
             <History className="w-4 h-4 text-purple-600" />
-            <span>स्थानांतरण इतिहास (Transfer History)</span>
+            <span>Transfer History</span>
             <span className="ml-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
               {transferHistoryList.length}
             </span>
@@ -393,7 +393,7 @@ export function TransferComplaintModal({
             {/* Step 1: Select Scope */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                1. स्थानांतरण का क्षेत्राधिकार चुनें (Select Jurisdiction Scope) <span className="text-red-500">*</span>
+                1. Select Jurisdiction Scope <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Other Station */}
@@ -410,8 +410,8 @@ export function TransferComplaintModal({
                     <Building2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900">Other Station (अन्य थाना)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">समान ज़िला (Same District)</div>
+                    <div className="text-xs font-bold text-slate-900">Other Station</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Same District</div>
                   </div>
                 </button>
 
@@ -429,8 +429,8 @@ export function TransferComplaintModal({
                     <MapPin className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900">Other District (अन्य ज़िला)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">समान राज्य (Same State)</div>
+                    <div className="text-xs font-bold text-slate-900">Other District</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Same State</div>
                   </div>
                 </button>
 
@@ -448,8 +448,8 @@ export function TransferComplaintModal({
                     <Globe2 className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-slate-900">Other State (अन्य राज्य)</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">अंतरराज्यीय अंतरण (Inter-State)</div>
+                    <div className="text-xs font-bold text-slate-900">Other State</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Inter-State Transfer</div>
                   </div>
                 </button>
               </div>
@@ -458,7 +458,7 @@ export function TransferComplaintModal({
             {/* Step 2: Select Complaint (Searchable Dropdown) */}
             <div className="relative" ref={dropdownRef}>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                2. स्थानांतरित की जाने वाली शिकायत चुनें (Select Complaint from Register) <span className="text-red-500">*</span>
+                2. Select Complaint from Register <span className="text-red-500">*</span>
               </label>
 
               {/* Input trigger */}
@@ -489,7 +489,7 @@ export function TransferComplaintModal({
                         setIsDropdownOpen(true);
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
-                      placeholder="शिकायत संख्या, नाम या फोन नंबर से खोजें (Type to search complaint)..."
+                      placeholder="Search by complaint number, name, or phone number..."
                       className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
                     />
                   )}
@@ -506,7 +506,7 @@ export function TransferComplaintModal({
                     }}
                     className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
                   >
-                    बदलें (Change)
+                    Change
                   </button>
                 )}
               </div>
@@ -519,7 +519,7 @@ export function TransferComplaintModal({
                       type="text"
                       value={complaintSearchQuery}
                       onChange={(e) => setComplaintSearchQuery(e.target.value)}
-                      placeholder="शिकायत संख्या, नाम या फोन दर्ज करें..."
+                      placeholder="Enter complaint number, name, or phone..."
                       autoFocus
                       className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500"
                     />
@@ -527,7 +527,7 @@ export function TransferComplaintModal({
 
                   {filteredComplaints.length === 0 ? (
                     <div className="p-4 text-center text-xs text-slate-500">
-                      कोई शिकायत नहीं मिली (No matching complaints)
+                      No matching complaints found
                     </div>
                   ) : (
                     filteredComplaints.map((c) => {
@@ -609,14 +609,14 @@ export function TransferComplaintModal({
             <div className="bg-slate-50/70 border border-slate-200 p-4 rounded-xl space-y-4">
               <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-600" />
-                <span>3. गंतव्य विवरण (Destination Police Jurisdiction)</span>
+                <span>3. Destination Police Jurisdiction</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 {/* State */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    गंतव्य राज्य (Target State) <span className="text-red-500">*</span>
+                    Target State <span className="text-red-500">*</span>
                   </label>
                   {transferType === "OTHER_STATE" ? (
                     <select
@@ -643,7 +643,7 @@ export function TransferComplaintModal({
                 {/* District */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    गंतव्य ज़िला (Target District) <span className="text-red-500">*</span>
+                    Target District <span className="text-red-500">*</span>
                   </label>
                   {transferType === "OTHER_STATION" ? (
                     <input
@@ -678,7 +678,7 @@ export function TransferComplaintModal({
                 {/* Police Station */}
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    गंतव्य थाना (Destination Police Station) <span className="text-red-500">*</span>
+                    Destination Police Station <span className="text-red-500">*</span>
                   </label>
                   {transferType === "OTHER_STATION" ? (
                     <select
@@ -686,13 +686,13 @@ export function TransferComplaintModal({
                       onChange={(e) => setTargetPoliceStation(e.target.value)}
                       className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     >
-                      <option value="">-- थाना चुनें (Select Station) --</option>
+                      <option value="">-- Select Station --</option>
                       {GURUGRAM_STATIONS.map((ps) => (
                         <option key={ps} value={ps}>
                           {ps}
                         </option>
                       ))}
-                      <option value="OTHER_CUSTOM">अन्य थाना (Enter custom name)...</option>
+                      <option value="OTHER_CUSTOM">Other Station (Enter custom name)...</option>
                     </select>
                   ) : (
                     <input
@@ -710,13 +710,13 @@ export function TransferComplaintModal({
               {targetPoliceStation === "OTHER_CUSTOM" && (
                 <div className="pt-2">
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    कस्टम थाना नाम लिखें (Enter Custom Police Station Name)
+                    Enter Custom Police Station Name
                   </label>
                   <input
                     type="text"
                     value={customStationInput}
                     onChange={(e) => setCustomStationInput(e.target.value)}
-                    placeholder="उदा. PS DLF Phase 4 / विशेष इकाई"
+                    placeholder="e.g. PS DLF Phase 4 / Special Unit"
                     className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                   />
                 </div>
@@ -728,7 +728,7 @@ export function TransferComplaintModal({
               {/* Order / Memo No */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  स्थानांतरण आदेश / पत्र संख्या (Order / Memo No.)
+                  Order / Memo No.
                 </label>
                 <input
                   type="text"
@@ -742,7 +742,7 @@ export function TransferComplaintModal({
               {/* Dispatch Date */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  प्रेषण तिथि (Dispatch Date) <span className="text-red-500">*</span>
+                  Dispatch Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -755,7 +755,7 @@ export function TransferComplaintModal({
               {/* Transferred By */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  हस्ताक्षरकर्ता / अधिकारी (Authorized By) <span className="text-red-500">*</span>
+                  Authorized By <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -770,7 +770,7 @@ export function TransferComplaintModal({
             {/* Step 5: Transfer Reason */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                4. स्थानांतरण का कारण (Transfer Reason / Legal Ground) <span className="text-red-500">*</span>
+                4. Transfer Reason / Legal Ground <span className="text-red-500">*</span>
               </label>
               <select
                 value={transferReason}
@@ -782,13 +782,13 @@ export function TransferComplaintModal({
                     {rs}
                   </option>
                 ))}
-                <option value="OTHER_CUSTOM_REASON">अन्य कारण (Type custom ground below)...</option>
+                <option value="OTHER_CUSTOM_REASON">Other Reason (Type custom ground below)...</option>
               </select>
 
               {transferReason === "OTHER_CUSTOM_REASON" && (
                 <textarea
                   rows={2}
-                  placeholder="विस्तृत कारण दर्ज करें..."
+                  placeholder="Enter detailed transfer reason..."
                   onChange={(e) => setTransferReason(e.target.value)}
                   className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                 />
@@ -798,13 +798,13 @@ export function TransferComplaintModal({
             {/* Step 6: Remarks */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                5. प्राप्तकर्ता थाने के लिए विशेष निर्देश / टिप्पणी (Remarks / Instructions for Receiving PS)
+                5. Remarks / Instructions for Receiving PS
               </label>
               <textarea
                 rows={2}
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                placeholder="उदा. फरियादी के मूल दस्तावेज व सीडी संलग्न हैं। प्राथमिकता पर जांच आरंभ की जाए।"
+                placeholder="e.g. Original documents and CD of the complainant are enclosed. Please initiate inquiry on priority."
                 className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
@@ -817,7 +817,7 @@ export function TransferComplaintModal({
                 disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
-                रद्द करें (Cancel)
+                Cancel
               </button>
               <button
                 type="submit"
@@ -825,7 +825,7 @@ export function TransferComplaintModal({
                 className="px-5 py-2.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowRightLeft className="w-4 h-4 text-amber-400" />
-                <span>{isSubmitting ? "स्थानांतरित किया जा रहा है..." : "शिकायत स्थानांतरित करें (Confirm Transfer)"}</span>
+                <span>{isSubmitting ? "Transferring..." : "Confirm Transfer"}</span>
               </button>
             </div>
           </form>
@@ -842,12 +842,12 @@ export function TransferComplaintModal({
                   type="text"
                   value={historySearchQuery}
                   onChange={(e) => setHistorySearchQuery(e.target.value)}
-                  placeholder="शिकायत संख्या, थाना, अधिकारी या आदेश सं. से खोजें..."
+                  placeholder="Search by complaint number, station, officer, or order no..."
                   className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-600 outline-none"
                 />
               </div>
               <div className="text-xs text-slate-500 font-mono">
-                कुल {filteredHistory.length} स्थानांतरण रिकॉर्ड
+                Total {filteredHistory.length} Transfer Record(s)
               </div>
             </div>
 
@@ -855,9 +855,9 @@ export function TransferComplaintModal({
             {filteredHistory.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl">
                 <History className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm font-bold text-slate-600">कोई स्थानांतरण इतिहास उपलब्ध नहीं है</p>
+                <p className="text-sm font-bold text-slate-600">No Transfer History Available</p>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  जब भी कोई शिकायत अन्य थाना या राज्य में भेजी जाएगी, उसका पूरा रिकॉर्ड यहाँ सुरक्षित रहेगा।
+                  Whenever a complaint is transferred to another police station, district, or state, its complete record will appear here.
                 </p>
               </div>
             ) : (
@@ -866,12 +866,12 @@ export function TransferComplaintModal({
                   <table className="w-full text-left text-xs text-slate-800">
                     <thead className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                       <tr>
-                        <th className="py-3 px-3.5">तिथि व समय</th>
-                        <th className="py-3 px-3.5">शिकायत सं. व फरियादी</th>
-                        <th className="py-3 px-3.5">प्रकार</th>
-                        <th className="py-3 px-3.5">स्रोत ➔ गंतव्य थाना</th>
-                        <th className="py-3 px-3.5">आदेश सं. व अधिकारी</th>
-                        <th className="py-3 px-3.5">कारण व टिप्पणी</th>
+                        <th className="py-3 px-3.5">Date & Time</th>
+                        <th className="py-3 px-3.5">Complaint No. & Complainant</th>
+                        <th className="py-3 px-3.5">Type</th>
+                        <th className="py-3 px-3.5">Source ➔ Destination PS</th>
+                        <th className="py-3 px-3.5">Order No. & Officer</th>
+                        <th className="py-3 px-3.5">Reason & Remarks</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -879,15 +879,15 @@ export function TransferComplaintModal({
                         const typeBadge =
                           item.transferType === "OTHER_STATION" ? (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
-                              अन्य थाना
+                              Other Station
                             </span>
                           ) : item.transferType === "OTHER_DISTRICT" ? (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 border border-indigo-200">
-                              अन्य ज़िला
+                              Other District
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
-                              अन्य राज्य
+                              Other State
                             </span>
                           );
 
@@ -951,7 +951,7 @@ export function TransferComplaintModal({
                               </p>
                               {item.remarks && (
                                 <p className="text-[10px] text-slate-500 italic mt-0.5 line-clamp-1">
-                                  नोट: {item.remarks}
+                                  Note: {item.remarks}
                                 </p>
                               )}
                             </td>

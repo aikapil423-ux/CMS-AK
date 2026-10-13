@@ -33,43 +33,43 @@ interface LinkDelinkComplaintsModalProps {
 const LINK_TYPE_OPTIONS = [
   {
     key: "CROSS",
-    label: "Cross-Complaint (क्रॉस शिकायत)",
-    desc: "एक ही घटना पर दोनों पक्षों द्वारा एक दूसरे के खिलाफ दर्ज शिकायतें",
+    label: "Cross-Complaint",
+    desc: "Complaints filed by both parties against each other over the same incident",
     badgeColor: "bg-red-100 text-red-800 border-red-200",
   },
   {
     key: "RELATED",
-    label: "Related Matter (संबंधित मामला)",
-    desc: "समान घटना स्थल, विवाद या एक ही घटनाक्रम से जुड़ी शिकायतें",
+    label: "Related Matter",
+    desc: "Complaints connected to the same place of occurrence, dispute, or sequence of events",
     badgeColor: "bg-blue-100 text-blue-800 border-blue-200",
   },
   {
     key: "DUPLICATE",
-    label: "Duplicate / Repeat (डुप्लीकेट शिकायत)",
-    desc: "एक ही व्यक्ति द्वारा उसी विषय पर दोबारा दी गई पूरक शिकायत",
+    label: "Duplicate / Repeat",
+    desc: "Supplementary or repeat complaint filed by the same person on the same subject",
     badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
   },
   {
     key: "SAME_ACCUSED",
-    label: "Same Accused / Gang (समान आरोपी / गिरोह)",
-    desc: "समान अपराधी या गिरोह द्वारा अलग-अलग पीड़ितों के साथ किया गया अपराध",
+    label: "Same Accused / Gang",
+    desc: "Offences committed by the same accused or syndicate against different victims",
     badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
   },
 ] as const;
 
 const LINK_REASON_PRESETS = [
-  "दोनों पक्षों द्वारा एक ही घटना पर परस्पर विरोधी आरोप लगाए गए हैं (Mutual cross-complaint)",
-  "घटना स्थल, समय और मुख्य विवाद का कारण एक ही पाया गया",
-  "समान आरोपी द्वारा एक ही मोडस ऑपरेंडी (Modus Operandi) से की गई धोखाधड़ी",
-  "शिकायतकर्ता द्वारा पूर्व दर्ज शिकायत के संबंध में ही अतिरिक्त साक्ष्य/विवरण प्रस्तुत किया गया",
-  "पुलिस अधीक्षक / एसीपी कार्यालय से संयुक्त जांच हेतु एक साथ जोड़ने के निर्देश",
+  "Mutual cross-allegations filed by both parties regarding the same incident",
+  "Place of occurrence, time, and core subject of dispute found to be identical",
+  "Fraud/offence committed by the same accused using the same Modus Operandi",
+  "Additional evidence/statement submitted by the complainant regarding an earlier complaint",
+  "Directions from SP / ACP Office to club complaints for joint inquiry",
 ];
 
 const DELINK_REASON_PRESETS = [
-  "प्रारंभिक जांच में दोनों मामलों का परस्पर कोई संबंध नहीं पाया गया, स्वतंत्र जांच आवश्यक है",
-  "दोनों पक्षों के विवाद का घटना स्थल व समय पूर्णतः पृथक निकला",
-  "क्लर्कियल / डेटा प्रविष्टि की असावधानी के कारण गलत लिंक हो गया था",
-  "जांच अधिकारी के निष्कर्षानुसार मामलों की अलग-अलग चार्जशीट / रिपोर्ट प्रस्तुत की जाएगी",
+  "Preliminary inquiry found no connection between the two matters; independent inquiry required",
+  "Place and time of occurrence of both disputes found to be completely distinct",
+  "Linked inadvertently due to clerical / data entry oversight",
+  "Separate inquiry reports / final reports to be submitted as per Enquiry Officer findings",
 ];
 
 export function LinkDelinkComplaintsModal({
@@ -244,22 +244,22 @@ export function LinkDelinkComplaintsModal({
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPrimaryComplaint) {
-      alert("कृपया पहली (मुख्य) शिकायत चुनें। (Please select the primary complaint)");
+      alert("Please select the primary complaint.");
       return;
     }
     if (!selectedTargetComplaint) {
-      alert("कृपया जोड़ने वाली दूसरी शिकायत चुनें। (Please select the target complaint to link)");
+      alert("Please select the target complaint to link.");
       return;
     }
     if (selectedPrimaryComplaint.complaintNumber === selectedTargetComplaint.complaintNumber) {
-      alert("एक ही शिकायत को स्वयं से लिंक नहीं किया जा सकता। (Cannot link a complaint to itself)");
+      alert("Cannot link a complaint to itself.");
       return;
     }
 
     const finalReason =
       linkReason === "OTHER_CUSTOM" ? customLinkReason.trim() : linkReason.trim();
     if (!finalReason) {
-      alert("कृपया लिंक करने का कारण दर्ज करें। (Please provide linking reason)");
+      alert("Please provide a reason for linking.");
       return;
     }
 
@@ -274,7 +274,7 @@ export function LinkDelinkComplaintsModal({
       });
 
       setSuccessToast(
-        `शिकायत ${selectedPrimaryComplaint.complaintNumber} और ${selectedTargetComplaint.complaintNumber} को सफलतापूर्वक लिंक कर दिया गया है!`
+        `Complaints ${selectedPrimaryComplaint.complaintNumber} and ${selectedTargetComplaint.complaintNumber} have been linked successfully!`
       );
       onSuccess(result);
 
@@ -284,7 +284,7 @@ export function LinkDelinkComplaintsModal({
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      alert(`लिंक करने में त्रुटि: ${err.message || "अज्ञात समस्या"}`);
+      alert(`Error linking complaints: ${err.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -294,18 +294,18 @@ export function LinkDelinkComplaintsModal({
   const handleDelinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDelinkSourceComplaint) {
-      alert("कृपया उस शिकायत का चयन करें जिससे लिंक हटाना है। (Select complaint to delink from)");
+      alert("Please select a complaint to delink from.");
       return;
     }
     if (!targetComplaintNumberToDelink) {
-      alert("कृपया डी-लिंक की जाने वाली संबंधित शिकायत का चयन करें। (Select target linked complaint to remove)");
+      alert("Please select the linked complaint to remove.");
       return;
     }
 
     const finalReason =
       delinkReason === "OTHER_CUSTOM" ? customDelinkReason.trim() : delinkReason.trim();
     if (!finalReason) {
-      alert("कृपया डी-लिंक करने का कारण दर्ज करें। (Please provide delinking reason)");
+      alert("Please provide a reason for delinking.");
       return;
     }
 
@@ -319,7 +319,7 @@ export function LinkDelinkComplaintsModal({
       });
 
       setSuccessToast(
-        `शिकायत ${selectedDelinkSourceComplaint.complaintNumber} से ${targetComplaintNumberToDelink} को सफलतापूर्वक डी-लिंक कर दिया गया है!`
+        `Complaint ${targetComplaintNumberToDelink} has been delinked from ${selectedDelinkSourceComplaint.complaintNumber} successfully!`
       );
       onSuccess(result);
 
@@ -329,7 +329,7 @@ export function LinkDelinkComplaintsModal({
       }, 1500);
     } catch (err: any) {
       console.error(err);
-      alert(`डी-लिंक करने में त्रुटि: ${err.message || "अज्ञात समस्या"}`);
+      alert(`Error delinking complaints: ${err.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -350,14 +350,14 @@ export function LinkDelinkComplaintsModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold tracking-tight">
-                  शिकायत लिंक व डी-लिंक / Link & Delink
+                  Link & Delink Complaints
                 </h2>
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full">
                   Case Association
                 </span>
               </div>
               <p className="text-xs text-slate-300">
-                क्रॉस शिकायतें, समान आरोपी या संबंधित मामलों को आपस में जोड़ें अथवा अलग करें
+                Associate or separate cross-complaints, same-accused cases, or related matters
               </p>
             </div>
           </div>
@@ -383,7 +383,7 @@ export function LinkDelinkComplaintsModal({
               }`}
             >
               <Link2 className="w-4 h-4" />
-              <span>शिकायतें लिंक करें (Link Complaints)</span>
+              <span>Link Complaints</span>
             </button>
             <button
               type="button"
@@ -395,7 +395,7 @@ export function LinkDelinkComplaintsModal({
               }`}
             >
               <Unlink className="w-4 h-4" />
-              <span>शिकायतें डी-लिंक करें (Delink Complaints)</span>
+              <span>Delink Complaints</span>
             </button>
           </div>
         </div>
@@ -415,7 +415,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 1: Select Primary Complaint */}
             <div className="relative" ref={primaryRef}>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                1. मुख्य शिकायत चुनें (Select Primary Complaint) <span className="text-red-500">*</span>
+                1. Select Primary Complaint <span className="text-red-500">*</span>
               </label>
 
               <div
@@ -445,7 +445,7 @@ export function LinkDelinkComplaintsModal({
                         setIsPrimaryDropdownOpen(true);
                       }}
                       onFocus={() => setIsPrimaryDropdownOpen(true)}
-                      placeholder="शिकायत संख्या, नाम या तारीख (Date/Name/No) से खोजें..."
+                      placeholder="Search by complaint number, name, or date..."
                       className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
                     />
                   )}
@@ -462,7 +462,7 @@ export function LinkDelinkComplaintsModal({
                     }}
                     className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
                   >
-                    बदलें (Change)
+                    Change
                   </button>
                 )}
               </div>
@@ -475,13 +475,13 @@ export function LinkDelinkComplaintsModal({
                       type="text"
                       value={primarySearch}
                       onChange={(e) => setPrimarySearch(e.target.value)}
-                      placeholder="नाम, शिकायत सं., या तारीख (DD/MM/YYYY) से खोजें..."
+                      placeholder="Search by name, complaint no., or date (DD/MM/YYYY)..."
                       autoFocus
                       className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
                     />
                   </div>
                   {filteredPrimaryComplaints.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-slate-500">कोई शिकायत नहीं मिली</div>
+                    <div className="p-3 text-center text-xs text-slate-500">No complaints found</div>
                   ) : (
                     filteredPrimaryComplaints.map((c) => (
                       <div
@@ -528,7 +528,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 2: Select Target Complaint to Link */}
             <div className="relative" ref={targetRef}>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                2. जिस शिकायत से लिंक करना है (Select Target Complaint to Link with) <span className="text-red-500">*</span>
+                2. Select Target Complaint to Link With <span className="text-red-500">*</span>
               </label>
 
               <div
@@ -558,7 +558,7 @@ export function LinkDelinkComplaintsModal({
                         setIsTargetDropdownOpen(true);
                       }}
                       onFocus={() => setIsTargetDropdownOpen(true)}
-                      placeholder="दूसरी शिकायत संख्या, नाम या तारीख (Date/Name/No) से खोजें..."
+                      placeholder="Search target complaint by number, name, or date..."
                       className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
                     />
                   )}
@@ -575,7 +575,7 @@ export function LinkDelinkComplaintsModal({
                     }}
                     className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
                   >
-                    बदलें (Change)
+                    Change
                   </button>
                 )}
               </div>
@@ -588,13 +588,13 @@ export function LinkDelinkComplaintsModal({
                       type="text"
                       value={targetSearch}
                       onChange={(e) => setTargetSearch(e.target.value)}
-                      placeholder="नाम, शिकायत सं., या तारीख (DD/MM/YYYY) से खोजें..."
+                      placeholder="Search by name, complaint no., or date (DD/MM/YYYY)..."
                       autoFocus
                       className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
                     />
                   </div>
                   {filteredTargetComplaints.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-slate-500">कोई शिकायत नहीं मिली</div>
+                    <div className="p-3 text-center text-xs text-slate-500">No complaints found</div>
                   ) : (
                     filteredTargetComplaints.map((c) => (
                       <div
@@ -634,7 +634,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 3: Link Type Selection */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                3. संबंध का प्रकार (Select Relationship Type) <span className="text-red-500">*</span>
+                3. Select Relationship Type <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {LINK_TYPE_OPTIONS.map((opt) => (
@@ -663,7 +663,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 4: Reason for Linking */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                4. लिंक करने का कारण व आधार (Ground / Reason for Linking) <span className="text-red-500">*</span>
+                4. Ground / Reason for Linking <span className="text-red-500">*</span>
               </label>
               <select
                 value={linkReason}
@@ -675,7 +675,7 @@ export function LinkDelinkComplaintsModal({
                     {rs}
                   </option>
                 ))}
-                <option value="OTHER_CUSTOM">अन्य विशिष्ट कारण लिखें (Type custom reason)...</option>
+                <option value="OTHER_CUSTOM">Other Reason (Type custom reason)...</option>
               </select>
 
               {linkReason === "OTHER_CUSTOM" && (
@@ -683,7 +683,7 @@ export function LinkDelinkComplaintsModal({
                   rows={2}
                   value={customLinkReason}
                   onChange={(e) => setCustomLinkReason(e.target.value)}
-                  placeholder="कारण का विवरण दर्ज करें..."
+                  placeholder="Enter detailed reason for linking..."
                   className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                 />
               )}
@@ -692,7 +692,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 5: Officer */}
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                अधिकृत अधिकारी (Authorized By)
+                Authorized By
               </label>
               <input
                 type="text"
@@ -710,7 +710,7 @@ export function LinkDelinkComplaintsModal({
                 disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
-                रद्द करें (Cancel)
+                Cancel
               </button>
               <button
                 type="submit"
@@ -718,7 +718,7 @@ export function LinkDelinkComplaintsModal({
                 className="px-5 py-2.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Link2 className="w-4 h-4 text-emerald-400" />
-                <span>{isSubmitting ? "लिंक किया जा रहा है..." : "शिकायतें लिंक करें (Confirm Linking)"}</span>
+                <span>{isSubmitting ? "Linking..." : "Confirm Linking"}</span>
               </button>
             </div>
           </form>
@@ -731,7 +731,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 1: Select Complaint that has active links */}
             <div className="relative" ref={delinkSourceRef}>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                1. वह शिकायत चुनें जिसमें लिंक मौजूद है (Select Complaint with Active Links) <span className="text-red-500">*</span>
+                1. Select Complaint with Active Links <span className="text-red-500">*</span>
               </label>
 
               <div
@@ -761,7 +761,7 @@ export function LinkDelinkComplaintsModal({
                         setIsDelinkSourceDropdownOpen(true);
                       }}
                       onFocus={() => setIsDelinkSourceDropdownOpen(true)}
-                      placeholder="लिंक युक्त शिकायत संख्या, नाम या तारीख से खोजें..."
+                      placeholder="Search linked complaint by number, name, or date..."
                       className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
                     />
                   )}
@@ -779,7 +779,7 @@ export function LinkDelinkComplaintsModal({
                     }}
                     className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
                   >
-                    बदलें (Change)
+                    Change
                   </button>
                 )}
               </div>
@@ -792,14 +792,14 @@ export function LinkDelinkComplaintsModal({
                       type="text"
                       value={delinkSourceSearch}
                       onChange={(e) => setDelinkSourceSearch(e.target.value)}
-                      placeholder="खोजें..."
+                      placeholder="Search..."
                       autoFocus
                       className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-rose-500"
                     />
                   </div>
                   {filteredDelinkSourceComplaints.length === 0 ? (
                     <div className="p-3 text-center text-xs text-slate-500">
-                      कोई लिंक युक्त शिकायत उपलब्ध नहीं है (No linked complaints found)
+                      No linked complaints found
                     </div>
                   ) : (
                     filteredDelinkSourceComplaints.map((c) => (
@@ -842,12 +842,12 @@ export function LinkDelinkComplaintsModal({
             {selectedDelinkSourceComplaint && (
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                  2. डी-लिंक करने हेतु जुड़ी हुई शिकायत चुनें (Select Linked Case to Delink) <span className="text-red-500">*</span>
+                  2. Select Linked Case to Delink <span className="text-red-500">*</span>
                 </label>
 
                 {activeLinksForSource.length === 0 ? (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-                    इस शिकायत से वर्तमान में कोई अन्य शिकायत लिंक नहीं है।
+                    No other complaints are currently linked with this complaint.
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -889,7 +889,7 @@ export function LinkDelinkComplaintsModal({
                                   : "bg-slate-100 text-slate-700 hover:bg-rose-100 hover:text-rose-800"
                               }`}
                             >
-                              {isSelected ? "चयनित (Selected)" : "चुनें (Select)"}
+                              {isSelected ? "Selected" : "Select"}
                             </span>
                           </div>
                         </div>
@@ -903,7 +903,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 3: Delink Reason */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                3. डी-लिंक करने का कारण (Reason for Delinking) <span className="text-red-500">*</span>
+                3. Reason for Delinking <span className="text-red-500">*</span>
               </label>
               <select
                 value={delinkReason}
@@ -915,7 +915,7 @@ export function LinkDelinkComplaintsModal({
                     {rs}
                   </option>
                 ))}
-                <option value="OTHER_CUSTOM">अन्य कारण लिखें (Type custom reason)...</option>
+                <option value="OTHER_CUSTOM">Other Reason (Type custom reason)...</option>
               </select>
 
               {delinkReason === "OTHER_CUSTOM" && (
@@ -923,7 +923,7 @@ export function LinkDelinkComplaintsModal({
                   rows={2}
                   value={customDelinkReason}
                   onChange={(e) => setCustomDelinkReason(e.target.value)}
-                  placeholder="डी-लिंक करने का विस्तृत कारण दर्ज करें..."
+                  placeholder="Enter detailed reason for delinking..."
                   className="w-full text-xs p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500/20 focus:border-rose-600"
                 />
               )}
@@ -932,7 +932,7 @@ export function LinkDelinkComplaintsModal({
             {/* Step 4: Officer */}
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                अधिकृत अधिकारी (Authorized By)
+                Authorized By
               </label>
               <input
                 type="text"
@@ -950,7 +950,7 @@ export function LinkDelinkComplaintsModal({
                 disabled={isSubmitting}
                 className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
               >
-                रद्द करें (Cancel)
+                Cancel
               </button>
               <button
                 type="submit"
@@ -958,7 +958,7 @@ export function LinkDelinkComplaintsModal({
                 className="px-5 py-2.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Unlink className="w-4 h-4 text-rose-400" />
-                <span>{isSubmitting ? "डी-लिंक किया जा रहा है..." : "शिकायत डी-लिंक करें (Confirm Delink)"}</span>
+                <span>{isSubmitting ? "Delinking..." : "Confirm Delink"}</span>
               </button>
             </div>
           </form>
