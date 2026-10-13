@@ -2964,8 +2964,57 @@ export default function RegisterComplaintPage() {
           </div>
         </div>
 
-        {/* Top Channel, Priority, Clear & Cancel Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Top Channel, Priority, Draft Actions, Clear & Cancel Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Voice Language Selector */}
+          <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-lg border border-slate-200 shrink-0 text-xs">
+            <Mic className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+            <button
+              type="button"
+              onClick={() => setVoiceLang("en-IN")}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setVoiceLang("hi-IN")}
+              className={`px-1.5 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
+                voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              HI
+            </button>
+          </div>
+
+          {/* Restore Last Draft Button */}
+          <button
+            type="button"
+            onClick={handleRestoreDraft}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer border ${
+              hasStoredDraft
+                ? "bg-blue-50 hover:bg-blue-100 text-blue-900 border-blue-300 ring-1 ring-blue-300/50"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200"
+            }`}
+            title={draftSavedAt ? `Restore saved draft from ${draftSavedAt}` : "Restore the last saved or cleared draft"}
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${hasStoredDraft ? "text-blue-600" : "text-slate-500"}`} />
+            <span>Restore Last Draft</span>
+          </button>
+
+          {/* Manual Save Draft Button */}
+          <button
+            type="button"
+            onClick={handleManualSaveDraft}
+            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+            title="Explicitly save form as draft now"
+          >
+            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Save as Draft</span>
+          </button>
+
           <button
             type="button"
             onClick={handleClearForm}
@@ -3136,77 +3185,6 @@ export default function RegisterComplaintPage() {
       )}
 
 
-      {/* Draft Status & Actions Control Bar + Voice Dictation Bar */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${hasStoredDraft ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-          <div>
-            <span className="font-bold text-slate-800">
-              {hasStoredDraft
-                ? `Draft Auto-Saved${draftSavedAt ? ` at ${draftSavedAt}` : ""}`
-                : "Auto-Save Active"}
-            </span>
-            <span className="text-[11px] text-slate-500 ml-1.5 hidden md:inline">
-              (Form stays preserved when navigating across pages)
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Restore Last Draft Button */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleRestoreDraft}
-            className={`text-xs font-bold gap-1.5 border-slate-300 hover:bg-white cursor-pointer shadow-2xs transition-all ${
-              hasStoredDraft
-                ? "text-blue-900 bg-blue-50/80 hover:bg-blue-100/70 border-blue-300 ring-1 ring-blue-300/60"
-                : "text-slate-600 bg-slate-100/70 hover:bg-slate-200/80"
-            }`}
-            title={draftSavedAt ? `Restore saved draft from ${draftSavedAt}` : "Restore the last saved or cleared draft"}
-          >
-            <RotateCcw className={`w-3.5 h-3.5 ${hasStoredDraft ? "text-blue-600" : "text-slate-500"}`} />
-            <span>Restore Last Draft</span>
-          </Button>
-
-          {/* Manual Save Draft Button */}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleManualSaveDraft}
-            className="text-xs font-semibold gap-1.5 border-slate-300 hover:bg-white text-emerald-900 bg-emerald-50/50 cursor-pointer shadow-2xs"
-            title="Explicitly save form as draft now"
-          >
-            <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Save as Draft</span>
-          </Button>
-
-          {/* Voice Language Selector */}
-          <div className="flex items-center gap-1 pl-2 border-l border-slate-300 shrink-0">
-            <Mic className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <button
-              type="button"
-              onClick={() => setVoiceLang("en-IN")}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
-                voiceLang === "en-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setVoiceLang("hi-IN")}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-colors cursor-pointer ${
-                voiceLang === "hi-IN" ? "bg-[#0b192c] text-white" : "text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              Hindi
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Main Single Form Card */}
       <Card className="border-slate-200 shadow-xs">
