@@ -287,6 +287,8 @@ export default function RegisterComplaintPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdComplaint, setCreatedComplaint] = useState<ComplaintItem | null>(null);
+  const [isSendingGdSuggestion, setIsSendingGdSuggestion] = useState(false);
+  const [gdSuggestionSent, setGdSuggestionSent] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [isReadOnlyPreview, setIsReadOnlyPreview] = useState(false);
@@ -966,6 +968,8 @@ export default function RegisterComplaintPage() {
     setLinkedComplaintNo("");
     setIsCrossCaseTagged(false);
     setPreviewModalFile(null);
+    setGdSuggestionSent(false);
+    setIsSendingGdSuggestion(false);
 
     // 6. Clear active draft session from localStorage, but preserve backup!
     setAutofilledFieldKeys(new Set());
@@ -2568,53 +2572,9 @@ export default function RegisterComplaintPage() {
         console.error("Failed to auto-save registered complaint document:", docErr);
       }
 
-      // 3. Automatically dispatch General Diary (Roznamcha) Auto-Suggestion to Auto Suggestions & Drafts for MHC (Munshi)
-      try {
-        const assignedEoObj = selectedEoId
-          ? MOCK_ENQUIRY_OFFICERS.find((o) => o.id === selectedEoId)
-          : null;
-
-        const timeStr = new Date().toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        const subjectStr = `प्राप्ति दरख्वास्त शिकायत - ${complaint.complaintNumber} (${primaryComp.name})`;
-        const relationStr = primaryComp.relativeName
-          ? ` (${primaryComp.relationType || "S/O"} ${primaryComp.relativeName})`
-          : "";
-        const mobileStr = primaryComp.mobile ? ` (मो: ${primaryComp.mobile})` : "";
-        const addressStr = primaryComp.presentAddress || incidentPlace || "इलाका थाना";
-        const complaintTopic = complaintSubject.trim() || incidentCategory || "दरख्वास्त शिकायत";
-        const assignedInfo = assignedEoObj
-          ? `तथा SHO महोदय के आदेशानुसार जांच अधिकारी ${assignedEoObj.name} (${assignedEoObj.rank}) को BNSS 173(3) के तहत 14 दिन में प्रारंभिक जांच हेतु सौंपा गया।`
-          : "तथा आगामी कानूनी कार्यवाही व SHO महोदय के अवलोकनार्थ प्रस्तुत किया गया।";
-
-        const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryComp.name}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${complaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया। [नोट: मुंशी (MHC) इस सुझाव को जांचकर रोजनामचा में 'Add to GD' कर सकते हैं, संशोधित (Edit) कर सकते हैं, अथवा खारिज (Delete) कर सकते हैं।]`;
-
-        await GeneralDiaryService.generateSuggestionFromSystemEvent({
-          eventType: "COMPLAINT_REGISTERED",
-          subject: subjectStr,
-          narrative: narrativeStr,
-          officer: {
-            name: assignedEoObj?.name || currentUser.name || "Duty Officer",
-            rank: assignedEoObj?.rank || currentUser.rankDisplay || "Sub-Inspector",
-            beltNumber: assignedEoObj?.beltNumber || (currentUser as any).beltNumber || "Station Staff",
-            pno: assignedEoObj?.pno || currentUser.pno || "00000000",
-          },
-          policeStation: currentUser.stationName || "PS City Thanesar",
-          district: currentUser.district || "Kurukshetra",
-          relatedRecords: {
-            complaintNumber: complaint.complaintNumber,
-            personName: primaryComp.name,
-            destinationLocation: incidentPlace,
-            purpose: complaintTopic,
-          },
-        });
-      } catch (gdSuggErr) {
-        console.warn("Failed to generate GD auto suggestion for complaint registration:", gdSuggErr);
-      }
-
+      // Reset GD suggestion state for newly registered complaint (dispatched ONLY on button click)
+      setGdSuggestionSent(false);
+      setIsSendingGdSuggestion(false);
       setShowVerificationModal(false);
 
       if (isSho && !isMhc && selectedEoId) {
@@ -2689,6 +2649,64 @@ export default function RegisterComplaintPage() {
       setValidationErrors({ submit: err.message || "Failed to register complaint." });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // On-demand dispatcher: only sends suggestion to Roznamcha GD when user explicitly clicks "GD Auto-Suggestions (MHC Desk)"
+  const handleSendToGdSuggestions = async () => {
+    if (!createdComplaint) return;
+    if (gdSuggestionSent) {
+      router.push("/general-diary?tab=SUGGESTIONS_DRAFTS");
+      return;
+    }
+    setIsSendingGdSuggestion(true);
+    try {
+      const timeStr = new Date().toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const primaryCompName = createdComplaint.complainantName || "नागरिक";
+      const relationStr = createdComplaint.complainantFatherSpouse
+        ? ` (${createdComplaint.complainantRelationType || "S/O"} ${createdComplaint.complainantFatherSpouse})`
+        : "";
+      const mobileStr = createdComplaint.complainantMobile ? ` (मो: ${createdComplaint.complainantMobile})` : "";
+      const addressStr = createdComplaint.incidentPlace || "इलाका थाना";
+      const complaintTopic = createdComplaint.subject || createdComplaint.categoryDisplay || "दरख्वास्त शिकायत";
+      const assignedInfo = createdComplaint.assignedEoName
+        ? `तथा SHO महोदय के आदेशानुसार जांच अधिकारी ${createdComplaint.assignedEoName} (${createdComplaint.assignedEoRank || ""}) को BNSS 173(3) के तहत 14 दिन में प्रारंभिक जांच हेतु सौंपा गया।`
+        : "तथा आगामी कानूनी कार्यवाही व SHO महोदय के अवलोकनार्थ प्रस्तुत किया गया।";
+
+      const subjectStr = `प्राप्ति दरख्वास्त शिकायत - ${createdComplaint.complaintNumber} (${primaryCompName})`;
+      const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryCompName}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${createdComplaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया। [नोट: मुंशी (MHC) इस सुझाव को जांचकर रोजनामचा में 'Add to GD' कर सकते हैं, संशोधित (Edit) कर सकते हैं, अथवा खारिज (Delete) कर सकते हैं।]`;
+
+      await GeneralDiaryService.generateSuggestionFromSystemEvent({
+        eventType: "COMPLAINT_REGISTERED",
+        subject: subjectStr,
+        narrative: narrativeStr,
+        officer: {
+          name: createdComplaint.assignedEoName || currentUser.name || "Duty Officer",
+          rank: createdComplaint.assignedEoRank || currentUser.rankDisplay || "Sub-Inspector",
+          beltNumber: (createdComplaint as any).assignedEoBeltNumber || (currentUser as any).beltNumber || "Station Staff",
+          pno: createdComplaint.assignedEoPno || currentUser.pno || "00000000",
+        },
+        policeStation: currentUser.stationName || "PS City Thanesar",
+        district: currentUser.district || "Kurukshetra",
+        relatedRecords: {
+          complaintNumber: createdComplaint.complaintNumber,
+          personName: primaryCompName,
+          destinationLocation: createdComplaint.incidentPlace,
+          purpose: complaintTopic,
+        },
+      });
+
+      setGdSuggestionSent(true);
+      router.push("/general-diary?tab=SUGGESTIONS_DRAFTS");
+    } catch (gdSuggErr) {
+      console.warn("Failed to generate GD auto suggestion for complaint registration:", gdSuggErr);
+      alert("Failed to send suggestion to Roznamcha GD.");
+    } finally {
+      setIsSendingGdSuggestion(false);
     }
   };
 
@@ -2818,18 +2836,30 @@ export default function RegisterComplaintPage() {
             )}
 
             {/* General Diary Auto-Suggestion Notice Card */}
-            <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl text-left text-xs space-y-1.5 animate-in fade-in-50">
+            <div className={`p-4 rounded-xl text-left text-xs space-y-1.5 animate-in fade-in-50 border transition-all ${
+              gdSuggestionSent
+                ? "bg-emerald-50/80 border-emerald-300"
+                : "bg-blue-50/80 border-blue-200"
+            }`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-blue-950 font-bold">
-                  <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
-                  <span>General Diary (Roznamcha) Auto-Suggestion Generated</span>
+                <div className="flex items-center gap-1.5 font-bold">
+                  <BookOpen className={`w-4 h-4 shrink-0 ${gdSuggestionSent ? "text-emerald-700" : "text-blue-700"}`} />
+                  <span className={gdSuggestionSent ? "text-emerald-950" : "text-blue-950"}>
+                    {gdSuggestionSent
+                      ? "General Diary (Roznamcha) Auto-Suggestion Sent"
+                      : "General Diary (Roznamcha) Auto-Suggestion (Optional)"}
+                  </span>
                 </div>
-                <span className="text-[10px] bg-blue-200 text-blue-900 font-bold px-2 py-0.5 rounded-full">
-                  MHC Review Desk
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  gdSuggestionSent ? "bg-emerald-200 text-emerald-900" : "bg-blue-200 text-blue-900"
+                }`}>
+                  {gdSuggestionSent ? "Sent to MHC Desk" : "MHC Review Desk"}
                 </span>
               </div>
-              <p className="text-[11px] text-blue-900 leading-relaxed">
-                इस शिकायत का GD इंद्राज सुझाव Smart General Diary के <strong>&ldquo;Auto-Suggestions &amp; Drafts&rdquo;</strong> टैब में भेज दिया गया है। मुंशी (MHC) अपनी सुविधानुसार इसे <strong>Add to GD</strong> कर सकते हैं, <strong>Edit</strong> कर सकते हैं अथवा <strong>Delete</strong> कर सकते हैं।
+              <p className={`text-[11px] leading-relaxed ${gdSuggestionSent ? "text-emerald-900" : "text-blue-900"}`}>
+                {gdSuggestionSent
+                  ? <>इस शिकायत का GD इंद्राज सुझाव Smart General Diary के <strong>&ldquo;Auto-Suggestions &amp; Drafts&rdquo;</strong> टैब में भेज दिया गया है। मुंशी (MHC) अपनी सुविधानुसार इसे <strong>Add to GD</strong> कर सकते हैं, <strong>Edit</strong> कर सकते हैं अथवा <strong>Delete</strong> कर सकते हैं।</>
+                  : <>इस शिकायत का GD इंद्राज सुझाव Smart General Diary के <strong>&ldquo;Auto-Suggestions &amp; Drafts&rdquo;</strong> टैब में भेजने के लिए नीचे <strong>&ldquo;GD Auto-Suggestions (MHC Desk)&rdquo;</strong> बटन पर क्लिक करें। मुंशी (MHC) अपनी सुविधानुसार इसे <strong>Add to GD</strong> कर सकेंगे।</>}
               </p>
             </div>
 
@@ -2841,12 +2871,28 @@ export default function RegisterComplaintPage() {
                   View Complaint Profile
                 </Button>
               </Link>
-              <Link href="/general-diary?tab=SUGGESTIONS_DRAFTS">
-                <Button variant="outline" size="md" className="gap-1.5 text-xs border-blue-300 text-blue-900 hover:bg-blue-50 font-semibold cursor-pointer">
-                  <BookOpen className="w-4 h-4 text-blue-700" />
-                  GD Auto-Suggestions (MHC Desk)
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={handleSendToGdSuggestions}
+                disabled={isSendingGdSuggestion}
+                className={`gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs transition-all ${
+                  gdSuggestionSent
+                    ? "border-emerald-400 text-emerald-900 bg-emerald-50 hover:bg-emerald-100"
+                    : "border-blue-400 text-blue-900 bg-blue-50/70 hover:bg-blue-100 ring-1 ring-blue-300/50"
+                }`}
+                title="Click to generate and dispatch auto-suggestion to Roznamcha GD"
+              >
+                <BookOpen className={`w-4 h-4 ${gdSuggestionSent ? "text-emerald-700" : "text-blue-700"} ${isSendingGdSuggestion ? "animate-spin" : ""}`} />
+                <span>
+                  {isSendingGdSuggestion
+                    ? "Sending to GD Desk..."
+                    : gdSuggestionSent
+                    ? "GD Suggestion Sent • Open MHC Desk"
+                    : "GD Auto-Suggestions (MHC Desk)"}
+                </span>
+              </Button>
               <button
                 type="button"
                 onClick={() => setShowReceiptModal(true)}
