@@ -502,8 +502,11 @@ export default function RegisterComplaintPage() {
     }
   }, [previewModalFile]);
 
-  // FORM DRAFT STORAGE KEY: Prevents losing filled data on page navigation / refresh
+  // FORM DRAFT STORAGE KEYS: Resilient multi-tier draft storage system
   const FORM_DRAFT_KEY = "haryana_police_cms_register_form_draft_v1";
+  const FORM_LAST_DRAFT_BACKUP_KEY = "haryana_police_cms_register_last_draft_backup_v1";
+  const FORM_MANUAL_DRAFT_KEY = "haryana_police_cms_register_manual_draft_v1";
+  const FORM_LAST_SUBMITTED_KEY = "haryana_police_cms_register_last_submitted_snapshot_v1";
 
   // DRAFT MANAGEMENT STATE
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
@@ -533,6 +536,7 @@ export default function RegisterComplaintPage() {
   };
 
   // Helper: check if data has genuine user entries (not all blank/empty)
+  // NOTE: assignedDirections default template must NEVER count as user input so fresh forms are not saved over drafts
   const hasFormContent = (data: any): boolean => {
     if (!data) return false;
     const hasComp = Array.isArray(data.complainants) && data.complainants.some(
@@ -550,14 +554,38 @@ export default function RegisterComplaintPage() {
       data.incidentDetails?.trim() ||
       data.complaintSubject?.trim() ||
       data.complaintDescription?.trim() ||
-      data.firNumber?.trim() ||
-      data.assignedDirections?.trim()
+      data.firNumber?.trim()
     );
     const hasAcc = Array.isArray(data.accusedList) && data.accusedList.some(
       (a: any) => Boolean(a.name?.trim() || a.address?.trim() || a.phone?.trim() || a.alias?.trim())
     );
     const hasAttach = Array.isArray(data.attachments) && data.attachments.length > 0;
     return Boolean(hasComp || hasInc || hasAcc || hasAttach);
+  };
+
+  // Helper: fetch best available saved draft from persistent keys
+  const getStoredDraftObject = (): { draft: any; source: string; key: string } | null => {
+    if (typeof window === "undefined") return null;
+    const sources = [
+      { key: FORM_DRAFT_KEY, source: "active" },
+      { key: FORM_LAST_DRAFT_BACKUP_KEY, source: "backup" },
+      { key: FORM_MANUAL_DRAFT_KEY, source: "manual" },
+      { key: FORM_LAST_SUBMITTED_KEY, source: "submitted" },
+    ];
+    for (const item of sources) {
+      try {
+        const raw = window.localStorage.getItem(item.key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && hasFormContent(parsed)) {
+            return { draft: parsed, source: item.source, key: item.key };
+          }
+        }
+      } catch {
+        // Continue searching
+      }
+    }
+    return null;
   };
 
   // Helper: apply all draft fields to React state
@@ -588,13 +616,22 @@ export default function RegisterComplaintPage() {
     if (draft.complaintPurpose !== undefined) setComplaintPurpose(draft.complaintPurpose);
     if (draft.selectedEoId !== undefined) {
       setSelectedEoId(draft.selectedEoId);
-      setShouldAssignEoNow(Boolean(draft.selectedEoId));
+      setShouldAssignEoNow(Boolean(draft.selectedEoId || draft.shouldAssignEoNow));
+    } else if (typeof draft.shouldAssignEoNow === "boolean") {
+      setShouldAssignEoNow(draft.shouldAssignEoNow);
     }
     if (draft.directionTemplate !== undefined) setDirectionTemplate(draft.directionTemplate);
     if (draft.assignedDirections !== undefined) setAssignedDirections(draft.assignedDirections);
     if (draft.targetDays !== undefined) setTargetDays(draft.targetDays);
+    if (draft.linkedComplaintNo !== undefined) setLinkedComplaintNo(draft.linkedComplaintNo);
+    if (typeof draft.isCrossCaseTagged === "boolean") setIsCrossCaseTagged(draft.isCrossCaseTagged);
     if (Array.isArray(draft.autofilledFieldKeys) && draft.autofilledFieldKeys.length > 0) {
       setAutofilledFieldKeys(new Set(draft.autofilledFieldKeys));
+    }
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("cms-textarea-autoresize"));
+      }, 60);
     }
   };
 
@@ -602,21 +639,19 @@ export default function RegisterComplaintPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const saved = window.localStorage.getItem(FORM_DRAFT_KEY);
-      if (!saved) {
+      const stored = getStoredDraftObject();
+      if (!stored) {
         setHasStoredDraft(false);
-        return;
-      }
-      const draft = JSON.parse(saved);
-      if (!draft || !hasFormContent(draft)) {
         return;
       }
 
       setHasStoredDraft(true);
-      if (draft.savedAt) setDraftSavedAt(draft.savedAt);
+      if (stored.draft.savedAt) {
+        setDraftSavedAt(stored.draft.savedAt);
+      }
 
       // Auto-restore so user never loses work when returning to this page
-      applyDraftData(draft);
+      applyDraftData(stored.draft);
     } catch (e) {
       console.warn("Could not restore form draft from localStorage:", e);
     }
@@ -652,9 +687,12 @@ export default function RegisterComplaintPage() {
         complaintClassification,
         complaintPurpose,
         selectedEoId,
+        shouldAssignEoNow,
         directionTemplate,
         assignedDirections,
         targetDays,
+        linkedComplaintNo,
+        isCrossCaseTagged,
         autofilledFieldKeys: Array.from(autofilledFieldKeys),
       };
 
@@ -668,13 +706,15 @@ export default function RegisterComplaintPage() {
           ...currentData,
           savedAt: nowStr,
         };
-        window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+        const serialized = JSON.stringify(draft);
+        window.localStorage.setItem(FORM_DRAFT_KEY, serialized);
+        window.localStorage.setItem(FORM_LAST_DRAFT_BACKUP_KEY, serialized);
         setDraftSavedAt(nowStr);
         setHasStoredDraft(true);
-      } catch (e) {
+      } catch {
         // Silently ignore quota warning for draft
       }
-    }, 350);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [
@@ -702,9 +742,12 @@ export default function RegisterComplaintPage() {
     complaintClassification,
     complaintPurpose,
     selectedEoId,
+    shouldAssignEoNow,
     directionTemplate,
     assignedDirections,
     targetDays,
+    linkedComplaintNo,
+    isCrossCaseTagged,
     autofilledFieldKeys,
     createdComplaint,
   ]);
@@ -712,19 +755,21 @@ export default function RegisterComplaintPage() {
   const handleRestoreDraft = () => {
     if (typeof window === "undefined") return;
     try {
-      const saved = window.localStorage.getItem(FORM_DRAFT_KEY);
-      if (!saved) {
-        setDraftToast("No saved draft found in local storage.");
-        setTimeout(() => setDraftToast(null), 3000);
+      const stored = getStoredDraftObject();
+      if (!stored || !stored.draft) {
+        setDraftToast("No saved draft found in local storage. Start filling the form to auto-save.");
+        setTimeout(() => setDraftToast(null), 3500);
         return;
       }
-      const draft = JSON.parse(saved);
-      applyDraftData(draft);
-      setDraftSavedAt(draft.savedAt || new Date().toLocaleTimeString("en-IN"));
-      setDraftToast("Last filled draft restored successfully! / सुरक्षित ड्राफ्ट पुनः लोड हो गया!");
+      applyDraftData(stored.draft);
+      const timeLabel = stored.draft.savedAt || new Date().toLocaleTimeString("en-IN");
+      setDraftSavedAt(timeLabel);
+      setHasStoredDraft(true);
       setDraftBannerDismissed(true);
+      setDraftToast(`Last filled draft restored successfully! (${timeLabel}) / सुरक्षित ड्राफ्ट पुनः लोड हो गया!`);
       setTimeout(() => setDraftToast(null), 4000);
     } catch (e) {
+      console.error("Failed to restore draft:", e);
       setDraftToast("Failed to restore draft.");
       setTimeout(() => setDraftToast(null), 3000);
     }
@@ -759,28 +804,37 @@ export default function RegisterComplaintPage() {
         complaintClassification,
         complaintPurpose,
         selectedEoId,
+        shouldAssignEoNow,
         directionTemplate,
         assignedDirections,
         targetDays,
+        linkedComplaintNo,
+        isCrossCaseTagged,
         autofilledFieldKeys: Array.from(autofilledFieldKeys),
         savedAt: nowStr,
       };
-      window.localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(draft));
+      const serialized = JSON.stringify(draft);
+      window.localStorage.setItem(FORM_DRAFT_KEY, serialized);
+      window.localStorage.setItem(FORM_MANUAL_DRAFT_KEY, serialized);
+      window.localStorage.setItem(FORM_LAST_DRAFT_BACKUP_KEY, serialized);
       setDraftSavedAt(nowStr);
       setHasStoredDraft(true);
-      setDraftToast(`Form draft saved successfully at ${nowStr}!`);
+      setDraftToast(`Form draft saved successfully at ${nowStr}! You can restore this draft anytime.`);
+      setTimeout(() => setDraftToast(null), 3500);
+    } catch {
+      setDraftToast("Could not save draft. Local storage may be restricted.");
       setTimeout(() => setDraftToast(null), 3000);
-    } catch {}
+    }
   };
 
   const handleDiscardDraft = () => {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(FORM_DRAFT_KEY);
     }
-    setHasStoredDraft(false);
-    setDraftSavedAt(null);
+    const backupExists = Boolean(getStoredDraftObject());
+    setHasStoredDraft(backupExists);
     setDraftBannerDismissed(true);
-    setDraftToast("Saved draft discarded.");
+    setDraftToast("Saved draft banner dismissed.");
     setTimeout(() => setDraftToast(null), 3000);
   };
 
@@ -795,8 +849,54 @@ export default function RegisterComplaintPage() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // Function to completely clear all fields in Register Complaint form & purge saved draft
+  // Function to completely clear all fields in Register Complaint form & preserve backup draft
   const handleClearForm = () => {
+    // 0. Snapshot current form to backup before clearing if it has content
+    const currentData = {
+      sourceChannel,
+      priorityLevel,
+      complainants,
+      isAccusedKnown,
+      accusedList,
+      incidentPlace,
+      incidentLandmark,
+      isDateTimeKnown,
+      incidentDate,
+      incidentTime,
+      incidentApproxPeriod,
+      incidentCategory,
+      incidentDetails,
+      attachments: attachments.map((a: any) => ({ ...a, dataUrl: undefined })),
+      intakeMode,
+      complaintSubject,
+      complaintDescription,
+      isFirRegistered,
+      firNumber,
+      firDate,
+      complaintAgeType,
+      complaintClassification,
+      complaintPurpose,
+      selectedEoId,
+      shouldAssignEoNow,
+      directionTemplate,
+      assignedDirections,
+      targetDays,
+      linkedComplaintNo,
+      isCrossCaseTagged,
+      autofilledFieldKeys: Array.from(autofilledFieldKeys),
+      savedAt: new Date().toLocaleTimeString("en-IN"),
+    };
+
+    if (hasFormContent(currentData)) {
+      try {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(FORM_LAST_DRAFT_BACKUP_KEY, JSON.stringify(currentData));
+        }
+      } catch (e) {
+        console.warn("Could not save backup draft before clear:", e);
+      }
+    }
+
     // 1. Reset Complainants
     setComplainants([
       {
@@ -867,13 +967,9 @@ export default function RegisterComplaintPage() {
     setIsCrossCaseTagged(false);
     setPreviewModalFile(null);
 
-    // 6. Purge saved draft from localStorage & reset draft indicators
+    // 6. Clear active draft session from localStorage, but preserve backup!
     setAutofilledFieldKeys(new Set());
-    setHasStoredDraft(false);
-    setDraftSavedAt(null);
     setDraftBannerDismissed(true);
-    setDraftToast("Form cleared.");
-    setTimeout(() => setDraftToast(null), 3000);
     try {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(FORM_DRAFT_KEY);
@@ -881,6 +977,20 @@ export default function RegisterComplaintPage() {
     } catch (e) {
       console.warn("Could not clear form draft from localStorage:", e);
     }
+
+    const availableBackup = getStoredDraftObject();
+    if (availableBackup) {
+      setHasStoredDraft(true);
+      if (availableBackup.draft.savedAt) {
+        setDraftSavedAt(availableBackup.draft.savedAt);
+      }
+      setDraftToast("Form cleared. Click 'Restore Last Draft' anytime to recover your cleared entries.");
+    } else {
+      setHasStoredDraft(false);
+      setDraftSavedAt(null);
+      setDraftToast("Form cleared.");
+    }
+    setTimeout(() => setDraftToast(null), 4000);
   };
 
   // Complainant Handlers
@@ -2533,11 +2643,47 @@ export default function RegisterComplaintPage() {
         setShowReceiptModal(true);
       }
 
-      // Clear the saved draft from localStorage upon successful registration
+      // Preserve submitted complaint snapshot in persistent backup draft before clearing active session
       try {
-        window.localStorage.removeItem(FORM_DRAFT_KEY);
-        setHasStoredDraft(false);
-        setDraftSavedAt(null);
+        if (typeof window !== "undefined") {
+          const snapshot = {
+            sourceChannel,
+            priorityLevel,
+            complainants,
+            isAccusedKnown,
+            accusedList,
+            incidentPlace,
+            incidentLandmark,
+            isDateTimeKnown,
+            incidentDate,
+            incidentTime,
+            incidentApproxPeriod,
+            incidentCategory,
+            incidentDetails,
+            attachments: attachments.map((a: any) => ({ ...a, dataUrl: undefined })),
+            intakeMode,
+            complaintSubject,
+            complaintDescription,
+            isFirRegistered,
+            firNumber,
+            firDate,
+            complaintAgeType,
+            complaintClassification,
+            complaintPurpose,
+            selectedEoId,
+            shouldAssignEoNow,
+            directionTemplate,
+            assignedDirections,
+            targetDays,
+            linkedComplaintNo,
+            isCrossCaseTagged,
+            savedAt: new Date().toLocaleTimeString("en-IN"),
+          };
+          window.localStorage.setItem(FORM_LAST_SUBMITTED_KEY, JSON.stringify(snapshot));
+          window.localStorage.setItem(FORM_LAST_DRAFT_BACKUP_KEY, JSON.stringify(snapshot));
+          window.localStorage.removeItem(FORM_DRAFT_KEY);
+        }
+        setHasStoredDraft(true);
       } catch {}
     } catch (err: any) {
       setValidationErrors({ submit: err.message || "Failed to register complaint." });
@@ -3011,11 +3157,14 @@ export default function RegisterComplaintPage() {
             variant="outline"
             size="sm"
             onClick={handleRestoreDraft}
-            disabled={!hasStoredDraft}
-            className="text-xs font-bold gap-1.5 border-slate-300 hover:bg-white text-blue-900 bg-blue-50/50 cursor-pointer shadow-2xs"
-            title="Restore the last auto-saved draft"
+            className={`text-xs font-bold gap-1.5 border-slate-300 hover:bg-white cursor-pointer shadow-2xs transition-all ${
+              hasStoredDraft
+                ? "text-blue-900 bg-blue-50/80 hover:bg-blue-100/70 border-blue-300 ring-1 ring-blue-300/60"
+                : "text-slate-600 bg-slate-100/70 hover:bg-slate-200/80"
+            }`}
+            title={draftSavedAt ? `Restore saved draft from ${draftSavedAt}` : "Restore the last saved or cleared draft"}
           >
-            <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
+            <RotateCcw className={`w-3.5 h-3.5 ${hasStoredDraft ? "text-blue-600" : "text-slate-500"}`} />
             <span>Restore Last Draft</span>
           </Button>
 
