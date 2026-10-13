@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { UniversalEvidenceRecord, EvidenceModuleType } from "@/types/evidence";
+import { extractVocabulary } from "@/app/api/suggestions/harvest/route";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-3.5-flash";
@@ -361,10 +362,19 @@ Return a valid JSON object matching:
       else finalStore.unshift(completedRecord);
       writeEvidenceStore(finalStore);
 
+      const harvested = extractVocabulary(completedRecord.extractedText || "");
+      if (completedRecord.structuredData?.classifiedDocumentName) {
+        harvested.phrases.unshift(completedRecord.structuredData.classifiedDocumentName);
+      }
+      if (completedRecord.structuredData?.complainant?.name) {
+        harvested.phrases.unshift(completedRecord.structuredData.complainant.name);
+      }
+
       return NextResponse.json({
         success: true,
         reused: false,
         record: completedRecord,
+        harvestedVocabulary: harvested,
       });
     } catch (procErr: any) {
       console.error("Processing failure:", procErr);

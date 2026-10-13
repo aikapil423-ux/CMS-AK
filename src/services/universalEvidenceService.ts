@@ -227,7 +227,17 @@ export const universalEvidenceService = {
         } else {
           current.unshift(record);
         }
-        persistLocalCache(current);
+        // Immediately feed newly harvested vocabulary from this file into the portal-wide AutoSuggest dictionary!
+        if (resJson.harvestedVocabulary && typeof window !== "undefined") {
+          try {
+            const { words = [], phrases = [] } = resJson.harvestedVocabulary;
+            const { suggestionStore } = await import("@/lib/suggestionStore");
+            suggestionStore.importHarvestedVocabulary(words, phrases);
+            window.dispatchEvent(new CustomEvent("cms-evidence-harvested", { detail: { words, phrases } }));
+          } catch (e) {
+            console.warn("Could not auto-import harvested vocabulary:", e);
+          }
+        }
 
         return record;
       } else if (resJson.record) {

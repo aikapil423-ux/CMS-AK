@@ -58,6 +58,8 @@ interface Persisted {
   v: 1;
   telemetry: Record<string, TelemetryEntry>;
   phrases: PhraseEntry[];
+  harvestedWords?: string[];
+  harvestedPhrases?: string[];
   outbox: OutboxEntry[];
 }
 
@@ -69,7 +71,14 @@ interface NgramModel {
   next2?: Record<string, string[]>;
 }
 
-const emptyPersisted = (): Persisted => ({ v: 1, telemetry: {}, phrases: [], outbox: [] });
+const emptyPersisted = (): Persisted => ({
+  v: 1,
+  telemetry: {},
+  phrases: [],
+  harvestedWords: [],
+  harvestedPhrases: [],
+  outbox: [],
+});
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -85,6 +94,8 @@ function loadPersisted(): Persisted {
       v: 1,
       telemetry: parsed.telemetry && typeof parsed.telemetry === "object" ? parsed.telemetry : {},
       phrases: Array.isArray(parsed.phrases) ? parsed.phrases : [],
+      harvestedWords: Array.isArray(parsed.harvestedWords) ? parsed.harvestedWords : [],
+      harvestedPhrases: Array.isArray(parsed.harvestedPhrases) ? parsed.harvestedPhrases : [],
       outbox: Array.isArray(parsed.outbox) ? parsed.outbox : [],
     };
   } catch {
@@ -194,6 +205,7 @@ export const suggestionStore = {
       }
 
       void suggestionStore.syncPhrases();
+      void suggestionStore.syncHarvestedVocabulary();
       void suggestionStore.flushOutbox();
     })();
 
@@ -205,10 +217,64 @@ export const suggestionStore = {
   },
 
   /**
-   * Snapshot for the engine: mined word-frequency prior, overridden by the
-   * officer's learned accept/reject weights, plus saved dictionary phrases.
+   * Imports vocabulary words & multi-word phrases extracted from uploaded documents
+   * and case records into the persistent local suggestion dictionary.
    */
-  getEngineOptions(): Omit<GDSuggestionOptions, "nextWords"> {
+  importHarvestedVocabulary(words: string[] = [], phrases: string[] = []): void {
+    if (!isBrowser()) return;
+    const existingWords = new Set(persisted.harvestedWords || []);
+    const existingPhrases = new Set(persisted.harvestedPhrases || []);
+
+    let changed = false;
+    for (const w of words) {
+      const clean = w.trim();
+      if (clean && !existingWords.has(clean)) {
+        existingWords.add(clean);
+        changed = true;
+      }
+    }
+
+    for (const p of phrases) {
+      const clean = p.trim();
+      if (clean && !existingPhrases.has(clean)) {
+        existingPhrases.add(clean);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      persisted.harvestedWords = Array.from(existingWords).slice(0, 3000);
+      persisted.harvestedPhrases = Array.from(existingPhrases).slice(0, 1000);
+      savePersisted();
+      notify();
+    }
+  },
+
+  /**
+   * Fetches the latest harvested words & phrases extracted from all uploaded
+   * case documents stored in the evidence vault.
+   */
+  async syncHarvestedVocabulary(): Promise<void> {
+    if (!isBrowser()) return;
+    try {
+      const res = await fetch("/api/suggestions/harvest");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && (data.words || data.phrases)) {
+          suggestionStore.importHarvestedVocabulary(data.words || [], data.phrases || []);
+        }
+      }
+    } catch {
+      // offline: continue with cached harvested vocabulary
+    }
+  },
+
+  /**
+   * Snapshot for the engine: mined word-frequency prior, overridden by the
+   * officer's learned accept/reject weights, plus saved dictionary phrases
+   * and ALL terms harvested from uploaded documents across the website.
+   */
+  getEngineOptions(): GDSuggestionOptions {
     const weights: Record<string, number> = {};
 
     // Mined corpus frequencies give fresh installs a sensible prior.
@@ -224,9 +290,26 @@ export const suggestionStore = {
       weights[k] = clamp(1 + t.a * 0.6 - t.r * 0.5, 0.1, 8);
     }
 
+    // Give high prior to harvested vocabulary from uploaded files
+    for (const hw of persisted.harvestedWords || []) {
+      const norm = hw.toLowerCase().trim();
+      if (!weights[norm]) weights[norm] = 1.6;
+    }
+    for (const hp of persisted.harvestedPhrases || []) {
+      const norm = hp.toLowerCase().trim();
+      if (!weights[norm]) weights[norm] = 2.0;
+    }
+
+    const personalPhrases = [
+      ...persisted.phrases.map((p) => p.text),
+      ...(persisted.harvestedPhrases || []),
+      ...(persisted.harvestedWords || []),
+    ];
+
     return {
       weights,
-      personalPhrases: persisted.phrases.map((p) => p.text),
+      personalPhrases,
+      nextWords: [],
     };
   },
 

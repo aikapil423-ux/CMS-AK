@@ -64,6 +64,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import {
   ComplaintVerificationModal,
@@ -4448,15 +4449,17 @@ export default function RegisterComplaintPage() {
                     />
                   </div>
                 </div>
-                <textarea
+                <AutoSuggestField
+                  as="textarea"
                   rows={8}
+                  entryType="COMPLAINT_DESCRIPTION"
                   value={incidentDetails}
-                  onChange={(e) => {
-                    setIncidentDetails(e.target.value);
+                  onChange={(val) => {
+                    setIncidentDetails(val);
                     markFieldAsEdited("incidentDetails");
                   }}
                   placeholder="पूरी शिकायत का संपूर्ण विवरण (Full verbatim text of the complaint / incident as received in document or verbal report)..."
-                  className={`w-full min-h-[160px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
+                  inputClassName={`w-full min-h-[160px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
                     isAutofilled("incidentDetails")
                       ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                       : "bg-white border-slate-300"
@@ -4494,11 +4497,13 @@ export default function RegisterComplaintPage() {
                     />
                   </div>
                 </div>
-                <textarea
+                <AutoSuggestField
+                  as="textarea"
                   rows={5}
+                  entryType="COMPLAINT_SUMMARY"
                   value={complaintDescription}
-                  onChange={(e) => {
-                    setComplaintDescription(e.target.value);
+                  onChange={(val) => {
+                    setComplaintDescription(val);
                     markFieldAsEdited("complaintDescription");
                     if (validationErrors.complaintDescription) {
                       setValidationErrors((prev) => {
@@ -4509,7 +4514,7 @@ export default function RegisterComplaintPage() {
                     }
                   }}
                   placeholder="शिकायत का संक्षिप्त सार (Concise structured summary of allegations against respondents, core incident facts, and prayer for police action in minimum words)..."
-                  className={`w-full min-h-[120px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
+                  inputClassName={`w-full min-h-[120px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
                     validationErrors.complaintDescription
                       ? "border-red-500 bg-red-50"
                       : isAutofilled("complaintDescription")

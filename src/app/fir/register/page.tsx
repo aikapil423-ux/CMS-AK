@@ -4452,12 +4452,14 @@ function RegisterFIRForm() {
                         iconOnly={true}
                       />
                     </div>
-                    <textarea
+                    <AutoSuggestField
+                      as="textarea"
                       rows={3}
+                      entryType="INJURY"
                       placeholder="Details of physical injuries, wounds, fractures, MLR number, Hospital admitted"
                       value={injuryDescription}
-                      onChange={(e) => setInjuryDescription(e.target.value)}
-                      className="w-full p-2.5 rounded border border-slate-300 text-xs overflow-hidden transition-[height] duration-75"
+                      onChange={(val) => setInjuryDescription(val)}
+                      inputClassName="w-full p-2.5 rounded border border-slate-300 text-xs overflow-hidden transition-[height] duration-75"
                     />
                   </div>
                   <div className="space-y-3">

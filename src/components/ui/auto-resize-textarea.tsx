@@ -276,13 +276,17 @@ export function initGlobalAutoResize(): () => void {
   };
 }
 
+import { suggestionStore } from "@/lib/suggestionStore";
+
 /**
  * Universal Global Component mounted in layout to activate auto-resizing
  * across all major fields (description, brief facts, statements, notes, etc.)
+ * and bootstrap dynamic suggestion dictionary harvested from uploaded files.
  */
 export function GlobalAutoResizeTextareas() {
   useEffect(() => {
     const cleanup = initGlobalAutoResize();
+    void suggestionStore.ensureLoaded();
     return cleanup;
   }, []);
 

@@ -236,6 +236,204 @@ const WORD_BANK: string[] = [
   "\u0938\u0940\u092e\u093e", // sima (boundary)
   "\u0917\u093f\u0930\u0926\u093e\u0935\u0930\u0940", // girdavari (survey)
   "\u0939\u0938\u094d\u0924\u093e\u0902\u0924\u0930\u0923", // hastantaran (transfer)
+
+  /* --------------------------------------------------------------
+   *  Common Police & Citizen Sentence Openers, Pronouns & Connectives
+   * ------------------------------------------------------------ */
+  "Today",
+  "Yesterday",
+  "Tomorrow",
+  "Morning",
+  "Evening",
+  "Night",
+  "Date",
+  "Dated",
+  "Time",
+  "Hours",
+  "Place",
+  "Occurrence",
+  "Incident",
+  "Spot",
+  "Sir",
+  "Respected Sir",
+  "Police Station",
+  "Police Chowki",
+  "District",
+  "Sector",
+  "Village",
+  "Kurukshetra",
+  "Haryana",
+  "Sub-Inspector",
+  "Assistant Sub-Inspector",
+  "Head Constable",
+  "Constable",
+  "Duty Officer",
+  "Station House Officer",
+  "SHO",
+  "Enquiry Officer",
+  "Investigating Officer",
+  "Complainant",
+  "Informant",
+  "Victim",
+  "Injured",
+  "Accused",
+  "Suspect",
+  "Witness",
+  "Independent Witness",
+  "Public Witness",
+  "Doctor",
+  "Medical Officer",
+  "Civil Hospital",
+  "Injury",
+  "Simple Hurt",
+  "Grievous Hurt",
+  "Fracture",
+  "Weapon",
+  "Lathi",
+  "Danda",
+  "Knife",
+  "Iron Rod",
+  "Firearm",
+  "Cartridge",
+  "Assault",
+  "Beating",
+  "Scuffle",
+  "Abuse",
+  "Threat",
+  "Criminal Intimidation",
+  "Cheating",
+  "Fraud",
+  "Cyber Crime",
+  "Theft",
+  "Burglary",
+  "Snatching",
+  "Vehicle Theft",
+  "Accident",
+  "Rash Driving",
+  "Bail",
+  "Remand",
+  "Custody",
+  "Site Plan",
+  "Naksha Mauka",
+  "Seizure Memo",
+  "Fard Makboozgi",
+  "Panchnama",
+  "Inquest Report",
+  "MLR",
+  "Post Mortem",
+  "CCTV Footage",
+  "Call Detail Record",
+  "CDR",
+  "Mobile Number",
+  "Bank Account",
+  "Transaction",
+  "Tehreer",
+  "Rukka",
+  "Challan",
+  "Final Report",
+  "NCR",
+  "Section 103 BNS",
+  "Section 115 BNS",
+  "Section 126 BNS",
+  "Section 303 BNS",
+  "Section 316 BNS",
+  "Section 318 BNS",
+  "Section 324 BNS",
+  "Section 351 BNS",
+  "Section 352 BNS",
+  "Section 35(3) BNSS",
+  "Section 173 BNSS",
+  "Section 174 BNSS",
+  "Section 176 BNSS",
+  "Section 180 BNSS",
+  "Section 187 BNSS",
+  "Section 223 BNSS",
+
+  /* --------------------------------------------------------------
+   *  Romanized Hinglish Vocabulary (Used by Officers typing phonetically)
+   * ------------------------------------------------------------ */
+  "Thana",
+  "Prabhari",
+  "Nirikshan",
+  "Shikayat",
+  "Giraftari",
+  "Gashth",
+  "Baramadgi",
+  "Mauka",
+  "Naksha",
+  "Bayanaat",
+  "Gawah",
+  "Vadi",
+  "Prarthi",
+  "Abhiyukt",
+  "Aropi",
+  "Muqaddama",
+  "Dhara",
+  "Darj",
+  "Karyavahi",
+  "Puchhtachh",
+  "Dabish",
+  "Farar",
+  "Malkhana",
+  "Roznamcha",
+  "Rapat",
+  "Ittila",
+  "Haziri",
+  "Ravangi",
+  "Wapsi",
+  "Hirasat",
+  "Tahqiqat",
+  "Tafteesh",
+  "Vivechna",
+  "Darkhwast",
+  "Marpeet",
+  "Gali Galoj",
+  "Dhamki",
+  "Zameeni Vivad",
+  "Ranjish",
+  "Purani Ranjish",
+  "Samjhauta",
+  "Raazinama",
+  "Aspatal",
+  "Chotil",
+  "Ilaaj",
+  "Dastavez",
+  "Hawalat",
+  "Chori",
+  "Vikram",
+  "Malkeet",
+  "Ramesh",
+  "Suresh",
+  "Devinder",
+  "Pooja",
+
+  /* --------------------------------------------------------------
+   *  Common Hindi (Devanagari) Vocabulary & Phrases
+   * ------------------------------------------------------------ */
+  "\u0906\u091c", // Aaj (Today)
+  "\u0915\u0932", // Kal (Yesterday)
+  "\u0926\u093f\u0928\u093e\u0902\u0915", // Dinank (Date)
+  "\u0938\u092e\u092f", // Samay (Time)
+  "\u092c\u091c\u0947", // Baje (O'clock)
+  "\u092a\u094d\u0930\u093e\u0924\u0903", // Pratah (Morning)
+  "\u0938\u093e\u092f\u0902", // Saayam (Evening)
+  "\u0930\u093e\u0924\u094d\u0930\u093f", // Raatri (Night)
+  "\u0936\u094d\u0930\u0940\u092e\u093e\u0928", // Shriman (Sir)
+  "\u092e\u0939\u094b\u0926\u092f", // Mahoday
+  "\u0938\u0947\u0935\u093e \u092e\u0947\u0902", // Seva mein
+  "\u0938\u0935\u093f\u0928\u092f \u0928\u093f\u0935\u0947\u0926\u0928", // Savinay nivedan
+  "\u0906\u092e\u0926", // Aamad (Arrival)
+  "\u0930\u0935\u093e\u0928\u0917\u0940", // Ravangi (Departure)
+  "\u0939\u093e\u091c\u093f\u0930\u0940", // Haziri (Attendance)
+  "\u0930\u092a\u091f", // Rapat
+  "\u0930\u094b\u091c\u0928\u093e\u092e\u091a\u093e", // Roznamcha
+  "\u092e\u094c\u0915\u093e \u092e\u0941\u0906\u092f\u0928\u093e", // Mauka muayana
+  "\u092c\u092f\u093e\u0928 \u0926\u0930\u094d\u091c", // Bayan darj
+  "\u0930\u093e\u091c\u0940\u0928\u093e\u092e\u093e", // Raazinama
+  "\u0938\u094d\u0935\u0924\u0902\u0924\u094d\u0930 \u0938\u093e\u0915\u094d\u0937\u0940", // Swatantra sakshi
+  "\u092e\u093e\u0930\u092a\u0940\u091f \u0935 \u0917\u093e\u0932\u0940-\u0917\u0932\u094c\u091c", // Marpeet wa gali-galoj
+  "\u091c\u093e\u0928 \u0938\u0947 \u092e\u093e\u0930\u0928\u0947 \u0915\u0940 \u0927\u092e\u0915\u0940", // Jaan se marne ki dhamki
+  "\u0915\u093e\u0928\u0942\u0928\u0940 \u0915\u093e\u0930\u094d\u0930\u0935\u093e\u0939\u0940" // Kanooni karyavahi
 ];
 
 /* --------------------------------------------------------------------------
@@ -264,7 +462,95 @@ interface GDSequence {
 }
 
 const SEQUENCES: GDSequence[] = [
-  /* ===================== English openers ===================== */
+  /* ===================== Complaint Registration Openers ===================== */
+  {
+    id: "en-open-complaint-desc",
+    entryTypes: ["COMPLAINT_DESCRIPTION", "COMPLAINT", "COMPLAINTS"],
+    trigger: [],
+    fragments: [
+      "To, The Station House Officer, ",
+      "Police Station ____________. ",
+      "Sir, it is humbly submitted that on ____ at about ____ hours, ",
+      "the complainant was present at ____________ when the accused persons namely ",
+      "____________ arrived and intentionally caused dispute, quarrel and criminal intimidation. ",
+      "It is therefore requested that prompt legal action be taken and justice be rendered.",
+    ],
+  },
+  {
+    id: "hi-open-complaint-desc",
+    entryTypes: ["COMPLAINT_DESCRIPTION", "COMPLAINT", "COMPLAINTS"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+      "\\u0938\\u0947\\u0935\\u093e \\u092e\\u0947\\u0902, \\u0936\\u094d\\u0930\\u0940\\u092e\\u093e\\u0928 \\u0925\\u093e\\u0928\\u093e \\u092a\\u094d\\u0930\\u092d\\u093e\\u0930\\u0940 \\u092e\\u0939\\u094b\\u0926\\u092f, ",
+      "\\u0925\\u093e\\u0928\\u093e ____________\\u0964 ",
+      "\\u092e\\u0939\\u094b\\u0926\\u092f, \\u0938\\u0935\\u093f\\u0928\\u092f \\u0928\\u093f\\u0935\\u0947\\u0926\\u0928 \\u0939\\u0948 \\u0915\\u093f \\u092a\\u094d\\u0930\\u093e\\u0930\\u094d\\u0925\\u0940 \\u0926\\u093f\\u0928\\u093e\\u0902\\u0915 ____ \\u0915\\u094b \\u0938\\u092e\\u092f \\u0915\\u0930\\u0940\\u092c ____ \\u092c\\u091c\\u0947 ",
+      "\\u0905\\u092a\\u0928\\u0947 \\u0918\\u0930/\\u0926\\u0941\\u0915\\u093e\\u0928 \\u092a\\u0930 \\u092e\\u094c\\u091c\\u0942\\u0926 \\u0925\\u093e \\u0915\\u093f \\u0924\\u092d\\u0940 \\u0928\\u093e\\u092e\\u091c\\u0926 \\u0905\\u092d\\u093f\\u092f\\u0941\\u0915\\u094d\\u0924\\u0917\\u0923 \\u0928\\u0947 ",
+      "\\u0917\\u093e\\u0932\\u0940-\\u0917\\u0932\\u094c\\u091c \\u0935 \\u092e\\u093e\\u0930\\u092a\\u0940\\u091f \\u0915\\u0930 \\u091c\\u093e\\u0928 \\u0938\\u0947 \\u092e\\u093e\\u0930\\u0928\\u0947 \\u0915\\u0940 \\u0927\\u092e\\u0915\\u0940 \\u0926\\u0940\\u0964 ",
+      "\\u0905\\u0924\\u0903 \\u0915\\u093e\\u0928\\u0942\\u0928\\u0940 \\u0915\\u093e\\u0930\\u094d\\u0930\\u0935\\u093e\\u0939\\u0940 \\u0915\\u0930 \\u0928\\u094d\\u092f\\u093e\\u092f \\u0926\\u093f\\u0932\\u093e\\u092f\\u093e \\u091c\\u093e\\u090f\\u0964",
+    ],
+  },
+  {
+    id: "en-open-complaint-summary",
+    entryTypes: ["COMPLAINT_SUMMARY", "SUMMARY"],
+    trigger: [],
+    fragments: [
+      "Dispute and altercation between parties at ____________ ",
+      "involving allegations of assault, cheating and intimidation; ",
+      "preliminary police enquiry and verification required.",
+    ],
+  },
+  {
+    id: "hi-open-complaint-summary",
+    entryTypes: ["COMPLAINT_SUMMARY", "SUMMARY"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+      "\\u092a\\u0915\\u094d\\u0937\\u0915\\u093e\\u0930\\u094b\\u0902 \\u0915\\u0947 \\u092e\\u0927\\u094d\\u092f \\u0935\\u093f\\u0935\\u093e\\u0926, \\u092e\\u093e\\u0930\\u092a\\u0940\\u091f \\u0935 \\u0927\\u092e\\u0915\\u0940 \\u0915\\u0947 \\u0938\\u0902\\u092c\\u0902\\u0927 \\u092e\\u0947\\u0902 ",
+      "\\u092a\\u094d\\u0930\\u093e\\u0925\\u092e\\u093f\\u0915 \\u091c\\u093e\\u0901\\u091a \\u0935 \\u0935\\u093f\\u0927\\u093f\\u0915 \\u0915\\u093e\\u0930\\u094d\\u0930\\u0935\\u093e\\u0939\\u0940 \\u0939\\u0947\\u0924\\u0941 \\u0938\\u0902\\u0915\\u094d\\u0937\\u093f\\u092a\\u094d\\u0924 \\u0938\\u093e\\u0930\\u0964",
+    ],
+  },
+  {
+    id: "en-open-injury-desc",
+    entryTypes: ["INJURY", "INJURIES"],
+    trigger: [],
+    fragments: [
+      "Physical assault injuries observed on victim, ",
+      "including contusion and lacerated wound, ",
+      "referred to Civil Hospital for Medico-Legal Examination (MLR).",
+    ],
+  },
+  {
+    id: "hi-open-injury-desc",
+    entryTypes: ["INJURY", "INJURIES"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+      "\\u092a\\u0940\\u0921\\u093c\\u093f\\u0924 \\u0915\\u0947 \\u0936\\u0930\\u0940\\u0930 \\u092a\\u0930 \\u091a\\u094b\\u091f \\u0915\\u0947 \\u0928\\u093f\\u0936\\u093e\\u0928, ",
+      "\\u0921\\u093e\\u0915\\u094d\\u091f\\u0930\\u0940 \\u092e\\u0941\\u0906\\u092f\u0928\u093e \\u0935 \\u090f\u092e\u090f\u0932\u0906\u0930 \\u0939\\u0947\u0924\u0941 \\u0938\u0930\u0915\u093e\u0930\u0940 \\u0905\u0938\u094d\u092a\u0924\u093e\u0932 \\u092d\u0947\u091c\u093e \\u0917\u092f\u093e\u0964",
+    ],
+  },
+  {
+    id: "en-open-enquiry-report",
+    entryTypes: ["ENQUIRY_REPORT", "ENQUIRY"],
+    trigger: [],
+    fragments: [
+      "Enquiry conducted on the spot in presence of respectables; ",
+      "statements of complainant and respondent recorded; ",
+      "matter enquired and report submitted for supervisory perusal.",
+    ],
+  },
+  {
+    id: "hi-open-enquiry-report",
+    entryTypes: ["ENQUIRY_REPORT", "ENQUIRY"],
+    lang: "hi",
+    trigger: [],
+    fragments: [
+      "\\u092e\\u094c\\u0915\\u093e \\u092a\\u0930 \\u092a\\u0939\u0941\\u0901\u091a\u0915\u0930 \\u091c\\u093e\\u0901\u091a \\u0915\u0940 \\u0917\u092f\u0940 \\u0924\u0925\u093e \\u0926\u094b\u0928\u094b\u0902 \\u092a\u0915\u094d\u0937\u094b\u0902 \\u0915\u0947 \\u092c\u092f\u093e\u0928 \\u0932\u093f\u090f \\u0917\u090f, ",
+      "\\u091c\\u093e\\u0901\u091a \\u0930\u093f\u092a\u094b\u0930\u094d\u091f \\u0905\u0917\u094d\u0930\u093f\u092e \\u0915\u093e\u0930\u094d\u0930\u0935\u093e\u0939\u0940 \\u0939\u0947\u0924\u0941 \\u092a\u0947\u0936 \\u0939\u0948\u0964",
+    ],
+  },
+  /* ===================== English GD openers ===================== */
   {
     id: "en-misc",
     entryTypes: ["MISCELLANEOUS_EVENT"],
@@ -831,7 +1117,10 @@ export function detectScript(text: string): TextScript {
 function matchesContextScript(candidate: string, contextScript: TextScript): boolean {
   if (contextScript === "none") return true;
   const s = detectScript(candidate);
-  return s === "none" || s === contextScript;
+  if (s === "none" || s === contextScript) return true;
+  // Allow common English police legal acronyms / codes / names in Hindi context
+  if (contextScript === "hi" && /^[A-Za-z0-9\s()_\-./]+$/.test(candidate)) return true;
+  return false;
 }
 
 /**
@@ -1031,8 +1320,32 @@ export function getGDSuggestions(
     });
   }
 
-  /* --- 4a. After a space: predicted NEXT words (mined n-gram model). --- */
+  /* --- 4a. After a space: predicted NEXT words & multi-word phrase continuations. --- */
   if (endsWithSpace) {
+    const rawTokens = value.trim().split(/\s+/).filter(Boolean);
+    const lastWord = rawTokens[rawTokens.length - 1] || "";
+    const normLast = normalize(lastWord);
+
+    // Look for multi-word phrases from harvested uploaded documents starting with lastWord
+    if (normLast.length >= 2) {
+      for (const p of options.personalPhrases ?? []) {
+        if (out.length >= MAX_CANDIDATES) break;
+        const normP = normalize(p);
+        if (normP.startsWith(normLast + " ") && normP !== normLast) {
+          const remainder = p.slice(lastWord.length).trim();
+          if (remainder && !out.some((o) => o.text.trim() === remainder)) {
+            push({
+              text: remainder + " ",
+              replaceLength: 0,
+              source: "phrase",
+              sequenceIndex: -1,
+              key: normP,
+            });
+          }
+        }
+      }
+    }
+
     for (const w of options.nextWords ?? []) {
       if (out.length >= MAX_CANDIDATES) break;
       const norm = normalize(w);
@@ -1040,7 +1353,10 @@ export function getGDSuggestions(
       if (!matchesContextScript(w, contextScript)) continue;
       push({ text: w + " ", replaceLength: 0, source: "next", sequenceIndex: -1, key: norm });
     }
-    return out.slice(0, MAX_CANDIDATES);
+
+    if (out.length > 0) {
+      return out.slice(0, MAX_CANDIDATES);
+    }
   }
 
   /* --- 4b. Mid-word: ranked completions (dictionary > bank > mined > fuzzy). --- */
@@ -1054,7 +1370,7 @@ export function getGDSuggestions(
       if (!norm || seen.has(norm)) return;
       if (!matchesContextScript(word, contextScript)) return;
       const firstWord = norm.split(" ")[0];
-      if (!firstWord.startsWith(normFrag)) return;
+      if (!firstWord.startsWith(normFrag) && !norm.startsWith(normFrag)) return;
       seen.add(norm);
       ranked.push({
         sug: {
@@ -1064,14 +1380,14 @@ export function getGDSuggestions(
           sequenceIndex: -1,
           key: norm,
         },
-        weight: weightOf(options, norm) * (source === "dict" ? 1.5 : 1),
-        exact: firstWord === normFrag,
+        weight: weightOf(options, norm) * (source === "dict" ? 2.0 : 1),
+        exact: firstWord === normFrag || norm === normFrag,
         extraChars: firstWord.length - normFrag.length,
       });
     };
 
-    // Personal dictionary first (Gboard personal-dictionary boost), then the
-    // static bank, then mined next-words that happen to start with the token.
+    // Personal dictionary first (Gboard personal-dictionary boost + harvested uploaded terms),
+    // then the static bank, then mined next-words that happen to start with the token.
     for (const p of options.personalPhrases ?? []) addWord(p, "dict");
     for (const w of WORD_BANK) addWord(w, "word");
     for (const w of options.nextWords ?? []) addWord(w, "word");

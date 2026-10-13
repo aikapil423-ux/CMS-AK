@@ -2,8 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getGDSuggestion, type GDChainState } from "@/lib/gdSuggestions";
+import { getGDSuggestions, type GDChainState, type GDSuggestion } from "@/lib/gdSuggestions";
 import { autoResizeTextarea } from "@/components/ui/auto-resize-textarea";
+import { suggestionStore } from "@/lib/suggestionStore";
 
 export interface AutoSuggestFieldProps {
   value: string;
@@ -71,11 +72,24 @@ export function AutoSuggestField({
    */
   const [chain, setChain] = useState<GDChainState | null>(null);
 
-  /** Prediction for the current value, taking any active chain into account. */
-  const suggestion = useMemo(
-    () => (enableGhost && !readOnly && !disabled ? getGDSuggestion(value, entryType, chain) : null),
-    [value, entryType, chain, enableGhost, readOnly, disabled]
-  );
+  // Dynamic subscription to suggestion store (personal dictionary, learned weights, uploaded files vocabulary)
+  const [storeTick, setStoreTick] = useState(0);
+
+  useEffect(() => {
+    void suggestionStore.ensureLoaded();
+    const unsubscribe = suggestionStore.subscribe(() => {
+      setStoreTick((t) => t + 1);
+    });
+    return unsubscribe;
+  }, []);
+
+  /** Prediction for the current value, using vocabulary harvested from uploaded files and case documents. */
+  const suggestion = useMemo(() => {
+    if (!enableGhost || readOnly || disabled) return null;
+    const options = suggestionStore.getEngineOptions();
+    const candidates = getGDSuggestions(value, entryType, chain, options);
+    return candidates[0] ?? null;
+  }, [value, entryType, chain, enableGhost, readOnly, disabled, storeTick]);
 
   /**
    * Set when the officer presses ESC. Any subsequent change to `value`
@@ -107,6 +121,7 @@ export function AutoSuggestField({
 
     const head = value.slice(0, value.length - activeSuggestion.replaceLength);
     onChange(head + activeSuggestion.text);
+    suggestionStore.recordAccept(activeSuggestion.key, entryType);
     setDismissed(false);
 
     if (activeSuggestion.sequenceIndex >= 0) {
@@ -119,7 +134,7 @@ export function AutoSuggestField({
     } else {
       setChain(null);
     }
-  }, [activeSuggestion, chain, value, onChange]);
+  }, [activeSuggestion, chain, value, onChange, entryType]);
 
   /**
    * Any real typing breaks the chain: the officer's own word takes over.
@@ -137,6 +152,7 @@ export function AutoSuggestField({
     if (e.key === "Escape") {
       if (activeSuggestion) {
         e.preventDefault();
+        suggestionStore.recordReject(activeSuggestion.key, entryType, "dismiss");
         setDismissed(true);
         setChain(null);
       }
@@ -191,7 +207,24 @@ export function AutoSuggestField({
     inputClassName
   );
 
-  const ghostText = activeSuggestion ? activeSuggestion.text : "";
+  let displayGhost = "";
+  let spacerText = value;
+
+  if (activeSuggestion) {
+    if (activeSuggestion.replaceLength > 0) {
+      const typedPrefix = value.slice(value.length - activeSuggestion.replaceLength);
+      if (activeSuggestion.text.toLowerCase().startsWith(typedPrefix.toLowerCase())) {
+        displayGhost = activeSuggestion.text.slice(activeSuggestion.replaceLength);
+        spacerText = value;
+      } else {
+        displayGhost = activeSuggestion.text;
+        spacerText = value.slice(0, value.length - activeSuggestion.replaceLength);
+      }
+    } else {
+      displayGhost = activeSuggestion.text;
+      spacerText = value;
+    }
+  }
 
   /** Transparent spacer + light-grey prediction, sitting behind the real control. */
   const ghostLayer = (
@@ -200,9 +233,9 @@ export function AutoSuggestField({
       aria-hidden="true"
       className={cn("pointer-events-none absolute inset-0 z-0 text-slate-400 select-none", layerRecipe)}
     >
-      {/* Invisible copy of the typed text so the prediction starts at the caret. */}
-      <span className="invisible whitespace-pre-wrap">{value}</span>
-      {ghostText && <span className="text-slate-400/90">{ghostText}</span>}
+      {/* Invisible copy of the typed text so the prediction starts right at the caret. */}
+      <span className="invisible whitespace-pre-wrap">{spacerText}</span>
+      {displayGhost && <span className="text-slate-400/90 font-normal">{displayGhost}</span>}
     </div>
   );
 
