@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
+import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -134,6 +135,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Floating Draggable CMS AI Agent */}
       <DraggableAgentButton />
+
+      {/* Universal Camera & File Upload Option Selector */}
+      <GlobalUploadCameraModal />
     </div>
   );
 }
