@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ModuleProvider } from "@/context/ModuleContext";
 import { AppShell } from "@/components/layout/AppShell";
+import { GlobalAutoResizeTextareas } from "@/components/ui/auto-resize-textarea";
 
 export const metadata: Metadata = {
   title: "Haryana Police - Case Management System (CMS)",
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans selection:bg-[#1e3e62] selection:text-white">
         <AuthProvider>
           <ModuleProvider>
+            <GlobalAutoResizeTextareas />
             <AppShell>{children}</AppShell>
           </ModuleProvider>
         </AuthProvider>

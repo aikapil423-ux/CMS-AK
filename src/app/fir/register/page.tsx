@@ -4453,11 +4453,11 @@ function RegisterFIRForm() {
                       />
                     </div>
                     <textarea
-                      rows={4}
+                      rows={3}
                       placeholder="Details of physical injuries, wounds, fractures, MLR number, Hospital admitted"
                       value={injuryDescription}
                       onChange={(e) => setInjuryDescription(e.target.value)}
-                      className="w-full p-2.5 rounded border border-slate-300 text-xs"
+                      className="w-full p-2.5 rounded border border-slate-300 text-xs overflow-hidden transition-[height] duration-75"
                     />
                   </div>
                   <div className="space-y-3">

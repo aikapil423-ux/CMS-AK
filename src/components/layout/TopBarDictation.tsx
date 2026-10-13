@@ -569,13 +569,13 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
                   (interimText ? (accumulatedText ? " " : "") + interimText : "")
                 }
                 onChange={(e) => setAccumulatedText(e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder={
                   selectedLang === "hi-IN"
                     ? "यहाँ आपकी बोली गई बात टाइप होगी... (पेज पर किसी भी इनपुट या टेक्स्ट फ़ील्ड पर क्लिक करके बोलें तो वहाँ भी अपने आप टाइप होगा)"
                     : "Your spoken text appears here... (Click any input or textarea on the page to type directly into it)"
                 }
-                className="w-full text-xs font-normal p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed text-slate-800 placeholder:text-slate-400"
+                className="w-full text-xs font-normal p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed text-slate-800 placeholder:text-slate-400 overflow-hidden transition-[height] duration-75 min-h-[75px]"
               />
               {interimText && (
                 <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[10px] font-medium text-amber-800">

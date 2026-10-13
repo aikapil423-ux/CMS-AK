@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { getGDSuggestion, type GDChainState } from "@/lib/gdSuggestions";
+import { autoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 
 export interface AutoSuggestFieldProps {
   value: string;
@@ -86,6 +87,16 @@ export function AutoSuggestField({
     setDismissed(false);
   }, [value]);
 
+  const adjustHeight = useCallback(() => {
+    if (as === "textarea" && controlRef.current) {
+      autoResizeTextarea(controlRef.current as HTMLTextAreaElement);
+    }
+  }, [as]);
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value, adjustHeight]);
+
   const activeSuggestion = dismissed ? null : suggestion;
 
   /**
@@ -117,6 +128,9 @@ export function AutoSuggestField({
     setChain(null);
     setDismissed(false);
     onChange(e.target.value);
+    if (as === "textarea") {
+      autoResizeTextarea(e.target as HTMLTextAreaElement);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -222,7 +236,7 @@ export function AutoSuggestField({
           {...controlProps}
           rows={rows}
           ref={controlRef as React.RefObject<HTMLTextAreaElement>}
-          className={cn(controlProps.className, "resize-y min-h-[100px]")}
+          className={cn(controlProps.className, "resize-y min-h-[90px] overflow-hidden transition-[height] duration-75")}
         />
       ) : (
         <input
