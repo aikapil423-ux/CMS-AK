@@ -53,6 +53,7 @@ import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { DropdownManagerService } from "@/services/dropdownManagerService";
 import { LEGACY_GD_TYPE_CODES } from "@/lib/generalDiaryConfig";
+import { CmsAgentService } from "@/services/agent/cmsAgentService";
 import {
   formatGDDateKey,
   formatGDTimeDisplay24,
@@ -1126,6 +1127,103 @@ function NewGDEntryContent() {
     }, 50);
   };
 
+  // Sync URL ?type= param if navigated dynamically
+  useEffect(() => {
+    if (preselectedType) {
+      setSelectedType(preselectedType);
+      setTypeDropdownOpen(false);
+      setTypeSearchQuery("");
+    }
+  }, [preselectedType]);
+
+  // Listen for live CMS AI Agent GD Form Fill commands (Event + sessionStorage handoff)
+  useEffect(() => {
+    const applyAgentPayload = (data: any) => {
+      if (!data) return;
+
+      let resolvedCode = data.typeCode as string | undefined;
+      if (!resolvedCode && (data.fieldId === "gdEntryType" || data.fieldId === "typeCode") && data.value) {
+        const matched = CmsAgentService.matchGDTypeFromQuery(String(data.value));
+        resolvedCode = matched?.code || String(data.value);
+      }
+
+      if (resolvedCode) {
+        setSelectedType(resolvedCode);
+        setTypeDropdownOpen(false);
+        setTypeSearchQuery("");
+      }
+
+      if (data.caseType) {
+        setCaseType(data.caseType);
+      }
+
+      if (Array.isArray(data.sections) && data.sections.length > 0) {
+        const actLabel = "Bharatiya Nyaya Sanhita, 2023 (BNS)";
+        setMajorAct(actLabel);
+        setActsAndSections(data.sections.join(", "));
+        setActsAndSectionsList((prev) => {
+          const existingSections = new Set(prev.map((p) => p.sections));
+          const additions: FIRActSectionEntry[] = data.sections
+            .filter((s: string) => !existingSections.has(s))
+            .map((s: string, idx: number) => ({
+              id: `act-agent-${Date.now()}-${idx}`,
+              srNo: prev.length + idx + 1,
+              act: actLabel,
+              sections: s,
+            }));
+          return [...prev, ...additions];
+        });
+      }
+
+      if (data.officerName) {
+        const qName = String(data.officerName).toLowerCase();
+        const foundOfficer = stationOfficers.find((o) =>
+          o.name.toLowerCase().includes(qName)
+        );
+        if (foundOfficer) {
+          setSelectedOfficerId(foundOfficer.id);
+        }
+      }
+
+      if (data.subject || (data.fieldId === "gdSubject" && data.value)) {
+        setSubject(String(data.subject || data.value));
+      }
+
+      if (data.narrative || (data.fieldId === "gdNarrative" && data.value)) {
+        setNarrative(String(data.narrative || data.value));
+      }
+
+      if (data.applyTemplate && (resolvedCode || selectedType)) {
+        applyTemplateForType(resolvedCode || selectedType, currentOfficer.name);
+      }
+    };
+
+    // 1. Check pending sessionStorage handoff (when navigating from another page)
+    try {
+      const pendingRaw = sessionStorage.getItem("cms_agent_pending_gd_autofill");
+      if (pendingRaw) {
+        sessionStorage.removeItem("cms_agent_pending_gd_autofill");
+        const parsed = JSON.parse(pendingRaw);
+        applyAgentPayload(parsed);
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    // 2. Listen for live custom events while already on /general-diary/new
+    const handleAgentAutofill = (evt: Event) => {
+      const customEvt = evt as CustomEvent;
+      applyAgentPayload(customEvt.detail);
+    };
+
+    window.addEventListener("cms-agent-gd-autofill", handleAgentAutofill);
+    window.addEventListener("cms-agent-fill-field", handleAgentAutofill);
+    return () => {
+      window.removeEventListener("cms-agent-gd-autofill", handleAgentAutofill);
+      window.removeEventListener("cms-agent-fill-field", handleAgentAutofill);
+    };
+  }, [stationOfficers, selectedType, currentOfficer.name]);
+
   // 24-hour key from the 12-hour picker parts
   const activityTime24 = useMemo(
     () => from12HourParts(hourSel, minuteSel, ampmSel),
@@ -1354,15 +1452,30 @@ function NewGDEntryContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
             {/* GD Type — searchable select (user must choose first) */}
             <div className="space-y-1.5 relative">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-blue-600" />
-                <span>GD Type – Select *</span>
-                {!selectedType && (
-                  <span className="text-[11px] font-semibold text-amber-700">
-                    (select type first)
-                  </span>
-                )}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-blue-600" />
+                  <span>GD Type – Select *</span>
+                  {!selectedType && (
+                    <span className="text-[11px] font-semibold text-amber-700">
+                      (select type first)
+                    </span>
+                  )}
+                </label>
+                <VoiceInputButton
+                  onTranscript={(spoken) => {
+                    const matched = CmsAgentService.matchGDTypeFromQuery(spoken);
+                    if (matched) {
+                      handleSelectType(matched.code);
+                    } else {
+                      setTypeSearchQuery(spoken.trim());
+                      setTypeDropdownOpen(true);
+                    }
+                  }}
+                  fieldLabel="GD Type"
+                  preferredLang="en-IN"
+                />
+              </div>
               <input
                 type="text"
                 value={typeDropdownOpen ? typeSearchQuery : selectedTypeLabel}

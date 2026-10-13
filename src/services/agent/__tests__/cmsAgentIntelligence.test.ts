@@ -93,6 +93,43 @@ async function runVerificationTests() {
   const today = new Date().toISOString().split("T")[0];
   assert(dateRes.actionPlan?.executablePayload?.parameters?.value === today, "Correctly sets date to today");
 
+  // TEST 11: Roznamcha / General Diary Add Entry — GD Type Select & Field Fill
+  console.log("\n--- 11. Roznamcha Add Entry GD Type Select (Criminal Case / Arrival) ---");
+  const gdTypeRes1 = await CmsAgentService.processUserInput(
+    "roznamcha module me add entry me GD type select me criminal case fill kr do",
+    "/general-diary/new"
+  );
+  assert(
+    gdTypeRes1.actionPlan?.executablePayload?.toolName === "fill_gd_form",
+    "Resolves full Hinglish Roznamcha command to fill_gd_form tool"
+  );
+  assert(
+    gdTypeRes1.actionPlan?.executablePayload?.parameters?.typeCode === "CRIMINAL_CASE",
+    "Selects official CCTNS GD Type code CRIMINAL_CASE"
+  );
+  assert(
+    gdTypeRes1.actionPlan?.status === "EXECUTED",
+    "Executes UI form field fill immediately without permission prompt"
+  );
+
+  const gdTypeRes2 = await CmsAgentService.processUserInput(
+    "criminal case fill kr do",
+    "/general-diary/new"
+  );
+  assert(
+    gdTypeRes2.actionPlan?.executablePayload?.parameters?.typeCode === "CRIMINAL_CASE",
+    "Selects CRIMINAL_CASE when user simply says 'criminal case fill kr do' on /general-diary/new"
+  );
+
+  const gdTypeRes3 = await CmsAgentService.processUserInput(
+    "GD type select me arrival fill kr do",
+    "/general-diary/new"
+  );
+  assert(
+    gdTypeRes3.actionPlan?.executablePayload?.parameters?.typeCode === "ARRIVAL",
+    "Selects ARRIVAL when user says 'GD type select me arrival fill kr do'"
+  );
+
   // Summary
   console.log("\n=================================================================");
   console.log(`TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);

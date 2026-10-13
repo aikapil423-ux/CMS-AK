@@ -149,13 +149,28 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
       const response = await CmsAgentService.processUserInput(text.trim(), pathname);
       setMessages((prev) => [...prev, response]);
 
-      // Immediate auto-execution for Navigation or Modal Open/Close commands (Zero Permission Required)
+      // Immediate auto-execution for Form Field Fill, Navigation, or Modal Open/Close commands (Zero Permission Required)
       const plan = response.actionPlan;
       if (plan) {
         const toolName = plan.executablePayload?.toolName;
-        const targetUrl = plan.executablePayload?.parameters?.url || plan.targetRecords?.[0]?.url;
+        const params = plan.executablePayload?.parameters || {};
+        const targetUrl = params.url || plan.targetRecords?.[0]?.url;
 
-        if (toolName === "navigate" || (targetUrl && !targetUrl.startsWith("MODAL:"))) {
+        if (toolName === "fill_gd_form" || toolName === "update_field") {
+          try {
+            sessionStorage.setItem("cms_agent_pending_gd_autofill", JSON.stringify(params));
+          } catch {
+            // ignore storage errors
+          }
+          window.dispatchEvent(new CustomEvent("cms-agent-gd-autofill", { detail: params }));
+          window.dispatchEvent(new CustomEvent("cms-agent-fill-field", { detail: params }));
+
+          if (params.url && pathname !== params.url) {
+            setTimeout(() => {
+              router.push(params.url);
+            }, 250);
+          }
+        } else if (toolName === "navigate" || (plan.status === "EXECUTED" && targetUrl && !targetUrl.startsWith("MODAL:"))) {
           if (targetUrl) {
             setTimeout(() => {
               router.push(targetUrl);
@@ -163,7 +178,7 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
             }, 400);
           }
         } else if (toolName === "open_modal" || targetUrl === "MODAL:ROLE_SWITCHER") {
-          const modalEvent = plan.executablePayload?.parameters?.modalEvent || "cms-open-role-switcher";
+          const modalEvent = params.modalEvent || "cms-open-role-switcher";
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent(modalEvent));
             onClose();
@@ -192,16 +207,31 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
 
   const handleApprovePlan = async (planId: string, actionPlan?: any) => {
     const toolName = actionPlan?.executablePayload?.toolName;
-    const targetUrl = actionPlan?.executablePayload?.parameters?.url || actionPlan?.targetRecords?.[0]?.url;
+    const params = actionPlan?.executablePayload?.parameters || {};
+    const targetUrl = params.url || actionPlan?.targetRecords?.[0]?.url;
+
+    if (toolName === "fill_gd_form" || toolName === "update_field") {
+      try {
+        sessionStorage.setItem("cms_agent_pending_gd_autofill", JSON.stringify(params));
+      } catch {
+        // ignore
+      }
+      window.dispatchEvent(new CustomEvent("cms-agent-gd-autofill", { detail: params }));
+      window.dispatchEvent(new CustomEvent("cms-agent-fill-field", { detail: params }));
+      if (params.url && pathname !== params.url) {
+        router.push(params.url);
+      }
+      return;
+    }
 
     if (toolName === "open_modal" || targetUrl === "MODAL:ROLE_SWITCHER") {
-      const modalEvent = actionPlan?.executablePayload?.parameters?.modalEvent || "cms-open-role-switcher";
+      const modalEvent = params.modalEvent || "cms-open-role-switcher";
       window.dispatchEvent(new CustomEvent(modalEvent));
       onClose();
       return;
     }
 
-    if (toolName === "navigate" || (targetUrl && !targetUrl.startsWith("MODAL:"))) {
+    if (toolName === "navigate") {
       if (targetUrl) {
         router.push(targetUrl);
         onClose();
@@ -214,13 +244,18 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
     try {
       const resultMsg = await CmsAgentService.executeActionPlan(planId);
       setMessages((prev) => [...prev, resultMsg]);
-      if (resultMsg.actionPlan?.executablePayload?.toolName === "navigate") {
-        const dest = resultMsg.actionPlan.executablePayload.parameters.url;
+      const resTool = resultMsg.actionPlan?.executablePayload?.toolName;
+      const resParams = resultMsg.actionPlan?.executablePayload?.parameters || {};
+      if (resTool === "fill_gd_form" || resTool === "update_field") {
+        window.dispatchEvent(new CustomEvent("cms-agent-gd-autofill", { detail: resParams }));
+        window.dispatchEvent(new CustomEvent("cms-agent-fill-field", { detail: resParams }));
+      } else if (resTool === "navigate") {
+        const dest = resParams.url;
         if (dest) {
           router.push(dest);
           onClose();
         }
-      } else if (resultMsg.actionPlan?.executablePayload?.toolName === "open_modal") {
+      } else if (resTool === "open_modal") {
         window.dispatchEvent(new CustomEvent("cms-open-role-switcher"));
         onClose();
       }

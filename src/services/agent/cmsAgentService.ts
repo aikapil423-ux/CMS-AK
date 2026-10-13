@@ -21,6 +21,8 @@ import {
 } from "@/types/cmsAgent";
 import { FIRItem } from "@/types";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { CCTNS_OFFICIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
+import { GDEntryTypeConfig } from "@/types/generalDiary";
 
 const SESSION_STORAGE_KEY = "haryana_police_cms_agent_session_v1";
 
@@ -268,6 +270,16 @@ export class CmsAgentService {
       q.includes("popup band karo")
     ) {
       return this.handleCloseDialogIntent();
+    }
+
+    // -------------------------------------------------------------
+    // INTENT B.2: GENERAL DIARY (ROZNAMCHA) ADD ENTRY FORM FIELD & GD TYPE SELECTION
+    // e.g. "GD type select me criminal case fill kr do", "roznamcha me add entry me criminal case select kr do",
+    // "criminal case fill kr do", "officer me SI Vikram Singh kr do", "case type juvenile kr do"
+    // -------------------------------------------------------------
+    const gdFormPayload = this.extractGDFormFieldsFromQuery(raw, currentPath, firNumber);
+    if (gdFormPayload) {
+      return this.handleGDFormFieldFillIntent(raw, gdFormPayload, currentPath);
     }
 
     // -------------------------------------------------------------
@@ -690,6 +702,432 @@ export class CmsAgentService {
       suggestedPrompts: ["फॉर्म खोलें", "General Diary खोलें"],
     };
   }
+
+  /**
+   * Matches any of the 99 Official CCTNS GD Types (English, Hindi, Hinglish, Devanagari, or code)
+   * from a natural language command.
+   */
+  public static matchGDTypeFromQuery(rawInput: string): GDEntryTypeConfig | null {
+    const q = rawInput.toLowerCase();
+
+    // 1. High-priority Hindi / Hinglish / Devanagari / Police slang aliases -> official GD code
+    const aliasMap: Array<{ patterns: RegExp[]; code: string }> = [
+      {
+        patterns: [
+          /\bcriminal\s*case\b/i,
+          /क्रिमिनल\s*केस/,
+          /आपराधिक\s*मामला/,
+          /\bmukadd?a?ma\b/i,
+          /मुकद्दमा/,
+          /मुकदमा/,
+          /\bfir\s*(entry|gd|rapat|type)\b/i,
+        ],
+        code: "CRIMINAL_CASE",
+      },
+      {
+        patterns: [
+          /\bnon[-\s]*cognizable\b/i,
+          /\bncr\b/i,
+          /असंज्ञेय/,
+          /एनसीआर/,
+        ],
+        code: "NON_COGNIZABLE_REPORT",
+      },
+      {
+        patterns: [
+          /\barrival\b/i,
+          /\baamad\b/i,
+          /\bwapsi\b/i,
+          /\bvapsi\b/i,
+          /आमद/,
+          /वापसी/,
+        ],
+        code: "ARRIVAL",
+      },
+      {
+        patterns: [
+          /\bdeparture\b/i,
+          /\bravangi\b/i,
+          /\brawangi\b/i,
+          /रवानगी/,
+        ],
+        code: "DEPARTURE",
+      },
+      {
+        patterns: [
+          /\bpatrol(ling)?\b/i,
+          /\bgasht\b/i,
+          /\bgast\b/i,
+          /गश्त/,
+          /पेट्रोलिंग/,
+        ],
+        code: "PATROLLING",
+      },
+      {
+        patterns: [
+          /\bopening\s*(of\s*)?gd\b/i,
+          /\bgd\s*open(ing)?\b/i,
+          /\baagaz\b/i,
+          /आगाज़/,
+          /आगाज/,
+          /रोजनामचा\s*शुरू/,
+        ],
+        code: "OPENING_OF_GD",
+      },
+      {
+        patterns: [
+          /\bclos(e|ing)\s*(of\s*)?gd\b/i,
+          /\bgd\s*clos(e|ing)\b/i,
+          /\bbandi\b/i,
+          /बंदी/,
+          /रोजनामचा\s*बंद/,
+        ],
+        code: "CLOSE_OF_GD",
+      },
+      {
+        patterns: [
+          /\broll\s*call\b/i,
+          /\bhaziri\b/i,
+          /\bginti\b/i,
+          /हाजिरी/,
+          /गिनती/,
+          /रोल\s*कॉल/,
+        ],
+        code: "ROLL_CALL",
+      },
+      {
+        patterns: [
+          /\bnakabandi\b/i,
+          /\bnaka\s*bandi\b/i,
+          /नाकाबंदी/,
+        ],
+        code: "NAKABANDI",
+      },
+      {
+        patterns: [
+          /\bmissing\s*person\b/i,
+          /\bgumshuda\b/i,
+          /गुमशुदा/,
+          /लापता/,
+        ],
+        code: "MISSING_PERSON",
+      },
+      {
+        patterns: [
+          /\bpcr\s*call\b/i,
+          /\bdial\s*112\b/i,
+          /\b112\s*call\b/i,
+          /पीसीआर\s*कॉल/,
+        ],
+        code: "PCR_CALL",
+      },
+      {
+        patterns: [
+          /\brukk?a\s*(gd)?\b/i,
+          /रुक्का/,
+        ],
+        code: "RUKKA_GD",
+      },
+      {
+        patterns: [
+          /\bcase\s*diary\b/i,
+          /\bzimni\b/i,
+          /केस\s*डायरी/,
+          /ज़िमनी/,
+        ],
+        code: "CASE_DIARY",
+      },
+      {
+        patterns: [
+          /\bremand\b/i,
+          /रिमांड/,
+        ],
+        code: "REMAND",
+      },
+      {
+        patterns: [
+          /\bbail\b/i,
+          /\bzamanat\b/i,
+          /जमानत/,
+          /बेल/,
+        ],
+        code: "BAIL",
+      },
+      {
+        patterns: [
+          /\bpreventive\s*action\b/i,
+          /निवारक\s*कार्यवाही/,
+        ],
+        code: "PREVENTIVE_ACTION",
+      },
+      {
+        patterns: [
+          /\bchange\s*of\s*guard\b/i,
+          /\bsentry\s*badli\b/i,
+          /पहरा\s*बदली/,
+          /गार्ड\s*बदली/,
+        ],
+        code: "CHANGE_OF_GUARD",
+      },
+      {
+        patterns: [
+          /\bmalkhana\s*inspection\b/i,
+          /मालखाना\s*निरीक्षण/,
+        ],
+        code: "MALKHANA_INSPECTION",
+      },
+      {
+        patterns: [
+          /\bunidentified\s*dead\s*body\b/i,
+          /\blawaris\s*lash\b/i,
+          /अज्ञात\s*शव/,
+          /लावारिस\s*लाश/,
+        ],
+        code: "UNIDENTIFIED_DEAD_BODY",
+      },
+    ];
+
+    for (const entry of aliasMap) {
+      if (entry.patterns.some((re) => re.test(rawInput))) {
+        const found = CCTNS_OFFICIAL_GD_TYPES.find((t) => t.code === entry.code);
+        if (found) return found;
+      }
+    }
+
+    // 2. Match against all 99 CCTNS_OFFICIAL_GD_TYPES by exact label, code, orHindi label (longest label first)
+    const sortedTypes = [...CCTNS_OFFICIAL_GD_TYPES].sort(
+      (a, b) => b.label.length - a.label.length
+    );
+
+    for (const gdType of sortedTypes) {
+      const labelLower = gdType.label.toLowerCase();
+      const codeLower = gdType.code.toLowerCase().replace(/_/g, " ");
+      const escapedLabel = labelLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const labelRegex = new RegExp(`\\b${escapedLabel}\\b`, "i");
+      if (
+        labelRegex.test(q) ||
+        q.includes(gdType.code.toLowerCase()) ||
+        (codeLower.length > 4 && q.includes(codeLower))
+      ) {
+        return gdType;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Detects when the user wants to select/fill GD Type or other fields on the Roznamcha / Add Entry form.
+   * Examples:
+   * - "GD type select me criminal case fill kr do"
+   * - "roznamcha module me add entry me GD type select me criminal case fill kr do"
+   * - "criminal case fill kr do" (while on /general-diary or /general-diary/new)
+   * - "GD type arrival select karo"
+   * - "GD me subject गश्त व चेकिंग भर दो"
+   */
+  private static extractGDFormFieldsFromQuery(
+    rawInput: string,
+    currentPath?: string,
+    firNumber?: string
+  ): {
+    typeCode?: string;
+    typeLabel?: string;
+    typeLabelHi?: string;
+    officerName?: string;
+    subject?: string;
+    narrative?: string;
+    caseType?: string;
+    sections?: string[];
+    applyTemplate?: boolean;
+  } | null {
+    const q = rawInput.toLowerCase();
+    const isOnGDPage = Boolean(currentPath && currentPath.startsWith("/general-diary"));
+
+    const mentionsGDOrRoznamcha =
+      /\b(gd\s*type|gd|roznamcha|रोजनामचा|general\s*diary|add\s*entry|new\s*gd|rapat|रपट)\b/i.test(rawInput);
+
+    const hasFillOrSelectVerb =
+      /\b(fill|select|choose|set|change|update|bhar|bharo|bhare|bhardo|kr\s*do|kar\s*do|kardo|karo|lagao|laga\s*do|chuno|chun\s*lo|डाल|भर|चुन|सेलेक्ट|सेट|कर\s*दो|करो)\b/i.test(
+        rawInput
+      );
+
+    // Do not intercept full arrest dossier or multi-step investigation workflows
+    if (/\b(arrest\s*docs|arrest\s*memo|dossier|form\s*26\.8|35\(3\))\b/i.test(rawInput)) {
+      return null;
+    }
+
+    const matchedType = this.matchGDTypeFromQuery(rawInput);
+
+    // Case Type detection (for CRIMINAL_CASE conditional block)
+    let caseType: string | undefined;
+    if (/\bonly\s*juvenile\b|केवल\s*किशोर/i.test(rawInput)) {
+      caseType = "ONLY JUVENILE";
+    } else if (/\bjuvenile\s*(&|and|aur)\s*adult\b/i.test(rawInput)) {
+      caseType = "JUVENILE & ADULT";
+    } else if (/\bcase\s*type\b.*\badult\b|\badult\s*case\s*type\b/i.test(rawInput)) {
+      caseType = "ADULT";
+    }
+
+    // Extract BNS / IPC sections if mentioned (e.g. "section 303(2)", "धारा 303(2), 317(2)")
+    const sections: string[] = [];
+    const sectionMatches = rawInput.matchAll(
+      /(?:section|sec|dhara|धारा|u\/s)\s*([0-9]{1,3}(?:\([0-9a-zA-Z]+\))?(?:\s*,\s*[0-9]{1,3}(?:\([0-9a-zA-Z]+\))?)*)/gi
+    );
+    for (const match of sectionMatches) {
+      if (match[1]) {
+        const parts = match[1].split(",").map((s) => s.trim()).filter(Boolean);
+        sections.push(...parts);
+      }
+    }
+
+    // Extract explicit subject if user says "subject ... fill kr do" / "विषय ... भर दो"
+    let subject: string | undefined;
+    const subjectMatch = rawInput.match(
+      /(?:subject|vishay|विषय)\s*(?:me|mein|में|ko|को|:|-)?\s*["']?([^"'\n]+?)["']?\s*(?:fill|bhar|set|likh|कर\s*दो|भर\s*दो|$)/i
+    );
+    if (subjectMatch?.[1] && subjectMatch[1].trim().length > 2) {
+      subject = subjectMatch[1].trim();
+    }
+
+    // Extract officer if mentioned
+    let officerName: string | undefined;
+    const officerMatch = rawInput.match(
+      /\b((?:SI|ASI|Inspector|Insp|HC|Constable)\s+[A-Za-z]+(?:\s+[A-Za-z]+)?)\b/i
+    );
+    if (officerMatch?.[1]) {
+      officerName = officerMatch[1].trim();
+    }
+
+    // Decide if this query is targeting the GD form
+    const isExplicitGDTypeCommand =
+      matchedType !== null &&
+      (mentionsGDOrRoznamcha || isOnGDPage || /\bgd\s*type\b/i.test(rawInput)) &&
+      (hasFillOrSelectVerb || /\bgd\s*type\b/i.test(rawInput));
+
+    const isExplicitGDFieldCommand =
+      (mentionsGDOrRoznamcha || isOnGDPage) &&
+      hasFillOrSelectVerb &&
+      Boolean(matchedType || caseType || sections.length > 0 || subject || officerName);
+
+    if (!isExplicitGDTypeCommand && !isExplicitGDFieldCommand) {
+      return null;
+    }
+
+    const applyTemplate =
+      /\b(template|auto\s*fill|autofill|पूरा\s*फॉर्म|टेम्पलेट|draft\s*bhar)\b/i.test(rawInput);
+
+    return {
+      typeCode: matchedType?.code,
+      typeLabel: matchedType?.label,
+      typeLabelHi: matchedType?.labelHi,
+      officerName,
+      subject,
+      caseType,
+      sections: sections.length > 0 ? sections : undefined,
+      applyTemplate,
+    };
+  }
+
+  /**
+   * Immediately selects the GD Type and/or fills GD form fields on `/general-diary/new`
+   * without asking permission (UI form fill only — actual database submission still requires user click/approval).
+   */
+  private static handleGDFormFieldFillIntent(
+    rawInput: string,
+    payload: {
+      typeCode?: string;
+      typeLabel?: string;
+      typeLabelHi?: string;
+      officerName?: string;
+      subject?: string;
+      narrative?: string;
+      caseType?: string;
+      sections?: string[];
+      applyTemplate?: boolean;
+    },
+    currentPath?: string
+  ): AgentMessage {
+    const targetUrl = "/general-diary/new";
+    const summaryItems: string[] = [];
+
+    if (payload.typeCode && payload.typeLabel) {
+      summaryItems.push(
+        `* **GD Type – Select *:** \`${payload.typeLabel}\` (${payload.typeLabelHi || payload.typeCode})`
+      );
+    }
+    if (payload.caseType) {
+      summaryItems.push(`* **Case Type *:** \`${payload.caseType}\``);
+    }
+    if (payload.sections && payload.sections.length > 0) {
+      summaryItems.push(`* **Act & Sections (BNS 2023):** \`${payload.sections.join(", ")}\``);
+    }
+    if (payload.officerName) {
+      summaryItems.push(`* **GD For Officer *:** \`${payload.officerName}\``);
+    }
+    if (payload.subject) {
+      summaryItems.push(`* **Subject *:** \`${payload.subject}\``);
+    }
+
+    const extraCriminalCaseNote =
+      payload.typeCode === "CRIMINAL_CASE"
+        ? `\n\n📌 **Criminal Case Conditional Block Active:** \`Case Type (ADULT)\` एवं \`Acts & Sections (BNS 2023)\` अनुभाग भी स्क्रीन पर खुल गया है। आप सीधे **"+ ऑटो-फिल टेम्पलेट"** दबा सकते हैं या मुझे धाराएं (जैसे *"Section 303(2) add kr do"*) बता सकते हैं।`
+        : "";
+
+    return {
+      id: `msg_gd_fill_${Date.now()}`,
+      sender: "agent",
+      text: `✅ **रोजनामचा (General Diary - Add Entry) फॉर्म में विवरण तुरंत भर दिया गया है:**\n\n${summaryItems.join("\n")}${extraCriminalCaseNote}`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      actionPlan: {
+        id: `plan_gd_fill_${Date.now()}`,
+        title: `GD Entry Form Fill: ${payload.typeLabel || "Roznamcha Fields"}`,
+        understoodIntent: `रोजनामचा (Add GD Entry) में ${payload.typeLabel ? `GD Type '${payload.typeLabel}'` : "फ़ील्ड"} तुरंत सेलेक्ट/भरना (बिना अनुमति के सीधा UI अपडेट)`,
+        confidenceScore: 0.99,
+        primaryModule: "GENERAL_DIARY",
+        targetRecords: [
+          {
+            type: "PAGE",
+            id: targetUrl,
+            label: "New General Diary Entry (Roznamcha)",
+            url: targetUrl,
+          },
+        ],
+        steps: [
+          {
+            id: "step_gd_fill_1",
+            stepNumber: 1,
+            module: "GENERAL_DIARY",
+            actionTitle: payload.typeLabel
+              ? `GD Type – Select: '${payload.typeLabel}' सेट किया गया`
+              : "GD फॉर्म फ़ील्ड अपडेट किया गया",
+            actionDescription: `रोजनामचा फॉर्म (/general-diary/new) में ${payload.typeLabel || "निर्दिष्ट फ़ील्ड"} चयनित कर दिया गया है।`,
+            isDestructive: false,
+            requiresOfficialApproval: false,
+            status: "COMPLETED",
+          },
+        ],
+        status: "EXECUTED",
+        createdAt: new Date().toISOString(),
+        executablePayload: {
+          toolName: "fill_gd_form",
+          parameters: {
+            url: targetUrl,
+            ...payload,
+          },
+        },
+      },
+      suggestedPrompts: [
+        "GD में पूरा टेम्पलेट ऑटो-फिल कर दो",
+        "Subject गश्त व नाकाबंदी भर दो",
+        "Section 303(2) add kr do",
+        "General Diary रजिस्टर खोलो",
+      ],
+      moduleContext: {
+        moduleName: "GENERAL_DIARY",
+      },
+    };
+  }
+
 
   /**
    * Multi-Step Integrated Workflow Handler
@@ -2368,16 +2806,16 @@ export class CmsAgentService {
       };
     }
 
-    // L. Update Field execution
-    if (toolName === "update_field") {
+    // L. Update Field / Fill GD Form execution
+    if (toolName === "update_field" || toolName === "fill_gd_form") {
       this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
       return {
         id: `msg_${Date.now()}`,
         sender: "agent",
-        text: `✅ **फील्ड सफलतापूर्वक अद्यतित कर दिया गया (${params.fieldId}: ${params.value})।**`,
+        text: `✅ **फील्ड सफलतापूर्वक अद्यतित कर दिया गया (${params.typeLabel || params.fieldId || "GD Form"}: ${params.typeCode || params.value || "Updated"})।**`,
         timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
         actionPlan: activePlan ? { ...activePlan, status: "EXECUTED" } : undefined,
-        suggestedPrompts: ["फॉर्म सबमिट करें", "रजिस्टर शिकायत"],
+        suggestedPrompts: ["फॉर्म सबमिट करें", "General Diary खोलें"],
       };
     }
 
