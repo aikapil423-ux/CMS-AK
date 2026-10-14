@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { FileCheck2, ScrollText, Sparkles, ArrowLeft, FileText } from "lucide-react";
+import { FileCheck2, ScrollText, Sparkles, ArrowLeft, FileText, Languages } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface EnquiryWorkspaceNavProps {
   complaintId?: string | null;
@@ -13,6 +14,7 @@ interface EnquiryWorkspaceNavProps {
 export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspaceNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { language, setLanguage, isHindi } = useLanguage();
 
   const activeComplaintId = complaintId || searchParams.get("complaintId");
   const querySuffix = activeComplaintId ? `?complaintId=${encodeURIComponent(activeComplaintId)}` : "";
@@ -35,7 +37,7 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
           }`}
         >
           <FileCheck2 className={`w-3.5 h-3.5 ${isDrafts ? "text-amber-700" : "text-amber-600"}`} />
-          <span>Draft Enquiry Reports</span>
+          <span>{isHindi ? "जांच रिपोर्ट (Drafts)" : "Draft Enquiry Reports"}</span>
         </Link>
 
         <Link
@@ -47,7 +49,7 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
           }`}
         >
           <FileText className={`w-3.5 h-3.5 ${isNcr ? "text-emerald-700" : "text-emerald-600"}`} />
-          <span>NCR u/s 174 BNSS</span>
+          <span>{isHindi ? "असंज्ञेय रपट (NCR)" : "NCR u/s 174 BNSS"}</span>
         </Link>
 
         <Link
@@ -59,7 +61,7 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
           }`}
         >
           <ScrollText className={`w-3.5 h-3.5 ${isTemplates ? "text-purple-700" : "text-purple-600"}`} />
-          <span>Notice Generator</span>
+          <span>{isHindi ? "सूचना-पत्र जनरेटर" : "Notice Generator"}</span>
         </Link>
 
         <Link
@@ -71,21 +73,49 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
           }`}
         >
           <Sparkles className={`w-3.5 h-3.5 ${isBuilder ? "text-blue-700" : "text-blue-600"}`} />
-          <span>Generate Report Template</span>
+          <span>{isHindi ? "टेम्पलेट बिल्डर" : "Generate Report Template"}</span>
         </Link>
       </div>
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
         {rightAction}
+
+        {/* Language Switcher */}
+        <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
+          <Languages className="w-3.5 h-3.5 text-blue-700 ml-1" />
+          <button
+            type="button"
+            onClick={() => setLanguage("hi")}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+              isHindi
+                ? "bg-amber-600 text-white shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
+          >
+            हिन्दी
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage("en")}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
+              !isHindi
+                ? "bg-blue-700 text-white shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+            }`}
+          >
+            English
+          </button>
+        </div>
+
         <Link href="/enquiry-workspace">
           <button
             type="button"
             className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-            title="Back to Field Enquiry Workspace Hub"
+            title={isHindi ? "जांच अधिकारी कार्यक्षेत्र मुख्य पृष्ठ" : "Back to Field Enquiry Workspace Hub"}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Workspace Home</span>
+            <span className="hidden sm:inline">{isHindi ? "कार्यक्षेत्र मुख्य" : "Workspace Home"}</span>
           </button>
         </Link>
       </div>

@@ -502,6 +502,26 @@ const DEFAULT_SAMPLE_DATA_HI: Record<ArrestDocTemplateType, ArrestDocsFormData> 
     articlesHandedOverToMhc: "उपरोक्त जामातलाशी का सम्पूर्ण सामान बमुताबिक फर्द थाना मालखाना मोहर्रिर (MHC) को सुरक्षित रखवाया गया।",
     mhcSignRankPno: "MHC HC रमेश कुमार, PNO-23114, थाना शहर पानीपत",
     mhcDepositDate: "18.09.2026",
+    stateVs: "हरियाणा राज्य",
+    gender: "पुरुष",
+    dobOrYear: "12.05.1992",
+    bodyBuild: "मध्यम मजबूत",
+    heightCm: "173 सेमी (5 फीट 8 इंच)",
+    complexionBloodGroup: "गेहुंआ / बी+वे",
+    identificationMarks: "बाएं गाल पर तिल व दाहिनी भौंह पर कट का निशान",
+    deformities: "कोई विकृति नहीं",
+    teeth: "सामान्य सफेद",
+    hair: "काले छोटे",
+    eyes: "काली",
+    habits: "साधारण / कोई विशेष आदत नहीं",
+    dress: "नीली जींस व सफेद शर्ट",
+    languageDialect: "हिन्दी / हरियाणवी",
+    burnMark: "कोई नहीं",
+    leukodermaSpots: "कोई नहीं",
+    mole: "बाएं गाल पर काला तिल",
+    wound: "दाहिनी भौंह पर पुराना 1 इंच कट का निशान",
+    tattooMark: "दाहिने हाथ की कलाई पर 'ॐ' गुदा हुआ",
+    otherTraitsDesc: "चाल सामान्य, कोई लंगड़ाहट नहीं",
     customClauses: [],
   },
 
@@ -944,6 +964,26 @@ const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> 
     articlesHandedOverToMhc: "All articles recovered in personal search handed over to Malkhana Moharrir (MHC) in safe custody.",
     mhcSignRankPno: "MHC HC Ramesh Kumar, PNO-23114, PS City Panipat",
     mhcDepositDate: "18.09.2026",
+    stateVs: "State of Haryana",
+    gender: "Male",
+    dobOrYear: "12.05.1992",
+    bodyBuild: "Medium Athletic",
+    heightCm: "173 cm (5 ft 8 in)",
+    complexionBloodGroup: "Wheatish / B+ve",
+    identificationMarks: "Mole on left cheek & cut scar over right eyebrow",
+    deformities: "None",
+    teeth: "Regular White",
+    hair: "Black Short",
+    eyes: "Black",
+    habits: "None specific",
+    dress: "Blue jeans and white shirt",
+    languageDialect: "Hindi / Haryanvi / English",
+    burnMark: "None",
+    leukodermaSpots: "None",
+    mole: "Black mole on left cheek",
+    wound: "Old 1 inch cut scar above right eyebrow",
+    tattooMark: "Tattoo of 'Om' on right wrist",
+    otherTraitsDesc: "Normal gait, no limp",
     customClauses: [],
   },
 
@@ -1398,51 +1438,53 @@ function ArrestDocsContent() {
 
     setFormData((prev) => {
       const updated = { ...prev };
-      if (!prev.headerDept || prev.headerDept === currentBase.headerDept) {
-        updated.headerDept = targetBase.headerDept;
+
+      // Sync all scalar keys from targetBase if untouched or matching currentBase
+      (Object.keys(targetBase) as (keyof ArrestDocsFormData)[]).forEach((key) => {
+        if (!prev[key] || prev[key] === (currentBase as any)[key]) {
+          (updated as any)[key] = (targetBase as any)[key];
+        }
+      });
+
+      // Special handling for Yes / No radios
+      if (newLang === "en") {
+        if (prev.fingerprintsTaken === "हाँ" || prev.fingerprintsTaken === "हां") updated.fingerprintsTaken = "Yes";
+        if (prev.fingerprintsTaken === "नहीं" || prev.fingerprintsTaken === "नही") updated.fingerprintsTaken = "No";
+        const radioKeys = [
+          "isDangerous",
+          "escapedBailEarlier",
+          "carriesWeapon",
+          "activeWithAssociates",
+          "isListedCriminal",
+          "isHabitualCriminal",
+          "escapeRiskDuringBail",
+          "threatRiskAfterBail",
+          "wantedInOtherCrime",
+        ] as const;
+        radioKeys.forEach((rk) => {
+          if ((prev as any)[rk] === "हाँ" || (prev as any)[rk] === "हां") (updated as any)[rk] = "Yes";
+          if ((prev as any)[rk] === "नहीं" || (prev as any)[rk] === "नही") (updated as any)[rk] = "No";
+        });
+      } else {
+        if (prev.fingerprintsTaken === "Yes") updated.fingerprintsTaken = "हाँ";
+        if (prev.fingerprintsTaken === "No") updated.fingerprintsTaken = "नही";
+        const radioKeys = [
+          "isDangerous",
+          "escapedBailEarlier",
+          "carriesWeapon",
+          "activeWithAssociates",
+          "isListedCriminal",
+          "isHabitualCriminal",
+          "escapeRiskDuringBail",
+          "threatRiskAfterBail",
+          "wantedInOtherCrime",
+        ] as const;
+        radioKeys.forEach((rk) => {
+          if ((prev as any)[rk] === "Yes") (updated as any)[rk] = "हाँ";
+          if ((prev as any)[rk] === "No") (updated as any)[rk] = "नही";
+        });
       }
-      if (!prev.headerGovt || prev.headerGovt === currentBase.headerGovt) {
-        updated.headerGovt = targetBase.headerGovt;
-      }
-      if (!prev.docTitle || prev.docTitle === currentBase.docTitle) {
-        updated.docTitle = targetBase.docTitle;
-      }
-      if (!prev.docSubTitle || prev.docSubTitle === currentBase.docSubTitle) {
-        updated.docSubTitle = targetBase.docSubTitle;
-      }
-      if (!prev.courtName || prev.courtName === currentBase.courtName) {
-        updated.courtName = targetBase.courtName;
-      }
-      if (!prev.subjectTitle || prev.subjectTitle === currentBase.subjectTitle) {
-        updated.subjectTitle = targetBase.subjectTitle;
-      }
-      if (!prev.introNarrative || prev.introNarrative === currentBase.introNarrative) {
-        updated.introNarrative = targetBase.introNarrative;
-      }
-      if (!prev.conclusionNarrative || prev.conclusionNarrative === currentBase.conclusionNarrative) {
-        updated.conclusionNarrative = targetBase.conclusionNarrative;
-      }
-      if (!prev.receiptClauseText || prev.receiptClauseText === currentBase.receiptClauseText) {
-        updated.receiptClauseText = targetBase.receiptClauseText;
-      }
-      if (!prev.verificationClauseText || prev.verificationClauseText === currentBase.verificationClauseText) {
-        updated.verificationClauseText = targetBase.verificationClauseText;
-      }
-      if (!prev.disclosureNarrative || prev.disclosureNarrative === currentBase.disclosureNarrative) {
-        updated.disclosureNarrative = targetBase.disclosureNarrative;
-      }
-      if (!prev.remandDays || prev.remandDays === currentBase.remandDays) {
-        updated.remandDays = targetBase.remandDays;
-      }
-      if (!prev.noticeeRole || prev.noticeeRole === currentBase.noticeeRole) {
-        updated.noticeeRole = targetBase.noticeeRole;
-      }
-      if (!prev.hospitalName || prev.hospitalName === currentBase.hospitalName) {
-        updated.hospitalName = targetBase.hospitalName;
-      }
-      if (!prev.medicalOfficerName || prev.medicalOfficerName === currentBase.medicalOfficerName) {
-        updated.medicalOfficerName = targetBase.medicalOfficerName;
-      }
+
       if (prev.stateVsName && prev.noticeeName) {
         updated.stateVsName = newLang === "hi" ? `सरकार बनाम ${prev.noticeeName}` : `State vs. ${prev.noticeeName}`;
       }
@@ -1451,6 +1493,21 @@ function ArrestDocsContent() {
           ? newLang === "hi" ? `${prev.noticeeName} सुपुत्र ${prev.noticeeFather}` : `${prev.noticeeName} s/o ${prev.noticeeFather}`
           : prev.noticeeName;
       }
+
+      // Sync witness and jamaTalashi sample lists if unchanged
+      if (
+        !prev.arrestWitnesses ||
+        JSON.stringify(prev.arrestWitnesses) === JSON.stringify(currentBase.arrestWitnesses)
+      ) {
+        updated.arrestWitnesses = targetBase.arrestWitnesses;
+      }
+      if (
+        !prev.jamaTalashiItems ||
+        JSON.stringify(prev.jamaTalashiItems) === JSON.stringify(currentBase.jamaTalashiItems)
+      ) {
+        updated.jamaTalashiItems = targetBase.jamaTalashiItems;
+      }
+
       if (targetBase.groundsPoints && (!prev.groundsPoints || prev.groundsPoints === currentBase.groundsPoints)) {
         updated.groundsPoints = targetBase.groundsPoints;
       }
@@ -1474,9 +1531,6 @@ function ArrestDocsContent() {
       }
       if (targetBase.recoveryItems && (!prev.recoveryItems || prev.recoveryItems === currentBase.recoveryItems)) {
         updated.recoveryItems = targetBase.recoveryItems;
-      }
-      if (targetBase.jamaTalashiItems && (!prev.jamaTalashiItems || prev.jamaTalashiItems === currentBase.jamaTalashiItems)) {
-        updated.jamaTalashiItems = targetBase.jamaTalashiItems;
       }
       return updated;
     });
@@ -1660,7 +1714,7 @@ function ArrestDocsContent() {
 
   const handlePrint = () => {
     if (selectedTemplate === "arrest_memo") {
-      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       let iframe = document.getElementById("cms-print-iframe") as HTMLIFrameElement | null;
       if (!iframe) {
         iframe = document.createElement("iframe");
@@ -1692,7 +1746,7 @@ function ArrestDocsContent() {
 
   const handleDownload = () => {
     if (selectedTemplate === "arrest_memo") {
-      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1711,11 +1765,11 @@ function ArrestDocsContent() {
 
   const handleOpenPreview = () => {
     if (selectedTemplate === "arrest_memo") {
-      const html = generateArrestMemo4PageHtml(formData, activeFir);
+      const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       setPreviewHtml(html);
     } else {
       const el = document.getElementById("arrest-printable-doc");
-      setPreviewHtml(`<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`);
+      setPreviewHtml(`<!DOCTYPE html><html lang="${templateLang}"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`);
     }
     setIsPreviewModalOpen(true);
   };
@@ -1733,12 +1787,15 @@ function ArrestDocsContent() {
       let docFileBase = "";
 
       if (selectedTemplate === "arrest_memo") {
-        htmlContent = generateArrestMemo4PageHtml(formData, activeFir);
-        docTitle = `गिरफ्तारी फार्म संख्या 26.8(1) (4 पृष्ठ) - ${formData.noticeeName || "अभियुक्त"}`;
+        htmlContent = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
+        docTitle =
+          templateLang === "hi"
+            ? `गिरफ्तारी फार्म संख्या 26.8(1) (4 पृष्ठ) - ${formData.noticeeName || "अभियुक्त"}`
+            : `Arrest Memo Form 26.8(1) (4 Pages) - ${formData.noticeeName || "Accused"}`;
         docFileBase = `arrest_memo_26_8_1_${(formData.noticeeName || "accused").toLowerCase().replace(/\s+/g, "_")}`;
       } else {
         const el = document.getElementById("arrest-printable-doc");
-        htmlContent = `<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`;
+        htmlContent = `<!DOCTYPE html><html lang="${templateLang}"><head><meta charset="utf-8"/><title>${TEMPLATE_CONFIG[selectedTemplate].label}</title><style>body{font-family:serif;padding:24px;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #333;padding:6px;}</style></head><body>${el?.innerHTML || ""}</body></html>`;
         docTitle = `${TEMPLATE_CONFIG[selectedTemplate].label} - ${formData.noticeeName || "अभियुक्त"}`;
         docFileBase = `${selectedTemplate}_${(formData.noticeeName || "accused").toLowerCase().replace(/\s+/g, "_")}`;
       }
@@ -2325,6 +2382,7 @@ function ArrestDocsContent() {
           {selectedTemplate === "arrest_memo" && (
             <ArrestMemoForm268
               formData={formData}
+              language={templateLang}
               onChangeField={handleFieldChange}
               onUpdateWitness={handleUpdateWitnessRow}
               onAddWitness={handleAddWitnessRow}

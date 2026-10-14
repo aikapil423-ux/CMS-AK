@@ -51,7 +51,7 @@ import { Button } from "@/components/ui/button";
 
 type ActiveTab = "templates" | "create" | "drafts" | "prepared" | "manager";
 
-export default function KalandraWorkspacePage() {
+function KalandraWorkspaceContent() {
   const searchParams = useSearchParams();
   const linkedFirId = searchParams.get("firId");
 
@@ -1874,3 +1874,12 @@ export default function KalandraWorkspacePage() {
     </div>
   );
 }
+
+export default function KalandraWorkspacePage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-slate-500 font-sans">Loading Kalandra Workspace...</div>}>
+      <KalandraWorkspaceContent />
+    </React.Suspense>
+  );
+}
+
