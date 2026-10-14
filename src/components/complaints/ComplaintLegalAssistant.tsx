@@ -28,6 +28,8 @@ import {
   Eye,
   X,
   Printer,
+  Table,
+  LayoutList,
 } from "lucide-react";
 import {
   ComplaintItem,
@@ -60,6 +62,7 @@ export function ComplaintLegalAssistant({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [detailModalSection, setDetailModalSection] =
     useState<LegalSuggestionItem | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   // Sync if complaint already has legalAnalysis
   useEffect(() => {
@@ -455,15 +458,274 @@ export function ComplaintLegalAssistant({
           </div>
 
           {/* ========================================================================= */}
-          {/* 5. SUGGESTED SECTIONS CARDS LIST                                         */}
+          {/* 5. SUGGESTED SECTIONS LIST (TABLE & CARD VIEW)                            */}
           {/* ========================================================================= */}
           <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-amber-600" />
+                <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                  लागू धाराओं का विधिक विवरण एवं औचित्य ({filteredSections.length} धाराएं)
+                </h3>
+              </div>
+
+              {/* View Mode Toggle: Table / Cards */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-medium hidden sm:inline">दृश्य स्वरूप:</span>
+                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("table")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                      viewMode === "table"
+                        ? "bg-white text-indigo-950 font-bold shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <Table className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>तालिका स्वरूप (Table)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("cards")}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                      viewMode === "cards"
+                        ? "bg-white text-indigo-950 font-bold shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    <LayoutList className="w-3.5 h-3.5 text-slate-400" />
+                    <span>कार्ड्स (Cards)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {filteredSections.length === 0 ? (
-              <div className="p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500 text-xs">
-                कोई धारा मेल नहीं खाती। फ़िल्टर बदलें या खोज शब्द हटाएं।
+              <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-xs">
+                दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।
+              </div>
+            ) : viewMode === "table" ? (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-[#0b192c] text-white uppercase text-[10px] tracking-wider font-bold">
+                      <tr>
+                        <th className="py-3 px-3 text-center w-12 border-b border-slate-700">क्र.सं.</th>
+                        <th className="py-3 px-4 w-60 border-b border-slate-700">लागू धारा व अधिनियम (Section &amp; Act)</th>
+                        <th className="py-3 px-4 min-w-[340px] border-b border-slate-700">धारा लगाने का कारण एवं कानूनी औचित्य (Reason for Section Application)</th>
+                        <th className="py-3 px-4 w-48 border-b border-slate-700">वर्गीकरण व दण्ड (Classification &amp; Punishment)</th>
+                        <th className="py-3 px-3 text-center w-32 border-b border-slate-700">मूल बेयर एक्ट पेज</th>
+                        <th className="py-3 px-3 text-right w-36 border-b border-slate-700">कार्यवाही (Actions)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredSections.map((sec, idx) => {
+                        const isPrimary = sec.recommendationType === "PRIMARY_OFFENCE";
+                        const isProcedural = sec.recommendationType === "PROCEDURAL_MANDATE";
+                        const isEvidentiary = sec.recommendationType === "EVIDENTIARY_RULE";
+
+                        return (
+                          <tr
+                            key={sec.id}
+                            className={`hover:bg-slate-50/90 transition-colors ${
+                              isPrimary
+                                ? "bg-red-50/20"
+                                : isProcedural
+                                ? "bg-blue-50/20"
+                                : isEvidentiary
+                                ? "bg-purple-50/20"
+                                : ""
+                            }`}
+                          >
+                            {/* Sr No */}
+                            <td className="py-3.5 px-3 text-center font-bold text-slate-500 font-mono align-top">
+                              {idx + 1}
+                            </td>
+
+                            {/* Section & Act */}
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className={`px-2 py-0.5 rounded font-black text-xs font-mono border ${
+                                      isPrimary
+                                        ? "bg-red-700 text-white border-red-800"
+                                        : isProcedural
+                                        ? "bg-blue-700 text-white border-blue-800"
+                                        : isEvidentiary
+                                        ? "bg-purple-700 text-white border-purple-800"
+                                        : "bg-slate-800 text-white border-slate-900"
+                                    }`}
+                                  >
+                                    {sec.sectionNumber}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                    {sec.actShortName}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 text-xs leading-tight">
+                                    {sec.sectionTitle}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                                    {sec.chapter}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span
+                                    className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                                      isPrimary
+                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        : isProcedural
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : isEvidentiary
+                                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                    }`}
+                                  >
+                                    {sec.recommendationTypeLabel}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Legal Rationale & Evidence */}
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="space-y-2">
+                                <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950">
+                                  <div className="flex items-center gap-1 font-bold text-[10px] uppercase text-amber-800 tracking-wider mb-1">
+                                    <Gavel className="w-3 h-3 text-amber-700" />
+                                    <span>कानूनी औचित्य (Rationale):</span>
+                                  </div>
+                                  <p className="text-xs leading-relaxed font-medium">
+                                    {sec.reason}
+                                  </p>
+                                </div>
+
+                                {sec.evidenceProof && sec.evidenceProof.length > 0 && (
+                                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                                      साक्ष्य/तथ्य:
+                                    </span>
+                                    {sec.evidenceProof.map((proof, pIdx) => (
+                                      <span
+                                        key={pIdx}
+                                        className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200"
+                                      >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                                        <span className="truncate max-w-[220px]" title={proof}>{proof}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Classification & Punishment */}
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="space-y-1.5 text-[11px]">
+                                <div className="flex flex-wrap gap-1">
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      sec.cognizable === "Cognizable"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-slate-100 text-slate-700"
+                                    }`}
+                                  >
+                                    {sec.cognizable === "Cognizable" ? "संज्ञेय" : "असंज्ञेय"}
+                                  </span>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      sec.bailable === "Non-bailable"
+                                        ? "bg-amber-100 text-amber-900"
+                                        : "bg-emerald-100 text-emerald-800"
+                                    }`}
+                                  >
+                                    {sec.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 font-semibold">सज़ा: </span>
+                                  <strong className="text-slate-900">{sec.punishment || "—"}</strong>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 font-semibold">न्यायालय: </span>
+                                  <span className="text-slate-700">{sec.triableBy || "—"}</span>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Bare Act Page No. */}
+                            <td className="py-3.5 px-3 text-center align-top">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenInActsPage(sec)}
+                                title={`मूल बेयर एक्ट पेज संख्या ${sec.pageNumber} पर देखें`}
+                                className="inline-flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 transition-colors cursor-pointer group shadow-2xs w-full"
+                              >
+                                <BookOpen className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform mb-0.5" />
+                                <span className="text-[10px] font-black uppercase text-amber-800">मूल बेयर एक्ट</span>
+                                <span className="text-xs font-black font-mono text-amber-950">पेज {sec.pageNumber}</span>
+                                <span className="text-[9px] text-amber-700 flex items-center gap-0.5 mt-0.5">
+                                  खोलें <ExternalLink className="w-2.5 h-2.5" />
+                                </span>
+                              </button>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-3 text-right align-top">
+                              <div className="flex flex-col items-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenInActsPage(sec)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#0b192c] hover:bg-[#1e3e62] text-white shadow-2xs cursor-pointer w-full justify-center"
+                                  title="Acts and Sections पेज में खोलें"
+                                >
+                                  <Scale className="w-3 h-3 text-amber-400" />
+                                  <span>Act में खोलें</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailModalSection(sec)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer w-full justify-center"
+                                  title="विस्तृत विधिक विवरण देखें"
+                                >
+                                  <Eye className="w-3 h-3 text-slate-500" />
+                                  <span>विस्तृत विवरण</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyCitation(sec)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                                  title="Citation कॉपी करें"
+                                >
+                                  {copiedSectionId === sec.id ? (
+                                    <>
+                                      <Check className="w-3 h-3 text-emerald-600" />
+                                      <span className="text-emerald-700 font-bold">कॉपी हुआ</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3 h-3" />
+                                      <span>कॉपी</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
-              filteredSections.map((sec) => {
+              <div className="grid grid-cols-1 gap-4">
+                {filteredSections.map((sec) => {
                 const isPrimary = sec.recommendationType === "PRIMARY_OFFENCE";
                 const isProcedural = sec.recommendationType === "PROCEDURAL_MANDATE";
                 const isEvidentiary = sec.recommendationType === "EVIDENTIARY_RULE";
@@ -673,7 +935,8 @@ export function ComplaintLegalAssistant({
                     </div>
                   </div>
                 );
-              })
+              })}
+              </div>
             )}
           </div>
 
