@@ -144,6 +144,28 @@ function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
   };
 }
 
+export function computeDaysPending(complaint: {
+  createdAt?: string;
+  daysPending?: number;
+  status?: string;
+  updatedAt?: string;
+}): number {
+  if (!complaint.createdAt) return complaint.daysPending || 0;
+  const createdTime = new Date(complaint.createdAt).getTime();
+  if (isNaN(createdTime)) return complaint.daysPending || 0;
+
+  const statusStr = (complaint.status || "").toString().toUpperCase();
+  const isResolved =
+    statusStr.includes("COMPLETE") ||
+    statusStr.includes("FIR_REGISTER") ||
+    statusStr.includes("DISPOSED");
+
+  const endTime = isResolved && complaint.updatedAt ? new Date(complaint.updatedAt).getTime() : Date.now();
+  const diffMs = (isNaN(endTime) ? Date.now() : endTime) - createdTime;
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 let complaintsStore: ComplaintItem[] = [];
 let officerNotificationsStore: OfficerNotification[] = [];
 
@@ -155,7 +177,11 @@ function loadComplaintsFromStorage(): ComplaintItem[] {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          loaded = parsed.map(restoreDataUrlsForComplaint);
+          loaded = parsed.map((item) => {
+            const restored = restoreDataUrlsForComplaint(item);
+            restored.daysPending = computeDaysPending(restored);
+            return restored;
+          });
         }
       }
     } catch (e) {
@@ -164,14 +190,20 @@ function loadComplaintsFromStorage(): ComplaintItem[] {
   }
 
   if (loaded.length === 0) {
-    return [...MOCK_COMPLAINTS];
+    return MOCK_COMPLAINTS.map((c) => ({
+      ...c,
+      daysPending: computeDaysPending(c),
+    }));
   }
 
   // Preserve any in-memory complaints created during this session that might not be in storage
   if (Array.isArray(complaintsStore) && complaintsStore.length > 0) {
     const loadedIds = new Set(loaded.map((c) => c.id));
     const memoryOnly = complaintsStore.filter((c) => !loadedIds.has(c.id));
-    return [...memoryOnly, ...loaded];
+    return [...memoryOnly, ...loaded].map((c) => ({
+      ...c,
+      daysPending: computeDaysPending(c),
+    }));
   }
 
   return loaded;
@@ -269,7 +301,10 @@ export const ComplaintService = {
     showSentToSho?: boolean;
   }): Promise<ComplaintItem[]> {
     complaintsStore = loadComplaintsFromStorage();
-    let list = [...complaintsStore];
+    let list = complaintsStore.map((c) => ({
+      ...c,
+      daysPending: computeDaysPending(c),
+    }));
 
     // 1. Role-based visibility
     const isEo =
@@ -468,15 +503,22 @@ export const ComplaintService = {
         c.id.toLowerCase() === cleanId ||
         c.complaintNumber.toLowerCase() === cleanId
     );
-    if (found) return found;
+    if (found) {
+      found.daysPending = computeDaysPending(found);
+      return found;
+    }
 
     // 2. If not found in memory, reload from storage and search
     complaintsStore = loadComplaintsFromStorage();
-    return complaintsStore.find(
+    found = complaintsStore.find(
       (c) =>
         c.id.toLowerCase() === cleanId ||
         c.complaintNumber.toLowerCase() === cleanId
     );
+    if (found) {
+      found.daysPending = computeDaysPending(found);
+    }
+    return found;
   },
 
   /**
@@ -490,13 +532,20 @@ export const ComplaintService = {
         c.id.toLowerCase() === cleanId ||
         c.complaintNumber.toLowerCase() === cleanId
     );
-    if (found) return found;
+    if (found) {
+      found.daysPending = computeDaysPending(found);
+      return found;
+    }
     complaintsStore = loadComplaintsFromStorage();
-    return complaintsStore.find(
+    found = complaintsStore.find(
       (c) =>
         c.id.toLowerCase() === cleanId ||
         c.complaintNumber.toLowerCase() === cleanId
     );
+    if (found) {
+      found.daysPending = computeDaysPending(found);
+    }
+    return found;
   },
 
   getById(id: string): ComplaintItem | undefined {

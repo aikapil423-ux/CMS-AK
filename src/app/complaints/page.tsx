@@ -808,7 +808,13 @@ function ComplaintListContent() {
 
     return list.sort((a, b) => {
       if (sortField === "daysPending") {
-        return sortOrder === "asc" ? a.daysPending - b.daysPending : b.daysPending - a.daysPending;
+        const aDays = typeof a.daysPending === "number" && a.daysPending > 0
+          ? a.daysPending
+          : (a.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(a.createdAt).getTime()) / 86400000)) : 0);
+        const bDays = typeof b.daysPending === "number" && b.daysPending > 0
+          ? b.daysPending
+          : (b.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(b.createdAt).getTime()) / 86400000)) : 0);
+        return sortOrder === "asc" ? aDays - bDays : bDays - aDays;
       }
       if (sortField === "createdAt") {
         const aTime = new Date(a.createdAt).getTime();
@@ -1099,20 +1105,27 @@ function ComplaintListContent() {
           </td>
         );
 
-      case "daysPending":
+      case "daysPending": {
+        const pendingDays =
+          typeof c.daysPending === "number" && c.daysPending > 0
+            ? c.daysPending
+            : c.createdAt
+            ? Math.max(0, Math.floor((Date.now() - new Date(c.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
+            : 0;
         return (
           <td key="daysPending" className="py-3 px-4 text-center">
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                c.daysPending > 10
+                pendingDays > 10
                   ? "bg-red-50 text-red-700 border border-red-200"
                   : "bg-slate-100 text-slate-700"
               }`}
             >
-              {c.daysPending}d
+              {pendingDays}d
             </span>
           </td>
         );
+      }
 
       default: {
         const customDef = customCols.find((col) => col.key === colKey);

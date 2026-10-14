@@ -6,19 +6,40 @@ import { MOCK_COMPLAINTS } from "@/lib/mockData";
 
 const DATA_FILE_PATH = path.join(process.cwd(), "prisma", "complaints-store.json");
 
+function computeDaysPending(c: ComplaintItem): number {
+  if (!c.createdAt) return c.daysPending || 0;
+  const createdTime = new Date(c.createdAt).getTime();
+  if (isNaN(createdTime)) return c.daysPending || 0;
+  const statusStr = (c.status || "").toString().toUpperCase();
+  const isResolved =
+    statusStr.includes("COMPLETE") ||
+    statusStr.includes("FIR_REGISTER") ||
+    statusStr.includes("DISPOSED");
+  const endTime = isResolved && c.updatedAt ? new Date(c.updatedAt).getTime() : Date.now();
+  const diffMs = (isNaN(endTime) ? Date.now() : endTime) - createdTime;
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 function readComplaintsFromFile(): ComplaintItem[] {
   try {
     if (fs.existsSync(DATA_FILE_PATH)) {
       const data = fs.readFileSync(DATA_FILE_PATH, "utf-8");
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((c) => ({
+          ...c,
+          daysPending: computeDaysPending(c),
+        }));
       }
     }
   } catch (e) {
     console.error("Error reading complaints-store.json:", e);
   }
-  return [...MOCK_COMPLAINTS];
+  return MOCK_COMPLAINTS.map((c) => ({
+    ...c,
+    daysPending: computeDaysPending(c),
+  }));
 }
 
 function writeComplaintsToFile(items: ComplaintItem[]): void {
