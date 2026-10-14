@@ -9,6 +9,7 @@ import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
+import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
@@ -56,6 +57,9 @@ export function MobileHeader() {
 
             {/* Universal Dictation for Mobile */}
             <TopBarDictation isMobile={true} />
+
+            {/* Bilingual Instant Language Switcher (Hindi / English) */}
+            <TopBarLanguageSwitcher isMobile={true} />
 
             {/* Role Switcher Pill */}
             <button

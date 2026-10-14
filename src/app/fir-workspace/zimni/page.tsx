@@ -29,6 +29,8 @@ import {
   ArrowRight,
   ExternalLink,
   CheckCircle,
+  Globe,
+  Languages,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,9 @@ import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml } from "@/utils/printElement";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
+import { useLanguage } from "@/context/LanguageContext";
+
+export type TemplateLanguage = "hi" | "en";
 
 interface HeaderLine {
   id: string;
@@ -105,7 +110,7 @@ interface ZimniProformaData {
   additionalSignatures: AdditionalSignature[];
 }
 
-const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
+const DEFAULT_IMAGE_ZIMNI_DATA_HI: ZimniProformaData = {
   formNumberText: "पुलिस फार्म संख्या 25.54 (1) भाग (1)",
   reportTitleText: "रिपोर्ट जिमनी",
   showHeader: true,
@@ -246,15 +251,160 @@ const DEFAULT_IMAGE_ZIMNI_DATA: ZimniProformaData = {
   additionalSignatures: [],
 };
 
+const DEFAULT_IMAGE_ZIMNI_DATA_EN: ZimniProformaData = {
+  formNumberText: "POLICE FORM NO. 25.54 (1) PART (1)",
+  reportTitleText: "CASE DIARY (ZIMNI) REPORT",
+  showHeader: true,
+  borderStyle: "box",
+  borderWidth: "2px",
+  verticalBorders: {
+    outerLeft: true,
+    col1ToCol2: true,
+    col2ToCol3: true,
+    outerRight: true,
+  },
+  horizontalBorders: {
+    outerTop: true,
+    headerBottom: true,
+    caseHeadingBottom: false,
+    closingTop: true,
+    outerBottom: true,
+  },
+  leftHeaderLines: [
+    { id: "lh_1", text: "Police Station Sector 20 Panchkula" },
+    { id: "lh_2", text: "FIR No. 137 Date 24.08.2024" },
+    { id: "lh_3", text: "Place of Occurrence: Village Abheypur, Sector 19, Panchkula" },
+    { id: "lh_4", text: "Date of Occurrence: 01.05.2024 to 01.06.2024" },
+    { id: "lh_5", text: "Offence: Sec 6 POCSO Act & 376(3), 506 IPC" },
+  ],
+  rightHeaderLines: [
+    { id: "rh_1", text: "Police Commissionerate Panchkula" },
+    { id: "rh_2", text: "Zimni No. 17" },
+    { id: "rh_3", text: "Received Date: ...." },
+    { id: "rh_4", text: "Dispatched Date: ...." },
+  ],
+  col1Title: "Date & Time",
+  col2Title: "Sr. No.",
+  col3Title: "Record of Investigation / Proceedings",
+  showCaseHeading: true,
+  stateLine:
+    "State through: Lalita Devi w/o Sh. Futupala r/o Ward No. 2 Darbhanga, PS Kalyanpur, Distt Samastipur, Bihar. Presently r/o H.No. 357, Village Abheypur, Sector 19, Panchkula, PS Sector 20 Panchkula.",
+  accusedLine:
+    "Versus: ------------------------*--------------------------*--------------------------",
+  ioLine:
+    "Investigating Officer: ASI Jasbir Singh, No. 128/Panchkula, Police Post Sector 19 Panchkula.",
+  salutation: "Respected Sir,",
+  entries: [
+    {
+      id: "entry_1",
+      dateTime: "Date\n11.11.2024\nTime\n07:00 AM",
+      srNo: "1.",
+      narration:
+        "In continuation of previous Zimni recorded by self, it is submitted that due to late hours the earlier diary was concluded. The named accused Roshan s/o Sarju r/o Village Mishroli Mafi, Distt Amethi (U.P.) remains to be arrested. Search was conducted based on mobile tower location at Phase 2 Taloja, Navi Mumbai, Maharashtra, but no clue was found. Cyber Cell has now indicated mobile number 8528471236 location near NRI Sagari, Distt Navi Mumbai. To trace the accused, I, ASI, along with Constable Ankit No. 173/Panchkula and HGH Pradeep Kumar No. 6618/Panchkula, proceed by private vehicle to PS NRI Sagari, Navi Mumbai.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_2",
+      dateTime: "",
+      srNo: "2.",
+      narration:
+        "At this time, I, ASI along with escort staff, reached PS NRI Sagari, Distt Navi Mumbai, Maharashtra by private vehicle. MHC of the police station was contacted, apprised of facts of the case, and departure/arrival entries were lodged. Search for accused Roshan was conducted in the area but no trace found. Calling brother of accused Roshan, namely Deepak on mobile 6394482571, revealed Deepak s/o Sarju Prasad r/o Misroli PS Sangrampur Distt Amethi UP, currently residing at Khuni Village, PS Manpada, Distt Thane Mumbai. Hence we proceed to Khuni Village.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_3",
+      dateTime: "",
+      srNo: "3.",
+      narration:
+        "Reached Khuni Village, PS Manpada, Distt Thane, Mumbai. Deepak s/o Sarju Prasad met present. After apprising him of the case, interrogation commenced.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_4",
+      dateTime: "Interrogation",
+      srNo: "4.",
+      narration:
+        "On interrogation, Deepak s/o Sarju Prasad stated that he resides at the said address and works as a painter. Roshan is his younger brother. He learned from family that Roshan had come to Mumbai 5-6 days ago for work, but did not visit Deepak's residence, and Deepak has no knowledge of his whereabouts.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_5",
+      dateTime: "",
+      srNo: "5.",
+      narration:
+        "Interrogation continued. Notice u/s 35 BNSS was served upon Deepak s/o Sarju Prasad to produce accused Roshan, and acknowledgment received. He promised to produce Roshan at Police Post Sector 19 Panchkula. Meanwhile, contractor Rajbir s/o Misri Raj r/o Kota Rajasthan met present and was questioned.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_6",
+      dateTime: "Interrogation",
+      srNo: "6.",
+      narration:
+        "On interrogation, Rajbir s/o Misri Raj stated that he is a painting contractor. Another contractor friend named Rahul works at Panvel Navi Mumbai where many labourers from UP are employed, and accused Roshan might be working there.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_7",
+      dateTime: "",
+      srNo: "7.",
+      narration:
+        "Departure to Panvel Karanjade Navi Mumbai by private vehicle.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_8",
+      dateTime: "",
+      srNo: "8.",
+      narration:
+        "Arrived at Panvel Karanjade Navi Mumbai. Met Rahul Shekhawat s/o Hukam Singh and Ajab Kumar s/o Jawahar Lal r/o Rupepur PS Antu Distt Pratapgarh UP. Questioning conducted.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_9",
+      dateTime: "Interrogation",
+      srNo: "9.",
+      narration:
+        "Rahul Shekhawat stated that Roshan had come looking for work 2 days ago but was turned away as he was underweight (38 kg). His current whereabouts are unknown.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_10",
+      dateTime: "Interrogation",
+      srNo: "10.",
+      narration:
+        "Ajab Kumar stated that Roshan is his cousin and came to Mumbai for work, but his exact address is unknown. He agreed to inform police if any clue is received.",
+      hasBottomBorder: false,
+    },
+    {
+      id: "entry_11",
+      dateTime: "",
+      srNo: "11.",
+      narration:
+        "Interrogation concluded and witnesses relieved. As night fell, further efforts will resume tomorrow. SHO and Incharge Police Post briefed telephonically. Escort party returns to Panchkula.",
+      hasBottomBorder: false,
+    },
+  ],
+  closingText: "Case Diary written and respectfully submitted.",
+  officerNameRank: "ASI Jasbir Singh, No. 128/Panchkula",
+  officerPost: "Police Post Sector 19 Panchkula",
+  signDate: "Date - 11.11.2024",
+  hasSignatureGraphic: true,
+  additionalSignatures: [],
+};
+
+const DEFAULT_IMAGE_ZIMNI_DATA = DEFAULT_IMAGE_ZIMNI_DATA_HI;
+
 function ZimniWorkspaceContent() {
   const router = useRouter();
   const { currentUser } = useAuth();
+  const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const urlFirId = searchParams.get("firId");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>("");
-  const [data, setData] = useState<ZimniProformaData>(DEFAULT_IMAGE_ZIMNI_DATA);
+  const [templateLang, setTemplateLang] = useState<TemplateLanguage>(globalLang || "hi");
+  const [data, setData] = useState<ZimniProformaData>(globalLang === "en" ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI);
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<"compact" | "normal" | "large">("normal");
@@ -266,6 +416,13 @@ function ZimniWorkspaceContent() {
     zimniNumber: number;
     fileName: string;
   } | null>(null);
+
+  // Sync with global top bar language switcher
+  useEffect(() => {
+    if (globalLang && globalLang !== templateLang) {
+      handleToggleLanguage(globalLang);
+    }
+  }, [globalLang]);
 
   // Load all FIRs
   useEffect(() => {
@@ -286,52 +443,141 @@ function ZimniWorkspaceContent() {
 
   const activeFir = firs.find((f) => f.id === selectedFirId) || null;
 
+  // Language Toggle Handler
+  const handleToggleLanguage = (lang: TemplateLanguage) => {
+    if (lang === templateLang) return;
+    setTemplateLang(lang);
+
+    const isEn = lang === "en";
+    const baseDefault = isEn ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI;
+    const oppDefault = isEn ? DEFAULT_IMAGE_ZIMNI_DATA_HI : DEFAULT_IMAGE_ZIMNI_DATA_EN;
+
+    setData((prev) => {
+      // Check if current entries match the opposite sample default
+      const isDefaultEntries =
+        prev.entries.length === oppDefault.entries.length &&
+        prev.entries[0]?.narration === oppDefault.entries[0]?.narration;
+
+      // Check if left/right header lines match default
+      const isDefaultLeftHeader =
+        prev.leftHeaderLines.length === oppDefault.leftHeaderLines.length &&
+        prev.leftHeaderLines[0]?.text === oppDefault.leftHeaderLines[0]?.text;
+
+      const isDefaultRightHeader =
+        prev.rightHeaderLines.length === oppDefault.rightHeaderLines.length &&
+        prev.rightHeaderLines[0]?.text === oppDefault.rightHeaderLines[0]?.text;
+
+      return {
+        ...prev,
+        formNumberText: baseDefault.formNumberText,
+        reportTitleText: baseDefault.reportTitleText,
+        col1Title: baseDefault.col1Title,
+        col2Title: baseDefault.col2Title,
+        col3Title: baseDefault.col3Title,
+        salutation: baseDefault.salutation,
+        closingText:
+          prev.closingText === oppDefault.closingText || !prev.closingText
+            ? baseDefault.closingText
+            : prev.closingText,
+        officerNameRank:
+          prev.officerNameRank === oppDefault.officerNameRank || !prev.officerNameRank
+            ? baseDefault.officerNameRank
+            : prev.officerNameRank,
+        officerPost:
+          prev.officerPost === oppDefault.officerPost || !prev.officerPost
+            ? baseDefault.officerPost
+            : prev.officerPost,
+        signDate:
+          prev.signDate === oppDefault.signDate || !prev.signDate
+            ? baseDefault.signDate
+            : prev.signDate,
+        stateLine:
+          prev.stateLine === oppDefault.stateLine || !prev.stateLine
+            ? baseDefault.stateLine
+            : prev.stateLine,
+        accusedLine:
+          prev.accusedLine === oppDefault.accusedLine || !prev.accusedLine
+            ? baseDefault.accusedLine
+            : prev.accusedLine,
+        ioLine:
+          prev.ioLine === oppDefault.ioLine || !prev.ioLine
+            ? baseDefault.ioLine
+            : prev.ioLine,
+        leftHeaderLines: isDefaultLeftHeader ? baseDefault.leftHeaderLines : prev.leftHeaderLines,
+        rightHeaderLines: isDefaultRightHeader ? baseDefault.rightHeaderLines : prev.rightHeaderLines,
+        entries: isDefaultEntries ? baseDefault.entries : prev.entries,
+      };
+    });
+
+    setSaveStatus(isEn ? "Switched to English Template" : "हिन्दी प्रारूप में बदला गया");
+    setTimeout(() => setSaveStatus(null), 3000);
+  };
+
   // Function to autofill / update proforma based on active FIR
-  const handleAutoFillFromFir = () => {
+  const handleAutoFillFromFir = (overrideLang?: TemplateLanguage) => {
     if (!activeFir) return;
+    const isEn = (overrideLang || templateLang) === "en";
 
-    const psName = activeFir.policeStation
-      ? activeFir.policeStation.startsWith("थाना")
-        ? activeFir.policeStation
-        : `थाना ${activeFir.policeStation}`
-      : "थाना सैक्टर 20 पंचकूला";
+    const rawPs = activeFir.policeStation || "Sector 20 Panchkula";
+    const cleanPs = rawPs.replace(/^(थाना|Police Station)\s*/i, "").trim();
+    const psName = isEn ? `PS ${cleanPs}` : `थाना ${cleanPs}`;
 
-    const firNoStr = `मु०नं० ${activeFir.firNumber || "137"} दिनांक ${
-      activeFir.firDate ? formatDate(activeFir.firDate) : formatDate(new Date())
-    }`;
+    const formattedDate = activeFir.firDate ? formatDate(activeFir.firDate) : formatDate(new Date());
+    const firNoStr = isEn
+      ? `FIR No. ${activeFir.firNumber || "137"} Date ${formattedDate}`
+      : `मु०नं० ${activeFir.firNumber || "137"} दिनांक ${formattedDate}`;
 
-    const incidentPlaceStr = `घटना स्थल:- ${
-      activeFir.incidentPlace || activeFir.incidentLandmark || "संबंधित क्षेत्र"
-    }`;
+    const rawPlace = activeFir.incidentPlace || activeFir.incidentLandmark || (isEn ? "Jurisdiction Area" : "संबंधित क्षेत्र");
+    const incidentPlaceStr = isEn ? `Place of Occurrence: ${rawPlace}` : `घटना स्थल:- ${rawPlace}`;
 
-    const incidentDateStr = `घटना तिथि:- ${
-      activeFir.incidentDateFrom
-        ? `${formatDate(activeFir.incidentDateFrom)}${
-            activeFir.incidentDateTo ? ` से ${formatDate(activeFir.incidentDateTo)} तक` : ""
-          }`
-        : activeFir.firDate
-        ? formatDate(activeFir.firDate)
-        : "दिनांक अनुसार"
-    }`;
+    const incidentDateStr = isEn
+      ? `Date of Occurrence: ${
+          activeFir.incidentDateFrom
+            ? `${formatDate(activeFir.incidentDateFrom)}${
+                activeFir.incidentDateTo ? ` to ${formatDate(activeFir.incidentDateTo)}` : ""
+              }`
+            : formattedDate
+        }`
+      : `घटना तिथि:- ${
+          activeFir.incidentDateFrom
+            ? `${formatDate(activeFir.incidentDateFrom)}${
+                activeFir.incidentDateTo ? ` से ${formatDate(activeFir.incidentDateTo)} तक` : ""
+              }`
+            : formattedDate
+        }`;
 
-    const offenceStr = `अपराध:- ${activeFir.actsAndSections || "धारा 175 BNSS"}`;
+    const offenceStr = isEn
+      ? `Offence: ${activeFir.actsAndSections || "Sec 175 BNSS"}`
+      : `अपराध:- ${activeFir.actsAndSections || "धारा 175 BNSS"}`;
 
-    const distCommStr = activeFir.district
+    const distCommStr = isEn
+      ? `Police Commissionerate / District ${activeFir.district || "Panchkula"}`
+      : activeFir.district
       ? activeFir.district.includes("कमिश्नर") || activeFir.district.includes("आयुक्तालय")
         ? activeFir.district
         : `पुलिस जिला / आयुक्तालय ${activeFir.district}`
       : "पुलिस आयुक्तालय पंचकूला";
 
     // Complainant state line
-    const complainantDetails = `राज्य द्वारा:- ${activeFir.complainantName || "ललिता देवी"}${
-      activeFir.complainantFatherSpouse
-        ? ` पत्नी/पुत्र ${activeFir.complainantFatherSpouse}`
-        : ""
-    }${
-      activeFir.complainantAddress
-        ? ` निवासी ${activeFir.complainantAddress}`
-        : ""
-    } ${psName}।`;
+    const complainantDetails = isEn
+      ? `State through: ${activeFir.complainantName || "Complainant"}${
+          activeFir.complainantFatherSpouse
+            ? ` w/o, s/o ${activeFir.complainantFatherSpouse}`
+            : ""
+        }${
+          activeFir.complainantAddress
+            ? ` r/o ${activeFir.complainantAddress}`
+            : ""
+        }, ${psName}.`
+      : `राज्य द्वारा:- ${activeFir.complainantName || "ललिता देवी"}${
+          activeFir.complainantFatherSpouse
+            ? ` पत्नी/पुत्र ${activeFir.complainantFatherSpouse}`
+            : ""
+        }${
+          activeFir.complainantAddress
+            ? ` निवासी ${activeFir.complainantAddress}`
+            : ""
+        } ${psName}।`;
 
     // Accused line
     const accusedNames =
@@ -339,20 +585,27 @@ function ZimniWorkspaceContent() {
         ? activeFir.accusedList
             .map(
               (a) =>
-                `${a.name}${a.fatherName ? ` पुत्र ${a.fatherName}` : ""}${
-                  a.address ? ` वासी ${a.address}` : ""
+                `${a.name}${a.fatherName ? (isEn ? ` s/o ${a.fatherName}` : ` पुत्र ${a.fatherName}`) : ""}${
+                  a.address ? (isEn ? ` r/o ${a.address}` : ` वासी ${a.address}`) : ""
                 }`
             )
             .join("; ")
         : "------------------------*--------------------------*--------------------------";
 
-    const accusedLineStr = `बनाम:- ${accusedNames}`;
+    const accusedLineStr = isEn ? `Versus: ${accusedNames}` : `बनाम:- ${accusedNames}`;
 
     // IO Line
-    const ioName = activeFir.assignedIoName || currentUser?.name || "स.उप.नि. जसबीर सिंह";
-    const ioRank = activeFir.assignedIoRank || currentUser?.rankDisplay || "स.उप.नि.";
-    const ioBelt = activeFir.assignedIoBeltNumber || currentUser?.pno || "नं. 128";
-    const ioLineStr = `अनुसन्धानकर्ता:- ${ioRank} ${ioName} ${ioBelt} ${psName}।`;
+    const ioName = activeFir.assignedIoName || currentUser?.name || (isEn ? "ASI Jasbir Singh" : "स.उप.नि. जसबीर सिंह");
+    const ioRank = activeFir.assignedIoRank || currentUser?.rankDisplay || (isEn ? "ASI" : "स.उप.नि.");
+    const ioBelt = activeFir.assignedIoBeltNumber || currentUser?.pno || (isEn ? "No. 128" : "नं. 128");
+    const ioLineStr = isEn
+      ? `Investigating Officer: ${ioRank} ${ioName} ${ioBelt}, ${psName}.`
+      : `अनुसन्धानकर्ता:- ${ioRank} ${ioName} ${ioBelt} ${psName}।`;
+
+    const zimniSeq = activeFir.caseDiaries?.length ? activeFir.caseDiaries.length + 1 : "1";
+    const zimniNoStr = isEn ? `Zimni No. ${zimniSeq}` : `जिमनी न० ${zimniSeq}`;
+    const recvStr = isEn ? "Received Date: ...." : "प्राप्ति तिथी....";
+    const dispStr = isEn ? "Dispatched Date: ...." : "रवानगी तिथी....";
 
     setData((prev) => ({
       ...prev,
@@ -365,26 +618,26 @@ function ZimniWorkspaceContent() {
       ],
       rightHeaderLines: [
         { id: `rh_${Date.now()}_1`, text: distCommStr },
-        { id: `rh_${Date.now()}_2`, text: `जिमनी न० ${activeFir.caseDiaries?.length ? activeFir.caseDiaries.length + 1 : "1"}` },
-        { id: `rh_${Date.now()}_3`, text: "प्राप्ति तिथी...." },
-        { id: `rh_${Date.now()}_4`, text: "रवानगी तिथी...." },
+        { id: `rh_${Date.now()}_2`, text: zimniNoStr },
+        { id: `rh_${Date.now()}_3`, text: recvStr },
+        { id: `rh_${Date.now()}_4`, text: dispStr },
       ],
       stateLine: complainantDetails,
       accusedLine: accusedLineStr,
       ioLine: ioLineStr,
       officerNameRank: `${ioRank} ${ioName} ${ioBelt}`,
       officerPost: psName,
-      signDate: `दिनांक - ${formatDate(new Date())}`,
+      signDate: isEn ? `Date - ${formatDate(new Date())}` : `दिनांक - ${formatDate(new Date())}`,
     }));
 
-    setSaveStatus("Selected FIR Details Populated!");
+    setSaveStatus(isEn ? "FIR Case Details Loaded (English)!" : "Selected FIR Details Populated!");
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
   // Restore Default Image Sample
   const handleResetToImageSample = () => {
-    setData(DEFAULT_IMAGE_ZIMNI_DATA);
-    setSaveStatus("Reset to Official Sample from Image!");
+    setData(templateLang === "en" ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI);
+    setSaveStatus(templateLang === "en" ? "Reset to English Sample!" : "Reset to Official Sample from Image!");
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
@@ -804,6 +1057,36 @@ function ZimniWorkspaceContent() {
             </span>
           )}
 
+          {/* Bilingual Language Selector */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-300 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("hi")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
+                templateLang === "hi"
+                  ? "bg-amber-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              }`}
+              title="हिन्दी प्रारूप (Hindi Proforma)"
+            >
+              <Languages className="w-3.5 h-3.5" />
+              <span>हिन्दी</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("en")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
+                templateLang === "en"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+              }`}
+              title="English Statutory Proforma"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>English</span>
+            </button>
+          </div>
+
           <Button
             size="sm"
             onClick={handleSaveToFir}
@@ -910,7 +1193,7 @@ function ZimniWorkspaceContent() {
             <Button
               type="button"
               size="sm"
-              onClick={handleAutoFillFromFir}
+              onClick={() => handleAutoFillFromFir()}
               className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -962,23 +1245,54 @@ function ZimniWorkspaceContent() {
             </button>
           </div>
 
-          {/* Font Size Selector */}
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-slate-600 text-[11px]">फॉन्ट आकार:</span>
-            {(["compact", "normal", "large"] as const).map((sz) => (
-              <button
-                key={sz}
-                type="button"
-                onClick={() => setFontSize(sz)}
-                className={`px-2 py-0.5 rounded text-xs font-bold uppercase transition-colors ${
-                  fontSize === sz
-                    ? "bg-amber-600 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {sz === "compact" ? "छोटा" : sz === "normal" ? "मध्यम" : "बड़ा"}
-              </button>
-            ))}
+          {/* Font Size & Language Selector */}
+          <div className="flex items-center gap-3">
+            {/* Bilingual Switcher in Toolbar */}
+            <div className="flex items-center gap-1">
+              <span className="font-bold text-slate-600 text-[11px]">भाषा:</span>
+              <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-300">
+                <button
+                  type="button"
+                  onClick={() => handleToggleLanguage("hi")}
+                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
+                    templateLang === "hi"
+                      ? "bg-amber-600 text-white"
+                      : "text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  हिन्दी
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleLanguage("en")}
+                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
+                    templateLang === "en"
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-slate-600 text-[11px]">फॉन्ट आकार:</span>
+              {(["compact", "normal", "large"] as const).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => setFontSize(sz)}
+                  className={`px-2 py-0.5 rounded text-xs font-bold uppercase transition-colors ${
+                    fontSize === sz
+                      ? "bg-amber-600 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  {sz === "compact" ? "छोटा" : sz === "normal" ? "मध्यम" : "बड़ा"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

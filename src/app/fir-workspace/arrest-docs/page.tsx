@@ -25,9 +25,12 @@ import {
   Loader2,
   ExternalLink,
   X,
+  Globe,
+  Languages,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -242,11 +245,24 @@ export type ArrestDocsFormData = Omit<Partial<NoticeFormData>, "arrestWitnesses"
   [key: string]: any;
 };
 
+export type TemplateLanguage = "hi" | "en";
+
 const TEMPLATE_CONFIG: Record<
   ArrestDocTemplateType,
-  { label: string; badge: string; subTitle: string; description: string; icon: any; color: string }
+  {
+    labelHi: string;
+    labelEn: string;
+    label: string;
+    badge: string;
+    subTitle: string;
+    description: string;
+    icon: any;
+    color: string;
+  }
 > = {
   arrest_memo: {
+    labelHi: "1. गिरफ्तारी/ न्यायालय समर्पण फार्म संख्या 26.8(1) (4 पृष्ठ)",
+    labelEn: "1. Arrest / Surrender in Court Memo Form 26.8(1) (4 Pages)",
     label: "1. गिरफ्तारी/ न्यायालय समर्पण फार्म संख्या 26.8(1) (4 पृष्ठ)",
     badge: "फार्म 26.8(1)",
     subTitle: "गिरफ्तारी/न्यायालय समर्पण फार्म भाग-1 व 2, धारा 47 BNSS, जामा तलाशी, पहचान पत्र व 18-शारीरिक लक्षण",
@@ -255,6 +271,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-rose-600",
   },
   fard_jamatalashi: {
+    labelHi: "2. फर्द जामातलाशी अभियुक्त (धारा 50 BNSS / 51 CrPC)",
+    labelEn: "2. Personal Search Memo - Fard Jamatalashi (Sec 50 BNSS / 51 CrPC)",
     label: "2. फर्द जामातलाशी अभियुक्त (धारा 50 BNSS / 51 CrPC)",
     badge: "धारा 50 BNSS",
     subTitle: "फर्द जामातलाशी अभियुक्त (Search of Arrested Person & Inventory of Seized Personal Effects)",
@@ -263,6 +281,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-amber-600",
   },
   grounds_of_arrest: {
+    labelHi: "3. गिरफ्तारी के आधार की लिखित सूचना (धारा 47 BNSS / Art 22(1))",
+    labelEn: "3. Notice of Grounds of Arrest (Sec 47 BNSS / Art 22(1))",
     label: "3. गिरफ्तारी के आधार की लिखित सूचना (धारा 47 BNSS / Art 22(1))",
     badge: "धारा 47 BNSS",
     subTitle: "गिरफ्तारी के आधार की लिखित सूचना एवं कानूनी अधिकारों की पावती (Notice of Grounds of Arrest)",
@@ -271,6 +291,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-blue-600",
   },
   pehchan_patr: {
+    labelHi: "4. पहचान पत्र व शारीरिक हुलिया प्रपत्र (Accused Identification Memo)",
+    labelEn: "4. Accused Identification Memo & Descriptive Roll (Sec 54 BNSS)",
     label: "4. पहचान पत्र व शारीरिक हुलिया प्रपत्र (Accused Identification Memo)",
     badge: "धारा 54 BNSS",
     subTitle: "अभियुक्त पहचान पत्र व 18 शारीरिक हुलिया/पहचान चिन्ह प्रपत्र (Identification & Descriptive Roll)",
@@ -279,6 +301,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-purple-600",
   },
   fard_baramadgi: {
+    labelHi: "5. फर्द बरामदगी / जब्ती सूची (धारा 23(2) BSA / 27 Evidence Act)",
+    labelEn: "5. Seizure & Recovery Memo upon Disclosure (Sec 23(2) BSA / 27 Evidence Act)",
     label: "5. फर्द बरामदगी / जब्ती सूची (धारा 23(2) BSA / 27 Evidence Act)",
     badge: "धारा 23(2) BSA",
     subTitle: "फर्द बरामदगी / जब्ती सूची मय सीलबंद नमूना मोहर (Seizure & Recovery Memo upon Disclosure)",
@@ -287,6 +311,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-emerald-600",
   },
   remand_application: {
+    labelHi: "6. पुलिस हिरासत रिमांड प्रार्थना पत्र (धारा 187 BNSS / 167 CrPC)",
+    labelEn: "6. Police Custody Remand Application (Sec 187 BNSS / 167 CrPC)",
     label: "6. पुलिस हिरासत रिमांड प्रार्थना पत्र (धारा 187 BNSS / 167 CrPC)",
     badge: "धारा 187 BNSS",
     subTitle: "प्रार्थना पत्र बाबत हासिल करने पुलिस हिरासत रिमांड (Application for Police Custody Remand)",
@@ -295,6 +321,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-red-600",
   },
   fard_nishandehi: {
+    labelHi: "7. फर्द निशानदेही मौका/स्थान (Pointing Out & Demarcation Memo)",
+    labelEn: "7. Pointing Out & Demarcation Memo (Fard Nishandehi)",
     label: "7. फर्द निशानदेही मौका/स्थान (Pointing Out & Demarcation Memo)",
     badge: "निशानदेही प्रपत्र",
     subTitle: "फर्द निशानदेही मौका-ए-वारदात अथवा माल मसरूका छिपाने का स्थान (Pointing Out Memo)",
@@ -303,6 +331,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-teal-600",
   },
   fard_inkeshaf: {
+    labelHi: "8. फर्द इंकिशाफ / इकबालिया बयान (धारा 23(2) BSA / 27 Evidence Act)",
+    labelEn: "8. Voluntary Disclosure Statement Memo (Sec 23(2) BSA / 27 Evidence Act)",
     label: "8. फर्द इंकिशाफ / इकबालिया बयान (धारा 23(2) BSA / 27 Evidence Act)",
     badge: "धारा 23(2) BSA",
     subTitle: "फर्द इंकिशाफ / इकबालिया बयान अभियुक्त (Voluntary Disclosure Statement Leading to Recovery)",
@@ -311,6 +341,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-indigo-600",
   },
   medical_letter: {
+    labelHi: "9. चिकित्सीय परीक्षण पत्र / MLR Request (धारा 51 BNSS / 53-54 CrPC)",
+    labelEn: "9. Accused Medical Examination Request (MLR - Sec 51 BNSS / 53-54 CrPC)",
     label: "9. चिकित्सीय परीक्षण पत्र / MLR Request (धारा 51 BNSS / 53-54 CrPC)",
     badge: "धारा 51 BNSS",
     subTitle: "प्रार्थना पत्र बाबत डाक्टरी मुलाहिजा / चिकित्सीय परीक्षण (Request for Accused Medical Examination)",
@@ -319,6 +351,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-sky-600",
   },
   peshi_remand: {
+    labelHi: "10. पेशी रिमांड / न्यायिक हिरासत प्रार्थना पत्र (Judicial Remand)",
+    labelEn: "10. Judicial Custody Remand Application (Peshi Remand - Jail)",
     label: "10. पेशी रिमांड / न्यायिक हिरासत प्रार्थना पत्र (Judicial Remand)",
     badge: "न्यायिक हिरासत",
     subTitle: "प्रार्थना पत्र बाबत पेशी अभियुक्त व भेजने न्यायिक हिरासत (जिला कारागार) (Judicial Custody Application)",
@@ -328,7 +362,7 @@ const TEMPLATE_CONFIG: Record<
   },
 };
 
-const DEFAULT_SAMPLE_DATA: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
+const DEFAULT_SAMPLE_DATA_HI: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
   arrest_memo: {
     headerDept: "हरियाणा पुलिस",
     headerGovt: "फार्म संख्या 26.8(1)",
@@ -770,15 +804,464 @@ const DEFAULT_SAMPLE_DATA: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
   },
 };
 
+const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> = {
+  arrest_memo: {
+    headerDept: "HARYANA POLICE",
+    headerGovt: "FORM NO. 26.8(1)",
+    docTitle: "ARREST / SURRENDER IN COURT MEMO",
+    docSubTitle: "Part-1 Form No. 26.8(1) (Separate Form for Each Accused)",
+    headerVersion: "v3.0 dt 07.04.2025",
+    district: "Panipat",
+    policeStation: "PS City Panipat",
+    arrestYear: "2026",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    incidentDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2), 351(2) BNS, 2023",
+
+    arrestDate: "18.09.2026",
+    arrestTime: "11:30 AM",
+    arrestGdNo: "GD Report No. 24",
+    arrestPlace: "Railway Road Chowk, Panipat",
+    arrestThana: "PS City Panipat",
+    arrestDistrict: "Panipat",
+    courtNameSurrender: "Not Applicable (Apprehended by Police)",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAlias1: "Vicky",
+    noticeeNationality: "Indian",
+    noticeeAge: "34 Years",
+    noticeeDob: "12.05.1992",
+    noticeeBirthPlace: "Panipat",
+    accusedGender: "Male",
+    userIdentificationNo: "8492-3810-4921",
+    noticeePhone: "9812044551",
+    occupation: "Shopkeeper / Retail Trader",
+    noticeeAddress: "House No. 412, Sector 7",
+    noticeeCity: "Urban Estate, Panipat",
+    noticeeDistrict: "Panipat",
+    noticeeState: "Haryana",
+    permanentAddress: "House No. 412, Sector 7",
+    permanentCity: "Urban Estate, Panipat",
+    permanentDistrict: "Panipat",
+    permanentState: "Haryana",
+    physicalConditionOrInjuries: "Physical condition is normal. No fresh visible external injuries. (Routine medical examination conducted)",
+
+    custodyIntimationDate: "18.09.2026",
+    custodyIntimationTime: "11:30 AM",
+    custodyPlace: "Railway Road Chowk, Panipat",
+
+    warisanName: "Amit Sharma",
+    warisanRelation: "Brother",
+    warisanDate: "18.09.2026",
+    warisanTime: "11:45 AM",
+    warisanMobile: "9812099881",
+    familyMember1: "Ramesh Chand Sharma (Father), Age 62 Years, r/o Panipat",
+    familyMember2: "Shanti Devi (Mother), Age 58 Years, r/o Panipat",
+    familyMember3: "Amit Sharma (Brother), Age 31 Years, Mobile 9812099881",
+
+    groundsSections: "Section 318(4), 316(2), 351(2) BNS, 2023",
+    groundsRole: "Active role in defrauding complainant of Rs. 4,50,000/-, criminal breach of trust and extending criminal intimidation.",
+    groundsEvidence: "Statement of complainant, bank account statements and Call Detail Records (CDR).",
+    groundsOther: "To prevent tampering of evidence, threatening witnesses and flight risk.",
+
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat", signature: "Baljeet Singh" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat", signature: "Ramesh Lal" },
+    ],
+
+    jamaTalashiItems: [
+      { id: "jt_1", srNo: "1.", description: "Cash Indian Currency Rs. 1,450/- (Two notes of 500, two of 200, one of 50)", quantity: "1,450/-" },
+      { id: "jt_2", srNo: "2.", description: "One Samsung Galaxy mobile phone (Blue color, working condition)", quantity: "1" },
+      { id: "jt_3", srNo: "3.", description: "Brown leather wallet containing Aadhaar Card & Driving License", quantity: "1" },
+    ],
+
+    accusedSign1: "Vikas Sharma",
+    witnessSign1: "Baljeet Singh",
+    witnessSign2: "Ramesh Lal",
+    accusedSign2: "Vikas Sharma",
+    signPlace: "PS City Panipat",
+    signDate: "18.09.2026",
+
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+
+    pehchanThana: "PS City Panipat",
+    pehchanDistrict: "Panipat",
+    stateVsName: "State vs. Vikas Sharma",
+    caseYear: "2026",
+    caseSections: "Section 318(4), 316(2), 351(2) BNS, 2023",
+    caseThana: "PS City Panipat",
+    caseBanam: "Vikas Sharma s/o Ramesh Chand Sharma",
+
+    trait1Height: "5 ft 8 in (173 cm)",
+    trait2Build: "Medium Athletic",
+    trait3Color: "Wheatish",
+    trait4Eyes: "Black",
+    trait5Hair: "Black Short",
+    trait6BeardMustache: "Light Beard & Mustache",
+    trait7Nose: "Straight Medium",
+    trait8Face: "Round-Oval",
+    trait9Teeth: "Regular White",
+    trait10Mole: "Black mole on left cheek",
+    trait11Scars: "Old 1 inch cut scar above right eyebrow",
+    trait12Deformities: "None",
+    trait13Tattoo: "Tattoo of 'Om' on right wrist",
+    trait14Language: "Hindi / Haryanvi / English",
+    trait15Dress: "Blue jeans and white shirt",
+    trait16Habits: "None specific",
+    trait17Voice: "Normal deep",
+    trait18PehchanChinh: "Mole on left cheek & cut scar over right eyebrow",
+    otherTraitsDetails: "Normal gait, no limp",
+
+    fingerprintsTaken: "Yes",
+    livingStandard: "Middle Class",
+    education: "Graduate (B.Com)",
+    socioOccupation: "Shopkeeper / Retail Trader",
+    incomeGroup: "Middle Income (Annual approx Rs. 4-5 Lakh)",
+
+    isDangerous: "No",
+    escapedBailEarlier: "No",
+    carriesWeapon: "No",
+    activeWithAssociates: "No",
+    isListedCriminal: "No",
+    isHabitualCriminal: "No",
+    escapeRiskDuringBail: "No",
+    threatRiskAfterBail: "No",
+    wantedInOtherCrime: "No",
+    caseReferenceIfYes: "-",
+
+    previousRecord1: "No previous criminal record (Clean Record)",
+    previousRecord2: "-",
+    previousRecord3: "-",
+    eagleCriminalId: "EAGLE-HR-2026-08492",
+    mhcName: "Ramesh Kumar",
+    mhcRank: "Head Constable (MHC)",
+    mhcBeltNo: "23114/Panipat",
+
+    articlesHandedOverToMhc: "All articles recovered in personal search handed over to Malkhana Moharrir (MHC) in safe custody.",
+    mhcSignRankPno: "MHC HC Ramesh Kumar, PNO-23114, PS City Panipat",
+    mhcDepositDate: "18.09.2026",
+    customClauses: [],
+  },
+
+  fard_jamatalashi: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
+    docTitle: "FARD JAMA TALASHI (PERSONAL SEARCH MEMO)",
+    docSubTitle: "Under Section 50 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / Section 51 CrPC",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAge: "34 Years",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    noticeeRole: "Arrested Accused",
+    arrestDate: "18.09.2026",
+    arrestTime: "11:30 AM",
+    arrestPlace: "Railway Road Chowk, Panipat",
+    introNarrative: `Today on 18.09.2026 at 11:30 AM at Railway Road Chowk, Panipat, immediately after the arrest of accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, age approx 34 years, r/o House No. 412, Sector 7, Urban Estate, Panipat in the above case, personal search was conducted in the presence of independent witnesses in accordance with statutory procedure. Upon search, the following articles, cash and personal documents were recovered:`,
+    jamaTalashiItems: [
+      { id: "jt_1", srNo: "1.", description: "Cash Indian Currency total Rs. 1,450/- (Two notes of 500, two of 200, one of 50)", quantity: "1,450/-", identification: "Currency note numbers noted" },
+      { id: "jt_2", srNo: "2.", description: "One Samsung Galaxy A14 mobile phone, blue color, with Vodafone SIM card (working condition)", quantity: "1", identification: "IMEI: 358491029481920" },
+      { id: "jt_3", srNo: "3.", description: "Brown leather wallet containing Aadhaar card, driving license and photographs", quantity: "1", identification: "Personal identity documents" },
+      { id: "jt_4", srNo: "4.", description: "Fastrack wrist watch with steel strap in running condition", quantity: "1", identification: "Metallic dial" },
+    ],
+    receiptClauseText: "All the above articles recovered in personal search have been taken into police custody and a copy of this Personal Search Memo has been provided to the accused free of cost. The accused and both independent witnesses have signed this memo admitting it to be correct.",
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  grounds_of_arrest: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2), 351(2) BNS, 2023",
+    docTitle: "WRITTEN NOTICE OF GROUNDS OF ARREST",
+    docSubTitle: "Under Section 47 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 & Article 22(1) Constitution of India",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    introNarrative: `You are hereby informed in writing under the provisions of Section 47 BNSS, 2023 that you have been arrested in FIR No. 128/2026, PS City Panipat on 18.09.2026 at 11:30 AM on the following cognizable offences and specific grounds:`,
+    groundsPoints: [
+      { id: "gp_1", text: "Nature of Offence: Section 318(4), 316(2), 351(2) BNS, 2023 (Cognizable and Non-Bailable offences)." },
+      { id: "gp_2", text: "Your Specific Role: Concrete prima facie evidence found of defrauding the complainant of Rs. 4,50,000/-, criminal breach of trust and extending threats to kill." },
+      { id: "gp_3", text: "Primary Evidence: Bank statements, complainant's statement, mobile phone records and WhatsApp chat technical trails." },
+      { id: "gp_4", text: "Necessity of Arrest: To prevent further offences, ensure proper investigation, recover cheated funds, and prevent witness intimidation." },
+    ],
+    rightsPoints: [
+      { id: "rp_1", text: "Section 38 BNSS: Right to meet and consult an advocate of your choice during interrogation." },
+      { id: "rp_2", text: "Free Legal Aid: If you cannot afford an advocate, one will be provided free of cost by the District Legal Services Authority (DLSA)." },
+      { id: "rp_3", text: "Section 48 BNSS: Immediate intimation of your arrest and place of custody has been communicated to your nominated family member." },
+      { id: "rp_4", text: "Section 51 BNSS: Mandatory medical examination (MLR) will be conducted by a registered medical practitioner at a government hospital." },
+    ],
+    receiptClauseText: "The grounds of arrest and legal rights mentioned above have been explained to me in language understood by me, and I have received an original copy of this Notice of Grounds of Arrest.",
+    arrestWitnesses: [
+      { id: "wit_1", name: "Amit Sharma (Brother)", address: "House No. 412, Sector 7, Panipat" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  pehchan_patr: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
+    docTitle: "ACCUSED IDENTIFICATION ROLL & DESCRIPTIVE MEMO",
+    docSubTitle: "Under Section 54 BNSS, 2023 & Section 9 Bharatiya Sakshya Adhiniyam, 2023",
+    noticeeName: "Vikas Sharma",
+    noticeeAlias1: "Vicky",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAge: "34 Years",
+    accusedGender: "Male",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    traitsList: [
+      { id: "tr_1", label: "1. Height", value: "173 cm (5 ft 8 in)" },
+      { id: "tr_2", label: "2. Complexion", value: "Wheatish" },
+      { id: "tr_3", label: "3. Build", value: "Medium Athletic" },
+      { id: "tr_4", label: "4. Eyes", value: "Black" },
+      { id: "tr_5", label: "5. Hair", value: "Black Short" },
+      { id: "tr_6", label: "6. Teeth", value: "Regular White" },
+      { id: "tr_7", label: "7. Mole", value: "Black mole on left cheek" },
+      { id: "tr_8", label: "8. Scar", value: "Old 1 inch cut scar above right eyebrow" },
+      { id: "tr_9", label: "9. Tattoo", value: "Tattoo of 'Om' on right wrist" },
+      { id: "tr_10", label: "10. Language / Accent", value: "Hindi / Haryanvi / English" },
+      { id: "tr_11", label: "11. Dress", value: "Blue jeans, white shirt & black shoes" },
+      { id: "tr_12", label: "12. Habits", value: "Tea drinker & occasional smoker" },
+      { id: "tr_13", label: "13. Education & Profession", value: "Graduate (B.Com) / Retail Trader" },
+      { id: "tr_14", label: "14. Fingerprints Taken", value: "Yes (All 10 Digits)" },
+    ],
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  fard_baramadgi: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
+    docTitle: "SEIZURE & RECOVERY MEMO (FARD BARAMADGI)",
+    docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023 / Section 27 Indian Evidence Act",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    recoveryPlace: "Bedroom cupboard of accused's residence at House No. 412, Sector 7, Urban Estate, Panipat",
+    introNarrative: `Today on 18.09.2026, pursuant to the voluntary disclosure statement made in police custody by arrested accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, r/o House No. 412, Sector 7, Urban Estate, Panipat, and upon his pointing out in the presence of independent witnesses, the following incriminating articles/money/property were recovered from the bedroom of his residence:`,
+    recoveryItems: [
+      { id: "rec_1", srNo: "1.", description: "Cheated cash amount totaling Rs. 1,20,000/- (240 notes of denomination 500)", quantity: "1,20,000/-", sealDetails: "Sealed in white cloth with seal mark 'SP'" },
+      { id: "rec_2", srNo: "2.", description: "One Dell laptop (black color) containing fraudulent agreements and billing records", quantity: "1", sealDetails: "Sealed in cloth with seal mark 'SP'" },
+      { id: "rec_3", srNo: "3.", description: "Forged letterheads and 2 rubber stamps used in the offence", quantity: "2 Stamps", sealDetails: "Sealed in box with seal mark 'SP'" },
+    ],
+    receiptClauseText: "The seized articles were packed and sealed in the presence of independent panch witnesses with seal mark 'SP'. Sample seal impression was preserved separately. Witnesses and the accused verified the memo and signed.",
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat (Independent Panch)" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat (Independent Panch)" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  remand_application: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2), 351(2) BNS, 2023",
+    courtName: "In the Court of Illaqa Magistrate / Chief Judicial Magistrate",
+    courtDistrict: "Panipat",
+    docTitle: "APPLICATION FOR POLICE CUSTODY REMAND",
+    docSubTitle: "Under Section 187 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / Section 167 CrPC",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    remandDays: "3 Days",
+    subjectTitle: "Application for grant of 3 days police custody remand of accused Vikas Sharma.",
+    introNarrative: `It is respectfully submitted that accused Vikas Sharma was arrested in the above case on 18.09.2026 at 11:30 AM. Police custody remand of the accused is urgently required on the following specific investigation grounds:`,
+    remandPoints: [
+      { id: "rem_1", text: "Out of the total defrauded amount of Rs. 4,50,000/-, remaining amount of Rs. 3,30,000/- is yet to be recovered." },
+      { id: "rem_2", text: "To recover other electronic devices, forged documents and bank passbooks used in the commission of offence." },
+      { id: "rem_3", text: "To trace and arrest co-accused persons and identify their hideouts." },
+      { id: "rem_4", text: "To take accused to scene of crime, bank branch and verify demarcation memo." },
+      { id: "rem_5", text: "To conduct sustained custodial interrogation to unearth the entire nexus of financial cheating." },
+    ],
+    conclusionNarrative: "It is therefore prayed that in the interest of justice and for fair investigation, 3 days police custody remand of accused Vikas Sharma (from 18.09.2026 to 21.09.2026) may kindly be granted.",
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  fard_nishandehi: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
+    docTitle: "POINTING OUT & DEMARCATION MEMO (FARD NISHANDEHI)",
+    docSubTitle: "Accused Pointing Out & Demarcation Proforma",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    pointingOutPlace: "House No. 412, Sector 7, Urban Estate, Panipat (where accused concealed cheated cash and laptop)",
+    introNarrative: `Today on 18.09.2026, accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, r/o House No. 412, Sector 7, Urban Estate, Panipat, accompanied the police party and independent witnesses to the site and pointed out with his finger that 'this is the place where I concealed the cheated cash and laptop.'`,
+    boundariesList: [
+      { id: "bd_1", direction: "East", detail: "House No. 411 (Neighbor)" },
+      { id: "bd_2", direction: "West", detail: "House No. 413 (Neighbor)" },
+      { id: "bd_3", direction: "North", detail: "Main Street (20 ft wide road)" },
+      { id: "bd_4", direction: "South", detail: "Open Plot / Vacant Land" },
+    ],
+    verificationClauseText: "The pointing out was done voluntarily by the accused in the presence of independent witnesses. Witnesses and accused signed this memo.",
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  fard_inkeshaf: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
+    docTitle: "VOLUNTARY DISCLOSURE STATEMENT (FARD INKESHAF)",
+    docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023 / Section 27 Indian Evidence Act",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    introNarrative: `Today on 18.09.2026, accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, age 34 years, r/o House No. 412, Sector 7, Urban Estate, Panipat, while in police custody, voluntarily made the following disclosure statement in the presence of independent witnesses without any threat, coercion or inducement:`,
+    disclosureNarrative: `Statement recorded: 'I along with my accomplice cheated the complainant of Rs. 4,50,000/-. Out of that amount, I have hidden Rs. 1,20,000/- cash and the laptop used in the cheating inside the secret cavity of the wooden cupboard in my bedroom at House No. 412, Sector 7, Urban Estate, Panipat, which is within my exclusive knowledge. I can lead the police party to the spot and get the cash and laptop recovered.'`,
+    verificationClauseText: "The accused made the above voluntary disclosure statement in police custody without any coercion or pressure. After having the statement read over, the accused admitted it as correct and signed.",
+    arrestWitnesses: [
+      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
+      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+    ],
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  medical_letter: {
+    headerDept: "Office of Station House Officer / Investigating Officer",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "18.09.2026",
+    dispatchNo: "1482/R",
+    hospitalName: "Civil Hospital, Panipat",
+    medicalOfficerName: "Senior Medical Officer In-charge (SMO)",
+    docTitle: "REQUISITION FOR MEDICAL EXAMINATION (MLR) OF ARRESTED ACCUSED",
+    docSubTitle: "Under Section 51 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / Section 53 & 54 CrPC",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAge: "34 Years",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
+    subjectTitle: "Requisition for mandatory medical examination of arrested accused Vikas Sharma u/s 51 BNSS.",
+    introNarrative: `It is submitted that arrested accused Vikas Sharma s/o Ramesh Chand Sharma, age 34 years, is produced before you under police escort for mandatory medical examination. Kindly examine the accused and report on the following points:`,
+    medicalPoints: [
+      { id: "mp_1", text: "Whether there are any fresh or old visible injuries on the person of the accused (Detailed MLR)." },
+      { id: "mp_2", text: "Whether the accused is physically and mentally fit for police custody and production before the Hon'ble Court." },
+      { id: "mp_3", text: "Whether the accused is under the influence of any intoxicant or alcohol." },
+    ],
+    escortOfficers: [
+      { id: "esc_1", name: "EHC Surjeet Singh", beltNo: "No. 418", thana: "PS City Panipat" },
+      { id: "esc_2", name: "Const. Naresh Kumar", beltNo: "No. 892", thana: "PS City Panipat" },
+    ],
+    conclusionNarrative: "Kindly examine the accused as per statutory protocol and issue Medico-Legal Report (MLR).",
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+
+  peshi_remand: {
+    headerDept: "HARYANA POLICE",
+    policeStation: "PS City Panipat",
+    district: "District Panipat",
+    complaintNo: "128/2026",
+    issueDate: "21.09.2026",
+    sectionsOfLaw: "Section 318(4), 316(2), 351(2) BNS, 2023",
+    courtName: "In the Court of Illaqa Magistrate / Chief Judicial Magistrate",
+    courtDistrict: "Panipat",
+    docTitle: "APPLICATION FOR PRODUCTION OF ACCUSED & REMAND TO JUDICIAL CUSTODY",
+    docSubTitle: "Under Section 187 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / Section 167 CrPC",
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    subjectTitle: "Production of accused Vikas Sharma on expiry of police remand and prayer to commit to Judicial Custody (Jail).",
+    introNarrative: `Respected Sir, it is submitted that accused Vikas Sharma was taken on police remand under the orders of this Hon'ble Court, which expires today. The accused is required to be remanded to judicial custody on the following grounds:`,
+    peshiPoints: [
+      { id: "pp_1", text: "Police remand of the accused expires today on 21.09.2026." },
+      { id: "pp_2", text: "During remand, recovery of Rs. 1,20,000/-, laptop and fake stamps has been effected and demarcation memo completed." },
+      { id: "pp_3", text: "No further custodial interrogation or recovery is required from the accused at this stage." },
+      { id: "pp_4", text: "Medical examination of the accused has been re-conducted at Civil Hospital and MLR is enclosed." },
+      { id: "pp_5", text: "Accused is involved in a serious cognizable crime; if released on bail, he may abscond or tamper with prosecution witnesses." },
+    ],
+    conclusionNarrative: "It is therefore prayed that accused Vikas Sharma may kindly be remanded to 14 days Judicial Custody (District Jail, Panipat).",
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector (SI)",
+    officerPno: "04291885",
+    officerPhone: "9812034567",
+    customClauses: [],
+  },
+};
+
+// Default export alias for backward compatibility
+const DEFAULT_SAMPLE_DATA = DEFAULT_SAMPLE_DATA_HI;
+
 function ArrestDocsContent() {
   const { currentUser } = useAuth();
+  const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
+  const [templateLang, setTemplateLang] = useState<TemplateLanguage>(globalLang || "hi");
   const [selectedTemplate, setSelectedTemplate] = useState<ArrestDocTemplateType>("arrest_memo");
-  const [formData, setFormData] = useState<ArrestDocsFormData>(DEFAULT_SAMPLE_DATA["arrest_memo"]);
+  const [formData, setFormData] = useState<ArrestDocsFormData>(
+    (globalLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI)["arrest_memo"]
+  );
 
   const [fontSize, setFontSize] = useState<"compact" | "standard" | "large">("standard");
   const [copied, setCopied] = useState(false);
@@ -821,7 +1304,8 @@ function ArrestDocsContent() {
 
   // Sync active FIR with current template and selected accused
   useEffect(() => {
-    const baseSample = DEFAULT_SAMPLE_DATA[selectedTemplate] || DEFAULT_SAMPLE_DATA.arrest_memo;
+    const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
+    const baseSample = baseSource[selectedTemplate] || baseSource.arrest_memo;
     if (!activeFir) {
       setFormData(baseSample);
       return;
@@ -849,14 +1333,22 @@ function ArrestDocsContent() {
 
       noticeeName,
       noticeeFather,
-      noticeeAge: (matchedAccused as any)?.age ? `${(matchedAccused as any).age} वर्ष` : baseSample.noticeeAge,
+      noticeeAge: (matchedAccused as any)?.age
+        ? templateLang === "hi" ? `${(matchedAccused as any).age} वर्ष` : `${(matchedAccused as any).age} Years`
+        : baseSample.noticeeAge,
       noticeeAddress,
       noticeePhone: matchedAccused?.phone || baseSample.noticeePhone,
       noticeeAlias1: matchedAccused?.alias || baseSample.noticeeAlias1,
       accusedGender: (matchedAccused as any)?.gender || baseSample.accusedGender,
 
-      caseBanam: noticeeName ? `${noticeeName}${noticeeFather ? ` सुपुत्र ${noticeeFather}` : ""}` : baseSample.caseBanam,
-      stateVsName: noticeeName ? `सरकार बनाम ${noticeeName}` : baseSample.stateVsName,
+      caseBanam: noticeeName
+        ? templateLang === "hi"
+          ? `${noticeeName}${noticeeFather ? ` सुपुत्र ${noticeeFather}` : ""}`
+          : `${noticeeName}${noticeeFather ? ` s/o ${noticeeFather}` : ""}`
+        : baseSample.caseBanam,
+      stateVsName: noticeeName
+        ? templateLang === "hi" ? `सरकार बनाम ${noticeeName}` : `State vs. ${noticeeName}`
+        : baseSample.stateVsName,
       accusedSign1: noticeeName || baseSample.accusedSign1,
       accusedSign2: noticeeName || baseSample.accusedSign2,
 
@@ -865,7 +1357,7 @@ function ArrestDocsContent() {
       officerPno: activeFir.assignedIoBeltNumber || currentUser.pno || baseSample.officerPno,
       officerPhone: activeFir.assignedIoPhone || (currentUser as any)?.phone || baseSample.officerPhone,
     });
-  }, [activeFir, selectedTemplate, selectedAccusedId, currentUser]);
+  }, [activeFir, selectedTemplate, selectedAccusedId, currentUser, templateLang]);
 
   const handleSelectAccused = (accusedId: string) => {
     setSelectedAccusedId(accusedId);
@@ -879,8 +1371,14 @@ function ArrestDocsContent() {
       noticeeAlias1: accused.alias || prev.noticeeAlias1,
       noticeeAddress: accused.address || prev.noticeeAddress,
       noticeePhone: accused.phone || prev.noticeePhone,
-      caseBanam: `${accused.name}${accused.fatherName || accused.relativeName ? ` सुपुत्र ${accused.fatherName || accused.relativeName}` : ""}`,
-      stateVsName: `सरकार बनाम ${accused.name}`,
+      caseBanam: `${accused.name}${
+        accused.fatherName || accused.relativeName
+          ? templateLang === "hi"
+            ? ` सुपुत्र ${accused.fatherName || accused.relativeName}`
+            : ` s/o ${accused.fatherName || accused.relativeName}`
+          : ""
+      }`,
+      stateVsName: templateLang === "hi" ? `सरकार बनाम ${accused.name}` : `State vs. ${accused.name}`,
       accusedSign1: accused.name,
       accusedSign2: accused.name,
     }));
@@ -890,8 +1388,110 @@ function ArrestDocsContent() {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
+  // Toggle template language between Hindi and English
+  const handleToggleLanguage = (newLang: TemplateLanguage) => {
+    if (newLang === templateLang) return;
+    setTemplateLang(newLang);
+
+    const currentBase = (templateLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
+    const targetBase = (newLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
+
+    setFormData((prev) => {
+      const updated = { ...prev };
+      if (!prev.headerDept || prev.headerDept === currentBase.headerDept) {
+        updated.headerDept = targetBase.headerDept;
+      }
+      if (!prev.headerGovt || prev.headerGovt === currentBase.headerGovt) {
+        updated.headerGovt = targetBase.headerGovt;
+      }
+      if (!prev.docTitle || prev.docTitle === currentBase.docTitle) {
+        updated.docTitle = targetBase.docTitle;
+      }
+      if (!prev.docSubTitle || prev.docSubTitle === currentBase.docSubTitle) {
+        updated.docSubTitle = targetBase.docSubTitle;
+      }
+      if (!prev.courtName || prev.courtName === currentBase.courtName) {
+        updated.courtName = targetBase.courtName;
+      }
+      if (!prev.subjectTitle || prev.subjectTitle === currentBase.subjectTitle) {
+        updated.subjectTitle = targetBase.subjectTitle;
+      }
+      if (!prev.introNarrative || prev.introNarrative === currentBase.introNarrative) {
+        updated.introNarrative = targetBase.introNarrative;
+      }
+      if (!prev.conclusionNarrative || prev.conclusionNarrative === currentBase.conclusionNarrative) {
+        updated.conclusionNarrative = targetBase.conclusionNarrative;
+      }
+      if (!prev.receiptClauseText || prev.receiptClauseText === currentBase.receiptClauseText) {
+        updated.receiptClauseText = targetBase.receiptClauseText;
+      }
+      if (!prev.verificationClauseText || prev.verificationClauseText === currentBase.verificationClauseText) {
+        updated.verificationClauseText = targetBase.verificationClauseText;
+      }
+      if (!prev.disclosureNarrative || prev.disclosureNarrative === currentBase.disclosureNarrative) {
+        updated.disclosureNarrative = targetBase.disclosureNarrative;
+      }
+      if (!prev.remandDays || prev.remandDays === currentBase.remandDays) {
+        updated.remandDays = targetBase.remandDays;
+      }
+      if (!prev.noticeeRole || prev.noticeeRole === currentBase.noticeeRole) {
+        updated.noticeeRole = targetBase.noticeeRole;
+      }
+      if (!prev.hospitalName || prev.hospitalName === currentBase.hospitalName) {
+        updated.hospitalName = targetBase.hospitalName;
+      }
+      if (!prev.medicalOfficerName || prev.medicalOfficerName === currentBase.medicalOfficerName) {
+        updated.medicalOfficerName = targetBase.medicalOfficerName;
+      }
+      if (prev.stateVsName && prev.noticeeName) {
+        updated.stateVsName = newLang === "hi" ? `सरकार बनाम ${prev.noticeeName}` : `State vs. ${prev.noticeeName}`;
+      }
+      if (prev.caseBanam && prev.noticeeName) {
+        updated.caseBanam = prev.noticeeFather
+          ? newLang === "hi" ? `${prev.noticeeName} सुपुत्र ${prev.noticeeFather}` : `${prev.noticeeName} s/o ${prev.noticeeFather}`
+          : prev.noticeeName;
+      }
+      if (targetBase.groundsPoints && (!prev.groundsPoints || prev.groundsPoints === currentBase.groundsPoints)) {
+        updated.groundsPoints = targetBase.groundsPoints;
+      }
+      if (targetBase.rightsPoints && (!prev.rightsPoints || prev.rightsPoints === currentBase.rightsPoints)) {
+        updated.rightsPoints = targetBase.rightsPoints;
+      }
+      if (targetBase.remandPoints && (!prev.remandPoints || prev.remandPoints === currentBase.remandPoints)) {
+        updated.remandPoints = targetBase.remandPoints;
+      }
+      if (targetBase.medicalPoints && (!prev.medicalPoints || prev.medicalPoints === currentBase.medicalPoints)) {
+        updated.medicalPoints = targetBase.medicalPoints;
+      }
+      if (targetBase.peshiPoints && (!prev.peshiPoints || prev.peshiPoints === currentBase.peshiPoints)) {
+        updated.peshiPoints = targetBase.peshiPoints;
+      }
+      if (targetBase.boundariesList && (!prev.boundariesList || prev.boundariesList === currentBase.boundariesList)) {
+        updated.boundariesList = targetBase.boundariesList;
+      }
+      if (targetBase.traitsList && (!prev.traitsList || prev.traitsList === currentBase.traitsList)) {
+        updated.traitsList = targetBase.traitsList;
+      }
+      if (targetBase.recoveryItems && (!prev.recoveryItems || prev.recoveryItems === currentBase.recoveryItems)) {
+        updated.recoveryItems = targetBase.recoveryItems;
+      }
+      if (targetBase.jamaTalashiItems && (!prev.jamaTalashiItems || prev.jamaTalashiItems === currentBase.jamaTalashiItems)) {
+        updated.jamaTalashiItems = targetBase.jamaTalashiItems;
+      }
+      return updated;
+    });
+  };
+
+  // Sync with global top bar language switcher
+  useEffect(() => {
+    if (globalLang && globalLang !== templateLang) {
+      handleToggleLanguage(globalLang);
+    }
+  }, [globalLang]);
+
   const handleResetSample = () => {
-    const base = DEFAULT_SAMPLE_DATA[selectedTemplate];
+    const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
+    const base = baseSource[selectedTemplate];
     if (base) {
       setFormData(base);
     }
@@ -1215,30 +1815,30 @@ function ArrestDocsContent() {
       <div className="text-center space-y-1">
         <input
           type="text"
-          value={formData.headerDept || "हरियाणा पुलिस"}
+          value={formData.headerDept || (templateLang === "hi" ? "हरियाणा पुलिस" : "HARYANA POLICE")}
           onChange={(e) => handleFieldChange("headerDept", e.target.value)}
           className="text-center font-bold text-base w-full bg-transparent hover:bg-slate-50 focus:bg-white outline-none border-b border-transparent focus:border-slate-400"
-          placeholder="विभाग का नाम"
+          placeholder={templateLang === "hi" ? "विभाग का नाम" : "Department Name"}
         />
         <input
           type="text"
           value={formData.docTitle || ""}
           onChange={(e) => handleFieldChange("docTitle", e.target.value)}
           className="text-center font-black text-xl w-full bg-transparent hover:bg-slate-50 focus:bg-white outline-none border-b border-transparent focus:border-slate-400 underline underline-offset-4"
-          placeholder="दस्तावेज का शीर्षक"
+          placeholder={templateLang === "hi" ? "दस्तावेज का शीर्षक" : "Document Title"}
         />
         <input
           type="text"
           value={formData.docSubTitle || ""}
           onChange={(e) => handleFieldChange("docSubTitle", e.target.value)}
           className="text-center text-xs text-slate-700 font-semibold w-full bg-transparent hover:bg-slate-50 focus:bg-white outline-none border-b border-transparent focus:border-slate-400"
-          placeholder="उप-शीर्षक / धाराएं"
+          placeholder={templateLang === "hi" ? "उप-शीर्षक / धाराएं" : "Sub-title / Legal Sections"}
         />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-bold pt-1">
         <div className="flex items-center gap-1">
-          <span className="shrink-0">थाना:</span>
+          <span className="shrink-0">{templateLang === "hi" ? "थाना:" : "Police Station:"}</span>
           <input
             type="text"
             value={formData.policeStation || ""}
@@ -1247,7 +1847,7 @@ function ArrestDocsContent() {
           />
         </div>
         <div className="flex items-center gap-1">
-          <span className="shrink-0">जिला:</span>
+          <span className="shrink-0">{templateLang === "hi" ? "जिला:" : "District:"}</span>
           <input
             type="text"
             value={formData.district || ""}
@@ -1256,7 +1856,7 @@ function ArrestDocsContent() {
           />
         </div>
         <div className="flex items-center gap-1">
-          <span className="shrink-0">मुकदमा सं0:</span>
+          <span className="shrink-0">{templateLang === "hi" ? "मुकदमा सं0:" : "FIR / Case No:"}</span>
           <input
             type="text"
             value={formData.complaintNo || ""}
@@ -1265,7 +1865,7 @@ function ArrestDocsContent() {
           />
         </div>
         <div className="flex items-center gap-1">
-          <span className="shrink-0">दिनांक:</span>
+          <span className="shrink-0">{templateLang === "hi" ? "दिनांक:" : "Date:"}</span>
           <input
             type="text"
             value={formData.issueDate || ""}
@@ -1276,13 +1876,13 @@ function ArrestDocsContent() {
       </div>
 
       <div className="flex items-center gap-2 text-xs font-bold pt-1">
-        <span className="shrink-0">धारा/धाराएं:</span>
+        <span className="shrink-0">{templateLang === "hi" ? "धारा/धाराएं:" : "Section(s) of Law:"}</span>
         <input
           type="text"
           value={formData.sectionsOfLaw || ""}
           onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
           className="w-full bg-transparent border-b border-dotted border-slate-700 outline-none px-1"
-          placeholder="धाराएं"
+          placeholder={templateLang === "hi" ? "धाराएं" : "Sections"}
         />
       </div>
     </div>
@@ -1292,13 +1892,15 @@ function ArrestDocsContent() {
   const renderCustomClausesSection = () => (
     <div className="space-y-3 pt-3 border-t border-slate-300">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-800">अतिरिक्त पैरा / क्लॉज (Custom Editable Sections):</span>
+        <span className="text-xs font-bold text-slate-800">
+          {templateLang === "hi" ? "अतिरिक्त पैरा / क्लॉज (Custom Editable Sections):" : "Additional Clauses / Custom Editable Sections:"}
+        </span>
         <button
           type="button"
           onClick={handleAddCustomClause}
           className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
         >
-          <Plus className="w-3.5 h-3.5" /> नया पैरा / क्लॉज जोड़ें
+          <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "नया पैरा / क्लॉज जोड़ें" : "Add Clause / Paragraph"}
         </button>
       </div>
 
@@ -1310,13 +1912,13 @@ function ArrestDocsContent() {
               value={clause.heading}
               onChange={(e) => handleUpdateCustomClause(clause.id, "heading", e.target.value)}
               className="font-bold text-xs w-full bg-transparent border-b border-dashed border-slate-400 outline-none"
-              placeholder="शीर्षक दर्ज करें..."
+              placeholder={templateLang === "hi" ? "शीर्षक दर्ज करें..." : "Enter heading..."}
             />
             <button
               type="button"
               onClick={() => handleDeleteCustomClause(clause.id)}
               className="no-print text-red-500 hover:text-red-700 shrink-0 p-1"
-              title="यह पैरा हटाएं"
+              title="Remove clause"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -1326,7 +1928,7 @@ function ArrestDocsContent() {
             value={clause.text}
             onChange={(e) => handleUpdateCustomClause(clause.id, "text", e.target.value)}
             className="w-full text-xs p-1 outline-none resize-y border-0 bg-transparent leading-relaxed"
-            placeholder="इस पैरा का विवरण लिखें..."
+            placeholder={templateLang === "hi" ? "इस पैरा का विवरण लिखें..." : "Enter details for this clause..."}
           />
         </div>
       ))}
@@ -1337,13 +1939,15 @@ function ArrestDocsContent() {
   const renderWitnessesSection = () => (
     <div className="space-y-2 pt-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold underline">गवाहान / पंच गवाह (Witnesses):</span>
+        <span className="text-xs font-bold underline">
+          {templateLang === "hi" ? "गवाहान / पंच गवाह (Witnesses):" : "Witnesses / Independent Panch Witnesses:"}
+        </span>
         <button
           type="button"
           onClick={handleAddWitnessRow}
           className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
         >
-          <Plus className="w-3.5 h-3.5" /> गवाह जोड़ें
+          <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "गवाह जोड़ें" : "Add Witness"}
         </button>
       </div>
 
@@ -1360,7 +1964,7 @@ function ArrestDocsContent() {
               }}
               className="relative border border-slate-400 p-1.5 w-10 text-center"
             >
-              क्र0
+              {templateLang === "hi" ? "क्र0" : "Sr."}
               <TableColResizer onResize={(e) => witnessTableResize.startColResize(0, e)} />
             </th>
             <th
@@ -1369,7 +1973,7 @@ function ArrestDocsContent() {
               }}
               className="relative border border-slate-400 p-1.5 text-left"
             >
-              गवाह का नाम व वल्दियत
+              {templateLang === "hi" ? "गवाह का नाम व वल्दियत" : "Witness Name & Parentage"}
               <TableColResizer onResize={(e) => witnessTableResize.startColResize(1, e)} />
             </th>
             <th
@@ -1378,7 +1982,7 @@ function ArrestDocsContent() {
               }}
               className="relative border border-slate-400 p-1.5 text-left"
             >
-              पूरा पता व मोबाइल
+              {templateLang === "hi" ? "पूरा पता व मोबाइल" : "Full Address & Mobile"}
               <TableColResizer onResize={(e) => witnessTableResize.startColResize(2, e)} />
             </th>
             <th
@@ -1387,7 +1991,7 @@ function ArrestDocsContent() {
               }}
               className="relative border border-slate-400 p-1.5 w-36 text-center"
             >
-              हस्ताक्षर/निशान अंगूठा
+              {templateLang === "hi" ? "हस्ताक्षर/निशान अंगूठा" : "Signature / Thumb"}
               <TableColResizer onResize={(e) => witnessTableResize.startColResize(3, e)} />
             </th>
             <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
@@ -1411,7 +2015,7 @@ function ArrestDocsContent() {
                   value={w.name}
                   onChange={(e) => handleUpdateWitnessRow(w.id, "name", e.target.value)}
                   className="w-full bg-transparent outline-none"
-                  placeholder="नाम व पिता का नाम"
+                  placeholder={templateLang === "hi" ? "नाम व पिता का नाम" : "Name & Father's Name"}
                 />
               </td>
               <td className="border border-slate-400 p-1.5">
@@ -1420,7 +2024,7 @@ function ArrestDocsContent() {
                   value={w.address}
                   onChange={(e) => handleUpdateWitnessRow(w.id, "address", e.target.value)}
                   className="w-full bg-transparent outline-none"
-                  placeholder="पता"
+                  placeholder={templateLang === "hi" ? "पता" : "Address"}
                 />
               </td>
               <td className="border border-slate-400 p-1.5 text-center font-bold">
@@ -1451,12 +2055,12 @@ function ArrestDocsContent() {
   const renderOfficerSignBlock = () => (
     <div className="pt-6 flex justify-between items-end text-xs border-t border-slate-300">
       <div>
-        <p className="font-bold">हस्ताक्षर/अंगूठा अभियुक्त:</p>
+        <p className="font-bold">{templateLang === "hi" ? "हस्ताक्षर/अंगूठा अभियुक्त:" : "Signature / Thumb Impression of Accused:"}</p>
         <p className="border-b border-slate-400 w-44 pt-4"></p>
         <p className="text-[11px] text-slate-600 pt-1">({formData.noticeeName})</p>
       </div>
       <div className="text-right space-y-0.5">
-        <p className="font-bold">हस्ताक्षर अनुसंधान अधिकारी (IO):</p>
+        <p className="font-bold">{templateLang === "hi" ? "हस्ताक्षर अनुसंधान अधिकारी (IO):" : "Signature of Investigating Officer (IO):"}</p>
         <p className="border-b border-slate-400 w-48 ml-auto pt-4"></p>
         <input
           type="text"
@@ -1502,6 +2106,36 @@ function ArrestDocsContent() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Bilingual Language Switcher (Top Action Bar) */}
+          <div className="flex items-center bg-white border border-slate-300 rounded-lg p-0.5 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-600 px-2 flex items-center gap-1">
+              <Languages className="w-3.5 h-3.5 text-rose-700" />
+              <span>भाषा / Lang:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("hi")}
+              className={`px-3 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                templateLang === "hi"
+                  ? "bg-rose-900 text-white shadow-xs"
+                  : "text-slate-600 hover:text-rose-900 hover:bg-slate-100"
+              }`}
+            >
+              हिन्दी
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("en")}
+              className={`px-3 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                templateLang === "en"
+                  ? "bg-rose-900 text-white shadow-xs"
+                  : "text-slate-600 hover:text-rose-900 hover:bg-slate-100"
+              }`}
+            >
+              English
+            </button>
+          </div>
+
           <Button
             size="sm"
             onClick={handleSaveToFir}
@@ -1510,7 +2144,7 @@ function ArrestDocsContent() {
             title="Save this document to FIR Profile Documents with Universal Evidence processing"
           >
             {isSavingToFir ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            <span>{isSavingToFir ? "सहेजा जा रहा है..." : "FIR Profile में सहेजें"}</span>
+            <span>{isSavingToFir ? (templateLang === "hi" ? "सहेजा जा रहा है..." : "Saving...") : (templateLang === "hi" ? "FIR Profile में सहेजें" : "Save to FIR")}</span>
           </Button>
 
           <Button
@@ -1521,7 +2155,7 @@ function ArrestDocsContent() {
             title="4-पृष्ठ पूर्वावलोकन (Preview exact 4 A4 pages)"
           >
             <Eye className="w-3.5 h-3.5 text-blue-700" />
-            <span>4-पृष्ठ पूर्वावलोकन</span>
+            <span>{templateLang === "hi" ? "4-पृष्ठ पूर्वावलोकन" : "4-Page Preview"}</span>
           </Button>
 
           <Button
@@ -1530,7 +2164,7 @@ function ArrestDocsContent() {
             className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs gap-1.5 shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
-            Print A4 Document
+            {templateLang === "hi" ? "प्रिंट A4 प्रपत्र" : "Print A4 Document"}
           </Button>
           <Button
             size="sm"
@@ -1539,7 +2173,7 @@ function ArrestDocsContent() {
             className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
           >
             <Download className="w-3.5 h-3.5" />
-            Download A4
+            {templateLang === "hi" ? "डाउनलोड A4" : "Download A4"}
           </Button>
           <Button
             size="sm"
@@ -1548,7 +2182,9 @@ function ArrestDocsContent() {
             className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied" : "Copy Text"}
+            {copied
+              ? (templateLang === "hi" ? "कॉपी हो गया" : "Copied")
+              : (templateLang === "hi" ? "टेक्स्ट कॉपी करें" : "Copy Text")}
           </Button>
         </div>
       </div>
@@ -1561,7 +2197,7 @@ function ArrestDocsContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Active FIR Case *
+              {templateLang === "hi" ? "सक्रिय अभियोग (FIR) चुनें *" : "Select Active FIR Case *"}
             </label>
             <select
               value={selectedFirId}
@@ -1578,7 +2214,7 @@ function ArrestDocsContent() {
 
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Accused Person (अभियुक्त चुनें) *
+              {templateLang === "hi" ? "अभियुक्त चुनें (Select Accused) *" : "Select Accused Person *"}
             </label>
             <select
               value={selectedAccusedId}
@@ -1592,14 +2228,14 @@ function ArrestDocsContent() {
                   </option>
                 ))
               ) : (
-                <option value="">{formData.noticeeName || "विकास शर्मा (डिफ़ॉल्ट अभियुक्त)"}</option>
+                <option value="">{formData.noticeeName || (templateLang === "hi" ? "विकास शर्मा (डिफ़ॉल्ट अभियुक्त)" : "Vikas Sharma (Default Accused)")}</option>
               )}
             </select>
           </div>
 
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Arrest Document Proforma *
+              {templateLang === "hi" ? "गिरफ्तारी प्रपत्र प्रोफार्मा चुनें *" : "Select Arrest Document Proforma *"}
             </label>
             <select
               value={selectedTemplate}
@@ -1608,30 +2244,53 @@ function ArrestDocsContent() {
             >
               {Object.entries(TEMPLATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>
-                  {cfg.label}
+                  {templateLang === "hi" ? cfg.labelHi : cfg.labelEn}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Toolbar: Font Size & Reset */}
+        {/* Toolbar: Font Size, Language & Reset */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-semibold text-[11px]">Font Size:</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 font-semibold text-[11px]">{templateLang === "hi" ? "फॉन्ट आकार:" : "Font Size:"}</span>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+                {(["compact", "standard", "large"] as const).map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setFontSize(sz)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize transition-colors ${
+                      fontSize === sz ? "bg-white text-rose-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-              {(["compact", "standard", "large"] as const).map((sz) => (
-                <button
-                  key={sz}
-                  type="button"
-                  onClick={() => setFontSize(sz)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize transition-colors ${
-                    fontSize === sz ? "bg-white text-rose-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {sz}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("hi")}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                  templateLang === "hi" ? "bg-white text-rose-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                हिन्दी
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("en")}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
+                  templateLang === "en" ? "bg-white text-rose-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                English
+              </button>
             </div>
           </div>
 
@@ -1643,7 +2302,7 @@ function ArrestDocsContent() {
               title="Reset template to standard default format"
             >
               <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Reset Template</span>
+              <span>{templateLang === "hi" ? "टेम्पलेट रीसेट" : "Reset Template"}</span>
             </button>
           </div>
         </div>
@@ -1691,13 +2350,15 @@ function ArrestDocsContent() {
               {/* Items Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">बरामदशुदा जामातलाशी सामान की सूची:</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "बरामदशुदा जामातलाशी सामान की सूची:" : "Inventory of Personal Search Articles:"}
+                  </span>
                   <button
                     type="button"
                     onClick={handleAddJamaTalashiRow}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> सामान जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सामान जोड़ें" : "Add Item"}
                   </button>
                 </div>
                 <TableResizeToolbar
@@ -1713,7 +2374,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-12 text-center font-bold"
                       >
-                        क्र0 सं0
+                        {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
                         <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(0, e)} />
                       </th>
                       <th
@@ -1722,7 +2383,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 text-left font-bold"
                       >
-                        विवरण सामान / नकदी / दस्तावेज
+                        {templateLang === "hi" ? "विवरण सामान / नकदी / दस्तावेज" : "Description of Articles / Cash / Documents"}
                         <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(1, e)} />
                       </th>
                       <th
@@ -1731,7 +2392,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-28 text-center font-bold"
                       >
-                        तादाद / रकम
+                        {templateLang === "hi" ? "तादाद / रकम" : "Quantity / Amount"}
                         <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(2, e)} />
                       </th>
                       <th
@@ -1740,7 +2401,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-36 text-left font-bold"
                       >
-                        पहचान / विशेष चिन्ह
+                        {templateLang === "hi" ? "पहचान / विशेष चिन्ह" : "Identification / Marks"}
                         <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(3, e)} />
                       </th>
                       <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
@@ -1799,7 +2460,9 @@ function ArrestDocsContent() {
 
               {/* Receipt Clause */}
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">रसीद व सुपुर्दगी की पुष्टि:</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "रसीद व सुपुर्दगी की पुष्टि:" : "Receipt & Delivery Confirmation:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.receiptClauseText || ""}
@@ -1829,13 +2492,15 @@ function ArrestDocsContent() {
               {/* Dynamic Grounds Points */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">गिरफ्तारी के ठोस आधार (Specific Grounds of Arrest):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "गिरफ्तारी के ठोस आधार (Specific Grounds of Arrest):" : "Specific Grounds of Arrest:"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleAddPoint("groundsPoints")}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> आधार बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "आधार बिंदु जोड़ें" : "Add Ground"}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -1863,13 +2528,15 @@ function ArrestDocsContent() {
               {/* Dynamic Legal Rights Points */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">विधिक अधिकार (Statutory Legal Rights):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "विधिक अधिकार (Statutory Legal Rights):" : "Statutory Legal Rights:"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleAddPoint("rightsPoints")}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> अधिकार बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "अधिकार बिंदु जोड़ें" : "Add Right"}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -1896,7 +2563,9 @@ function ArrestDocsContent() {
 
               {/* Accused Receipt Clause */}
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">अभियुक्त की पावती (Receipt Clause):</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "अभियुक्त की पावती (Receipt Clause):" : "Accused Receipt Clause:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.receiptClauseText || ""}
@@ -1917,13 +2586,15 @@ function ArrestDocsContent() {
               {renderOfficialHeader()}
 
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs font-bold underline">शारीरिक लक्षण व पहचान सूची:</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "शारीरिक लक्षण व पहचान सूची:" : "Physical Features & Identification Traits:"}
+                </span>
                 <button
                   type="button"
                   onClick={handleAddTraitRow}
                   className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                 >
-                  <Plus className="w-3.5 h-3.5" /> लक्षण जोड़ें
+                  <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "लक्षण जोड़ें" : "Add Trait"}
                 </button>
               </div>
 
@@ -1965,7 +2636,7 @@ function ArrestDocsContent() {
               {renderOfficialHeader()}
 
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold shrink-0">बरामदगी का स्थान:</span>
+                <span className="font-bold shrink-0">{templateLang === "hi" ? "बरामदगी का स्थान:" : "Place of Recovery:"}</span>
                 <input
                   type="text"
                   value={formData.recoveryPlace || ""}
@@ -1984,13 +2655,15 @@ function ArrestDocsContent() {
               {/* Recovery Items Table */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">बरामदशुदा माल का विस्तृत विवरण (Inventory):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "बरामदशुदा माल का विस्तृत विवरण (Inventory):" : "Inventory of Seized / Recovered Property:"}
+                  </span>
                   <button
                     type="button"
                     onClick={handleAddRecoveryRow}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> बरामदगी जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "बरामदगी जोड़ें" : "Add Item"}
                   </button>
                 </div>
                 <TableResizeToolbar
@@ -2006,7 +2679,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-12 text-center font-bold"
                       >
-                        क्र0 सं0
+                        {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
                         <TableColResizer onResize={(e) => recoveryTableResize.startColResize(0, e)} />
                       </th>
                       <th
@@ -2015,7 +2688,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 text-left font-bold"
                       >
-                        बरामद सामान/नकदी का विवरण
+                        {templateLang === "hi" ? "बरामद सामान/नकदी का विवरण" : "Description of Recovered Property / Cash"}
                         <TableColResizer onResize={(e) => recoveryTableResize.startColResize(1, e)} />
                       </th>
                       <th
@@ -2024,7 +2697,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-28 text-center font-bold"
                       >
-                        तादाद / संख्या
+                        {templateLang === "hi" ? "तादाद / संख्या" : "Quantity"}
                         <TableColResizer onResize={(e) => recoveryTableResize.startColResize(2, e)} />
                       </th>
                       <th
@@ -2033,7 +2706,7 @@ function ArrestDocsContent() {
                         }}
                         className="relative border border-slate-400 p-2 w-44 text-left font-bold"
                       >
-                        मोहर व सीलबंद पार्सल
+                        {templateLang === "hi" ? "मोहर व सीलबंद पार्सल" : "Seal & Packaging Particulars"}
                         <TableColResizer onResize={(e) => recoveryTableResize.startColResize(3, e)} />
                       </th>
                       <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
@@ -2092,7 +2765,9 @@ function ArrestDocsContent() {
 
               {/* Sealing Note */}
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">सीलबंद कार्यवाही व नमूना मोहर:</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "सीलबंद कार्यवाही व नमूना मोहर:" : "Sealing Proceedings & Specimen Seal:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.receiptClauseText || ""}
@@ -2112,7 +2787,7 @@ function ArrestDocsContent() {
             <div className="space-y-6">
               <div className="text-center space-y-1 pb-2 border-b border-slate-400">
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs font-bold">न्यायालय:</span>
+                  <span className="text-xs font-bold">{templateLang === "hi" ? "न्यायालय:" : "Court:"}</span>
                   <input
                     type="text"
                     value={formData.courtName || ""}
@@ -2122,13 +2797,13 @@ function ArrestDocsContent() {
                 </div>
                 <input
                   type="text"
-                  value={formData.docTitle || "प्रार्थना पत्र बाबत हासिल करने पुलिस हिरासत रिमांड"}
+                  value={formData.docTitle || (templateLang === "hi" ? "प्रार्थना पत्र बाबत हासिल करने पुलिस हिरासत रिमांड" : "APPLICATION FOR POLICE CUSTODY REMAND")}
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                   className="text-center font-bold text-base w-full bg-transparent outline-none"
                 />
                 <input
                   type="text"
-                  value={formData.docSubTitle || "अंतर्गत धारा 187 BNSS, 2023"}
+                  value={formData.docSubTitle || (templateLang === "hi" ? "अंतर्गत धारा 187 BNSS, 2023" : "Under Section 187 BNSS, 2023")}
                   onChange={(e) => handleFieldChange("docSubTitle", e.target.value)}
                   className="text-center text-xs text-slate-700 w-full bg-transparent outline-none"
                 />
@@ -2136,7 +2811,7 @@ function ArrestDocsContent() {
 
               {/* Subject */}
               <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="shrink-0">विषय:</span>
+                <span className="shrink-0">{templateLang === "hi" ? "विषय:" : "Subject:"}</span>
                 <input
                   type="text"
                   value={formData.subjectTitle || ""}
@@ -2155,13 +2830,15 @@ function ArrestDocsContent() {
               {/* Remand Reasons List */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">पुलिस रिमांड के ठोस आधार (Grounds for Police Remand):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "पुलिस रिमांड के ठोस आधार (Grounds for Police Remand):" : "Specific Grounds for Police Custody Remand:"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleAddPoint("remandPoints")}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> रिमांड बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "रिमांड बिंदु जोड़ें" : "Add Ground"}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -2188,7 +2865,9 @@ function ArrestDocsContent() {
 
               {/* Prayer */}
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">प्रार्थना (Prayer):</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "प्रार्थना (Prayer):" : "Prayer:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.conclusionNarrative || ""}
@@ -2208,7 +2887,7 @@ function ArrestDocsContent() {
               {renderOfficialHeader()}
 
               <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold shrink-0">निशानदेही का स्थान:</span>
+                <span className="font-bold shrink-0">{templateLang === "hi" ? "निशानदेही का स्थान:" : "Place of Pointing Out / Demarcation:"}</span>
                 <input
                   type="text"
                   value={formData.pointingOutPlace || ""}
@@ -2227,13 +2906,15 @@ function ArrestDocsContent() {
               {/* Dynamic Boundaries */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">चौहद्दी व सीमाएं (Boundaries):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "चौहद्दी व सीमाएं (Boundaries):" : "Boundaries & Environs:"}
+                  </span>
                   <button
                     type="button"
                     onClick={handleAddBoundaryRow}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> सीमा बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सीमा बिंदु जोड़ें" : "Add Boundary"}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -2264,7 +2945,9 @@ function ArrestDocsContent() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">तस्दीक व सत्यापन नोट:</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "तस्दीक व सत्यापन नोट:" : "Attestation & Verification Note:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.verificationClauseText || ""}
@@ -2292,7 +2975,9 @@ function ArrestDocsContent() {
               />
 
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">बयान अभियुक्त (In Disclosure Narrative):</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "बयान अभियुक्त (In Disclosure Narrative):" : "Accused Disclosure Statement:"}
+                </span>
                 <textarea
                   rows={5}
                   value={formData.disclosureNarrative || ""}
@@ -2302,7 +2987,9 @@ function ArrestDocsContent() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">सत्यापन नोट (Verification):</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "सत्यापन नोट (Verification):" : "Verification Note:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.verificationClauseText || ""}
@@ -2324,7 +3011,7 @@ function ArrestDocsContent() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs border border-slate-300 p-3 bg-slate-50">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold shrink-0">चिकित्सा अधिकारी:</span>
+                  <span className="font-bold shrink-0">{templateLang === "hi" ? "चिकित्सा अधिकारी:" : "Medical Officer:"}</span>
                   <input
                     type="text"
                     value={formData.medicalOfficerName || ""}
@@ -2333,7 +3020,7 @@ function ArrestDocsContent() {
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold shrink-0">अस्पताल:</span>
+                  <span className="font-bold shrink-0">{templateLang === "hi" ? "अस्पताल:" : "Hospital:"}</span>
                   <input
                     type="text"
                     value={formData.hospitalName || ""}
@@ -2344,7 +3031,7 @@ function ArrestDocsContent() {
               </div>
 
               <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="shrink-0">विषय:</span>
+                <span className="shrink-0">{templateLang === "hi" ? "विषय:" : "Subject:"}</span>
                 <input
                   type="text"
                   value={formData.subjectTitle || ""}
@@ -2363,13 +3050,15 @@ function ArrestDocsContent() {
               {/* Dynamic Medical Points */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">परीक्षण बिंदु (Medical Queries):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "परीक्षण बिंदु (Medical Queries):" : "Medical Examination Queries:"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleAddPoint("medicalPoints")}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "बिंदु जोड़ें" : "Add Query"}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -2397,13 +3086,15 @@ function ArrestDocsContent() {
               {/* Escort Staff */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">साथ जाने वाले पुलिस कर्मचारी (Escort Staff):</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "साथ जाने वाले पुलिस कर्मचारी (Escort Staff):" : "Escort Police Personnel:"}
+                  </span>
                   <button
                     type="button"
                     onClick={handleAddEscortRow}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> कर्मचारी जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "कर्मचारी जोड़ें" : "Add Officer"}
                   </button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -2414,14 +3105,14 @@ function ArrestDocsContent() {
                         value={esc.name}
                         onChange={(e) => handleUpdateEscortRow(esc.id, "name", e.target.value)}
                         className="w-full bg-transparent outline-none border-b border-dotted border-slate-400"
-                        placeholder="नाम व पद"
+                        placeholder={templateLang === "hi" ? "नाम व पद" : "Name & Rank"}
                       />
                       <input
                         type="text"
                         value={esc.beltNo}
                         onChange={(e) => handleUpdateEscortRow(esc.id, "beltNo", e.target.value)}
                         className="w-28 bg-transparent outline-none border-b border-dotted border-slate-400"
-                        placeholder="बेल्ट न0"
+                        placeholder={templateLang === "hi" ? "बेल्ट न0" : "Belt No."}
                       />
                       <button
                         type="button"
@@ -2436,7 +3127,9 @@ function ArrestDocsContent() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">अनुरोध (Request):</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "अनुरोध (Request):" : "Requisition / Prayer:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.conclusionNarrative || ""}
@@ -2455,7 +3148,7 @@ function ArrestDocsContent() {
             <div className="space-y-6">
               <div className="text-center space-y-1 pb-2 border-b border-slate-400">
                 <div className="flex items-center justify-center gap-2">
-                  <span className="text-xs font-bold">न्यायालय:</span>
+                  <span className="text-xs font-bold">{templateLang === "hi" ? "न्यायालय:" : "Court:"}</span>
                   <input
                     type="text"
                     value={formData.courtName || ""}
@@ -2465,20 +3158,20 @@ function ArrestDocsContent() {
                 </div>
                 <input
                   type="text"
-                  value={formData.docTitle || "प्रार्थना पत्र बाबत पेशी अभियुक्त व भेजने न्यायिक हिरासत (जेल)"}
+                  value={formData.docTitle || (templateLang === "hi" ? "प्रार्थना पत्र बाबत पेशी अभियुक्त व भेजने न्यायिक हिरासत (जेल)" : "APPLICATION FOR PRODUCTION OF ACCUSED & REMAND TO JUDICIAL CUSTODY")}
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                   className="text-center font-bold text-base w-full bg-transparent outline-none"
                 />
                 <input
                   type="text"
-                  value={formData.docSubTitle || "अंतर्गत धारा 187 BNSS, 2023"}
+                  value={formData.docSubTitle || (templateLang === "hi" ? "अंतर्गत धारा 187 BNSS, 2023" : "Under Section 187 BNSS, 2023")}
                   onChange={(e) => handleFieldChange("docSubTitle", e.target.value)}
                   className="text-center text-xs text-slate-700 w-full bg-transparent outline-none"
                 />
               </div>
 
               <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="shrink-0">विषय:</span>
+                <span className="shrink-0">{templateLang === "hi" ? "विषय:" : "Subject:"}</span>
                 <input
                   type="text"
                   value={formData.subjectTitle || ""}
@@ -2497,13 +3190,15 @@ function ArrestDocsContent() {
               {/* Dynamic Peshi Points */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">न्यायिक हिरासत के आधार:</span>
+                  <span className="text-xs font-bold underline">
+                    {templateLang === "hi" ? "न्यायिक हिरासत के आधार:" : "Grounds for Judicial Remand:"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleAddPoint("peshiPoints")}
                     className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
                   >
-                    <Plus className="w-3.5 h-3.5" /> बिंदु जोड़ें
+                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "बिंदु जोड़ें" : "Add Ground"}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -2529,7 +3224,9 @@ function ArrestDocsContent() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-xs font-bold underline">प्रार्थना:</span>
+                <span className="text-xs font-bold underline">
+                  {templateLang === "hi" ? "प्रार्थना:" : "Prayer:"}
+                </span>
                 <textarea
                   rows={2}
                   value={formData.conclusionNarrative || ""}

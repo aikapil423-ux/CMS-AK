@@ -9,6 +9,7 @@ import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
+import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import {
   PlusCircle,
@@ -86,6 +87,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Universal Police Dictation (Hindi & English Voice Input) */}
             <TopBarDictation />
+
+            {/* Bilingual Instant Language Switcher (Hindi / English) */}
+            <TopBarLanguageSwitcher />
 
             {isComplaints && canRegisterComplaint && (
               <Link href="/complaints/register">

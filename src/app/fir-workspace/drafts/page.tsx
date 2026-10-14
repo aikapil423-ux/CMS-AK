@@ -15,8 +15,11 @@ import {
   Trash2,
   Send,
   RotateCcw,
+  Globe,
+  Languages,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
 import { FIRItem } from "@/types";
@@ -89,19 +92,29 @@ interface AccusedTrialEntry {
 
 function FIRFinalFormContent() {
   const { currentUser } = useAuth();
+  const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
   const [formType, setFormType] = useState<FinalFormType>("CHARGESHEET");
+  const [templateLang, setTemplateLang] = useState<"hi" | "en">(globalLang || "hi");
 
   // Editable Proforma Fields
-  const [courtName, setCourtName] = useState("In the Court of Chief Judicial Magistrate, Gurugram");
+  const [courtName, setCourtName] = useState(
+    globalLang === "hi"
+      ? "न्यायालय मुख्य न्यायिक दंडाधिकारी, गुरुग्राम"
+      : "In the Court of Chief Judicial Magistrate, Gurugram"
+  );
   const [reportNumber, setReportNumber] = useState("");
   const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
-  const [policeStation, setPoliceStation] = useState("Sector 29 Police Station");
-  const [district, setDistrict] = useState("Gurugram");
+  const [policeStation, setPoliceStation] = useState(
+    globalLang === "hi" ? "थाना सैक्टर 29" : "Sector 29 Police Station"
+  );
+  const [district, setDistrict] = useState(
+    globalLang === "hi" ? "जिला गुरुग्राम" : "Gurugram"
+  );
   const [firActsAndSections, setFirActsAndSections] = useState("");
   const [firNumberAndDate, setFirNumberAndDate] = useState("");
 
@@ -119,13 +132,17 @@ function FIRFinalFormContent() {
   >([]);
 
   // Property Details
-  const [propertyRecovered, setPropertyRecovered] = useState("");
+  const [propertyRecovered, setPropertyRecovered] = useState(
+    globalLang === "hi"
+      ? "कोई ठोस संपत्ति बरामद नहीं हुई अथवा प्रदर्श हेतु अपेक्षित नहीं है।"
+      : "No tangible property recovered or required for exhibit."
+  );
 
   // IO and SHO Endorsement
   const [investigatingOfficer, setInvestigatingOfficer] = useState(
     currentUser.name || "SI Neeraj Kumar"
   );
-  const [ioRank, setIoRank] = useState("Sub Inspector");
+  const [ioRank, setIoRank] = useState(globalLang === "hi" ? "उप-निरीक्षक" : "Sub Inspector");
   const [ioBelt, setIoBelt] = useState("SI/6641");
   const [shoName, setShoName] = useState("Inspector Rajesh Kumar");
   const [investigationSummary, setInvestigationSummary] = useState("");
@@ -133,6 +150,44 @@ function FIRFinalFormContent() {
   const [copied, setCopied] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+
+  const handleToggleLanguage = (lang: "hi" | "en") => {
+    if (lang === templateLang) return;
+    setTemplateLang(lang);
+
+    if (lang === "hi") {
+      setPoliceStation((prev) => (prev ? (prev.startsWith("थाना") ? prev : `थाना ${prev.replace(/^(Police Station|PS)\s*/i, "")}`) : "थाना सैक्टर 29"));
+      setDistrict((prev) => (prev ? (prev.startsWith("जिला") ? prev : `जिला ${prev.replace(/^District\s*/i, "")}`) : "जिला गुरुग्राम"));
+      setCourtName((prev) =>
+        prev.includes("Court")
+          ? `न्यायालय मुख्य न्यायिक दंडाधिकारी, ${district.replace(/^(District|जिला)\s*/i, "")}`
+          : prev
+      );
+      if (propertyRecovered === "No tangible property recovered or required for exhibit.") {
+        setPropertyRecovered("कोई ठोस संपत्ति बरामद नहीं हुई अथवा प्रदर्श हेतु अपेक्षित नहीं है।");
+      }
+      setIoRank((prev) => (prev === "Sub Inspector" ? "उप-निरीक्षक" : prev));
+    } else {
+      setPoliceStation((prev) => (prev ? `PS ${prev.replace(/^थाना\s*/, "")}` : "PS Sector 29"));
+      setDistrict((prev) => (prev ? `District ${prev.replace(/^जिला\s*/, "")}` : "District Gurugram"));
+      setCourtName((prev) =>
+        prev.includes("न्यायालय")
+          ? `In the Court of Chief Judicial Magistrate, ${district.replace(/^(जिला|District)\s*/i, "")}`
+          : prev
+      );
+      if (propertyRecovered === "कोई ठोस संपत्ति बरामद नहीं हुई अथवा प्रदर्श हेतु अपेक्षित नहीं है।") {
+        setPropertyRecovered("No tangible property recovered or required for exhibit.");
+      }
+      setIoRank((prev) => (prev === "उप-निरीक्षक" ? "Sub Inspector" : prev));
+    }
+  };
+
+  // Sync with global top bar language switcher
+  useEffect(() => {
+    if (globalLang && globalLang !== templateLang) {
+      handleToggleLanguage(globalLang);
+    }
+  }, [globalLang]);
 
   const keyRefTableResize = useTableResize({
     initialColWidths: { 0: 160, 1: 180, 2: 160, 3: 180 },
@@ -412,6 +467,36 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           </div>
 
           <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
+            {/* Bilingual Language Selector */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-300 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("hi")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
+                  templateLang === "hi"
+                    ? "bg-emerald-700 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                }`}
+                title="हिन्दी प्रारूप (Hindi Proforma)"
+              >
+                <Languages className="w-3.5 h-3.5" />
+                <span>हिन्दी</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("en")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
+                  templateLang === "en"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
+                }`}
+                title="English Statutory Proforma"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>English</span>
+              </button>
+            </div>
+
             <Button
               variant="outline"
               size="sm"
@@ -419,7 +504,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               className="text-xs font-semibold gap-1.5 cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? "Copied" : "Copy Proforma"}</span>
+              <span>{copied ? "Copied" : templateLang === "hi" ? "टेक्स्ट कॉपी" : "Copy Proforma"}</span>
             </Button>
 
             <Button
@@ -429,7 +514,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               className="text-xs font-semibold gap-1.5 text-slate-700 cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5 text-slate-600" />
-              <span>Print Final Form</span>
+              <span>{templateLang === "hi" ? "प्रिंट / PDF" : "Print Final Form"}</span>
             </Button>
 
             <Button
@@ -438,7 +523,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               className="text-xs font-bold gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer shadow-xs"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Submit & Update FIR</span>
+              <span>{templateLang === "hi" ? "न्यायालय में प्रेषित करें" : "Submit & Update FIR"}</span>
             </Button>
           </div>
         </div>
@@ -515,31 +600,33 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <Shield className="w-9 h-9 text-slate-800" />
             </div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-              HARYANA POLICE DEPARTMENT
+              {templateLang === "hi" ? "हरियाणा पुलिस विभाग" : "HARYANA POLICE DEPARTMENT"}
             </h2>
             <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-700 flex-wrap">
-              <span>POLICE STATION:</span>
+              <span>{templateLang === "hi" ? "थाना:" : "POLICE STATION:"}</span>
               <input
                 type="text"
                 value={policeStation}
                 onChange={(e) => setPoliceStation(e.target.value)}
                 className="font-bold text-slate-900 uppercase bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 px-1 py-0.5 outline-none text-center"
-                placeholder="POLICE STATION"
+                placeholder={templateLang === "hi" ? "थाना" : "POLICE STATION"}
               />
-              <span>, DISTRICT</span>
+              <span>{templateLang === "hi" ? ", जिला:" : ", DISTRICT:"}</span>
               <input
                 type="text"
                 value={district}
                 onChange={(e) => setDistrict(e.target.value)}
                 className="font-bold text-slate-900 uppercase bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 px-1 py-0.5 outline-none text-center"
-                placeholder="DISTRICT"
+                placeholder={templateLang === "hi" ? "जिला" : "DISTRICT"}
               />
             </div>
             <div className="inline-block mt-1 px-3 py-0.5 bg-slate-100 border border-slate-400 text-xs font-bold font-sans rounded">
               {FINAL_FORM_CONFIGS[formType].policeFormNo} • {FINAL_FORM_CONFIGS[formType].bnssSection}
             </div>
             <h1 className="text-base sm:text-lg font-black uppercase tracking-tight text-slate-950 mt-1">
-              POLICE REPORT UNDER SECTION 193 BNSS, 2023
+              {templateLang === "hi"
+                ? "पुलिस रिपोर्ट अंतर्गत धारा 193 BNSS, 2023"
+                : "POLICE REPORT UNDER SECTION 193 BNSS, 2023"}
             </h1>
             <p className="text-xs font-bold text-slate-800 italic">
               ({FINAL_FORM_CONFIGS[formType].titleHindi} / {FINAL_FORM_CONFIGS[formType].label})
@@ -553,7 +640,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               value={courtName}
               onChange={(e) => setCourtName(e.target.value)}
               className="flex-1 font-bold underline uppercase text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-0.5 outline-none text-xs"
-              placeholder="In the Court of Judicial Magistrate..."
+              placeholder={templateLang === "hi" ? "न्यायालय मुख्य न्यायिक दंडाधिकारी..." : "In the Court of Judicial Magistrate..."}
             />
             <VoiceInputButton
               onTranscript={(text) => setCourtName(text)}
@@ -582,7 +669,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   }}
                   className="relative border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4"
                 >
-                  FIR No. &amp; Date:
+                  {templateLang === "hi" ? "मुकदमा संख्या व दिनांक:" : "FIR No. & Date:"}
                   <TableColResizer onResize={(e) => keyRefTableResize.startColResize(0, e)} />
                   <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(0, e)} />
                 </td>
@@ -609,7 +696,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   }}
                   className="relative border-r border-slate-800 p-2 font-bold bg-slate-50 w-1/4"
                 >
-                  Report Serial No.:
+                  {templateLang === "hi" ? "रिपोर्ट क्रमांक:" : "Report Serial No.:"}
                   <TableColResizer onResize={(e) => keyRefTableResize.startColResize(2, e)} />
                 </td>
                 <td
@@ -635,7 +722,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 className="border-b border-slate-800"
               >
                 <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
-                  Acts &amp; Sections:
+                  {templateLang === "hi" ? "अधिनियम व धाराएं:" : "Acts & Sections:"}
                   <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(1, e)} />
                 </td>
                 <td className="p-1.5 font-bold text-emerald-900" colSpan={3}>
@@ -663,7 +750,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 className="border-b border-slate-800"
               >
                 <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
-                  Complainant / Informant:
+                  {templateLang === "hi" ? "परिवादी / शिकायतकर्ता:" : "Complainant / Informant:"}
                   <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(2, e)} />
                 </td>
                 <td className="border-r border-slate-800 p-1.5" colSpan={2}>
@@ -682,7 +769,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         fieldLabel="Complainant Name"
                         iconOnly
                       />
-                      <span className="text-slate-600">s/o, w/o:</span>
+                      <span className="text-slate-600">{templateLang === "hi" ? "पिता/पति:" : "s/o, w/o:"}</span>
                       <input
                         type="text"
                         value={complainantFather}
@@ -715,7 +802,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   </div>
                 </td>
                 <td className="p-1.5">
-                  <span className="text-[10px] text-slate-600 block">Contact:</span>
+                  <span className="text-[10px] text-slate-600 block">{templateLang === "hi" ? "संपर्क:" : "Contact:"}</span>
                   <div className="flex items-center gap-1">
                     <input
                       type="text"
@@ -739,7 +826,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 }}
               >
                 <td className="relative border-r border-slate-800 p-2 font-bold bg-slate-50">
-                  Dispatch Date:
+                  {templateLang === "hi" ? "रवानगी दिनांक:" : "Dispatch Date:"}
                   <TableRowResizer onResize={(e) => keyRefTableResize.startRowResize(3, e)} />
                 </td>
                 <td className="border-r border-slate-800 p-1.5">
@@ -750,9 +837,9 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                     size="sm"
                   />
                 </td>
-                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">Nature of Report:</td>
+                <td className="border-r border-slate-800 p-2 font-bold bg-slate-50">{templateLang === "hi" ? "रिपोर्ट का प्रकार:" : "Nature of Report:"}</td>
                 <td className="p-2 font-bold text-slate-900">
-                  {FINAL_FORM_CONFIGS[formType].label} ({FINAL_FORM_CONFIGS[formType].policeFormNo})
+                  {templateLang === "hi" ? FINAL_FORM_CONFIGS[formType].titleHindi : FINAL_FORM_CONFIGS[formType].label} ({FINAL_FORM_CONFIGS[formType].policeFormNo})
                 </td>
               </tr>
             </tbody>
@@ -762,7 +849,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
-                1. Particulars of Accused Persons:
+                {templateLang === "hi" ? "1. अभियुक्तों का विवरण:" : "1. Particulars of Accused Persons:"}
               </h4>
               <div className="no-print">
                 {formType === "CHARGESHEET" ? (
@@ -774,7 +861,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                     className="text-[11px] h-7 px-2 font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 cursor-pointer gap-1"
                   >
                     <Plus className="w-3 h-3" />
-                    <span>Add Accused Row</span>
+                    <span>{templateLang === "hi" ? "+ अभियुक्त जोड़ें" : "Add Accused Row"}</span>
                   </Button>
                 ) : (
                   <Button
@@ -785,7 +872,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                     className="text-[11px] h-7 px-2 font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50 cursor-pointer gap-1"
                   >
                     <Plus className="w-3 h-3" />
-                    <span>Add Suspect Row</span>
+                    <span>{templateLang === "hi" ? "+ संदेही जोड़ें" : "Add Suspect Row"}</span>
                   </Button>
                 )}
               </div>
@@ -795,7 +882,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-sans text-slate-600 italic">
-                    (A) Accused Persons Sent Up for Trial:
+                    {templateLang === "hi" ? "(क) अभियोग हेतु भेजे गए अभियुक्त (Sent Up for Trial):" : "(A) Accused Persons Sent Up for Trial:"}
                   </p>
                 </div>
                 <TableResizeToolbar
@@ -811,7 +898,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-center w-10"
                       >
-                        Sr.
+                        {templateLang === "hi" ? "क्र.सं." : "Sr."}
                         <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(0, e)} />
                       </th>
                       <th
@@ -821,7 +908,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-left w-2/5"
                       >
-                        Name &amp; Particulars
+                        {templateLang === "hi" ? "नाम व पूर्ण विवरण" : "Name & Particulars"}
                         <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(1, e)} />
                       </th>
                       <th
@@ -831,7 +918,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-left w-1/4"
                       >
-                        Custody / Bail Status
+                        {templateLang === "hi" ? "हिरासत / जमानत स्थिति" : "Custody / Bail Status"}
                         <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(2, e)} />
                       </th>
                       <th
@@ -841,7 +928,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-left"
                       >
-                        Bail / Bond Particulars
+                        {templateLang === "hi" ? "जमानत / बंधपत्र विवरण" : "Bail / Bond Particulars"}
                         <TableColResizer onResize={(e) => accusedSentTableResize.startColResize(3, e)} />
                       </th>
                       <th className="p-1 text-center w-10 no-print"></th>
@@ -868,15 +955,15 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                                 value={acc.name}
                                 onChange={(e) => handleUpdateAccusedSent(acc.id, "name", e.target.value)}
                                 className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none w-1/2"
-                                placeholder="Accused Name"
+                                placeholder={templateLang === "hi" ? "अभियुक्त का नाम" : "Accused Name"}
                               />
-                              <span className="text-slate-500 text-[9px]">s/o:</span>
+                              <span className="text-slate-500 text-[9px]">{templateLang === "hi" ? "पिता:" : "s/o:"}</span>
                               <input
                                 type="text"
                                 value={acc.fatherName}
                                 onChange={(e) => handleUpdateAccusedSent(acc.id, "fatherName", e.target.value)}
                                 className="text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none flex-1 text-[9px]"
-                                placeholder="Father Name"
+                                placeholder={templateLang === "hi" ? "पिता का नाम" : "Father Name"}
                               />
                             </div>
                             <input
@@ -884,7 +971,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                               value={acc.address}
                               onChange={(e) => handleUpdateAccusedSent(acc.id, "address", e.target.value)}
                               className="w-full text-slate-600 text-[9px] bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
-                              placeholder="Full Address"
+                              placeholder={templateLang === "hi" ? "पूरा पता" : "Full Address"}
                             />
                           </td>
                           <td className="border-r border-slate-800 p-1.5">
@@ -893,10 +980,10 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                               onChange={(e) => handleUpdateAccusedSent(acc.id, "status", e.target.value as any)}
                               className="text-[9px] font-bold p-1 rounded border border-slate-300 bg-white"
                             >
-                              <option value="ON_BAIL">On Bail (जमानत पर)</option>
-                              <option value="IN_CUSTODY">In Judicial Custody (न्यायिक हिरासत)</option>
-                              <option value="ABSCONDING">Absconding (फरार / उद्घोषित)</option>
-                              <option value="NOT_ARRESTED">Not Arrested (गिरफ्तार नहीं)</option>
+                              <option value="ON_BAIL">{templateLang === "hi" ? "जमानत पर (On Bail)" : "On Bail (जमानत पर)"}</option>
+                              <option value="IN_CUSTODY">{templateLang === "hi" ? "न्यायिक हिरासत में (In Custody)" : "In Judicial Custody (न्यायिक हिरासत)"}</option>
+                              <option value="ABSCONDING">{templateLang === "hi" ? "उद्घोषित / फरार (Absconding)" : "Absconding (फरार / उद्घोषित)"}</option>
+                              <option value="NOT_ARRESTED">{templateLang === "hi" ? "गिरफ्तार नहीं (Not Arrested)" : "Not Arrested (गिरफ्तार नहीं)"}</option>
                             </select>
                           </td>
                           <td className="border-r border-slate-800 p-1.5">
@@ -911,7 +998,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                                 )
                               }
                               className="w-full text-[9px] text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none"
-                              placeholder="Bail bond / Jail details..."
+                              placeholder={templateLang === "hi" ? "जमानत बंधपत्र / जेल का विवरण..." : "Bail bond / Jail details..."}
                             />
                           </td>
                           <td className="p-1 text-center no-print">
@@ -929,7 +1016,9 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                     ) : (
                       <tr>
                         <td colSpan={5} className="p-2 text-center text-slate-500 italic">
-                          No accused sent up for trial. Click &quot;Add Accused Row&quot; above to add.
+                          {templateLang === "hi"
+                            ? "अभियोग हेतु कोई अभियुक्त नहीं भेजा गया है।"
+                            : "No accused sent up for trial. Click 'Add Accused Row' above to add."}
                         </td>
                       </tr>
                     )}
@@ -940,7 +1029,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-sans text-slate-600 italic">
-                    (B) Accused Persons Not Sent Up for Trial:
+                    {templateLang === "hi" ? "(ख) अभियोग हेतु नहीं भेजे गए संदेही / अभियुक्त (Not Sent for Trial):" : "(B) Accused Persons Not Sent Up for Trial:"}
                   </p>
                 </div>
                 <TableResizeToolbar
@@ -956,7 +1045,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-center w-12"
                       >
-                        Sr.
+                        {templateLang === "hi" ? "क्र.सं." : "Sr."}
                         <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(0, e)} />
                       </th>
                       <th
@@ -966,7 +1055,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-left w-1/3"
                       >
-                        Name of Suspect / Accused
+                        {templateLang === "hi" ? "संदेही / अभियुक्त का नाम" : "Name of Suspect / Accused"}
                         <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(1, e)} />
                       </th>
                       <th
@@ -976,7 +1065,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                         }}
                         className="relative border-r border-slate-800 p-1.5 text-left"
                       >
-                        Reasons for Not Sending for Trial
+                        {templateLang === "hi" ? "चालान न भेजने के कारण" : "Reasons for Not Sending for Trial"}
                         <TableColResizer onResize={(e) => accusedNotSentTableResize.startColResize(2, e)} />
                       </th>
                       <th className="p-1 text-center w-10 no-print"></th>
@@ -1001,7 +1090,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                             value={acc.name}
                             onChange={(e) => handleUpdateAccusedNotSent(acc.id, "name", e.target.value)}
                             className="w-full font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
-                            placeholder="Suspect / Accused Name"
+                            placeholder={templateLang === "hi" ? "संदेही / अभियुक्त का नाम" : "Suspect / Accused Name"}
                           />
                         </td>
                         <td className="border-r border-slate-800 p-1.5">
@@ -1010,7 +1099,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                             value={acc.reason}
                             onChange={(e) => handleUpdateAccusedNotSent(acc.id, "reason", e.target.value)}
                             className="w-full text-slate-800 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 py-0.5 outline-none text-xs"
-                            placeholder="Reason for not sending for trial..."
+                            placeholder={templateLang === "hi" ? "चालान न भेजने के कारण..." : "Reason for not sending for trial..."}
                           />
                         </td>
                         <td className="p-1 text-center no-print">
@@ -1035,7 +1124,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
-                2. Details of Property Recovered / Seized:
+                {templateLang === "hi" ? "2. बरामद / जब्त संपत्ति का विवरण:" : "2. Details of Property Recovered / Seized:"}
               </h4>
               <VoiceInputButton
                 onTranscript={(t) => setPropertyRecovered((prev) => (prev ? prev + " " + t : t))}
@@ -1050,7 +1139,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 value={propertyRecovered}
                 onChange={(e) => setPropertyRecovered(e.target.value)}
                 className="w-full bg-transparent hover:bg-white focus:bg-white text-[11px] font-sans p-1.5 rounded outline-none border border-transparent focus:border-emerald-500 leading-relaxed text-slate-950 resize-y"
-                placeholder="Recovered property details / Malkhana deposit particulars..."
+                placeholder={templateLang === "hi" ? "बरामद संपत्ति का विवरण / मालखाना मद विवरण..." : "Recovered property details / Malkhana deposit particulars..."}
               />
             </div>
           </div>
@@ -1059,7 +1148,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           <div className="mb-6">
             <div className="flex items-center justify-between mb-1">
               <h4 className="text-xs font-bold uppercase tracking-wider font-sans text-slate-800">
-                3. Brief Facts and Grounds of Investigation:
+                {templateLang === "hi" ? "3. अनुसंधान के संक्षिप्त तथ्य व आधार:" : "3. Brief Facts and Grounds of Investigation:"}
               </h4>
               <VoiceInputButton
                 onTranscript={(t) => setInvestigationSummary((prev) => (prev ? prev + " " + t : t))}
@@ -1074,7 +1163,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 value={investigationSummary}
                 onChange={(e) => setInvestigationSummary(e.target.value)}
                 className="w-full bg-transparent hover:bg-slate-50 focus:bg-white text-xs leading-relaxed text-justify p-2 rounded outline-none border border-transparent focus:border-emerald-500 text-slate-950 resize-y"
-                placeholder="Narrative of investigation, statement recordings under Sec 180 BNSS, technical evidence seized u/s 105 BNSS, and final conclusion..."
+                placeholder={templateLang === "hi" ? "अनुसंधान का संक्षिप्त विवरण, गवाहों के बयान, तकनीकी साक्ष्य व अंतिम निष्कर्ष दर्ज करें..." : "Narrative of investigation, statement recordings under Sec 180 BNSS, technical evidence seized u/s 105 BNSS, and final conclusion..."}
               />
             </div>
           </div>
@@ -1083,7 +1172,9 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           <div className="mt-8 pt-4 border-t border-slate-400 grid grid-cols-2 gap-8 text-center text-xs font-sans">
             <div className="space-y-1">
               <div className="h-10 flex items-end justify-center">
-                <span className="font-script text-base text-slate-500 italic">Signature of IO</span>
+                <span className="font-script text-base text-slate-500 italic">
+                  {templateLang === "hi" ? "तफ्तीश अधिकारी (IO) के हस्ताक्षर" : "Signature of IO"}
+                </span>
               </div>
               <div className="border-t border-slate-800 pt-1 flex items-center justify-center gap-1">
                 <input
@@ -1091,7 +1182,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   value={investigatingOfficer}
                   onChange={(e) => setInvestigatingOfficer(e.target.value)}
                   className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
-                  placeholder="IO Name"
+                  placeholder={templateLang === "hi" ? "अधिकारी का नाम" : "IO Name"}
                 />
                 <VoiceInputButton
                   onTranscript={(t) => setInvestigatingOfficer(t)}
@@ -1106,25 +1197,27 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   value={ioRank}
                   onChange={(e) => setIoRank(e.target.value)}
                   className="text-center bg-transparent border-b border-dotted border-slate-400 outline-none w-24"
-                  placeholder="Rank"
+                  placeholder={templateLang === "hi" ? "पद" : "Rank"}
                 />
-                <span>• Belt:</span>
+                <span>{templateLang === "hi" ? "• बेल्ट:" : "• Belt:"}</span>
                 <input
                   type="text"
                   value={ioBelt}
                   onChange={(e) => setIoBelt(e.target.value)}
                   className="text-center bg-transparent border-b border-dotted border-slate-400 outline-none w-20"
-                  placeholder="Belt No."
+                  placeholder={templateLang === "hi" ? "बेल्ट नं." : "Belt No."}
                 />
               </div>
               <p className="text-[10px] text-slate-600">
-                PS {policeStation}, Distt {district}
+                {templateLang === "hi" ? `थाना ${policeStation}, जिला ${district}` : `PS ${policeStation}, Distt ${district}`}
               </p>
             </div>
 
             <div className="space-y-1">
               <div className="h-10 flex items-end justify-center">
-                <span className="font-script text-base text-slate-500 italic">Forwarded by SHO</span>
+                <span className="font-script text-base text-slate-500 italic">
+                  {templateLang === "hi" ? "थाना प्रबंधक (SHO) द्वारा अग्रेषित" : "Forwarded by SHO"}
+                </span>
               </div>
               <div className="border-t border-slate-800 pt-1 flex items-center justify-center gap-1">
                 <input
@@ -1132,7 +1225,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   value={shoName}
                   onChange={(e) => setShoName(e.target.value)}
                   className="font-bold text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-emerald-500 rounded px-1 outline-none w-full"
-                  placeholder="SHO Name"
+                  placeholder={templateLang === "hi" ? "प्रबंधक अफसर का नाम" : "SHO Name"}
                 />
                 <VoiceInputButton
                   onTranscript={(t) => setShoName(t)}
@@ -1141,9 +1234,11 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                   iconOnly
                 />
               </div>
-              <p className="text-[10px] text-slate-600">Officer In-Charge (SHO)</p>
               <p className="text-[10px] text-slate-600">
-                PS {policeStation}, Distt {district}
+                {templateLang === "hi" ? "प्रबंधक अफसर (SHO)" : "Officer In-Charge (SHO)"}
+              </p>
+              <p className="text-[10px] text-slate-600">
+                {templateLang === "hi" ? `थाना ${policeStation}, जिला ${district}` : `PS ${policeStation}, Distt ${district}`}
               </p>
             </div>
           </div>

@@ -24,6 +24,7 @@ import {
   Languages,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
 import { FIRItem, NoticeFormData } from "@/types";
@@ -452,15 +453,18 @@ const TEMPLATE_CONFIG: Record<
 
 function FIRTemplatesContent() {
   const { currentUser } = useAuth();
+  const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
   const [selectedTemplate, setSelectedTemplate] = useState<FIRNoticeTemplateType>("section_35_notice");
-  const [templateLang, setTemplateLang] = useState<TemplateLanguage>("hi");
+  const [templateLang, setTemplateLang] = useState<TemplateLanguage>(globalLang || "hi");
 
-  const [formData, setFormData] = useState<NoticeFormData>(DEFAULT_SAMPLE_DATA_HI["section_35_notice"]);
+  const [formData, setFormData] = useState<NoticeFormData>(
+    (globalLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI)["section_35_notice"]
+  );
 
   // Dynamic CDR Target Rows
   const [cdrTargetRows, setCdrTargetRows] = useState<
@@ -680,6 +684,13 @@ function FIRTemplatesContent() {
       })
     );
   };
+
+  // Sync with global top bar language switcher
+  useEffect(() => {
+    if (globalLang && globalLang !== templateLang) {
+      handleToggleLanguage(globalLang);
+    }
+  }, [globalLang]);
 
   const handleResetSample = () => {
     const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
