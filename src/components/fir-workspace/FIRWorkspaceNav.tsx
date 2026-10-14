@@ -37,7 +37,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           }`}
         >
           <FileText className={`w-3.5 h-3.5 ${isBuilder ? "text-blue-700" : "text-blue-600"}`} />
-          <span>Template Builder (टेम्पलेट बिल्डर)</span>
+          <span>Template Builder</span>
         </Link>
 
         <Link
@@ -73,7 +73,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           }`}
         >
           <ShieldAlert className={`w-3.5 h-3.5 ${isArrestDocs ? "text-rose-700" : "text-rose-600"}`} />
-          <span>Arrest Docs (गिरफ्तारी प्रपत्र)</span>
+          <span>Arrest Docs</span>
         </Link>
 
         <Link
@@ -97,7 +97,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           }`}
         >
           <Gavel className={`w-3.5 h-3.5 ${isKalandra ? "text-emerald-700" : "text-emerald-600"}`} />
-          <span>Kalandra (कलंदरा)</span>
+          <span>Kalandra</span>
         </Link>
       </div>
 

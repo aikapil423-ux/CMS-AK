@@ -12,10 +12,12 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
   const { language, toggleLanguage, isHindi } = useLanguage();
   const [justToggled, setJustToggled] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     toggleLanguage();
     setJustToggled(true);
-    setTimeout(() => setJustToggled(false), 1200);
+    setTimeout(() => setJustToggled(false), 800);
   };
 
   const titleText = isHindi

@@ -25,6 +25,7 @@ import {
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/utils";
+import { cleanGdNarrative } from "@/services/generalDiaryService";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 
 interface GDRecordModalProps {
@@ -149,12 +150,12 @@ export function GDRecordModal({
         </div>
 
         {/* Scrollable Document Area */}
-        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100 flex justify-center">
+        <div className="overflow-y-auto p-4 sm:p-6 bg-slate-100">
           <div
             id="printable-gd-record"
             ref={printRef}
-            className="w-full max-w-[800px] bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative"
-            style={{ minHeight: "750px", lineHeight: "1.6" }}
+            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative my-3 min-h-[750px] h-auto"
+            style={{ lineHeight: "1.6" }}
           >
             {/* Haryana Police Official Header */}
             <div className="text-center pb-3 border-b-2 border-slate-900">
@@ -374,7 +375,7 @@ export function GDRecordModal({
                 इंद्राज का विस्तृत विवरण (Roznamcha Narrative):
               </h4>
               <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap">
-                {record.narrative}
+                {cleanGdNarrative(record.narrative)}
               </div>
             </div>
 

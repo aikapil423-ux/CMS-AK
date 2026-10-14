@@ -768,7 +768,7 @@ export default function RegisterComplaintPage() {
       setDraftSavedAt(timeLabel);
       setHasStoredDraft(true);
       setDraftBannerDismissed(true);
-      setDraftToast(`Last filled draft restored successfully! (${timeLabel}) / सुरक्षित ड्राफ्ट पुनः लोड हो गया!`);
+      setDraftToast(`Last filled draft restored successfully! (${timeLabel})`);
       setTimeout(() => setDraftToast(null), 4000);
     } catch (e) {
       console.error("Failed to restore draft:", e);
@@ -1690,7 +1690,7 @@ export default function RegisterComplaintPage() {
       if (extractedName) {
         identifiedPersonsList.push({
           name: extractedName,
-          role: "Complainant / प्रार्थी",
+          role: "Complainant",
           fatherOrSpouse: extractedRelativeName,
           phone: extractedMobile,
           address: extractedAddress,
@@ -1700,7 +1700,7 @@ export default function RegisterComplaintPage() {
       validAccusedCards.forEach((acc, idx) => {
         identifiedPersonsList.push({
           name: acc.name,
-          role: `Accused / आरोपी #${idx + 1}`,
+          role: `Accused #${idx + 1}`,
           phone: acc.phone,
           address: acc.address,
         });
@@ -1962,7 +1962,7 @@ export default function RegisterComplaintPage() {
     if (extractedName) {
       identifiedPersonsList.push({
         name: extractedName,
-        role: "Complainant / प्रार्थी",
+        role: "Complainant",
         fatherOrSpouse: extractedRelative,
         phone: extractedMobile,
         address: extractedAddr,
@@ -1972,7 +1972,7 @@ export default function RegisterComplaintPage() {
     extractedAccused.forEach((acc, idx) => {
       identifiedPersonsList.push({
         name: acc.name,
-        role: `Accused / आरोपी #${idx + 1}`,
+        role: `Accused #${idx + 1}`,
         phone: acc.phone,
         address: acc.address,
       });
@@ -2678,7 +2678,7 @@ export default function RegisterComplaintPage() {
         : "तथा आगामी कानूनी कार्यवाही व SHO महोदय के अवलोकनार्थ प्रस्तुत किया गया।";
 
       const subjectStr = `प्राप्ति दरख्वास्त शिकायत - ${createdComplaint.complaintNumber} (${primaryCompName})`;
-      const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryCompName}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${createdComplaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया। [नोट: मुंशी (MHC) इस सुझाव को जांचकर रोजनामचा में 'Add to GD' कर सकते हैं, संशोधित (Edit) कर सकते हैं, अथवा खारिज (Delete) कर सकते हैं।]`;
+      const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryCompName}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${createdComplaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया।`;
 
       await GeneralDiaryService.generateSuggestionFromSystemEvent({
         eventType: "COMPLAINT_REGISTERED",
@@ -4506,19 +4506,16 @@ export default function RegisterComplaintPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-bold text-slate-800">
-                      Description of Incident / Full Complaint (घटना का संपूर्ण विवरण / पूरी शिकायत) *
+                      Complaint Description *
                     </label>
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
-                    <span className="italic text-slate-500">
-                      Complete verbatim complaint text (पूरी शिकायत)
-                    </span>
                     <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
                       {incidentDetails.trim() ? incidentDetails.trim().split(/\s+/).length : 0} words
                     </span>
                     <VoiceInputButton
                       preferredLang={voiceLang}
-                      fieldLabel="Description of Incident / Full Complaint"
+                      fieldLabel="Complaint Description"
                       currentValue={incidentDetails}
                       onTranscript={(val) => {
                         setIncidentDetails((prev) => (prev ? `${prev} ${val}` : val));
@@ -4536,15 +4533,14 @@ export default function RegisterComplaintPage() {
                     setIncidentDetails(val);
                     markFieldAsEdited("incidentDetails");
                   }}
-                  placeholder="पूरी शिकायत का संपूर्ण विवरण (Full verbatim text of the complaint / incident as received in document or verbal report)..."
-                  inputClassName={`w-full min-h-[160px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
+                  placeholder="Full verbatim text of the complaint / incident as received in document or verbal report..."
+                  inputClassName={`w-full min-h-[160px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed overflow-hidden ${
                     isAutofilled("incidentDetails")
                       ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
                       : "bg-white border-slate-300"
                   }`}
                 />
-                <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
-                  <span>Contains the complete, unabridged complaint as submitted by the citizen / complainant.</span>
+                <p className="text-[11px] text-slate-500 flex items-center justify-end pt-0.5">
                   <span className="font-mono text-[10px] text-slate-400">{incidentDetails.length} characters</span>
                 </p>
               </div>
@@ -4554,19 +4550,16 @@ export default function RegisterComplaintPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-bold text-slate-800">
-                      Summary of Complaint (शिकायत का संक्षिप्त विवरण / सारांश) *
+                      Complaint Summary *
                     </label>
                   </div>
                   <div className="flex items-center gap-2.5 text-[11px] text-slate-500">
-                    <span className="italic text-slate-500">
-                      Brief summary of allegations in minimum words (संक्षिप्त सार)
-                    </span>
                     <span className="font-mono font-semibold px-2 py-0.5 bg-white rounded text-slate-700 border border-indigo-200">
                       {complaintDescription.trim() ? complaintDescription.trim().split(/\s+/).length : 0} words
                     </span>
                     <VoiceInputButton
                       preferredLang={voiceLang}
-                      fieldLabel="Summary of Complaint"
+                      fieldLabel="Complaint Summary"
                       currentValue={complaintDescription}
                       onTranscript={(val) => {
                         setComplaintDescription((prev) => (prev ? `${prev} ${val}` : val));
@@ -4591,8 +4584,8 @@ export default function RegisterComplaintPage() {
                       });
                     }
                   }}
-                  placeholder="शिकायत का संक्षिप्त सार (Concise structured summary of allegations against respondents, core incident facts, and prayer for police action in minimum words)..."
-                  inputClassName={`w-full min-h-[120px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed shadow-2xs overflow-hidden ${
+                  placeholder="Concise structured summary of allegations against respondents, core incident facts, and prayer for police action in minimum words..."
+                  inputClassName={`w-full min-h-[120px] px-3.5 py-2.5 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-[height] duration-75 leading-relaxed overflow-hidden ${
                     validationErrors.complaintDescription
                       ? "border-red-500 bg-red-50"
                       : isAutofilled("complaintDescription")
@@ -4603,8 +4596,7 @@ export default function RegisterComplaintPage() {
                 {validationErrors.complaintDescription && (
                   <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.complaintDescription}</p>
                 )}
-                <p className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
-                  <span>Keep allegations succinct, actionable, and summarized in minimum words for quick review.</span>
+                <p className="text-[11px] text-slate-500 flex items-center justify-end pt-0.5">
                   <span className="font-mono text-[10px] text-slate-400">{complaintDescription.length} characters</span>
                 </p>
               </div>
@@ -4922,9 +4914,6 @@ export default function RegisterComplaintPage() {
                     <Search className="w-4 h-4 text-purple-600" />
                     <span>5. Run Intelligence Check</span>
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Runs 100% locally by checking specific filled fields (Complainant, Mobile, Accused, Spot &amp; Facts) against station records without AI model
-                  </p>
                 </div>
 
                 {/* Dropdown Format Button */}
@@ -5154,11 +5143,14 @@ export default function RegisterComplaintPage() {
                       className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 font-semibold text-slate-800"
                     >
                       <option value="">Select EO</option>
-                      {MOCK_ENQUIRY_OFFICERS.map((eo) => (
-                        <option key={eo.id} value={eo.id}>
-                          {eo.rank} {eo.name}
-                        </option>
-                      ))}
+                      {MOCK_ENQUIRY_OFFICERS.map((eo) => {
+                        const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
+                        return (
+                          <option key={eo.id} value={eo.id}>
+                            {label}
+                          </option>
+                        );
+                      })}
                     </select>
                     <p className="text-[10px] text-slate-500 mt-1">
                       Officer will receive instant dispatch alert and case docket access upon submission.
@@ -5224,7 +5216,7 @@ export default function RegisterComplaintPage() {
                     className="text-xs sm:text-sm font-bold gap-2 border-slate-300 text-slate-800 hover:bg-slate-100 w-full sm:w-auto px-5 py-2.5 shadow-xs transition-all active:scale-98 cursor-pointer"
                   >
                     <Eye className="w-4 h-4 text-blue-600" />
-                    Preview (पूर्वावलोकन)
+                    Preview
                   </Button>
 
                   <Button

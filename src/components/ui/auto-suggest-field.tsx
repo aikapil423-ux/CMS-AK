@@ -204,7 +204,8 @@ export function AutoSuggestField({
     as === "textarea"
       ? "whitespace-pre-wrap break-words overflow-hidden"
       : "whitespace-nowrap overflow-hidden",
-    inputClassName
+    inputClassName,
+    "!border-transparent !shadow-none !ring-0 !outline-none"
   );
 
   let displayGhost = "";
@@ -256,7 +257,7 @@ export function AutoSuggestField({
     // Hide the native placeholder while a ghost hint is on screen.
     className: cn(
       sharedClasses,
-      "relative z-10 bg-transparent",
+      "block relative z-10 bg-transparent",
       activeSuggestion && "placeholder-transparent"
     ),
   };
@@ -269,7 +270,7 @@ export function AutoSuggestField({
           {...controlProps}
           rows={rows}
           ref={controlRef as React.RefObject<HTMLTextAreaElement>}
-          className={cn(controlProps.className, "resize-y min-h-[90px] overflow-hidden transition-[height] duration-75")}
+          className={cn(controlProps.className, "resize-none overflow-hidden transition-[height] duration-75")}
         />
       ) : (
         <input

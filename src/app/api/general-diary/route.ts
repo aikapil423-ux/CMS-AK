@@ -8,6 +8,8 @@ import {
   formatGDDateKey,
   formatGDActivityDateTime,
   startOfDay,
+  isGdRecordExpired,
+  GD_EXPIRATION_WINDOW_MS,
 } from "@/lib/gdDateTime";
 import {
   GeneralDiaryRecord,
@@ -22,6 +24,46 @@ import {
   getSmartVerifiedSuggestions,
   dismissSuggestionId,
 } from "@/services/gdSmartSuggestionService";
+
+// ------------------------------------------------------------------
+// 24-Hour Auto-Purge for Unlocked Suggestions & Drafts
+// - Deletes suggestions and drafts without any action for >= 24 hours.
+// - Locked entries are NEVER touched under PPR 22.48.
+// ------------------------------------------------------------------
+export async function pruneExpiredSuggestionsAndDrafts(): Promise<number> {
+  try {
+    const candidates = await prisma.gDRecord.findMany({
+      where: {
+        isLocked: false,
+        status: { in: ["SUGGESTED", "DRAFT"] },
+      },
+      select: {
+        id: true,
+        isLocked: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        auditTrailJson: true,
+      },
+    });
+
+    const expiredIds = candidates
+      .filter((row) => isGdRecordExpired(row))
+      .map((row) => row.id);
+
+    if (expiredIds.length > 0) {
+      await prisma.gDRecord.deleteMany({
+        where: { id: { in: expiredIds } },
+      });
+      console.log(`[GD Auto-Cleanup] Purged ${expiredIds.length} expired GD suggestion/draft record(s).`);
+    }
+
+    return expiredIds.length;
+  } catch (err) {
+    console.warn("Failed to prune expired GD suggestions:", err);
+    return 0;
+  }
+}
 
 // ------------------------------------------------------------------
 // CCTNS-style General Diary backend (Roznamcha, Register No. II)
@@ -54,6 +96,14 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
 
 type OfficerPartials = Partial<GDOfficerParticulars>;
 
+export function cleanGdNarrative(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/\s*\[नोट:\s*मुंशी[^\]]*\]/gi, "")
+    .replace(/\s*\[(AI \/ System Suggestion|Draft saved by MHC)[^\]]*\]/gi, "")
+    .trim();
+}
+
 function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
   const related = parseJson<GDRelatedRecords>(row.relatedRecordsJson, {});
   return {
@@ -79,7 +129,7 @@ function mapRowToRecord(row: GDRecord): GeneralDiaryRecord {
     typeDisplay: row.typeDisplay,
     typeDisplayHi: row.typeDisplayHi,
     subject: row.subject,
-    narrative: row.narrative,
+    narrative: cleanGdNarrative(row.narrative),
     // Server-standard CCTNS display: dd/mm/yyyy HH:mm (24-hour)
     activityDateTime: formatGDActivityDateTime(new Date(row.entryDateTime)),
     officialCreationTimestamp: new Date(row.createdAt).toISOString(),
@@ -211,7 +261,7 @@ async function createLockedEntry(
   const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
   if (!subject) throw new Error("Subject is required for a General Diary entry.");
-  const narrative = String(body.narrative || "");
+  const narrative = cleanGdNarrative(String(body.narrative || ""));
   const entryForOfficer = buildOfficer(body.entryForOfficer, FALLBACK_OFFICER);
   const actualAuthor = buildOfficer(body.actualAuthor, FALLBACK_AUTHOR);
   const relatedRecords = (body.relatedRecords || {}) as GDRelatedRecords;
@@ -319,7 +369,7 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
   const typeCode = String(body.typeCode || "OTHERS");
   const subject = String(body.subject || "").trim();
   if (!subject) throw new Error("Please enter at least a Subject to save a draft.");
-  const narrative = String(body.narrative || "");
+  const narrative = cleanGdNarrative(String(body.narrative || ""));
   const entryForOfficer = buildOfficer(body.entryForOfficer, FALLBACK_OFFICER);
   const actualAuthor = buildOfficer(body.actualAuthor, FALLBACK_AUTHOR);
   const existingId = body.id ? String(body.id) : undefined;
@@ -592,7 +642,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       typeDisplay: String(event.typeDisplay || defaultDisplayEn),
       typeDisplayHi: String(event.typeDisplayHi || defaultDisplayHi),
       subject: String(event.subject || "System Suggested Entry"),
-      narrative: String(event.narrative || ""),
+      narrative: cleanGdNarrative(String(event.narrative || "")),
       entryForOfficerJson: JSON.stringify(officer),
       actualAuthorJson: JSON.stringify({
         name: "System Automation",
@@ -684,6 +734,9 @@ export async function GET(req: NextRequest) {
     };
     const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
     const pageSize = Math.max(1, parseInt(searchParams.get("pageSize") || "15") || 15);
+
+    // Prune suggestions and drafts on which no action has been taken for 24 hours
+    await pruneExpiredSuggestionsAndDrafts();
 
     // Fetch ALL rows once — status counts are GLOBAL, so tab badges
     // (e.g. the Register count) never change with the active tab.
@@ -833,6 +886,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Record<string, unknown>;
     const action = String(body.action || "CREATE_LOCKED");
+
+    if (action === "PRUNE_EXPIRED") {
+      const pruned = await pruneExpiredSuggestionsAndDrafts();
+      return NextResponse.json({ success: true, pruned });
+    }
 
     if (action === "SYSTEM_EVENT_SUGGESTION") {
       const suggestion = await createSystemSuggestion(body);

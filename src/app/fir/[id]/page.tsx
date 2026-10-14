@@ -1848,25 +1848,15 @@ export default function FIRProfilePage() {
                                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                                   {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
                                     <span
-                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded shadow-2xs"
                                       title={
                                         evidenceRec?.rawDocument?.sha256Hash
-                                          ? `Authoritative Original Preserved • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
-                                          : "Authoritative Original File Preserved in case docket"
+                                          ? `Authoritative Original Document • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
+                                          : "Authoritative Original Document"
                                       }
                                     >
                                       <ShieldCheck className="w-2.5 h-2.5 text-blue-600" />
-                                      Original Preserved
-                                    </span>
-                                  )}
-
-                                  {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
-                                    <span
-                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs"
-                                      title={`Cryptographically verified lossless copy: saved ${evidenceRec.compression.savedPercentage}%`}
-                                    >
-                                      <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                                      Lossless Verified (-{evidenceRec.compression.savedPercentage}%)
+                                      Original
                                     </span>
                                   )}
 
@@ -1894,19 +1884,6 @@ export default function FIRProfilePage() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                              {/* Case Data Modal button if evidence record available */}
-                              {evidenceRec && (
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedEvidenceRecord(evidenceRec)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                  title="View Lossless Compression & Cryptographic Verification Details"
-                                >
-                                  <Database className="w-3.5 h-3.5 text-purple-600" />
-                                  <span>Case Data</span>
-                                </button>
-                              )}
-
                               {/* Preview */}
                               <button
                                 type="button"
@@ -1918,7 +1895,7 @@ export default function FIRProfilePage() {
                                 <span>Preview</span>
                               </button>
 
-                              {/* Download Original */}
+                              {/* Download */}
                               <a
                                 href={
                                   evidenceRec
@@ -1933,23 +1910,11 @@ export default function FIRProfilePage() {
                                   }
                                 }}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                title="Download Original Authoritative Evidence File"
+                                title="Download document"
                               >
                                 <Download className="w-3.5 h-3.5 text-slate-600" />
-                                <span>Original</span>
+                                <span>Download</span>
                               </a>
-
-                              {/* Download Lossless (if compressed) */}
-                              {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
-                                <a
-                                  href={`/api/evidence/download?id=${evidenceRec.id}&type=compressed`}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                  title="Download Verified Lossless Compressed Copy"
-                                >
-                                  <Download className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Lossless (-{evidenceRec.compression.savedPercentage}%)</span>
-                                </a>
-                              )}
 
                               {/* Delete (only for directly uploaded FIR documents) */}
                               {(!doc.originSource || doc.originSource === "FIR Investigation") && (

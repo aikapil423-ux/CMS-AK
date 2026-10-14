@@ -24,7 +24,7 @@ import {
   Scale,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { GeneralDiaryService } from "@/services/generalDiaryService";
+import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import {
   GeneralDiaryRecord,
@@ -868,7 +868,7 @@ function NewGDEntryContent() {
       if (!alive || !draft) return;
       setSelectedType(draft.typeCode);
       setSubject(draft.subject);
-      setNarrative(draft.narrative);
+      setNarrative(cleanGdNarrative(draft.narrative));
       // Restore the draft's stored activity date/time into the pickers
       const dt = parseGDActivityDateTime(draft.activityDateTime || "");
       setActivityDate(dt.dateISO);

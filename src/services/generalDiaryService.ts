@@ -13,7 +13,7 @@ import {
 } from "@/types/generalDiary";
 import { FIRActSectionEntry } from "@/types";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
-import { formatGDActivityDateTime } from "@/lib/gdDateTime";
+import { formatGDActivityDateTime, isGdRecordExpired } from "@/lib/gdDateTime";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
 const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v4_cctns";
@@ -417,7 +417,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       typeDisplayHi: "प्राप्ति / निपटान शिकायत दरख्वास्त (PPR 22.48)",
       subject: "प्राप्ति दरख्वास्त शिकायत क्रमांक HAR-KKR-2026-CMP-00483 मनजानिब Ramphal Sharma",
       narrative:
-        "बवक्त 02:15 PM, मुसम्मी Ramphal Sharma (मो: 9812048192) द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय 'बाबत धोखाधड़ी व फर्जी इकरारनामा' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में दर्ज करके जांच अधिकारी Sub-Inspector Vikram Singh को धारा 173(3) BNSS के तहत 14 दिन में प्रारंभिक जांच हेतु सौंपा गया। [AI / System Suggestion: Requires MHC Human Review & Verification before locking into Daily Roznamcha].",
+        "बवक्त 02:15 PM, मुसम्मी Ramphal Sharma (मो: 9812048192) द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय 'बाबत धोखाधड़ी व फर्जी इकरारनामा' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में दर्ज करके जांच अधिकारी Sub-Inspector Vikram Singh को धारा 173(3) BNSS के तहत 14 दिन में प्रारंभिक जांच हेतु सौंपा गया।",
       activityDateTime: `${today} 14:15`,
       officialCreationTimestamp: new Date(now.getTime() - 1.5 * 3600000).toISOString(),
       status: "SUGGESTED",
@@ -464,7 +464,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       typeDisplayHi: "रवानगी / आमद सरकारी गाड़ी (Government Vehicle)",
       subject: "रवानगी सरकारी वाहन HR-07-G-1102 चालक EHC Kuldeep Singh बा-मकसद रात्रि गश्त",
       narrative:
-        "सरकारी वाहन संख्या HR-07-G-1102 चालक EHC Kuldeep Singh (बेल्ट: 329/KKR) बा-मकसद रात्रि नाकाबंदी व पेट्रोलिंग रवाना किया गया। मीटर रीडिंग 49,120 किमी नोट की गई। [Draft saved by MHC - Pending final driver briefing and verification].",
+        "सरकारी वाहन संख्या HR-07-G-1102 चालक EHC Kuldeep Singh (बेल्ट: 329/KKR) बा-मकसद रात्रि नाकाबंदी व पेट्रोलिंग रवाना किया गया। मीटर रीडिंग 49,120 किमी नोट की गई।",
       activityDateTime: `${today} 16:00`,
       officialCreationTimestamp: new Date(now.getTime() - 45 * 60000).toISOString(),
       status: "DRAFT",
@@ -488,6 +488,14 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
   ];
 }
 
+export function cleanGdNarrative(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/\s*\[नोट:\s*मुंशी[^\]]*\]/gi, "")
+    .replace(/\s*\[(AI \/ System Suggestion|Draft saved by MHC)[^\]]*\]/gi, "")
+    .trim();
+}
+
 function loadRecordsFromStorage(): GeneralDiaryRecord[] {
   if (typeof window !== "undefined" && window.localStorage) {
     try {
@@ -495,14 +503,25 @@ function loadRecordsFromStorage(): GeneralDiaryRecord[] {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          const cleaned = parsed
+            .filter((r: GeneralDiaryRecord) => !isGdRecordExpired(r))
+            .map((r: GeneralDiaryRecord) => ({
+              ...r,
+              narrative: cleanGdNarrative(r.narrative),
+            }));
+          if (cleaned.length !== parsed.length) {
+            try {
+              window.localStorage.setItem(GD_STORAGE_KEY, JSON.stringify(cleaned));
+            } catch {}
+          }
+          return cleaned;
         }
       }
     } catch (e) {
       console.warn("Could not load GD records from storage", e);
     }
   }
-  return generateSeedEntries();
+  return generateSeedEntries().filter((r) => !isGdRecordExpired(r));
 }
 
 function saveRecordsToStorage(records: GeneralDiaryRecord[]) {
@@ -1325,7 +1344,7 @@ export const GeneralDiaryService = {
           ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
           : (typeDef?.nameHi || typeCode)),
       subject: event.subject,
-      narrative: event.narrative,
+      narrative: cleanGdNarrative(event.narrative),
       activityDateTime: `${today} ${nowTime}`,
       officialCreationTimestamp: nowIso,
       status: "SUGGESTED",

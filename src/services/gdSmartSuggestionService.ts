@@ -6,6 +6,7 @@ import {
   GDRelatedRecords,
 } from "@/types/generalDiary";
 import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS } from "@/lib/mockData";
+import { isGdRecordExpired, GD_EXPIRATION_WINDOW_MS } from "@/lib/gdDateTime";
 
 export interface VerifiedVehicle {
   id: string;
@@ -467,8 +468,25 @@ export function generateComplaintIntakeDraft(
 /**
  * Generates dynamic verified suggestions for the Auto-Suggestions & Drafts tab.
  */
+function parseDepartureTimeMs(dep: VerifiedDeparture): number {
+  try {
+    if (!dep.departureDate) return 0;
+    const raw = dep.departureTime ? `${dep.departureDate} ${dep.departureTime}` : dep.departureDate;
+    const ms = new Date(raw).getTime();
+    return isNaN(ms) ? 0 : ms;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Generates dynamic verified suggestions for the Auto-Suggestions & Drafts tab.
+ * Strictly adheres to the 24-hour rule: events older than 24 hours with no action
+ * are auto-expired and not suggested.
+ */
 export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
   const now = new Date();
+  const nowMs = now.getTime();
   const yyyy = String(now.getFullYear()).padStart(4, "0");
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
@@ -478,151 +496,166 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
   const departures = getActiveDepartures();
   const suggestions: GeneralDiaryRecord[] = [];
 
-  // 1. Arrival suggestions for active departures
-  departures.slice(0, 2).forEach((dep, idx) => {
-    const arrival = generateArrivalFromDeparture(dep, "en");
+  // 1. Arrival suggestions only for active, unreturned departures within the last 24 hours
+  departures
+    .filter((dep) => !dep.isReturned)
+    .filter((dep) => {
+      const depMs = parseDepartureTimeMs(dep);
+      return depMs > 0 && nowMs - depMs < GD_EXPIRATION_WINDOW_MS;
+    })
+    .slice(0, 2)
+    .forEach((dep, idx) => {
+      const arrival = generateArrivalFromDeparture(dep, "en");
+      suggestions.push({
+        id: `sugg_arrival_${dep.id}`,
+        gdNumber: "GD-PENDING-SUGGESTION",
+        sequencePerDay: 0,
+        policeStation: "PS City Thanesar",
+        district: "Kurukshetra",
+        entryForOfficer: {
+          name: dep.officerName,
+          rank: dep.officerRank,
+          beltNumber: dep.officerBelt,
+          pno: dep.officerPno,
+        },
+        actualAuthor: {
+          name: "Auto-Suggestion Engine (Smart GD)",
+          rank: "Head Constable (MHC)",
+          beltNumber: "889/KKR",
+          pno: "05192834",
+        },
+        typeCode: "ARRIVAL_RETURN",
+        category: "DUTY_MOVEMENT",
+        typeDisplay: "Arrival/Return",
+        typeDisplayHi: "वापसी / आगमन (PPR 22.48)",
+        subject: arrival.subject,
+        narrative: arrival.narrative,
+        activityDateTime: `${todayKey} ${nowTime}`,
+        officialCreationTimestamp: new Date(parseDepartureTimeMs(dep) || nowMs).toISOString(),
+        status: "SUGGESTED",
+        source: "SYSTEM_EVENT",
+        isLocked: false,
+        relatedRecords: arrival.relatedRecords,
+        auditTrail: [
+          {
+            action: "SUGGESTED",
+            performedBy: "Smart General Diary Linker",
+            performedByPno: "SYS/AUTO",
+            performedByRank: "Automated Linker",
+            timestamp: new Date(parseDepartureTimeMs(dep) || nowMs).toISOString(),
+            auditId: `SYS-ARRIV-LINK-${idx + 1}`,
+            remarks: `Auto-suggested Arrival linked to verified Departure ${dep.gdNumber}`,
+          },
+        ],
+        _sortGdDate: todayKey,
+        _sortEntryMs: now.getTime() - (idx + 1) * 60000,
+      });
+    });
+
+  // 2. FIR Registration suggestion for Complaint recommended for FIR within 24h
+  const comp484 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-KKR-2026-CMP-00484");
+  const comp484Ms = comp484 ? new Date(comp484.updatedAt || comp484.createdAt).getTime() : 0;
+  if (comp484Ms > 0 && nowMs - comp484Ms < GD_EXPIRATION_WINDOW_MS) {
+    const firDraft = generateFirFromComplaint("HAR-KKR-2026-CMP-00484", "FIR No. 45/2026", "115(2), 126(2), 351(2), 3(5) BNS", "SI Vikram Singh", "en");
     suggestions.push({
-      id: `sugg_arrival_${dep.id}`,
+      id: "sugg_fir_cmp_00484",
       gdNumber: "GD-PENDING-SUGGESTION",
       sequencePerDay: 0,
       policeStation: "PS City Thanesar",
       district: "Kurukshetra",
       entryForOfficer: {
-        name: dep.officerName,
-        rank: dep.officerRank,
-        beltNumber: dep.officerBelt,
-        pno: dep.officerPno,
+        name: "SI Vikram Singh",
+        rank: "Sub-Inspector",
+        beltNumber: "742/KKR",
+        pno: "07182930",
       },
       actualAuthor: {
-        name: "Auto-Suggestion Engine (Smart GD)",
+        name: "Auto-Suggestion Engine (FIR Module)",
         rank: "Head Constable (MHC)",
         beltNumber: "889/KKR",
         pno: "05192834",
       },
-      typeCode: "ARRIVAL_RETURN",
-      category: "DUTY_MOVEMENT",
-      typeDisplay: "Arrival/Return",
-      typeDisplayHi: "वापसी / आगमन (PPR 22.48)",
-      subject: arrival.subject,
-      narrative: arrival.narrative,
-      activityDateTime: `${todayKey} ${nowTime}`,
-      officialCreationTimestamp: now.toISOString(),
+      typeCode: "CRIMINAL_CASE",
+      category: "INVESTIGATION_PROCESS",
+      typeDisplay: "Criminal case",
+      typeDisplayHi: "पंजीकरण मुकद्दमा / FIR (PPR 22.48)",
+      subject: firDraft.subject,
+      narrative: firDraft.narrative,
+      activityDateTime: `${todayKey} 11:30`,
+      officialCreationTimestamp: new Date(comp484Ms).toISOString(),
       status: "SUGGESTED",
-      source: "SYSTEM_EVENT",
+      source: "FIR_INTEGRATION",
       isLocked: false,
-      relatedRecords: arrival.relatedRecords,
+      relatedRecords: firDraft.relatedRecords,
       auditTrail: [
         {
           action: "SUGGESTED",
-          performedBy: "Smart General Diary Linker",
+          performedBy: "Complaint & FIR Integration Engine",
           performedByPno: "SYS/AUTO",
-          performedByRank: "Automated Linker",
-          timestamp: now.toISOString(),
-          auditId: `SYS-ARRIV-LINK-${idx + 1}`,
-          remarks: `Auto-suggested Arrival linked to verified Departure ${dep.gdNumber}`,
+          performedByRank: "Automated Integration",
+          timestamp: new Date(comp484Ms).toISOString(),
+          auditId: "SYS-FIR-SUGG-484",
+          remarks: "Triggered: Complaint HAR-KKR-2026-CMP-00484 recommended for FIR by SHO",
         },
       ],
       _sortGdDate: todayKey,
-      _sortEntryMs: now.getTime() - (idx + 1) * 60000,
+      _sortEntryMs: comp484Ms,
     });
-  });
+  }
 
-  // 2. FIR Registration suggestion for Complaint recommended for FIR (CMP-00484)
-  const firDraft = generateFirFromComplaint("HAR-KKR-2026-CMP-00484", "FIR No. 45/2026", "115(2), 126(2), 351(2), 3(5) BNS", "SI Vikram Singh", "en");
-  suggestions.push({
-    id: "sugg_fir_cmp_00484",
-    gdNumber: "GD-PENDING-SUGGESTION",
-    sequencePerDay: 0,
-    policeStation: "PS City Thanesar",
-    district: "Kurukshetra",
-    entryForOfficer: {
-      name: "SI Vikram Singh",
-      rank: "Sub-Inspector",
-      beltNumber: "742/KKR",
-      pno: "07182930",
-    },
-    actualAuthor: {
-      name: "Auto-Suggestion Engine (FIR Module)",
-      rank: "Head Constable (MHC)",
-      beltNumber: "889/KKR",
-      pno: "05192834",
-    },
-    typeCode: "CRIMINAL_CASE",
-    category: "INVESTIGATION_PROCESS",
-    typeDisplay: "Criminal case",
-    typeDisplayHi: "पंजीकरण मुकद्दमा / FIR (PPR 22.48)",
-    subject: firDraft.subject,
-    narrative: firDraft.narrative,
-    activityDateTime: `${todayKey} 11:30`,
-    officialCreationTimestamp: now.toISOString(),
-    status: "SUGGESTED",
-    source: "FIR_INTEGRATION",
-    isLocked: false,
-    relatedRecords: firDraft.relatedRecords,
-    auditTrail: [
-      {
-        action: "SUGGESTED",
-        performedBy: "Complaint & FIR Integration Engine",
-        performedByPno: "SYS/AUTO",
-        performedByRank: "Automated Integration",
-        timestamp: now.toISOString(),
-        auditId: "SYS-FIR-SUGG-484",
-        remarks: "Triggered: Complaint HAR-KKR-2026-CMP-00484 recommended for FIR by SHO",
+  // 3. Complaint Intake suggestion for newly received complaint within 24h
+  const comp486 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-KKR-2026-CMP-00486");
+  const comp486Ms = comp486 ? new Date(comp486.updatedAt || comp486.createdAt).getTime() : 0;
+  if (comp486Ms > 0 && nowMs - comp486Ms < GD_EXPIRATION_WINDOW_MS) {
+    const compDraft = generateComplaintIntakeDraft("HAR-KKR-2026-CMP-00486", "en");
+    suggestions.push({
+      id: "sugg_cmp_intake_00486",
+      gdNumber: "GD-PENDING-SUGGESTION",
+      sequencePerDay: 0,
+      policeStation: "PS City Thanesar",
+      district: "Kurukshetra",
+      entryForOfficer: {
+        name: "ASI Surender Pal",
+        rank: "ASI (Duty Officer)",
+        beltNumber: "419/KKR",
+        pno: "09384712",
       },
-    ],
-    _sortGdDate: todayKey,
-    _sortEntryMs: now.getTime() - 120000,
-  });
-
-  // 3. Complaint Intake suggestion for newly received complaint (CMP-00486)
-  const compDraft = generateComplaintIntakeDraft("HAR-KKR-2026-CMP-00486", "en");
-  suggestions.push({
-    id: "sugg_cmp_intake_00486",
-    gdNumber: "GD-PENDING-SUGGESTION",
-    sequencePerDay: 0,
-    policeStation: "PS City Thanesar",
-    district: "Kurukshetra",
-    entryForOfficer: {
-      name: "ASI Surender Pal",
-      rank: "ASI (Duty Officer)",
-      beltNumber: "419/KKR",
-      pno: "09384712",
-    },
-    actualAuthor: {
-      name: "Auto-Suggestion Engine (Citizen Portal)",
-      rank: "Head Constable (MHC)",
-      beltNumber: "889/KKR",
-      pno: "05192834",
-    },
-    typeCode: "CITIZEN_INFORMATION_TIP_RECEIVED",
-    category: "INVESTIGATION_PROCESS",
-    typeDisplay: "Citizen Information/Tip Received",
-    typeDisplayHi: "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)",
-    subject: compDraft.subject,
-    narrative: compDraft.narrative,
-    activityDateTime: `${todayKey} 08:35`,
-    officialCreationTimestamp: now.toISOString(),
-    status: "SUGGESTED",
-    source: "COMPLAINT_INTEGRATION",
-    isLocked: false,
-    relatedRecords: compDraft.relatedRecords,
-    auditTrail: [
-      {
-        action: "SUGGESTED",
-        performedBy: "HarPath Citizen Portal Integration",
-        performedByPno: "SYS/AUTO",
-        performedByRank: "Automated Integration",
-        timestamp: now.toISOString(),
-        auditId: "SYS-CMP-INTAKE-486",
-        remarks: "Auto-suggested upon intake of online complaint HAR-KKR-2026-CMP-00486",
+      actualAuthor: {
+        name: "Auto-Suggestion Engine (Citizen Portal)",
+        rank: "Head Constable (MHC)",
+        beltNumber: "889/KKR",
+        pno: "05192834",
       },
-    ],
-    _sortGdDate: todayKey,
-    _sortEntryMs: now.getTime() - 180000,
-  });
+      typeCode: "CITIZEN_INFORMATION_TIP_RECEIVED",
+      category: "INVESTIGATION_PROCESS",
+      typeDisplay: "Citizen Information/Tip Received",
+      typeDisplayHi: "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)",
+      subject: compDraft.subject,
+      narrative: compDraft.narrative,
+      activityDateTime: `${todayKey} 08:35`,
+      officialCreationTimestamp: new Date(comp486Ms).toISOString(),
+      status: "SUGGESTED",
+      source: "COMPLAINT_INTEGRATION",
+      isLocked: false,
+      relatedRecords: compDraft.relatedRecords,
+      auditTrail: [
+        {
+          action: "SUGGESTED",
+          performedBy: "HarPath Citizen Portal Integration",
+          performedByPno: "SYS/AUTO",
+          performedByRank: "Automated Integration",
+          timestamp: new Date(comp486Ms).toISOString(),
+          auditId: "SYS-CMP-INTAKE-486",
+          remarks: "Auto-suggested upon intake of online complaint HAR-KKR-2026-CMP-00486",
+        },
+      ],
+      _sortGdDate: todayKey,
+      _sortEntryMs: comp486Ms,
+    });
+  }
 
   const dismissed = getDismissedSuggestionIds();
-  return suggestions.filter((s) => !dismissed.has(s.id));
+  return suggestions.filter((s) => !dismissed.has(s.id) && !isGdRecordExpired(s));
 }
 
 const DISMISSED_FILE = path.join(process.cwd(), "prisma", "gd-dismissed-suggestions.json");

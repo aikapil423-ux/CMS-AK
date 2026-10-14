@@ -32,10 +32,11 @@ import {
   Loader2,
   ChevronDown,
   Pencil,
+  Clock,
 } from "lucide-react";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { useAuth } from "@/context/AuthContext";
-import { GeneralDiaryService } from "@/services/generalDiaryService";
+import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import {
   GeneralDiaryRecord,
   GDSearchFilter,
@@ -52,7 +53,7 @@ import { GDVerificationModal } from "@/components/general-diary/GDVerificationMo
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
-import { toDDMMYYYY, parseGDActivityDateTimeToMs } from "@/lib/gdDateTime";
+import { toDDMMYYYY, parseGDActivityDateTimeToMs, getGdRecordRemainingTime } from "@/lib/gdDateTime";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
 
@@ -305,7 +306,7 @@ function GeneralDiaryContent() {
   const copyBriefNarrative = async () => {
     if (!briefModalRecord?.narrative) return;
     try {
-      await navigator.clipboard.writeText(briefModalRecord.narrative);
+      await navigator.clipboard.writeText(cleanGdNarrative(briefModalRecord.narrative));
       setBriefCopied(true);
       setTimeout(() => setBriefCopied(false), 2000);
     } catch (err) {
@@ -641,7 +642,8 @@ function GeneralDiaryContent() {
 
   const renderGDCell = (col: GDColKey, rec: GeneralDiaryRecord) => {
     switch (col) {
-      case "gdNumber":
+      case "gdNumber": {
+        const remTime = !rec.isLocked ? getGdRecordRemainingTime(rec) : null;
         return (
           <td key="gdNumber" className="py-3 px-2.5 align-top w-24 min-w-[85px]">
             <div className="flex flex-col gap-0.5 font-mono text-left leading-tight">
@@ -657,9 +659,21 @@ function GeneralDiaryContent() {
               >
                 {rec.isLocked ? rec.gdNumber : "No GD"}
               </span>
+
+              {/* 24-Hour Expiration Indicator for Unlocked Entries */}
+              {remTime && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded mt-0.5 whitespace-nowrap"
+                  title="Auto-deletes if no action is taken within 24 hours of creation/edit"
+                >
+                  <Clock className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                  <span>{remTime.displayTextEn}</span>
+                </span>
+              )}
             </div>
           </td>
         );
+      }
 
       case "officer":
         return (
@@ -743,7 +757,7 @@ function GeneralDiaryContent() {
               title="Click to view full description dialog (पूरा विवरण देखें)"
             >
               <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
-                {rec.narrative}
+                {cleanGdNarrative(rec.narrative)}
               </p>
               {rec.narrative && (
                 <span className="text-[10px] font-bold text-blue-600 group-hover:text-blue-800 mt-1 inline-block">
@@ -859,6 +873,27 @@ function GeneralDiaryContent() {
           )}
         </button>
       </div>
+
+      {/* 24-Hour Auto-Purge Policy Notice for Auto-Suggestions & Drafts */}
+      {activeTab === "SUGGESTIONS_DRAFTS" && (
+        <div className="bg-gradient-to-r from-purple-50 via-purple-50/80 to-amber-50/50 border border-purple-200/80 rounded-xl p-3 flex items-start gap-3 text-xs text-purple-950 shadow-2xs">
+          <Clock className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-900">24-Hour Auto-Purge Rule (24 घंटे का स्वतः निष्कासन नियम)</span>
+              <span className="text-[10px] font-semibold bg-purple-200/70 text-purple-900 px-1.5 py-0.5 rounded font-mono">
+                PPR 22.48 Compliance
+              </span>
+            </div>
+            <p className="text-slate-700 leading-relaxed text-[11px]">
+              Any suggested or draft General Diary entry on which no action is taken for 24 hours is automatically removed. Locked entries are permanent and never deleted under law.
+            </p>
+            <p className="text-slate-500 leading-relaxed text-[10px]">
+              (सुझाव अथवा ड्राफ्ट रोजनामचा प्रविष्टि जिस पर 24 घंटे तक कोई कार्रवाई नहीं होती, वह स्वतः हट जाती है। स्थायी रोजनामचा प्रविष्टियां कानूनन कभी हटाई नहीं जातीं।)
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Friendly Search & Filter Bar */}
       <Card className="border-slate-200 shadow-2xs bg-white">
@@ -1257,7 +1292,7 @@ function GeneralDiaryContent() {
                 Complete Narrative (दर्ज विवरण):
               </div>
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-sans select-text">
-                {briefModalRecord.narrative || "(No description recorded)"}
+                {cleanGdNarrative(briefModalRecord.narrative) || "(No description recorded)"}
               </div>
             </div>
 
