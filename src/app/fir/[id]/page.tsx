@@ -34,6 +34,9 @@ import {
   Download,
   Edit3,
   ShieldAlert,
+  ShieldCheck,
+  Database,
+  Archive,
   ArrowRight,
   ScrollText,
   ChevronDown,
@@ -44,8 +47,11 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
+import { ComplaintService } from "@/services/complaintService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
+import { CaseEvidenceDataModal } from "@/components/evidence/CaseEvidenceDataModal";
+import { UniversalEvidenceRecord } from "@/types/evidence";
 import {
   FIRItem,
   FIRCaseDiaryItem,
@@ -248,6 +254,112 @@ export default function FIRProfilePage() {
     });
     return unsub;
   }, [firId]);
+
+  const [selectedEvidenceRecord, setSelectedEvidenceRecord] = useState<UniversalEvidenceRecord | null>(null);
+  const [evidenceRefreshTrigger, setEvidenceRefreshTrigger] = useState(0);
+
+  // Sync universal evidence records from server on mount
+  useEffect(() => {
+    universalEvidenceService.syncFromServer(firId).then(() => {
+      setEvidenceRefreshTrigger((c) => c + 1);
+    });
+  }, [firId]);
+
+  // Combine all documents: fir.documents + linked universalEvidenceService records + origin complaint documents
+  const combinedFirDocuments: (FIRDocumentItem & { originSource?: string; evidenceRecord?: UniversalEvidenceRecord })[] = useMemo(() => {
+    if (!fir) return [];
+    const list: (FIRDocumentItem & { originSource?: string; evidenceRecord?: UniversalEvidenceRecord })[] = [
+      ...(fir.documents || []).map((d) => ({ ...d, originSource: "FIR Investigation" })),
+    ];
+    const existingNames = new Set(list.map((d) => (d.fileName || "").toLowerCase().trim()));
+    const existingIds = new Set(list.map((d) => d.id));
+
+    // 1. Evidence records from universalEvidenceService linked to this FIR
+    const allEvidence = universalEvidenceService.getAll();
+    const linkedEvidence = allEvidence.filter(
+      (r) =>
+        (r.caseNumber && fir.firNumber && r.caseNumber.toLowerCase() === fir.firNumber.toLowerCase()) ||
+        (r.caseId && r.caseId === fir.id) ||
+        (fir.sourceComplaintNumber && r.caseNumber && r.caseNumber.toLowerCase() === fir.sourceComplaintNumber.toLowerCase()) ||
+        (fir.sourceComplaintId && r.caseId && r.caseId === fir.sourceComplaintId)
+    );
+
+    linkedEvidence.forEach((ev) => {
+      const key = (ev.rawDocument?.fileName || "").toLowerCase().trim();
+      const recId = ev.fileId || ev.id;
+      if (!existingNames.has(key) && !existingIds.has(recId) && !existingIds.has(ev.id)) {
+        list.push({
+          id: recId,
+          firId: fir.id,
+          title: ev.structuredData?.classifiedDocumentName || ev.rawDocument?.fileName || "Authoritative Case Evidence",
+          fileName: ev.rawDocument?.fileName || "evidence.pdf",
+          category: (ev.structuredData?.documentCategory || "OFFICIAL EVIDENCE").toUpperCase(),
+          uploadedBy: ev.rawDocument?.uploadedBy || "Intake Officer",
+          uploadedAt: ev.rawDocument?.uploadedAt ? ev.rawDocument.uploadedAt.replace("T", " ").slice(0, 16) : fir.firDate,
+          fileSize: ev.rawDocument?.fileSize ? `${(ev.rawDocument.fileSize / 1024).toFixed(1)} KB` : "10 KB",
+          dataUrl: ev.rawDocument?.dataUrl,
+          fileUrl: ev.rawDocument?.fileUrl || `/api/evidence/download?id=${ev.id}&type=original`,
+          originSource: ev.caseNumber === fir.sourceComplaintNumber ? `Complaint #${fir.sourceComplaintNumber}` : "Universal Evidence Store",
+          evidenceRecord: ev,
+        });
+        existingNames.add(key);
+        existingIds.add(recId);
+      }
+    });
+
+    // 2. Documents & attachments from source complaint if connected
+    if (fir.sourceComplaintId || fir.sourceComplaintNumber) {
+      const sourceComp =
+        (fir.sourceComplaintId ? ComplaintService.getById(fir.sourceComplaintId) : null) ||
+        (fir.sourceComplaintNumber ? ComplaintService.getByComplaintNumber(fir.sourceComplaintNumber) : null);
+
+      if (sourceComp) {
+        (sourceComp.documents || []).forEach((cDoc: any) => {
+          const key = (cDoc.fileName || "").toLowerCase().trim();
+          if (!existingNames.has(key) && !existingIds.has(cDoc.id)) {
+            list.push({
+              id: cDoc.id,
+              firId: fir.id,
+              title: cDoc.fileName,
+              fileName: cDoc.fileName,
+              category: `ORIGIN COMPLAINT: ${cDoc.fileCategory || "DOCUMENT"}`,
+              uploadedBy: cDoc.uploadedBy || sourceComp.registeredBy || "Intake Officer",
+              uploadedAt: cDoc.uploadedAt ? cDoc.uploadedAt.replace("T", " ").slice(0, 16) : fir.firDate,
+              fileSize: cDoc.fileSize || "10 KB",
+              dataUrl: cDoc.dataUrl,
+              fileUrl: cDoc.fileUrl,
+              originSource: `Complaint #${sourceComp.complaintNumber}`,
+            });
+            existingNames.add(key);
+            existingIds.add(cDoc.id);
+          }
+        });
+
+        (sourceComp.attachments || []).forEach((att: any) => {
+          const key = (att.name || "").toLowerCase().trim();
+          if (!existingNames.has(key) && !existingIds.has(att.id)) {
+            list.push({
+              id: `att_${att.id}`,
+              firId: fir.id,
+              title: att.name,
+              fileName: att.name,
+              category: `ORIGIN EVIDENCE: ${att.category.toUpperCase()}`,
+              uploadedBy: sourceComp.registeredBy || "Intake Officer",
+              uploadedAt: att.uploadedAt ? att.uploadedAt.replace("T", " ").slice(0, 16) : fir.firDate,
+              fileSize: typeof att.size === "number" ? `${(att.size / 1024).toFixed(1)} KB` : String(att.size || "10 KB"),
+              dataUrl: att.dataUrl,
+              fileUrl: att.dataUrl,
+              originSource: `Complaint #${sourceComp.complaintNumber}`,
+            });
+            existingNames.add(key);
+            existingIds.add(att.id);
+          }
+        });
+      }
+    }
+
+    return list;
+  }, [fir, evidenceRefreshTrigger]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1094,7 +1206,7 @@ export default function FIRProfilePage() {
         {[
           { key: "overview", label: "Overview & Facts", icon: FileText },
           { key: "case_diaries", label: `Case Diaries / Zimni (${fir.caseDiaries?.length || 0})`, icon: ScrollText },
-          { key: "documents", label: `Documents (${fir.documents?.length || 0})`, icon: Paperclip },
+          { key: "documents", label: `Documents (${combinedFirDocuments.length})`, icon: Paperclip },
           { key: "summary", label: "Investigation Summary", icon: Sparkles },
           { key: "reports", label: "Final Form / Reports", icon: Scale },
           { key: "history", label: "Timeline & Audit", icon: HistoryIcon },
@@ -1535,7 +1647,7 @@ export default function FIRProfilePage() {
             </div>
           </div>
 
-          {fir.documents && fir.documents.length > 0 ? (
+          {combinedFirDocuments && combinedFirDocuments.length > 0 ? (
             <Card className="border-slate-200 shadow-xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
@@ -1549,69 +1661,152 @@ export default function FIRProfilePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {fir.documents.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-slate-900">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
-                              <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-bold text-slate-900" title={doc.title}>
-                                {doc.title}
-                              </p>
-                              <p className="text-[11px] text-slate-500 font-mono truncate" title={doc.fileName}>
-                                {doc.fileName}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                            {doc.category}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-700">{doc.uploadedBy}</td>
-                        <td className="py-3 px-4 text-slate-500 font-mono">
-                          {doc.uploadedAt}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {/* Preview */}
-                            <button
-                              type="button"
-                              onClick={() => setDocPreviewItem(doc)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                              title="Instant Preview without downloading"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-blue-600" />
-                              <span>Preview</span>
-                            </button>
+                    {combinedFirDocuments.map((doc) => {
+                      const evidenceRec =
+                        doc.evidenceRecord ||
+                        universalEvidenceService.getAll().find(
+                          (r) =>
+                            r.fileId === doc.id ||
+                            r.id === doc.id ||
+                            (doc.fileName && r.rawDocument?.fileName?.toLowerCase() === doc.fileName?.toLowerCase())
+                        );
 
-                            {/* Download */}
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadDocument(doc)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                              title="Download file"
-                            >
-                              <Download className="w-3.5 h-3.5 text-slate-600" />
-                              <span>Download</span>
-                            </button>
+                      return (
+                        <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-slate-900">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                                <FileText className="w-4 h-4" />
+                              </div>
+                              <div className="min-w-0 space-y-1">
+                                <p className="truncate font-bold text-slate-900" title={doc.title}>
+                                  {doc.title}
+                                </p>
+                                <p className="text-[11px] text-slate-500 font-mono truncate" title={doc.fileName}>
+                                  {doc.fileName} {doc.fileSize ? `(${doc.fileSize})` : ""}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                  {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                      title={
+                                        evidenceRec?.rawDocument?.sha256Hash
+                                          ? `Authoritative Original Preserved • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
+                                          : "Authoritative Original File Preserved in case docket"
+                                      }
+                                    >
+                                      <ShieldCheck className="w-2.5 h-2.5 text-blue-600" />
+                                      Original Preserved
+                                    </span>
+                                  )}
 
-                            {/* Delete */}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDocument(doc.id)}
-                              className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
-                              title="Delete document"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                                  {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                      title={`Cryptographically verified lossless copy: saved ${evidenceRec.compression.savedPercentage}%`}
+                                    >
+                                      <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                      Lossless Verified (-{evidenceRec.compression.savedPercentage}%)
+                                    </span>
+                                  )}
+
+                                  {doc.originSource && doc.originSource !== "FIR Investigation" && (
+                                    <span
+                                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded shadow-2xs"
+                                      title="Preserved from Citizen Intake Complaint"
+                                    >
+                                      <Archive className="w-2.5 h-2.5 text-purple-600" />
+                                      {doc.originSource}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              {doc.category}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-700">{doc.uploadedBy}</td>
+                          <td className="py-3 px-4 text-slate-500 font-mono">
+                            {doc.uploadedAt}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              {/* Case Data Modal button if evidence record available */}
+                              {evidenceRec && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedEvidenceRecord(evidenceRec)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                  title="View Lossless Compression & Cryptographic Verification Details"
+                                >
+                                  <Database className="w-3.5 h-3.5 text-purple-600" />
+                                  <span>Case Data</span>
+                                </button>
+                              )}
+
+                              {/* Preview */}
+                              <button
+                                type="button"
+                                onClick={() => setDocPreviewItem(doc)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                title="Instant Preview without downloading"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Preview</span>
+                              </button>
+
+                              {/* Download Original */}
+                              <a
+                                href={
+                                  evidenceRec
+                                    ? `/api/evidence/download?id=${evidenceRec.id}&type=original`
+                                    : doc.dataUrl || doc.fileUrl || "#"
+                                }
+                                download={doc.fileName}
+                                onClick={(e) => {
+                                  if (!evidenceRec && (!doc.dataUrl || !doc.fileUrl)) {
+                                    e.preventDefault();
+                                    handleDownloadDocument(doc);
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                title="Download Original Authoritative Evidence File"
+                              >
+                                <Download className="w-3.5 h-3.5 text-slate-600" />
+                                <span>Original</span>
+                              </a>
+
+                              {/* Download Lossless (if compressed) */}
+                              {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
+                                <a
+                                  href={`/api/evidence/download?id=${evidenceRec.id}&type=compressed`}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                  title="Download Verified Lossless Compressed Copy"
+                                >
+                                  <Download className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Lossless (-{evidenceRec.compression.savedPercentage}%)</span>
+                                </a>
+                              )}
+
+                              {/* Delete (only for directly uploaded FIR documents) */}
+                              {(!doc.originSource || doc.originSource === "FIR Investigation") && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteDocument(doc.id)}
+                                  className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors inline-flex items-center cursor-pointer"
+                                  title="Delete document"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -3057,6 +3252,18 @@ export default function FIRProfilePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Case Evidence & Lossless Integrity Verification Modal */}
+      {selectedEvidenceRecord && (
+        <CaseEvidenceDataModal
+          record={selectedEvidenceRecord}
+          onClose={() => setSelectedEvidenceRecord(null)}
+          onUpdated={(updated) => {
+            setSelectedEvidenceRecord(updated);
+            setEvidenceRefreshTrigger((c) => c + 1);
+          }}
+        />
       )}
     </div>
   );

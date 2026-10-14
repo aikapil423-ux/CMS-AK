@@ -479,6 +479,34 @@ export const ComplaintService = {
     );
   },
 
+  /**
+   * Synchronously retrieves a complaint from local cache by ID or complaint number
+   */
+  getComplaintByIdSync(id: string): ComplaintItem | undefined {
+    if (!id) return undefined;
+    const cleanId = decodeURIComponent(id).trim().toLowerCase();
+    let found = complaintsStore.find(
+      (c) =>
+        c.id.toLowerCase() === cleanId ||
+        c.complaintNumber.toLowerCase() === cleanId
+    );
+    if (found) return found;
+    complaintsStore = loadComplaintsFromStorage();
+    return complaintsStore.find(
+      (c) =>
+        c.id.toLowerCase() === cleanId ||
+        c.complaintNumber.toLowerCase() === cleanId
+    );
+  },
+
+  getById(id: string): ComplaintItem | undefined {
+    return this.getComplaintByIdSync(id);
+  },
+
+  getByComplaintNumber(complaintNumber: string): ComplaintItem | undefined {
+    return this.getComplaintByIdSync(complaintNumber);
+  },
+
   async getStatusCounts(assignedEoFilter?: string): Promise<{
     all: number;
     unassigned: number;

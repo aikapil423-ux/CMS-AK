@@ -120,6 +120,13 @@ export const universalEvidenceService = {
   },
 
   /**
+   * Retrieves all processed evidence records bound to a specific case number
+   */
+  getByCaseNumber(caseNumber: string): UniversalEvidenceRecord[] {
+    return this.getByCase(caseNumber);
+  },
+
+  /**
    * Retrieves a single record by file ID (matches attachment.id, doc.id)
    */
   getByFileId(fileId: string): UniversalEvidenceRecord | null {

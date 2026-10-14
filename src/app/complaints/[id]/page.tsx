@@ -57,6 +57,7 @@ import {
   Banknote,
   Handshake,
   ShieldAlert,
+  ShieldCheck,
   ArrowRight,
   Database,
   RotateCcw,
@@ -2156,8 +2157,40 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
       }
     });
 
+    // 3. Authoritative Original Evidence records permanently stored in universal evidence database
+    const caseRecords = universalEvidenceService.getByCase(complaint.id);
+    const caseNumberRecords = complaint.complaintNumber
+      ? universalEvidenceService.getByCaseNumber(complaint.complaintNumber)
+      : [];
+    const allLinkedRecords = [...caseRecords, ...caseNumberRecords];
+    const existingIds = new Set(list.map((d) => d.id));
+
+    allLinkedRecords.forEach((ev) => {
+      const key = (ev.rawDocument?.fileName || "").toLowerCase().trim();
+      const recId = ev.fileId || ev.id;
+      if (!existingNames.has(key) && !existingIds.has(recId) && !existingIds.has(ev.id)) {
+        list.push({
+          id: recId,
+          complaintId: complaint.id,
+          fileName: ev.rawDocument?.fileName || "Original_Evidence.pdf",
+          originalName: ev.rawDocument?.fileName,
+          fileCategory: (ev.structuredData?.documentCategory || "OFFICIAL EVIDENCE").toUpperCase(),
+          uploadedBy: ev.rawDocument?.uploadedBy || complaint.registeredBy || "Intake Officer",
+          uploadedAt: ev.rawDocument?.uploadedAt || ev.createdAt,
+          fileSize: ev.rawDocument?.fileSize
+            ? `${(ev.rawDocument.fileSize / 1024).toFixed(1)} KB`
+            : "10 KB",
+          fileUrl: ev.rawDocument?.fileUrl || ev.rawDocument?.dataUrl,
+          dataUrl: ev.rawDocument?.dataUrl,
+          description: `Authoritative Original Evidence • SHA-256: ${ev.rawDocument?.sha256Hash?.substring(0, 10)}...`,
+        });
+        existingNames.add(key);
+        existingIds.add(recId);
+      }
+    });
+
     return list;
-  }, [complaint]);
+  }, [complaint, evidenceRefreshTrigger]);
 
   // Handle instant preview for any document
   const handlePreviewDocument = async (doc: ComplaintDocumentItem) => {
@@ -3441,6 +3474,30 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                       </span>
                                     ) : null}
 
+                                    {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
+                                      <span
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                        title={
+                                          evidenceRec?.rawDocument?.sha256Hash
+                                            ? `Authoritative Original Preserved • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
+                                            : "Authoritative Original File Preserved in case docket"
+                                        }
+                                      >
+                                        <ShieldCheck className="w-2.5 h-2.5 text-blue-600" />
+                                        Original Preserved
+                                      </span>
+                                    )}
+
+                                    {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
+                                      <span
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                        title={`Cryptographically verified lossless copy: saved ${evidenceRec.compression.savedPercentage}%`}
+                                      >
+                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                        Lossless Verified (-{evidenceRec.compression.savedPercentage}%)
+                                      </span>
+                                    )}
+
                                     {evidenceRec?.verificationStatus === "HUMAN_VERIFIED" && (
                                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-300 px-1.5 py-0.5 rounded shadow-2xs" title="Human-verified case data">
                                         <CheckCircle className="w-2.5 h-2.5 text-blue-600" />
@@ -3501,15 +3558,35 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                   <Eye className="w-3.5 h-3.5 text-blue-600" />
                                   <span>Preview</span>
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownloadDocument(doc)}
+                                <a
+                                  href={
+                                    evidenceRec
+                                      ? `/api/evidence/download?id=${evidenceRec.id}&type=original`
+                                      : doc.dataUrl || doc.fileUrl || "#"
+                                  }
+                                  download={doc.fileName}
+                                  onClick={(e) => {
+                                    if (!evidenceRec && (!doc.dataUrl || !doc.fileUrl)) {
+                                      e.preventDefault();
+                                      handleDownloadDocument(doc);
+                                    }
+                                  }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                  title="Download file"
+                                  title="Download Original Authoritative Evidence File"
                                 >
                                   <Download className="w-3.5 h-3.5 text-slate-600" />
-                                  <span>Download</span>
-                                </button>
+                                  <span>Original</span>
+                                </a>
+                                {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
+                                  <a
+                                    href={`/api/evidence/download?id=${evidenceRec.id}&type=compressed`}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                                    title="Download Verified Lossless Compressed Copy"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Lossless (-{evidenceRec.compression.savedPercentage}%)</span>
+                                  </a>
+                                )}
                                 {complaint &&
                                   !doc.isPermanentRegistrationDoc &&
                                   doc.fileCategory !== "REGISTERED COMPLAINT DOCKET" &&
