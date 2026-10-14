@@ -1080,8 +1080,10 @@ export interface LegalSuggestionItem {
 }
 
 export interface LegalAnalysisReport {
-  complaintId: string;
-  complaintNumber: string;
+  complaintId?: string;
+  complaintNumber?: string;
+  firId?: string;
+  firNumber?: string;
   analyzedAt: string;
   summary: string;
   scannedFactsCount: number;

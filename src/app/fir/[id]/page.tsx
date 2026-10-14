@@ -69,11 +69,13 @@ import { formatDate } from "@/lib/utils";
 import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
+import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
 
 type ActiveTab =
   | "overview"
   | "case_diaries"
   | "documents"
+  | "legal_assistant"
   | "summary"
   | "reports"
   | "history"
@@ -1207,8 +1209,15 @@ export default function FIRProfilePage() {
           { key: "overview", label: "Overview & Facts", icon: FileText },
           { key: "case_diaries", label: `Case Diaries / Zimni (${fir.caseDiaries?.length || 0})`, icon: ScrollText },
           { key: "documents", label: `Documents (${combinedFirDocuments.length})`, icon: Paperclip },
+          {
+            key: "legal_assistant",
+            label: fir.legalAnalysis?.suggestedSections?.length
+              ? `Legal Help (${fir.legalAnalysis.suggestedSections.length})`
+              : "Legal Help (कानूनी सहायक)",
+            icon: Scale,
+          },
           { key: "summary", label: "Investigation Summary", icon: Sparkles },
-          { key: "reports", label: "Final Form / Reports", icon: Scale },
+          { key: "reports", label: "Final Form / Reports", icon: FileCheck2 },
           { key: "history", label: "Timeline & Audit", icon: HistoryIcon },
           { key: "confidential_dossier", label: "Confidential Dossier", icon: Lock },
         ].map((tab) => {
@@ -1218,7 +1227,7 @@ export default function FIRProfilePage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as ActiveTab)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer ${
                 isActive
                   ? "bg-[#0b192c] text-white shadow-xs"
                   : "text-slate-600 hover:bg-slate-100"
@@ -1238,19 +1247,31 @@ export default function FIRProfilePage() {
         <div className="space-y-6">
           {/* Acts & Sections Card */}
           <Card className="border-red-200 shadow-xs bg-red-50/30">
-            <CardContent className="p-4 flex items-start gap-3">
-              <Scale className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-red-800">
-                  Statutory Offence Charged
-                </span>
-                <h3 className="text-sm font-black text-red-950 font-mono">
-                  {fir.actsAndSections}
-                </h3>
-                <p className="text-xs text-red-800">
-                  Major Act: {fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"} • Classification: {fir.categoryDisplay || fir.category}
-                </p>
+            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <Scale className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-800">
+                    Statutory Offence Charged
+                  </span>
+                  <h3 className="text-sm font-black text-red-950 font-mono">
+                    {fir.actsAndSections}
+                  </h3>
+                  <p className="text-xs text-red-800">
+                    Major Act: {fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"} • Classification: {fir.categoryDisplay || fir.category}
+                  </p>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab("legal_assistant")}
+                className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+                title="एफआईआर में लागू धाराओं का विधिक विश्लेषण और बेयर एक्ट देखें"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>कानूनी विश्लेषण व बेयर एक्ट (Legal Help) →</span>
+              </button>
             </CardContent>
           </Card>
 
@@ -1834,6 +1855,23 @@ export default function FIRProfilePage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB: LEGAL ASSISTANT (BNS, BNSS, BSA Statutory Analysis & Bare Act Indexing) */}
+      {activeTab === "legal_assistant" && (
+        <FIRLegalAssistant
+          fir={fir}
+          onUpdateFir={(updated) => {
+            setFir(updated);
+            if (updated.legalAnalysis) {
+              try {
+                firService.saveLegalAnalysis(updated.id, updated.legalAnalysis);
+              } catch (e) {
+                console.error("Failed to persist FIR legal analysis", e);
+              }
+            }
+          }}
+        />
       )}
 
       {/* 4. SUMMARY TAB */}

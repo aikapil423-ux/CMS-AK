@@ -12,6 +12,7 @@ import {
   FIRAuditRecord,
   AccusedPerson,
   ComplainantPerson,
+  LegalAnalysisReport,
 } from "@/types";
 import { ComplaintService } from "./complaintService";
 
@@ -692,6 +693,10 @@ export const firService = {
     saveFirsToStorage(firsStore);
     notifyListeners();
     return updated;
+  },
+
+  saveLegalAnalysis(firId: string, legalAnalysis: LegalAnalysisReport): FIRItem | undefined {
+    return this.updateFir(firId, { legalAnalysis });
   },
 
   assignIo(
