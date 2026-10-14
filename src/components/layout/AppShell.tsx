@@ -11,6 +11,7 @@ import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   PlusCircle,
   BookOpen,
@@ -28,6 +29,7 @@ import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [roleModalOpen, setRoleModalOpen] = useState(false);
 
   React.useEffect(() => {
@@ -95,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link href="/complaints/register">
                 <Button size="sm" variant="primary" className="gap-1.5 text-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
-                  Register Complaint
+                  {t("Register Complaint")}
                 </Button>
               </Link>
             )}
@@ -104,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link href="/fir/register">
                 <Button size="sm" variant="primary" className="gap-1.5 text-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
-                  Register FIR
+                  {t("Register FIR")}
                 </Button>
               </Link>
             )}
@@ -113,14 +115,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => setRoleModalOpen(true)}
               className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 transition-colors text-left"
-              title="Click to switch persona"
+              title={t("Click to switch persona")}
             >
               <div className="w-5.5 h-5.5 rounded-md bg-slate-900 text-white flex items-center justify-center font-medium text-[10px]">
                 {currentUser.name.slice(0, 1)}
               </div>
               <div className="hidden xl:block">
                 <p className="text-xs font-medium text-slate-900 leading-tight">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-500">{currentUser.roleDisplay}</p>
+                <p className="text-[10px] text-slate-500">{t(currentUser.roleDisplay)}</p>
               </div>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>

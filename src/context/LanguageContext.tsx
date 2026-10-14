@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { setUniversalLanguage } from "@/utils/universalDomTranslator";
+import { CMS_DICTIONARY } from "@/utils/cmsTranslationDictionary";
 
 export type AppLanguage = "hi" | "en";
 
@@ -10,7 +12,7 @@ interface LanguageContextType {
   toggleLanguage: () => void;
   isHindi: boolean;
   isEnglish: boolean;
-  t: (hiText: string, enText: string) => string;
+  t: (textOrHi: string, enFallback?: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -18,10 +20,10 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LANGUAGE_STORAGE_KEY = "cms_app_language";
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<AppLanguage>("hi");
+  const [language, setLanguageState] = useState<AppLanguage>("en");
   const [mounted, setMounted] = useState(false);
 
-  // Initialize from localStorage or default to "hi"
+  // Initialize from localStorage or default to "en"
   useEffect(() => {
     try {
       const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY) as AppLanguage | null;
@@ -31,10 +33,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           document.documentElement.lang = saved;
         }
       } else {
-        // default is Hindi
-        setLanguageState("hi");
+        // default is English (the natural source template language of the UI)
+        setLanguageState("en");
         if (typeof document !== "undefined") {
-          document.documentElement.lang = "hi";
+          document.documentElement.lang = "en";
         }
       }
     } catch {
@@ -43,6 +45,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
+  // Trigger universal DOM translation across the whole website whenever language changes
+  useEffect(() => {
+    if (mounted) {
+      setUniversalLanguage(language);
+    }
+  }, [language, mounted]);
+
   const setLanguage = useCallback((lang: AppLanguage) => {
     setLanguageState(lang);
     try {
@@ -50,6 +59,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       if (typeof document !== "undefined") {
         document.documentElement.lang = lang;
       }
+      setUniversalLanguage(lang);
       // Broadcast to any component / tab
       window.dispatchEvent(
         new CustomEvent("cms-language-changed", { detail: { language: lang } })
@@ -67,6 +77,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (typeof document !== "undefined") {
           document.documentElement.lang = nextLang;
         }
+        setUniversalLanguage(nextLang);
         window.dispatchEvent(
           new CustomEvent("cms-language-changed", { detail: { language: nextLang } })
         );
@@ -81,7 +92,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleCustomEvent = (e: Event) => {
       const customEvent = e as CustomEvent<{ language?: AppLanguage }>;
-      if (customEvent.detail?.language && (customEvent.detail.language === "hi" || customEvent.detail.language === "en")) {
+      if (
+        customEvent.detail?.language &&
+        (customEvent.detail.language === "hi" || customEvent.detail.language === "en")
+      ) {
         setLanguageState(customEvent.detail.language);
       }
     };
@@ -101,8 +115,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (hiText: string, enText: string) => {
-      return language === "hi" ? hiText : enText;
+    (textOrHi: string, enFallback?: string) => {
+      if (enFallback !== undefined) {
+        // Called as t(hiText, enText)
+        return language === "hi" ? textOrHi : enFallback;
+      }
+      // Called as t(englishText)
+      if (language === "hi") {
+        return CMS_DICTIONARY[textOrHi] || textOrHi;
+      }
+      return textOrHi;
     },
     [language]
   );
@@ -128,12 +150,13 @@ export function useLanguage() {
   if (!context) {
     // Provide a safe fallback if used outside of LanguageProvider
     return {
-      language: "hi" as AppLanguage,
+      language: "en" as AppLanguage,
       setLanguage: () => {},
       toggleLanguage: () => {},
-      isHindi: true,
-      isEnglish: false,
-      t: (hiText: string, _enText: string) => hiText,
+      isHindi: false,
+      isEnglish: true,
+      t: (textOrHi: string, enFallback?: string) =>
+        enFallback !== undefined ? enFallback : (CMS_DICTIONARY[textOrHi] || textOrHi),
     };
   }
   return context;

@@ -10,11 +10,13 @@ import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
+import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
+  const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
 
@@ -35,7 +37,7 @@ export function MobileHeader() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
-                  {isRoznamcha ? "Roznamcha GD" : isFir ? "FIR Module" : isComplaints ? "Complaints" : "HP CMS"}
+                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : "HP CMS"}
                 </span>
                 <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}
@@ -65,7 +67,7 @@ export function MobileHeader() {
             <button
               onClick={() => setRoleModalOpen(true)}
               className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200/80 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 border border-slate-200/70"
-              title="Switch Police Role"
+              title={t("Switch Police Role")}
             >
               <UserCog className="w-3.5 h-3.5 text-slate-600" />
               <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -97,7 +99,7 @@ export function MobileHeader() {
                   <Shield className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-900">Haryana Police CMS</h3>
+                  <h3 className="text-xs font-semibold text-slate-900">{t("Haryana Police CMS")}</h3>
                   <p className="text-[10px] text-slate-400">{currentUser.stationName}</p>
                 </div>
               </div>
@@ -108,7 +110,7 @@ export function MobileHeader() {
 
             <div className="p-3 border-b border-slate-200/80 bg-white">
               <p className="text-xs font-semibold text-slate-900">{currentUser.name}</p>
-              <p className="text-[11px] text-slate-600">{currentUser.roleDisplay}</p>
+              <p className="text-[11px] text-slate-600">{t(currentUser.roleDisplay)}</p>
               <p className="text-[10px] text-slate-400 font-mono mt-0.5">PNO: {currentUser.pno}</p>
             </div>
 
@@ -120,7 +122,7 @@ export function MobileHeader() {
                 className="w-full flex items-center justify-center gap-2 py-1.5 px-3 rounded-md bg-white hover:bg-slate-100 text-slate-800 text-xs font-medium border border-slate-200/80 transition-colors"
               >
                 <LayoutGrid className="w-3.5 h-3.5 text-slate-600" />
-                <span>&larr; Modules Portal</span>
+                <span>&larr; {t("Modules Portal")}</span>
               </Link>
             </div>
 
@@ -128,116 +130,116 @@ export function MobileHeader() {
               {isRoznamcha ? (
                 <>
                   <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
-                    Roznamcha GD
+                    {t("Roznamcha GD")}
                   </div>
                   <Link
                     href="/general-diary"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Smart General Diary
+                    {t("Smart General Diary")}
                   </Link>
                   <Link
                     href="/general-diary/new"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    New GD Entry
+                    {t("New GD Entry")}
                   </Link>
                   <Link
                     href="/general-diary?type=SHIFT_RELIEF_TURNOVER"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Shift & Sentry Turnover
+                    {t("Shift Turnover")}
                   </Link>
                   <Link
                     href="/general-diary?type=PATROL_DEPARTURE_RETURN"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Patrol & Night Domination
+                    {t("Patrol & Night Domination")}
                   </Link>
                   <Link
                     href="/general-diary?type=SEIZURE_MUDDMAL"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Malkhana & Property Seizures
+                    {t("Malkhana")} & Property Seizures
                   </Link>
                 </>
               ) : isComplaints ? (
                 <>
                   <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
-                    Complaints
+                    {t("Complaints")}
                   </div>
                   <Link
                     href="/complaints"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Complaints Register
+                    {t("Complaints Register")}
                   </Link>
                   <Link
                     href="/enquiry-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Field Enquiry Workspace
+                    {t("Field Enquiry Workspace")}
                   </Link>
                 </>
               ) : isFir ? (
                 <>
                   <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
-                    FIR
+                    {t("FIR")}
                   </div>
                   <Link
                     href="/fir"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    FIR Register
+                    {t("FIR Register")}
                   </Link>
                   <Link
                     href="/fir-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Investigation Workspace
+                    {t("Investigation Workspace")}
                   </Link>
                 </>
               ) : (
                 <>
                   <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
-                    Operations
+                    {t("Modules")}
                   </div>
                   <Link
                     href="/general-diary"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Smart General Diary
+                    {t("Smart General Diary")}
                   </Link>
                   <Link
                     href="/complaints"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Complaints Register
+                    {t("Complaints Register")}
                   </Link>
                   <Link
                     href="/fir"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    FIR Register
+                    {t("FIR Register")}
                   </Link>
                   <Link
                     href="/acts-sections"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    ACT and SECTIONs
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               )}
@@ -250,7 +252,7 @@ export function MobileHeader() {
                 }}
                 className="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2"
               >
-                <UserCog className="w-3.5 h-3.5 text-slate-500" /> Switch Police Role
+                <UserCog className="w-3.5 h-3.5 text-slate-500" /> {t("Switch Police Role")}
               </button>
             </nav>
 
@@ -262,7 +264,7 @@ export function MobileHeader() {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200/80 text-xs font-medium transition-colors"
               >
-                Sign Out
+                {t("Sign Out")}
               </button>
             </div>
           </div>

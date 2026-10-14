@@ -28,6 +28,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -41,6 +42,7 @@ interface NavItem {
 export function Sidebar() {
   const pathname = usePathname();
   const { currentUser, logout } = useAuth();
+  const { t } = useLanguage();
 
   // State for hover-to-expand and optional lock pin
   const [isHovered, setIsHovered] = useState(false);
@@ -147,10 +149,10 @@ export function Sidebar() {
             <div className="flex-1 min-w-0 animate-in fade-in duration-150">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                  Haryana Police
+                  {t("Haryana Police")}
                 </span>
               </div>
-              <h1 className="text-xs font-semibold text-slate-900 tracking-tight truncate">Case Management</h1>
+              <h1 className="text-xs font-semibold text-slate-900 tracking-tight truncate">{t("Case Management")}</h1>
               <p className="text-[10px] text-slate-400 truncate">{currentUser.stationName}</p>
             </div>
           )}
@@ -172,7 +174,7 @@ export function Sidebar() {
       <div className="p-2 bg-slate-50/60 border-b border-slate-200/80 overflow-hidden">
         <Link
           href="/"
-          title="Main Module Selector"
+          title={t("Modules Portal")}
           className={cn(
             "flex items-center rounded-md bg-white hover:bg-slate-100/80 text-slate-700 hover:text-slate-900 border border-slate-200/70 transition-colors",
             isExpanded ? "justify-between px-2.5 py-1.5 text-xs font-medium" : "justify-center p-2"
@@ -180,9 +182,9 @@ export function Sidebar() {
         >
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-            {isExpanded && <span className="truncate">Modules Portal</span>}
+            {isExpanded && <span className="truncate">{t("Modules Portal")}</span>}
           </div>
-          {isExpanded && <span className="text-[10px] text-slate-400 shrink-0">&larr; Switch</span>}
+          {isExpanded && <span className="text-[10px] text-slate-400 shrink-0">&larr; {t("Switch")}</span>}
         </Link>
       </div>
 
@@ -207,7 +209,7 @@ export function Sidebar() {
                 <BookOpen className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                 {isExpanded && (
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    Roznamcha GD
+                    {t("Roznamcha GD")}
                   </span>
                 )}
               </div>
@@ -231,7 +233,7 @@ export function Sidebar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      title={!isExpanded ? item.name : undefined}
+                      title={!isExpanded ? t(item.name) : undefined}
                       className={cn(
                         "flex items-center rounded-md text-xs font-medium transition-all group",
                         isExpanded
@@ -249,7 +251,7 @@ export function Sidebar() {
                             isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
                           )}
                         />
-                        {isExpanded && <span className="truncate">{item.name}</span>}
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
                       </div>
                       {isExpanded && item.badge && (
                         <span
@@ -258,7 +260,7 @@ export function Sidebar() {
                             item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
                           )}
                         >
-                          {item.badge}
+                          {t(item.badge)}
                         </span>
                       )}
                     </Link>
@@ -286,7 +288,7 @@ export function Sidebar() {
                 <FileText className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                 {isExpanded && (
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    Complaints
+                    {t("Complaints")}
                   </span>
                 )}
               </div>
@@ -310,7 +312,7 @@ export function Sidebar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      title={!isExpanded ? item.name : undefined}
+                      title={!isExpanded ? t(item.name) : undefined}
                       className={cn(
                         "flex items-center rounded-md text-xs font-medium transition-all group",
                         isExpanded
@@ -328,7 +330,7 @@ export function Sidebar() {
                             isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
                           )}
                         />
-                        {isExpanded && <span className="truncate">{item.name}</span>}
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
                       </div>
                       {isExpanded && item.badge && (
                         <span
@@ -337,7 +339,7 @@ export function Sidebar() {
                             item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
                           )}
                         >
-                          {item.badge}
+                          {t(item.badge)}
                         </span>
                       )}
                     </Link>
@@ -365,7 +367,7 @@ export function Sidebar() {
                 <Scale className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                 {isExpanded && (
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    FIR
+                    {t("FIR")}
                   </span>
                 )}
               </div>
@@ -389,7 +391,7 @@ export function Sidebar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      title={!isExpanded ? item.name : undefined}
+                      title={!isExpanded ? t(item.name) : undefined}
                       className={cn(
                         "flex items-center rounded-md text-xs font-medium transition-all group",
                         isExpanded
@@ -407,7 +409,7 @@ export function Sidebar() {
                             isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
                           )}
                         />
-                        {isExpanded && <span className="truncate">{item.name}</span>}
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
                       </div>
                       {isExpanded && item.badge && (
                         <span
@@ -416,7 +418,7 @@ export function Sidebar() {
                             item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
                           )}
                         >
-                          {item.badge}
+                          {t(item.badge)}
                         </span>
                       )}
                     </Link>
@@ -443,7 +445,7 @@ export function Sidebar() {
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600 shrink-0" />
               {isExpanded && (
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                  Management
+                  {t("Management")}
                 </span>
               )}
             </div>
@@ -467,7 +469,7 @@ export function Sidebar() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    title={!isExpanded ? item.name : undefined}
+                    title={!isExpanded ? t(item.name) : undefined}
                     className={cn(
                       "flex items-center rounded-md text-xs font-medium transition-all group",
                       isExpanded
@@ -485,7 +487,7 @@ export function Sidebar() {
                           isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
                         )}
                       />
-                      {isExpanded && <span className="truncate">{item.name}</span>}
+                      {isExpanded && <span className="truncate">{t(item.name)}</span>}
                     </div>
                     {isExpanded && item.badge && (
                       <span
@@ -494,7 +496,7 @@ export function Sidebar() {
                           item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
                         )}
                       >
-                        {item.badge}
+                        {t(item.badge)}
                       </span>
                     )}
                   </Link>
@@ -508,13 +510,13 @@ export function Sidebar() {
         <div className="pt-2 border-t border-slate-200/70">
           {isExpanded && (
             <div className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 animate-in fade-in duration-150">
-              Station Info
+              {t("Station Info")}
             </div>
           )}
           <nav className="space-y-0.5">
             <Link
               href="/station-profile"
-              title={!isExpanded ? "Station Profile" : undefined}
+              title={!isExpanded ? t("Station Profile") : undefined}
               className={cn(
                 "flex items-center rounded-md text-xs font-medium transition-all group",
                 isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
@@ -525,12 +527,12 @@ export function Sidebar() {
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <Building2 className={cn("w-3.5 h-3.5 shrink-0", pathname === "/station-profile" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
-                {isExpanded && <span className="truncate">Station Profile</span>}
+                {isExpanded && <span className="truncate">{t("Station Profile")}</span>}
               </div>
             </Link>
             <Link
               href="/users"
-              title={!isExpanded ? "Officer Roster" : undefined}
+              title={!isExpanded ? t("Officer Roster") : undefined}
               className={cn(
                 "flex items-center rounded-md text-xs font-medium transition-all group",
                 isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
@@ -541,7 +543,7 @@ export function Sidebar() {
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <Users className={cn("w-3.5 h-3.5 shrink-0", pathname === "/users" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
-                {isExpanded && <span className="truncate">Officer Roster</span>}
+                {isExpanded && <span className="truncate">{t("Officer Roster")}</span>}
               </div>
             </Link>
           </nav>
@@ -557,12 +559,12 @@ export function Sidebar() {
         >
           {isExpanded && (
             <div className="flex items-center gap-1.5 text-[11px] animate-in fade-in duration-150">
-              <span className="font-medium text-slate-600">Haryana Police IT</span>
+              <span className="font-medium text-slate-600">{t("Haryana Police IT")}</span>
             </div>
           )}
           <button
             onClick={logout}
-            title="Sign Out"
+            title={t("Sign Out")}
             className="text-slate-400 hover:text-slate-800 transition-colors p-1"
           >
             <LogOut className="w-3.5 h-3.5" />
