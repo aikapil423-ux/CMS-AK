@@ -24,11 +24,16 @@ import {
   Gavel,
   ShieldAlert,
   HelpCircle,
+  Download,
+  ArrowLeft,
+  ExternalLink,
+  FileCheck2,
 } from "lucide-react";
 import { FIRItem } from "@/types";
 import { firService } from "@/services/firService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { printA4Element } from "@/utils/printElement";
 
 interface CrimeDetailModalProps {
   fir: FIRItem;
@@ -206,6 +211,154 @@ export function CrimeDetailModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [isSavedSuccess, setIsSavedSuccess] = useState(false);
+
+  // Split acts and sections for Table 2 matching official IIF-II proforma
+  const actsAndSectionsList = React.useMemo(() => {
+    if (!fir.actsAndSections) {
+      return [{ sNo: 1, act: "Bharatiya Nyaya Sanhita, 2023", sections: "Sec 103, 303(2) BNS" }];
+    }
+    const raw = fir.actsAndSections;
+    const parts = raw.split(/;|\n/);
+    if (parts.length > 1) {
+      return parts.map((p, i) => {
+        const trimmed = p.trim();
+        const hasAct = trimmed.toLowerCase().includes("act");
+        return {
+          sNo: i + 1,
+          act: hasAct ? trimmed.split(/sec|section/i)[0].trim() : (fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"),
+          sections: hasAct ? (trimmed.match(/sec.*|section.*/i)?.[0] || trimmed) : trimmed,
+        };
+      });
+    }
+    return [
+      {
+        sNo: 1,
+        act: raw.toLowerCase().includes("arms") ? "ARMS ACT, 1959" : (fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"),
+        sections: raw.toLowerCase().includes("arms") ? "25" : (fir.bnsSections?.join(", ") || raw),
+      },
+      {
+        sNo: 2,
+        act: raw.toLowerCase().includes("arms") ? (fir.majorAct || "IPC 1860 / BNS 2023") : "Special & Local Laws (SLL)",
+        sections: raw.toLowerCase().includes("arms") ? (fir.bnsSections?.join(", ") || "302 / 103") : "Applicable Provisions",
+      },
+    ];
+  }, [fir.actsAndSections, fir.majorAct, fir.bnsSections]);
+
+  const handleDownloadProforma = () => {
+    const el = document.getElementById("cctns-iif2-official-sheet");
+    if (!el) return;
+    const filename = `CRIME_DETAILS_FORM_IIF2_${(fir.firNumber || "FIR").replace(/[\/\s]/g, "_")}.html`;
+    const fullHtml = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8"/>
+  <title>Crime Details Form (IIF-II) - ${fir.firNumber}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 15mm; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 11px; color: #000; background: #fff; margin: 0; padding: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    th, td { border: 1px solid #444; padding: 4px 6px; vertical-align: top; font-size: 11px; }
+    th { background-color: #f2f2f2; font-weight: bold; }
+    .page-break { page-break-before: always; break-before: page; margin-top: 25px; padding-top: 15px; }
+    .no-print { display: none !important; }
+  </style>
+</head>
+<body>
+  ${el.innerHTML}
+</body>
+</html>`;
+
+    const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintProforma = () => {
+    printA4Element("cctns-iif2-official-sheet", `CRIME_DETAILS_FORM_IIF2_${fir.firNumber}`);
+  };
+
+  const handleSaveToFirProfile = () => {
+    setIsSubmitting(true);
+    const el = document.getElementById("cctns-iif2-official-sheet");
+    const htmlSnapshot = el ? `<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8"/>
+  <title>Crime Details Form (IIF-II) - ${fir.firNumber}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 15mm; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 11px; color: #000; background: #fff; margin: 0; padding: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    th, td { border: 1px solid #444; padding: 4px 6px; vertical-align: top; font-size: 11px; }
+    th { background-color: #f2f2f2; font-weight: bold; }
+    .page-break { page-break-before: always; break-before: page; margin-top: 25px; padding-top: 15px; }
+  </style>
+</head>
+<body>
+  ${el.innerHTML}
+</body>
+</html>` : "";
+
+    const crimeDetailsPayload = {
+      formTitle: "Crime Detail Form IIF-II",
+      formCode: "IIF-II",
+      firNumber: fir.firNumber,
+      firDate: fir.firDate,
+      policeStation: fir.policeStation,
+      district: fir.district,
+      actsAndSections: fir.actsAndSections,
+      isHeinous,
+      isSensitive,
+      placeOfOccurrence: {
+        longitude,
+        latitude,
+        visitDateTime,
+        beatNo,
+        majorPlaceType,
+        minorPlaceType,
+        gist,
+        description,
+        physicalEvidenceDetails,
+        shownBy: {
+          name: shownByName,
+          relativeName: shownByRelative,
+          relationType: shownByRelationType,
+          gender: shownByGender,
+          mobile: shownByMobile,
+          age: shownByAge,
+          address: shownByAddress,
+          district: shownByDistrict,
+          policeStation: shownByPs,
+        },
+      },
+      modusOperandi: modusList,
+      accusedSuspects: accusedEntries,
+      victims: victimEntries,
+      witnesses: witnessEntries,
+      propertyOfInterest: {
+        hasProperty,
+        properties: propertyEntries,
+      },
+      submittedAt: new Date().toISOString(),
+      submittedBy: currentUserName,
+    };
+
+    const updated = firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
+    setIsSubmitting(false);
+
+    if (updated) {
+      setIsSavedSuccess(true);
+      onSubmitted(updated);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -1340,51 +1493,694 @@ export function CrimeDetailModal({
 
             <Button
               type="button"
-              onClick={() => setShowConfirmDialog(true)}
-              disabled={isSubmitting}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-2 rounded-xl shadow-md gap-1.5 cursor-pointer"
+              onClick={() => setShowPdfPreview(true)}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md gap-1.5 cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>अपराध विवरण प्रपत्र सबमिट करें (Submit IIF-II)</span>
+              <Eye className="w-4 h-4" />
+              <span>Confirm &amp; Submit Crime Details (पूर्वावलोकन एवं सबमिट) →</span>
             </Button>
           </div>
         </div>
 
-        {/* Save Confirmation Dialog (matching CCTNS Video page 49) */}
-        {showConfirmDialog && (
-          <div className="fixed inset-0 z-60 bg-slate-950/70 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-center animate-in zoom-in-95">
-              <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto border border-amber-300">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h4 className="text-base font-black text-slate-900">
-                अपराध विवरण प्रपत्र सत्यापन (Save Confirmation)
-              </h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-mono bg-slate-50 p-3 rounded-lg border border-slate-200">
-                &quot;All details entered in the form will be saved. Do you wish to submit the form?&quot;
-              </p>
-              <p className="text-[11px] text-slate-500">
-                यह फॉर्म सबमिट होते ही FIR के Documents टैब में <strong>Crime Detail Form (IIF-II)</strong> जुड़ जाएगा और इस केस में <strong>Arrest Docs</strong> बनाने की अनुमति अनलॉक हो जाएगी।
-              </p>
-              <div className="flex items-center justify-center gap-3 pt-2">
+        {/* ========================================================================= */}
+        {/* OFFICIAL CCTNS IIF-II PROFORMA PREVIEW (MATCHING HARYANA POLICE PDF EXACTLY) */}
+        {/* ========================================================================= */}
+        {showPdfPreview && (
+          <div className="fixed inset-0 z-60 bg-slate-950/85 backdrop-blur-md flex flex-col p-2 sm:p-4 overflow-hidden animate-in fade-in-0 duration-200">
+            {/* Top Toolbar */}
+            <div className="bg-[#0b192c] text-white px-4 py-3 rounded-t-xl border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 shadow-md shrink-0">
+              <div className="flex items-center gap-3">
                 <Button
-                  type="button"
+                  size="sm"
                   variant="outline"
-                  onClick={() => setShowConfirmDialog(false)}
-                  className="text-xs"
+                  onClick={() => setShowPdfPreview(false)}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-bold gap-1.5 cursor-pointer"
                 >
-                  Cancel
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>वापस संपादन करें (Back to Edit)</span>
                 </Button>
+                <div className="hidden sm:block">
+                  <h4 className="text-xs sm:text-sm font-black text-white">
+                    I.I.F.-II / अपराध विवरण प्रपत्र - CCTNS Proforma Preview
+                  </h4>
+                  <p className="text-[10px] text-slate-300">
+                    FIR No: {fir.cctnsFirNumber || fir.firNumber} • PS: {fir.policeStation} • Dist: {fir.district}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <Button
-                  type="button"
-                  onClick={handleFinalSubmit}
-                  disabled={isSubmitting}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-6 py-2 rounded-xl shadow-md"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDownloadProforma}
+                  className="bg-white hover:bg-slate-100 text-slate-800 border-slate-300 font-bold text-xs gap-1.5 cursor-pointer"
+                  title="Download filled Crime Details Form IIF-II as HTML / A4 Document"
                 >
-                  {isSubmitting ? "Submitting..." : "OK (Submit Form)"}
+                  <Download className="w-3.5 h-3.5" />
+                  <span>डाउनलोड A4 प्रपत्र (Download)</span>
                 </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handlePrintProforma}
+                  className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+                  title="Print official A4 proforma"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>प्रिंट A4 (Print)</span>
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleSaveToFirProfile}
+                  disabled={isSubmitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-1.5 shadow-lg shadow-emerald-900/40 cursor-pointer animate-pulse"
+                  title="Save Crime Details Form to FIR Profile Documents"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{isSubmitting ? "सहेजा जा रहा है..." : "FIR Profile में सहेजें (Save to FIR)"}</span>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPdfPreview(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
+
+            {/* Scrollable Proforma Canvas */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-800/60 flex justify-center">
+              <div
+                id="cctns-iif2-official-sheet"
+                className="bg-white text-black p-8 sm:p-14 shadow-2xl rounded-sm max-w-4xl w-full font-serif border border-slate-400 space-y-6"
+                style={{ minHeight: "1100px", lineHeight: "1.4" }}
+              >
+                {/* Page 1 */}
+                <div className="page-sheet">
+                  {/* Top Right Header */}
+                  <div className="text-right text-xs font-semibold space-y-0.5 mb-2">
+                    <p className="font-bold">Haryana Police (हरियाणा पुलिस)</p>
+                    <p className="text-[11px] font-bold">I.I.F.-II/एकीकृत जाँच फार्म-II</p>
+                  </div>
+
+                  {/* Centered Heading */}
+                  <div className="text-center my-4">
+                    <h2 className="text-sm sm:text-base font-bold uppercase underline tracking-wide">
+                      CRIME DETAILS FORM (अपराध विवरण प्रपत्र)
+                    </h2>
+                  </div>
+
+                  {/* Section 1: District, P.S., Year, FIR No., Date */}
+                  <div className="space-y-1.5 text-xs font-serif mb-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <strong>1. District (जिला):</strong> {fir.district || "Gurugram"}
+                      </div>
+                      <div>
+                        <strong>P.S. (थाना):</strong> {fir.policeStation || "Sector 29"}
+                      </div>
+                      <div>
+                        <strong>Year (वर्ष):</strong> {fir.firYear || new Date().getFullYear()}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <strong>FIR No. (प्र.सू.रि. सं.):</strong> {fir.cctnsFirNumber || fir.firNumber}
+                      </div>
+                      <div>
+                        <strong>Date (दिनांक):</strong> {fir.firDate}
+                      </div>
+                      <div></div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: Acts and Sections Table */}
+                  <div className="mb-3">
+                    <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="border border-slate-600 px-2 py-1 text-center w-16">
+                            2. S.No. (क्र.सं.)
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Acts (अधिनियम)
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Sections (धारा(एं))
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {actsAndSectionsList.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="border border-slate-600 px-2 py-1 text-center font-mono">
+                              {item.sNo}
+                            </td>
+                            <td className="border border-slate-600 px-2 py-1 font-bold">
+                              {item.act}
+                            </td>
+                            <td className="border border-slate-600 px-2 py-1 font-mono font-bold">
+                              {item.sections}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 3: Place of occurrence shown by */}
+                  <div className="mb-3">
+                    <div className="font-bold text-xs mb-1">
+                      3. Place of occurrence shown by (के द्वारा दिखाया गया घटना स्थल):
+                    </div>
+                    <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="border border-slate-600 px-2 py-1 text-center w-16">
+                            S.No. (क्र.सं.)
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Name (नाम):
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Relative Type (संबंध प्रकार)
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Relative Name (संबंध का नाम)
+                          </th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">
+                            Address (पता)
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                          <td className="border border-slate-600 px-2 py-1 font-bold">
+                            {shownByName || fir.complainantName}
+                          </td>
+                          <td className="border border-slate-600 px-2 py-1">
+                            {shownByRelationType}
+                          </td>
+                          <td className="border border-slate-600 px-2 py-1">
+                            {shownByRelative || fir.complainantFatherSpouse || "—"}
+                          </td>
+                          <td className="border border-slate-600 px-2 py-1 text-[10px]">
+                            <div>Permanent Address: {shownByAddress}, {shownByDistrict}</div>
+                            <div>Present Address: {shownByAddress}, {shownByDistrict}</div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 4: Type of crime */}
+                  <div className="mb-3 space-y-1.5">
+                    <div className="font-bold text-xs">4. Type of crime (अपराध का प्रकार):</div>
+
+                    {/* (i) & (ii) side by side */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-xs shrink-0">(i)</span>
+                        <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                          <thead>
+                            <tr className="bg-slate-100">
+                              <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                              <th className="border border-slate-600 px-2 py-0.5 text-left">Major Head (मुख्य शीर्ष)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                              <td className="border border-slate-600 px-2 py-1 font-bold uppercase">{majorHead || "PROPERTY THEFT / OFFENCE"}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-xs shrink-0">(ii)</span>
+                        <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                          <thead>
+                            <tr className="bg-slate-100">
+                              <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                              <th className="border border-slate-600 px-2 py-0.5 text-left">Minor Head (लघु शीर्ष)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                              <td className="border border-slate-600 px-2 py-1 uppercase">{minorHead || "FOR GAIN"}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* (iii) Modus Operandi */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(iii)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Modus Operandi (तरीका वारदात)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 uppercase">{method || "BLUNT WEAPON / FORCED ENTRY"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (iv) Conveyance(s) Used */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(iv)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Conveyance(s) Used (वाहन प्रयोग किया गया)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1">{conveyanceType} {conveyanceNumber ? `(${conveyanceNumber})` : ""}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (v) Character Assumed */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(v)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Character Assumed (चरित्रधारण (वेशभूषा))</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 uppercase">{characterAssumed || "PASSERBY / RIDER"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (vi) Language / Dialect Used */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(vi)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Language / Dialect Used (भाषा / बोली का प्रयोग)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 uppercase">{languageDialect || "HINDI / HARYANVI"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (vii) Special Feature */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(vii)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Special Feature (विशेष लक्षण)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 uppercase">{specialFeature || "CHANGING OF CLOTHES / CONCEALED FACE"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (viii) Type of place of occurrence */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(viii)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Type of place of occurrence (घटनास्थल का प्रकार)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 space-y-0.5">
+                              <div><strong>Major Type of Place of Occurence:</strong> {majorPlaceType}</div>
+                              <div><strong>Minor Type of Place of Occurence:</strong> {minorPlaceType}</div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* (ix) Type of property stolen */}
+                    <div className="flex items-start gap-1">
+                      <span className="font-bold text-xs shrink-0">(ix)</span>
+                      <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                        <thead>
+                          <tr className="bg-slate-100">
+                            <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                            <th className="border border-slate-600 px-2 py-0.5 text-left">Type of property stolen (चोरी की गयी सम्पत्ति का प्रकार)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {propertyEntries && propertyEntries.length > 0 ? (
+                            propertyEntries.map((p, idx) => (
+                              <tr key={idx}>
+                                <td className="border border-slate-600 px-2 py-1 text-center">{idx + 1}</td>
+                                <td className="border border-slate-600 px-2 py-1 font-semibold">{p.category}</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                              <td className="border border-slate-600 px-2 py-1 font-semibold">{propCategory}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Section 5: Particulars of the victim(s) */}
+                  <div className="mb-3">
+                    <div className="font-bold text-xs mb-1">
+                      5. Particulars of the victim(s) (पीड़ित (ओं) का विवरण):
+                    </div>
+                    <table className="w-full border-collapse border border-slate-600 text-[10px]">
+                      <thead>
+                        <tr className="bg-slate-100 font-bold">
+                          <th className="border border-slate-600 px-1 py-1 text-center">S. No.<br/>(क्र.सं.)</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">Name (नाम)</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">Father&apos;s / Husband&apos;s Name<br/>(पिता / पति का नाम)</th>
+                          <th className="border border-slate-600 px-1 py-1 text-center">Date of Birth / Age<br/>(जन्म तिथि / आयु)</th>
+                          <th className="border border-slate-600 px-1 py-1 text-center">Sex<br/>(लिंग)</th>
+                          <th className="border border-slate-600 px-1 py-1 text-center">Nationality<br/>(राष्ट्रीयता)</th>
+                          <th className="border border-slate-600 px-1 py-1 text-center">Religion<br/>(धर्म)</th>
+                        </tr>
+                        <tr className="bg-slate-50 text-slate-500 font-mono text-[9px] text-center">
+                          <th className="border border-slate-600 py-0.5">1</th>
+                          <th className="border border-slate-600 py-0.5">2</th>
+                          <th className="border border-slate-600 py-0.5">3</th>
+                          <th className="border border-slate-600 py-0.5">4</th>
+                          <th className="border border-slate-600 py-0.5">5</th>
+                          <th className="border border-slate-600 py-0.5">6</th>
+                          <th className="border border-slate-600 py-0.5">7</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-slate-600 px-1 py-1 text-center">1</td>
+                          <td className="border border-slate-600 px-1.5 py-1 font-bold uppercase">{victimName}</td>
+                          <td className="border border-slate-600 px-1.5 py-1">Father: {shownByRelative || "Ramesh Singh"}</td>
+                          <td className="border border-slate-600 px-1 py-1 text-center font-mono">02/12/1990 / {shownByAge}</td>
+                          <td className="border border-slate-600 px-1 py-1 text-center">{victimGender}</td>
+                          <td className="border border-slate-600 px-1 py-1 text-center">Indian</td>
+                          <td className="border border-slate-600 px-1 py-1 text-center">Hindu</td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <table className="w-full border-collapse border border-slate-600 text-[10px] mt-1">
+                      <thead>
+                        <tr className="bg-slate-100 font-bold">
+                          <th className="border border-slate-600 px-1 py-1 text-left">Whether SC/ST/OBC<br/>(यदि अनु.जाति / जनजाति / पिछड़ी जाति)</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">Occupation<br/>(व्यवसाय)</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">Address<br/>(पता)</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">Injury (Grievous / Simple)<br/>(घायल (गंभीर / साधारण))</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">Means of causing injury<br/>(घायल होने का कारण)</th>
+                        </tr>
+                        <tr className="bg-slate-50 text-slate-500 font-mono text-[9px] text-center">
+                          <th className="border border-slate-600 py-0.5">8</th>
+                          <th className="border border-slate-600 py-0.5">9</th>
+                          <th className="border border-slate-600 py-0.5">10</th>
+                          <th className="border border-slate-600 py-0.5">11</th>
+                          <th className="border border-slate-600 py-0.5">12</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-slate-600 px-1 py-1">General (No)</td>
+                          <td className="border border-slate-600 px-1.5 py-1">Business / Private</td>
+                          <td className="border border-slate-600 px-2 py-1 text-[9px]">
+                            <div>Present Address: {shownByAddress}, {shownByDistrict}</div>
+                            <div>Permanent Address: {shownByAddress}, {shownByDistrict}</div>
+                          </td>
+                          <td className="border border-slate-600 px-1.5 py-1 font-semibold">{victimInjury || "Simple Hurt / None"}</td>
+                          <td className="border border-slate-600 px-1.5 py-1">{physicalEvidenceDetails?.slice(0, 45) || "Blunt Force / Weapon"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 6: Motive of crime */}
+                  <div className="mb-3">
+                    <div className="font-bold text-xs mb-1">6. Motive of crime (अपराध का उद्देश्य):</div>
+                    <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                          <th className="border border-slate-600 px-2 py-0.5 text-left">Motive of crime (अपराध का उद्देश्य)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                          <td className="border border-slate-600 px-2 py-1 uppercase">{motive}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 7: Details of properties stolen / involved */}
+                  <div className="mb-4">
+                    <div className="font-bold text-xs mb-1">
+                      7. Details of properties stolen / involved (चोरी गयी / संलिप्त सम्पत्ति का विवरण):
+                    </div>
+                    <table className="w-full border-collapse border border-slate-600 text-[11px]">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="border border-slate-600 px-2 py-0.5 text-center w-14">S. No. (क्र.सं.)</th>
+                          <th className="border border-slate-600 px-2 py-0.5 text-left">Property Type (सम्पत्ति का प्रकार)</th>
+                          <th className="border border-slate-600 px-2 py-0.5 text-left">Property Name (सम्पत्ति का नाम)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {propertyEntries && propertyEntries.length > 0 ? (
+                          propertyEntries.map((p, idx) => (
+                            <tr key={idx}>
+                              <td className="border border-slate-600 px-2 py-1 text-center font-mono">{idx + 1}</td>
+                              <td className="border border-slate-600 px-2 py-1 font-semibold">{p.category}</td>
+                              <td className="border border-slate-600 px-2 py-1 uppercase font-bold">{p.description}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="border border-slate-600 px-2 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-2 py-1 font-semibold">{propCategory}</td>
+                            <td className="border border-slate-600 px-2 py-1 uppercase font-bold">{propDesc}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Page 1 Number */}
+                  <div className="text-center font-bold text-xs py-2 border-t border-slate-300">
+                    1
+                  </div>
+                </div>
+
+                {/* Page 2 */}
+                <div className="page-sheet pt-6 border-t-2 border-dashed border-slate-400 mt-6">
+                  <div className="text-right text-xs font-semibold mb-2">
+                    <p className="font-bold">Haryana Police (हरियाणा पुलिस) • I.I.F.-II/एकीकृत जाँच फार्म-II</p>
+                    <p className="text-[10px] text-slate-500 font-mono">FIR No: {fir.cctnsFirNumber || fir.firNumber} • Page 2</p>
+                  </div>
+
+                  {/* Section 8: Suspected / Accused Persons */}
+                  <div className="mb-4">
+                    <div className="font-bold text-xs mb-1">
+                      8. Details of Suspected / Accused Persons (संदिग्ध / अभियुक्तों का विवरण):
+                    </div>
+                    <table className="w-full border-collapse border border-slate-600 text-[10px]">
+                      <thead>
+                        <tr className="bg-slate-100 font-bold">
+                          <th className="border border-slate-600 px-1 py-1 text-center w-10">क्र.सं.</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-left">स्थिति (Status)</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">नाम व उपनाम (Name &amp; Alias)</th>
+                          <th className="border border-slate-600 px-1.5 py-1 text-center">लिंग / आयु</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">शारीरिक विवरण व कद</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">पहने हुए वस्त्र व पहचान चिह्न</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {accusedEntries.map((acc, idx) => (
+                          <tr key={idx}>
+                            <td className="border border-slate-600 px-1 py-1 text-center">{idx + 1}</td>
+                            <td className="border border-slate-600 px-1.5 py-1 font-bold">{acc.accusedType}</td>
+                            <td className="border border-slate-600 px-2 py-1 font-bold">
+                              {acc.name} {acc.alias ? `(${acc.alias})` : ""}
+                            </td>
+                            <td className="border border-slate-600 px-1.5 py-1 text-center">{acc.gender || "Male"} / {acc.age || "25-30"}</td>
+                            <td className="border border-slate-600 px-2 py-1">{acc.description}</td>
+                            <td className="border border-slate-600 px-2 py-1">{accusedClothes} • {accusedMarks}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 9: Witnesses */}
+                  <div className="mb-4">
+                    <div className="font-bold text-xs mb-1">
+                      9. Details of Witnesses (साक्षियों का विवरण):
+                    </div>
+                    <table className="w-full border-collapse border border-slate-600 text-[10px]">
+                      <thead>
+                        <tr className="bg-slate-100 font-bold">
+                          <th className="border border-slate-600 px-1 py-1 text-center w-10">क्र.सं.</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">साक्षी का नाम व संबंध</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">भूमिका / साक्ष्य प्रकार</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">संपर्क व पता</th>
+                          <th className="border border-slate-600 px-2 py-1 text-left">बयान का सार (Statement Summary)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {witnessEntries.map((wit, idx) => (
+                          <tr key={idx}>
+                            <td className="border border-slate-600 px-1 py-1 text-center">{idx + 1}</td>
+                            <td className="border border-slate-600 px-2 py-1 font-bold">
+                              {wit.name} {wit.relativeName ? `s/o ${wit.relativeName}` : ""}
+                            </td>
+                            <td className="border border-slate-600 px-2 py-1">{wit.role}</td>
+                            <td className="border border-slate-600 px-2 py-1 font-mono text-[9px]">{wit.mobile || "—"}</td>
+                            <td className="border border-slate-600 px-2 py-1 italic">{wit.statement}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Section 10: Place of Occurrence Detailed Inspection & Boundaries */}
+                  <div className="mb-6 border border-slate-600 p-3 text-[11px] space-y-2 bg-slate-50/40">
+                    <div className="font-bold text-xs uppercase underline">
+                      10. Place of Occurrence Inspection &amp; Physical Boundaries (घटनास्थल निरीक्षण एवं चौहद्दी विवरण):
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 font-mono text-[10px]">
+                      <div><strong>GPS अक्षांश (Latitude):</strong> {latitude}</div>
+                      <div><strong>GPS देशांतर (Longitude):</strong> {longitude}</div>
+                      <div><strong>बीट संख्या (Beat No):</strong> {beatNo}</div>
+                      <div><strong>निरीक्षण दिनांक व समय:</strong> {visitDateTime} hrs</div>
+                    </div>
+                    <div className="border-t border-slate-400 pt-2 grid grid-cols-2 gap-2 text-[10px]">
+                      <div><strong>पूर्व (East):</strong> Shop No. 19 / Commercial Pathway</div>
+                      <div><strong>पश्चिम (West):</strong> Main Road / Parking Entry Gate</div>
+                      <div><strong>उत्तर (North):</strong> Commercial Complex Block A</div>
+                      <div><strong>दक्षिण (South):</strong> Service Lane &amp; Pedestrian Walkway</div>
+                    </div>
+                    <div className="border-t border-slate-400 pt-2 text-[10px]">
+                      <strong>विवेचक द्वारा घटनास्थल निरीक्षण की संक्षिप्त टिप्पणी:</strong>
+                      <p className="mt-0.5">{description}</p>
+                    </div>
+                    <div className="border-t border-slate-400 pt-2 text-[10px]">
+                      <strong>घटनास्थल से संकलित भौतिक साक्ष्य (Physical Evidence Gathered):</strong>
+                      <p className="mt-0.5">{physicalEvidenceDetails}</p>
+                    </div>
+                  </div>
+
+                  {/* Official Signatures & Seal Block */}
+                  <div className="pt-6 border-t border-slate-400 flex items-end justify-between text-xs">
+                    <div className="space-y-1 text-[11px]">
+                      <p><strong>निरीक्षणकर्ता अधिकारी:</strong> {currentUserName}</p>
+                      <p><strong>पद / बेल्ट सं.:</strong> Sub-Inspector / Investigating Officer</p>
+                      <p><strong>थाना:</strong> {fir.policeStation}, {fir.district}</p>
+                      <p className="text-[10px] text-slate-500 font-mono">Date: {visitDateTime.slice(0, 10)}</p>
+                    </div>
+
+                    <div className="text-center space-y-12">
+                      <div className="w-24 h-24 border-2 border-dashed border-slate-400 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-500 mx-auto">
+                        थाना मुहर / Official Seal
+                      </div>
+                      <div className="border-t border-slate-800 pt-1 font-bold text-xs px-6">
+                        हस्ताक्षर अनुसंधान अधिकारी (Signature of IO)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Page 2 Number */}
+                  <div className="text-center font-bold text-xs pt-4">
+                    2
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Success Dialog */}
+            {isSavedSuccess && (
+              <div className="fixed inset-0 z-70 bg-black/70 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl border border-emerald-300 animate-in zoom-in-95">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-300">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                      अपराध विवरण प्रपत्र (IIF-II) सफलतापूर्वक सहेजा गया!
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                      दस्तावेज FIR प्रोफाइल के <strong>Documents</strong> टैब में पंजीकृत हो चुका है। अब इस केस के लिए <strong>Arrest &amp; Surrender Documents (गिरफ्तारी दस्तावेज)</strong> बनाने की अनुमति अनलॉक हो गई है।
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleDownloadProforma}
+                      className="w-full sm:w-auto text-xs font-semibold gap-1.5 cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>प्रपत्र डाउनलोड करें</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setShowPdfPreview(false);
+                        onClose();
+                      }}
+                      className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>FIR Profile पर जाएं</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

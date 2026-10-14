@@ -699,23 +699,30 @@ export const firService = {
     return this.updateFir(firId, { legalAnalysis });
   },
 
-  saveCrimeDetails(firId: string, crimeDetailsData: any, filledBy: string): FIRItem | undefined {
+  saveCrimeDetails(firId: string, crimeDetailsData: any, filledBy: string, htmlContent?: string): FIRItem | undefined {
     const fir = this.getFirById(firId);
     if (!fir) return undefined;
 
     const docId = `doc-crime-detail-${Date.now()}`;
+    const dataUrl = htmlContent
+      ? "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent)
+      : undefined;
+
     const crimeDoc: FIRDocumentItem = {
       id: docId,
-      title: "Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र",
+      title: `Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र - ${fir.cctnsFirNumber || fir.firNumber}`,
       fileName: `Crime_Detail_IIF_II_${fir.firNumber.replace(/[\/\s]/g, "_")}.html`,
-      category: "FIELD_REPORT",
+      category: "CCTNS_IIF2",
       uploadedBy: filledBy,
       uploadedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
-      fileSize: "68.5 KB",
+      fileSize: htmlContent ? `${(htmlContent.length / 1024).toFixed(1)} KB` : "68.5 KB",
+      dataUrl,
     };
 
     const existingDocs = fir.documents || [];
-    const filteredDocs = existingDocs.filter(d => !d.title.toLowerCase().includes("crime detail"));
+    const filteredDocs = existingDocs.filter(
+      (d) => !d.title.toLowerCase().includes("crime detail") && d.category !== "CCTNS_IIF2"
+    );
 
     return this.updateFir(firId, {
       crimeDetailsFilled: true,
