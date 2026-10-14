@@ -172,60 +172,59 @@ export function ComplaintLegalAssistant({
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & LEGAL HELP ACTION HERO BANNER                             */}
       {/* ========================================================================= */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-900 text-white p-6 shadow-xl border border-indigo-500/20">
-        <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold backdrop-blur-xs">
-              <Scale className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Statutory Legal Assistant • BNS / BNSS / BSA AI Engine</span>
-            </div>
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              <span>लीगल असिस्टेंट (Statutory Legal Help)</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-md bg-blue-600/60 text-blue-100 font-mono font-normal">
+      <div className="rounded-xl bg-white p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200">
+                <Scale className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Statutory AI Engine • BNS / BNSS / BSA</span>
+              </span>
+              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200/60">
                 {complaint.complaintNumber}
               </span>
+            </div>
+            <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">
+              लीगल असिस्टेंट (Statutory Legal Help)
             </h2>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              यह मॉड्यूल शिकायत के <strong>Overview</strong> (घटना विवरण, आरोप, आरोपी) तथा <strong>Documents Sub-Tab</strong> (मेडिकल एमएलआर, बैंक ट्रांसफर रसीद, फर्जी दस्तावेज, ऑडियो/वीडियो साक्ष्य) का स्वतः विश्लेषण कर उपयुक्त <strong>Act, धाराएं (Sections), कानूनी कारण (Reason)</strong> तथा <strong>मूल बेयर एक्ट में पेज संख्या</strong> प्रदर्शित करता है।
+            <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+              शिकायत के <strong>घटना विवरण (Overview)</strong> व <strong>संलग्न साक्ष्यों (Documents)</strong> का स्वतः विश्लेषण कर भारतीय न्याय संहिता व अन्य अधिनियमों की प्रासंगिक धाराएं व मूल बेयर एक्ट पृष्ठ संख्या प्रस्तुत करता है।
             </p>
           </div>
 
-          <div className="shrink-0 flex flex-col items-start md:items-end gap-2.5">
+          <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
             <button
               onClick={handleRunLegalHelp}
               disabled={isAnalyzing}
-              className={`group inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-bold text-sm text-white shadow-lg transition-all duration-200 cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-white shadow-2xs transition-all cursor-pointer ${
                 isAnalyzing
-                  ? "bg-indigo-700/80 cursor-wait"
+                  ? "bg-slate-700 cursor-wait"
                   : report
-                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 hover:shadow-emerald-900/30 hover:scale-[1.02]"
-                  : "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 hover:shadow-indigo-900/40 hover:scale-[1.02]"
+                  ? "bg-slate-900 hover:bg-slate-800"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
               {isAnalyzing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-indigo-200" />
-                  <span>साक्ष्य व धाराओं का विश्लेषण जारी...</span>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>विश्लेषण जारी...</span>
                 </>
               ) : report ? (
                 <>
-                  <RefreshCw className="w-4 h-4 text-emerald-200 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>पुनः कानूनी मदद लें (Re-run Legal Help)</span>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>पुनः विश्लेषण करें (Re-run Legal Help)</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                  <span>कानूनी मदद (Legal Help)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>कानूनी मदद लें (Legal Help)</span>
                 </>
               )}
             </button>
 
             {report && (
-              <span className="text-[11px] text-slate-300 font-mono flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>अंतिम विश्लेषण: {new Date(report.analyzedAt).toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" })}</span>
               </span>
             )}
@@ -234,21 +233,21 @@ export function ComplaintLegalAssistant({
 
         {/* ANALYZING PROGRESS BANNER */}
         {isAnalyzing && (
-          <div className="mt-6 pt-5 border-t border-indigo-500/20 space-y-3">
-            <div className="flex items-center justify-between text-xs text-indigo-200 font-medium">
+          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
               <span className="flex items-center gap-2">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-3 h-3 animate-spin text-indigo-600" />
                 {ANALYSIS_STEPS[analysisStep]?.title}
               </span>
-              <span className="font-mono">{((analysisStep + 1) * 25)}%</span>
+              <span className="font-mono text-slate-500">{((analysisStep + 1) * 25)}%</span>
             </div>
-            <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden border border-indigo-500/30">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 h-full transition-all duration-300"
+                className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
                 style={{ width: `${(analysisStep + 1) * 25}%` }}
               />
             </div>
-            <p className="text-[11px] text-slate-400 italic">
+            <p className="text-[11px] text-slate-400">
               {ANALYSIS_STEPS[analysisStep]?.desc}
             </p>
           </div>
@@ -289,41 +288,41 @@ export function ComplaintLegalAssistant({
       {report && (
         <>
           {/* STATS OVERVIEW TILES */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs space-y-1">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-bold uppercase tracking-wider">घटना तथ्य (Words)</span>
-                <FileText className="w-4 h-4 text-blue-600" />
+                <span className="text-[11px] font-medium text-slate-500">घटना तथ्य (Words)</span>
+                <FileText className="w-3.5 h-3.5 text-slate-400" />
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl font-bold text-slate-900">
                 {report.scannedFactsCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                श्रेणी: <strong className="text-slate-700">{complaint.category}</strong>
+                श्रेणी: <span className="text-slate-700 font-medium">{complaint.category}</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-bold uppercase tracking-wider">साक्ष्य दस्तावेज़ (Docs)</span>
-                <Paperclip className="w-4 h-4 text-emerald-600" />
+                <span className="text-[11px] font-medium text-slate-500">साक्ष्य दस्तावेज़ (Docs)</span>
+                <Paperclip className="w-3.5 h-3.5 text-slate-400" />
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl font-bold text-slate-900">
                 {report.scannedDocumentsCount}
               </div>
-              <div className="text-[11px] text-emerald-700 font-semibold truncate">
+              <div className="text-[11px] text-slate-600 truncate">
                 {report.scannedEvidenceSummary.documentsFound.length > 0
                   ? `${report.scannedEvidenceSummary.documentsFound.length} फाइल्स मूल्यांकित`
                   : "0 दस्तावेज संलग्न"}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-bold uppercase tracking-wider">अधिनियम (Acts)</span>
-                <Scale className="w-4 h-4 text-indigo-600" />
+                <span className="text-[11px] font-medium text-slate-500">अधिनियम (Acts)</span>
+                <Scale className="w-3.5 h-3.5 text-slate-400" />
               </div>
-              <div className="text-2xl font-black text-slate-900">
+              <div className="text-xl font-bold text-slate-900">
                 {availableActs.length}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
@@ -331,12 +330,12 @@ export function ComplaintLegalAssistant({
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs space-y-1">
+            <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-bold uppercase tracking-wider">सुझावित धाराएं (Sections)</span>
-                <Gavel className="w-4 h-4 text-purple-600" />
+                <span className="text-[11px] font-medium text-slate-500">सुझावित धाराएं (Sections)</span>
+                <Gavel className="w-3.5 h-3.5 text-slate-400" />
               </div>
-              <div className="text-2xl font-black text-indigo-600">
+              <div className="text-xl font-bold text-slate-900">
                 {report.suggestedSections.length}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
@@ -346,29 +345,29 @@ export function ComplaintLegalAssistant({
           </div>
 
           {/* EVIDENCE PROCESSING CALLOUT */}
-          <div className="bg-indigo-50/60 border border-indigo-200/80 rounded-xl p-4.5 space-y-3">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2.5">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-indigo-700" />
-                <span>दस्तावेज़ एवं साक्ष्य मूल्यांकन रिपोर्ट (Evidence Processing Summary)</span>
+              <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-slate-600" />
+                <span>दस्तावेज़ एवं साक्ष्य मूल्यांकन (Evidence Summary)</span>
               </h4>
-              <span className="text-[11px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">
-                AI Cross-Check Verified
+              <span className="text-[10px] bg-slate-200/60 text-slate-700 font-medium px-2 py-0.5 rounded-md border border-slate-300/60">
+                AI Verified
               </span>
             </div>
 
-            <p className="text-xs text-indigo-900 leading-relaxed font-medium">
+            <p className="text-xs text-slate-600 leading-relaxed">
               {report.summary}
             </p>
 
             {/* Evidence Chips */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
               {report.scannedEvidenceSummary.documentsFound.map((doc, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-indigo-200 text-slate-800 shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-700 shadow-2xs"
                 >
-                  <Paperclip className="w-3 h-3 text-indigo-600" />
+                  <Paperclip className="w-3 h-3 text-slate-400" />
                   <span>दस्तावेज़: {doc}</span>
                 </span>
               ))}
@@ -376,9 +375,9 @@ export function ComplaintLegalAssistant({
               {report.scannedEvidenceSummary.injuriesOrLossNoted.map((inj, idx) => (
                 <span
                   key={`inj-${idx}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 border border-rose-200 text-rose-800 shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50/70 border border-rose-200/60 text-rose-800 shadow-2xs"
                 >
-                  <ShieldAlert className="w-3 h-3 text-rose-600" />
+                  <ShieldAlert className="w-3 h-3 text-rose-500" />
                   <span>चोट/हानि: {inj}</span>
                 </span>
               ))}
@@ -386,9 +385,9 @@ export function ComplaintLegalAssistant({
               {report.scannedEvidenceSummary.accusedIdentified.map((acc, idx) => (
                 <span
                   key={`acc-${idx}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-50 border border-amber-200 text-amber-800 shadow-2xs"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50/70 border border-amber-200/60 text-amber-900 shadow-2xs"
                 >
-                  <AlertTriangle className="w-3 h-3 text-amber-600" />
+                  <AlertTriangle className="w-3 h-3 text-amber-500" />
                   <span>आरोपी: {acc}</span>
                 </span>
               ))}
@@ -506,17 +505,17 @@ export function ComplaintLegalAssistant({
                 दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।
               </div>
             ) : viewMode === "table" ? (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-[#0b192c] text-white uppercase text-[10px] tracking-wider font-bold">
+                    <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600">
                       <tr>
-                        <th className="py-3 px-3 text-center w-12 border-b border-slate-700">क्र.सं.</th>
-                        <th className="py-3 px-4 w-60 border-b border-slate-700">लागू धारा व अधिनियम (Section &amp; Act)</th>
-                        <th className="py-3 px-4 min-w-[340px] border-b border-slate-700">धारा लगाने का कारण एवं कानूनी औचित्य (Reason for Section Application)</th>
-                        <th className="py-3 px-4 w-48 border-b border-slate-700">वर्गीकरण व दण्ड (Classification &amp; Punishment)</th>
-                        <th className="py-3 px-3 text-center w-32 border-b border-slate-700">मूल बेयर एक्ट पेज</th>
-                        <th className="py-3 px-3 text-right w-36 border-b border-slate-700">कार्यवाही (Actions)</th>
+                        <th className="py-2.5 px-3 text-center w-10 text-[11px] font-semibold text-slate-500">#</th>
+                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">धारा व अधिनियम</th>
+                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">कानूनी औचित्य एवं साक्ष्य</th>
+                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">वर्गीकरण व दण्ड</th>
+                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">बेयर एक्ट</th>
+                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">कार्यवाही</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -528,93 +527,67 @@ export function ComplaintLegalAssistant({
                         return (
                           <tr
                             key={sec.id}
-                            className={`hover:bg-slate-50/90 transition-colors ${
-                              isPrimary
-                                ? "bg-red-50/20"
-                                : isProcedural
-                                ? "bg-blue-50/20"
-                                : isEvidentiary
-                                ? "bg-purple-50/20"
-                                : ""
-                            }`}
+                            className="hover:bg-slate-50/60 transition-colors"
                           >
                             {/* Sr No */}
-                            <td className="py-3.5 px-3 text-center font-bold text-slate-500 font-mono align-top">
+                            <td className="py-3 px-3 text-center text-slate-400 font-mono text-xs align-top">
                               {idx + 1}
                             </td>
 
                             {/* Section & Act */}
-                            <td className="py-3.5 px-4 align-top">
-                              <div className="space-y-1.5">
+                            <td className="py-3 px-3.5 align-top">
+                              <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span
-                                    className={`px-2 py-0.5 rounded font-black text-xs font-mono border ${
-                                      isPrimary
-                                        ? "bg-red-700 text-white border-red-800"
-                                        : isProcedural
-                                        ? "bg-blue-700 text-white border-blue-800"
-                                        : isEvidentiary
-                                        ? "bg-purple-700 text-white border-purple-800"
-                                        : "bg-slate-800 text-white border-slate-900"
-                                    }`}
-                                  >
-                                    {sec.sectionNumber}
+                                  <span className="font-mono font-bold text-slate-900 text-sm">
+                                    धारा {sec.sectionNumber}
                                   </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                                     {sec.actShortName}
                                   </span>
                                 </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 text-xs leading-tight">
-                                    {sec.sectionTitle}
-                                  </p>
-                                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                                    {sec.chapter}
-                                  </p>
-                                </div>
-                                <div>
+                                <p className="text-xs font-medium text-slate-800 leading-snug">
+                                  {sec.sectionTitle}
+                                </p>
+                                <div className="flex items-center gap-2 flex-wrap pt-0.5">
                                   <span
-                                    className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                                    className={`inline-block text-[10px] px-2 py-0.5 rounded font-medium border ${
                                       isPrimary
-                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        ? "bg-rose-50 text-rose-700 border-rose-200/60"
                                         : isProcedural
-                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200/60"
                                         : isEvidentiary
-                                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                        ? "bg-purple-50 text-purple-700 border-purple-200/60"
+                                        : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
                                     {sec.recommendationTypeLabel}
                                   </span>
+                                  {sec.chapter && (
+                                    <span className="text-[10px] text-slate-400 truncate max-w-[140px]" title={sec.chapter}>
+                                      {sec.chapter}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </td>
 
                             {/* Legal Rationale & Evidence */}
-                            <td className="py-3.5 px-4 align-top">
+                            <td className="py-3 px-3.5 align-top">
                               <div className="space-y-2">
-                                <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950">
-                                  <div className="flex items-center gap-1 font-bold text-[10px] uppercase text-amber-800 tracking-wider mb-1">
-                                    <Gavel className="w-3 h-3 text-amber-700" />
-                                    <span>कानूनी औचित्य (Rationale):</span>
-                                  </div>
-                                  <p className="text-xs leading-relaxed font-medium">
-                                    {sec.reason}
-                                  </p>
-                                </div>
+                                <p className="text-xs text-slate-700 leading-relaxed">
+                                  {sec.reason}
+                                </p>
 
                                 {sec.evidenceProof && sec.evidenceProof.length > 0 && (
                                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                                      साक्ष्य/तथ्य:
-                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">साक्ष्य:</span>
                                     {sec.evidenceProof.map((proof, pIdx) => (
                                       <span
                                         key={pIdx}
-                                        className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200"
+                                        className="inline-flex items-center text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200/70"
+                                        title={proof}
                                       >
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
-                                        <span className="truncate max-w-[220px]" title={proof}>{proof}</span>
+                                        {proof}
                                       </span>
                                     ))}
                                   </div>
@@ -623,95 +596,85 @@ export function ComplaintLegalAssistant({
                             </td>
 
                             {/* Classification & Punishment */}
-                            <td className="py-3.5 px-4 align-top">
-                              <div className="space-y-1.5 text-[11px]">
+                            <td className="py-3 px-3.5 align-top">
+                              <div className="space-y-1.5 text-xs">
                                 <div className="flex flex-wrap gap-1">
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                                       sec.cognizable === "Cognizable"
-                                        ? "bg-red-100 text-red-800"
-                                        : "bg-slate-100 text-slate-700"
+                                        ? "bg-rose-50 text-rose-700 border-rose-200/60"
+                                        : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
                                     {sec.cognizable === "Cognizable" ? "संज्ञेय" : "असंज्ञेय"}
                                   </span>
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                                       sec.bailable === "Non-bailable"
-                                        ? "bg-amber-100 text-amber-900"
-                                        : "bg-emerald-100 text-emerald-800"
+                                        ? "bg-amber-50 text-amber-800 border-amber-200/60"
+                                        : "bg-emerald-50 text-emerald-800 border-emerald-200/60"
                                     }`}
                                   >
                                     {sec.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
                                   </span>
                                 </div>
-                                <div>
-                                  <span className="text-slate-500 font-semibold">सज़ा: </span>
-                                  <strong className="text-slate-900">{sec.punishment || "—"}</strong>
+                                <div className="text-[11px] text-slate-600">
+                                  <span className="text-slate-400">सज़ा: </span>
+                                  <span className="font-medium text-slate-800">{sec.punishment || "—"}</span>
                                 </div>
-                                <div>
-                                  <span className="text-slate-500 font-semibold">न्यायालय: </span>
+                                <div className="text-[11px] text-slate-600">
+                                  <span className="text-slate-400">कोर्ट: </span>
                                   <span className="text-slate-700">{sec.triableBy || "—"}</span>
                                 </div>
                               </div>
                             </td>
 
                             {/* Bare Act Page No. */}
-                            <td className="py-3.5 px-3 text-center align-top">
+                            <td className="py-3 px-3 text-center align-top">
                               <button
                                 type="button"
                                 onClick={() => handleOpenInActsPage(sec)}
-                                title={`मूल बेयर एक्ट पेज संख्या ${sec.pageNumber} पर देखें`}
-                                className="inline-flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 transition-colors cursor-pointer group shadow-2xs w-full"
+                                title={`मूल बेयर एक्ट पेज ${sec.pageNumber} पर देखें`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-900 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-colors cursor-pointer group shadow-2xs"
                               >
-                                <BookOpen className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform mb-0.5" />
-                                <span className="text-[10px] font-black uppercase text-amber-800">मूल बेयर एक्ट</span>
-                                <span className="text-xs font-black font-mono text-amber-950">पेज {sec.pageNumber}</span>
-                                <span className="text-[9px] text-amber-700 flex items-center gap-0.5 mt-0.5">
-                                  खोलें <ExternalLink className="w-2.5 h-2.5" />
-                                </span>
+                                <BookOpen className="w-3.5 h-3.5 text-amber-600 group-hover:text-amber-700" />
+                                <span className="font-mono font-semibold">पेज {sec.pageNumber}</span>
+                                <ExternalLink className="w-3 h-3 text-amber-600/70 group-hover:text-amber-800" />
                               </button>
                             </td>
 
                             {/* Actions */}
-                            <td className="py-3.5 px-3 text-right align-top">
-                              <div className="flex flex-col items-end gap-1.5">
+                            <td className="py-3 px-3 text-right align-top">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenInActsPage(sec)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#0b192c] hover:bg-[#1e3e62] text-white shadow-2xs cursor-pointer w-full justify-center"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
                                   title="Acts and Sections पेज में खोलें"
                                 >
-                                  <Scale className="w-3 h-3 text-amber-400" />
-                                  <span>Act में खोलें</span>
+                                  <Scale className="w-3 h-3 text-amber-300" />
+                                  <span>Act</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => setDetailModalSection(sec)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer w-full justify-center"
+                                  className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
                                   title="विस्तृत विधिक विवरण देखें"
                                 >
-                                  <Eye className="w-3 h-3 text-slate-500" />
-                                  <span>विस्तृत विवरण</span>
+                                  <Eye className="w-3.5 h-3.5" />
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => handleCopyCitation(sec)}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                                  title="Citation कॉपी करें"
+                                  className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                                  title={copiedSectionId === sec.id ? "कॉपी हुआ" : "Citation कॉपी करें"}
                                 >
                                   {copiedSectionId === sec.id ? (
-                                    <>
-                                      <Check className="w-3 h-3 text-emerald-600" />
-                                      <span className="text-emerald-700 font-bold">कॉपी हुआ</span>
-                                    </>
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
                                   ) : (
-                                    <>
-                                      <Copy className="w-3 h-3" />
-                                      <span>कॉपी</span>
-                                    </>
+                                    <Copy className="w-3.5 h-3.5" />
                                   )}
                                 </button>
                               </div>
@@ -944,27 +907,27 @@ export function ComplaintLegalAssistant({
           {/* 6. STATUTORY COMPLIANCE & INVESTIGATION RECOMMENDATIONS                   */}
           {/* ========================================================================= */}
           {report.investigativeStepsRecommended && report.investigativeStepsRecommended.length > 0 && (
-            <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-lg space-y-3 border border-slate-800">
+            <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider flex items-center gap-2 text-indigo-300">
-                  <ShieldAlert className="w-4 h-4 text-indigo-400" />
+                <h4 className="text-xs sm:text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-slate-600" />
                   <span>जांच अधिकारी हेतु वैधानिक प्रक्रियात्मक निर्देश (Statutory IO Mandates)</span>
                 </h4>
-                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
+                <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 font-medium">
                   BNSS / BSA Mandate
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-0.5">
                 {report.investigativeStepsRecommended.map((step, sIdx) => (
                   <div
                     key={sIdx}
-                    className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-start gap-2.5"
+                    className="p-3 rounded-lg bg-slate-50/80 border border-slate-200/70 flex items-start gap-2.5"
                   >
-                    <span className="w-5 h-5 rounded-full bg-indigo-600/60 text-indigo-200 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center shrink-0 mt-0.5">
                       {sIdx + 1}
                     </span>
-                    <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                    <p className="text-xs text-slate-700 leading-relaxed font-normal">
                       {step}
                     </p>
                   </div>

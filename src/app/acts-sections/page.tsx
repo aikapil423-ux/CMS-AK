@@ -538,65 +538,62 @@ function ActsAndSectionsContent() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header Banner */}
-      <div className="bg-gradient-to-r from-[#0b192c] via-[#10243e] to-[#0b192c] border-b-4 border-amber-500 rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-8 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-          <div className="space-y-2">
+      <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <Scale className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono flex items-center gap-1.5">
+                <Scale className="w-3.5 h-3.5 text-slate-700" />
                 <span>Statutory Bare Acts &amp; Criminal Law Database</span>
               </span>
-              <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">
+              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono border border-slate-200/60">
                 CMS Repository
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-              <span>ACT and SECTIONs</span>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+              Acts and Sections Database
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Official Indian Legal Bare Acts, Criminal Law Codes (BNS 2023, BNSS 2023, BSA 2023, Arms Act 1959, Benami Property Act 1988) and statutory police powers. Upload documents in any format with permanent local storage.
+            <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+              Official Indian Legal Bare Acts, Criminal Law Codes (BNS 2023, BNSS 2023, BSA 2023, Arms Act 1959, Benami Property Act 1988) and statutory police powers.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <Button
               onClick={() => setUploadModalOpen(true)}
-              variant="primary"
-              className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs gap-2 px-4 py-2.5 shadow-md cursor-pointer transition-all"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs gap-2 px-4 py-2.5 rounded-xl shadow-2xs cursor-pointer transition-all"
             >
               <UploadCloud className="w-4 h-4" />
-              <span>Upload Document (Any Format)</span>
+              <span>Upload Document</span>
             </Button>
           </div>
         </div>
 
         {/* Quick Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-700/60 text-xs">
-          <div className="p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/60">
-            <div className="text-slate-400 text-[11px]">Total Acts Available</div>
-            <div className="text-base sm:text-lg font-bold text-white mt-0.5">{actsList.length} Acts</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-slate-100 text-xs">
+          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60 space-y-0.5">
+            <div className="text-slate-400 text-[11px] font-medium">Total Acts Available</div>
+            <div className="text-base font-bold text-slate-900">{actsList.length} Acts</div>
           </div>
-          <div className="p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/60">
-            <div className="text-slate-400 text-[11px]">Substantive Criminal Law</div>
-            <div className="text-base sm:text-lg font-bold text-amber-300 mt-0.5">BNS 2023 (358 Sec)</div>
+          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60 space-y-0.5">
+            <div className="text-slate-400 text-[11px] font-medium">Substantive Criminal Law</div>
+            <div className="text-base font-bold text-slate-900">BNS 2023 (358 Sec)</div>
           </div>
-          <div className="p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/60">
-            <div className="text-slate-400 text-[11px]">Procedural Code &amp; Forms</div>
-            <div className="text-base sm:text-lg font-bold text-blue-300 mt-0.5">BNSS 2023 (531 Sec)</div>
+          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60 space-y-0.5">
+            <div className="text-slate-400 text-[11px] font-medium">Procedural Code &amp; Forms</div>
+            <div className="text-base font-bold text-slate-900">BNSS 2023 (531 Sec)</div>
           </div>
-          <div className="p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/60">
-            <div className="text-slate-400 text-[11px]">Special Laws Included</div>
-            <div className="text-base sm:text-lg font-bold text-emerald-300 mt-0.5">Arms &amp; Benami Acts</div>
+          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/60 space-y-0.5">
+            <div className="text-slate-400 text-[11px] font-medium">Special Laws Included</div>
+            <div className="text-base font-bold text-slate-900">Arms &amp; Benami Acts</div>
           </div>
         </div>
       </div>
 
       {/* Search Bar & Filters Section */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3.5">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-2xs space-y-3">
         <form onSubmit={handleTriggerSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           {/* Search Input Box */}
           <div className="relative flex-1">

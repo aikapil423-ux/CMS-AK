@@ -183,63 +183,59 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
   return (
     <div className="space-y-6 animate-in fade-in-50">
       {/* 1. TOP HEADER & LEGAL HELP ACTION HERO BANNER */}
-      <div className="bg-gradient-to-r from-[#0b192c] via-[#1e3e62] to-[#0b192c] rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-slate-700/50">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-1/3 -mb-10 w-48 h-48 bg-amber-600/10 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-red-500/20 text-red-300 border border-red-500/30 uppercase tracking-widest flex items-center gap-1">
-                <Scale className="w-3 h-3 text-red-400" />
-                <span>Statutory Legal Assistant • BNS / BNSS / BSA AI Engine</span>
+      <div className="rounded-xl bg-white p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200">
+                <Scale className="w-3.5 h-3.5 text-slate-700" />
+                <span>Statutory Legal Assistant • BNS / BNSS / BSA</span>
               </span>
-              <span className="text-xs text-slate-300 font-mono">
+              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200/60">
                 {fir.firNumber}
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              <span>कानूनी सहायता एवं धारा विश्लेषण (FIR Statutory Legal Help)</span>
-              <Sparkles className="w-5 h-5 text-amber-400" />
+            <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">
+              कानूनी सहायता एवं धारा विश्लेषण (FIR Statutory Legal Help)
             </h2>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-normal">
-              एफआईआर में दर्ज धाराओं (<strong>{fir.actsAndSections}</strong>), घटना विवरण, 
-              तहरीर, चोरी गई संपत्ति, ज़िमनी (केस डायरी) व संलग्न दस्तावेजों का पूर्ण विधिक विश्लेषण। 
-              यह प्रणाली स्पष्ट करती है कि <strong>कौन सी धारा किस अधिनियम (Act) से और किस विधिक आधार (Why) पर लागू हो रही है</strong>, 
-              तथा मूल बेयर एक्ट के सटीक पृष्ठ संख्या (Bare Act Page) को सीधे खोलती है।
+            <p className="text-xs text-slate-500 leading-relaxed font-normal">
+              दर्ज धाराओं (<strong>{fir.actsAndSections}</strong>), तहरीर, ज़िमनी व संलग्न साक्ष्यों का विधिक विश्लेषण। 
+              यह प्रणाली प्रत्येक धारा का अधिनियम व विधिक औचित्य (Why) स्पष्ट कर मूल बेयर एक्ट के सटीक पृष्ठ पर ले जाती है।
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-3 shrink-0">
-            <Button
+          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0">
+            <button
               onClick={handleRunLegalHelp}
               disabled={isAnalyzing}
-              className={`px-5 py-3 rounded-xl font-black text-xs tracking-wide shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                report
-                  ? "bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-400/50 hover:shadow-amber-500/20"
-                  : "bg-red-600 hover:bg-red-500 text-white border border-red-500 hover:shadow-red-500/30 animate-pulse"
+              className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-white shadow-2xs transition-all cursor-pointer ${
+                isAnalyzing
+                  ? "bg-slate-700 cursor-wait"
+                  : report
+                  ? "bg-slate-900 hover:bg-slate-800"
+                  : "bg-red-700 hover:bg-red-800"
               }`}
             >
               {isAnalyzing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-current" />
-                  <span>विधिक विश्लेषण जारी है...</span>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>विधिक विश्लेषण जारी...</span>
                 </>
               ) : report ? (
                 <>
-                  <RefreshCw className="w-4 h-4 text-slate-950" />
-                  <span>पुनः कानूनी विश्लेषण करें (Re-run Legal Help)</span>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>पुनः कानूनी विश्लेषण करें</span>
                 </>
               ) : (
                 <>
-                  <Scale className="w-4 h-4 text-white" />
-                  <span>कानूनी मदद लें (Run Legal Help)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>कानूनी मदद लें (Legal Help)</span>
                 </>
               )}
-            </Button>
+            </button>
 
             {report && (
-              <span className="text-[11px] text-slate-300 flex items-center gap-1 font-mono justify-end">
+              <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono justify-end">
                 <Clock className="w-3 h-3 text-slate-400" />
                 <span>अंतिम विश्लेषण: {new Date(report.analyzedAt).toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" })}</span>
               </span>
@@ -249,19 +245,19 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
 
         {/* Scan Progress Bar Animation */}
         {isAnalyzing && (
-          <div className="mt-6 pt-4 border-t border-slate-700/60 space-y-2 animate-in fade-in duration-300">
-            <div className="flex items-center justify-between text-xs text-amber-300 font-semibold">
+          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+            <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
               <span>{ANALYSIS_STEPS[analysisStep].title}</span>
-              <span className="font-mono">चरण {analysisStep + 1} / 4</span>
+              <span className="font-mono text-slate-500">चरण {analysisStep + 1} / 4</span>
             </div>
-            <p className="text-[11px] text-slate-300">
+            <p className="text-[11px] text-slate-400">
               {ANALYSIS_STEPS[analysisStep].desc}
             </p>
-            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-amber-400 to-red-500 h-2 rounded-full transition-all duration-500 ease-out"
+                className="bg-red-600 h-full transition-all duration-300 rounded-full"
                 style={{ width: `${((analysisStep + 1) / 4) * 100}%` }}
-              ></div>
+              />
             </div>
           </div>
         )}
@@ -299,59 +295,55 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
         <div className="space-y-6">
           {/* Executive Metrics Overview Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white p-3.5 rounded-xl border border-red-200/80 shadow-2xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-50 text-red-700 flex items-center justify-center shrink-0 border border-red-200 font-bold text-sm">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-medium text-slate-500">मुख्य अपराध</span>
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+              </div>
+              <div className="text-xl font-bold text-slate-900">
                 {primaryOffencesCount}
               </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  दर्ज व मुख्य अपराध
-                </div>
-                <div className="text-xs font-black text-slate-900 truncate">
-                  Primary Offences
-                </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                Primary Offences
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-amber-200/80 shadow-2xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200 font-bold text-sm">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-medium text-slate-500">सहोगामी धाराएं</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+              </div>
+              <div className="text-xl font-bold text-slate-900">
                 {corroboratingCount}
               </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  सहोगामी धाराएं
-                </div>
-                <div className="text-xs font-black text-slate-900 truncate">
-                  Corroborating Offences
-                </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                Corroborating Offences
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-blue-200/80 shadow-2xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200 font-bold text-sm">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-medium text-slate-500">प्रक्रिया व साक्ष्य</span>
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+              </div>
+              <div className="text-xl font-bold text-slate-900">
                 {proceduralCount}
               </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  वैधानिक प्रक्रिया व साक्ष्य
-                </div>
-                <div className="text-xs font-black text-slate-900 truncate">
-                  BNSS / BSA Mandates
-                </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                BNSS / BSA Mandates
               </div>
             </div>
 
-            <div className="bg-white p-3.5 rounded-xl border border-emerald-200/80 shadow-2xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200 font-bold text-sm">
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-[11px] font-medium text-slate-500">डायरी व साक्ष्य स्कैन</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              </div>
+              <div className="text-xl font-bold text-slate-900">
                 {report.scannedDocumentsCount}
               </div>
-              <div className="min-w-0">
-                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
-                  केस डायरी व साक्ष्य स्कैन
-                </div>
-                <div className="text-xs font-black text-slate-900 truncate">
-                  Diaries & Evidence Scanned
-                </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                Diaries &amp; Evidence Records
               </div>
             </div>
           </div>
@@ -537,17 +529,17 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।
               </div>
             ) : viewMode === "table" ? (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="bg-[#0b192c] text-white uppercase text-[10px] tracking-wider font-bold">
+                    <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600">
                       <tr>
-                        <th className="py-3 px-3 text-center w-12 border-b border-slate-700">क्र.सं.</th>
-                        <th className="py-3 px-4 w-60 border-b border-slate-700">लागू धारा व अधिनियम (Section &amp; Act)</th>
-                        <th className="py-3 px-4 min-w-[340px] border-b border-slate-700">धारा लगाने का कारण एवं कानूनी औचित्य (Reason for Section Application)</th>
-                        <th className="py-3 px-4 w-48 border-b border-slate-700">वर्गीकरण व दण्ड (Classification &amp; Punishment)</th>
-                        <th className="py-3 px-3 text-center w-32 border-b border-slate-700">मूल बेयर एक्ट पेज</th>
-                        <th className="py-3 px-3 text-right w-36 border-b border-slate-700">कार्यवाही (Actions)</th>
+                        <th className="py-2.5 px-3 text-center w-10 text-[11px] font-semibold text-slate-500">#</th>
+                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">धारा व अधिनियम</th>
+                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">कानूनी औचित्य एवं साक्ष्य</th>
+                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">वर्गीकरण व दण्ड</th>
+                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">बेयर एक्ट</th>
+                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">कार्यवाही</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -559,93 +551,67 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                         return (
                           <tr
                             key={item.id}
-                            className={`hover:bg-slate-50/90 transition-colors ${
-                              isPrimary
-                                ? "bg-red-50/20"
-                                : isProcedural
-                                ? "bg-blue-50/20"
-                                : isEvidentiary
-                                ? "bg-purple-50/20"
-                                : ""
-                            }`}
+                            className="hover:bg-slate-50/60 transition-colors"
                           >
                             {/* Sr No */}
-                            <td className="py-3.5 px-3 text-center font-bold text-slate-500 font-mono align-top">
+                            <td className="py-3 px-3 text-center text-slate-400 font-mono text-xs align-top">
                               {idx + 1}
                             </td>
 
                             {/* Section & Act */}
-                            <td className="py-3.5 px-4 align-top">
-                              <div className="space-y-1.5">
+                            <td className="py-3 px-3.5 align-top">
+                              <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span
-                                    className={`px-2 py-0.5 rounded font-black text-xs font-mono border ${
-                                      isPrimary
-                                        ? "bg-red-700 text-white border-red-800"
-                                        : isProcedural
-                                        ? "bg-blue-700 text-white border-blue-800"
-                                        : isEvidentiary
-                                        ? "bg-emerald-700 text-white border-emerald-800"
-                                        : "bg-slate-800 text-white border-slate-900"
-                                    }`}
-                                  >
-                                    {item.sectionNumber}
+                                  <span className="font-mono font-bold text-slate-900 text-sm">
+                                    धारा {item.sectionNumber}
                                   </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                                     {item.actShortName}
                                   </span>
                                 </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 text-xs leading-tight">
-                                    {item.sectionTitle}
-                                  </p>
-                                  <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                                    {item.chapter}
-                                  </p>
-                                </div>
-                                <div>
+                                <p className="text-xs font-medium text-slate-800 leading-snug">
+                                  {item.sectionTitle}
+                                </p>
+                                <div className="flex items-center gap-2 flex-wrap pt-0.5">
                                   <span
-                                    className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                                    className={`inline-block text-[10px] px-2 py-0.5 rounded font-medium border ${
                                       isPrimary
-                                        ? "bg-red-50 text-red-700 border-red-200"
+                                        ? "bg-rose-50 text-rose-700 border-rose-200/60"
                                         : isProcedural
-                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200/60"
                                         : isEvidentiary
-                                        ? "bg-purple-50 text-purple-700 border-purple-200"
-                                        : "bg-amber-50 text-amber-700 border-amber-200"
+                                        ? "bg-purple-50 text-purple-700 border-purple-200/60"
+                                        : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
                                     {item.recommendationTypeLabel}
                                   </span>
+                                  {item.chapter && (
+                                    <span className="text-[10px] text-slate-400 truncate max-w-[140px]" title={item.chapter}>
+                                      {item.chapter}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </td>
 
                             {/* Legal Rationale & Evidence */}
-                            <td className="py-3.5 px-4 align-top">
+                            <td className="py-3 px-3.5 align-top">
                               <div className="space-y-2">
-                                <div className="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-amber-950">
-                                  <div className="flex items-center gap-1 font-bold text-[10px] uppercase text-amber-800 tracking-wider mb-1">
-                                    <Gavel className="w-3 h-3 text-amber-700" />
-                                    <span>कानूनी औचित्य (Rationale):</span>
-                                  </div>
-                                  <p className="text-xs leading-relaxed font-medium">
-                                    {item.reason}
-                                  </p>
-                                </div>
+                                <p className="text-xs text-slate-700 leading-relaxed">
+                                  {item.reason}
+                                </p>
 
                                 {item.evidenceProof && item.evidenceProof.length > 0 && (
                                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
-                                      साक्ष्य/तथ्य:
-                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-medium">साक्ष्य:</span>
                                     {item.evidenceProof.map((proof, pIdx) => (
                                       <span
                                         key={pIdx}
-                                        className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200"
+                                        className="inline-flex items-center text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200/70"
+                                        title={proof}
                                       >
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
-                                        <span className="truncate max-w-[220px]" title={proof}>{proof}</span>
+                                        {proof}
                                       </span>
                                     ))}
                                   </div>
@@ -654,95 +620,85 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                             </td>
 
                             {/* Classification & Punishment */}
-                            <td className="py-3.5 px-4 align-top">
-                              <div className="space-y-1.5 text-[11px]">
+                            <td className="py-3 px-3.5 align-top">
+                              <div className="space-y-1.5 text-xs">
                                 <div className="flex flex-wrap gap-1">
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                                       item.cognizable === "Cognizable"
-                                        ? "bg-red-100 text-red-800"
-                                        : "bg-slate-100 text-slate-700"
+                                        ? "bg-rose-50 text-rose-700 border-rose-200/60"
+                                        : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
                                     {item.cognizable === "Cognizable" ? "संज्ञेय" : "असंज्ञेय"}
                                   </span>
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                                       item.bailable === "Non-bailable"
-                                        ? "bg-amber-100 text-amber-900"
-                                        : "bg-emerald-100 text-emerald-800"
+                                        ? "bg-amber-50 text-amber-800 border-amber-200/60"
+                                        : "bg-emerald-50 text-emerald-800 border-emerald-200/60"
                                     }`}
                                   >
                                     {item.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
                                   </span>
                                 </div>
-                                <div>
-                                  <span className="text-slate-500 font-semibold">सज़ा: </span>
-                                  <strong className="text-slate-900">{item.punishment || "—"}</strong>
+                                <div className="text-[11px] text-slate-600">
+                                  <span className="text-slate-400">सज़ा: </span>
+                                  <span className="font-medium text-slate-800">{item.punishment || "—"}</span>
                                 </div>
-                                <div>
-                                  <span className="text-slate-500 font-semibold">न्यायालय: </span>
+                                <div className="text-[11px] text-slate-600">
+                                  <span className="text-slate-400">कोर्ट: </span>
                                   <span className="text-slate-700">{item.triableBy || "—"}</span>
                                 </div>
                               </div>
                             </td>
 
                             {/* Bare Act Page No. */}
-                            <td className="py-3.5 px-3 text-center align-top">
+                            <td className="py-3 px-3 text-center align-top">
                               <button
                                 type="button"
                                 onClick={() => handleOpenInActsPage(item)}
-                                title={`मूल बेयर एक्ट पेज संख्या ${item.pageNumber} पर देखें`}
-                                className="inline-flex flex-col items-center justify-center p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 transition-colors cursor-pointer group shadow-2xs w-full"
+                                title={`मूल बेयर एक्ट पेज ${item.pageNumber} पर देखें`}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-900 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-colors cursor-pointer group shadow-2xs"
                               >
-                                <BookOpen className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform mb-0.5" />
-                                <span className="text-[10px] font-black uppercase text-amber-800">मूल बेयर एक्ट</span>
-                                <span className="text-xs font-black font-mono text-amber-950">पेज {item.pageNumber}</span>
-                                <span className="text-[9px] text-amber-700 flex items-center gap-0.5 mt-0.5">
-                                  खोलें <ExternalLink className="w-2.5 h-2.5" />
-                                </span>
+                                <BookOpen className="w-3.5 h-3.5 text-amber-600 group-hover:text-amber-700" />
+                                <span className="font-mono font-semibold">पेज {item.pageNumber}</span>
+                                <ExternalLink className="w-3 h-3 text-amber-600/70 group-hover:text-amber-800" />
                               </button>
                             </td>
 
                             {/* Actions */}
-                            <td className="py-3.5 px-3 text-right align-top">
-                              <div className="flex flex-col items-end gap-1.5">
+                            <td className="py-3 px-3 text-right align-top">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenInActsPage(item)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#0b192c] hover:bg-[#1e3e62] text-white shadow-2xs cursor-pointer w-full justify-center"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
                                   title="Acts and Sections पेज में खोलें"
                                 >
-                                  <Scale className="w-3 h-3 text-amber-400" />
-                                  <span>Act में खोलें</span>
+                                  <Scale className="w-3 h-3 text-amber-300" />
+                                  <span>Act</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => setDetailModalSection(item)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer w-full justify-center"
+                                  className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
                                   title="विस्तृत विधिक विवरण देखें"
                                 >
-                                  <Eye className="w-3 h-3 text-slate-500" />
-                                  <span>विस्तृत विवरण</span>
+                                  <Eye className="w-3.5 h-3.5" />
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => handleCopyCitation(item)}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                                  title="Citation कॉपी करें"
+                                  className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                                  title={copiedSectionId === item.id ? "कॉपी हुआ" : "Citation कॉपी करें"}
                                 >
                                   {copiedSectionId === item.id ? (
-                                    <>
-                                      <Check className="w-3 h-3 text-emerald-600" />
-                                      <span className="text-emerald-700 font-bold">कॉपी हुआ</span>
-                                    </>
+                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
                                   ) : (
-                                    <>
-                                      <Copy className="w-3 h-3" />
-                                      <span>कॉपी</span>
-                                    </>
+                                    <Copy className="w-3.5 h-3.5" />
                                   )}
                                 </button>
                               </div>
@@ -973,35 +929,36 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
           </div>
 
           {/* Statutory Investigation Mandates & Checklist for IO */}
-          <Card className="border border-blue-200 shadow-xs bg-gradient-to-br from-blue-50/50 to-white">
-            <CardContent className="p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-700" />
-                <h3 className="text-sm font-black text-slate-900">
-                  अनुसंधान अधिकारी (IO) हेतु अनिवार्य वैधानिक निर्देश (Statutory Investigation Checklist under BNSS)
-                </h3>
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                नए आपराधिक कानून BNSS, 2023 एवं भारतीय साक्ष्य अधिनियम, 2023 के तहत इस एफआईआर की तफ्तीश में निम्नलिखित प्रक्रियाओं का पालन करना कानूनी रूप से अनिवार्य है:
-              </p>
+          <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs sm:text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-slate-600" />
+                <span>अनुसंधान अधिकारी (IO) हेतु वैधानिक निर्देश (Investigation Checklist under BNSS)</span>
+              </h3>
+              <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 font-medium">
+                BNSS / BSA
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              नए आपराधिक कानून BNSS, 2023 एवं भारतीय साक्ष्य अधिनियम, 2023 के तहत तफ्तीश में अनुपालन हेतु आवश्यक बिंदु:
+            </p>
 
-              <div className="space-y-2 pt-1 text-xs">
-                {report.investigativeStepsRecommended.map((step, sIdx) => (
-                  <div
-                    key={sIdx}
-                    className="p-2.5 rounded-lg bg-white border border-blue-100 flex items-start gap-2 shadow-2xs"
-                  >
-                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-800 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
-                      {sIdx + 1}
-                    </span>
-                    <span className="text-slate-800 font-medium leading-relaxed">
-                      {step}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-0.5 text-xs">
+              {report.investigativeStepsRecommended.map((step, sIdx) => (
+                <div
+                  key={sIdx}
+                  className="p-3 rounded-lg bg-slate-50/80 border border-slate-200/70 flex items-start gap-2.5"
+                >
+                  <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-semibold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
+                    {sIdx + 1}
+                  </span>
+                  <span className="text-slate-700 leading-relaxed font-normal">
+                    {step}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
