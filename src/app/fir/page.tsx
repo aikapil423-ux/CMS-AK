@@ -287,6 +287,26 @@ function FIRRegisterPageContent() {
     }
   };
 
+  useEffect(() => {
+    if (selectedStatuses.length === ALL_FIR_STATUS_KEYS.length) {
+      setMasterFilterTab("ALL");
+    } else if (selectedStatuses.length === 1 && selectedStatuses[0] === "UNDER_INVESTIGATION") {
+      setMasterFilterTab("UNDER_INVESTIGATION");
+    } else if (selectedStatuses.length === 1 && selectedStatuses[0] === "PENDING_SUPERVISORY_REVIEW") {
+      setMasterFilterTab("PENDING_REVIEW");
+    } else if (selectedStatuses.length === 1 && selectedStatuses[0] === "CHARGESHEET_FILED") {
+      setMasterFilterTab("CHARGESHEET");
+    } else if (selectedStatuses.length === 1 && selectedStatuses[0] === "CLOSURE_REPORT_FILED") {
+      setMasterFilterTab("CLOSURE");
+    } else if (
+      selectedStatuses.length === 2 &&
+      selectedStatuses.includes("UNTRACED") &&
+      selectedStatuses.includes("CANCELLED")
+    ) {
+      setMasterFilterTab("UNTRACED_CANCELLED");
+    }
+  }, [selectedStatuses]);
+
   // Sorting
   const [sortField, setSortField] = useState<FIRSortField>("firDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
@@ -811,60 +831,6 @@ function FIRRegisterPageContent() {
         </div>
       </div>
 
-      {/* Master Tabs */}
-      <div className="flex items-center gap-1.5 border-b border-slate-200 overflow-x-auto pb-1">
-        <button
-          onClick={() => handleMasterTabChange("ALL")}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
-            masterFilterTab === "ALL"
-              ? "bg-[#0b192c] text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          All FIRs ({statusCounts.all})
-        </button>
-        <button
-          onClick={() => handleMasterTabChange("UNDER_INVESTIGATION")}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
-            masterFilterTab === "UNDER_INVESTIGATION"
-              ? "bg-amber-600 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          Under Investigation ({statusCounts.underInvestigation})
-        </button>
-        <button
-          onClick={() => handleMasterTabChange("CHARGESHEET")}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
-            masterFilterTab === "CHARGESHEET"
-              ? "bg-emerald-600 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          Chargesheet Filed ({statusCounts.chargesheetFiled})
-        </button>
-        <button
-          onClick={() => handleMasterTabChange("CLOSURE")}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
-            masterFilterTab === "CLOSURE"
-              ? "bg-blue-600 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          Closure Filed ({statusCounts.closureFiled})
-        </button>
-        <button
-          onClick={() => handleMasterTabChange("UNTRACED_CANCELLED")}
-          className={`px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 ${
-            masterFilterTab === "UNTRACED_CANCELLED"
-              ? "bg-slate-700 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          Untraced / Cancelled ({statusCounts.untracedCancelled})
-        </button>
-      </div>
-
       {/* Search & Table Filter Controls */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search Bar */}
@@ -887,8 +853,28 @@ function FIRRegisterPageContent() {
           )}
         </div>
 
-        {/* Right Tools: Status Dropdown, Columns Dropdown, Refresh */}
-        <div className="flex items-center gap-2">
+        {/* Right Tools: Master FIR Category Dropdown, Status Dropdown, Columns Dropdown, Refresh */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Master Stage / Category Filter Dropdown */}
+          <div className="relative">
+            <div className="relative flex items-center">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 pointer-events-none" />
+              <select
+                value={masterFilterTab}
+                onChange={(e) => handleMasterTabChange(e.target.value)}
+                className="pl-8 pr-7 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:outline-hidden transition-colors shadow-2xs cursor-pointer appearance-none"
+                title="Filter by Stage / Category"
+              >
+                <option value="ALL">All FIRs ({statusCounts.all})</option>
+                <option value="UNDER_INVESTIGATION">Under Investigation ({statusCounts.underInvestigation})</option>
+                <option value="CHARGESHEET">Chargesheet Filed ({statusCounts.chargesheetFiled})</option>
+                <option value="CLOSURE">Closure Filed ({statusCounts.closureFiled})</option>
+                <option value="UNTRACED_CANCELLED">Untraced / Cancelled ({statusCounts.untracedCancelled})</option>
+              </select>
+              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
+            </div>
+          </div>
+
           {/* Status Multi-select */}
           <div className="relative" ref={statusDropdownRef}>
             <button
