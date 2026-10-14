@@ -10,7 +10,6 @@ import {
   Trash2,
   X,
   CornerDownLeft,
-  ChevronDown,
   Volume2,
   Sparkles,
   Info,
@@ -394,92 +393,62 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
 
   return (
     <div className="relative inline-flex items-center" ref={panelRef}>
-      {/* Top Bar Dictation Controls */}
-      <div className="flex items-center gap-1 bg-slate-100/90 hover:bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 transition-all shadow-2xs">
-        {/* Language Selector Pill: Hindi / English */}
-        <div className="flex items-center rounded-md bg-white p-0.5 border border-slate-200/60 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => handleSelectLang("hi-IN")}
-            className={`px-2 py-0.5 text-[11px] font-semibold rounded transition-all cursor-pointer ${
-              selectedLang === "hi-IN"
-                ? "bg-amber-500 text-slate-950 font-bold shadow-2xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-            title="हिंदी वॉइस इनपुट (Hindi Voice Input)"
-          >
-            हिंदी
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSelectLang("en-IN")}
-            className={`px-2 py-0.5 text-[11px] font-semibold rounded transition-all cursor-pointer ${
-              selectedLang === "en-IN"
-                ? "bg-slate-900 text-white font-bold shadow-2xs"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-            title="English Voice Input"
-          >
-            EN
-          </button>
-        </div>
-
-        {/* Dictation Mic Action Button */}
-        <button
-          type="button"
-          onClick={handleToggleListening}
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-            isListening
-              ? "bg-red-600 text-white shadow-xs ring-2 ring-red-400/40 animate-pulse"
-              : "bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/70"
-          }`}
-          title={
-            isListening
-              ? "डिक्टेशन रोकें (Stop Dictation)"
-              : `डिक्टेशन शुरू करें (${selectedLang === "hi-IN" ? "हिंदी" : "English"})`
+      {/* Icon-Only Top Bar Dictation Trigger Button */}
+      <button
+        type="button"
+        onClick={() => {
+          if (isListening) {
+            stopListening();
+          } else if (isPanelOpen) {
+            setIsPanelOpen(false);
+          } else {
+            setIsPanelOpen(true);
+            startListening();
           }
-        >
-          {isListening ? (
-            <>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-              </span>
-              <Mic className="w-3.5 h-3.5 text-white animate-bounce" />
-              {!isMobile && (
-                <span className="text-[11px] font-bold tracking-tight">
-                  {selectedLang === "hi-IN" ? "बोलिए..." : "Listening..."}
-                </span>
-              )}
-            </>
-          ) : (
-            <>
-              <Mic className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-900" />
-              {!isMobile && (
-                <span className="text-[11px] font-medium text-slate-700">
-                  {selectedLang === "hi-IN" ? "डिक्टेशन" : "Dictate"}
-                </span>
-              )}
-            </>
-          )}
-        </button>
-
-        {/* Panel Toggle Icon Button */}
-        <button
-          type="button"
-          onClick={() => setIsPanelOpen(!isPanelOpen)}
-          className={`p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-white/80 transition-colors cursor-pointer ${
-            isPanelOpen ? "bg-white text-slate-900 shadow-2xs" : ""
-          }`}
-          title="डिक्टेशन नोटपैड खोलें / बंद करें"
-        >
-          <ChevronDown
-            className={`w-3.5 h-3.5 transition-transform duration-200 ${
-              isPanelOpen ? "rotate-180 text-slate-800" : ""
-            }`}
-          />
-        </button>
-      </div>
+        }}
+        className={`relative rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs select-none ${
+          isMobile ? "w-8 h-8 p-1.5" : "w-8.5 h-8.5 p-2"
+        } ${
+          isListening
+            ? "bg-rose-50 border-rose-300 text-rose-600 ring-2 ring-rose-400/40 animate-pulse"
+            : isPanelOpen
+            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+            : "bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200/90 hover:border-slate-300"
+        }`}
+        title={
+          isListening
+            ? "डिक्टेशन रोकें (Stop Dictation)"
+            : `वॉइस डिक्टेशन (${selectedLang === "hi-IN" ? "हिंदी" : "English"})`
+        }
+        aria-label="Voice Dictation"
+        aria-expanded={isPanelOpen}
+      >
+        {isListening ? (
+          <>
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+            </span>
+            <Mic className="w-4 h-4 text-rose-600 animate-bounce" />
+          </>
+        ) : (
+          <>
+            <Mic className={`w-4 h-4 ${isPanelOpen ? "text-white" : "text-slate-700"}`} />
+            {/* Subtle language badge in corner */}
+            <span
+              className={`absolute -bottom-1 -right-1 text-[8px] font-bold px-0.5 leading-none rounded border shadow-2xs ${
+                isPanelOpen
+                  ? "bg-slate-800 text-slate-200 border-slate-700"
+                  : selectedLang === "hi-IN"
+                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                  : "bg-blue-100 text-blue-900 border-blue-300"
+              }`}
+            >
+              {selectedLang === "hi-IN" ? "हिं" : "EN"}
+            </span>
+          </>
+        )}
+      </button>
 
       {/* Dropdown Floating Dictation Panel / Scratchpad */}
       {isPanelOpen && (
