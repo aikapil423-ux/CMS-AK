@@ -222,7 +222,7 @@ function ComplaintListContent() {
   };
 
   const COMPLAINT_COL_LABELS: Record<string, string> = {
-    complaintId: "Complaint ID & Priority",
+    complaintId: "Complaint ID",
     dateTime: "Date & Time",
     complainant: "Complainant",
     categoryLocation: "Category & Incident Location",
@@ -964,27 +964,28 @@ function ComplaintListContent() {
             >
               {c.complaintNumber}
             </Link>
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              <PriorityBadge priority={c.priority} />
-              {c.isTransferred && (
-                <span
-                  title={`Transferred to: ${c.transferredToPoliceStation || "Other Station"}`}
-                  className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-0.5"
-                >
-                  <ArrowRightLeft className="w-2.5 h-2.5 text-amber-700" />
-                  <span>Transferred</span>
-                </span>
-              )}
-              {((c.linkedComplaintsList && c.linkedComplaintsList.length > 0) || c.linkedComplaintNumber) && (
-                <span
-                  title={c.isCrossComplaint ? "Cross-Complaint" : "Linked Complaint"}
-                  className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-900 border border-indigo-200 flex items-center gap-0.5"
-                >
-                  <Link2 className="w-2.5 h-2.5 text-indigo-700" />
-                  <span>{c.isCrossComplaint ? "Cross" : `Linked (${c.linkedComplaintsList?.length || 1})`}</span>
-                </span>
-              )}
-            </div>
+            {(c.isTransferred || ((c.linkedComplaintsList && c.linkedComplaintsList.length > 0) || c.linkedComplaintNumber)) && (
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {c.isTransferred && (
+                  <span
+                    title={`Transferred to: ${c.transferredToPoliceStation || "Other Station"}`}
+                    className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-0.5"
+                  >
+                    <ArrowRightLeft className="w-2.5 h-2.5 text-amber-700" />
+                    <span>Transferred</span>
+                  </span>
+                )}
+                {((c.linkedComplaintsList && c.linkedComplaintsList.length > 0) || c.linkedComplaintNumber) && (
+                  <span
+                    title={c.isCrossComplaint ? "Cross-Complaint" : "Linked Complaint"}
+                    className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-900 border border-indigo-200 flex items-center gap-0.5"
+                  >
+                    <Link2 className="w-2.5 h-2.5 text-indigo-700" />
+                    <span>{c.isCrossComplaint ? "Cross" : `Linked (${c.linkedComplaintsList?.length || 1})`}</span>
+                  </span>
+                )}
+              </div>
+            )}
           </td>
         );
 
@@ -1262,8 +1263,8 @@ function ComplaintListContent() {
       {/* Filter and Search Controls */}
       <Card className="border-slate-200 !overflow-visible relative z-30">
         <CardContent className="p-4 space-y-3 !overflow-visible">
-          {/* Main Controls Row: Status Dropdown with Checkboxes + Search + Priority + Category */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {/* Main Controls Row: Status Dropdown with Checkboxes + Search + Category */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             {/* Status Dropdown Button with Checkboxes */}
             <div className="relative z-40" ref={statusDropdownRef}>
               <button
@@ -1423,20 +1424,6 @@ function ComplaintListContent() {
               />
             </div>
 
-            {/* Priority Filter */}
-            <div>
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="w-full h-10 px-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium"
-              >
-                <option value="ALL">All Priorities</option>
-                <option value="ROUTINE">Routine</option>
-                <option value="URGENT">Urgent</option>
-                <option value="CM_WINDOW_VIP">CM Window (VIP)</option>
-              </select>
-            </div>
-
             {/* Category Filter: All Categories | NCR | FIR Recommend | Closure */}
             <div>
               <select
@@ -1545,7 +1532,7 @@ function ComplaintListContent() {
                       onChange={() => toggleColumn("complaintId")}
                       className="w-3.5 h-3.5 rounded text-blue-600"
                     />
-                    <span>Complaint ID &amp; Priority</span>
+                    <span>Complaint ID</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                     <input
@@ -1931,7 +1918,6 @@ function ComplaintListContent() {
                     >
                       {c.complaintNumber}
                     </Link>
-                    <PriorityBadge priority={c.priority} />
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">

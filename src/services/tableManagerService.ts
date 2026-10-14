@@ -145,10 +145,10 @@ export const MANAGED_TABLES: ManagedTableConfig[] = [
       {
         id: "complaintId",
         key: "complaintId",
-        label: "Complaint ID & Priority",
-        labelHi: "शिकायत क्रमांक एवं प्राथमिकता",
+        label: "Complaint ID",
+        labelHi: "शिकायत क्रमांक",
         dataType: "text",
-        description: "Unique complaint tracking number, priority rating, and source channel.",
+        description: "Unique complaint tracking number and source channel.",
         isDefault: true,
         isActive: true,
         width: "min-w-[170px]",
