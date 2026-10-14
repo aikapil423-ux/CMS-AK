@@ -211,10 +211,10 @@ export const MANAGED_TABLES: ManagedTableConfig[] = [
       {
         id: "daysPending",
         key: "daysPending",
-        label: "Days Pending",
-        labelHi: "लंबित दिन",
+        label: "Days Registered",
+        labelHi: "पंजीकृत दिन",
         dataType: "number",
-        description: "Elapsed days towards statutory 14-day preliminary enquiry limit under BNSS 173(3).",
+        description: "Elapsed days since complaint registration towards statutory 14-day preliminary enquiry limit under BNSS 173(3).",
         isDefault: true,
         isActive: true,
         width: "min-w-[100px]",

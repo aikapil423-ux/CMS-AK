@@ -228,7 +228,7 @@ function ComplaintListContent() {
     categoryLocation: "Category & Incident Location",
     status: "Enquiry Status",
     assignedEo: "Enquiry Officer",
-    daysPending: "Days Pending",
+    daysPending: "Days Registered",
   };
 
   const getColLabel = (colKey: string) => {
@@ -1599,7 +1599,7 @@ function ComplaintListContent() {
                       onChange={() => toggleColumn("daysPending")}
                       className="w-3.5 h-3.5 rounded text-blue-600"
                     />
-                    <span>Days Pending</span>
+                    <span>Days Registered</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                     <input

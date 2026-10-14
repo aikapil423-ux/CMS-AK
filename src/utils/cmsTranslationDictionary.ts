@@ -249,6 +249,8 @@ export const CMS_DICTIONARY: Record<string, string> = {
   "Status": "स्थिति",
   "Actions": "कार्रवाई",
   "Action": "कार्रवाई",
+  "Days Registered": "पंजीकृत दिन",
+  "Days Pending": "लंबित दिन",
   "Documents": "दस्तावेज़",
   "Original Document": "मूल दस्तावेज़",
   "Overview": "अवलोकन",
