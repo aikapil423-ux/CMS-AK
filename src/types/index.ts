@@ -1596,6 +1596,12 @@ export interface FIRItem {
   legalAnalysis?: LegalAnalysisReport;
   investigationSummary?: InvestigationSummaryReport;
 
+  // CCTNS Crime Detail Form (IIF-II)
+  crimeDetailsFilled?: boolean;
+  crimeDetailsData?: any;
+  crimeDetailsFilledAt?: string;
+  crimeDetailsFilledBy?: string;
+
   // SHO & Supervisory Review
   shoDecision?: 'APPROVE' | 'RE_INVESTIGATION' | 'REJECT';
   shoDecisionAt?: string;

@@ -27,6 +27,9 @@ import {
   X,
   Globe,
   Languages,
+  Lock,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -1342,6 +1345,17 @@ function ArrestDocsContent() {
 
   const activeFir = firs.find((f) => f.id === selectedFirId || f.firNumber === selectedFirId);
 
+  const isCrimeDetailsFilled = Boolean(
+    activeFir?.crimeDetailsFilled ||
+    activeFir?.documents?.some(
+      (d) =>
+        d.title.toLowerCase().includes("crime detail") ||
+        d.title.includes("IIF-II") ||
+        d.title.includes("अपराध विवरण") ||
+        d.category === "CCTNS_IIF2"
+    )
+  );
+
   // Sync active FIR with current template and selected accused
   useEffect(() => {
     const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
@@ -1713,6 +1727,10 @@ function ArrestDocsContent() {
   };
 
   const handlePrint = () => {
+    if (!isCrimeDetailsFilled) {
+      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज प्रिंट नहीं किए जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
+      return;
+    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       let iframe = document.getElementById("cms-print-iframe") as HTMLIFrameElement | null;
@@ -1745,6 +1763,10 @@ function ArrestDocsContent() {
   };
 
   const handleDownload = () => {
+    if (!isCrimeDetailsFilled) {
+      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज डाउनलोड नहीं किए जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
+      return;
+    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -1764,6 +1786,10 @@ function ArrestDocsContent() {
   };
 
   const handleOpenPreview = () => {
+    if (!isCrimeDetailsFilled) {
+      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज का पूर्वावलोकन नहीं किया जा सकता। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
+      return;
+    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       setPreviewHtml(html);
@@ -1777,6 +1803,10 @@ function ArrestDocsContent() {
   const handleSaveToFir = async () => {
     if (!activeFir) {
       alert("कृपया पहले एक सक्रिय FIR केस चुनें।");
+      return;
+    }
+    if (!isCrimeDetailsFilled) {
+      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज FIR Profile में सहेजे नहीं जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
       return;
     }
 
@@ -2196,9 +2226,9 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             onClick={handleSaveToFir}
-            disabled={isSavingToFir}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 shadow-sm"
-            title="Save this document to FIR Profile Documents with Universal Evidence processing"
+            disabled={isSavingToFir || !isCrimeDetailsFilled}
+            className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+            title={!isCrimeDetailsFilled ? "Crime Details Form pending" : "Save this document to FIR Profile Documents with Universal Evidence processing"}
           >
             {isSavingToFir ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             <span>{isSavingToFir ? (templateLang === "hi" ? "सहेजा जा रहा है..." : "Saving...") : (templateLang === "hi" ? "FIR Profile में सहेजें" : "Save to FIR")}</span>
@@ -2207,8 +2237,9 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             variant="outline"
+            disabled={!isCrimeDetailsFilled}
             onClick={handleOpenPreview}
-            className="border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-blue-800 font-bold text-xs gap-1.5"
+            className="border-blue-300 bg-blue-50/70 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed text-blue-800 font-bold text-xs gap-1.5 cursor-pointer"
             title="4-पृष्ठ पूर्वावलोकन (Preview exact 4 A4 pages)"
           >
             <Eye className="w-3.5 h-3.5 text-blue-700" />
@@ -2217,8 +2248,9 @@ function ArrestDocsContent() {
 
           <Button
             size="sm"
+            disabled={!isCrimeDetailsFilled}
             onClick={handlePrint}
-            className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs gap-1.5 shadow-sm"
+            className="bg-rose-700 hover:bg-rose-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             {templateLang === "hi" ? "प्रिंट A4 प्रपत्र" : "Print A4 Document"}
@@ -2226,8 +2258,9 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             variant="outline"
+            disabled={!isCrimeDetailsFilled}
             onClick={handleDownload}
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
+            className="border-slate-300 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             {templateLang === "hi" ? "डाउनलोड A4" : "Download A4"}
@@ -2365,8 +2398,75 @@ function ArrestDocsContent() {
         </div>
       </div>
 
-      {/* Fully Editable Official Legal Document Canvas */}
-      <div className="flex justify-center">
+      {/* STATUTORY PREREQUISITE WARNING BANNER */}
+      {!isCrimeDetailsFilled && activeFir && (
+        <div className="bg-gradient-to-r from-red-600 via-rose-700 to-red-800 text-white rounded-2xl p-5 sm:p-6 shadow-xl border-2 border-red-400 space-y-4 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30 shadow-inner">
+                <ShieldAlert className="w-7 h-7 text-amber-300 animate-bounce" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-sm">
+                    STATUTORY PREREQUISITE BLOCKED
+                  </span>
+                  <span className="text-xs font-mono text-red-200">
+                    FIR #{activeFir.firNumber}
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black tracking-wide text-white">
+                  🚨 अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!
+                </h2>
+                <p className="text-xs sm:text-sm text-red-100 leading-relaxed max-w-3xl">
+                  CCTNS व आपराधिक प्रक्रिया संहिता (BNSS) की अनिवार्य प्रक्रिया के अनुसार, <strong>FIR दर्ज होने के तुरंत बाद IO द्वारा अपराध विवरण प्रपत्र (IIF-II) भरा जाना अनिवार्य है</strong>। जब तक IIF-II फॉर्म सबमिट होकर केस डाक्यूमेंट्स में दर्ज नहीं हो जाता, तब तक <strong>Arrest & Surrender Documents (गिरफ्तारी मेमो, जामातलाशी, पेशी रिमांड, आदि) नहीं बनाए जा सकते।</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="shrink-0 self-end sm:self-center">
+              <Link href={`/fir/${activeFir.id}?openCrimeDetails=true`}>
+                <Button
+                  size="sm"
+                  className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs gap-2 px-5 py-2.5 shadow-lg shadow-black/30 hover:scale-105 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>FIR Profile में IIF-II प्रपत्र भरें (Fill Crime Details) →</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fully Editable Official Legal Document Canvas OR Locked Placeholder */}
+      {!isCrimeDetailsFilled && activeFir ? (
+        <div className="bg-white border-2 border-dashed border-red-300 rounded-2xl p-10 sm:p-14 text-center max-w-2xl mx-auto space-y-5 shadow-sm my-6">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-200 shadow-inner">
+            <Lock className="w-8 h-8 text-red-600" />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200 inline-block">
+              Arrest Documents Generation Locked
+            </span>
+            <h3 className="text-lg sm:text-xl font-black text-slate-900">
+              गिरफ्तारी प्रपत्र निर्माण लॉक है (Crime Details Pending)
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+              इस FIR (No: <strong>{activeFir.firNumber}</strong>) के लिए अभी तक <strong>Crime Details Form (IIF-II) / अपराध विवरण प्रपत्र</strong> सबमिट नहीं हुआ है। CCTNS व BNSS वैधानिक अनुपालन के लिए पहले IIF-II फॉर्म भरें।
+            </p>
+          </div>
+          <div className="pt-3">
+            <Link href={`/fir/${activeFir.id}?openCrimeDetails=true`}>
+              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-md gap-2 cursor-pointer hover:scale-105 transition-all">
+                <Sparkles className="w-4 h-4 text-amber-300" />
+                <span>अपराध विवरण प्रपत्र भरें (Fill Crime Detail Form IIF-II) →</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center">
         <div
           id="arrest-printable-doc"
           className={`w-full max-w-4xl transition-all ${
@@ -3299,6 +3399,7 @@ function ArrestDocsContent() {
           )}
         </div>
       </div>
+      )}
 
       {/* 4 A4 Pages Preview Modal */}
       {isPreviewModalOpen && (

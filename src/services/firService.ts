@@ -699,6 +699,33 @@ export const firService = {
     return this.updateFir(firId, { legalAnalysis });
   },
 
+  saveCrimeDetails(firId: string, crimeDetailsData: any, filledBy: string): FIRItem | undefined {
+    const fir = this.getFirById(firId);
+    if (!fir) return undefined;
+
+    const docId = `doc-crime-detail-${Date.now()}`;
+    const crimeDoc: FIRDocumentItem = {
+      id: docId,
+      title: "Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र",
+      fileName: `Crime_Detail_IIF_II_${fir.firNumber.replace(/[\/\s]/g, "_")}.html`,
+      category: "FIELD_REPORT",
+      uploadedBy: filledBy,
+      uploadedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
+      fileSize: "68.5 KB",
+    };
+
+    const existingDocs = fir.documents || [];
+    const filteredDocs = existingDocs.filter(d => !d.title.toLowerCase().includes("crime detail"));
+
+    return this.updateFir(firId, {
+      crimeDetailsFilled: true,
+      crimeDetailsData,
+      crimeDetailsFilledAt: new Date().toISOString(),
+      crimeDetailsFilledBy: filledBy,
+      documents: [crimeDoc, ...filteredDocs],
+    });
+  },
+
   assignIo(
     firId: string,
     ioId: string,
