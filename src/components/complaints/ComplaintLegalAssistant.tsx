@@ -49,6 +49,7 @@ import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { ComplaintService } from "@/services/complaintService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ComplaintLegalAssistantProps {
   complaint: ComplaintItem;
@@ -62,6 +63,7 @@ export function ComplaintLegalAssistant({
   onUpdateComplaint,
 }: ComplaintLegalAssistantProps) {
   const router = useRouter();
+  const { isHindi } = useLanguage();
 
   const [report, setReport] = useState<LegalAnalysisReport | null>(
     complaint.legalAnalysis || null
@@ -291,20 +293,36 @@ export function ComplaintLegalAssistant({
   // Steps for simulated deep AI statutory scanning
   const ANALYSIS_STEPS = [
     {
-      title: "घटना विवरण एवं तथ्यों का विश्लेषण (Scanning Incident Narrative & Overview)",
-      desc: "Reading incident facts, dates, named accused persons, and loss details...",
+      title: isHindi
+        ? "घटना विवरण एवं तथ्यों का विश्लेषण"
+        : "Scanning Incident Narrative & Overview",
+      desc: isHindi
+        ? "घटना के तथ्य, तिथियां, नामजद आरोपी व नुकसान का विवरण स्कैन किया जा रहा है..."
+        : "Reading incident facts, dates, named accused persons, and loss details...",
     },
     {
-      title: "संलग्न साक्ष्य एवं दस्तावेज़ों की जांच (Processing Attached Documents)",
-      desc: "Inspecting MLR medical reports, bank transfer receipts, forged letters, and audio/video files...",
+      title: isHindi
+        ? "संलग्न साक्ष्य एवं दस्तावेज़ों की जांच"
+        : "Processing Attached Documents",
+      desc: isHindi
+        ? "मेडिकल रिपोर्ट (MLR), बैंक ट्रांजैक्शन रसीदें, पत्र व ऑडियो/वीडियो फाइल्स का मूल्यांकन..."
+        : "Inspecting MLR medical reports, bank transfer receipts, forged letters, and audio/video files...",
     },
     {
-      title: "भारतीय न्याय संहिता एवं वैधानिक संहिताओं से मिलान (Statutory Acts Mapping)",
-      desc: "Evaluating BNS 2023, BNSS 2023, BSA 2023, Arms Act, and Special Acts provisions...",
+      title: isHindi
+        ? "भारतीय न्याय संहिता एवं वैधानिक संहिताओं से मिलान"
+        : "Statutory Acts Mapping",
+      desc: isHindi
+        ? "बीएनएस, बीएनएसएस, बीएसए एवं विशेष अधिनियमों के प्रावधानों का निर्धारण..."
+        : "Evaluating BNS 2023, BNSS 2023, BSA 2023, Arms Act, and Special Acts provisions...",
     },
     {
-      title: "मूल बेयर एक्ट पृष्ठ संख्या व कानूनी आधार का निर्धारण (Indexing Bare Act Pages & Rationale)",
-      desc: "Pinpointing exact publication page numbers and articulating factual legal justifications...",
+      title: isHindi
+        ? "मूल बेयर एक्ट पृष्ठ संख्या व कानूनी आधार का निर्धारण"
+        : "Indexing Bare Act Pages & Rationale",
+      desc: isHindi
+        ? "आधिकारिक बेयर एक्ट प्रकाशन पृष्ठ संख्या व कानूनी औचित्य तैयार किया जा रहा है..."
+        : "Pinpointing exact publication page numbers and articulating factual legal justifications...",
     },
   ];
 
@@ -334,7 +352,7 @@ export function ComplaintLegalAssistant({
   };
 
   const handleCopyCitation = (item: LegalSuggestionItem) => {
-    const citation = `${item.sectionNumber} ${item.actShortName} - "${item.sectionTitle}" (Bare Act Page ${item.pageNumber})\nकानूनी आधार: ${item.reason}\nसाक्ष्य: ${item.evidenceProof.join("; ")}`;
+    const citation = `${item.sectionNumber} ${item.actShortName} - "${item.sectionTitle}" (${isHindi ? "पेज" : "Page"} ${item.pageNumber})\n${isHindi ? "कानूनी आधार:" : "Legal Ground:"} ${item.reason}\n${isHindi ? "साक्ष्य:" : "Evidence:"} ${item.evidenceProof.join("; ")}`;
     navigator.clipboard.writeText(citation);
     setCopiedSectionId(item.id);
     setTimeout(() => setCopiedSectionId(null), 2500);
@@ -402,10 +420,18 @@ export function ComplaintLegalAssistant({
               </span>
             </div>
             <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">
-              लीगल असिस्टेंट (Statutory Legal Help)
+              {isHindi ? "लीगल असिस्टेंट" : "Statutory Legal Help"}
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-              शिकायत के <strong>घटना विवरण (Overview)</strong> व <strong>संलग्न साक्ष्यों (Documents)</strong> का स्वतः विश्लेषण कर भारतीय न्याय संहिता व अन्य अधिनियमों की प्रासंगिक धाराएं व मूल बेयर एक्ट पृष्ठ संख्या प्रस्तुत करता है।
+              {isHindi ? (
+                <>
+                  शिकायत के <strong>घटना विवरण</strong> व <strong>संलग्न साक्ष्यों</strong> का स्वतः विश्लेषण कर भारतीय न्याय संहिता व अन्य अधिनियमों की प्रासंगिक धाराएं व मूल बेयर एक्ट पृष्ठ संख्या प्रस्तुत करता है।
+                </>
+              ) : (
+                <>
+                  Statutory legal engine that analyzes complaint facts and attached evidence documents to determine relevant provisions of BNS, BNSS, and BSA with exact Bare Act page numbers.
+                </>
+              )}
             </p>
           </div>
 
@@ -424,17 +450,17 @@ export function ComplaintLegalAssistant({
               {isAnalyzing ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>विश्लेषण जारी...</span>
+                  <span>{isHindi ? "विश्लेषण जारी..." : "Analyzing..."}</span>
                 </>
               ) : report ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>पुनः विश्लेषण करें (Re-run Legal Help)</span>
+                  <span>{isHindi ? "पुनः विश्लेषण करें" : "Re-run Legal Help"}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>कानूनी मदद लें (Legal Help)</span>
+                  <span>{isHindi ? "कानूनी मदद लें" : "Run Legal Help"}</span>
                 </>
               )}
             </button>
@@ -442,7 +468,7 @@ export function ComplaintLegalAssistant({
             {report && (
               <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>अंतिम विश्लेषण: {new Date(report.analyzedAt).toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span>{isHindi ? "अंतिम विश्लेषण:" : "Last analyzed:"} {new Date(report.analyzedAt).toLocaleTimeString(isHindi ? "hi-IN" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
               </span>
             )}
           </div>
@@ -482,10 +508,18 @@ export function ComplaintLegalAssistant({
             </div>
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900">
-                कानूनी मदद हेतु विश्लेषण प्रारंभ करें
+                {isHindi ? "कानूनी मदद हेतु विश्लेषण प्रारंभ करें" : "Run Statutory Legal Analysis"}
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                ऊपर दिए गए <strong>&quot;Legal Help&quot;</strong> बटन पर क्लिक करें। सिस्टम इस शिकायत के सभी तथ्यों (Overview) और साक्ष्यों (Documents) को स्कैन करके संबंधित भारतीय न्याय संहिता (BNS), BNSS, साक्ष्य अधिनियम (BSA) की धाराएं और उनके बेयर एक्ट पेज नंबर प्रस्तुत करेगा।
+                {isHindi ? (
+                  <>
+                    ऊपर दिए गए <strong>&quot;कानूनी मदद लें&quot;</strong> बटन पर क्लिक करें। सिस्टम इस शिकायत के सभी तथ्यों और साक्ष्यों को स्कैन करके संबंधित भारतीय न्याय संहिता (BNS), BNSS, साक्ष्य अधिनियम (BSA) की धाराएं और उनके बेयर एक्ट पेज नंबर प्रस्तुत करेगा।
+                  </>
+                ) : (
+                  <>
+                    Click the <strong>&quot;Run Legal Help&quot;</strong> button above. The system will scan all facts and attached evidence to identify relevant BNS, BNSS, and BSA provisions with verbatim Bare Act page numbers.
+                  </>
+                )}
               </p>
             </div>
             <Button
@@ -493,7 +527,7 @@ export function ComplaintLegalAssistant({
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs"
             >
               <Sparkles className="w-3.5 h-3.5 mr-2 text-amber-300" />
-              Legal Help (कानूनी मदद प्राप्त करें)
+              {isHindi ? "कानूनी मदद प्राप्त करें" : "Run Legal Help"}
             </Button>
           </div>
         </Card>
@@ -508,24 +542,24 @@ export function ComplaintLegalAssistant({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">घटना तथ्य (Words)</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "घटना तथ्य (शब्द)" : "Scanned Facts (Words)"}</span>
                 <FileText className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {report.scannedFactsCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                श्रेणी: <span className="text-slate-700 font-medium">{complaint.category}</span>
+                {isHindi ? "श्रेणी: " : "Category: "}<span className="text-slate-700 font-medium user-data" data-no-translate="true">{complaint.category}</span>
               </div>
             </div>
 
             <div
               onClick={() => setIsEvidenceModalOpen(true)}
               className="bg-white rounded-xl p-3.5 border border-slate-200/80 hover:border-slate-300 shadow-2xs space-y-1 cursor-pointer transition-colors"
-              title="Click to view, preview, and download evidence documents"
+              title={isHindi ? "साक्ष्य दस्तावेज़ देखने एवं डाउनलोड करने हेतु क्लिक करें" : "Click to view, preview, and download evidence documents"}
             >
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">साक्ष्य दस्तावेज़ (Docs)</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "साक्ष्य दस्तावेज़" : "Evidence Documents"}</span>
                 <Paperclip className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <div className="text-xl font-bold text-slate-900 flex items-baseline justify-between">
@@ -537,16 +571,16 @@ export function ComplaintLegalAssistant({
               </div>
               <div className="text-[11px] text-slate-600 truncate">
                 {evidenceFiles && evidenceFiles.length > 0
-                  ? `${evidenceFiles.length} फाइल्स संलग्न`
+                  ? (isHindi ? `${evidenceFiles.length} फाइल्स संलग्न` : `${evidenceFiles.length} files attached`)
                   : report.scannedEvidenceSummary.documentsFound.length > 0
-                  ? `${report.scannedEvidenceSummary.documentsFound.length} फाइल्स मूल्यांकित`
-                  : "0 दस्तावेज संलग्न"}
+                  ? (isHindi ? `${report.scannedEvidenceSummary.documentsFound.length} फाइल्स मूल्यांकित` : `${report.scannedEvidenceSummary.documentsFound.length} files evaluated`)
+                  : (isHindi ? "0 दस्तावेज संलग्न" : "0 documents attached")}
               </div>
             </div>
 
             <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">अधिनियम (Acts)</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "अधिनियम" : "Acts"}</span>
                 <Scale className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <div className="text-xl font-bold text-slate-900">
@@ -559,14 +593,14 @@ export function ComplaintLegalAssistant({
 
             <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">सुझावित धाराएं (Sections)</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "सुझावित धाराएं" : "Suggested Sections"}</span>
                 <Gavel className="w-3.5 h-3.5 text-slate-400" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {report.suggestedSections.length}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                {report.suggestedSections.filter((s) => s.recommendationType === "PRIMARY_OFFENCE").length} मुख्य धाराएं
+                {report.suggestedSections.filter((s) => s.recommendationType === "PRIMARY_OFFENCE").length} {isHindi ? "मुख्य धाराएं" : "Primary Sections"}
               </div>
             </div>
           </div>
@@ -576,14 +610,14 @@ export function ComplaintLegalAssistant({
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-slate-600" />
-                <span>दस्तावेज़ एवं साक्ष्य मूल्यांकन (Evidence Summary)</span>
+                <span>{isHindi ? "दस्तावेज़ एवं साक्ष्य मूल्यांकन" : "Document & Evidence Evaluation"}</span>
               </h4>
               <span className="text-[10px] bg-slate-200/60 text-slate-700 font-medium px-2 py-0.5 rounded-md border border-slate-300/60">
                 AI Verified
               </span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed user-data" data-no-translate="true">
               {report.summary}
             </p>
 
@@ -598,7 +632,7 @@ export function ComplaintLegalAssistant({
                   title="दस्तावेज़ देखने एवं डाउनलोड करने हेतु क्लिक करें"
                 >
                   <Paperclip className="w-3 h-3 text-slate-400" />
-                  <span>दस्तावेज़: {doc}</span>
+                  <span>{isHindi ? "दस्तावेज़" : "Document"}: {doc}</span>
                   <Eye className="w-2.5 h-2.5 text-emerald-600 ml-0.5" />
                 </button>
               ))}
@@ -609,7 +643,7 @@ export function ComplaintLegalAssistant({
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50/70 border border-rose-200/60 text-rose-800 shadow-2xs"
                 >
                   <ShieldAlert className="w-3 h-3 text-rose-500" />
-                  <span>चोट/हानि: {inj}</span>
+                  <span>{isHindi ? "चोट/हानि" : "Injury/Loss"}: {inj}</span>
                 </span>
               ))}
 
@@ -619,7 +653,7 @@ export function ComplaintLegalAssistant({
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50/70 border border-amber-200/60 text-amber-900 shadow-2xs"
                 >
                   <AlertTriangle className="w-3 h-3 text-amber-500" />
-                  <span>आरोपी: {acc}</span>
+                  <span>{isHindi ? "आरोपी" : "Accused"}: {acc}</span>
                 </span>
               ))}
             </div>
@@ -639,7 +673,7 @@ export function ComplaintLegalAssistant({
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                सभी अधिनियम ({report.suggestedSections.length})
+                {isHindi ? "सभी अधिनियम" : "All Acts"} ({report.suggestedSections.length})
               </button>
 
               {availableActs.map((act) => (
@@ -671,7 +705,7 @@ export function ComplaintLegalAssistant({
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="धारा संख्या या कीवर्ड खोजें..."
+                placeholder={isHindi ? "धारा संख्या या कीवर्ड खोजें..." : "Search section number or keyword..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white"
@@ -695,13 +729,13 @@ export function ComplaintLegalAssistant({
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                  लागू धाराओं का विधिक विवरण एवं औचित्य ({filteredSections.length} धाराएं)
+                  {isHindi ? "लागू धाराओं का विधिक विवरण एवं औचित्य" : "Applicable Legal Sections & Rationale"} ({filteredSections.length} {isHindi ? "धाराएं" : "Sections"})
                 </h3>
               </div>
 
               {/* View Mode Toggle: Table / Cards */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-medium hidden sm:inline">दृश्य स्वरूप:</span>
+                <span className="text-xs text-slate-500 font-medium hidden sm:inline">{isHindi ? "दृश्य स्वरूप:" : "View Mode:"}</span>
                 <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs font-semibold">
                   <button
                     type="button"
@@ -713,7 +747,7 @@ export function ComplaintLegalAssistant({
                     }`}
                   >
                     <Table className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>तालिका स्वरूप (Table)</span>
+                    <span>{isHindi ? "तालिका स्वरूप" : "Table View"}</span>
                   </button>
                   <button
                     type="button"
@@ -725,7 +759,7 @@ export function ComplaintLegalAssistant({
                     }`}
                   >
                     <LayoutList className="w-3.5 h-3.5 text-slate-400" />
-                    <span>कार्ड्स (Cards)</span>
+                    <span>{isHindi ? "कार्ड्स" : "Card View"}</span>
                   </button>
                 </div>
               </div>
@@ -733,7 +767,7 @@ export function ComplaintLegalAssistant({
 
             {filteredSections.length === 0 ? (
               <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-xs">
-                दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।
+                {isHindi ? "दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।" : "No sections found matching the selected filter or query."}
               </div>
             ) : viewMode === "table" ? (
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -742,11 +776,11 @@ export function ComplaintLegalAssistant({
                     <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600">
                       <tr>
                         <th className="py-2.5 px-3 text-center w-10 text-[11px] font-semibold text-slate-500">#</th>
-                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">धारा व अधिनियम</th>
-                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">कानूनी औचित्य एवं साक्ष्य</th>
-                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">वर्गीकरण व दण्ड</th>
-                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">बेयर एक्ट</th>
-                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">कार्यवाही</th>
+                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">{isHindi ? "धारा व अधिनियम" : "Section & Act"}</th>
+                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">{isHindi ? "कानूनी औचित्य एवं साक्ष्य" : "Legal Rationale & Evidence"}</th>
+                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">{isHindi ? "वर्गीकरण व दण्ड" : "Classification & Punishment"}</th>
+                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">{isHindi ? "बेयर एक्ट" : "Bare Act"}</th>
+                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">{isHindi ? "कार्यवाही" : "Actions"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -770,7 +804,7 @@ export function ComplaintLegalAssistant({
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-mono font-bold text-slate-900 text-sm">
-                                    धारा {sec.sectionNumber}
+                                    {isHindi ? "धारा" : "Section"} {sec.sectionNumber}
                                   </span>
                                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                                     {sec.actShortName}
@@ -811,7 +845,7 @@ export function ComplaintLegalAssistant({
 
                                 {sec.evidenceProof && sec.evidenceProof.length > 0 && (
                                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <span className="text-[10px] text-slate-400 font-medium">साक्ष्य:</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">{isHindi ? "साक्ष्य:" : "Evidence:"}</span>
                                     {sec.evidenceProof.map((proof, pIdx) => (
                                       <span
                                         key={pIdx}
@@ -837,7 +871,7 @@ export function ComplaintLegalAssistant({
                                         : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
-                                    {sec.cognizable === "Cognizable" ? "संज्ञेय" : "असंज्ञेय"}
+                                    {sec.cognizable === "Cognizable" ? (isHindi ? "संज्ञेय" : "Cognizable") : (isHindi ? "असंज्ञेय" : "Non-Cognizable")}
                                   </span>
                                   <span
                                     className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
@@ -846,15 +880,15 @@ export function ComplaintLegalAssistant({
                                         : "bg-emerald-50 text-emerald-800 border-emerald-200/60"
                                     }`}
                                   >
-                                    {sec.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
+                                    {sec.bailable === "Non-bailable" ? (isHindi ? "गैर-जमानती" : "Non-Bailable") : (isHindi ? "जमानती" : "Bailable")}
                                   </span>
                                 </div>
                                 <div className="text-[11px] text-slate-600">
-                                  <span className="text-slate-400">सज़ा: </span>
+                                  <span className="text-slate-400">{isHindi ? "सज़ा: " : "Punishment: "}</span>
                                   <span className="font-medium text-slate-800">{sec.punishment || "—"}</span>
                                 </div>
                                 <div className="text-[11px] text-slate-600">
-                                  <span className="text-slate-400">कोर्ट: </span>
+                                  <span className="text-slate-400">{isHindi ? "कोर्ट: " : "Court: "}</span>
                                   <span className="text-slate-700">{sec.triableBy || "—"}</span>
                                 </div>
                               </div>
@@ -865,11 +899,11 @@ export function ComplaintLegalAssistant({
                               <button
                                 type="button"
                                 onClick={() => handleOpenInActsPage(sec)}
-                                title={`मूल बेयर एक्ट पेज ${sec.pageNumber} पर देखें`}
+                                title={isHindi ? `मूल बेयर एक्ट पेज ${sec.pageNumber} पर देखें` : `View Bare Act on page ${sec.pageNumber}`}
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-900 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-colors cursor-pointer group shadow-2xs"
                               >
                                 <BookOpen className="w-3.5 h-3.5 text-amber-600 group-hover:text-amber-700" />
-                                <span className="font-mono font-semibold">पेज {sec.pageNumber}</span>
+                                <span className="font-mono font-semibold">{isHindi ? "पेज" : "Page"} {sec.pageNumber}</span>
                                 <ExternalLink className="w-3 h-3 text-amber-600/70 group-hover:text-amber-800" />
                               </button>
                             </td>
@@ -881,17 +915,17 @@ export function ComplaintLegalAssistant({
                                   type="button"
                                   onClick={() => handleOpenInActsPage(sec)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
-                                  title="Acts and Sections पेज में खोलें"
+                                  title={isHindi ? "Acts and Sections पेज में खोलें" : "Open in Acts & Sections Page"}
                                 >
                                   <Scale className="w-3 h-3 text-amber-300" />
-                                  <span>Act</span>
+                                  <span>{isHindi ? "अधिनियम" : "Act"}</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => setDetailModalSection(sec)}
                                   className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                                  title="विस्तृत विधिक विवरण देखें"
+                                  title={isHindi ? "विस्तृत विधिक विवरण देखें" : "View Detailed Legal Overview"}
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
@@ -900,7 +934,7 @@ export function ComplaintLegalAssistant({
                                   type="button"
                                   onClick={() => handleCopyCitation(sec)}
                                   className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                                  title={copiedSectionId === sec.id ? "कॉपी हुआ" : "Citation कॉपी करें"}
+                                  title={copiedSectionId === sec.id ? (isHindi ? "कॉपी हुआ" : "Copied") : (isHindi ? "Citation कॉपी करें" : "Copy Citation")}
                                 >
                                   {copiedSectionId === sec.id ? (
                                     <Check className="w-3.5 h-3.5 text-emerald-600" />

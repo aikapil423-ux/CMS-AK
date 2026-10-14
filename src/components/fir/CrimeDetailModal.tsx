@@ -1576,7 +1576,10 @@ export function CrimeDetailModal({
             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-800/60 flex justify-center">
               <div
                 id="cctns-iif2-official-sheet"
-                className="bg-white text-black p-8 sm:p-14 shadow-2xl rounded-sm max-w-4xl w-full font-serif border border-slate-400 space-y-6"
+                data-no-translate="true"
+                data-processed="true"
+                data-autofill="true"
+                className="bg-white text-black p-8 sm:p-14 shadow-2xl rounded-sm max-w-4xl w-full font-serif border border-slate-400 space-y-6 page-sheet no-translate user-data"
                 style={{ minHeight: "1100px", lineHeight: "1.4" }}
               >
                 {/* Page 1 */}

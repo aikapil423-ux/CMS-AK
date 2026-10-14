@@ -22,76 +22,220 @@ let observer: MutationObserver | null = null;
 let currentLanguage: "hi" | "en" = "en";
 let isTranslating = false;
 
-// Tags that should NEVER be translated
+// Tags that should NEVER be translated (inputs, forms, scripts, raw code, canvases)
 const EXCLUDED_TAGS = new Set([
   "SCRIPT",
   "STYLE",
   "INPUT",
   "TEXTAREA",
+  "SELECT",
   "PRE",
   "CODE",
   "NOSCRIPT",
   "SVG",
   "PATH",
+  "CANVAS",
+  "IFRAME",
 ]);
 
 /**
- * Check if a node or any of its parents has opted out of translation
+ * Check if a node or any of its parents has opted out of translation.
+ * Strictly preserves auto-filled data, processed case text, user content, official CCTNS sheets, and print documents.
  */
 function isExcluded(node: Node): boolean {
   let el: Element | null =
     node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
   while (el) {
     if (EXCLUDED_TAGS.has(el.tagName)) return true;
-    if (el.getAttribute("data-no-translate") === "true") return true;
-    if (el.getAttribute("contenteditable") === "true") return true;
+    if (
+      el.getAttribute("data-no-translate") === "true" ||
+      el.getAttribute("data-processed") === "true" ||
+      el.getAttribute("data-autofill") === "true" ||
+      el.getAttribute("data-user-content") === "true" ||
+      el.getAttribute("contenteditable") === "true"
+    ) {
+      return true;
+    }
+
+    const id = el.id || "";
+    if (
+      id.includes("proforma") ||
+      id.includes("official-sheet") ||
+      id.includes("cctns") ||
+      id.includes("print-canvas")
+    ) {
+      return true;
+    }
+
+    const cls = el.className;
+    if (
+      typeof cls === "string" &&
+      (cls.includes("user-content") ||
+        cls.includes("user-data") ||
+        cls.includes("auto-filled") ||
+        cls.includes("processed-data") ||
+        cls.includes("case-data") ||
+        cls.includes("verbatim") ||
+        cls.includes("prose") ||
+        cls.includes("page-sheet") ||
+        cls.includes("print-sheet") ||
+        cls.includes("no-translate"))
+    ) {
+      return true;
+    }
+
     el = el.parentElement;
   }
   return false;
 }
 
 /**
- * Translate a single string from English to Hindi using dictionary
+ * Strip or extract language-specific parts from bilingual strings:
+ * Pattern 1: Devanagari text followed by (English text) -> "तालिका स्वरूप (Table)" or "क्र.सं. (Sr. No.)"
+ * Pattern 2: English text followed by (Devanagari text) -> "Complaints (शिकायतें)" or "Table (तालिका)"
+ *
+ * NOTE: Only operates on short UI strings (<= 120 chars). Long narratives or processed data are preserved as-is.
  */
-export function translateStringToHindi(text: string): string {
-  if (!text || text.trim().length === 0) return text;
-
-  const trimmed = text.trim();
-  if (CMS_DICTIONARY[trimmed]) {
-    return text.replace(trimmed, CMS_DICTIONARY[trimmed]);
-  }
-
-  let result = text;
-  for (const [en, hi] of SORTED_ENTRIES) {
-    if (result.includes(en)) {
-      result = result.split(en).join(hi);
-    }
-  }
-  return result;
-}
 
 /**
- * Translate a single string from Hindi back to English
+ * Strip or extract language-specific parts from standalone bilingual UI strings:
+ * Only transforms strings where the ENTIRE string is a known standalone bilingual label.
+ * Never touches addresses, multi-word case narratives, or user data.
  */
-export function translateStringToEnglish(text: string): string {
-  if (!text || text.trim().length === 0) return text;
 
+export function cleanBilingualForHindi(text: string): string {
+  if (!text) return text;
   const trimmed = text.trim();
+
+  // Pattern 1: Devanagari (Latin) -> keep Devanagari (e.g. "तालिका स्वरूप (Table)" -> "तालिका स्वरूप")
+  const biMatch1 = trimmed.match(/^([\u0900-\u097F\s.,&/\-–—]+)\s*\(([a-zA-Z0-9\s.,&/\-–—]+)\)$/);
+  if (biMatch1) {
+    return text.replace(trimmed, biMatch1[1].trim());
+  }
+
+  // Pattern 2: Latin (Devanagari) -> keep Devanagari (e.g. "Complaints (शिकायतें)" -> "शिकायतें")
+  const biMatch2 = trimmed.match(/^([a-zA-Z0-9\s.,&/\-–—]+)\s*\(([\u0900-\u097F\s.,&/\-–—]+)\)$/);
+  if (biMatch2) {
+    return text.replace(trimmed, biMatch2[2].trim());
+  }
+
+  // Pattern 3: Trailing English abbreviation in parentheses on short UI label (e.g. "रोजनामचा आम (GD)" -> "रोजनामचा आम")
+  if (trimmed.length < 50) {
+    const abbrevMatch = trimmed.match(/^([\u0900-\u097F\s.,&/\-–—]+)\s*\([a-zA-Z0-9\s.,&/\-–—]+\)$/);
+    if (abbrevMatch) {
+      return text.replace(trimmed, abbrevMatch[1].trim());
+    }
+  }
+
+  return text;
+}
+
+export function cleanBilingualForEnglish(text: string): string {
+  if (!text) return text;
+  const trimmed = text.trim();
+
+  // Check reverse dictionary first
   if (REVERSE_DICTIONARY[trimmed]) {
     return text.replace(trimmed, REVERSE_DICTIONARY[trimmed]);
   }
 
-  let result = text;
-  for (const [hi, en] of SORTED_REVERSE_ENTRIES) {
-    if (result.includes(hi)) {
-      result = result.split(hi).join(en);
-    }
+  // Pattern 1: Devanagari (Latin) -> keep Latin (e.g. "तालिका स्वरूप (Table)" -> "Table View" or "Table")
+  const biMatch1 = trimmed.match(/^([\u0900-\u097F\s.,&/\-–—]+)\s*\(([a-zA-Z0-9\s.,&/\-–—]+)\)$/);
+  if (biMatch1) {
+    const latin = biMatch1[2].trim();
+    return text.replace(trimmed, REVERSE_DICTIONARY[trimmed] || latin);
   }
-  return result;
+
+  // Pattern 2: Latin (Devanagari) -> keep Latin (e.g. "Complaints (शिकायतें)" -> "Complaints")
+  const biMatch2 = trimmed.match(/^([a-zA-Z0-9\s.,&/\-–—]+)\s*\(([\u0900-\u097F\s.,&/\-–—]+)\)$/);
+  if (biMatch2) {
+    return text.replace(trimmed, biMatch2[1].trim());
+  }
+
+  return text;
 }
 
 /**
- * Translate an individual text node
+ * Translate a single string from English to Hindi using dictionary & exact phrase matching.
+ * User-entered case data, addresses, names, statements, and numbers are 100% preserved.
+ */
+export function translateStringToHindi(text: string): string {
+  if (!text || text.trim().length === 0) return text;
+  const trimmed = text.trim();
+
+  // 1. Direct exact match in CMS_DICTIONARY
+  if (CMS_DICTIONARY[trimmed]) {
+    return text.replace(trimmed, CMS_DICTIONARY[trimmed]);
+  }
+
+  // 2. Colon suffix match (e.g. "Full Name:", "Address:", "Date:", "Subject:")
+  if (trimmed.endsWith(":")) {
+    const base = trimmed.slice(0, -1).trim();
+    if (CMS_DICTIONARY[base]) {
+      return text.replace(trimmed, CMS_DICTIONARY[base] + ":");
+    }
+  }
+
+  // 3. Numbered prefix match (e.g. "1. Complainant Particulars", "2. Incident Facts & Statement")
+  const numMatch = trimmed.match(/^(\d+\.\s*)(.+)$/);
+  if (numMatch) {
+    const prefix = numMatch[1];
+    const base = numMatch[2].trim();
+    if (CMS_DICTIONARY[base]) {
+      return text.replace(trimmed, prefix + CMS_DICTIONARY[base]);
+    }
+  }
+
+  // 4. Standalone bilingual UI patterns
+  const cleaned = cleanBilingualForHindi(text);
+  if (cleaned !== text) return cleaned;
+
+  // Otherwise: NEVER touch or alter (preserves user data, addresses, names, statements)
+  return text;
+}
+
+/**
+ * Translate a single string from Hindi back to English using dictionary & exact phrase matching.
+ * User-entered case data, addresses, names, statements, and numbers are 100% preserved.
+ */
+export function translateStringToEnglish(text: string): string {
+  if (!text || text.trim().length === 0) return text;
+  const trimmed = text.trim();
+
+  // 1. Direct exact match in REVERSE_DICTIONARY
+  if (REVERSE_DICTIONARY[trimmed]) {
+    return text.replace(trimmed, REVERSE_DICTIONARY[trimmed]);
+  }
+
+  // 2. Colon suffix match (e.g. "पूरा नाम:", "पता:", "दिनांक:", "विषय:")
+  if (trimmed.endsWith(":")) {
+    const base = trimmed.slice(0, -1).trim();
+    if (REVERSE_DICTIONARY[base]) {
+      return text.replace(trimmed, REVERSE_DICTIONARY[base] + ":");
+    }
+  }
+
+  // 3. Numbered prefix match (e.g. "1. परिवादी / शिकायतकर्ता विवरण")
+  const numMatch = trimmed.match(/^(\d+\.\s*)(.+)$/);
+  if (numMatch) {
+    const prefix = numMatch[1];
+    const base = numMatch[2].trim();
+    if (REVERSE_DICTIONARY[base]) {
+      return text.replace(trimmed, prefix + REVERSE_DICTIONARY[base]);
+    }
+  }
+
+  // 4. Standalone bilingual UI patterns
+  const cleaned = cleanBilingualForEnglish(text);
+  if (cleaned !== text) return cleaned;
+
+  // Otherwise: NEVER touch or alter (preserves user data, addresses, names, statements)
+  return text;
+}
+
+/**
+ * Translate an individual text node.
+ * Automatically skips nodes belonging to processed data, auto-fill forms, and long case narratives.
  */
 function translateNode(node: Text, toLang: "hi" | "en") {
   if (isExcluded(node)) return;
@@ -99,28 +243,25 @@ function translateNode(node: Text, toLang: "hi" | "en") {
   const currentVal = node.nodeValue || "";
   if (!currentVal.trim()) return;
 
+  // Processed data, multi-line statements, and paragraphs must be seen exactly as they are
+  if (currentVal.length > 120 || currentVal.includes("\n")) return;
+
+  // Always cache the raw initial text node value
+  if (!originalTextMap.has(node)) {
+    originalTextMap.set(node, currentVal);
+  }
+  const orig = originalTextMap.get(node) || currentVal;
+
   if (toLang === "hi") {
-    if (!originalTextMap.has(node)) {
-      originalTextMap.set(node, currentVal);
-    }
-    const orig = originalTextMap.get(node) || currentVal;
     const translated = translateStringToHindi(orig);
     if (translated !== currentVal) {
       node.nodeValue = translated;
     }
   } else {
-    // Revert to English
-    if (originalTextMap.has(node)) {
-      const orig = originalTextMap.get(node);
-      if (orig !== undefined && orig !== currentVal) {
-        node.nodeValue = orig;
-      }
-    } else {
-      const englishVal = translateStringToEnglish(currentVal);
-      if (englishVal !== currentVal) {
-        node.nodeValue = englishVal;
-        originalTextMap.set(node, englishVal);
-      }
+    // English mode: clean any Hindi or bilingual text
+    const translated = translateStringToEnglish(orig);
+    if (translated !== currentVal) {
+      node.nodeValue = translated;
     }
   }
 }
@@ -137,26 +278,20 @@ function translateAttributes(el: Element, toLang: "hi" | "en") {
     if (!val || !val.trim()) continue;
 
     const origKey = `data-orig-${attr}`;
+    if (!el.hasAttribute(origKey)) {
+      el.setAttribute(origKey, val);
+    }
+    const orig = el.getAttribute(origKey) || val;
+
     if (toLang === "hi") {
-      if (!el.hasAttribute(origKey)) {
-        el.setAttribute(origKey, val);
-      }
-      const orig = el.getAttribute(origKey) || val;
       const translated = translateStringToHindi(orig);
       if (translated !== val) {
         el.setAttribute(attr, translated);
       }
     } else {
-      if (el.hasAttribute(origKey)) {
-        const orig = el.getAttribute(origKey);
-        if (orig !== null && orig !== val) {
-          el.setAttribute(attr, orig);
-        }
-      } else {
-        const englishVal = translateStringToEnglish(val);
-        if (englishVal !== val) {
-          el.setAttribute(attr, englishVal);
-        }
+      const translated = translateStringToEnglish(orig);
+      if (translated !== val) {
+        el.setAttribute(attr, translated);
       }
     }
   }

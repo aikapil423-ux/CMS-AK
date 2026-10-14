@@ -40,6 +40,7 @@ import { LegalAssistantService } from "@/services/legalAssistantService";
 import { firService } from "@/services/firService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface FIRLegalAssistantProps {
   fir: FIRItem;
@@ -48,6 +49,7 @@ interface FIRLegalAssistantProps {
 
 export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) {
   const router = useRouter();
+  const { isHindi } = useLanguage();
 
   const [report, setReport] = useState<LegalAnalysisReport | null>(
     fir.legalAnalysis || null
@@ -72,20 +74,36 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
   // Steps for simulated deep AI statutory scanning
   const ANALYSIS_STEPS = [
     {
-      title: "एफआईआर विवरण, तहरीर व केस डायरी का विश्लेषण (Analyzing FIR Incident & Case Diaries)",
-      desc: "Reading FIR contents, occurrence details, stolen properties, accused profiles, and Zimni entries...",
+      title: isHindi
+        ? "एफआईआर विवरण, तहरीर व केस डायरी का विश्लेषण"
+        : "Analyzing FIR Incident & Case Diaries",
+      desc: isHindi
+        ? "एफआईआर सामग्री, घटना विवरण, संपत्ति, आरोपी प्रोफाइल व ज़िमनी प्रविष्टियों का विश्लेषण..."
+        : "Reading FIR contents, occurrence details, stolen properties, accused profiles, and Zimni entries...",
     },
     {
-      title: "एफआईआर में दर्ज धाराओं का विधिक सत्यापन (Evaluating Charged BNS & Special Act Sections)",
-      desc: "Cross-checking charged sections (e.g. BNS 303(2), 305, Arms Act) against statutory ingredients...",
+      title: isHindi
+        ? "एफआईआर में दर्ज धाराओं का विधिक सत्यापन"
+        : "Evaluating Charged BNS & Special Act Sections",
+      desc: isHindi
+        ? "दर्ज धाराओं (BNS, Arms Act इत्यादि) का वैधानिक तत्वों के अनुसार सत्यापन..."
+        : "Cross-checking charged sections against statutory ingredients...",
     },
     {
-      title: "बेयर एक्ट पृष्ठ संख्या व विधिक औचित्य का निर्धारण (Indexing Bare Act Pages & Rationale)",
-      desc: "Mapping official Bare Act publication page numbers and articulating factual legal justifications...",
+      title: isHindi
+        ? "बेयर एक्ट पृष्ठ संख्या व विधिक औचित्य का निर्धारण"
+        : "Indexing Bare Act Pages & Rationale",
+      desc: isHindi
+        ? "आधिकारिक बेयर एक्ट पृष्ठ संख्या एवं तथ्यात्मक विधिक औचित्य का निर्धारण..."
+        : "Mapping official Bare Act publication page numbers and articulating factual legal justifications...",
     },
     {
-      title: "बीएनएसएस अनुसंधान अधिदेश व साक्ष्य नियम तैयार करना (Statutory BNSS & BSA Procedural Rules)",
-      desc: "Formulating mandatory Section 105 videography, Section 35(3) Notice, and Section 63(4) BSA compliance...",
+      title: isHindi
+        ? "बीएनएसएस अनुसंधान अधिदेश व साक्ष्य नियम तैयार करना"
+        : "Statutory BNSS & BSA Procedural Rules",
+      desc: isHindi
+        ? "धारा 105 वीडियोग्राफी, धारा 35(3) नोटिस व धारा 63(4) बीएसए अनुपालन रूपरेखा..."
+        : "Formulating mandatory Section 105 videography, Section 35(3) Notice, and Section 63(4) BSA compliance...",
     },
   ];
 
@@ -118,7 +136,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
   };
 
   const handleCopyCitation = (item: LegalSuggestionItem) => {
-    const citation = `${item.sectionNumber} ${item.actShortName} - "${item.sectionTitle}" (Bare Act Page ${item.pageNumber})\nकानूनी आधार: ${item.reason}\nसाक्ष्य: ${item.evidenceProof.join("; ")}`;
+    const citation = `${item.sectionNumber} ${item.actShortName} - "${item.sectionTitle}" (${isHindi ? "पेज" : "Page"} ${item.pageNumber})\n${isHindi ? "कानूनी आधार:" : "Legal Ground:"} ${item.reason}\n${isHindi ? "साक्ष्य:" : "Evidence:"} ${item.evidenceProof.join("; ")}`;
     navigator.clipboard.writeText(citation);
     setCopiedSectionId(item.id);
     setTimeout(() => setCopiedSectionId(null), 2500);
@@ -196,11 +214,18 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               </span>
             </div>
             <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">
-              कानूनी सहायता एवं धारा विश्लेषण (FIR Statutory Legal Help)
+              {isHindi ? "कानूनी सहायता एवं धारा विश्लेषण" : "FIR Statutory Legal Help"}
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed font-normal">
-              दर्ज धाराओं (<strong>{fir.actsAndSections}</strong>), तहरीर, ज़िमनी व संलग्न साक्ष्यों का विधिक विश्लेषण। 
-              यह प्रणाली प्रत्येक धारा का अधिनियम व विधिक औचित्य (Why) स्पष्ट कर मूल बेयर एक्ट के सटीक पृष्ठ पर ले जाती है।
+              {isHindi ? (
+                <>
+                  दर्ज धाराओं (<strong className="user-data" data-no-translate="true">{fir.actsAndSections}</strong>), तहरीर, ज़िमनी व संलग्न साक्ष्यों का विधिक विश्लेषण। यह प्रणाली प्रत्येक धारा का अधिनियम व विधिक औचित्य स्पष्ट कर मूल बेयर एक्ट के सटीक पृष्ठ पर ले जाती है।
+                </>
+              ) : (
+                <>
+                  Statutory legal analysis of charged sections (<strong className="user-data" data-no-translate="true">{fir.actsAndSections}</strong>), complaint narrative, case diary entries, and corroborating documents with exact Bare Act page indexing.
+                </>
+              )}
             </p>
           </div>
 
@@ -219,17 +244,17 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               {isAnalyzing ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>विधिक विश्लेषण जारी...</span>
+                  <span>{isHindi ? "विधिक विश्लेषण जारी..." : "Analyzing..."}</span>
                 </>
               ) : report ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5" />
-                  <span>पुनः कानूनी विश्लेषण करें</span>
+                  <span>{isHindi ? "पुनः कानूनी विश्लेषण करें" : "Re-run Legal Help"}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>कानूनी मदद लें (Legal Help)</span>
+                  <span>{isHindi ? "कानूनी मदद लें" : "Run Legal Help"}</span>
                 </>
               )}
             </button>
@@ -237,7 +262,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
             {report && (
               <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono justify-end">
                 <Clock className="w-3 h-3 text-slate-400" />
-                <span>अंतिम विश्लेषण: {new Date(report.analyzedAt).toLocaleTimeString("hi-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+                <span>{isHindi ? "अंतिम विश्लेषण:" : "Last analyzed:"} {new Date(report.analyzedAt).toLocaleTimeString(isHindi ? "hi-IN" : "en-US", { hour: "2-digit", minute: "2-digit" })}</span>
               </span>
             )}
           </div>
@@ -248,7 +273,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
           <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
               <span>{ANALYSIS_STEPS[analysisStep].title}</span>
-              <span className="font-mono text-slate-500">चरण {analysisStep + 1} / 4</span>
+              <span className="font-mono text-slate-500">{isHindi ? `चरण ${analysisStep + 1} / 4` : `Step ${analysisStep + 1} / 4`}</span>
             </div>
             <p className="text-[11px] text-slate-400">
               {ANALYSIS_STEPS[analysisStep].desc}
@@ -271,11 +296,18 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               <Scale className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-black text-slate-900">
-              एफआईआर कानूनी सहायता प्रणाली (Statutory Legal Analysis)
+              {isHindi ? "एफआईआर कानूनी सहायता प्रणाली" : "Statutory Legal Analysis"}
             </h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              ऊपर दिए गए <strong>&quot;कानूनी मदद लें (Run Legal Help)&quot;</strong> बटन पर क्लिक करें। सिस्टम इस एफआईआर के दर्ज आरोपों (<strong>{fir.actsAndSections}</strong>), 
-              तहरीर, ज़िमनी (केस डायरी) और साक्ष्यों को स्कैन करके संबंधित भारतीय न्याय संहिता (BNS), BNSS, साक्ष्य अधिनियम (BSA) की धाराओं का विधिक औचित्य और उनके बेयर एक्ट पेज नंबर प्रस्तुत करेगा।
+              {isHindi ? (
+                <>
+                  ऊपर दिए गए <strong>&quot;कानूनी मदद लें&quot;</strong> बटन पर क्लिक करें। सिस्टम इस एफआईआर के दर्ज आरोपों (<strong className="user-data" data-no-translate="true">{fir.actsAndSections}</strong>), तहरीर, ज़िमनी (केस डायरी) और साक्ष्यों को स्कैन करके संबंधित भारतीय न्याय संहिता (BNS), BNSS, साक्ष्य अधिनियम (BSA) की धाराओं का विधिक औचित्य और उनके बेयर एक्ट पेज नंबर प्रस्तुत करेगा।
+                </>
+              ) : (
+                <>
+                  Click the <strong>&quot;Run Legal Help&quot;</strong> button above. The system will scan charged sections (<strong className="user-data" data-no-translate="true">{fir.actsAndSections}</strong>), incident narrative, case diaries, and evidence documents to extract applicable legal sections and verbatim Bare Act pages.
+                </>
+              )}
             </p>
             <div className="pt-2">
               <Button
@@ -283,7 +315,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 className="bg-[#0b192c] hover:bg-[#1e3e62] text-white px-6 py-2.5 rounded-xl font-bold text-xs gap-2 shadow-md cursor-pointer"
               >
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Legal Help (कानूनी मदद प्राप्त करें)</span>
+                <span>{isHindi ? "कानूनी मदद प्राप्त करें" : "Run Legal Help"}</span>
               </Button>
             </div>
           </CardContent>
@@ -297,53 +329,53 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">मुख्य अपराध</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "मुख्य अपराध" : "Primary Offences"}</span>
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {primaryOffencesCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                Primary Offences
+                {isHindi ? "दर्ज मुख्य अपराध" : "Primary Charges"}
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">सहोगामी धाराएं</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "सहोगामी धाराएं" : "Corroborating"}</span>
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {corroboratingCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                Corroborating Offences
+                {isHindi ? "सह-आरोपित धाराएं" : "Associated Charges"}
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">प्रक्रिया व साक्ष्य</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "प्रक्रिया व साक्ष्य" : "Procedure & Evidence"}</span>
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {proceduralCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                BNSS / BSA Mandates
+                {isHindi ? "बीएनएसएस व बीएसए नियम" : "BNSS / BSA Mandates"}
               </div>
             </div>
 
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
               <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">डायरी व साक्ष्य स्कैन</span>
+                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "डायरी व साक्ष्य स्कैन" : "Scanned Records"}</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
               </div>
               <div className="text-xl font-bold text-slate-900">
                 {report.scannedDocumentsCount}
               </div>
               <div className="text-[11px] text-slate-500 truncate">
-                Diaries &amp; Evidence Records
+                {isHindi ? "केस डायरी व साक्ष्य" : "Diaries & Evidence"}
               </div>
             </div>
           </div>
@@ -355,11 +387,13 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 <div className="flex items-center gap-2">
                   <FileCheck2 className="w-4 h-4 text-blue-600" />
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    केस सामग्री व साक्ष्य विश्लेषण सारांश (Synthesized Case Evidence)
+                    {isHindi ? "केस सामग्री व साक्ष्य विश्लेषण सारांश" : "Synthesized Case Evidence"}
                   </span>
                 </div>
                 <span className="text-[11px] text-slate-500">
-                  {report.scannedFactsCount} शब्द विश्लेषित • {report.scannedDocumentsCount} केस रिकॉर्ड
+                  {isHindi
+                    ? `${report.scannedFactsCount} शब्द विश्लेषित • ${report.scannedDocumentsCount} केस रिकॉर्ड`
+                    : `${report.scannedFactsCount} words analyzed • ${report.scannedDocumentsCount} case records`}
                 </span>
               </div>
 
@@ -367,9 +401,9 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 {/* Allegations */}
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 space-y-1">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    प्रमुख विधिक आरोप (Key Allegations):
+                    {isHindi ? "प्रमुख विधिक आरोप:" : "Key Allegations:"}
                   </span>
-                  <ul className="space-y-1 text-slate-800 list-disc list-inside">
+                  <ul className="space-y-1 text-slate-800 list-disc list-inside user-data" data-no-translate="true">
                     {report.scannedEvidenceSummary.keyAllegationsIdentified.map((item, idx) => (
                       <li key={idx} className="font-medium truncate" title={item}>
                         {item}
@@ -381,20 +415,20 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 {/* Accused & Loss */}
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 space-y-1">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    आरोपी व संपत्ति नुकसान (Accused & Property):
+                    {isHindi ? "आरोपी व संपत्ति नुकसान:" : "Accused & Property Loss:"}
                   </span>
                   <div className="space-y-1 text-slate-800">
-                    <p className="font-semibold text-slate-900 truncate">
-                      आरोपी: {report.scannedEvidenceSummary.accusedIdentified.join(", ")}
+                    <p className="font-semibold text-slate-900 truncate user-data" data-no-translate="true">
+                      {isHindi ? "आरोपी: " : "Accused: "}{report.scannedEvidenceSummary.accusedIdentified.join(", ") || (isHindi ? "अज्ञात" : "Unknown")}
                     </p>
                     {report.scannedEvidenceSummary.injuriesOrLossNoted.length > 0 ? (
                       report.scannedEvidenceSummary.injuriesOrLossNoted.map((loss, idx) => (
-                        <p key={idx} className="text-red-700 font-medium truncate" title={loss}>
+                        <p key={idx} className="text-red-700 font-medium truncate user-data" data-no-translate="true" title={loss}>
                           • {loss}
                         </p>
                       ))
                     ) : (
-                      <p className="text-slate-500 italic">वारदात में संपत्ति/चोट विवरण उपलब्ध</p>
+                      <p className="text-slate-500 italic">{isHindi ? "वारदात में संपत्ति/चोट विवरण उपलब्ध" : "Incident injury/loss details recorded"}</p>
                     )}
                   </div>
                 </div>
@@ -402,9 +436,9 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 {/* Document docket */}
                 <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 space-y-1">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    स्कैन किए गए दस्तावेज व डायरी:
+                    {isHindi ? "स्कैन किए गए दस्तावेज व डायरी:" : "Scanned Documents & Diaries:"}
                   </span>
-                  <ul className="space-y-1 text-slate-800">
+                  <ul className="space-y-1 text-slate-800 user-data" data-no-translate="true">
                     {report.scannedEvidenceSummary.documentsFound.slice(0, 3).map((doc, idx) => (
                       <li key={idx} className="truncate text-slate-700" title={doc}>
                         📎 {doc}
@@ -412,7 +446,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                     ))}
                     {report.scannedEvidenceSummary.documentsFound.length > 3 && (
                       <li className="text-[11px] text-blue-700 font-bold">
-                        + {report.scannedEvidenceSummary.documentsFound.length - 3} अन्य दस्तावेज़ संलग्न
+                        + {report.scannedEvidenceSummary.documentsFound.length - 3} {isHindi ? "अन्य दस्तावेज़ संलग्न" : "more documents"}
                       </li>
                     )}
                   </ul>
@@ -430,7 +464,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="धारा नंबर, शीर्षक, या कानूनी कारण खोजें (उदा: 303, 305, theft, 105)..."
+                placeholder={isHindi ? "धारा नंबर, शीर्षक, या कानूनी कारण खोजें (उदा: 303, 305)..." : "Search section number, title, or legal ground..."}
                 className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               {searchQuery && (
@@ -448,13 +482,13 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs text-slate-600">
                 <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-semibold text-[11px]">अधिनियम (Act):</span>
+                <span className="font-semibold text-[11px]">{isHindi ? "अधिनियम:" : "Act:"}</span>
                 <select
                   value={selectedActFilter}
                   onChange={(e) => setSelectedActFilter(e.target.value)}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none font-medium text-slate-800"
                 >
-                  <option value="ALL">सभी अधिनियम (All Acts)</option>
+                  <option value="ALL">{isHindi ? "सभी अधिनियम" : "All Acts"}</option>
                   {availableActs.map((act) => (
                     <option key={act.actId} value={act.actId}>
                       {act.name}
@@ -466,17 +500,17 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               {/* Type Filter */}
               <div className="flex items-center gap-1.5 text-xs text-slate-600">
                 <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-semibold text-[11px]">प्रकार (Type):</span>
+                <span className="font-semibold text-[11px]">{isHindi ? "प्रकार:" : "Type:"}</span>
                 <select
                   value={selectedTypeFilter}
                   onChange={(e) => setSelectedTypeFilter(e.target.value)}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none font-medium text-slate-800"
                 >
-                  <option value="ALL">सभी धाराएं (All Provisions)</option>
-                  <option value="PRIMARY_OFFENCE">मुख्य दर्ज अपराध (Primary)</option>
-                  <option value="CORROBORATING_OFFENCE">सहोगामी अपराध (Corroborating)</option>
-                  <option value="PROCEDURAL_MANDATE">अनुसंधान प्रक्रिया (BNSS Mandates)</option>
-                  <option value="EVIDENTIARY_RULE">साक्ष्य नियम (BSA Rules)</option>
+                  <option value="ALL">{isHindi ? "सभी धाराएं" : "All Provisions"}</option>
+                  <option value="PRIMARY_OFFENCE">{isHindi ? "मुख्य दर्ज अपराध" : "Primary Offence"}</option>
+                  <option value="CORROBORATING_OFFENCE">{isHindi ? "सहोगामी अपराध" : "Corroborating Offence"}</option>
+                  <option value="PROCEDURAL_MANDATE">{isHindi ? "अनुसंधान प्रक्रिया (बीएनएसएस)" : "Investigation Procedure (BNSS)"}</option>
+                  <option value="EVIDENTIARY_RULE">{isHindi ? "साक्ष्य नियम (बीएसए)" : "Evidentiary Rule (BSA)"}</option>
                 </select>
               </div>
             </div>
@@ -488,12 +522,14 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               <div className="flex items-center gap-2">
                 <Gavel className="w-4 h-4 text-red-600" />
                 <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                  लागू धाराओं का विधिक विवरण एवं औचित्य ({filteredSections.length} धाराएं)
+                  {isHindi
+                    ? `लागू धाराओं का विधिक विवरण एवं औचित्य (${filteredSections.length} धाराएं)`
+                    : `Applicable Legal Sections & Rationale (${filteredSections.length} Sections)`}
                 </h3>
               </div>
               <div className="flex items-center gap-2.5">
                 <span className="text-xs text-slate-500 hidden md:inline">
-                  BNS, BNSS व BSA बेयर एक्ट के अनुसार सत्यापित
+                  {isHindi ? "BNS, BNSS व BSA बेयर एक्ट के अनुसार सत्यापित" : "Verified as per BNS, BNSS & BSA Bare Acts"}
                 </span>
                 <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                   <button
@@ -506,7 +542,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                     }`}
                   >
                     <Table className="w-3.5 h-3.5 text-blue-400" />
-                    <span>तालिका स्वरूप (Table)</span>
+                    <span>{isHindi ? "तालिका स्वरूप" : "Table View"}</span>
                   </button>
                   <button
                     type="button"
@@ -518,7 +554,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                     }`}
                   >
                     <LayoutList className="w-3.5 h-3.5 text-slate-400" />
-                    <span>कार्ड्स (Cards)</span>
+                    <span>{isHindi ? "कार्ड्स" : "Cards"}</span>
                   </button>
                 </div>
               </div>
@@ -526,7 +562,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
 
             {filteredSections.length === 0 ? (
               <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-xs">
-                दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।
+                {isHindi ? "दिए गए फिल्टर अथवा खोज के अनुरूप कोई धारा नहीं मिली।" : "No sections found matching the selected filter or query."}
               </div>
             ) : viewMode === "table" ? (
               <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
@@ -535,11 +571,11 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                     <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-600">
                       <tr>
                         <th className="py-2.5 px-3 text-center w-10 text-[11px] font-semibold text-slate-500">#</th>
-                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">धारा व अधिनियम</th>
-                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">कानूनी औचित्य एवं साक्ष्य</th>
-                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">वर्गीकरण व दण्ड</th>
-                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">बेयर एक्ट</th>
-                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">कार्यवाही</th>
+                        <th className="py-2.5 px-3.5 w-56 text-[11px] font-semibold text-slate-600">{isHindi ? "धारा व अधिनियम" : "Section & Act"}</th>
+                        <th className="py-2.5 px-3.5 min-w-[320px] text-[11px] font-semibold text-slate-600">{isHindi ? "कानूनी औचित्य एवं साक्ष्य" : "Legal Rationale & Evidence"}</th>
+                        <th className="py-2.5 px-3.5 w-44 text-[11px] font-semibold text-slate-600">{isHindi ? "वर्गीकरण व दण्ड" : "Classification & Punishment"}</th>
+                        <th className="py-2.5 px-3 text-center w-28 text-[11px] font-semibold text-slate-600">{isHindi ? "बेयर एक्ट" : "Bare Act"}</th>
+                        <th className="py-2.5 px-3 text-right w-36 text-[11px] font-semibold text-slate-600">{isHindi ? "कार्यवाही" : "Actions"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -563,7 +599,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-mono font-bold text-slate-900 text-sm">
-                                    धारा {item.sectionNumber}
+                                    {isHindi ? "धारा" : "Section"} {item.sectionNumber}
                                   </span>
                                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                                     {item.actShortName}
@@ -598,17 +634,18 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                             {/* Legal Rationale & Evidence */}
                             <td className="py-3 px-3.5 align-top">
                               <div className="space-y-2">
-                                <p className="text-xs text-slate-700 leading-relaxed">
+                                <p className="text-xs text-slate-700 leading-relaxed user-data" data-no-translate="true">
                                   {item.reason}
                                 </p>
 
                                 {item.evidenceProof && item.evidenceProof.length > 0 && (
                                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <span className="text-[10px] text-slate-400 font-medium">साक्ष्य:</span>
+                                    <span className="text-[10px] text-slate-400 font-medium">{isHindi ? "साक्ष्य:" : "Evidence:"}</span>
                                     {item.evidenceProof.map((proof, pIdx) => (
                                       <span
                                         key={pIdx}
-                                        className="inline-flex items-center text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200/70"
+                                        className="inline-flex items-center text-[10px] bg-slate-50 text-slate-600 px-2 py-0.5 rounded border border-slate-200/70 user-data"
+                                        data-no-translate="true"
                                         title={proof}
                                       >
                                         {proof}
@@ -630,7 +667,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                         : "bg-slate-50 text-slate-600 border-slate-200/60"
                                     }`}
                                   >
-                                    {item.cognizable === "Cognizable" ? "संज्ञेय" : "असंज्ञेय"}
+                                    {item.cognizable === "Cognizable" ? (isHindi ? "संज्ञेय" : "Cognizable") : (isHindi ? "असंज्ञेय" : "Non-Cognizable")}
                                   </span>
                                   <span
                                     className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
@@ -639,15 +676,15 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                         : "bg-emerald-50 text-emerald-800 border-emerald-200/60"
                                     }`}
                                   >
-                                    {item.bailable === "Non-bailable" ? "गैर-जमानती" : "जमानती"}
+                                    {item.bailable === "Non-bailable" ? (isHindi ? "गैर-जमानती" : "Non-Bailable") : (isHindi ? "जमानती" : "Bailable")}
                                   </span>
                                 </div>
                                 <div className="text-[11px] text-slate-600">
-                                  <span className="text-slate-400">सज़ा: </span>
+                                  <span className="text-slate-400">{isHindi ? "सज़ा: " : "Punishment: "}</span>
                                   <span className="font-medium text-slate-800">{item.punishment || "—"}</span>
                                 </div>
                                 <div className="text-[11px] text-slate-600">
-                                  <span className="text-slate-400">कोर्ट: </span>
+                                  <span className="text-slate-400">{isHindi ? "कोर्ट: " : "Court: "}</span>
                                   <span className="text-slate-700">{item.triableBy || "—"}</span>
                                 </div>
                               </div>
@@ -658,11 +695,11 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                               <button
                                 type="button"
                                 onClick={() => handleOpenInActsPage(item)}
-                                title={`मूल बेयर एक्ट पेज ${item.pageNumber} पर देखें`}
+                                title={isHindi ? `मूल बेयर एक्ट पेज ${item.pageNumber} पर देखें` : `View Bare Act on page ${item.pageNumber}`}
                                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-900 bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-colors cursor-pointer group shadow-2xs"
                               >
                                 <BookOpen className="w-3.5 h-3.5 text-amber-600 group-hover:text-amber-700" />
-                                <span className="font-mono font-semibold">पेज {item.pageNumber}</span>
+                                <span className="font-mono font-semibold">{isHindi ? "पेज" : "Page"} {item.pageNumber}</span>
                                 <ExternalLink className="w-3 h-3 text-amber-600/70 group-hover:text-amber-800" />
                               </button>
                             </td>
@@ -674,17 +711,17 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                   type="button"
                                   onClick={() => handleOpenInActsPage(item)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
-                                  title="Acts and Sections पेज में खोलें"
+                                  title={isHindi ? "Acts and Sections पेज में खोलें" : "Open in Acts & Sections Page"}
                                 >
                                   <Scale className="w-3 h-3 text-amber-300" />
-                                  <span>Act</span>
+                                  <span>{isHindi ? "अधिनियम" : "Act"}</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => setDetailModalSection(item)}
                                   className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                                  title="विस्तृत विधिक विवरण देखें"
+                                  title={isHindi ? "विस्तृत विधिक विवरण देखें" : "View Detailed Legal Info"}
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </button>
@@ -693,7 +730,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                   type="button"
                                   onClick={() => handleCopyCitation(item)}
                                   className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                                  title={copiedSectionId === item.id ? "कॉपी हुआ" : "Citation कॉपी करें"}
+                                  title={copiedSectionId === item.id ? (isHindi ? "कॉपी हुआ" : "Copied") : (isHindi ? "Citation कॉपी करें" : "Copy Citation")}
                                 >
                                   {copiedSectionId === item.id ? (
                                     <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -803,7 +840,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                             {/* Punishment Badge */}
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold bg-rose-50 text-rose-800 border border-rose-200">
                               <ShieldAlert className="w-3 h-3 text-rose-600" />
-                              <span>सजा: {item.punishment}</span>
+                              <span>{isHindi ? "सजा: " : "Punishment: "}<span className="user-data" data-no-translate="true">{item.punishment}</span></span>
                             </span>
 
                             {/* Cognizable */}
@@ -814,7 +851,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                   : "bg-slate-50 text-slate-700 border-slate-200"
                               }`}
                             >
-                              <span>{item.cognizable === "Cognizable" ? "संज्ञेय (Cognizable)" : "असंज्ञेय (Non-cognizable)"}</span>
+                              <span>{item.cognizable === "Cognizable" ? (isHindi ? "संज्ञेय" : "Cognizable") : (isHindi ? "असंज्ञेय" : "Non-Cognizable")}</span>
                             </span>
 
                             {/* Bailable */}
@@ -825,13 +862,13 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                   : "bg-emerald-50 text-emerald-800 border-emerald-200"
                               }`}
                             >
-                              <span>{item.bailable === "Non-bailable" ? "गैर-जमानती (Non-bailable)" : "जमानती (Bailable)"}</span>
+                              <span>{item.bailable === "Non-bailable" ? (isHindi ? "गैर-जमानती" : "Non-Bailable") : (isHindi ? "जमानती" : "Bailable")}</span>
                             </span>
 
                             {/* Triable By */}
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                               <Gavel className="w-3 h-3 text-slate-600" />
-                              <span>विचारणीय: {item.triableBy}</span>
+                              <span>{isHindi ? "विचारणीय: " : "Court: "}<span className="user-data" data-no-translate="true">{item.triableBy}</span></span>
                             </span>
                           </div>
                         </div>
@@ -840,9 +877,9 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                         <div className="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/80 space-y-1.5">
                           <div className="flex items-center gap-1.5 text-xs font-black text-amber-950">
                             <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                            <span>यह धारा क्यों लागू हो रही है? (Why this section applies - Factual & Legal Ground):</span>
+                            <span>{isHindi ? "यह धारा क्यों लागू हो रही है? (विधिक व तथ्यात्मक आधार):" : "Why this section applies (Factual & Legal Ground):"}</span>
                           </div>
-                          <p className="text-xs text-slate-800 leading-relaxed font-normal">
+                          <p className="text-xs text-slate-800 leading-relaxed font-normal user-data" data-no-translate="true">
                             {item.reason}
                           </p>
                         </div>
@@ -852,13 +889,14 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                           <div className="space-y-1.5">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
                               <Paperclip className="w-3 h-3 text-slate-400" />
-                              <span>एफआईआर में साक्ष्य एवं संबंधित तथ्य (Corroborating Case Records):</span>
+                              <span>{isHindi ? "एफआईआर में साक्ष्य एवं संबंधित तथ्य:" : "FIR Evidence & Corroborating Records:"}</span>
                             </span>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
                               {item.evidenceProof.map((proof, pIdx) => (
                                 <div
                                   key={pIdx}
-                                  className="bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60 text-slate-700 flex items-center gap-1.5 truncate"
+                                  className="bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/60 text-slate-700 flex items-center gap-1.5 truncate user-data"
+                                  data-no-translate="true"
                                   title={proof}
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -877,10 +915,10 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                               type="button"
                               onClick={() => handleOpenInActsPage(item)}
                               className="bg-[#0b192c] hover:bg-[#1e3e62] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                              title={`अधिनियम पृष्ठ संख्या ${item.pageNumber} पर सीधे खोलें`}
+                              title={isHindi ? `अधिनियम पृष्ठ संख्या ${item.pageNumber} पर सीधे खोलें` : `Open Bare Act page ${item.pageNumber}`}
                             >
                               <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                              <span>बेयर एक्ट में खोलें (Open Bare Act Pg {item.pageNumber})</span>
+                              <span>{isHindi ? `बेयर एक्ट में खोलें (पेज ${item.pageNumber})` : `Open Bare Act (Pg ${item.pageNumber})`}</span>
                               <ExternalLink className="w-3 h-3 text-slate-400 ml-0.5" />
                             </Button>
 
@@ -892,7 +930,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                               className="border-slate-300 text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5 text-slate-500" />
-                              <span>विस्तृत विवरण (Breakdown)</span>
+                              <span>{isHindi ? "विस्तृत विवरण" : "Breakdown"}</span>
                             </Button>
                           </div>
 
@@ -905,17 +943,17 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-300"
                                 : "bg-white text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50"
                             }`}
-                            title="विधिक उद्धरण (Legal Citation) कॉपी करें"
+                            title={isHindi ? "विधिक उद्धरण कॉपी करें" : "Copy Citation"}
                           >
                             {copiedSectionId === item.id ? (
                               <>
                                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>कॉपी हुआ!</span>
+                                <span>{isHindi ? "कॉपी हुआ!" : "Copied!"}</span>
                               </>
                             ) : (
                               <>
                                 <Copy className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Citation कॉपी करें</span>
+                                <span>{isHindi ? "Citation कॉपी करें" : "Copy Citation"}</span>
                               </>
                             )}
                           </button>
@@ -933,14 +971,16 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
             <div className="flex items-center justify-between">
               <h3 className="text-xs sm:text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-slate-600" />
-                <span>अनुसंधान अधिकारी (IO) हेतु वैधानिक निर्देश (Investigation Checklist under BNSS)</span>
+                <span>{isHindi ? "अनुसंधान अधिकारी (IO) हेतु वैधानिक निर्देश" : "Statutory Directives for Investigating Officer (IO)"}</span>
               </h3>
               <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200 font-medium">
                 BNSS / BSA
               </span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              नए आपराधिक कानून BNSS, 2023 एवं भारतीय साक्ष्य अधिनियम, 2023 के तहत तफ्तीश में अनुपालन हेतु आवश्यक बिंदु:
+              {isHindi
+                ? "नए आपराधिक कानून BNSS, 2023 एवं भारतीय साक्ष्य अधिनियम, 2023 के तहत तफ्तीश में अनुपालन हेतु आवश्यक बिंदु:"
+                : "Mandatory procedural compliance points for investigation under BNSS, 2023 and BSA, 2023:"}
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-0.5 text-xs">
@@ -952,7 +992,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                   <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-semibold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
                     {sIdx + 1}
                   </span>
-                  <span className="text-slate-700 leading-relaxed font-normal">
+                  <span className="text-slate-700 leading-relaxed font-normal user-data" data-no-translate="true">
                     {step}
                   </span>
                 </div>
@@ -993,29 +1033,29 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               {/* Classification Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-700">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">अधिनियम</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">{isHindi ? "अधिनियम" : "Act"}</span>
                   <span className="font-bold text-slate-900">{detailModalSection.actShortName}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">पृष्ठ संख्या</span>
-                  <span className="font-bold text-blue-700 font-mono">Page {detailModalSection.pageNumber}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">{isHindi ? "पृष्ठ संख्या" : "Page No."}</span>
+                  <span className="font-bold text-blue-700 font-mono">{isHindi ? "पेज" : "Page"} {detailModalSection.pageNumber}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">संज्ञेयता</span>
-                  <span className="font-bold text-slate-900">{detailModalSection.cognizable}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">{isHindi ? "संज्ञेयता" : "Cognizability"}</span>
+                  <span className="font-bold text-slate-900">{detailModalSection.cognizable === "Cognizable" ? (isHindi ? "संज्ञेय" : "Cognizable") : (isHindi ? "असंज्ञेय" : "Non-Cognizable")}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">जमानत</span>
-                  <span className="font-bold text-slate-900">{detailModalSection.bailable}</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">{isHindi ? "जमानत" : "Bailability"}</span>
+                  <span className="font-bold text-slate-900">{detailModalSection.bailable === "Non-bailable" ? (isHindi ? "गैर-जमानती" : "Non-Bailable") : (isHindi ? "जमानती" : "Bailable")}</span>
                 </div>
               </div>
 
               {/* Verbatim Bare Act Text */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  मूल बेयर एक्ट वैधानिक पाठ (Verbatim Statutory Text):
+                  {isHindi ? "मूल बेयर एक्ट वैधानिक पाठ (Verbatim Statutory Text):" : "Verbatim Statutory Text:"}
                 </span>
-                <div className="p-3.5 bg-slate-900 text-slate-100 rounded-xl font-mono text-[11px] leading-relaxed border border-slate-800 whitespace-pre-wrap select-text">
+                <div className="p-3.5 bg-slate-900 text-slate-100 rounded-xl font-mono text-[11px] leading-relaxed border border-slate-800 whitespace-pre-wrap select-text user-data" data-no-translate="true">
                   {detailModalSection.verbatimSnippet || detailModalSection.description}
                 </div>
               </div>
@@ -1023,9 +1063,9 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               {/* Legal Rationale */}
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  इस एफआईआर में लागू होने का विधिक आधार:
+                  {isHindi ? "इस एफआईआर में लागू होने का विधिक आधार:" : "Factual & Legal Ground in this FIR:"}
                 </span>
-                <p className="text-slate-800 bg-amber-50/70 p-3 rounded-xl border border-amber-200 leading-relaxed font-medium">
+                <p className="text-slate-800 bg-amber-50/70 p-3 rounded-xl border border-amber-200 leading-relaxed font-medium user-data" data-no-translate="true">
                   {detailModalSection.reason}
                 </p>
               </div>
@@ -1033,10 +1073,10 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               {/* Punishment & Court */}
               <div className="space-y-1">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  सजा एवं विचारणीय न्यायालय (Punishment & Jurisdiction):
+                  {isHindi ? "सजा एवं विचारणीय न्यायालय:" : "Punishment & Trial Jurisdiction:"}
                 </span>
                 <p className="text-slate-800 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                  <strong>सजा:</strong> {detailModalSection.punishment} • <strong>अदालत:</strong> {detailModalSection.triableBy}
+                  <strong>{isHindi ? "सजा: " : "Punishment: "}</strong> <span className="user-data" data-no-translate="true">{detailModalSection.punishment}</span> • <strong>{isHindi ? "अदालत: " : "Court: "}</strong> <span className="user-data" data-no-translate="true">{detailModalSection.triableBy}</span>
                 </p>
               </div>
             </div>
@@ -1049,7 +1089,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 onClick={() => setDetailModalSection(null)}
                 className="text-xs"
               >
-                बंद करें
+                {isHindi ? "बंद करें" : "Close"}
               </Button>
 
               <Button
@@ -1062,7 +1102,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
                 className="bg-[#0b192c] hover:bg-[#1e3e62] text-white text-xs font-bold gap-1.5"
               >
                 <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                <span>अधिनियम पृष्ठ संख्या {detailModalSection.pageNumber} पर देखें</span>
+                <span>{isHindi ? `अधिनियम पृष्ठ संख्या ${detailModalSection.pageNumber} पर देखें` : `View Bare Act on page ${detailModalSection.pageNumber}`}</span>
                 <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
               </Button>
             </div>

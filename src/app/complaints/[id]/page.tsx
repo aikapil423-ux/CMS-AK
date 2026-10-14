@@ -2925,26 +2925,26 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
                       <span className="text-slate-500 block">Full Name:</span>
-                      <strong className="text-slate-900 text-sm">{complaint.complainantName}</strong>
+                      <strong data-no-translate="true" className="text-slate-900 text-sm user-data">{complaint.complainantName}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">Father / Spouse Name:</span>
-                      <strong className="text-slate-800">{complaint.complainantFatherSpouse || "Not specified"}</strong>
+                      <strong data-no-translate="true" className="text-slate-800 user-data">{complaint.complainantFatherSpouse || "Not specified"}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">Contact Phone:</span>
-                      <strong className="text-slate-900 font-mono">{complaint.complainantMobile}</strong>
+                      <strong data-no-translate="true" className="text-slate-900 font-mono user-data">{complaint.complainantMobile}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">Gender & Age:</span>
-                      <strong className="text-slate-800">
+                      <strong data-no-translate="true" className="text-slate-800 user-data">
                         {complaint.complainantGender} • {complaint.complainantAge || "Adult"} Years
                       </strong>
                     </div>
                     <div className="sm:col-span-2">
                       <span className="text-slate-500 block">Address:</span>
-                      <strong className="text-slate-800">
-                        {complaint.complainantAddress}, {complaint.complainantCity}, {complaint.complainantDistrict}
+                      <strong data-no-translate="true" className="text-slate-800 user-data">
+                        {[complaint.complainantAddress, complaint.complainantCity, complaint.complainantDistrict].filter(Boolean).join(", ")}
                       </strong>
                     </div>
                   </div>
@@ -2964,25 +2964,25 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                         <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 block mb-0.5">
                           Subject:
                         </span>
-                        <strong className="text-slate-900 font-semibold text-sm">
+                        <strong data-no-translate="true" className="text-slate-900 font-semibold text-sm user-data">
                           {complaint.complaintSubject || (complaint as any).subject}
                         </strong>
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-4 text-slate-600">
                       <span>
-                        <strong>Date:</strong> {complaint.incidentDate || "Not recorded"}
+                        <strong>Date:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentDate || "Not recorded"}</span>
                       </span>
                       <span>
-                        <strong>Occurrence Place:</strong> {complaint.incidentPlace}
+                        <strong>Occurrence Place:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentPlace}</span>
                       </span>
                       {complaint.incidentLandmark && (
                         <span>
-                          <strong>Landmark:</strong> {complaint.incidentLandmark}
+                          <strong>Landmark:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentLandmark}</span>
                         </span>
                       )}
                     </div>
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 leading-relaxed font-sans text-xs sm:text-sm">
+                    <div data-no-translate="true" className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 leading-relaxed font-sans text-xs sm:text-sm user-data">
                       {complaint.incidentDetails}
                     </div>
                   </div>

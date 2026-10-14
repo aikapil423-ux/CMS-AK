@@ -1413,22 +1413,22 @@ export default function FIRProfilePage() {
               <CardContent className="p-4 space-y-2 text-xs">
                 <div>
                   <span className="text-slate-500 font-semibold">Name:</span>{" "}
-                  <strong className="text-slate-900">{fir.complainantName}</strong>
+                  <strong data-no-translate="true" className="text-slate-900 user-data">{fir.complainantName}</strong>
                   {fir.complainantFatherSpouse && (
-                    <span className="text-slate-600"> (S/o, W/o {fir.complainantFatherSpouse})</span>
+                    <span data-no-translate="true" className="text-slate-600 user-data"> (S/o, W/o {fir.complainantFatherSpouse})</span>
                   )}
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Gender / Age:</span>{" "}
-                  <span>{fir.complainantGender} / {fir.complainantAge || "Adult"} yrs</span>
+                  <span data-no-translate="true" className="user-data">{fir.complainantGender} / {fir.complainantAge || "Adult"} yrs</span>
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Contact:</span>{" "}
-                  <span className="font-mono">{fir.complainantMobile || "—"}</span>
+                  <span data-no-translate="true" className="font-mono user-data">{fir.complainantMobile || "—"}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Address:</span>{" "}
-                  <span>{fir.complainantAddress}, {fir.complainantCity}, {fir.complainantDistrict}</span>
+                  <span data-no-translate="true" className="user-data">{[fir.complainantAddress, fir.complainantCity, fir.complainantDistrict].filter(Boolean).join(", ")}</span>
                 </div>
               </CardContent>
             </Card>
@@ -1439,7 +1439,7 @@ export default function FIRProfilePage() {
                 <div className="flex items-center gap-2">
                   <UserCheck className="w-4 h-4 text-blue-600" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Investigating Officer (IO)
+                    Investigating Officer
                   </h3>
                 </div>
                 {(isSho || isSuperior) && (

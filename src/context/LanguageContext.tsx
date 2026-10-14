@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import { setUniversalLanguage } from "@/utils/universalDomTranslator";
-import { CMS_DICTIONARY } from "@/utils/cmsTranslationDictionary";
+import { setUniversalLanguage, cleanBilingualForHindi, cleanBilingualForEnglish } from "@/utils/universalDomTranslator";
+import { CMS_DICTIONARY, REVERSE_DICTIONARY } from "@/utils/cmsTranslationDictionary";
 
 export type AppLanguage = "hi" | "en";
 
@@ -152,12 +152,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (textOrHi: string, enFallback?: string) => {
       if (enFallback !== undefined) {
-        return language === "hi" ? textOrHi : enFallback;
+        return language === "hi"
+          ? cleanBilingualForHindi(textOrHi)
+          : cleanBilingualForEnglish(enFallback);
       }
       if (language === "hi") {
-        return CMS_DICTIONARY[textOrHi] || textOrHi;
+        const val = CMS_DICTIONARY[textOrHi] || textOrHi;
+        return cleanBilingualForHindi(val);
       }
-      return textOrHi;
+      // English mode
+      if (REVERSE_DICTIONARY[textOrHi]) {
+        return cleanBilingualForEnglish(REVERSE_DICTIONARY[textOrHi]);
+      }
+      return cleanBilingualForEnglish(textOrHi);
     },
     [language]
   );
@@ -187,8 +194,10 @@ export function useLanguage() {
       toggleLanguage: () => {},
       isHindi: false,
       isEnglish: true,
-      t: (textOrHi: string, enFallback?: string) =>
-        enFallback !== undefined ? enFallback : (CMS_DICTIONARY[textOrHi] || textOrHi),
+      t: (textOrHi: string, enFallback?: string) => {
+        if (enFallback !== undefined) return cleanBilingualForEnglish(enFallback);
+        return cleanBilingualForEnglish(REVERSE_DICTIONARY[textOrHi] || textOrHi);
+      },
     };
   }
   return context;
