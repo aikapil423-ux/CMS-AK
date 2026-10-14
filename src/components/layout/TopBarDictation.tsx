@@ -472,7 +472,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-xs font-bold tracking-tight truncate">
-                    पुलिस डिक्टेशन (Voice Typing)
+                    Police Voice Dictation
                   </h4>
                   <span
                     className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider ${
@@ -558,7 +558,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1 text-[11px] text-slate-500">
                 <Languages className="w-3.5 h-3.5 text-slate-400" />
-                <span>भाषा (Language):</span>
+                <span>Language:</span>
                 <button
                   type="button"
                   onClick={() => handleSelectLang("hi-IN")}
@@ -652,12 +652,12 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
               {isListening ? (
                 <>
                   <MicOff className="w-3.5 h-3.5" />
-                  <span>रोकें (Stop)</span>
+                  <span>Stop</span>
                 </>
               ) : (
                 <>
                   <Mic className="w-3.5 h-3.5" />
-                  <span>बोलें (Start)</span>
+                  <span>Start</span>
                 </>
               )}
             </button>

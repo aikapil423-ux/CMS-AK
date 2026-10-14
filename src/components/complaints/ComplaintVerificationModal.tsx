@@ -133,7 +133,7 @@ export function ComplaintVerificationModal({
             </div>
             <div>
               <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
-                <span>Complaint Preview (पूर्वावलोकन)</span>
+                <span>Complaint Preview</span>
                 <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.2 rounded uppercase">
                   Draft Preview
                 </span>
@@ -181,12 +181,12 @@ export function ComplaintVerificationModal({
         </div>
 
         {/* Scrollable Preview Sheet */}
-        <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 p-4 sm:p-6 bg-slate-200/70 flex justify-center">
+        <div ref={scrollRef} className="overflow-y-auto flex-1 min-h-0 p-4 sm:p-6 bg-slate-200/70">
           <div
             id="printable-complaint-preview"
             ref={printRef}
-            className="w-full max-w-[800px] bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative"
-            style={{ minHeight: "800px", lineHeight: "1.6" }}
+            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative my-3 min-h-[800px] h-auto"
+            style={{ lineHeight: "1.6" }}
           >
             {/* Seal & Department Title */}
             <div className="text-center pb-3 border-b-2 border-slate-900">
@@ -320,7 +320,7 @@ export function ComplaintVerificationModal({
 
                 <div className="pt-2 border-t border-slate-300">
                   <strong className="block text-slate-800 mb-0.5 uppercase tracking-wide text-[11px]">
-                    Subject / विषय:
+                    Subject:
                   </strong>
                   <p className="text-slate-950 font-bold text-xs sm:text-sm">
                     {previewData.complaintSubject}
@@ -329,7 +329,7 @@ export function ComplaintVerificationModal({
 
                 <div className="pt-2 border-t border-slate-300">
                   <strong className="block text-slate-800 mb-0.5 uppercase tracking-wide text-[11px]">
-                    Brief Synopsis / विवरण:
+                    Brief Synopsis:
                   </strong>
                   <p className="text-slate-900 text-xs leading-relaxed whitespace-pre-wrap">
                     {previewData.complaintDescription}
@@ -446,7 +446,7 @@ export function ComplaintVerificationModal({
                 className="text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                <span>Edit Form (बदलाव करें)</span>
+                <span>Edit Form</span>
               </Button>
 
               <Button
@@ -458,7 +458,7 @@ export function ComplaintVerificationModal({
                 className="text-xs sm:text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 shadow-md transition-all active:scale-98 cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Submit &amp; Register Complaint (फाइनल दर्ज करें)</span>
+                <span>Submit &amp; Register Complaint</span>
               </Button>
             </div>
           </div>

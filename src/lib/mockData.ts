@@ -89,6 +89,20 @@ export const MOCK_POLICE_STATIONS = [
 
 export const MOCK_ENQUIRY_OFFICERS = [
   {
+    id: "eo_sho",
+    name: "SHO - Inspector Rajesh Kumar",
+    pno: "HR-04291882",
+    beltNumber: "SHO/KKR",
+    phone: "9812033441",
+    rank: "SHO",
+    activeCases: 1,
+    rosterDuty: "Station House Officer & Supervisory Enquiry",
+    shift: "Round the Clock (24x7)",
+    availability: "Available" as const,
+    specialization: "Special Enquiries, Public Grievances & Station Administration",
+    beatZone: "Station Jurisdiction - PS City Thanesar",
+  },
+  {
     id: "eo_1",
     name: "SI Vikram Singh",
     pno: "HR-07182930",

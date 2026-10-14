@@ -187,7 +187,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
               )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-              <span>जांच सारांश व प्रगति आख्या (Investigation Summary)</span>
+              <span>Investigation Summary</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
               शिकायत के <strong>Overview</strong>, संलग्न <strong>Documents</strong> तथा केस डायरी <strong>History</strong> का संपूर्ण विश्लेषण — अब तक हुए कार्य और शेष आवश्यक कदमों का पारदर्शी विवरण।
@@ -222,7 +222,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                   className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs gap-2 shadow-md cursor-pointer border border-blue-400/30"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isProcessing ? "animate-spin" : ""}`} />
-                  <span>{isProcessing ? "Updating Summary..." : "Update Summary (सारांश अपडेट करें)"}</span>
+                  <span>{isProcessing ? "Updating Summary..." : "Update Summary"}</span>
                 </Button>
               </>
             ) : (
@@ -233,7 +233,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm gap-2 shadow-lg cursor-pointer px-5 py-2.5 border border-emerald-400/30"
               >
                 <Sparkles className={`w-4 h-4 ${isProcessing ? "animate-spin" : ""}`} />
-                <span>{isProcessing ? "Processing Analysis..." : "Generate Summary (सारांश तैयार करें)"}</span>
+                <span>{isProcessing ? "Processing Analysis..." : "Generate Summary"}</span>
               </Button>
             )}
           </div>
@@ -245,7 +245,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
             <div className="flex items-center justify-between text-xs font-semibold mb-1.5 text-slate-200">
               <span className="flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                जांच पूर्णता स्तर (Inquiry Completion Status):
+                Inquiry Completion Status:
               </span>
               <span className="text-emerald-300 font-bold">{summary.progressPercentage}% Complete</span>
             </div>
@@ -322,7 +322,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
             </div>
             <div className="space-y-2">
               <h3 className="text-lg font-bold text-slate-900">
-                कोई सारांश अभी तैयार नहीं है (No Summary Generated Yet)
+                No Summary Generated Yet
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 शिकायत का पूर्ण सारांश निकालने के लिए <strong>Generate Summary</strong> पर क्लिक करें। सिस्टम स्वतः शिकायत के
@@ -448,7 +448,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Statutory Time Limits & Supervisory Alerts (वैधानिक समय-सीमा व निर्देश)</span>
+                <span>Statutory Time Limits &amp; Supervisory Alerts</span>
               </div>
               <ul className="space-y-1.5 text-xs text-amber-800">
                 {summary.urgentDeadlines.map((deadline, idx) => (
@@ -467,7 +467,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-indigo-600" />
-                  <span>केस सारांश व प्राइमा फेसी अवलोकन (Executive Case Synopsis)</span>
+                  <span>Executive Case Synopsis</span>
                 </h4>
                 <span className="text-[11px] text-slate-500 font-medium">
                   Source: Overview + Documents + History
@@ -479,7 +479,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
               <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 text-xs text-indigo-900 flex items-start gap-2.5">
                 <Scale className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold">प्राइमा फेसी विधिक निष्कर्ष (Prima Facie Observation): </span>
+                  <span className="font-bold">Prima Facie Observation: </span>
                   <span>{summary.primaFacieObservation}</span>
                 </div>
               </div>
@@ -489,7 +489,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                 <div className="pt-2">
                   <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Eye className="w-3.5 h-3.5 text-blue-600" />
-                    <span>दस्तावेज़ व प्रारंभिक रिकॉर्ड सत्यापन स्थिति (Verified Overview Data)</span>
+                    <span>Verified Overview Data</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                     {summary.scannedOverviewHighlights.map((highlight, idx) => {
@@ -521,7 +521,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                 onClick={() => setActiveSection("all")}
                 className="text-xs h-8 cursor-pointer"
               >
-                सभी विवरण (All Details)
+                All Details
               </Button>
               <Button
                 variant={activeSection === "completed" ? "primary" : "outline"}
@@ -556,7 +556,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                     <h3 className="text-base font-bold text-emerald-950">
-                      कितना काम हुआ है अब तक (Work Done So Far)
+                      Work Done So Far
                     </h3>
                   </div>
                   <p className="text-xs text-emerald-900 leading-relaxed">
@@ -567,7 +567,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                 {/* List of Completed Action Cards */}
                 <div className="space-y-2.5">
                   <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                    <span>पूर्ण की गई कार्यवाहियां (Completed Actions)</span>
+                    <span>Completed Actions</span>
                     <span className="text-emerald-700 font-semibold">{summary.completedActions.length} Items</span>
                   </div>
 
@@ -604,7 +604,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                         <UploadCloud className="w-4 h-4 text-indigo-600" />
-                        <span>केस में संलग्न साक्ष्य दस्तावेज़ (Documents on Docket)</span>
+                        <span>Documents on Docket</span>
                       </div>
                       <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
                         {summary.scannedDocumentsHighlights.length} Files
@@ -641,7 +641,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-5 h-5 text-amber-600" />
                     <h3 className="text-base font-bold text-amber-950">
-                      क्या बाकी है (Pending Work & Next Steps)
+                      Pending Work & Next Steps
                     </h3>
                   </div>
                   <p className="text-xs text-amber-900 leading-relaxed">
@@ -652,7 +652,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                 {/* List of Pending Action Cards */}
                 <div className="space-y-2.5">
                   <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
-                    <span>लंबित कार्यवाहियां (Outstanding Tasks)</span>
+                    <span>Outstanding Tasks</span>
                     <span className="text-amber-700 font-semibold">{summary.pendingActions.length} Pending</span>
                   </div>
 
@@ -703,7 +703,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                   <CardContent className="p-4 space-y-3">
                     <div className="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
                       <ListTodo className="w-4 h-4 text-indigo-600" />
-                      <span>जांच अधिकारी हेतु अनुशंसित कार्य (Recommended EO Action Items)</span>
+                      <span>Recommended EO Action Items</span>
                     </div>
                     <ul className="space-y-1.5 text-xs text-indigo-900">
                       {summary.recommendedEoActions.map((rec, idx) => (
@@ -717,7 +717,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                     <div className="pt-2 border-t border-indigo-100">
                       <div className="text-xs font-bold text-indigo-950 flex items-center gap-1.5 mb-1.5">
                         <Scale className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>थाना प्रभारी (SHO) दिशा-निर्देश (Supervisory Directions)</span>
+                        <span>Supervisory Directions</span>
                       </div>
                       <ul className="space-y-1.5 text-xs text-indigo-900">
                         {summary.recommendedShoDirections.map((dir, idx) => (

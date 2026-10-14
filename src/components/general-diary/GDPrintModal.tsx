@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
-import { GeneralDiaryService } from "@/services/generalDiaryService";
+import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
 import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
@@ -186,7 +186,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
               ${rec.subject}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45;">
-              ${rec.narrative}
+              ${cleanGdNarrative(rec.narrative)}
             </td>
           </tr>
         `;
@@ -621,7 +621,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 
                               {/* 6. Brief Description */}
                               <td className="py-2.5 px-3 text-slate-700 text-xs leading-relaxed break-words print:border-black">
-                                {rec.narrative}
+                                {cleanGdNarrative(rec.narrative)}
                               </td>
                             </tr>
                           );

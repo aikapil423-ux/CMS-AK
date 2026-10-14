@@ -227,42 +227,42 @@ const REPORT_DROPDOWN_OPTIONS = [
   {
     key: "GAMINI" as RecommendationReportType,
     label: "1. Gamini",
-    desc: "Land & Boundary Demarcation Dispute / राजस्व ज़मीनी विवाद",
+    desc: "Land & Boundary Demarcation Dispute",
     icon: Landmark,
     badgeBg: "bg-amber-50 text-amber-800 border-amber-300",
   },
   {
     key: "DIWANI" as RecommendationReportType,
     label: "2. Diwani",
-    desc: "Civil & Monetary Dealing Dispute / दीवानी लेन-देन",
+    desc: "Civil & Monetary Dealing Dispute",
     icon: Banknote,
     badgeBg: "bg-blue-50 text-blue-800 border-blue-300",
   },
   {
     key: "NCR" as RecommendationReportType,
     label: "3. NCR",
-    desc: "Non-Cognizable Report u/s 174 BNSS / असंज्ञेय रिपोर्ट",
+    desc: "Non-Cognizable Report u/s 174 BNSS",
     icon: FileText,
     badgeBg: "bg-purple-50 text-purple-800 border-purple-300",
   },
   {
     key: "FIR" as RecommendationReportType,
     label: "4. FIR",
-    desc: "Cognizable Offence - Regular FIR Recommendation / संज्ञेय अपराध",
+    desc: "Cognizable Offence - Regular FIR Recommendation",
     icon: ShieldAlert,
     badgeBg: "bg-red-50 text-red-800 border-red-300",
   },
   {
     key: "NIVARAN" as RecommendationReportType,
     label: "5. Nivaran",
-    desc: "Preventive Action u/s 126/170 BNSS & Disposal / निवारक व निस्तारण",
+    desc: "Preventive Action u/s 126/170 BNSS & Disposal",
     icon: Shield,
     badgeBg: "bg-indigo-50 text-indigo-800 border-indigo-300",
   },
   {
     key: "RAZINAMA" as RecommendationReportType,
     label: "6. Razinama",
-    desc: "Mutual Compromise & Settlement Accord / राजीनामा / आपसी समझौता",
+    desc: "Mutual Compromise & Settlement Accord",
     icon: Handshake,
     badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-300",
   },
@@ -2453,7 +2453,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs ${
                 !isReportViewed ? "bg-amber-600 text-white animate-pulse" : "bg-blue-700 text-white"
               }`}>
-                {!isReportViewed ? "जांच आख्या समीक्षा आवश्यक (Review Pending)" : "SHO Approval Required"}
+                {!isReportViewed ? "Review Pending" : "SHO Approval Required"}
               </span>
               <h3 className={`font-bold text-sm ${!isReportViewed ? "text-amber-950" : "text-blue-950"}`}>
                 Enquiry Report Ready for SHO Decision ({complaint.assignedEoName || complaint.eoRecommendedBy || "Enquiry Officer"})
@@ -2490,7 +2490,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
               >
                 <Eye className="w-4 h-4" />
-                <span>जांच रिपोर्ट देखें (View Report)</span>
+                <span>View Report</span>
               </Button>
             ) : (
               <>
@@ -2681,7 +2681,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 className="w-full text-left px-3 py-2 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
               >
                 <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Legal Assistant (कानूनी सहायक)</span>
+                <span>Legal Assistant</span>
               </button>
 
               <button
@@ -2693,7 +2693,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 className="w-full text-left px-3 py-2 text-blue-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
               >
                 <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Investigation Summary (जांच सारांश)</span>
+                <span>Investigation Summary</span>
               </button>
 
               {canAskProgress && (
@@ -3424,13 +3424,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                           (cleanDocId ? universalEvidenceService.getByFileId(cleanDocId) : null) ||
                           (doc.fileName ? universalEvidenceService.getByFileName(doc.fileName, complaint.id) : null);
 
-                        const isCached =
-                          Boolean(evidenceRec && evidenceRec.processingStatus === "COMPLETED") ||
-                          Boolean(doc.isProcessed) ||
-                          Boolean(complaintAutoFillService.getByDocumentId(doc.id)) ||
-                          Boolean(cleanDocId && complaintAutoFillService.getByDocumentId(cleanDocId)) ||
-                          Boolean(doc.fileName && complaintAutoFillService.getByFileName(doc.fileName, complaint.id));
-
                         return (
                           <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
                             <td className="py-3 px-4 font-semibold text-slate-900">
@@ -3467,34 +3460,19 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                         <AlertTriangle className="w-2.5 h-2.5 text-red-600" />
                                         Processing Failed
                                       </span>
-                                    ) : isCached ? (
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs">
-                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                                        AI Processed & Saved in DB
-                                      </span>
                                     ) : null}
 
                                     {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
                                       <span
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded shadow-2xs"
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded shadow-2xs"
                                         title={
                                           evidenceRec?.rawDocument?.sha256Hash
-                                            ? `Authoritative Original Preserved • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
-                                            : "Authoritative Original File Preserved in case docket"
+                                            ? `Authoritative Original Document • SHA-256: ${evidenceRec.rawDocument.sha256Hash}`
+                                            : "Authoritative Original Document"
                                         }
                                       >
                                         <ShieldCheck className="w-2.5 h-2.5 text-blue-600" />
-                                        Original Preserved
-                                      </span>
-                                    )}
-
-                                    {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
-                                      <span
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs"
-                                        title={`Cryptographically verified lossless copy: saved ${evidenceRec.compression.savedPercentage}%`}
-                                      >
-                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                                        Lossless Verified (-{evidenceRec.compression.savedPercentage}%)
+                                        Original
                                       </span>
                                     )}
 
@@ -3520,17 +3498,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                             <td className="py-3 px-4 text-right font-mono text-slate-500">{doc.fileSize}</td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
-                                {evidenceRec && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedEvidenceRecord(evidenceRec)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                    title="Inspect extracted case facts, entities & verification audit"
-                                  >
-                                    <Database className="w-3.5 h-3.5 text-purple-600" />
-                                    <span>Case Data</span>
-                                  </button>
-                                )}
                                 {evidenceRec?.processingStatus === "FAILED" && (
                                   <button
                                     type="button"
@@ -3572,21 +3539,11 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                     }
                                   }}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                  title="Download Original Authoritative Evidence File"
+                                  title="Download document"
                                 >
                                   <Download className="w-3.5 h-3.5 text-slate-600" />
-                                  <span>Original</span>
+                                  <span>Download</span>
                                 </a>
-                                {evidenceRec?.compression?.status === "VERIFIED_LOSSLESS" && (
-                                  <a
-                                    href={`/api/evidence/download?id=${evidenceRec.id}&type=compressed`}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 hover:text-emerald-900 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                    title="Download Verified Lossless Compressed Copy"
-                                  >
-                                    <Download className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Lossless (-{evidenceRec.compression.savedPercentage}%)</span>
-                                  </a>
-                                )}
                                 {complaint &&
                                   !doc.isPermanentRegistrationDoc &&
                                   doc.fileCategory !== "REGISTERED COMPLAINT DOCKET" &&
@@ -3649,6 +3606,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
         {activeTab === "legal_assistant" && (
           <ComplaintLegalAssistant
             complaint={complaint}
+            documents={combinedDocuments}
             onUpdateComplaint={async (updated) => {
               setComplaint(updated);
               if (updated.legalAnalysis) {
@@ -3997,7 +3955,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 title="View enquiry report before approving or rejecting"
                               >
                                 <Eye className="w-3.5 h-3.5" />
-                                <span>जांच रिपोर्ट देखें (View Report)</span>
+                                <span>View Report</span>
                               </Button>
                             ) : (
                               <>
@@ -4300,7 +4258,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 <div className="flex items-center gap-2">
                   <ArrowRightLeft className="w-4 h-4 text-amber-600" />
                   <h4 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800">
-                    Jurisdiction Transfer &amp; Case Linkage Records (स्थानांतरण व लिंक इतिहास)
+                    Jurisdiction Transfer &amp; Case Linkage Records
                   </h4>
                 </div>
 
@@ -4310,7 +4268,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-amber-950 flex items-center gap-2">
                         <ArrowRightLeft className="w-4 h-4 text-amber-700" />
-                        <span>Jurisdictional Transfer Log (थाना / ज़िला / राज्य स्थानांतरण विवरण)</span>
+                        <span>Jurisdictional Transfer Log</span>
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
                         {complaint.transferHistory?.length || 1} Record(s)
@@ -4365,7 +4323,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-indigo-950 flex items-center gap-2">
                         <Link2 className="w-4 h-4 text-indigo-700" />
-                        <span>Linked &amp; Cross-Complaint Associations (लिंक की गई शिकायतें)</span>
+                        <span>Linked &amp; Cross-Complaint Associations</span>
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-900 border border-indigo-300">
                         {complaint.linkedComplaintsList?.length || 1} Linked
@@ -5345,7 +5303,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               {/* 1. Case Type dropdown */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  1. Case Type (केस प्रकार) <span className="text-red-500">*</span>
+                  1. Case Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={firCaseType}
@@ -5364,7 +5322,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-semibold text-slate-700">
-                    2. Acts &amp; Sections Applicable (अधिनियम व धाराएं) <span className="text-red-500">*</span>
+                    2. Acts &amp; Sections Applicable <span className="text-red-500">*</span>
                   </label>
                   <VoiceInputButton
                     onTranscript={(txt) => setFirSections((p) => (p ? p + " " + txt : txt))}
@@ -5400,7 +5358,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               </div>
 
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
-                A <strong>Criminal case (आपराधिक मामला)</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
+                A <strong>Criminal case</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
@@ -6293,7 +6251,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
               {/* Mandatory Enquiry Outcome Selector */}
               <div>
                 <label className="font-semibold text-slate-700 block mb-1.5">
-                  Mandatory Enquiry Outcome (जांच निष्कर्ष) <span className="text-red-500">*</span>
+                  Mandatory Enquiry Outcome <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button

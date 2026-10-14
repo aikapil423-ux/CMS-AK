@@ -843,7 +843,7 @@ function ComplaintListContent() {
           <div className="flex items-center gap-1 min-w-0">
             <span
               className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
-              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+              title="Grab & drag to reorder position"
             >
               <GripVertical className="w-3 h-3" />
             </span>
@@ -855,7 +855,7 @@ function ComplaintListContent() {
                 e.stopPropagation();
                 setActiveSearchCol(isSearching ? null : field);
               }}
-              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              title="Click to Search Column"
               className="flex items-center gap-1 font-semibold text-slate-700 hover:text-blue-700 transition-colors text-left group cursor-pointer truncate"
             >
               <span className="truncate">{label}</span>
@@ -874,7 +874,7 @@ function ComplaintListContent() {
               e.stopPropagation();
               handleSort(field);
             }}
-            title={`सॉर्ट करें (Sort by ${label})`}
+            title={`Sort by ${label}`}
             className={`p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer shrink-0 ${
               isSorted ? "text-blue-700 bg-blue-50" : "text-slate-400 hover:text-slate-700"
             }`}
@@ -910,7 +910,7 @@ function ComplaintListContent() {
                     setActiveSearchCol(null);
                   }
                 }}
-                placeholder={`${label} खोजें...`}
+                placeholder={`Search ${label}...`}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
               />
               {filterValue && (
@@ -2614,7 +2614,7 @@ function ComplaintListContent() {
               {/* 1. Case Type dropdown */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  1. Case Type (केस प्रकार) <span className="text-red-500">*</span>
+                  1. Case Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={firCaseTypeInput}
@@ -2633,7 +2633,7 @@ function ComplaintListContent() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-semibold text-slate-700">
-                    2. Acts &amp; Sections Applicable (अधिनियम व धाराएं) <span className="text-red-500">*</span>
+                    2. Acts &amp; Sections Applicable <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] text-red-600 font-mono">BNS, 2023</span>
                 </div>
@@ -2666,7 +2666,7 @@ function ComplaintListContent() {
               </div>
 
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
-                A <strong>Criminal case (आपराधिक मामला)</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
+                A <strong>Criminal case</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">

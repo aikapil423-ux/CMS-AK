@@ -1,13 +1,17 @@
 /**
  * Universal Client-side DOM Text Translator for Haryana Police CMS.
  * Translates visible UI text, buttons, links, navigation, placeholders, and tooltips
- * between English and authentic police Hindi without modifying React form state or inputs.
+ * between English and authentic police Hindi instantly and bidirectionally without modifying form state.
  */
 
 import { CMS_DICTIONARY, REVERSE_DICTIONARY } from "./cmsTranslationDictionary";
 
-// Sort dictionary phrases by length descending to match multi-word phrases first
+// Sort dictionary phrases by length descending to match longest multi-word phrases first
 const SORTED_ENTRIES = Object.entries(CMS_DICTIONARY).sort(
+  (a, b) => b[0].length - a[0].length
+);
+
+const SORTED_REVERSE_ENTRIES = Object.entries(REVERSE_DICTIONARY).sort(
   (a, b) => b[0].length - a[0].length
 );
 
@@ -35,7 +39,8 @@ const EXCLUDED_TAGS = new Set([
  * Check if a node or any of its parents has opted out of translation
  */
 function isExcluded(node: Node): boolean {
-  let el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  let el: Element | null =
+    node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
   while (el) {
     if (EXCLUDED_TAGS.has(el.tagName)) return true;
     if (el.getAttribute("data-no-translate") === "true") return true;
@@ -59,8 +64,27 @@ export function translateStringToHindi(text: string): string {
   let result = text;
   for (const [en, hi] of SORTED_ENTRIES) {
     if (result.includes(en)) {
-      // Use boundary-safe global replacement
       result = result.split(en).join(hi);
+    }
+  }
+  return result;
+}
+
+/**
+ * Translate a single string from Hindi back to English
+ */
+export function translateStringToEnglish(text: string): string {
+  if (!text || text.trim().length === 0) return text;
+
+  const trimmed = text.trim();
+  if (REVERSE_DICTIONARY[trimmed]) {
+    return text.replace(trimmed, REVERSE_DICTIONARY[trimmed]);
+  }
+
+  let result = text;
+  for (const [hi, en] of SORTED_REVERSE_ENTRIES) {
+    if (result.includes(hi)) {
+      result = result.split(hi).join(en);
     }
   }
   return result;
@@ -92,9 +116,10 @@ function translateNode(node: Text, toLang: "hi" | "en") {
         node.nodeValue = orig;
       }
     } else {
-      const trimmed = currentVal.trim();
-      if (REVERSE_DICTIONARY[trimmed]) {
-        node.nodeValue = currentVal.replace(trimmed, REVERSE_DICTIONARY[trimmed]);
+      const englishVal = translateStringToEnglish(currentVal);
+      if (englishVal !== currentVal) {
+        node.nodeValue = englishVal;
+        originalTextMap.set(node, englishVal);
       }
     }
   }
@@ -124,13 +149,13 @@ function translateAttributes(el: Element, toLang: "hi" | "en") {
     } else {
       if (el.hasAttribute(origKey)) {
         const orig = el.getAttribute(origKey);
-        if (orig !== null) {
+        if (orig !== null && orig !== val) {
           el.setAttribute(attr, orig);
         }
       } else {
-        const trimmed = val.trim();
-        if (REVERSE_DICTIONARY[trimmed]) {
-          el.setAttribute(attr, val.replace(trimmed, REVERSE_DICTIONARY[trimmed]));
+        const englishVal = translateStringToEnglish(val);
+        if (englishVal !== val) {
+          el.setAttribute(attr, englishVal);
         }
       }
     }
@@ -145,21 +170,36 @@ export function walkAndTranslate(root: Node, toLang: "hi" | "en") {
   isTranslating = true;
 
   try {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
-      acceptNode(node) {
-        if (isExcluded(node)) return NodeFilter.FILTER_REJECT;
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    });
+    // 1. Walk only text nodes using TreeWalker SHOW_TEXT (never skips container subtrees)
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          if (isExcluded(node)) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      }
+    );
 
     let currentNode = walker.nextNode();
     while (currentNode) {
-      if (currentNode.nodeType === Node.TEXT_NODE) {
-        translateNode(currentNode as Text, toLang);
-      } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        translateAttributes(currentNode as Element, toLang);
-      }
+      translateNode(currentNode as Text, toLang);
       currentNode = walker.nextNode();
+    }
+
+    // 2. Translate attributes on all elements with relevant attributes
+    if (root.nodeType === Node.ELEMENT_NODE || root.nodeType === Node.DOCUMENT_NODE) {
+      const el = root as Element;
+      if (el.querySelectorAll) {
+        const attrElements = el.querySelectorAll("[placeholder], [title], [aria-label], [alt]");
+        attrElements.forEach((targetEl) => {
+          translateAttributes(targetEl, toLang);
+        });
+      }
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        translateAttributes(el, toLang);
+      }
     }
   } catch (err) {
     console.warn("DOM translation notice:", err);
@@ -183,22 +223,27 @@ export function setUniversalLanguage(lang: "hi" | "en") {
   // Set up or restart MutationObserver
   if (!observer && typeof MutationObserver !== "undefined") {
     observer = new MutationObserver((mutations) => {
-      if (isTranslating || currentLanguage === "en") return;
+      if (isTranslating) return;
 
-      for (const m of mutations) {
-        if (m.type === "childList") {
-          m.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-              translateNode(node as Text, currentLanguage);
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-              walkAndTranslate(node, currentLanguage);
+      isTranslating = true;
+      try {
+        for (const m of mutations) {
+          if (m.type === "childList") {
+            m.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                translateNode(node as Text, currentLanguage);
+              } else if (node.nodeType === Node.ELEMENT_NODE) {
+                walkAndTranslate(node, currentLanguage);
+              }
+            });
+          } else if (m.type === "characterData") {
+            if (m.target.nodeType === Node.TEXT_NODE) {
+              translateNode(m.target as Text, currentLanguage);
             }
-          });
-        } else if (m.type === "characterData") {
-          if (m.target.nodeType === Node.TEXT_NODE) {
-            translateNode(m.target as Text, currentLanguage);
           }
         }
+      } finally {
+        isTranslating = false;
       }
     });
 

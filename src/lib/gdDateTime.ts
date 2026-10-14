@@ -136,4 +136,146 @@ export function parseGDActivityDateTimeToMs(raw: string): number {
   const { dateISO, time24 } = parseGDActivityDateTime(raw);
   const ms = new Date(`${dateISO}T${time24}:00`).getTime();
   return isNaN(ms) ? 0 : ms;
+}
+
+// -------------------------------------------------------------
+// 24-Hour Auto-Expiration Rules for Unlocked Suggestions & Drafts
+// - Unlocked GD entries (SUGGESTED / DRAFT) on which no action has
+//   been taken for 24 hours are automatically purged.
+// - LOCKED entries are protected under PPR 22.48 and can NEVER expire.
+// -------------------------------------------------------------
+export const GD_EXPIRATION_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 Hours
+
+export function getRecordLastActionTimeMs(record: {
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  auditTrailJson?: string | null;
+  auditTrail?: Array<{ timestamp?: string | null }> | null;
+  officialCreationTimestamp?: string | null;
+  activityDateTime?: string | null;
+}): number {
+  let latestAuditMs = 0;
+
+  if (record.auditTrail && Array.isArray(record.auditTrail)) {
+    for (const log of record.auditTrail) {
+      if (log && log.timestamp) {
+        const ms = new Date(log.timestamp).getTime();
+        if (!isNaN(ms) && ms > latestAuditMs) latestAuditMs = ms;
+      }
+    }
+  } else if (record.auditTrailJson) {
+    try {
+      const trail = JSON.parse(record.auditTrailJson);
+      if (Array.isArray(trail)) {
+        for (const log of trail) {
+          if (log && log.timestamp) {
+            const ms = new Date(log.timestamp).getTime();
+            if (!isNaN(ms) && ms > latestAuditMs) latestAuditMs = ms;
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Authoritative action logs: audit trail records every CREATED, EDITED, SUGGESTED action
+  if (latestAuditMs > 0) {
+    return latestAuditMs;
+  }
+
+  // Fallback when audit trail is absent
+  let fallbackMs = 0;
+  if (record.createdAt) {
+    const crMs = new Date(record.createdAt).getTime();
+    if (!isNaN(crMs) && crMs > fallbackMs) fallbackMs = crMs;
+  }
+  if (record.officialCreationTimestamp) {
+    const crMs = new Date(record.officialCreationTimestamp).getTime();
+    if (!isNaN(crMs) && crMs > fallbackMs) fallbackMs = crMs;
+  }
+  if (record.updatedAt) {
+    const upMs = new Date(record.updatedAt).getTime();
+    if (!isNaN(upMs) && upMs > fallbackMs) fallbackMs = upMs;
+  }
+
+  return fallbackMs;
+}
+
+export function isGdRecordExpired(record: {
+  isLocked?: boolean | null;
+  status?: string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  auditTrailJson?: string | null;
+  auditTrail?: Array<{ timestamp?: string | null }> | null;
+  officialCreationTimestamp?: string | null;
+  activityDateTime?: string | null;
+}): boolean {
+  // Statutory protection: LOCKED entries cannot be deleted under PPR 22.48
+  if (record.isLocked) return false;
+  // Only SUGGESTED and DRAFT entries are subject to the 24-hour expiration rule
+  if (record.status !== "SUGGESTED" && record.status !== "DRAFT") return false;
+
+  const lastAction = getRecordLastActionTimeMs(record);
+  if (!lastAction) return false;
+
+  return Date.now() - lastAction >= GD_EXPIRATION_WINDOW_MS;
+}
+
+export function getGdRecordRemainingTime(record: {
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  auditTrailJson?: string | null;
+  auditTrail?: Array<{ timestamp?: string | null }> | null;
+  officialCreationTimestamp?: string | null;
+  activityDateTime?: string | null;
+}): {
+  isExpired: boolean;
+  hoursRemaining: number;
+  minutesRemaining: number;
+  displayTextEn: string;
+  displayTextHi: string;
+} {
+  const lastAction = getRecordLastActionTimeMs(record);
+  if (!lastAction) {
+    return {
+      isExpired: false,
+      hoursRemaining: 24,
+      minutesRemaining: 0,
+      displayTextEn: "24h left",
+      displayTextHi: "24 घंटे शेष",
+    };
+  }
+
+  const elapsed = Date.now() - lastAction;
+  const remaining = GD_EXPIRATION_WINDOW_MS - elapsed;
+  if (remaining <= 0) {
+    return {
+      isExpired: true,
+      hoursRemaining: 0,
+      minutesRemaining: 0,
+      displayTextEn: "Expired",
+      displayTextHi: "समय सीमा समाप्त",
+    };
+  }
+
+  const hours = Math.floor(remaining / (60 * 60 * 1000));
+  const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+
+  if (hours > 0) {
+    return {
+      isExpired: false,
+      hoursRemaining: hours,
+      minutesRemaining: minutes,
+      displayTextEn: `${hours}h ${minutes}m left`,
+      displayTextHi: `${hours} घंटे ${minutes} मिनट शेष`,
+    };
+  }
+
+  return {
+    isExpired: false,
+    hoursRemaining: 0,
+    minutesRemaining: minutes,
+    displayTextEn: `${minutes}m left`,
+    displayTextHi: `${minutes} मिनट शेष`,
+  };
 }

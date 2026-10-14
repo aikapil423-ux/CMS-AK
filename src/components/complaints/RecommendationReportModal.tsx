@@ -628,7 +628,7 @@ Dated: ${reportDateStr}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      Report Title (आख्या शीर्षक)
+                      Report Title
                     </label>
                     <input
                       type="text"
@@ -643,7 +643,7 @@ Dated: ${reportDateStr}
 
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      Dispatch Reference Number (डिस्पैच क्रमांक)
+                      Dispatch Reference Number
                     </label>
                     <input
                       type="text"
@@ -659,7 +659,7 @@ Dated: ${reportDateStr}
 
                 <div>
                   <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                    Subject Line (विषय)
+                    Subject Line
                   </label>
                   <input
                     type="text"
