@@ -448,7 +448,7 @@ export class AgentDocumentEngine {
   }
 
   /**
-   * Generates Statutory Notice of Appearance u/s 35(3) BNSS 2023 (formerly 41A CrPC)
+   * Generates Statutory Notice of Appearance u/s 35(3) BNSS 2023 (formerly 41A CrPC) - Hindi
    */
   public static generateNotice35BnssHtml(caseNumber: string, personName: string, address: string, ps = "Sector 14 Hisar"): string {
     const today = new Date().toISOString().split("T")[0];
@@ -477,6 +477,60 @@ export class AgentDocumentEngine {
   }
 
   /**
+   * Generates Statutory Notice of Appearance u/s 35(3) BNSS 2023 (formerly 41A CrPC) - English
+   */
+  public static generateNotice35BnssEnglishHtml(caseNumber: string, personName: string, address: string, ps = "Sector 14 Hisar"): string {
+    const today = new Date().toISOString().split("T")[0];
+    const dispatchNo = `DISP/35(3)/${new Date().getFullYear()}/${Date.now().toString().slice(-4)}`;
+    return `
+      <div style="font-family: serif; padding: 24px; color: #111; line-height: 1.6; max-width: 800px; margin: auto; background: #fff; border: 1px solid #ccc;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px;">HARYANA POLICE — NOTICE OF APPEARANCE</h2>
+          <p style="margin: 4px 0 0; font-size: 13px; font-weight: bold;">[Under Section 35(3) of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023]</p>
+        </div>
+        <p><strong>Dispatch No.:</strong> ${dispatchNo} | <strong>Date:</strong> ${today}</p>
+        <p>To,<br/><strong>Shri/Smt. ${personName}</strong><br/>Address: ${address || "Sector 14, Hisar, Haryana"}</p>
+        <p><strong>Subject:</strong> Direction to join statutory investigation in Case / Complaint No. <strong>${caseNumber}</strong>.</p>
+        <p>Whereas credible information has been laid / complaint received regarding the commission of a cognizable offence within the territorial jurisdiction of Police Station <strong>${ps}</strong>, and it appears to the undersigned that you are acquainted with the facts and circumstances of the case.</p>
+        <p>Now therefore, in exercise of powers conferred under Section 35(3) of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023, you are hereby directed to:</p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+          <li>Appear in person before the undersigned at Police Station <strong>${ps}</strong> on <strong>${today}</strong> at 10:00 AM.</li>
+          <li>Render full and truthful disclosure of all facts and produce pertinent documentary / electronic records.</li>
+          <li>Not induce, threaten or promise any person acquainted with the facts so as to dissuade them from disclosing facts to the police.</li>
+        </ol>
+        <p style="font-size: 12px; color: #555; font-style: italic;">*Statutory Warning: Failure to comply with this notice or failure to join investigation may render you liable for arrest pursuant to Section 35(6) BNSS, 2023.*</p>
+        <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+          <div>Recipient's Acknowledgment: ____________<br/><span style="font-size: 11px;">(Signature / Thumb impression & Date)</span></div>
+          <div style="text-align: right;">Investigating / Enquiry Officer: ____________<br/><span style="font-size: 11px;">Police Station ${ps}, Haryana Police</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates bilingual statutory notice dynamically based on language choice
+   */
+  public static generateNoticeHtml(options: {
+    lang: "en" | "hi";
+    templateType?: string;
+    caseNumber: string;
+    personName: string;
+    address?: string;
+    ps?: string;
+    requestedDocs?: string;
+  }): string {
+    const { lang, templateType, caseNumber, personName, address = "Sector 14, Hisar", ps = "Sector 14 Hisar", requestedDocs } = options;
+    if (templateType === "notice_91_bnss" || templateType === "summons_91") {
+      return lang === "en"
+        ? this.generateNotice91BnssEnglishHtml(caseNumber, personName, requestedDocs, ps)
+        : this.generateNotice91BnssHtml(caseNumber, personName, requestedDocs, ps);
+    }
+    return lang === "en"
+      ? this.generateNotice35BnssEnglishHtml(caseNumber, personName, address, ps)
+      : this.generateNotice35BnssHtml(caseNumber, personName, address, ps);
+  }
+
+  /**
    * Generates Statutory Notice to Produce Documents u/s 91 BNSS 2023 (formerly 91 CrPC)
    */
   public static generateNotice91BnssHtml(caseNumber: string, recipientName: string, requestedDocs = "बैंक खाता विवरण, पहचान पत्र व संबंधित पत्रावली", ps = "Sector 14 Hisar"): string {
@@ -497,6 +551,33 @@ export class AgentDocumentEngine {
         <div style="margin-top: 40px; text-align: right;">
           <p style="margin: 0; font-weight: bold;">अन्वेषण अधिकारी</p>
           <p style="margin: 0; font-size: 12px;">थाना ${ps}, हरियाणा पुलिस</p>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Generates Statutory Notice to Produce Documents u/s 91 BNSS 2023 (formerly 91 CrPC) - English
+   */
+  public static generateNotice91BnssEnglishHtml(caseNumber: string, recipientName: string, requestedDocs = "Bank statement, identity proof, transaction records and relevant files", ps = "Sector 14 Hisar"): string {
+    const today = new Date().toISOString().split("T")[0];
+    const dispatchNo = `DISP/91/${new Date().getFullYear()}/${Date.now().toString().slice(-4)}`;
+    return `
+      <div style="font-family: serif; padding: 24px; color: #111; line-height: 1.6; max-width: 800px; margin: auto; background: #fff; border: 1px solid #ccc;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
+          <h2 style="margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px;">HARYANA POLICE — SUMMONS TO PRODUCE DOCUMENTS</h2>
+          <p style="margin: 4px 0 0; font-size: 13px; font-weight: bold;">[Under Section 91 of Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023]</p>
+        </div>
+        <p><strong>Dispatch Ref.:</strong> ${dispatchNo} | <strong>Case No.:</strong> ${caseNumber} | <strong>Date:</strong> ${today}</p>
+        <p>To,<br/><strong>${recipientName}</strong></p>
+        <p>Whereas it has been made to appear to the undersigned that the production of the undermentioned documents or electronic records is necessary or desirable for the purposes of statutory investigation in Case / Complaint No. <strong>${caseNumber}</strong> at Police Station <strong>${ps}</strong>:</p>
+        <div style="background: #f8fafc; padding: 12px; border-left: 4px solid #2563eb; margin: 12px 0; font-family: sans-serif; font-size: 13px;">
+          ${requestedDocs}
+        </div>
+        <p>You are hereby directed to attend and produce the said documents or things before the undersigned at Police Station ${ps} within forty-eight (48) hours of receipt of this summons.</p>
+        <div style="margin-top: 40px; text-align: right;">
+          <p style="margin: 0; font-weight: bold;">Investigating / Enquiry Officer</p>
+          <p style="margin: 0; font-size: 12px;">Police Station ${ps}, Haryana Police</p>
         </div>
       </div>
     `;

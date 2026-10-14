@@ -1180,8 +1180,18 @@ export class CmsCapabilityRegistry {
 
     // 2. Register Complaint Form / Dialog
     if (
-      (q.includes("complaint") || q.includes("shikayat") || q.includes("शिकायत")) &&
-      (q.includes("register") || q.includes("form") || q.includes("nayi") || q.includes("darj") || q.includes("box") || q.includes("dialog") || q.includes("daailogue"))
+      (q.includes("complaint") || q.includes("shikayat") || q.includes("शिकायत") || q.includes("application")) &&
+      (q.includes("register") ||
+        q.includes("form") ||
+        q.includes("nayi") ||
+        q.includes("darj") ||
+        q.includes("likho") ||
+        q.includes("leni") ||
+        q.includes("lena") ||
+        q.includes("darj karo") ||
+        q.includes("box") ||
+        q.includes("dialog") ||
+        q.includes("daailogue"))
     ) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/complaints/register") || null;
     }

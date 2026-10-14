@@ -29,6 +29,7 @@ import { useAuth } from "@/context/AuthContext";
 import { CmsAgentService } from "@/services/agent/cmsAgentService";
 import { AgentMessage, ProposedDocument } from "@/types/cmsAgent";
 import { printA4Element } from "@/utils/printElement";
+import { InteractiveTemplateDraftCard } from "./InteractiveTemplateDraftCard";
 
 interface CmsAgentModalProps {
   isOpen: boolean;
@@ -404,41 +405,82 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
                       </div>
 
                       {/* Proposed Documents Suite */}
-                      {msg.actionPlan.proposedDocuments && msg.actionPlan.proposedDocuments.length > 0 && (
-                        <div className="space-y-1.5">
-                          <span className="font-bold text-[10px] text-slate-700 uppercase block">
-                            तैयार किए जाने वाले कानूनी दस्तावेज़ ({msg.actionPlan.proposedDocuments.length} Documents):
-                          </span>
-                          <div className="grid grid-cols-1 gap-1.5">
-                            {msg.actionPlan.proposedDocuments.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 hover:border-blue-400 transition"
-                              >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-slate-900 text-[11px] truncate">
-                                      {doc.title}
-                                    </p>
-                                    <p className="text-[10px] text-slate-500 truncate">
-                                      {doc.recipientOrSubject}
-                                    </p>
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewDoc(doc)}
-                                  className="px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-[10px] font-semibold shrink-0 flex items-center gap-1 cursor-pointer border border-blue-200"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                  Preview
-                                </button>
+                      {msg.actionPlan.proposedDocuments && msg.actionPlan.proposedDocuments.length > 0 && (() => {
+                        const noticeDoc = msg.actionPlan!.proposedDocuments!.find(
+                          (d) =>
+                            d.templateType?.toLowerCase().includes("notice") ||
+                            d.templateType?.toLowerCase().includes("summons") ||
+                            d.title?.toLowerCase().includes("notice") ||
+                            d.templateType === "BNSS_35_3_NOTICE"
+                        );
+                        const otherDocs = noticeDoc
+                          ? msg.actionPlan!.proposedDocuments!.filter((d) => d.id !== noticeDoc.id)
+                          : msg.actionPlan!.proposedDocuments!;
+
+                        return (
+                          <div className="space-y-2">
+                            {/* Interactive Template & Draft Card with bilingual toggle */}
+                            {noticeDoc && (
+                              <div className="my-1.5">
+                                <InteractiveTemplateDraftCard
+                                  initialComplainantName={
+                                    msg.moduleContext?.activePersonName ||
+                                    (noticeDoc.recipientOrSubject?.replace(/\(.*?\)/g, "").trim()) ||
+                                    "Anil Kumar"
+                                  }
+                                  initialCaseNumber={
+                                    msg.moduleContext?.activeFirNumber ||
+                                    msg.moduleContext?.activeComplaintNumber ||
+                                    "125/2026"
+                                  }
+                                  templateType={noticeDoc.templateType}
+                                  templateTitle={noticeDoc.title}
+                                  policeStation={currentUser?.stationName || "Sector 14 Hisar"}
+                                  onApproveAndSave={() => handleApprovePlan(msg.actionPlan!.id, msg.actionPlan)}
+                                />
                               </div>
-                            ))}
+                            )}
+
+                            {otherDocs.length > 0 && (
+                              <div className="space-y-1.5">
+                                <span className="font-bold text-[10px] text-slate-700 uppercase block">
+                                  {noticeDoc
+                                    ? `अन्य संलग्न विधिक प्रपत्र (${otherDocs.length} Documents):`
+                                    : `तैयार किए जाने वाले कानूनी दस्तावेज़ (${otherDocs.length} Documents):`}
+                                </span>
+                                <div className="grid grid-cols-1 gap-1.5">
+                                  {otherDocs.map((doc) => (
+                                    <div
+                                      key={doc.id}
+                                      className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 hover:border-blue-400 transition"
+                                    >
+                                      <div className="flex items-center gap-2 overflow-hidden">
+                                        <FileText className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-slate-900 text-[11px] truncate">
+                                            {doc.title}
+                                          </p>
+                                          <p className="text-[10px] text-slate-500 truncate">
+                                            {doc.recipientOrSubject}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setPreviewDoc(doc)}
+                                        className="px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-[10px] font-semibold shrink-0 flex items-center gap-1 cursor-pointer border border-blue-200"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        Preview
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Missing Information Notice if any */}
                       {msg.actionPlan.missingInformation && msg.actionPlan.missingInformation.length > 0 && (

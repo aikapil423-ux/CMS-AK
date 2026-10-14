@@ -130,6 +130,91 @@ async function runVerificationTests() {
     "Selects ARRIVAL when user says 'GD type select me arrival fill kr do'"
   );
 
+  // TEST 12: Natural Police Colloquial Intent Recognition
+  console.log("\n--- 12. Natural Police Colloquial Intent Recognition ---");
+  const shkRes = await CmsAgentService.processUserInput("Shikayat darj karo");
+  assert(
+    shkRes.actionPlan?.executablePayload?.parameters?.url === "/complaints/register",
+    "'Shikayat darj karo' maps to complaint registration route"
+  );
+
+  const appRes = await CmsAgentService.processUserInput("Application leni hai");
+  assert(
+    appRes.actionPlan?.executablePayload?.parameters?.url === "/complaints/register",
+    "'Application leni hai' maps to complaint registration route"
+  );
+
+  const eoRes1 = await CmsAgentService.processUserInput("EO laga do");
+  assert(
+    eoRes1.actionPlan?.executablePayload?.toolName === "assign_eo",
+    "'EO laga do' maps to EO assignment workflow"
+  );
+
+  const eoRes2 = await CmsAgentService.processUserInput("Is complaint ki enquiry kisi officer ko de do");
+  assert(
+    eoRes2.actionPlan?.executablePayload?.toolName === "assign_eo",
+    "'Is complaint ki enquiry kisi officer ko de do' maps to EO assignment"
+  );
+
+  // TEST 13: Detailed Complaint Intake with External Document Reference
+  console.log("\n--- 13. Detailed Intake & Unstructured Query Parsing ---");
+  const compIntakeQuery = "Anil Kumar ki complaint likho, uska address Hisar hai aur baaki details uploaded PDF mein hain.";
+  const intakeDetailRes = await CmsAgentService.processUserInput(compIntakeQuery);
+  assert(
+    intakeDetailRes.actionPlan?.status === "AWAITING_APPROVAL",
+    "Detailed complaint intake prepares plan awaiting approval"
+  );
+  assert(
+    intakeDetailRes.actionPlan?.executablePayload?.parameters?.complainantName.includes("Anil Kumar"),
+    "Understands complainant name as Anil Kumar"
+  );
+  assert(
+    intakeDetailRes.actionPlan?.executablePayload?.parameters?.complainantAddress.includes("Hisar"),
+    "Understands complainant address as Hisar"
+  );
+
+  // TEST 14: Bilingual Template & Drafts Intelligence (Mock Image Alignment)
+  console.log("\n--- 14. Bilingual Template & Drafts Intelligence (Toggle Mock Alignment) ---");
+  const noticeToggleRes = await CmsAgentService.processUserInput("Toggle ka interface dikhao");
+  assert(
+    noticeToggleRes.actionPlan?.proposedDocuments?.some((d) => d.templateType?.includes("notice")) === true,
+    "'Toggle ka interface dikhao' generates Notice Template draft"
+  );
+
+  const enHtml = (await import("../agentDocumentEngine")).AgentDocumentEngine.generateNoticeHtml({
+    lang: "en",
+    templateType: "notice_35_bnss",
+    caseNumber: "125/2026",
+    personName: "Anil Kumar",
+  });
+  assert(
+    enHtml.includes("HARYANA POLICE — NOTICE OF APPEARANCE") && enHtml.includes("Anil Kumar") && enHtml.includes("125/2026"),
+    "English statutory notice preserves exact case data (Anil Kumar, 125/2026) with official legal formatting"
+  );
+
+  const hiHtml = (await import("../agentDocumentEngine")).AgentDocumentEngine.generateNoticeHtml({
+    lang: "hi",
+    templateType: "notice_35_bnss",
+    caseNumber: "125/2026",
+    personName: "Anil Kumar",
+  });
+  assert(
+    hiHtml.includes("हरियाणा पुलिस - हाजिरी नोटिस") && hiHtml.includes("Anil Kumar") && hiHtml.includes("125/2026"),
+    "Hindi statutory notice preserves exact case data (Anil Kumar, 125/2026) with authentic police terminology"
+  );
+
+  // TEST 15: Affirmation & State-Changing Execution ("Ab save kar do")
+  console.log("\n--- 15. Contextual Affirmation & Execution ('Ab save kar do') ---");
+  CmsAgentService.updateContext({
+    lastActionPlanId: intakeDetailRes.actionPlan?.id,
+    activeActionPlan: intakeDetailRes.actionPlan,
+  });
+  const saveAffirmRes = await CmsAgentService.processUserInput("Ab save kar do");
+  assert(
+    saveAffirmRes.actionPlan?.status === "EXECUTED" || saveAffirmRes.text.includes("सुरक्षित") || saveAffirmRes.text.includes("पंजीकृत"),
+    "'Ab save kar do' triggers safe execution of pending plan with verification"
+  );
+
   // Summary
   console.log("\n=================================================================");
   console.log(`TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);

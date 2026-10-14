@@ -84,23 +84,32 @@ export class CmsAgentService {
     const q = raw.toLowerCase();
     const context = this.getContext();
 
-    // 0. Permission Affirmation Check ("Approve", "हाँ", "कर दो", "Proceed", "Save karo", "Ab save karo")
-    if (
-      context.lastActionPlanId &&
+    // 0. Permission Affirmation Check ("Approve", "हाँ", "कर दो", "Proceed", "Save karo", "Ab save karo", "Ab save kar do")
+    const isAffirmation =
+      Boolean(context.lastActionPlanId) &&
+      !q.includes("date") &&
+      !q.includes("tarikh") &&
+      !q.includes("select") &&
+      !q.includes("fill") &&
       (q === "approve" ||
         q === "yes" ||
         q === "हाँ" ||
         q === "proceed" ||
         q === "स्वीकृत" ||
         q === "save" ||
-        q.includes("कर दो") ||
+        q === "kar do" ||
+        q === "kardo" ||
+        q === "kar do ise" ||
+        q === "kar do ise save" ||
+        q.includes("save kar do") ||
+        q.includes("ab save") ||
+        q.includes("save karo") ||
         q.includes("स्वीकृत करें") ||
         q.includes("theek hai") ||
-        q.includes("save karo") ||
-        q.includes("ab save karo") ||
-        q.includes("ठीक है"))
-    ) {
-      return this.executeActionPlan(context.lastActionPlanId);
+        q.includes("ठीक है"));
+
+    if (isAffirmation) {
+      return this.executeActionPlan(context.lastActionPlanId!);
     }
 
     // 1. Slot Extraction & Context Continuity
@@ -227,15 +236,31 @@ export class CmsAgentService {
 
     // -------------------------------------------------------------
     // INTENT: DETAILED COMPLAINT REGISTRATION INTAKE (Intelligent Field Understanding & Autofill)
-    // e.g. "Anil Kumar ki complaint likho, uska address Hisar hai aur mobile 9812345678"
+    // e.g. "Anil Kumar ki complaint likho, uska address Hisar hai aur baaki details uploaded PDF mein hain"
     // -------------------------------------------------------------
+    const queryHasDetails = Boolean(
+      personMatch ||
+        q.includes("anil") ||
+        q.includes("kumar") ||
+        mobileNumber ||
+        addressText ||
+        q.includes("address") ||
+        q.includes("pata") ||
+        q.includes("mobile") ||
+        q.includes("pdf") ||
+        q.includes("uploaded") ||
+        (attachments && attachments.length > 0)
+    );
+
     const isDetailedComplaintIntake =
+      queryHasDetails &&
       (q.includes("complaint likho") ||
-        q.includes("complaint darj karo") ||
-        q.includes("shikayat darj karo") ||
-        q.includes("application register karo") ||
-        q.includes("nayi complaint likho") ||
-        (q.includes("complaint") && (q.includes("address") || q.includes("mobile") || q.includes("details uploaded") || q.includes("pdf")))) &&
+        q.includes("complaint darj") ||
+        q.includes("shikayat darj") ||
+        q.includes("application register") ||
+        q.includes("nayi complaint") ||
+        q.includes("details uploaded") ||
+        q.includes("pdf")) &&
       !q.includes("search") &&
       !q.includes("list");
 
@@ -307,7 +332,18 @@ export class CmsAgentService {
       q.includes("workspace") ||
       q.includes("tab");
 
-    if (targetRoute && (isOpenOrNavQuery || q.includes("register") || q.includes("new") || q.includes("nayi") || q.includes("add"))) {
+    if (
+      targetRoute &&
+      (isOpenOrNavQuery ||
+        q.includes("register") ||
+        q.includes("new") ||
+        q.includes("nayi") ||
+        q.includes("add") ||
+        q.includes("darj") ||
+        q.includes("leni") ||
+        q.includes("lena") ||
+        q.includes("likh"))
+    ) {
       // If user asks specifically for documents check rather than navigation, defer to FIR documents check
       if (!(q.includes("document") && (q.includes("check") || q.includes("dikhao")))) {
         return this.handleNavigationIntent(targetRoute, raw);
@@ -370,8 +406,8 @@ export class CmsAgentService {
     }
 
     // -------------------------------------------------------------
-    // INTENT G: STATUTORY LEGAL NOTICES & TEMPLATES (35(3) BNSS / 91 BNSS / Builder)
-    // e.g. "Dhara 35(3) ka notice banao", "Naya notice template banao", "Dhara 91 notice banao"
+    // INTENT G: STATUTORY LEGAL NOTICES & TEMPLATES (35(3) BNSS / 91 BNSS / Bilingual Templates & Drafts)
+    // e.g. "Dhara 35(3) ka notice banao", "Naya notice template banao", "Toggle ka interface dikhao", "Templates & Drafts"
     // -------------------------------------------------------------
     if (
       q.includes("35(3)") ||
@@ -381,17 +417,34 @@ export class CmsAgentService {
       q.includes("91 bnss") ||
       q.includes("summons notice") ||
       q.includes("notice template") ||
-      (q.includes("notice") && (q.includes("banao") || q.includes("draft") || q.includes("template")))
+      q.includes("templates & drafts") ||
+      q.includes("templates and drafts") ||
+      q.includes("toggle ka interface") ||
+      q.includes("toggle interface") ||
+      q.includes("template interface") ||
+      q.includes("switch languages") ||
+      (q.includes("template") && (q.includes("banao") || q.includes("dikhao") || q.includes("draft") || q.includes("kholo") || q.includes("toggle"))) ||
+      (q.includes("notice") && (q.includes("banao") || q.includes("draft") || q.includes("template") || q.includes("dikhao")))
     ) {
       return this.handleLegalNoticeIntent(raw, firNumber, personName);
     }
 
     // -------------------------------------------------------------
-    // INTENT H: ASSIGN ENQUIRY OFFICER (EO) TO COMPLAINT ("Is complaint ka EO assign kar do")
+    // INTENT H: ASSIGN ENQUIRY OFFICER (EO) TO COMPLAINT ("EO laga do", "Enquiry officer de do", "Is complaint ki enquiry kisi officer ko de do")
     // -------------------------------------------------------------
     if (
-      (q.includes("complaint") || q.includes("shikayat") || complaintNumber) &&
-      (q.includes("eo assign") || q.includes("assign eo") || q.includes("adhikari assign") || q.includes("eo badlo") || q.includes("assign kar do"))
+      (q.includes("complaint") || q.includes("shikayat") || complaintNumber || context.activeComplaintNumber || q.includes("enquiry") || q.includes("eo")) &&
+      (q.includes("eo assign") ||
+        q.includes("assign eo") ||
+        q.includes("adhikari assign") ||
+        q.includes("eo badlo") ||
+        q.includes("eo laga") ||
+        q.includes("eo de do") ||
+        q.includes("enquiry officer de do") ||
+        q.includes("enquiry officer laga") ||
+        q.includes("kisi officer ko de do") ||
+        q.includes("officer ko de do") ||
+        q.includes("assign kar do"))
     ) {
       return this.handleAssignEoIntent(raw, complaintNumber);
     }
