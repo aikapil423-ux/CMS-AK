@@ -182,6 +182,45 @@ export interface UniversalEvidenceRecord {
   // 5. Audit history
   auditTrail: EvidenceAuditEntry[];
 
+  // 6. Lossless Compression & Integrity Verification Metadata
+  compression?: LosslessCompressionMetadata;
+
   createdAt: string;
   updatedAt: string;
 }
+
+export type LosslessCompressionStatus =
+  | 'VERIFIED_LOSSLESS'
+  | 'PENDING_VERIFICATION'
+  | 'FAILED_VERIFICATION'
+  | 'ORIGINAL_RETAINED';
+
+export type LosslessCompressionMethod =
+  | 'BROTLI_L11'
+  | 'GZIP_L9'
+  | 'SHARP_LOSSLESS_PNG'
+  | 'SHARP_LOSSLESS_WEBP'
+  | 'ZIP_BEST_DEFLATE'
+  | 'NONE_RETAINED';
+
+export interface LosslessCompressionMetadata {
+  status: LosslessCompressionStatus;
+  originalFileName: string;
+  originalMimeType: string;
+  originalSizeBytes: number;
+  originalSha256: string;
+  compressedSizeBytes: number;
+  compressedSha256?: string;
+  compressionMethod: LosslessCompressionMethod;
+  savedBytes: number;
+  savedPercentage: number;
+  verifiedLossless: boolean;
+  verifiedAt?: string;
+  compressedAt: string;
+  failureReason?: string;
+  originalFileUrl?: string;
+  compressedFileUrl?: string;
+  compressedDataUrl?: string;
+  decompressVerificationMethod?: 'SHA256_BYTE_EXACT' | 'PIXEL_EXACT_RAW' | 'FORMAT_VALIDATED';
+}
+

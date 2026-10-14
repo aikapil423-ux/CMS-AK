@@ -397,4 +397,79 @@ export const universalEvidenceService = {
       return false;
     }
   },
+
+  /**
+   * Fetches system-wide storage optimization metrics and file records
+   */
+  async getStorageOptimizationStats(): Promise<{
+    stats: any;
+    records: any[];
+  }> {
+    try {
+      const res = await fetch("/api/evidence/compress", { method: "GET" });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          stats: data.stats,
+          records: data.records || [],
+        };
+      }
+    } catch (err) {
+      console.warn("Could not fetch storage optimization stats:", err);
+    }
+    return {
+      stats: null,
+      records: [],
+    };
+  },
+
+  /**
+   * Triggers lossless compression and verification for a specific evidence record
+   */
+  async compressRecord(recordId: string): Promise<UniversalEvidenceRecord | null> {
+    try {
+      const res = await fetch("/api/evidence/compress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recordId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.record) {
+          const records = loadLocalCache();
+          const idx = records.findIndex((r) => r.id === data.record.id);
+          if (idx !== -1) {
+            records[idx] = data.record;
+            persistLocalCache(records);
+          }
+          return data.record;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to compress record:", err);
+    }
+    return null;
+  },
+
+  /**
+   * Triggers batch lossless compression across all stored case documents
+   */
+  async batchCompressAll(force: boolean = false): Promise<any> {
+    try {
+      const res = await fetch("/api/evidence/compress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch: true, force }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await this.syncFromServer();
+        return data;
+      }
+    } catch (err) {
+      console.error("Batch compression failed:", err);
+    }
+    return null;
+  },
 };
+

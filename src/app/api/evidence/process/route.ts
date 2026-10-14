@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import { UniversalEvidenceRecord, EvidenceModuleType } from "@/types/evidence";
 import { extractVocabulary } from "@/app/api/suggestions/harvest/route";
+import { losslessCompressionService } from "@/services/losslessCompressionService";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-3.5-flash";
@@ -313,6 +314,42 @@ Return a valid JSON object matching:
         });
       }
 
+      // Perform Lossless Compression & Cryptographic Integrity Verification
+      let compressionMeta = undefined;
+      let compressionAudit = null;
+      try {
+        const rawBuf =
+          fileBuffer ||
+          (dataUrl.includes(",") ? Buffer.from(dataUrl.split(",")[1], "base64") : null);
+        if (rawBuf) {
+          const compResult = await losslessCompressionService.compressAndVerify(
+            rawBuf,
+            fileName,
+            fileType
+          );
+          compressionMeta = compResult.metadata;
+          if (compressionMeta.status === "VERIFIED_LOSSLESS") {
+            compressionAudit = {
+              id: `aud_${Date.now()}_comp`,
+              action: "PROCESS_COMPLETED" as const,
+              performedBy: "Lossless Compression Engine",
+              timestamp: new Date().toISOString(),
+              details: `Lossless compression verified: ${compressionMeta.savedPercentage}% saved (${(compressionMeta.savedBytes / 1024).toFixed(1)} KB reduction). SHA-256 integrity check passed.`,
+            };
+          } else {
+            compressionAudit = {
+              id: `aud_${Date.now()}_comp`,
+              action: "PROCESS_COMPLETED" as const,
+              performedBy: "Lossless Compression Engine",
+              timestamp: new Date().toISOString(),
+              details: `Original authoritative file retained (${compressionMeta.failureReason || "Optimal format"}).`,
+            };
+          }
+        }
+      } catch (cErr: any) {
+        console.warn("[ProcessRoute] Lossless compression non-blocking error:", cErr);
+      }
+
       const completedRecord: UniversalEvidenceRecord = {
         ...inProgressRecord,
         extractedText: extractedRawText,
@@ -342,6 +379,7 @@ Return a valid JSON object matching:
         },
         processingStatus: "COMPLETED",
         verificationStatus: "AI_EXTRACTED",
+        compression: compressionMeta,
         processedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         auditTrail: [
@@ -353,6 +391,7 @@ Return a valid JSON object matching:
             timestamp: new Date().toISOString(),
             details: `Processing completed successfully. Extracted ${persons.length} persons and incident facts.`,
           },
+          ...(compressionAudit ? [compressionAudit] : []),
         ],
       };
 

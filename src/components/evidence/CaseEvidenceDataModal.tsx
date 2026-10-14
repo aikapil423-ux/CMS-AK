@@ -24,6 +24,9 @@ import {
   Download,
   Clock,
   Loader2,
+  Archive,
+  HardDrive,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UniversalEvidenceRecord } from "@/types/evidence";
@@ -46,10 +49,12 @@ export function CaseEvidenceDataModal({
   currentOfficerRole = "Inspector / IO",
   onPreviewFile,
 }: CaseEvidenceDataModalProps) {
-  const [activeTab, setActiveTab] = useState<"entities" | "raw_text" | "audit">("entities");
+  const [activeTab, setActiveTab] = useState<"entities" | "raw_text" | "audit" | "compression">("entities");
   const [copiedHash, setCopiedHash] = useState(false);
+  const [copiedCompHash, setCopiedCompHash] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [verificationNotes, setVerificationNotes] = useState("");
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -127,6 +132,26 @@ export function CaseEvidenceDataModal({
     }
   };
 
+  const handleRunCompression = async () => {
+    setIsCompressing(true);
+    try {
+      const updated = await universalEvidenceService.compressRecord(record.id);
+      if (updated) {
+        setSuccessToast(
+          `Lossless compression verified: ${updated.compression?.savedPercentage || 0}% space saved.`
+        );
+        setTimeout(() => setSuccessToast(null), 3500);
+        if (onUpdated) onUpdated(updated);
+      } else {
+        alert("Lossless compression could not be completed for this file.");
+      }
+    } catch (err: any) {
+      alert("Compression error: " + (err.message || "Failed"));
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
   const isFailed = record.processingStatus === "FAILED";
   const isCompleted = record.processingStatus === "COMPLETED";
   const isHumanVerified = record.verificationStatus === "HUMAN_VERIFIED";
@@ -155,6 +180,24 @@ export function CaseEvidenceDataModal({
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-800 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
                     <ShieldCheck className="w-3 h-3 text-blue-600" />
                     Human Verified
+                  </span>
+                )}
+                {record.compression?.status === "VERIFIED_LOSSLESS" && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full"
+                    title={`Cryptographically verified lossless: saved ${record.compression.savedPercentage}%`}
+                  >
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    Lossless Verified (-{record.compression.savedPercentage}%)
+                  </span>
+                )}
+                {record.compression?.status === "ORIGINAL_RETAINED" && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-2 py-0.5 rounded-full"
+                    title="File already in optimal format; authoritative original preserved"
+                  >
+                    <CheckCircle2 className="w-3 h-3 text-slate-500" />
+                    Original Retained (Optimal)
                   </span>
                 )}
                 {isFailed && (
@@ -269,6 +312,23 @@ export function CaseEvidenceDataModal({
           >
             <History className="w-3.5 h-3.5" />
             <span>Audit Trail ({record.auditTrail?.length || 0})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("compression")}
+            className={`pb-2.5 flex items-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
+              activeTab === "compression"
+                ? "border-purple-600 text-purple-700"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span>Lossless Storage & Integrity</span>
+            {record.compression?.status === "VERIFIED_LOSSLESS" && (
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full border border-emerald-300">
+                -{record.compression.savedPercentage}%
+              </span>
+            )}
           </button>
         </div>
 
@@ -536,11 +596,195 @@ export function CaseEvidenceDataModal({
               </div>
             </div>
           )}
+
+          {activeTab === "compression" && (
+            <div className="space-y-4 text-xs">
+              {/* Lossless Status Card */}
+              {record.compression?.status === "VERIFIED_LOSSLESS" && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-900 text-sm flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      Cryptographically Verified Lossless Evidence
+                    </span>
+                    <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full">
+                      -{record.compression.savedPercentage}% Space Saved
+                    </span>
+                  </div>
+                  <p className="text-emerald-800 text-[11px] leading-relaxed">
+                    This file has undergone lossless compression with mandatory round-trip decompression verification.
+                    Original evidentiary pixel data, audio/video fidelity, formulas, and document contents are 100% preserved
+                    with zero quality loss.
+                  </p>
+                </div>
+              )}
+
+              {record.compression?.status === "ORIGINAL_RETAINED" && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-900 text-sm flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                      Authoritative Original Retained
+                    </span>
+                    <span className="bg-blue-100 text-blue-800 font-semibold text-[10px] px-2 py-0.5 rounded-full border border-blue-300">
+                      Already Optimal
+                    </span>
+                  </div>
+                  <p className="text-blue-800 text-[11px] leading-relaxed">
+                    {record.compression.failureReason ||
+                      "This file is already in an optimal compressed format. Further compression yielded <1.5% reduction, so the original file was retained to avoid unnecessary container overhead."}
+                  </p>
+                </div>
+              )}
+
+              {(!record.compression || record.compression.status === "PENDING_VERIFICATION") && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-900 text-sm flex items-center gap-1.5">
+                      <Archive className="w-4 h-4 text-amber-600" />
+                      Lossless Compression Available
+                    </span>
+                  </div>
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    This evidence record has not yet undergone lossless storage optimization. Run compression now to
+                    reduce storage bandwidth while maintaining court-admissible original evidence.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isCompressing}
+                    onClick={handleRunCompression}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs gap-1.5 cursor-pointer"
+                  >
+                    {isCompressing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+                    <span>{isCompressing ? "Compressing & Verifying..." : "Run Lossless Compression Now"}</span>
+                  </Button>
+                </div>
+              )}
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Original File Specs */}
+                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-2.5">
+                  <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Authoritative Original Evidence</span>
+                  </h4>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">Original Size:</span>
+                      <strong className="text-slate-800 font-mono">
+                        {(record.rawDocument.fileSize / 1024).toFixed(1)} KB ({(record.rawDocument.fileSize / (1024 * 1024)).toFixed(2)} MB)
+                      </strong>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">MIME Type:</span>
+                      <strong className="text-slate-800 font-mono">{record.rawDocument.fileType || record.rawDocument.mimeType || "application/octet-stream"}</strong>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">Uploaded At:</span>
+                      <strong className="text-slate-800">{new Date(record.rawDocument.uploadedAt).toLocaleString("en-IN")}</strong>
+                    </div>
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-slate-500 block mb-1">Original SHA-256 Checksum:</span>
+                      <div className="p-1.5 bg-slate-50 rounded border border-slate-200 font-mono text-[10px] text-slate-700 break-all select-all flex items-center justify-between gap-1">
+                        <span>{record.rawDocument.sha256Hash || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <a
+                      href={`/api/evidence/download?id=${record.id}&type=original`}
+                      download={record.rawDocument.fileName}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg border border-slate-300 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Download Original Authoritative File</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Lossless Compressed Specs */}
+                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-2.5">
+                  <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                    <HardDrive className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Lossless Compressed Copy</span>
+                  </h4>
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">Compressed Size:</span>
+                      <strong className="text-emerald-700 font-mono">
+                        {record.compression?.status === "VERIFIED_LOSSLESS"
+                          ? `${(record.compression.compressedSizeBytes / 1024).toFixed(1)} KB (${(record.compression.compressedSizeBytes / (1024 * 1024)).toFixed(2)} MB)`
+                          : `${(record.rawDocument.fileSize / 1024).toFixed(1)} KB (Original Retained)`}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">Space Saved:</span>
+                      <strong className="text-emerald-700 font-bold">
+                        {record.compression?.status === "VERIFIED_LOSSLESS"
+                          ? `-${record.compression.savedPercentage}% (${(record.compression.savedBytes / 1024).toFixed(1)} KB)`
+                          : "0% (Original Retained)"}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between py-0.5">
+                      <span className="text-slate-500">Compression Engine:</span>
+                      <strong className="text-slate-800 font-mono">{record.compression?.compressionMethod || "None"}</strong>
+                    </div>
+                    <div className="pt-2 border-t border-slate-100">
+                      <span className="text-slate-500 block mb-1">Compressed Checksum / Verification:</span>
+                      <div className="p-1.5 bg-slate-50 rounded border border-slate-200 font-mono text-[10px] text-slate-700 break-all select-all">
+                        {record.compression?.compressedSha256 || record.rawDocument.sha256Hash || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2 flex gap-2">
+                    <a
+                      href={`/api/evidence/download?id=${record.id}&type=compressed`}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-lg border border-emerald-300 transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Download Lossless Copy</span>
+                    </a>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isCompressing}
+                      onClick={handleRunCompression}
+                      className="text-xs font-semibold gap-1 text-slate-700 cursor-pointer"
+                      title="Re-verify cryptographic lossless integrity"
+                    >
+                      {isCompressing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                      <span>Re-verify</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-200 bg-white flex items-center justify-between gap-3">
-          <div>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/api/evidence/download?id=${record.id}&type=original`}
+              download={record.rawDocument.fileName}
+              className="inline-flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span>Download Original</span>
+            </a>
+            {record.compression?.status === "VERIFIED_LOSSLESS" && (
+              <a
+                href={`/api/evidence/download?id=${record.id}&type=compressed`}
+                className="inline-flex items-center gap-1 text-xs font-medium text-emerald-800 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Download Lossless (-{record.compression.savedPercentage}%)</span>
+              </a>
+            )}
             {isFailed && (
               <Button
                 type="button"

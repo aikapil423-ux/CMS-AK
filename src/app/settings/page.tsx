@@ -28,6 +28,7 @@ import {
   Database,
   Lock,
   Table,
+  HardDrive,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,8 +40,9 @@ import {
   DROPDOWN_CATEGORIES,
 } from "@/services/dropdownManagerService";
 import TableManagerTab from "@/components/settings/TableManagerTab";
+import StorageOptimizationTab from "@/components/settings/StorageOptimizationTab";
 
-type SettingsTab = "dropdowns" | "station" | "system" | "table-manager";
+type SettingsTab = "dropdowns" | "station" | "system" | "table-manager" | "storage-optimization";
 
 const COLOR_OPTIONS = [
   { label: "Blue", value: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -353,6 +355,28 @@ function SettingsPageContent() {
             }`}
           >
             All Tables
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("storage-optimization")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === "storage-optimization"
+              ? "bg-emerald-600 text-white shadow-xs"
+              : "text-slate-700 bg-emerald-50/70 border border-emerald-200 hover:bg-emerald-100"
+          }`}
+        >
+          <HardDrive className="w-4 h-4 text-emerald-500" />
+          <span className="font-extrabold">Storage Optimization</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === "storage-optimization"
+                ? "bg-white/20 text-white"
+                : "bg-emerald-200 text-emerald-900 font-bold"
+            }`}
+          >
+            Lossless
           </span>
         </button>
 
@@ -859,6 +883,11 @@ function SettingsPageContent() {
       {/* TAB 4: TABLE MANAGER (Configurable Columns) */}
       {/* ======================================================== */}
       {activeTab === "table-manager" && <TableManagerTab />}
+
+      {/* ======================================================== */}
+      {/* TAB 5: STORAGE OPTIMIZATION (Lossless Compression) */}
+      {/* ======================================================== */}
+      {activeTab === "storage-optimization" && <StorageOptimizationTab />}
 
       {/* ======================================================== */}
       {/* MODAL: ADD NEW DROPDOWN OPTION */}
