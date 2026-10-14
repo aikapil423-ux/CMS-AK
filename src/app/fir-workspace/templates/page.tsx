@@ -20,6 +20,8 @@ import {
   X,
   RotateCcw,
   Layers,
+  Globe,
+  Languages,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -42,7 +44,9 @@ export type FIRNoticeTemplateType =
   | "natgrid_proforma"
   | "section_179_witness";
 
-const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
+export type TemplateLanguage = "hi" | "en";
+
+export const DEFAULT_SAMPLE_DATA_HI: Record<FIRNoticeTemplateType, NoticeFormData> = {
   section_35_notice: {
     headerDept: "हरियाणा पुलिस",
     headerGovt: "जिला अम्बाला।",
@@ -122,56 +126,56 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
     shoName: "प्रबंधक अफसर",
     supervisoryOfficerName: "पर्यवेक्षण अधिकारी",
     certificateText:
-      "1. The Subscriber identity has been ascertained and it is ensured that person in question is not someone whose call details are of sensitive nature.\n2. The number is not subscribed in the name of a sitting MP/MLA/MLC & Governor.",
+      "1. उपभोक्ता की पहचान सुनिश्चित कर ली गई है और यह आश्वस्त किया जाता है कि संबंधित व्यक्ति की काल डिटेल संवेदनशील प्रकृति की नहीं है।\n2. यह नंबर किसी आसीन सांसद / विधायक / विधान पार्षद अथवा राज्यपाल के नाम पर पंजीकृत नहीं है।",
   },
 
   natgrid_proforma: {
-    headerDept: "HARYANA POLICE",
-    headerGovt: "NATIONAL INTELLIGENCE GRID",
-    docTitle: "NATGRID PERFORMA",
+    headerDept: "हरियाणा पुलिस",
+    headerGovt: "राष्ट्रीय आसूचना ग्रिड",
+    docTitle: "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र",
     docSubTitle: "",
     dispatchNo: "HP/SRS/2026/NATGRID-012",
     policeStation: "City Sirsa",
     district: "Sirsa",
     issueDate: new Date().toISOString().split("T")[0],
 
-    shoName: "Inspector, SHO",
+    shoName: "निरीक्षक, प्रबंधक अफसर (SHO)",
     shoPhone: "9812033441",
     shoEmail: "sho.citysirsa-hry@nic.in",
 
     complaintNo: "184/2026",
     incidentDate: "24-09-2026",
-    sectionsOfLaw: "Section 318(4), 316(2), 336(3), 61(2) BNS, 2023 & Sec 66D IT Act",
-    allegationsBrief: "Organized financial fraud and inter-state cyber syndicate cheating victims through fake banking channels and shell entities.",
+    sectionsOfLaw: "धारा 318(4), 316(2), 336(3), 61(2) BNS, 2023 व धारा 66D IT Act",
+    allegationsBrief: "संगठित वित्तीय धोखाधड़ी और अंतर-राज्यीय साइबर गिरोह द्वारा फर्जी बैंकिंग चैनलों व शेल कंपनियों के जरिए पीड़ितों से ठगी करने बाबत।",
 
-    officerName: "Surender Pal",
-    officerRank: "Sub-Inspector",
+    officerName: "सुरेन्द्र पाल",
+    officerRank: "सब-इंस्पेक्टर",
     officerPhone: "9812034567",
     officerPno: "PNO-23841",
 
     natgridNationalSecurity: false,
     natgridCounterTerror: false,
     natgridHeinousCrime: true,
-    natgridReason: "To apprehend the accused",
-    natgridDepartment: "FIU-IND, Bureau of Immigration (BOI), Telecom Service Providers, Income Tax PAN Database",
-    natgridInfoRequired: "All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections, and vehicle ownership details.",
+    natgridReason: "आरोपी को गिरफ्तार करने व साक्ष्य एकत्र करने हेतु",
+    natgridDepartment: "FIU-IND, आप्रवासन ब्यूरो (BOI), टेलीकॉम सेवा प्रदाता, आयकर पैन डेटाबेस",
+    natgridInfoRequired: "पैन/आधार से जुड़े सभी बैंक खाते, घरेलू/अंतरराष्ट्रीय यात्रा इतिहास, सक्रिय पंजीकृत मोबाइल नंबर व वाहन स्वामित्व विवरण।",
 
-    noticeeAge: "38 Years",
-    noticeeRole: "Suspect / Target Subject",
-    complainantName: "Superintendent of Police Sirsa",
+    noticeeAge: "38 वर्ष",
+    noticeeRole: "संदेही / अभियुक्त",
+    complainantName: "पुलिस अधीक्षक सिरसा",
     appearanceDate: "14-08-1988",
     appearanceTime: "All Databases",
     appearancePlace: "CCTNS & National Intelligence Grid Central Portal",
     documentsRequired: "Passport No. Z4920194, Vehicle No. HR-24-AK-5521",
 
-    noticeeName: "Vikas Sharma",
-    noticeeFather: "Ramesh Chand Sharma",
-    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Sirsa, Haryana",
+    noticeeName: "विकास शर्मा",
+    noticeeFather: "रमेश चंद शर्मा",
+    noticeeAddress: "मकान नं. 412, सेक्टर 7, अर्बन एस्टेट, सिरसा, हरियाणा",
     noticeeDob: "14-08-1988",
     noticeePhone: "9812044551, 9416022331",
     accusedAadhaar: "8492-3810-4921",
     accusedPan: "ABCPS1234F",
-    natgridOtherInfo: "Passport No. Z4920194, Vehicle No. HR-24-AK-5521",
+    natgridOtherInfo: "पासपोर्ट सं. Z4920194, वाहन सं. HR-24-AK-5521",
   },
 
   section_179_witness: {
@@ -215,11 +219,198 @@ const DEFAULT_SAMPLE_DATA: Record<FIRNoticeTemplateType, NoticeFormData> = {
   },
 };
 
+export const DEFAULT_SAMPLE_DATA_EN: Record<FIRNoticeTemplateType, NoticeFormData> = {
+  section_35_notice: {
+    headerDept: "HARYANA POLICE",
+    headerGovt: "DISTRICT AMBALA",
+    docTitle: "NOTICE OF APPEARANCE (SECTION 35(3) BNSS, 2023)",
+    docSubTitle: "Notice of Appearance under Section 35(3) Bharatiya Nagarik Suraksha Sanhita, 2023",
+    recipientDesignation: "",
+    dispatchNo: "",
+    policeStation: "Police Station City Ambala",
+    district: "District Ambala",
+    issueDate: formatDate(new Date()),
+
+    noticeeName: "",
+    noticeeFather: "",
+    noticeeAge: "",
+    noticeeAddress: "",
+    noticeePhone: "",
+    noticeeRole: "Accused / Suspect",
+
+    complaintNo: "128/2026",
+    complainantName: "",
+    complainantAddress: "",
+    incidentDate: formatDate(new Date()),
+    sectionsOfLaw: "Section 318(4), 316(2) BNS",
+    allegationsBrief:
+      "In connection with the investigation of the above case, reasonable grounds and suspicion of commission of a cognizable offence have been found against you. You are hereby required to join the investigation and present your statement.",
+
+    groundsBrief: "To cooperate in investigation and verify material evidence.",
+    appearanceDate: formatDate(new Date(Date.now() + 2 * 86400000)),
+    appearanceTime: "11:00 AM",
+    appearancePlace: "Office of Investigating Officer, Police Station City Ambala",
+    documentsRequired: "Identity proof (Aadhaar / PAN card), proof of residence, and any relevant documents concerning the case.",
+    statutoryClarification:
+      "If you fail to attend on the specified date and time or fail to comply with the terms of this notice, you may be arrested on the order of the competent Court under Section 35(6) BNSS, 2023.",
+
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector",
+    officerPno: "PNO-23841",
+    officerPhone: "9812034567",
+  },
+
+  cdr_requisition: {
+    headerDept: "POLICE STATION CITY PANIPAT",
+    headerGovt: "DISTRICT PANIPAT",
+    docTitle: "PROFORMA FOR CALL DETAIL RECORDS (CDR & IMEI)",
+    docSubTitle: "",
+    dispatchNo: "",
+    policeStation: "Police Station City Panipat",
+    district: "District Panipat",
+    issueDate: formatDate(new Date()),
+
+    toAuthority: "The Superintendent of Police, Panipat.",
+
+    noticeeName: "",
+    noticeeFather: "",
+    noticeeAge: "",
+    noticeeAddress: "",
+    noticeePhone: "",
+    noticeeRole: "",
+
+    complaintNo: "128/2026",
+    complainantName: "",
+    incidentDate: "18-09-2026",
+    sectionsOfLaw: "Section 318(4), 316(2) BNS",
+    allegationsBrief:
+      "It is submitted that for the investigation of the above case, Call Detail Records (CDR), CAF ID and IMEI search are required for the following mobile phone numbers. It is requested to provide the same.",
+
+    appearanceDate: "",
+    appearanceTime: "",
+    appearancePlace: "",
+    documentsRequired: "",
+
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector",
+    officerPno: "PNO-23841",
+    officerPhone: "9812034567",
+
+    shoName: "Station House Officer (SHO)",
+    supervisoryOfficerName: "Supervisory Officer (DSP)",
+    certificateText:
+      "1. The Subscriber identity has been ascertained and it is ensured that person in question is not someone whose call details are of sensitive nature.\n2. The number is not subscribed in the name of a sitting MP/MLA/MLC & Governor.",
+  },
+
+  natgrid_proforma: {
+    headerDept: "HARYANA POLICE",
+    headerGovt: "NATIONAL INTELLIGENCE GRID",
+    docTitle: "NATGRID PERFORMA",
+    docSubTitle: "",
+    dispatchNo: "HP/SRS/2026/NATGRID-012",
+    policeStation: "City Sirsa",
+    district: "Sirsa",
+    issueDate: new Date().toISOString().split("T")[0],
+
+    shoName: "Inspector, SHO",
+    shoPhone: "9812033441",
+    shoEmail: "sho.citysirsa-hry@nic.in",
+
+    complaintNo: "184/2026",
+    incidentDate: "24-09-2026",
+    sectionsOfLaw: "Section 318(4), 316(2), 336(3), 61(2) BNS, 2023 & Sec 66D IT Act",
+    allegationsBrief: "Organized financial fraud and inter-state cyber syndicate cheating victims through fake banking channels and shell entities.",
+
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector",
+    officerPhone: "9812034567",
+    officerPno: "PNO-23841",
+
+    natgridNationalSecurity: false,
+    natgridCounterTerror: false,
+    natgridHeinousCrime: true,
+    natgridReason: "To apprehend the accused and trace digital trails",
+    natgridDepartment: "FIU-IND, Bureau of Immigration (BOI), Telecom Service Providers, Income Tax PAN Database",
+    natgridInfoRequired: "All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections, and vehicle ownership details.",
+
+    noticeeAge: "38 Years",
+    noticeeRole: "Suspect / Target Subject",
+    complainantName: "Superintendent of Police Sirsa",
+    appearanceDate: "14-08-1988",
+    appearanceTime: "All Databases",
+    appearancePlace: "CCTNS & National Intelligence Grid Central Portal",
+    documentsRequired: "Passport No. Z4920194, Vehicle No. HR-24-AK-5521",
+
+    noticeeName: "Vikas Sharma",
+    noticeeFather: "Ramesh Chand Sharma",
+    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Sirsa, Haryana",
+    noticeeDob: "14-08-1988",
+    noticeePhone: "9812044551, 9416022331",
+    accusedAadhaar: "8492-3810-4921",
+    accusedPan: "ABCPS1234F",
+    natgridOtherInfo: "Passport No. Z4920194, Vehicle No. HR-24-AK-5521",
+  },
+
+  section_179_witness: {
+    headerDept: "HARYANA POLICE",
+    headerGovt: "DISTRICT AMBALA",
+    docTitle: "WITNESS ATTENDANCE ORDER (SECTION 179 BNSS, 2023)",
+    docSubTitle: "Witness Attendance Order under Section 179 Bharatiya Nagarik Suraksha Sanhita, 2023",
+    recipientDesignation: "Witness",
+    dispatchNo: "",
+    policeStation: "Police Station City Ambala",
+    district: "District Ambala",
+    issueDate: formatDate(new Date()),
+
+    noticeeName: "",
+    noticeeFather: "",
+    noticeeAge: "",
+    noticeeAddress: "",
+    noticeePhone: "",
+    noticeeRole: "Witness / Acquainted Person",
+
+    complaintNo: "128/2026",
+    complainantName: "",
+    complainantAddress: "",
+    incidentDate: formatDate(new Date()),
+    sectionsOfLaw: "Section 318(4), 316(2) BNS",
+    allegationsBrief:
+      "From the investigation of the above case, it appears that you are acquainted with the facts and circumstances of the case. Your examination is necessary for the investigation.",
+
+    groundsBrief: "To record statement and evidence under Section 180 BNSS, 2023.",
+    appearanceDate: formatDate(new Date(Date.now() + 2 * 86400000)),
+    appearanceTime: "11:00 AM",
+    appearancePlace: "Office of Investigating Officer, Police Station City Ambala",
+    documentsRequired: "Identity proof and any relevant documents or records relating to the case.",
+    statutoryClarification:
+      "Under Section 179 BNSS, 2023, you are legally bound to answer truly all questions relating to the case put to you by the investigating officer.",
+
+    officerName: "Surender Pal",
+    officerRank: "Sub-Inspector",
+    officerPno: "PNO-23841",
+    officerPhone: "9812034567",
+  },
+};
+
+// Default export alias for backward compatibility
+const DEFAULT_SAMPLE_DATA = DEFAULT_SAMPLE_DATA_HI;
+
 const TEMPLATE_CONFIG: Record<
   FIRNoticeTemplateType,
-  { label: string; badge: string; subTitle: string; description: string; icon: any; color: string }
+  {
+    labelHi: string;
+    labelEn: string;
+    label: string;
+    badge: string;
+    subTitle: string;
+    description: string;
+    icon: any;
+    color: string;
+  }
 > = {
   section_35_notice: {
+    labelHi: "1. सूचना-पत्र अभियुक्त (धारा 35(3) BNSS)",
+    labelEn: "1. Notice to Accused u/s 35(3) BNSS (Statutory Notice)",
     label: "1. Notice to Accused u/s 35(3) BNSS (सूचना-पत्र)",
     badge: "Accused Notice",
     subTitle: "Notice of Appearance under Section 35(3) Bharatiya Nagarik Suraksha Sanhita, 2023",
@@ -228,6 +419,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-blue-600",
   },
   cdr_requisition: {
+    labelHi: "2. काल डिटेल मांग प्रपत्र (CDR & IMEI - पानीपत प्रारूप)",
+    labelEn: "2. CDR & Digital Evidence Requisition (Panipat Format)",
     label: "2. CDR & Digital Evidence Requisition (Panipat Format बाबत काल डिटेल)",
     badge: "CDR & IMEI Proforma",
     subTitle: "Call Detail Records, CAF, IMEI & WhatsApp requisition with non-VIP certificate",
@@ -236,6 +429,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-purple-600",
   },
   natgrid_proforma: {
+    labelHi: "3. नैटग्रिड आसूचना प्रपत्र (NATGRID Multi-Agency Proforma)",
+    labelEn: "3. NATGRID Intelligence Requisition Proforma (Multi-Agency)",
     label: "3. NATGRID Intelligence Requisition Proforma",
     badge: "NATGRID Table",
     subTitle: "NATGRID Intelligence Requisition Proforma (Multi-Agency Intelligence Requisition)",
@@ -244,6 +439,8 @@ const TEMPLATE_CONFIG: Record<
     color: "text-emerald-600",
   },
   section_179_witness: {
+    labelHi: "4. साक्षी उपस्थिति आदेश (धारा 179 BNSS)",
+    labelEn: "4. Witness Attendance Order (Section 179 BNSS, 2023)",
     label: "4. Witness Attendance Order (Sec 179 BNSS)",
     badge: "Witness Order",
     subTitle: "Order requiring attendance of witness under Section 179 BNSS, 2023",
@@ -261,8 +458,9 @@ function FIRTemplatesContent() {
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
   const [selectedTemplate, setSelectedTemplate] = useState<FIRNoticeTemplateType>("section_35_notice");
+  const [templateLang, setTemplateLang] = useState<TemplateLanguage>("hi");
 
-  const [formData, setFormData] = useState<NoticeFormData>(DEFAULT_SAMPLE_DATA["section_35_notice"]);
+  const [formData, setFormData] = useState<NoticeFormData>(DEFAULT_SAMPLE_DATA_HI["section_35_notice"]);
 
   // Dynamic CDR Target Rows
   const [cdrTargetRows, setCdrTargetRows] = useState<
@@ -308,7 +506,8 @@ function FIRTemplatesContent() {
 
   // When active FIR or template changes, sync formData
   useEffect(() => {
-    const baseSample = DEFAULT_SAMPLE_DATA[selectedTemplate] || DEFAULT_SAMPLE_DATA.section_35_notice;
+    const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
+    const baseSample = baseSource[selectedTemplate] || baseSource.section_35_notice;
     if (!activeFir) {
       setFormData(baseSample);
       return;
@@ -335,10 +534,20 @@ function FIRTemplatesContent() {
 
     const targetNoticeeAge = (primaryAccused as any)?.age ? String((primaryAccused as any).age) : baseSample.noticeeAge || "";
 
+    const districtDisplay = activeFir.district
+      ? templateLang === "hi"
+        ? activeFir.district.startsWith("जिला")
+          ? activeFir.district
+          : `जिला ${activeFir.district}`
+        : activeFir.district.startsWith("District")
+          ? activeFir.district
+          : `District ${activeFir.district.replace(/^जिला\s*/, "")}`
+      : baseSample.district;
+
     setFormData({
       ...baseSample,
       policeStation: activeFir.policeStation || baseSample.policeStation,
-      district: activeFir.district ? (activeFir.district.startsWith("जिला") ? activeFir.district : `जिला ${activeFir.district}`) : baseSample.district,
+      district: districtDisplay,
       complaintNo: activeFir.firNumber || baseSample.complaintNo,
       complainantName: activeFir.complainantName || baseSample.complainantName,
       incidentDate: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || activeFir.firDate || baseSample.incidentDate,
@@ -370,18 +579,111 @@ function FIRTemplatesContent() {
           phone: primaryAccused.phone || "9812044551",
           periodFrom: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || "01-08-2026",
           periodTo: formatDate(new Date()),
-          reason: `Verification of accused in FIR No. ${activeFir.firNumber}`,
+          reason: templateLang === "hi"
+            ? `अभियोग सं. ${activeFir.firNumber} में अभियुक्त सत्यापन हेतु`
+            : `Verification of accused in FIR No. ${activeFir.firNumber}`,
         },
       ]);
     }
-  }, [activeFir, selectedTemplate, currentUser]);
+  }, [activeFir, selectedTemplate, currentUser, templateLang]);
 
   const handleFieldChange = (field: keyof NoticeFormData, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
+  // Toggle template language between Hindi and English
+  const handleToggleLanguage = (newLang: TemplateLanguage) => {
+    if (newLang === templateLang) return;
+    setTemplateLang(newLang);
+    setVoiceLang(newLang === "hi" ? "hi-IN" : "en-IN");
+
+    const currentBase = (templateLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
+    const targetBase = (newLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
+
+    setFormData((prev) => {
+      const updated = { ...prev };
+      // Switch boilerplate header & titles if empty or unchanged from defaults
+      if (!prev.headerDept || prev.headerDept === currentBase.headerDept) {
+        updated.headerDept = targetBase.headerDept;
+      }
+      if (!prev.headerGovt || prev.headerGovt === currentBase.headerGovt) {
+        updated.headerGovt = targetBase.headerGovt;
+      }
+      if (!prev.docTitle || prev.docTitle === currentBase.docTitle) {
+        updated.docTitle = targetBase.docTitle;
+      }
+      if (!prev.docSubTitle || prev.docSubTitle === currentBase.docSubTitle) {
+        updated.docSubTitle = targetBase.docSubTitle;
+      }
+      if (!prev.noticeeRole || prev.noticeeRole === currentBase.noticeeRole) {
+        updated.noticeeRole = targetBase.noticeeRole;
+      }
+      if (!prev.groundsBrief || prev.groundsBrief === currentBase.groundsBrief) {
+        updated.groundsBrief = targetBase.groundsBrief;
+      }
+      if (!prev.allegationsBrief || prev.allegationsBrief === currentBase.allegationsBrief) {
+        updated.allegationsBrief = targetBase.allegationsBrief;
+      }
+      if (!prev.documentsRequired || prev.documentsRequired === currentBase.documentsRequired) {
+        updated.documentsRequired = targetBase.documentsRequired;
+      }
+      if (!prev.statutoryClarification || prev.statutoryClarification === currentBase.statutoryClarification) {
+        updated.statutoryClarification = targetBase.statutoryClarification;
+      }
+      if (!prev.toAuthority || prev.toAuthority === currentBase.toAuthority) {
+        updated.toAuthority = targetBase.toAuthority;
+      }
+      if (!prev.shoName || prev.shoName === currentBase.shoName) {
+        updated.shoName = targetBase.shoName;
+      }
+      if (!prev.supervisoryOfficerName || prev.supervisoryOfficerName === currentBase.supervisoryOfficerName) {
+        updated.supervisoryOfficerName = targetBase.supervisoryOfficerName;
+      }
+      if (!prev.natgridReason || prev.natgridReason === currentBase.natgridReason) {
+        updated.natgridReason = targetBase.natgridReason;
+      }
+      if (!prev.natgridDepartment || prev.natgridDepartment === currentBase.natgridDepartment) {
+        updated.natgridDepartment = targetBase.natgridDepartment;
+      }
+      if (!prev.natgridInfoRequired || prev.natgridInfoRequired === currentBase.natgridInfoRequired) {
+        updated.natgridInfoRequired = targetBase.natgridInfoRequired;
+      }
+      if (prev.district) {
+        if (newLang === "hi") {
+          updated.district = prev.district.replace(/^District\s+/i, "जिला ");
+        } else {
+          updated.district = prev.district.replace(/^जिला\s+/, "District ");
+        }
+      }
+      return updated;
+    });
+
+    // Translate CDR reasons if using default sample texts
+    setCdrTargetRows((prevRows) =>
+      prevRows.map((r) => {
+        if (newLang === "en") {
+          if (r.reason === "आरोपी द्वारा परिवादी को फर्जी कॉल कर धोखाधड़ी करने बाबत") {
+            return { ...r, reason: "Fraudulent call made by accused to victim for financial cheating" };
+          }
+          if (r.reason === "सह-आरोपी के साथ संपर्क व लोकेशन मिलान हेतु") {
+            return { ...r, reason: "Verification of contact and cell-tower location matching with co-accused" };
+          }
+        } else {
+          if (r.reason === "Fraudulent call made by accused to victim for financial cheating") {
+            return { ...r, reason: "आरोपी द्वारा परिवादी को फर्जी कॉल कर धोखाधड़ी करने बाबत" };
+          }
+          if (r.reason === "Verification of contact and cell-tower location matching with co-accused") {
+            return { ...r, reason: "सह-आरोपी के साथ संपर्क व लोकेशन मिलान हेतु" };
+          }
+        }
+        return r;
+      })
+    );
+  };
+
   const handleResetSample = () => {
-    const base = DEFAULT_SAMPLE_DATA[selectedTemplate];
+    const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
+    const base = baseSource[selectedTemplate];
     if (base) {
       setFormData(base);
     }
@@ -451,32 +753,64 @@ function FIRTemplatesContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Bilingual Language Switcher (Top Action Bar) */}
+          <div className="flex items-center bg-white border border-slate-300 rounded-lg p-0.5 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-600 px-2 flex items-center gap-1">
+              <Languages className="w-3.5 h-3.5 text-purple-700" />
+              <span>भाषा / Lang:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("hi")}
+              className={`px-3 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                templateLang === "hi"
+                  ? "bg-purple-900 text-white shadow-xs"
+                  : "text-slate-600 hover:text-purple-900 hover:bg-slate-100"
+              }`}
+            >
+              हिन्दी
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleLanguage("en")}
+              className={`px-3 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                templateLang === "en"
+                  ? "bg-purple-900 text-white shadow-xs"
+                  : "text-slate-600 hover:text-purple-900 hover:bg-slate-100"
+              }`}
+            >
+              English
+            </button>
+          </div>
+
           <Button
             size="sm"
             onClick={handlePrint}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
-            Print A4 Notice
+            {templateLang === "hi" ? "प्रिंट A4 नोटिस" : "Print A4 Notice"}
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={handleDownload}
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
+            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            Download A4
+            {templateLang === "hi" ? "डाउनलोड A4" : "Download A4"}
           </Button>
           <Button
             size="sm"
             variant="outline"
             onClick={handleCopy}
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
+            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied" : "Copy Text"}
+            {copied
+              ? (templateLang === "hi" ? "कॉपी हो गया" : "Copied")
+              : (templateLang === "hi" ? "टेक्स्ट कॉपी करें" : "Copy Text")}
           </Button>
         </div>
       </div>
@@ -489,7 +823,7 @@ function FIRTemplatesContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Active FIR Case *
+              {templateLang === "hi" ? "सक्रिय अभियोग (FIR) चुनें *" : "Select Active FIR Case *"}
             </label>
             <select
               value={selectedFirId}
@@ -506,7 +840,7 @@ function FIRTemplatesContent() {
 
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Notice / Memo Proforma *
+              {templateLang === "hi" ? "नोटिस / मांग पत्र प्रपत्र चुनें *" : "Select Notice / Memo Proforma *"}
             </label>
             <select
               value={selectedTemplate}
@@ -515,54 +849,100 @@ function FIRTemplatesContent() {
             >
               {Object.entries(TEMPLATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>
-                  {cfg.label}
+                  {templateLang === "hi" ? cfg.labelHi : cfg.labelEn}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Toolbar: Font Size, Dictation, Reset */}
+        {/* Toolbar: Template Language Switcher, Font Size, Dictation, Reset */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 font-semibold text-[11px]">Font Size:</span>
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-              {(["compact", "standard", "large"] as const).map((sz) => (
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Prominent Bilingual Toggle Button in Toolbar */}
+            <div className="flex items-center gap-1.5 bg-purple-50 border border-purple-200 px-2 py-1 rounded-lg">
+              <span className="text-purple-950 font-bold text-[11px] flex items-center gap-1">
+                <Globe className="w-3.5 h-3.5 text-purple-700" />
+                <span>{templateLang === "hi" ? "टेम्पलेट भाषा:" : "Template Language:"}</span>
+              </span>
+              <div className="flex items-center gap-1 bg-white p-0.5 rounded border border-purple-200">
                 <button
-                  key={sz}
                   type="button"
-                  onClick={() => setFontSize(sz)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize transition-colors ${
-                    fontSize === sz ? "bg-white text-purple-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                  onClick={() => handleToggleLanguage("hi")}
+                  className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                    templateLang === "hi"
+                      ? "bg-purple-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-purple-900 hover:bg-purple-50"
                   }`}
                 >
-                  {sz}
+                  हिन्दी
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => handleToggleLanguage("en")}
+                  className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                    templateLang === "en"
+                      ? "bg-purple-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-purple-900 hover:bg-purple-50"
+                  }`}
+                >
+                  English
+                </button>
+              </div>
             </div>
 
-            <span className="text-slate-300 mx-1">|</span>
+            <span className="text-slate-300 hidden sm:inline">|</span>
 
-            <span className="text-slate-500 font-semibold text-[11px]">Dictation:</span>
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setVoiceLang("hi-IN")}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  voiceLang === "hi-IN" ? "bg-purple-900 text-white" : "text-slate-600"
-                }`}
-              >
-                हिन्दी
-              </button>
-              <button
-                type="button"
-                onClick={() => setVoiceLang("en-IN")}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  voiceLang === "en-IN" ? "bg-purple-900 text-white" : "text-slate-600"
-                }`}
-              >
-                English
-              </button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-semibold text-[11px]">
+                {templateLang === "hi" ? "फॉन्ट आकार:" : "Font Size:"}
+              </span>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+                {(["compact", "standard", "large"] as const).map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setFontSize(sz)}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize transition-colors cursor-pointer ${
+                      fontSize === sz ? "bg-white text-purple-900 shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {sz === "compact"
+                      ? templateLang === "hi" ? "छोटा" : "compact"
+                      : sz === "standard"
+                        ? templateLang === "hi" ? "सामान्य" : "standard"
+                        : templateLang === "hi" ? "बड़ा" : "large"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <span className="text-slate-300 hidden sm:inline">|</span>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 font-semibold text-[11px]">
+                {templateLang === "hi" ? "बोलकर लिखें:" : "Dictation:"}
+              </span>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang("hi-IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                    voiceLang === "hi-IN" ? "bg-purple-900 text-white" : "text-slate-600"
+                  }`}
+                >
+                  हिन्दी
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang("en-IN")}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                    voiceLang === "en-IN" ? "bg-purple-900 text-white" : "text-slate-600"
+                  }`}
+                >
+                  English
+                </button>
+              </div>
             </div>
           </div>
 
@@ -570,11 +950,11 @@ function FIRTemplatesContent() {
             <button
               type="button"
               onClick={handleResetSample}
-              className="px-2.5 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1 border border-slate-200"
+              className="px-2.5 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1 border border-slate-200 cursor-pointer"
               title="Reset template to standard default format"
             >
               <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Reset Template</span>
+              <span>{templateLang === "hi" ? "टेम्पलेट रीसेट करें" : "Reset Template"}</span>
             </button>
           </div>
         </div>
@@ -596,17 +976,19 @@ function FIRTemplatesContent() {
               <div className="text-center pt-2">
                 <input
                   type="text"
-                  value={formData.headerDept || "हरियाणा पुलिस"}
+                  value={formData.headerDept || (templateLang === "hi" ? "हरियाणा पुलिस" : "HARYANA POLICE")}
                   onChange={(e) => handleFieldChange("headerDept", e.target.value)}
                   className="font-black text-slate-950 underline underline-offset-8 text-xl sm:text-2xl text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wider"
-                  placeholder="हरियाणा पुलिस"
+                  placeholder={templateLang === "hi" ? "हरियाणा पुलिस" : "HARYANA POLICE"}
                 />
               </div>
 
               {/* Station and District Row */}
               <div className="flex items-baseline justify-between gap-4 font-bold text-base text-slate-950 pt-2">
                 <div className="flex items-center gap-1.5 flex-1 max-w-md">
-                  <span className="whitespace-nowrap">थाना/यूनिट</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "थाना/यूनिट" : "Police Station / Unit"}
+                  </span>
                   <input
                     type="text"
                     value={formData.policeStation || ""}
@@ -620,13 +1002,19 @@ function FIRTemplatesContent() {
                     type="text"
                     value={
                       formData.district
-                        ? formData.district.startsWith("जिला")
-                          ? formData.district
-                          : `जिला ${formData.district}`
-                        : "जिला अम्बाला।"
+                        ? templateLang === "hi"
+                          ? formData.district.startsWith("जिला")
+                            ? formData.district
+                            : `जिला ${formData.district}`
+                          : formData.district.startsWith("District")
+                            ? formData.district
+                            : `District ${formData.district.replace(/^जिला\s*/, "")}`
+                        : templateLang === "hi"
+                          ? "जिला अम्बाला।"
+                          : "District Ambala"
                     }
                     onChange={(e) => handleFieldChange("district", e.target.value)}
-                    placeholder="जिला अम्बाला।"
+                    placeholder={templateLang === "hi" ? "जिला अम्बाला।" : "District Ambala"}
                     className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none text-right w-44"
                   />
                 </div>
@@ -639,19 +1027,25 @@ function FIRTemplatesContent() {
                   value={
                     formData.docTitle ||
                     (selectedTemplate === "section_35_notice"
-                      ? "सूचना-पत्र (धारा 35(3) BNSS)"
-                      : "साक्षी उपस्थिति आदेश (धारा 179 BNSS)")
+                      ? templateLang === "hi"
+                        ? "सूचना-पत्र (धारा 35(3) BNSS)"
+                        : "NOTICE OF APPEARANCE (SECTION 35(3) BNSS, 2023)"
+                      : templateLang === "hi"
+                        ? "साक्षी उपस्थिति आदेश (धारा 179 BNSS)"
+                        : "WITNESS ATTENDANCE ORDER (SECTION 179 BNSS, 2023)")
                   }
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                   className="font-black text-slate-950 text-lg sm:text-xl text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wide"
-                  placeholder="शीर्षक दर्ज करें"
+                  placeholder={templateLang === "hi" ? "शीर्षक दर्ज करें" : "Enter Document Title"}
                 />
               </div>
 
               {/* Dispatch & Date */}
               <div className="flex items-center gap-8 font-medium text-slate-900 pb-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="whitespace-nowrap">क्रमांक</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "क्रमांक" : "Memo / Dispatch No."}
+                  </span>
                   <input
                     type="text"
                     value={formData.dispatchNo || ""}
@@ -661,7 +1055,9 @@ function FIRTemplatesContent() {
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="whitespace-nowrap">दिनांक</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "दिनांक" : "Date"}
+                  </span>
                   <input
                     type="text"
                     value={formData.issueDate || ""}
@@ -677,143 +1073,222 @@ function FIRTemplatesContent() {
                 <div className="flex items-center justify-between pb-1 border-b border-slate-200">
                   <span className="font-bold text-slate-900 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-purple-600" />
-                    <span>सेवा में / प्रति (Notice Recipient):</span>
+                    <span>
+                      {templateLang === "hi" ? "सेवा में / प्रति (Notice Recipient):" : "To / Notice Recipient:"}
+                    </span>
                   </span>
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                    {formData.noticeeRole || (selectedTemplate === "section_35_notice" ? "अभियुक्त / आरोपी" : "साक्षी / गवाह")}
+                    {formData.noticeeRole ||
+                      (selectedTemplate === "section_35_notice"
+                        ? templateLang === "hi"
+                          ? "अभियुक्त / आरोपी"
+                          : "Accused / Suspect"
+                        : templateLang === "hi"
+                          ? "साक्षी / गवाह"
+                          : "Witness / Acquainted Person")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">श्री/श्रीमती:</span>
+                    <span className="font-bold text-slate-700 whitespace-nowrap">
+                      {templateLang === "hi" ? "श्री/श्रीमती:" : "Shri/Smt:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.noticeeName || ""}
                       onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
-                      placeholder="नाम दर्ज करें"
+                      placeholder={templateLang === "hi" ? "नाम दर्ज करें" : "Enter Name"}
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
                     />
                     <VoiceInputButton
                       onTranscript={(t) => handleFieldChange("noticeeName", t)}
                       currentValue={formData.noticeeName || ""}
-                      fieldLabel="नाम"
+                      fieldLabel={templateLang === "hi" ? "नाम" : "Name"}
                       iconOnly
                     />
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">सुपुत्र/पत्नी/आत्मज:</span>
+                    <span className="font-bold text-slate-700 whitespace-nowrap">
+                      {templateLang === "hi" ? "सुपुत्र/पत्नी/आत्मज:" : "S/o, W/o, D/o:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.noticeeFather || ""}
                       onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
-                      placeholder="पिता/पति का नाम"
+                      placeholder={templateLang === "hi" ? "पिता/पति का नाम" : "Father's/Spouse's Name"}
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
                     />
                     <VoiceInputButton
                       onTranscript={(t) => handleFieldChange("noticeeFather", t)}
                       currentValue={formData.noticeeFather || ""}
-                      fieldLabel="पिता/पति का नाम"
+                      fieldLabel={templateLang === "hi" ? "पिता/पति का नाम" : "Parent/Spouse Name"}
                       iconOnly
                     />
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">आयु:</span>
+                    <span className="font-bold text-slate-700 whitespace-nowrap">
+                      {templateLang === "hi" ? "आयु:" : "Age:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.noticeeAge || ""}
                       onChange={(e) => handleFieldChange("noticeeAge", e.target.value)}
-                      placeholder="वर्ष"
+                      placeholder={templateLang === "hi" ? "वर्ष" : "Yrs"}
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-16 text-center"
                     />
-                    <span className="text-slate-500 text-[11px]">वर्ष</span>
+                    <span className="text-slate-500 text-[11px]">
+                      {templateLang === "hi" ? "वर्ष" : "Yrs"}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 sm:col-span-2">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">निवास स्थान (पता):</span>
+                    <span className="font-bold text-slate-700 whitespace-nowrap">
+                      {templateLang === "hi" ? "निवास स्थान (पता):" : "Residential Address:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.noticeeAddress || ""}
                       onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
-                      placeholder="पूरा पता"
+                      placeholder={templateLang === "hi" ? "पूरा पता" : "Complete Address"}
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
                     />
                     <VoiceInputButton
-                      onTranscript={(t) => handleFieldChange("noticeeAddress", (formData.noticeeAddress ? formData.noticeeAddress + " " : "") + t)}
+                      onTranscript={(t) =>
+                        handleFieldChange(
+                          "noticeeAddress",
+                          (formData.noticeeAddress ? formData.noticeeAddress + " " : "") + t
+                        )
+                      }
                       currentValue={formData.noticeeAddress || ""}
-                      fieldLabel="पूरा पता"
+                      fieldLabel={templateLang === "hi" ? "पूरा पता" : "Address"}
                       iconOnly
                     />
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">मोबाईल:</span>
+                    <span className="font-bold text-slate-700 whitespace-nowrap">
+                      {templateLang === "hi" ? "मोबाईल:" : "Mobile No.:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.noticeePhone || ""}
                       onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
-                      placeholder="मोबाईल नं."
+                      placeholder={templateLang === "hi" ? "मोबाईल नं." : "Mobile Number"}
                       className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-purple-500 px-1 py-0.5 outline-none w-full"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Case Allegation & Reference */}
-              <div className="text-justify leading-loose text-slate-900" style={{ textIndent: "40px" }}>
-                <span>आपको इस नोटिस के माध्यम से सूचित किया जाता है कि अभियोग संख्या </span>
-                <input
-                  type="text"
-                  value={formData.complaintNo || ""}
-                  onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
-                  placeholder=".........."
-                  className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[120px]"
-                />
-                <span> दिनांक </span>
-                <input
-                  type="text"
-                  value={formData.incidentDate || ""}
-                  onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
-                  placeholder=".........."
-                  className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[100px]"
-                />
-                <span> अंतर्गत धारा </span>
-                <input
-                  type="text"
-                  value={formData.sectionsOfLaw || ""}
-                  onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
-                  placeholder="धारा दर्ज करें"
-                  className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[180px]"
-                />
-                <span> थाना </span>
-                <input
-                  type="text"
-                  value={formData.policeStation || ""}
-                  onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                  placeholder="थाना नाम"
-                  className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[140px]"
-                />
-                <span> में दर्ज परिवादी </span>
-                <input
-                  type="text"
-                  value={formData.complainantName || ""}
-                  onChange={(e) => handleFieldChange("complainantName", e.target.value)}
-                  placeholder="परिवादी का नाम"
-                  className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[140px]"
-                />
-                <span> के संदर्भ में अनुसंधान विचाराधीन है।</span>
-              </div>
+              {/* Case Allegation & Reference Narrative */}
+              {templateLang === "hi" ? (
+                <div className="text-justify leading-loose text-slate-900" style={{ textIndent: "40px" }}>
+                  <span>आपको इस नोटिस के माध्यम से सूचित किया जाता है कि अभियोग संख्या </span>
+                  <input
+                    type="text"
+                    value={formData.complaintNo || ""}
+                    onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
+                    placeholder=".........."
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[120px]"
+                  />
+                  <span> दिनांक </span>
+                  <input
+                    type="text"
+                    value={formData.incidentDate || ""}
+                    onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
+                    placeholder=".........."
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[100px]"
+                  />
+                  <span> अंतर्गत धारा </span>
+                  <input
+                    type="text"
+                    value={formData.sectionsOfLaw || ""}
+                    onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
+                    placeholder="धारा दर्ज करें"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[180px]"
+                  />
+                  <span> थाना </span>
+                  <input
+                    type="text"
+                    value={formData.policeStation || ""}
+                    onChange={(e) => handleFieldChange("policeStation", e.target.value)}
+                    placeholder="थाना नाम"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[140px]"
+                  />
+                  <span> में दर्ज परिवादी </span>
+                  <input
+                    type="text"
+                    value={formData.complainantName || ""}
+                    onChange={(e) => handleFieldChange("complainantName", e.target.value)}
+                    placeholder="परिवादी का नाम"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[140px]"
+                  />
+                  <span> के संदर्भ में अनुसंधान विचाराधीन है।</span>
+                </div>
+              ) : (
+                <div className="text-justify leading-loose text-slate-900" style={{ textIndent: "40px" }}>
+                  <span>You are hereby notified that in connection with the investigation of Case / FIR No. </span>
+                  <input
+                    type="text"
+                    value={formData.complaintNo || ""}
+                    onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
+                    placeholder=".........."
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[120px]"
+                  />
+                  <span> dated </span>
+                  <input
+                    type="text"
+                    value={formData.incidentDate || ""}
+                    onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
+                    placeholder=".........."
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[100px]"
+                  />
+                  <span> under Section(s) </span>
+                  <input
+                    type="text"
+                    value={formData.sectionsOfLaw || ""}
+                    onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
+                    placeholder="Sections of Law"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[180px]"
+                  />
+                  <span> of Police Station </span>
+                  <input
+                    type="text"
+                    value={formData.policeStation || ""}
+                    onChange={(e) => handleFieldChange("policeStation", e.target.value)}
+                    placeholder="Police Station"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none text-center min-w-[140px]"
+                  />
+                  <span> lodged on complaint of </span>
+                  <input
+                    type="text"
+                    value={formData.complainantName || ""}
+                    onChange={(e) => handleFieldChange("complainantName", e.target.value)}
+                    placeholder="Complainant Name"
+                    className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[140px]"
+                  />
+                  <span>, investigation is in progress and your appearance is required.</span>
+                </div>
+              )}
 
               {/* Allegation Paragraph */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <div className="font-bold text-slate-900">संक्षिप्त विषय/आरोप:</div>
+                  <div className="font-bold text-slate-900">
+                    {templateLang === "hi" ? "संक्षिप्त विषय/आरोप:" : "Brief Subject / Allegations:"}
+                  </div>
                   <VoiceInputButton
-                    onTranscript={(t) => handleFieldChange("allegationsBrief", (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t)}
+                    onTranscript={(t) =>
+                      handleFieldChange(
+                        "allegationsBrief",
+                        (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t
+                      )
+                    }
                     currentValue={formData.allegationsBrief || ""}
-                    fieldLabel="संक्षिप्त विषय/आरोप"
+                    fieldLabel={templateLang === "hi" ? "संक्षिप्त विषय/आरोप" : "Allegations Brief"}
                     iconOnly
                   />
                 </div>
@@ -822,48 +1297,67 @@ function FIRTemplatesContent() {
                   value={formData.allegationsBrief || ""}
                   onChange={(e) => handleFieldChange("allegationsBrief", e.target.value)}
                   className="w-full text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded p-2 outline-none leading-relaxed"
-                  placeholder="आरोप व विषय का संक्षिप्त विवरण..."
+                  placeholder={
+                    templateLang === "hi"
+                      ? "आरोप व विषय का संक्षिप्त विवरण..."
+                      : "Brief summary of allegations and subject..."
+                  }
                 />
               </div>
 
               {/* Appearance Directives */}
               <div className="p-4 bg-slate-50 border border-slate-300 rounded-lg space-y-3">
-                <div className="font-bold text-slate-950">उपस्थिति निर्देश (Appearance Directives):</div>
+                <div className="font-bold text-slate-950">
+                  {templateLang === "hi"
+                    ? "उपस्थिति निर्देश (Appearance Directives):"
+                    : "Appearance Directives:"}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <span className="block font-semibold text-slate-700 text-xs mb-1">उपस्थिति दिनांक:</span>
+                    <span className="block font-semibold text-slate-700 text-xs mb-1">
+                      {templateLang === "hi" ? "उपस्थिति दिनांक:" : "Date of Appearance:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.appearanceDate || ""}
                       onChange={(e) => handleFieldChange("appearanceDate", e.target.value)}
-                      placeholder="दिनांक"
+                      placeholder={templateLang === "hi" ? "दिनांक" : "Date"}
                       className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
                     />
                   </div>
                   <div>
-                    <span className="block font-semibold text-slate-700 text-xs mb-1">उपस्थिति समय:</span>
+                    <span className="block font-semibold text-slate-700 text-xs mb-1">
+                      {templateLang === "hi" ? "उपस्थिति समय:" : "Time of Appearance:"}
+                    </span>
                     <input
                       type="text"
                       value={formData.appearanceTime || "11:00 AM"}
                       onChange={(e) => handleFieldChange("appearanceTime", e.target.value)}
-                      placeholder="समय"
+                      placeholder={templateLang === "hi" ? "समय" : "Time"}
                       className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
                     />
                   </div>
                   <div>
-                    <span className="block font-semibold text-slate-700 text-xs mb-1">उपस्थिति स्थान:</span>
+                    <span className="block font-semibold text-slate-700 text-xs mb-1">
+                      {templateLang === "hi" ? "उपस्थिति स्थान:" : "Place of Appearance:"}
+                    </span>
                     <div className="flex items-center gap-1">
                       <input
                         type="text"
-                        value={formData.appearancePlace || `कार्यालय अनुसंधान अधिकारी, ${formData.policeStation}`}
+                        value={
+                          formData.appearancePlace ||
+                          (templateLang === "hi"
+                            ? `कार्यालय अनुसंधान अधिकारी, ${formData.policeStation}`
+                            : `Office of Investigating Officer, ${formData.policeStation}`)
+                        }
                         onChange={(e) => handleFieldChange("appearancePlace", e.target.value)}
-                        placeholder="स्थान"
+                        placeholder={templateLang === "hi" ? "स्थान" : "Place"}
                         className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
                       />
                       <VoiceInputButton
                         onTranscript={(t) => handleFieldChange("appearancePlace", t)}
                         currentValue={formData.appearancePlace || ""}
-                        fieldLabel="उपस्थिति स्थान"
+                        fieldLabel={templateLang === "hi" ? "उपस्थिति स्थान" : "Appearance Place"}
                         iconOnly
                       />
                     </div>
@@ -871,19 +1365,30 @@ function FIRTemplatesContent() {
                 </div>
 
                 <div>
-                  <span className="block font-semibold text-slate-700 text-xs mb-1">आवश्यक दस्तावेज:</span>
+                  <span className="block font-semibold text-slate-700 text-xs mb-1">
+                    {templateLang === "hi" ? "आवश्यक दस्तावेज:" : "Documents Required:"}
+                  </span>
                   <div className="flex items-center gap-1">
                     <input
                       type="text"
                       value={formData.documentsRequired || ""}
                       onChange={(e) => handleFieldChange("documentsRequired", e.target.value)}
-                      placeholder="पहचान पत्र, साक्ष्य दस्तावेज..."
+                      placeholder={
+                        templateLang === "hi"
+                          ? "पहचान पत्र, साक्ष्य दस्तावेज..."
+                          : "Identity proof, relevant evidence documents..."
+                      }
                       className="w-full text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
                     />
                     <VoiceInputButton
-                      onTranscript={(t) => handleFieldChange("documentsRequired", (formData.documentsRequired ? formData.documentsRequired + ", " : "") + t)}
+                      onTranscript={(t) =>
+                        handleFieldChange(
+                          "documentsRequired",
+                          (formData.documentsRequired ? formData.documentsRequired + ", " : "") + t
+                        )
+                      }
                       currentValue={formData.documentsRequired || ""}
-                      fieldLabel="आवश्यक दस्तावेज"
+                      fieldLabel={templateLang === "hi" ? "आवश्यक दस्तावेज" : "Documents Required"}
                       iconOnly
                     />
                   </div>
@@ -893,11 +1398,20 @@ function FIRTemplatesContent() {
               {/* Statutory Warning */}
               <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-xs leading-relaxed text-amber-950 font-medium">
                 <div className="flex items-center justify-between">
-                  <strong>वैधानिक चेतावनी (Statutory Clarification): </strong>
+                  <strong>
+                    {templateLang === "hi"
+                      ? "वैधानिक चेतावनी (Statutory Clarification): "
+                      : "Statutory Clarification / Warning: "}
+                  </strong>
                   <VoiceInputButton
-                    onTranscript={(t) => handleFieldChange("statutoryClarification", (formData.statutoryClarification ? formData.statutoryClarification + " " : "") + t)}
+                    onTranscript={(t) =>
+                      handleFieldChange(
+                        "statutoryClarification",
+                        (formData.statutoryClarification ? formData.statutoryClarification + " " : "") + t
+                      )
+                    }
                     currentValue={formData.statutoryClarification || ""}
-                    fieldLabel="वैधानिक चेतावनी"
+                    fieldLabel={templateLang === "hi" ? "वैधानिक चेतावनी" : "Statutory Clarification"}
                     iconOnly
                   />
                 </div>
@@ -906,8 +1420,12 @@ function FIRTemplatesContent() {
                   value={
                     formData.statutoryClarification ||
                     (selectedTemplate === "section_35_notice"
-                      ? "यदि आप उक्त तिथि व समय पर उपस्थित नहीं होते हैं अथवा नोटिस की शर्तों का पालन करने में विफल रहते हैं, तो धारा 35(6) BNSS के तहत सक्षम न्यायालय के आदेश पर आपकी गिरफ्तारी की जा सकती है।"
-                      : "धारा 179 BNSS के अंतर्गत पुलिस अधिकारी द्वारा पूछे गए सभी प्रश्नों का सत्य उत्तर देना आपका विधिक दायित्व है।")
+                      ? templateLang === "hi"
+                        ? "यदि आप उक्त तिथि व समय पर उपस्थित नहीं होते हैं अथवा नोटिस की शर्तों का पालन करने में विफल रहते हैं, तो धारा 35(6) BNSS के तहत सक्षम न्यायालय के आदेश पर आपकी गिरफ्तारी की जा सकती है।"
+                        : "If you fail to attend on the specified date and time or fail to comply with the terms of this notice, you may be arrested on the order of the competent Court under Section 35(6) BNSS, 2023."
+                      : templateLang === "hi"
+                        ? "धारा 179 BNSS के अंतर्गत पुलिस अधिकारी द्वारा पूछे गए सभी प्रश्नों का सत्य उत्तर देना आपका विधिक दायित्व है।"
+                        : "Under Section 179 BNSS, 2023, you are legally bound to answer truly all questions relating to the case put to you by the investigating officer.")
                   }
                   onChange={(e) => handleFieldChange("statutoryClarification", e.target.value)}
                   className="w-full bg-transparent border-0 outline-none p-1 mt-1 font-medium"
@@ -917,8 +1435,8 @@ function FIRTemplatesContent() {
               {/* Signature Block */}
               <div className="pt-8 flex justify-between items-end font-sans text-xs">
                 <div>
-                  <p>स्थान: {formData.policeStation}</p>
-                  <p>दिनांक: {formData.issueDate}</p>
+                  <p>{templateLang === "hi" ? "स्थान:" : "Place:"} {formData.policeStation}</p>
+                  <p>{templateLang === "hi" ? "दिनांक:" : "Date:"} {formData.issueDate}</p>
                 </div>
                 <div className="text-right space-y-1">
                   <div className="w-48 border-b border-slate-800 ml-auto mb-1.5"></div>
@@ -927,16 +1445,18 @@ function FIRTemplatesContent() {
                     value={formData.officerName || ""}
                     onChange={(e) => handleFieldChange("officerName", e.target.value)}
                     className="font-bold text-slate-950 bg-transparent text-right outline-none block ml-auto"
-                    placeholder="अनुसंधान अधिकारी का नाम"
+                    placeholder={templateLang === "hi" ? "अनुसंधान अधिकारी का नाम" : "Name of Investigating Officer"}
                   />
                   <input
                     type="text"
-                    value={`${formData.officerRank || "उप-निरीक्षक"} • ${formData.officerPno || "PNO"}`}
+                    value={`${formData.officerRank || (templateLang === "hi" ? "उप-निरीक्षक" : "Sub-Inspector")} • ${formData.officerPno || "PNO"}`}
                     onChange={(e) => handleFieldChange("officerRank", e.target.value)}
                     className="text-slate-700 bg-transparent text-right outline-none block ml-auto"
-                    placeholder="रैंक व बेल्ट नं."
+                    placeholder={templateLang === "hi" ? "रैंक व बेल्ट नं." : "Rank & Belt/PNO"}
                   />
-                  <p className="text-slate-600 font-semibold">अनुसंधान अधिकारी (I.O.)</p>
+                  <p className="text-slate-600 font-semibold">
+                    {templateLang === "hi" ? "अनुसंधान अधिकारी (I.O.)" : "Investigating Officer (I.O.)"}
+                  </p>
                   <p className="text-slate-600">{formData.policeStation}</p>
                 </div>
               </div>
@@ -946,24 +1466,24 @@ function FIRTemplatesContent() {
           {/* ================= TEMPLATE 2: CDR & DIGITAL EVIDENCE REQUISITION (हरियाणा पुलिस प्रारूप बाबत काल डिटेल) ================= */}
           {selectedTemplate === "cdr_requisition" && (
             <div className="space-y-6 text-slate-950 font-sans text-sm">
-              {/* 1. Top Header: Left (थाना शहर पानीपत), Center (प्रारुप बाबत काल डिटेल), Right (जिला पानीपत, नम्बर, दिनांक) */}
+              {/* 1. Top Header: Left (थाना), Center (प्रारुप), Right (जिला, नम्बर, दिनांक) */}
               <div className="flex items-start justify-between gap-4 pt-2">
                 <div className="w-1/3">
                   <input
                     type="text"
-                    value={formData.policeStation || "थाना शहर पानीपत"}
+                    value={formData.policeStation || (templateLang === "hi" ? "थाना शहर पानीपत" : "Police Station City Panipat")}
                     onChange={(e) => handleFieldChange("policeStation", e.target.value)}
                     className="font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-1.5 py-0.5 outline-none text-base"
-                    placeholder="थाना शहर पानीपत"
+                    placeholder={templateLang === "hi" ? "थाना शहर पानीपत" : "Police Station City Panipat"}
                   />
                 </div>
                 <div className="w-1/3 text-center">
                   <input
                     type="text"
-                    value={formData.docTitle || "प्रारुप बाबत काल डिटेल"}
+                    value={formData.docTitle || (templateLang === "hi" ? "प्रारुप बाबत काल डिटेल" : "PROFORMA FOR CALL DETAIL RECORDS")}
                     onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                     className="font-black text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none text-base sm:text-lg text-center"
-                    placeholder="प्रारुप बाबत काल डिटेल"
+                    placeholder={templateLang === "hi" ? "प्रारुप बाबत काल डिटेल" : "PROFORMA FOR CALL DETAIL RECORDS"}
                   />
                 </div>
                 <div className="w-1/3 text-right space-y-1">
@@ -971,17 +1491,23 @@ function FIRTemplatesContent() {
                     type="text"
                     value={
                       formData.district
-                        ? formData.district.startsWith("जिला")
-                          ? formData.district
-                          : `जिला ${formData.district}`
-                        : "जिला पानीपत"
+                        ? templateLang === "hi"
+                          ? formData.district.startsWith("जिला")
+                            ? formData.district
+                            : `जिला ${formData.district}`
+                          : formData.district.startsWith("District")
+                            ? formData.district
+                            : `District ${formData.district.replace(/^जिला\s*/, "")}`
+                        : templateLang === "hi"
+                          ? "जिला पानीपत"
+                          : "District Panipat"
                     }
                     onChange={(e) => handleFieldChange("district", e.target.value)}
                     className="font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-1.5 py-0.5 outline-none text-base text-right w-full"
-                    placeholder="जिला पानीपत"
+                    placeholder={templateLang === "hi" ? "जिला पानीपत" : "District Panipat"}
                   />
                   <div className="flex items-center justify-end gap-1 text-sm font-semibold text-slate-800">
-                    <span>नम्बर-</span>
+                    <span>{templateLang === "hi" ? "नम्बर-" : "Memo No.-"}</span>
                     <input
                       type="text"
                       value={formData.dispatchNo || ""}
@@ -991,7 +1517,7 @@ function FIRTemplatesContent() {
                     />
                   </div>
                   <div className="flex items-center justify-end gap-1 text-sm font-semibold text-slate-800">
-                    <span>दिनांक-</span>
+                    <span>{templateLang === "hi" ? "दिनांक-" : "Date-"}</span>
                     <input
                       type="text"
                       value={formData.issueDate || ""}
@@ -1003,10 +1529,12 @@ function FIRTemplatesContent() {
                 </div>
               </div>
 
-              {/* 2. Case Details Row: अभियोग संख्या, दिनांक, धारा, थाना शहर पानीपत */}
+              {/* 2. Case Details Row */}
               <div className="grid grid-cols-4 items-center gap-3 py-2 border-y border-slate-300 text-sm font-bold text-slate-900">
                 <div className="flex items-center gap-1.5">
-                  <span className="whitespace-nowrap">अभियोग संख्या</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "अभियोग संख्या" : "FIR / Case No."}
+                  </span>
                   <input
                     type="text"
                     value={formData.complaintNo || ""}
@@ -1016,7 +1544,9 @@ function FIRTemplatesContent() {
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="whitespace-nowrap">दिनांक</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "दिनांक" : "Date"}
+                  </span>
                   <input
                     type="text"
                     value={formData.incidentDate || ""}
@@ -1026,7 +1556,9 @@ function FIRTemplatesContent() {
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="whitespace-nowrap">धारा</span>
+                  <span className="whitespace-nowrap">
+                    {templateLang === "hi" ? "धारा" : "Section(s)"}
+                  </span>
                   <input
                     type="text"
                     value={formData.sectionsOfLaw || ""}
@@ -1038,9 +1570,9 @@ function FIRTemplatesContent() {
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
-                    value={formData.policeStation || "थाना शहर पानीपत"}
+                    value={formData.policeStation || (templateLang === "hi" ? "थाना शहर पानीपत" : "PS City Panipat")}
                     onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                    placeholder="थाना शहर पानीपत"
+                    placeholder={templateLang === "hi" ? "थाना शहर पानीपत" : "PS City Panipat"}
                     className="w-full font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-right"
                   />
                 </div>
@@ -1048,14 +1580,17 @@ function FIRTemplatesContent() {
 
               {/* 3. सेवा में, पुलिस अधीक्षक पानीपत। */}
               <div className="space-y-1 text-sm">
-                <p className="font-bold text-slate-900">सेवा में,</p>
+                <p className="font-bold text-slate-900">{templateLang === "hi" ? "सेवा में," : "To,"}</p>
                 <div className="pl-8">
                   <input
                     type="text"
-                    value={formData.toAuthority || "पुलिस अधीक्षक पानीपत।"}
+                    value={
+                      formData.toAuthority ||
+                      (templateLang === "hi" ? "पुलिस अधीक्षक पानीपत।" : "The Superintendent of Police, Panipat.")
+                    }
                     onChange={(e) => handleFieldChange("toAuthority", e.target.value)}
                     className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-full max-w-md text-sm"
-                    placeholder="पुलिस अधीक्षक पानीपत।"
+                    placeholder={templateLang === "hi" ? "पुलिस अधीक्षक पानीपत।" : "The Superintendent of Police, Panipat."}
                   />
                 </div>
               </div>
@@ -1063,11 +1598,18 @@ function FIRTemplatesContent() {
               {/* 4. श्रीमान जी, निवेदन है कि... */}
               <div className="space-y-1 text-sm">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-slate-900">श्रीमान जी,</p>
+                  <p className="font-bold text-slate-900">
+                    {templateLang === "hi" ? "श्रीमान जी," : "Respected Sir,"}
+                  </p>
                   <VoiceInputButton
-                    onTranscript={(t) => handleFieldChange("allegationsBrief", (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t)}
+                    onTranscript={(t) =>
+                      handleFieldChange(
+                        "allegationsBrief",
+                        (formData.allegationsBrief ? formData.allegationsBrief + " " : "") + t
+                      )
+                    }
                     currentValue={formData.allegationsBrief || ""}
-                    fieldLabel="निवेदन विवरण"
+                    fieldLabel={templateLang === "hi" ? "निवेदन विवरण" : "Requisition Details"}
                     iconOnly
                   />
                 </div>
@@ -1076,11 +1618,17 @@ function FIRTemplatesContent() {
                     rows={2}
                     value={
                       formData.allegationsBrief ||
-                      "निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।"
+                      (templateLang === "hi"
+                        ? "निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।"
+                        : "It is submitted that for the investigation of the above case, Call Detail Records (CDR), CAF ID and IMEI search are required for the following mobile phone numbers. It is requested to provide the same.")
                     }
                     onChange={(e) => handleFieldChange("allegationsBrief", e.target.value)}
                     className="w-full font-medium text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed text-sm resize-y"
-                    placeholder="निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।"
+                    placeholder={
+                      templateLang === "hi"
+                        ? "निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।"
+                        : "It is submitted that for the investigation of the above case, Call Detail Records (CDR), CAF ID and IMEI search are required..."
+                    }
                   />
                 </div>
               </div>
@@ -1089,7 +1637,9 @@ function FIRTemplatesContent() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between no-print">
                   <span className="text-xs font-bold text-slate-700">
-                    मोबाईल फोन विवरण तालिका ({cdrTargetRows.length} पंक्तियाँ):
+                    {templateLang === "hi"
+                      ? `मोबाईल फोन विवरण तालिका (${cdrTargetRows.length} पंक्तियाँ):`
+                      : `Target Device / CDR Table (${cdrTargetRows.length} Rows):`}
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
@@ -1100,7 +1650,7 @@ function FIRTemplatesContent() {
                       className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-900 border-slate-300 font-bold gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>+ नई पंक्ति जोड़ें (Add Row)</span>
+                      <span>{templateLang === "hi" ? "+ नई पंक्ति जोड़ें (Add Row)" : "+ Add Target Row"}</span>
                     </Button>
                   </div>
                 </div>
@@ -1121,7 +1671,7 @@ function FIRTemplatesContent() {
                           }}
                           className="relative w-12 p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
-                          क्र.स.
+                          {templateLang === "hi" ? "क्र.स." : "Sr. No."}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(0, e)} />
                         </th>
                         <th
@@ -1132,14 +1682,16 @@ function FIRTemplatesContent() {
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
-                          मोबाईल फोन/ आई.एम.ई.आई. / आई पी/ व्हाटसअप नम्बर जिनकी डिटेल की आवश्यकता है
+                          {templateLang === "hi"
+                            ? "मोबाईल फोन/ आई.एम.ई.आई. / आई पी/ व्हाटसअप नम्बर जिनकी डिटेल की आवश्यकता है"
+                            : "Mobile Phone / IMEI / IP / WhatsApp Numbers for Requisition"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(1, e)} />
                         </th>
                         <th
                           colSpan={2}
                           className="p-1.5 font-black border-r-2 border-slate-900 text-center border-b-2 border-slate-900"
                         >
-                          समय अवधि
+                          {templateLang === "hi" ? "समय अवधि" : "Period / Duration"}
                         </th>
                         <th
                           rowSpan={2}
@@ -1149,11 +1701,13 @@ function FIRTemplatesContent() {
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
-                          अभियोग का विवरण एवं डाटा किस कारण से जरूरी है संक्षिप्त विवरण
+                          {templateLang === "hi"
+                            ? "अभियोग का विवरण एवं डाटा किस कारण से जरूरी है संक्षिप्त विवरण"
+                            : "Brief Case Facts & Justification for Data Requirement"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(4, e)} />
                         </th>
                         <th rowSpan={2} className="w-10 p-1 font-black text-center align-middle no-print">
-                          हटाएं
+                          {templateLang === "hi" ? "हटाएं" : "Delete"}
                         </th>
                       </tr>
                       <tr className="bg-slate-50 border-b-2 border-slate-900">
@@ -1164,7 +1718,7 @@ function FIRTemplatesContent() {
                           }}
                           className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
                         >
-                          कब से
+                          {templateLang === "hi" ? "कब से" : "From"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(2, e)} />
                         </th>
                         <th
@@ -1174,7 +1728,7 @@ function FIRTemplatesContent() {
                           }}
                           className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
                         >
-                          कब तक
+                          {templateLang === "hi" ? "कब तक" : "To"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(3, e)} />
                         </th>
                       </tr>
@@ -1206,7 +1760,7 @@ function FIRTemplatesContent() {
                               type="text"
                               value={row.periodFrom || ""}
                               onChange={(e) => handleUpdateCdrRow(row.id, "periodFrom", e.target.value)}
-                              placeholder="कब से"
+                              placeholder={templateLang === "hi" ? "कब से" : "From Date"}
                               className="w-full text-xs text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none"
                             />
                           </td>
@@ -1215,7 +1769,7 @@ function FIRTemplatesContent() {
                               type="text"
                               value={row.periodTo || ""}
                               onChange={(e) => handleUpdateCdrRow(row.id, "periodTo", e.target.value)}
-                              placeholder="कब तक"
+                              placeholder={templateLang === "hi" ? "कब तक" : "To Date"}
                               className="w-full text-xs text-center text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none"
                             />
                           </td>
@@ -1225,13 +1779,23 @@ function FIRTemplatesContent() {
                                 rows={Math.max(1, Math.floor(((cdrTableResize.rowHeights[index] || 36) - 14) / 18))}
                                 value={row.reason || ""}
                                 onChange={(e) => handleUpdateCdrRow(row.id, "reason", e.target.value)}
-                                placeholder="अभियोग का संक्षिप्त विवरण व डाटा का कारण"
+                                placeholder={
+                                  templateLang === "hi"
+                                    ? "अभियोग का संक्षिप्त विवरण व डाटा का कारण"
+                                    : "Brief case facts & reason for CDR requisition"
+                                }
                                 className="w-full text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 p-1 rounded outline-none resize-y"
                               />
                               <VoiceInputButton
-                                onTranscript={(t) => handleUpdateCdrRow(row.id, "reason", (row.reason ? row.reason + " " : "") + t)}
+                                onTranscript={(t) =>
+                                  handleUpdateCdrRow(
+                                    row.id,
+                                    "reason",
+                                    (row.reason ? row.reason + " " : "") + t
+                                  )
+                                }
                                 currentValue={row.reason || ""}
-                                fieldLabel="डाटा का कारण"
+                                fieldLabel={templateLang === "hi" ? "डाटा का कारण" : "Reason for Data"}
                                 iconOnly
                               />
                             </div>
@@ -1254,28 +1818,47 @@ function FIRTemplatesContent() {
                 </div>
               </div>
 
-              {/* 6. Legal Undertakings in English */}
-              <div className="space-y-1.5 text-xs text-slate-900 font-medium pt-2">
-                <p className="flex items-start gap-1.5">
-                  <span className="font-bold">1.</span>
-                  <span>
-                    The Subscriber identity has been ascertained and it is ensured that person in question is not
-                    someone whose call details are of sensitive nature.
-                  </span>
-                </p>
-                <p className="flex items-start gap-1.5">
-                  <span className="font-bold">2.</span>
-                  <span>The number is not subscribed in the name of a sitting MP/MLA/MLC &amp; Governor.</span>
-                </p>
-              </div>
+              {/* 6. Legal Undertakings */}
+              {templateLang === "hi" ? (
+                <div className="space-y-1.5 text-xs text-slate-900 font-medium pt-2">
+                  <p className="flex items-start gap-1.5">
+                    <span className="font-bold">1.</span>
+                    <span>
+                      उपभोक्ता की पहचान सुनिश्चित कर ली गई है और यह आश्वस्त किया जाता है कि संबंधित व्यक्ति की काल डिटेल संवेदनशील प्रकृति की नहीं है।
+                    </span>
+                  </p>
+                  <p className="flex items-start gap-1.5">
+                    <span className="font-bold">2.</span>
+                    <span>यह नंबर किसी आसीन सांसद / विधायक / विधान पार्षद अथवा राज्यपाल के नाम पर पंजीकृत नहीं है।</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 text-xs text-slate-900 font-medium pt-2">
+                  <p className="flex items-start gap-1.5">
+                    <span className="font-bold">1.</span>
+                    <span>
+                      The Subscriber identity has been ascertained and it is ensured that person in question is not
+                      someone whose call details are of sensitive nature.
+                    </span>
+                  </p>
+                  <p className="flex items-start gap-1.5">
+                    <span className="font-bold">2.</span>
+                    <span>The number is not subscribed in the name of a sitting MP/MLA/MLC &amp; Governor.</span>
+                  </p>
+                </div>
+              )}
 
               {/* 7. Signatures and Forwarding blocks */}
               <div className="pt-6 space-y-10">
                 <div className="flex justify-end">
                   <div className="w-64 space-y-1.5 text-xs">
-                    <p className="font-bold text-slate-950">हस्ताक्षर अनुसंधान अधिकारी</p>
+                    <p className="font-bold text-slate-950">
+                      {templateLang === "hi" ? "हस्ताक्षर अनुसंधान अधिकारी" : "Signature of Investigating Officer"}
+                    </p>
                     <div className="flex items-center gap-1">
-                      <span className="font-semibold text-slate-800">नाम-</span>
+                      <span className="font-semibold text-slate-800">
+                        {templateLang === "hi" ? "नाम-" : "Name-"}
+                      </span>
                       <input
                         type="text"
                         value={formData.officerName || ""}
@@ -1285,7 +1868,9 @@ function FIRTemplatesContent() {
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="font-semibold text-slate-800">रैन्क-</span>
+                      <span className="font-semibold text-slate-800">
+                        {templateLang === "hi" ? "रैन्क-" : "Rank-"}
+                      </span>
                       <input
                         type="text"
                         value={formData.officerRank || ""}
@@ -1295,7 +1880,9 @@ function FIRTemplatesContent() {
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="font-semibold text-slate-800">फोन न0-</span>
+                      <span className="font-semibold text-slate-800">
+                        {templateLang === "hi" ? "फोन न0-" : "Phone No.-"}
+                      </span>
                       <input
                         type="text"
                         value={formData.officerPhone || ""}
@@ -1305,7 +1892,9 @@ function FIRTemplatesContent() {
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="font-semibold text-slate-800">थाना/यूनिट-</span>
+                      <span className="font-semibold text-slate-800">
+                        {templateLang === "hi" ? "थाना/यूनिट-" : "Police Station/Unit-"}
+                      </span>
                       <input
                         type="text"
                         value={formData.policeStation || ""}
@@ -1318,21 +1907,31 @@ function FIRTemplatesContent() {
                 </div>
 
                 <div className="space-y-6 pt-4">
-                  <div className="text-left w-48 space-y-1 text-xs">
-                    <p className="font-bold text-slate-900">अग्रेषित</p>
+                  <div className="text-left w-56 space-y-1 text-xs">
+                    <p className="font-bold text-slate-900">
+                      {templateLang === "hi" ? "अग्रेषित" : "Forwarded"}
+                    </p>
                     <input
                       type="text"
-                      value={formData.shoName || "प्रबंधक अफसर"}
+                      value={
+                        formData.shoName ||
+                        (templateLang === "hi" ? "प्रबंधक अफसर" : "Station House Officer (SHO)")
+                      }
                       onChange={(e) => handleFieldChange("shoName", e.target.value)}
                       className="font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 px-1 py-0.5 outline-none w-full"
                     />
                   </div>
 
-                  <div className="text-center w-64 mx-auto space-y-1 text-xs">
-                    <p className="font-bold text-slate-900">अग्रेषित</p>
+                  <div className="text-center w-72 mx-auto space-y-1 text-xs">
+                    <p className="font-bold text-slate-900">
+                      {templateLang === "hi" ? "अग्रेषित" : "Forwarded"}
+                    </p>
                     <input
                       type="text"
-                      value={formData.supervisoryOfficerName || "पर्यवेक्षण अधिकारी"}
+                      value={
+                        formData.supervisoryOfficerName ||
+                        (templateLang === "hi" ? "पर्यवेक्षण अधिकारी" : "Supervisory Officer (DSP)")
+                      }
                       onChange={(e) => handleFieldChange("supervisoryOfficerName", e.target.value)}
                       className="font-bold text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-400 px-1 py-0.5 outline-none w-full text-center"
                     />
@@ -1349,10 +1948,13 @@ function FIRTemplatesContent() {
               <div className="text-center pt-2 pb-2">
                 <input
                   type="text"
-                  value={formData.docTitle || "NATGRID PERFORMA"}
+                  value={
+                    formData.docTitle ||
+                    (templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA")
+                  }
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                   className="font-bold text-slate-950 underline underline-offset-4 text-base sm:text-lg text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wide"
-                  placeholder="NATGRID PERFORMA"
+                  placeholder={templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA"}
                 />
               </div>
 
@@ -1378,7 +1980,11 @@ function FIRTemplatesContent() {
                         }}
                         className="relative w-[28%] p-2 font-medium border-r border-slate-950 align-top leading-tight"
                       >
-                        Name of Incharge<br />Unit/SHO (with<br />Rank)
+                        {templateLang === "hi" ? (
+                          <>प्रभारी यूनिट / SHO<br />का नाम (मय पद)</>
+                        ) : (
+                          <>Name of Incharge<br />Unit/SHO (with<br />Rank)</>
+                        )}
                         <TableColResizer onResize={(e) => natgridTableResize.startColResize(0, e)} />
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(0, e)} />
                       </td>
@@ -1387,7 +1993,7 @@ function FIRTemplatesContent() {
                           type="text"
                           value={formData.shoName || ""}
                           onChange={(e) => handleFieldChange("shoName", e.target.value)}
-                          placeholder="Inspector, SHO"
+                          placeholder={templateLang === "hi" ? "निरीक्षक, प्रबंधक अफसर (SHO)" : "Inspector, SHO"}
                           className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                         />
                       </td>
@@ -1401,7 +2007,7 @@ function FIRTemplatesContent() {
                       className="border-b border-slate-950"
                     >
                       <td className="relative p-2 font-medium border-r border-slate-950 align-top">
-                        Mobile No.
+                        {templateLang === "hi" ? "मोबाईल नं." : "Mobile No."}
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(1, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
@@ -1409,7 +2015,7 @@ function FIRTemplatesContent() {
                           type="text"
                           value={formData.shoPhone || ""}
                           onChange={(e) => handleFieldChange("shoPhone", e.target.value)}
-                          placeholder="SHO Mobile Number"
+                          placeholder={templateLang === "hi" ? "प्रबंधक अफसर मोबाईल नं." : "SHO Mobile Number"}
                           className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                         />
                       </td>
@@ -1423,7 +2029,7 @@ function FIRTemplatesContent() {
                       className="border-b border-slate-950"
                     >
                       <td className="relative p-2 font-medium border-r border-slate-950 align-top">
-                        Govt. Email ID
+                        {templateLang === "hi" ? "शासकीय ईमेल आईडी" : "Govt. Email ID"}
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(2, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
@@ -1431,7 +2037,7 @@ function FIRTemplatesContent() {
                           type="text"
                           value={formData.shoEmail || ""}
                           onChange={(e) => handleFieldChange("shoEmail", e.target.value)}
-                          placeholder="Official Govt Email ID"
+                          placeholder={templateLang === "hi" ? "शासकीय ईमेल आईडी" : "Official Govt Email ID"}
                           className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                         />
                       </td>
@@ -1447,7 +2053,9 @@ function FIRTemplatesContent() {
                       <td className="relative w-[28%] p-2 border-r border-slate-950 align-top">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(3, e)} />
                         <div className="flex items-center gap-1 font-bold">
-                          <span className="whitespace-nowrap">FIR No.</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi" ? "मुकद्दमा सं." : "FIR No."}
+                          </span>
                           <input
                             type="text"
                             value={formData.complaintNo || ""}
@@ -1459,7 +2067,9 @@ function FIRTemplatesContent() {
                       </td>
                       <td className="w-[24%] p-2 border-r border-slate-950 align-top">
                         <div className="flex items-center gap-1 font-bold">
-                          <span className="whitespace-nowrap">Date :-</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi" ? "दिनांक :-" : "Date :-"}
+                          </span>
                           <input
                             type="text"
                             value={formData.incidentDate || formData.issueDate || ""}
@@ -1471,24 +2081,28 @@ function FIRTemplatesContent() {
                       </td>
                       <td className="w-[24%] p-2 border-r border-slate-950 align-top">
                         <div className="flex items-center gap-1 font-bold">
-                          <span className="whitespace-nowrap">P.S.</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi" ? "थाना" : "P.S."}
+                          </span>
                           <input
                             type="text"
                             value={formData.policeStation || ""}
                             onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                            placeholder="City Sirsa"
+                            placeholder={templateLang === "hi" ? "थाना शहर सिरसा" : "City Sirsa"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
                           />
                         </div>
                       </td>
                       <td className="w-[24%] p-2 align-top">
                         <div className="flex items-center gap-1 font-bold">
-                          <span className="whitespace-nowrap">District</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi" ? "जिला" : "District"}
+                          </span>
                           <input
                             type="text"
-                            value={formData.district || "Sirsa"}
+                            value={formData.district || (templateLang === "hi" ? "सिरसा" : "Sirsa")}
                             onChange={(e) => handleFieldChange("district", e.target.value)}
-                            placeholder="Sirsa"
+                            placeholder={templateLang === "hi" ? "सिरसा" : "Sirsa"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
                           />
                         </div>
@@ -1505,7 +2119,9 @@ function FIRTemplatesContent() {
                       <td colSpan={4} className="relative p-2 align-top">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(4, e)} />
                         <div className="flex items-center gap-1 font-bold">
-                          <span className="whitespace-nowrap">Offence U/s</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi" ? "अपराध अंतर्गत धाराएं" : "Offence U/s"}
+                          </span>
                           <input
                             type="text"
                             value={formData.sectionsOfLaw || ""}
@@ -1526,12 +2142,20 @@ function FIRTemplatesContent() {
                     >
                       <td colSpan={4} className="relative p-2 align-top space-y-1">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(5, e)} />
-                        <div className="font-bold text-slate-950">Brief summary of case :- &ldquo;&rdquo;</div>
+                        <div className="font-bold text-slate-950">
+                          {templateLang === "hi"
+                            ? "अभियोग का संक्षिप्त विवरण :- “ ”"
+                            : "Brief summary of case :- “”"}
+                        </div>
                         <textarea
                           rows={3}
                           value={formData.allegationsBrief || ""}
                           onChange={(e) => handleFieldChange("allegationsBrief", e.target.value)}
-                          placeholder="Organized financial fraud and inter-state syndicate cheating victims..."
+                          placeholder={
+                            templateLang === "hi"
+                              ? "संगठित वित्तीय धोखाधड़ी और अंतर-राज्यीय साइबर गिरोह द्वारा पीड़ितों से ठगी करने बाबत..."
+                              : "Organized financial fraud and inter-state syndicate cheating victims..."
+                          }
                           className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
                         />
                       </td>
@@ -1547,12 +2171,16 @@ function FIRTemplatesContent() {
                       <td colSpan={4} className="relative p-2 align-top">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(6, e)} />
                         <div className="flex flex-wrap items-center gap-1 font-bold text-slate-950">
-                          <span className="whitespace-nowrap">Name/Rank of I.O. with Mobile No :-</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi"
+                              ? "अनुसंधान अधिकारी का नाम/रैंक व मोबाईल नं. :-"
+                              : "Name/Rank of I.O. with Mobile No :-"}
+                          </span>
                           <input
                             type="text"
                             value={formData.officerName || ""}
                             onChange={(e) => handleFieldChange("officerName", e.target.value)}
-                            placeholder="Surender Pal"
+                            placeholder={templateLang === "hi" ? "सुरेन्द्र पाल" : "Surender Pal"}
                             className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-36"
                           />
                           <span className="font-normal">/</span>
@@ -1560,7 +2188,7 @@ function FIRTemplatesContent() {
                             type="text"
                             value={formData.officerRank || ""}
                             onChange={(e) => handleFieldChange("officerRank", e.target.value)}
-                            placeholder="Sub-Inspector"
+                            placeholder={templateLang === "hi" ? "सब-इंस्पेक्टर" : "Sub-Inspector"}
                             className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-32"
                           />
                           <span className="font-normal">, Mob:</span>
@@ -1585,12 +2213,26 @@ function FIRTemplatesContent() {
                       <td colSpan={3} className="relative p-2.5 border-r border-slate-950 align-middle">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(7, e)} />
                         <div className="font-medium text-slate-950 mb-1">
-                          For what reason/purpose this case is related to
+                          {templateLang === "hi"
+                            ? "यह अभियोग किस प्रयोजन/श्रेणी से संबंधित है:"
+                            : "For what reason/purpose this case is related to"}
                         </div>
                         <div className="space-y-1 pl-1 text-slate-950 leading-relaxed font-normal">
-                          <div>1.&nbsp;&nbsp;National security</div>
-                          <div>2.&nbsp;&nbsp;Counter terror</div>
-                          <div>3.&nbsp;&nbsp;Heinous Crime (Punishment should be 7 years or more)</div>
+                          <div>
+                            {templateLang === "hi"
+                              ? "1.  राष्ट्रीय सुरक्षा (National security)"
+                              : "1.  National security"}
+                          </div>
+                          <div>
+                            {templateLang === "hi"
+                              ? "2.  आतंकवाद निरोध (Counter terror)"
+                              : "2.  Counter terror"}
+                          </div>
+                          <div>
+                            {templateLang === "hi"
+                              ? "3.  जघन्य अपराध (सजा 7 वर्ष या अधिक - Heinous Crime)"
+                              : "3.  Heinous Crime (Punishment should be 7 years or more)"}
+                          </div>
                         </div>
                       </td>
                       <td className="p-2.5 align-middle text-center">
@@ -1633,12 +2275,19 @@ function FIRTemplatesContent() {
                       <td colSpan={4} className="relative p-2 align-top">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(8, e)} />
                         <div className="flex items-center gap-1 font-bold text-slate-950">
-                          <span className="whitespace-nowrap">Explain along with a Valid Reason :-</span>
+                          <span className="whitespace-nowrap">
+                            {templateLang === "hi"
+                              ? "वैध कारण सहित स्पष्ट करें :-"
+                              : "Explain along with a Valid Reason :-"}
+                          </span>
                           <input
                             type="text"
-                            value={formData.natgridReason || "To apprehend the accused"}
+                            value={
+                              formData.natgridReason ||
+                              (templateLang === "hi" ? "आरोपी को गिरफ्तार करने व साक्ष्य एकत्र करने हेतु" : "To apprehend the accused")
+                            }
                             onChange={(e) => handleFieldChange("natgridReason", e.target.value)}
-                            placeholder="To apprehend the accused"
+                            placeholder={templateLang === "hi" ? "आरोपी को गिरफ्तार करने हेतु" : "To apprehend the accused"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -1656,13 +2305,19 @@ function FIRTemplatesContent() {
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(9, e)} />
                         <div className="flex items-center gap-1 font-bold text-slate-950">
                           <span className="whitespace-nowrap">
-                            Name of Department from which Information is required:-
+                            {templateLang === "hi"
+                              ? "जिस विभाग से सूचना अपेक्षित है उसका नाम:-"
+                              : "Name of Department from which Information is required:-"}
                           </span>
                           <input
                             type="text"
                             value={formData.natgridDepartment || ""}
                             onChange={(e) => handleFieldChange("natgridDepartment", e.target.value)}
-                            placeholder="FIU-IND, Bureau of Immigration (BOI), Telecom Providers, Income Tax PAN Database"
+                            placeholder={
+                              templateLang === "hi"
+                                ? "एफआईयू-इंड, आप्रवासन ब्यूरो, टेलीकॉम सेवा प्रदाता, आयकर पैन डेटाबेस"
+                                : "FIU-IND, Bureau of Immigration (BOI), Telecom Providers, Income Tax PAN Database"
+                            }
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -1678,12 +2333,20 @@ function FIRTemplatesContent() {
                     >
                       <td colSpan={4} className="relative p-2 align-top space-y-1">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(10, e)} />
-                        <div className="font-bold text-slate-950">What type of information is required?</div>
+                        <div className="font-bold text-slate-950">
+                          {templateLang === "hi"
+                            ? "किस प्रकार की सूचना अपेक्षित है?"
+                            : "What type of information is required?"}
+                        </div>
                         <textarea
                           rows={2}
                           value={formData.natgridInfoRequired || ""}
                           onChange={(e) => handleFieldChange("natgridInfoRequired", e.target.value)}
-                          placeholder="All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections..."
+                          placeholder={
+                            templateLang === "hi"
+                              ? "पैन/आधार से जुड़े सभी बैंक खाते, घरेलू/अंतरराष्ट्रीय यात्रा इतिहास, सक्रिय पंजीकृत मोबाइल नंबर..."
+                              : "All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections..."
+                          }
                           className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
                         />
                       </td>
@@ -1697,43 +2360,59 @@ function FIRTemplatesContent() {
                     >
                       <td colSpan={4} className="relative p-2.5 align-top space-y-1.5 text-slate-950">
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(11, e)} />
-                        <div className="font-bold text-slate-950">Information available at your end:-</div>
+                        <div className="font-bold text-slate-950">
+                          {templateLang === "hi"
+                            ? "आपके स्तर पर उपलब्ध सूचना/विवरण:-"
+                            : "Information available at your end:-"}
+                        </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Name –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "नाम –" : "Name –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.noticeeName || ""}
                             onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
-                            placeholder="Vikas Sharma"
+                            placeholder={templateLang === "hi" ? "विकास शर्मा" : "Vikas Sharma"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Father Name –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "पिता का नाम –" : "Father Name –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.noticeeFather || ""}
                             onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
-                            placeholder="Ramesh Chand Sharma"
+                            placeholder={templateLang === "hi" ? "रमेश चंद शर्मा" : "Ramesh Chand Sharma"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Address –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "पता –" : "Address –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.noticeeAddress || ""}
                             onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
-                            placeholder="House No. 412, Sector 7, Urban Estate, Sirsa, Haryana"
+                            placeholder={
+                              templateLang === "hi"
+                                ? "मकान नं. 412, सेक्टर 7, अर्बन एस्टेट, सिरसा, हरियाणा"
+                                : "House No. 412, Sector 7, Urban Estate, Sirsa, Haryana"
+                            }
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Date of Birth –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "जन्म तिथि –" : "Date of Birth –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.noticeeDob || formData.appearanceDate || ""}
@@ -1747,7 +2426,9 @@ function FIRTemplatesContent() {
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Mobile No. –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "मोबाईल नं. –" : "Mobile No. –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.noticeePhone || ""}
@@ -1758,7 +2439,9 @@ function FIRTemplatesContent() {
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Aadhar No. –</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "आधार नं. –" : "Aadhar No. –"}
+                          </span>
                           <input
                             type="text"
                             value={formData.accusedAadhaar || ""}
@@ -1769,7 +2452,9 @@ function FIRTemplatesContent() {
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">PAN -</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "पैन नं. -" : "PAN -"}
+                          </span>
                           <input
                             type="text"
                             value={formData.accusedPan || ""}
@@ -1780,7 +2465,9 @@ function FIRTemplatesContent() {
                         </div>
 
                         <div className="flex items-center gap-1 font-medium">
-                          <span className="whitespace-nowrap w-44">Any other information-</span>
+                          <span className="whitespace-nowrap w-44">
+                            {templateLang === "hi" ? "अन्य कोई जानकारी-" : "Any other information-"}
+                          </span>
                           <input
                             type="text"
                             value={formData.natgridOtherInfo || formData.documentsRequired || ""}
@@ -1788,7 +2475,11 @@ function FIRTemplatesContent() {
                               handleFieldChange("natgridOtherInfo", e.target.value);
                               handleFieldChange("documentsRequired", e.target.value);
                             }}
-                            placeholder="Passport No. Z4920194, Vehicle No. HR-24-AK-5521"
+                            placeholder={
+                              templateLang === "hi"
+                                ? "पासपोर्ट सं. Z4920194, वाहन सं. HR-24-AK-5521"
+                                : "Passport No. Z4920194, Vehicle No. HR-24-AK-5521"
+                            }
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -1801,8 +2492,12 @@ function FIRTemplatesContent() {
               {/* Bottom Right Signature */}
               <div className="pt-12 sm:pt-16 flex justify-end pr-4 text-slate-950 font-serif">
                 <div className="text-left space-y-1 text-xs sm:text-sm font-bold">
-                  <p>Signature of Incharge/SHO</p>
-                  <p>With Seal/Stamp</p>
+                  <p>
+                    {templateLang === "hi"
+                      ? "हस्ताक्षर प्रभारी / प्रबंधक अफसर (SHO)"
+                      : "Signature of Incharge/SHO"}
+                  </p>
+                  <p>{templateLang === "hi" ? "मय मोहर / स्टाम्प" : "With Seal/Stamp"}</p>
                 </div>
               </div>
             </div>
