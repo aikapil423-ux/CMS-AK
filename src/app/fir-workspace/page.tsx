@@ -16,6 +16,7 @@ import {
   PhoneCall,
   MapPin,
   ShieldAlert,
+  Gavel,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +49,7 @@ export default function FIRWorkspacePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* 0. Investigation Template Builder */}
         <Link href="/fir-workspace/builder" className="block group">
           <Card className="border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
@@ -168,6 +169,36 @@ export default function FIRWorkspacePage() {
               </div>
               <div className="flex items-center justify-end text-xs font-bold text-amber-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
                 <span>Open Diaries</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 5. Kalandra (कलंदरा) */}
+        <Link href="/fir-workspace/kalandra" className="block group">
+          <Card className="border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                  <Gavel className="w-5 h-5 text-emerald-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="font-bold text-slate-900 text-sm group-hover:text-emerald-800 transition-colors">
+                      Kalandra (कलंदरा)
+                    </h3>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                      Preventive & Special
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Bilingual preparation of Kalandras (107/151, 107/150, 217/248 BNS, 145, 72 IPC, 7/16), forwarding memos & court dossiers.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Kalandra Workspace</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>

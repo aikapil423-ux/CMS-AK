@@ -148,6 +148,16 @@ export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
     databaseEntities: ["FIRItem", "FIRCaseDiaryItem"],
   },
   {
+    path: "/fir-workspace/kalandra",
+    title: "कलंदरा वर्कस्पेस (Kalandra Preparation & Court Dossier Suite)",
+    category: "FIR & Investigation",
+    description: "निवारक एवं विनियामक कलंदरा प्रपत्र (107/151, 107/150, 217 BNS, 248 BNS, 145, 72 IPC, 7/16, Other), SHO प्रेषण पत्र, गवाहान सूची व न्यायालय अग्रेषण पत्रावली।",
+    supportedActions: ["कलंदरा तैयार करना", "ड्राफ्ट सहेजना", "FIR/Complaint/GD से ऑटो-फिल करना", "न्यायालय पैकेज व A4 प्रिंट निकालना", "टेम्पलेट कस्टमाइज़ करना"],
+    requiredRoles: ["INVESTIGATING_OFFICER", "ENQUIRY_OFFICER", "SHO"],
+    primaryApis: ["/api/kalandra", "/api/fir"],
+    databaseEntities: ["KalandraRecord", "KalandraTemplate"],
+  },
+  {
     path: "/acts-sections",
     title: "कानूनी धाराएं व अधिनियम (Acts & Sections Explorer)",
     category: "Legal & Reference",
@@ -555,6 +565,19 @@ export const CMS_ACTIONS: ActionMetadata[] = [
     confirmationRequired: false,
     synonyms: ["zimni desk kholo", "case diary workspace", "zimni likhne ka page", "open zimni"],
   },
+  {
+    id: "act_nav_kalandra",
+    label: "कलंदरा वर्कस्पेस खोलें",
+    module: "KALANDRA",
+    route: "/fir-workspace/kalandra",
+    operationType: "READ_ONLY",
+    description: "निवारक एवं विनियामक कलंदरा प्रपत्र (107/151, 107/150, 217/248 BNS, 145 आदि) तैयार करने का वर्कस्पेस खोलता है।",
+    invokes: { handler: "router.push", service: "NavigationService" },
+    backendEffects: "रीड-ओनली।",
+    databaseEntities: ["KalandraRecord", "KalandraTemplate"],
+    confirmationRequired: false,
+    synonyms: ["kalandra workspace kholo", "kalandra tab par chalo", "107 151 kalandra desk", "kalandra dikhao", "open kalandra"],
+  },
 
   // --- PREPARATION ACTIONS (Drafts, Pre-fills, Document Generation - Explicit Approval Required) ---
   {
@@ -595,6 +618,19 @@ export const CMS_ACTIONS: ActionMetadata[] = [
     databaseEntities: ["FIRCaseDiaryItem"],
     confirmationRequired: true,
     synonyms: ["zimni draft karo", "case diary likho", "zimni entry banao", "tafteesh zimni draft"],
+  },
+  {
+    id: "act_prepare_kalandra_draft",
+    label: "कलंदरा ड्राफ्ट तैयार करें",
+    module: "KALANDRA",
+    route: "/fir-workspace/kalandra",
+    operationType: "PREPARATION",
+    description: "शांति भंग की आशंका (107/151 CrPC), लोक न्यूसेंस (217 BNS) या भूमि विवाद (145 CrPC) बाबत सम्पूर्ण कलंदरा रिपोर्ट व न्यायालय अग्रेषण पैकेज तैयार करता है।",
+    invokes: { handler: "kalandraService.saveRecord", service: "KALANDRA" },
+    backendEffects: "कलंदरा ड्राफ्ट तैयार करता है।",
+    databaseEntities: ["KalandraRecord"],
+    confirmationRequired: true,
+    synonyms: ["kalandra draft karo", "107 151 kalandra banao", "217 bns kalandra taiyar karo", "kalandra generate karo", "shanti bhang kalandra"],
   },
   {
     id: "act_prepare_notice_35",
@@ -899,6 +935,21 @@ export const CMS_CAPABILITIES: CMSCapability[] = [
       "FIR 125 ki Zimni draft karo",
       "Zimni number 2 likho",
       "Case diary prepare karo",
+    ],
+  },
+  {
+    id: "prepare_kalandra_dossier",
+    name: "कलंदरा रिपोर्ट एवं न्यायालय अग्रेषण पैकेज तैयार करना (Draft Kalandra Dossier)",
+    module: "KALANDRA",
+    description: "107/151 CrPC (BNSS 126/170), 217 BNS (Public Nuisance), 248 BNS, 145 CrPC या 72 IPC/7/16 बाबत सम्पूर्ण कलंदरा पत्रावली, प्रेषण पत्र, मौका आख्या व गवाह सूची तैयार करना।",
+    isMutation: true,
+    requiresExplicitApproval: true,
+    exampleQueries: [
+      "107/151 CrPC ka kalandra bana do",
+      "Suresh Kumar ke khilaf 107 151 kalandra draft karo",
+      "Public nuisance u/s 217 BNS ka kalandra prepare karo",
+      "Kalandra workspace kholo",
+      "Investigation me kalandra tab dikhao",
     ],
   },
   {
@@ -1218,6 +1269,20 @@ export class CmsCapabilityRegistry {
       (q.includes("form") || q.includes("page") || q.includes("workspace") || q.includes("kholo") || q.includes("open") || q.includes("box") || q.includes("desk"))
     ) {
       return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/zimni") || null;
+    }
+
+    // 5.5 Kalandra Workspace (कलंदरा)
+    if (
+      q.includes("kalandra") ||
+      q.includes("कलंदरा") ||
+      q.includes("107/151") ||
+      q.includes("107 151") ||
+      q.includes("107/150") ||
+      q.includes("217 bns") ||
+      q.includes("248 bns") ||
+      (q.includes("investigation") && q.includes("kalandra"))
+    ) {
+      return WEBSITE_ARCHITECTURE.find((r) => r.path === "/fir-workspace/kalandra") || null;
     }
 
     // 6. General Diary Auto-Suggestions & Drafts Tab

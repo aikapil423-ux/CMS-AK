@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert } from "lucide-react";
+import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert, Gavel } from "lucide-react";
 
 interface FIRWorkspaceNavProps {
   firId?: string | null;
@@ -22,6 +22,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
   const isBuilder = pathname.includes("/fir-workspace/builder");
   const isZimni = pathname.includes("/fir-workspace/zimni");
   const isArrestDocs = pathname.includes("/fir-workspace/arrest-docs");
+  const isKalandra = pathname.includes("/fir-workspace/kalandra");
 
   return (
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -85,6 +86,18 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
         >
           <ScrollText className={`w-3.5 h-3.5 ${isZimni ? "text-amber-700" : "text-amber-600"}`} />
           <span>Case Diaries / Zimni</span>
+        </Link>
+
+        <Link
+          href={`/fir-workspace/kalandra${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isKalandra
+              ? "text-emerald-950 bg-emerald-50 border border-emerald-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <Gavel className={`w-3.5 h-3.5 ${isKalandra ? "text-emerald-700" : "text-emerald-600"}`} />
+          <span>Kalandra (कलंदरा)</span>
         </Link>
       </div>
 

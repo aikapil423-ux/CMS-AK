@@ -9,6 +9,7 @@ export type AgentModule =
   | "EVIDENCE"
   | "ARREST_DOCS"
   | "ZIMNI"
+  | "KALANDRA"
   | "STAFF"
   | "ACTS_SECTIONS"
   | "SETTINGS"
@@ -21,7 +22,7 @@ export interface FrontendAction {
 }
 
 export interface BackendAction {
-  service: "FIR" | "COMPLAINTS" | "GENERAL_DIARY" | "ACTS" | "EVIDENCE" | "STAFF" | "BUILDER";
+  service: "FIR" | "COMPLAINTS" | "GENERAL_DIARY" | "ACTS" | "EVIDENCE" | "STAFF" | "BUILDER" | "KALANDRA";
   operation: string;
   parameters: Record<string, any>;
 }

@@ -215,6 +215,24 @@ async function runVerificationTests() {
     "'Ab save kar do' triggers safe execution of pending plan with verification"
   );
 
+  // TEST 16: Smart Kalandra Workspace & Kalandra Preparation
+  console.log("\n--- 16. Smart Kalandra Workspace & Legal Preparation ---");
+  const kalandraNav = await CmsAgentService.processUserInput("Investigation me Kalandra tab kholo");
+  assert(
+    kalandraNav.actionPlan?.executablePayload?.parameters?.url === "/fir-workspace/kalandra",
+    "'Investigation me Kalandra tab kholo' navigates to /fir-workspace/kalandra"
+  );
+
+  const kalandraDraft = await CmsAgentService.processUserInput("Suresh Kumar ke khilaf 107/151 CrPC ka kalandra bana do");
+  assert(
+    kalandraDraft.actionPlan?.primaryModule === "KALANDRA",
+    "Understands Kalandra drafting request with module KALANDRA"
+  );
+  assert(
+    kalandraDraft.actionPlan?.proposedDocuments?.some((d) => d.previewHtml?.includes("107/151") || d.title.includes("107/151")) === true,
+    "Generates bilingual 107/151 Kalandra court package"
+  );
+
   // Summary
   console.log("\n=================================================================");
   console.log(`TEST SUMMARY: ${passed} PASSED, ${failed} FAILED`);

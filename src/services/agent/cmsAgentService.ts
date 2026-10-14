@@ -23,6 +23,8 @@ import { FIRItem } from "@/types";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { CCTNS_OFFICIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { GDEntryTypeConfig } from "@/types/generalDiary";
+import { kalandraService } from "@/services/kalandraService";
+import { KalandraRecord } from "@/types/kalandra";
 
 const SESSION_STORAGE_KEY = "haryana_police_cms_agent_session_v1";
 
@@ -538,6 +540,22 @@ export class CmsAgentService {
         };
       }
       return this.handleZimniIntent(raw, firNumber, currentPath);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT M.5: KALANDRA PREPARATION & MANAGEMENT (कलंदरा)
+    // -------------------------------------------------------------
+    if (
+      q.includes("kalandra") ||
+      q.includes("कलंदरा") ||
+      q.includes("107/151") ||
+      q.includes("107 151") ||
+      q.includes("107/150") ||
+      q.includes("217 bns") ||
+      q.includes("248 bns") ||
+      (q.includes("145") && (q.includes("crpc") || q.includes("bnss") || q.includes("zamin") || q.includes("land")))
+    ) {
+      return this.handleKalandraIntent(raw, personName, firNumber);
     }
 
     // -------------------------------------------------------------
@@ -1525,6 +1543,226 @@ export class CmsAgentService {
       timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       actionPlan,
       suggestedPrompts: ["Approve (स्वीकृत करें)", "Complaint Details खोलें", "Cancel"],
+    };
+  }
+
+  /**
+   * Handles Kalandra preparation & workspace navigation queries
+   */
+  private static async handleKalandraIntent(
+    rawInput: string,
+    personName?: string,
+    firNumber?: string
+  ): Promise<AgentMessage> {
+    const q = rawInput.toLowerCase();
+
+    // Check if this is a navigation-only command
+    const isNavigation =
+      (q.includes("kholo") || q.includes("open") || q.includes("dikhao") || q.includes("chalo") || q.includes("workspace") || q.includes("tab")) &&
+      !q.includes("banao") &&
+      !q.includes("draft") &&
+      !q.includes("prepare") &&
+      !q.includes("taiyar");
+
+    if (isNavigation) {
+      const planId = `plan_nav_kal_${Date.now()}`;
+      const actionPlan: AgentActionPlan = {
+        id: planId,
+        title: "कलंदरा वर्कस्पेस खोलें (Open Kalandra Workspace)",
+        understoodIntent: "अन्वेषण वर्कस्पेस के अंतर्गत कलंदरा (Kalandra) टैब खोलना।",
+        confidenceScore: 0.98,
+        primaryModule: "KALANDRA",
+        targetRecords: [{ type: "PAGE", id: "/fir-workspace/kalandra", label: "Kalandra Workspace", url: "/fir-workspace/kalandra" }],
+        steps: [
+          {
+            id: "step_nav_kal",
+            stepNumber: 1,
+            module: "KALANDRA",
+            actionTitle: "कलंदरा वर्कस्पेस पर जाएं",
+            actionDescription: "/fir-workspace/kalandra पृष्ठ पर सीधे नेविगेट करता है।",
+            targetRecordId: "/fir-workspace/kalandra",
+            targetRecordLabel: "Kalandra Workspace",
+            isDestructive: false,
+            requiresOfficialApproval: false,
+            status: "PENDING",
+          },
+        ],
+        status: "APPROVED",
+        createdAt: new Date().toISOString(),
+        executablePayload: {
+          toolName: "navigate",
+          parameters: {
+            url: "/fir-workspace/kalandra",
+          },
+        },
+      };
+
+      return {
+        id: `msg_${Date.now()}`,
+        sender: "agent",
+        text: `⚖️ **कलंदरा वर्कस्पेस (Kalandra Workspace):**\n\nअन्वेषण वर्कस्पेस का **कलंदरा (Kalandra)** प्रभाग खोला जा रहा है। यहाँ आप:\n* 107/151 CrPC (शांति भंग एवं निवारक गिरफ्तारी)\n* 107/150 CrPC (पाबंदी समन)\n* 217 BNS (लोक उपद्रव / न्यूसेंस)\n* 248 BNS (सार्वजनिक अश्लीलता)\n* 145 CrPC (भूमि/जल विवाद)\n* 72 IPC / 7/16 एवं विशेष कलंदरा प्रारूप तैयार व प्रबंधित कर सकते हैं।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        actionPlan,
+        suggestedPrompts: [
+          "107/151 CrPC कलंदरा तैयार करें",
+          "217 BNS Public Nuisance कलंदरा बनाएं",
+          "सहेजे गए कलंदरा ड्राफ्ट देखें",
+        ],
+      };
+    }
+
+    // Otherwise, drafting/preparation request
+    let typeCode = "107_151";
+    if (q.includes("217") || q.includes("nuisance") || q.includes("उपद्रव")) {
+      typeCode = "217_BNS";
+    } else if (q.includes("248") || q.includes("obscene") || q.includes("अश्लील")) {
+      typeCode = "248_BNS";
+    } else if (q.includes("107/150") || q.includes("107 150") || q.includes("150 crpc")) {
+      typeCode = "107_150";
+    } else if (q.includes("107/151") || q.includes("107 151") || q.includes("151 crpc") || q.includes("shanti bhang")) {
+      typeCode = "107_151";
+    } else if (q.includes("145") || q.includes("zamin") || q.includes("bhumi") || q.includes("zameen") || /\bland\b/i.test(q)) {
+      typeCode = "145";
+    } else if (q.includes("72")) {
+      typeCode = "72_IPC";
+    } else if (q.includes("7/16") || q.includes("7 16")) {
+      typeCode = "7_16";
+    }
+
+    const tmpl = kalandraService.getTemplateByCode(typeCode) || kalandraService.getAllTemplates()[0];
+    
+    let respondent = personName;
+    const nameBeforeKhilaf = rawInput.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:ke\s+khilaf|ka\s+kalandra|par)/i);
+    if (nameBeforeKhilaf && nameBeforeKhilaf[1] && !["kalandra", "investigation", "police", "fir"].includes(nameBeforeKhilaf[1].toLowerCase())) {
+      respondent = nameBeforeKhilaf[1].trim();
+    }
+    if (!respondent || respondent === "Anil Kumar") {
+      if (nameBeforeKhilaf && nameBeforeKhilaf[1]) {
+        respondent = nameBeforeKhilaf[1].trim();
+      } else {
+        respondent = respondent || "Suresh Kumar";
+      }
+    }
+    const generatedNo = kalandraService.generateKalandraNumber();
+
+    const newRecord: KalandraRecord = {
+      id: "kal-" + Date.now(),
+      kalandraNumber: generatedNo,
+      typeCode: tmpl.code,
+      templateId: tmpl.id,
+      templateTitle: tmpl.titleHi,
+      actAndSection: tmpl.section,
+      policeStation: "Sector 29 Police Station",
+      district: "Gurugram",
+      caseType: firNumber ? "FROM_FIR" : "DIRECT",
+      relatedFirNumber: firNumber,
+      respondentName: respondent,
+      respondentFather: "Sh. Ram Kishan",
+      respondentAddress: "H.No. 112, Village Chakkarpur, Sector 28, Gurugram",
+      respondentAge: 32,
+      respondentGender: "MALE",
+      incidentDate: new Date().toISOString().split("T")[0],
+      incidentTime: "11:30",
+      incidentPlace: "Main Market, Sector 29, Gurugram",
+      reportingOfficer: "SI Balwan Singh",
+      officerRank: "Sub Inspector",
+      officerBelt: "1482/GGM",
+      magistrateCourt: tmpl.defaultCourtHi,
+      factsAndCircumstances: kalandraService.populateNarrative(tmpl.defaultNarrativeTemplateHi, {
+        respondentName: respondent,
+        respondentFather: "Sh. Ram Kishan",
+        respondentAddress: "H.No. 112, Village Chakkarpur, Sector 28, Gurugram",
+        incidentPlace: "Main Market, Sector 29, Gurugram",
+        incidentDate: new Date().toISOString().split("T")[0],
+        district: "Gurugram",
+        policeStation: "Sector 29 Police Station",
+      }),
+      witnesses: [
+        { id: "w-1", name: "ASI Virender Singh", fatherName: "Sh. Rohtas", address: "PS Sector 29, Gurugram" },
+        { id: "w-2", name: "Ramesh Chand", fatherName: "Sh. Mohan Lal", address: "Shopkeeper, Sector 29 Market" }
+      ],
+      supportingDocuments: (tmpl.supportingDocumentsList || []).map((t, idx) => ({
+        id: `sd-${idx}`,
+        title: t,
+        documentType: "DOC",
+        isAttached: true,
+      })),
+      proposedAction: "विपक्षी को नियमानुसार पाबंद/संज्ञान लेकर आवश्यक वैधानिक कार्रवाई अमल में लाई जावे।",
+      status: "DRAFT",
+      language: "hi",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const pkg = kalandraService.generateKalandraPackage(newRecord, "hi");
+
+    const planId = `plan_kal_draft_${Date.now()}`;
+    const actionPlan: AgentActionPlan = {
+      id: planId,
+      title: `${tmpl.titleHi} तैयार करना - ${respondent}`,
+      understoodIntent: `${respondent} के विरुद्ध ${tmpl.section} के अंतर्गत कलंदरा ड्राफ्ट व न्यायालय अग्रेषण पैकेज तैयार करना।`,
+      confidenceScore: 0.98,
+      primaryModule: "KALANDRA",
+      targetRecords: [{ type: "PAGE", id: "/fir-workspace/kalandra", label: "Kalandra Workspace", url: "/fir-workspace/kalandra" }],
+      steps: [
+        {
+          id: "step_kal_draft",
+          stepNumber: 1,
+          module: "KALANDRA",
+          actionTitle: `कलंदरा प्रपत्र तैयार करना (${tmpl.section})`,
+          actionDescription: `${respondent} के विरुद्ध ${tmpl.section} के तहत वैधानिक कलंदरा, प्रेषण पत्र एवं मौका रिपोर्ट ड्राफ्ट तैयार करता है।`,
+          targetRecordId: generatedNo,
+          targetRecordLabel: generatedNo,
+          isDestructive: false,
+          requiresOfficialApproval: true,
+          status: "PENDING",
+        },
+      ],
+      proposedDocuments: [
+        {
+          id: `doc_kal_${Date.now()}`,
+          templateType: String(tmpl.code),
+          title: `कलंदरा प्रपत्र (${tmpl.section}) - ${respondent}`,
+          recipientOrSubject: `${respondent} (${tmpl.section})`,
+          previewHtml: pkg.mainKalandraHtml,
+          isEditable: true,
+          status: "READY",
+        },
+        {
+          id: `doc_kal_fwd_${Date.now()}`,
+          templateType: "FORWARDING_LETTER",
+          title: `SHO प्रेषण पत्र (Forwarding Memo) - ${tmpl.section}`,
+          recipientOrSubject: tmpl.defaultCourtHi,
+          previewHtml: pkg.forwardingLetterHtml,
+          isEditable: true,
+          status: "READY",
+        },
+      ],
+      status: "AWAITING_APPROVAL",
+      createdAt: new Date().toISOString(),
+      executablePayload: {
+        toolName: "save_kalandra_record",
+        parameters: {
+          record: newRecord,
+          url: "/fir-workspace/kalandra",
+        },
+      },
+    };
+
+    this.updateContext({ lastActionPlanId: planId, activeActionPlan: actionPlan });
+
+    const verificationNotice =
+      tmpl.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION"
+        ? `\n\n⚠️ **विधि सत्यापन प्रतीक्षित (Legal Notice):**\nयह प्रारूप (*${tmpl.section}*) राज्य पुलिस नियमों के तहत सत्यापन अपेक्षित श्रेणी में है। न्यायालय प्रस्तुत करने से पूर्व धारा का सत्यापन आवश्यक है।`
+        : "";
+
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `📜 **कलंदरा रिपोर्ट ड्राफ्ट तैयार है:**\n\n* **कलंदरा सं.:** \`${generatedNo}\`\n* **विपक्षी / गैर-सायल:** **${respondent}**\n* **अधिनियम व धारा:** **${tmpl.section}**\n* **न्यायालय:** ${tmpl.defaultCourtHi}\n* **संलग्न दस्तावेज:** ${tmpl.supportingDocumentsList.slice(0, 3).join(", ")} आदि।${verificationNotice}\n\nमुख्य कलंदरा प्रपत्र एवं SHO प्रेषण पत्र का मसौदा तैयार है। कृपया अनुमोदन हेतु **Approve (स्वीकृत करें)** पर क्लिक करें अथवा "हाँ" कहें।`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      actionPlan,
+      suggestedPrompts: ["Approve (स्वीकृत करें)", "Kalandra Workspace खोलें", "Cancel"],
     };
   }
 
@@ -2844,6 +3082,34 @@ export class CmsAgentService {
             }
           : undefined,
         suggestedPrompts: ["General Diary खोलें", "Complaints Register खोलें"],
+      };
+    }
+
+    // Save Kalandra Record execution
+    if (toolName === "save_kalandra_record") {
+      const record = params.record as KalandraRecord;
+      if (record) {
+        kalandraService.saveRecord(record);
+      }
+      this.updateContext({ lastActionPlanId: undefined, activeActionPlan: undefined });
+      return {
+        id: `msg_${Date.now()}`,
+        sender: "agent",
+        text: `✅ **कलंदरा रिपोर्ट सफलतापूर्वक सहेजी गई!**\n\n* **कलंदरा संख्या:** \`${record?.kalandraNumber}\`\n* **विपक्षी / आरोपी:** **${record?.respondentName}**\n* **अधिनियम व धारा:** **${record?.actAndSection}**\n* **स्थिति:** \`DRAFT / PREPARED\`\n\nपत्रावली कलंदरा वर्कस्पेस में सुरक्षित कर दी गई है। आप इसे प्रिंट या न्यायालय अग्रेषित कर सकते हैं।`,
+        timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+        actionPlan: activePlan
+          ? {
+              ...activePlan,
+              status: "EXECUTED",
+              verification: {
+                isVerified: true,
+                verifiedAt: new Date().toISOString(),
+                verifiedRecordId: record?.id,
+                verificationDetails: [`Kalandra ${record?.kalandraNumber} saved successfully`],
+              },
+            }
+          : undefined,
+        suggestedPrompts: ["Kalandra Workspace खोलें", "A4 प्रिंट निकालें", "नया कलंदरा बनाएं"],
       };
     }
 
