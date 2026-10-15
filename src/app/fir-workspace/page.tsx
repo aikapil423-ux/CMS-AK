@@ -50,187 +50,181 @@ export default function FIRWorkspacePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* 0. Investigation Template Builder */}
-        <Link href="/fir-workspace/builder" className="block group">
-          <Card className="border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-blue-700 group-hover:scale-110 transition-transform" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-blue-800 transition-colors">
-                    Template Builder (टेम्पलेट बिल्डर)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Word-like editor for custom FIR templates, 180 BNSS statements, recovery memos & My Templates tab.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end text-xs font-bold text-blue-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Builder</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* 1. Final Form (Chargesheet / Closure) */}
-        <Link href="/fir-workspace/drafts" className="block group">
-          <Card className="border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-red-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-                  <Scale className="w-5 h-5 text-red-700 group-hover:scale-110 transition-transform" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-red-800 transition-colors">
-                    Final Form (Sec 193 BNSS)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Statutory Police Report (Chargesheet / Challan / Closure) for submission before Court.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end text-xs font-bold text-red-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>View Form</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* 2. Statutory Legal Notices */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+        {/* 1. Statutory Notice Generator */}
         <Link href="/fir-workspace/templates" className="block group">
           <Card className="border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-purple-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center shrink-0">
-                  <FileCheck2 className="w-5 h-5 text-purple-700 group-hover:scale-110 transition-transform" />
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                  <FileCheck2 className="w-4 h-4 text-purple-700 group-hover:scale-110 transition-transform" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-purple-800 transition-colors">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-purple-800 transition-colors">
                     Statutory Notice Generator
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
                     Accused notice (Sec 35(3) BNSS), CDR requisition, NATGRID intelligence & Witness summons (Sec 179 BNSS).
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-purple-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+              <div className="flex items-center justify-end text-[11px] font-bold text-purple-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
                 <span>Generate Notices</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* 3. Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र) */}
-        <Link href="/fir-workspace/arrest-docs" className="block group">
-          <Card className="border-slate-200 hover:border-rose-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-rose-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="w-5 h-5 text-rose-700 group-hover:scale-110 transition-transform" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-rose-800 transition-colors">
-                    Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Arrest memo, Fard Jamatalashi, Grounds of arrest, Pehchan Patr, Fard Baramadgi, Remand & Medical letters.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end text-xs font-bold text-rose-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Arrest Docs and IIF-III</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        {/* 4. Case Diaries / Zimni */}
+        {/* 2. Case Diaries (Zimni) */}
         <Link href="/fir-workspace/zimni" className="block group">
           <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <ScrollText className="w-5 h-5 text-amber-700 group-hover:scale-110 transition-transform" />
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                  <ScrollText className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-800 transition-colors">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-amber-800 transition-colors">
                     Case Diaries (Zimni)
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
                     Record chronological investigation diaries under Section 175 BNSS with spot inspections.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-amber-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+              <div className="flex items-center justify-end text-[11px] font-bold text-amber-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
                 <span>Open Diaries</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* 5. Kalandra (कलंदरा) */}
-        <Link href="/fir-workspace/kalandra" className="block group">
-          <Card className="border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-                  <Gavel className="w-5 h-5 text-emerald-700 group-hover:scale-110 transition-transform" />
+        {/* 3. Arrest Docs and IIF-III */}
+        <Link href="/fir-workspace/arrest-docs" className="block group">
+          <Card className="border-slate-200 hover:border-rose-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-rose-50/20 h-full">
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-4 h-4 text-rose-700 group-hover:scale-110 transition-transform" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-bold text-slate-900 text-sm group-hover:text-emerald-800 transition-colors">
-                      Kalandra (कलंदरा)
-                    </h3>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                      Preventive & Special
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Bilingual preparation of Kalandras (107/151, 107/150, 217/248 BNS, 145, 72 IPC, 7/16), forwarding memos & court dossiers.
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-rose-800 transition-colors">
+                    Arrest Docs and IIF-III
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
+                    Arrest memo, Fard Jamatalashi, Grounds of arrest, Pehchan Patr, Fard Baramadgi, Remand & Medical letters.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Kalandra Workspace</span>
-                <ArrowRight className="w-4 h-4" />
+              <div className="flex items-center justify-end text-[11px] font-bold text-rose-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>Open Arrest Docs</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        {/* 6. Property Seizure Form IIF-IV */}
+        {/* 4. Property Seizure Form IIF-IV */}
         <Link href="/fir-workspace/property-seizure" className="block group">
           <Card className="border-slate-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-teal-50/20 h-full">
-            <CardContent className="p-5 flex flex-col justify-between h-full">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
-                  <PackageCheck className="w-5 h-5 text-teal-700 group-hover:scale-110 transition-transform" />
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                  <PackageCheck className="w-4 h-4 text-teal-700 group-hover:scale-110 transition-transform" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h3 className="font-bold text-slate-900 text-sm group-hover:text-teal-800 transition-colors">
-                      Property Seizure Form IIF-IV (सम्पत्ति तलाशी एवं जब्ती फार्म)
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-teal-800 transition-colors">
+                      Property Seizure Form IIF-IV
                     </h3>
-                    <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-bold">
-                      CCTNS IIF-IV
-                    </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    तलाशी / पेशी / बरामदगी फार्म ज़ेर धारा 51/102/165 CrPC (धारा 50/106/185 BNSS), गवाह सूची, सीलबंद माल व प्राप्ति पावती।
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
+                    तलाशी / जब्ती फार्म ज़ेर धारा 51/102/165 CrPC (धारा 50/106/185 BNSS), गवाह सूची, सीलबंद माल व प्राप्ति पावती।
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-end text-xs font-bold text-teal-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Property Seizure</span>
-                <ArrowRight className="w-4 h-4" />
+              <div className="flex items-center justify-end text-[11px] font-bold text-teal-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>Open Seizure Form</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 5. ChargeSheet/Final report and IIF-V */}
+        <Link href="/fir-workspace/drafts" className="block group">
+          <Card className="border-slate-200 hover:border-red-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-red-50/20 h-full">
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                  <Scale className="w-4 h-4 text-red-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-red-800 transition-colors">
+                    ChargeSheet/Final report and IIF-V
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
+                    Statutory Police Report (Chargesheet / Challan / Closure - Sec 193 BNSS / IIF-V) for Court submission.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-[11px] font-bold text-red-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>View Form</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 6. Kalandra (कलंदरा) */}
+        <Link href="/fir-workspace/kalandra" className="block group">
+          <Card className="border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-emerald-50/20 h-full">
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                  <Gavel className="w-4 h-4 text-emerald-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-emerald-800 transition-colors">
+                      Kalandra (कलंदरा)
+                    </h3>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
+                    Bilingual preparation of Kalandras (107/151, 107/150, 217/248 BNS, 145, 72 IPC, 7/16) & dossiers.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-[11px] font-bold text-emerald-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>Open Kalandra</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 7. Template Builder */}
+        <Link href="/fir-workspace/builder" className="block group">
+          <Card className="border-slate-200 hover:border-blue-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-blue-50/20 h-full">
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-blue-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-blue-800 transition-colors">
+                    Template Builder
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
+                    Word-like editor for custom FIR templates, 180 BNSS statements, recovery memos & My Templates tab.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-[11px] font-bold text-blue-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>Open Builder</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </CardContent>
           </Card>

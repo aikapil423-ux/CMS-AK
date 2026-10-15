@@ -13,6 +13,8 @@ import {
   AccusedPerson,
   ComplainantPerson,
   LegalAnalysisReport,
+  FIRTransferRecord,
+  LinkedFIREntry,
 } from "@/types";
 import { ComplaintService } from "./complaintService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
@@ -1062,5 +1064,266 @@ export const firService = {
     } catch (e) {
       console.warn("Failed to clear FIR draft:", e);
     }
+  },
+
+  transferFirInterState(payload: {
+    firId: string;
+    targetState: string;
+    targetDistrict: string;
+    targetPoliceStation: string;
+    statutoryGround: string;
+    transferReason: string;
+    orderNumber?: string;
+    orderDate?: string;
+    dispatchDate: string;
+    dispatchTime?: string;
+    transferredBy: string;
+    transferredByRank?: string;
+    remarks?: string;
+  }): FIRItem {
+    const fir = this.getFirById(payload.firId);
+    if (!fir) throw new Error("FIR not found");
+
+    const now = new Date();
+    const recordId = `trf-fir-${Date.now()}`;
+    const transferRecord: FIRTransferRecord = {
+      id: recordId,
+      firId: fir.id,
+      firNumber: fir.firNumber,
+      transferType: "INTER_STATE",
+      sourceState: fir.state || "Haryana",
+      sourceDistrict: fir.district || "Gurugram",
+      sourcePoliceStation: fir.policeStation || "Sector 29 Police Station",
+      targetState: payload.targetState,
+      targetDistrict: payload.targetDistrict,
+      targetPoliceStation: payload.targetPoliceStation,
+      transferReason: payload.transferReason,
+      statutoryGround: payload.statutoryGround,
+      orderNumber: payload.orderNumber,
+      orderDate: payload.orderDate,
+      dispatchDate: payload.dispatchDate,
+      dispatchTime: payload.dispatchTime,
+      transferredBy: payload.transferredBy,
+      transferredByRank: payload.transferredByRank,
+      remarks: payload.remarks,
+      timestamp: now.toISOString(),
+    };
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem("haryana_police_cms_fir_transfers_v1");
+        const list: FIRTransferRecord[] = stored ? JSON.parse(stored) : [];
+        list.unshift(transferRecord);
+        window.localStorage.setItem("haryana_police_cms_fir_transfers_v1", JSON.stringify(list));
+      } catch (e) {
+        console.warn("Failed to save to FIR transfer history storage", e);
+      }
+    }
+
+    const timelineItem: FIRTimelineEvent = {
+      id: `tl-${Date.now()}`,
+      date: `${payload.dispatchDate} ${payload.dispatchTime || "10:00"}`,
+      title: "FIR Transferred (Inter-State)",
+      description: `Case docket transferred to ${payload.targetPoliceStation}, Dist. ${payload.targetDistrict}, State: ${payload.targetState}. Statutory Ground: ${payload.statutoryGround}. Sanction Order: ${payload.orderNumber || "N/A"}.`,
+      actor: `${payload.transferredBy} (${payload.transferredByRank || "SHO"})`,
+      stage: "SUPERVISORY_REVIEW",
+    };
+
+    const auditItem: FIRAuditRecord = {
+      id: `aud-${Date.now()}`,
+      timestamp: `${payload.dispatchDate} ${payload.dispatchTime || "10:00"}`,
+      action: "INTER_STATE_TRANSFER",
+      officerName: payload.transferredBy,
+      role: payload.transferredByRank || "SHO",
+      details: `Transferred to ${payload.targetPoliceStation}, ${payload.targetDistrict}, ${payload.targetState}. Ground: ${payload.statutoryGround}`,
+    };
+
+    const updated = this.updateFir(fir.id, {
+      isTransferred: true,
+      transferType: "INTER_STATE",
+      transferredToState: payload.targetState,
+      transferredToDistrict: payload.targetDistrict,
+      transferredToPoliceStation: payload.targetPoliceStation,
+      transferredAt: now.toISOString(),
+      transferredBy: `${payload.transferredBy} (${payload.transferredByRank || "SHO"})`,
+      transferReason: payload.transferReason,
+      transferStatutoryGround: payload.statutoryGround,
+      transferOrderNumber: payload.orderNumber,
+      transferOrderDate: payload.orderDate,
+      transferRecord,
+      transferHistory: [transferRecord, ...(fir.transferHistory || [])],
+      timeline: [timelineItem, ...(fir.timeline || [])],
+      auditTrail: [auditItem, ...(fir.auditTrail || [])],
+    });
+
+    if (!updated) throw new Error("Failed to update FIR with transfer details");
+    return updated;
+  },
+
+  getTransferHistory(): FIRTransferRecord[] {
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem("haryana_police_cms_fir_transfers_v1");
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // fallback
+      }
+    }
+    // Also extract from firsStore
+    const historyList: FIRTransferRecord[] = [];
+    firsStore.forEach((fir) => {
+      if (fir.transferHistory && fir.transferHistory.length > 0) {
+        historyList.push(...fir.transferHistory);
+      } else if (fir.transferRecord) {
+        historyList.push(fir.transferRecord);
+      }
+    });
+    return historyList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  },
+
+  linkFirs(payload: {
+    primaryFirId: string;
+    targetFirId: string;
+    linkType: "DUPLICATE" | "CROSS" | "CONNECTED";
+    reason: string;
+    officerName: string;
+  }): { primary: FIRItem; target: FIRItem } {
+    const primary = this.getFirById(payload.primaryFirId);
+    const target = this.getFirById(payload.targetFirId);
+    if (!primary || !target) throw new Error("One or both FIRs could not be found");
+    if (primary.id === target.id) throw new Error("Cannot link an FIR to itself");
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    const primaryEntry: LinkedFIREntry = {
+      id: `lnk-${Date.now()}-1`,
+      firId: target.id,
+      firNumber: target.firNumber,
+      cctnsFirNumber: target.cctnsFirNumber,
+      complainantName: target.complainantName,
+      firDate: target.firDate,
+      linkType: payload.linkType,
+      reason: payload.reason,
+      linkedAt: now.toISOString(),
+      linkedBy: payload.officerName,
+    };
+
+    const targetEntry: LinkedFIREntry = {
+      id: `lnk-${Date.now()}-2`,
+      firId: primary.id,
+      firNumber: primary.firNumber,
+      cctnsFirNumber: primary.cctnsFirNumber,
+      complainantName: primary.complainantName,
+      firDate: primary.firDate,
+      linkType: payload.linkType,
+      reason: payload.reason,
+      linkedAt: now.toISOString(),
+      linkedBy: payload.officerName,
+    };
+
+    const primaryExisting = (primary.linkedFirsList || []).filter((l) => l.firNumber !== target.firNumber);
+    const targetExisting = (target.linkedFirsList || []).filter((l) => l.firNumber !== primary.firNumber);
+
+    const isDuplicate = payload.linkType === "DUPLICATE";
+    const isCross = payload.linkType === "CROSS";
+
+    const pTimeline: FIRTimelineEvent = {
+      id: `tl-${Date.now()}-1`,
+      date: `${dateStr} ${timeStr}`,
+      title: `FIR Linked (${payload.linkType})`,
+      description: `Linked with FIR #${target.firNumber} (${payload.linkType}). Reason: ${payload.reason}`,
+      actor: payload.officerName,
+      stage: "FIELD_ENQUIRY",
+    };
+
+    const tTimeline: FIRTimelineEvent = {
+      id: `tl-${Date.now()}-2`,
+      date: `${dateStr} ${timeStr}`,
+      title: `FIR Linked (${payload.linkType})`,
+      description: `Linked with FIR #${primary.firNumber} (${payload.linkType}). Reason: ${payload.reason}`,
+      actor: payload.officerName,
+      stage: "FIELD_ENQUIRY",
+    };
+
+    const updatedPrimary = this.updateFir(primary.id, {
+      linkedFirsList: [primaryEntry, ...primaryExisting],
+      isCrossFir: isCross ? true : primary.isCrossFir,
+      timeline: [pTimeline, ...(primary.timeline || [])],
+    });
+
+    const updatedTarget = this.updateFir(target.id, {
+      linkedFirsList: [targetEntry, ...targetExisting],
+      isDuplicate: isDuplicate ? true : target.isDuplicate,
+      isCrossFir: isCross ? true : target.isCrossFir,
+      timeline: [tTimeline, ...(target.timeline || [])],
+    });
+
+    if (!updatedPrimary || !updatedTarget) throw new Error("Failed to link FIRs");
+    return { primary: updatedPrimary, target: updatedTarget };
+  },
+
+  delinkFirs(payload: {
+    primaryFirId: string;
+    targetFirNumber: string;
+    reason: string;
+    officerName: string;
+  }): { primary: FIRItem; target?: FIRItem } {
+    const primary = this.getFirById(payload.primaryFirId);
+    if (!primary) throw new Error("Primary FIR not found");
+
+    const targetFirNumber = payload.targetFirNumber;
+    const target = firsStore.find((f) => f.firNumber === targetFirNumber);
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    const pUpdatedList = (primary.linkedFirsList || []).filter((l) => l.firNumber !== targetFirNumber);
+    const hasOtherDuplicatesP = pUpdatedList.some((l) => l.linkType === "DUPLICATE");
+    const hasOtherCrossP = pUpdatedList.some((l) => l.linkType === "CROSS");
+
+    const pTimeline: FIRTimelineEvent = {
+      id: `tl-${Date.now()}-1`,
+      date: `${dateStr} ${timeStr}`,
+      title: "FIR Delinked",
+      description: `Delinked from FIR #${targetFirNumber}. Reason: ${payload.reason}`,
+      actor: payload.officerName,
+      stage: "FIELD_ENQUIRY",
+    };
+
+    const updatedPrimary = this.updateFir(primary.id, {
+      linkedFirsList: pUpdatedList,
+      isDuplicate: hasOtherDuplicatesP,
+      isCrossFir: hasOtherCrossP,
+      timeline: [pTimeline, ...(primary.timeline || [])],
+    });
+
+    let updatedTarget: FIRItem | undefined = undefined;
+    if (target) {
+      const tUpdatedList = (target.linkedFirsList || []).filter((l) => l.firNumber !== primary.firNumber);
+      const hasOtherDuplicatesT = tUpdatedList.some((l) => l.linkType === "DUPLICATE");
+      const hasOtherCrossT = tUpdatedList.some((l) => l.linkType === "CROSS");
+
+      const tTimeline: FIRTimelineEvent = {
+        id: `tl-${Date.now()}-2`,
+        date: `${dateStr} ${timeStr}`,
+        title: "FIR Delinked",
+        description: `Delinked from FIR #${primary.firNumber}. Reason: ${payload.reason}`,
+        actor: payload.officerName,
+        stage: "FIELD_ENQUIRY",
+      };
+
+      updatedTarget = this.updateFir(target.id, {
+        linkedFirsList: tUpdatedList,
+        isDuplicate: hasOtherDuplicatesT,
+        isCrossFir: hasOtherCrossT,
+        timeline: [tTimeline, ...(target.timeline || [])],
+      });
+    }
+
+    if (!updatedPrimary) throw new Error("Failed to delink FIR");
+    return { primary: updatedPrimary, target: updatedTarget };
   },
 };

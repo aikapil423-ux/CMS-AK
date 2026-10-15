@@ -34,6 +34,9 @@ import {
   PlusCircle,
   GripVertical,
   RotateCcw,
+  ArrowRightLeft,
+  Link2,
+  Copy,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
@@ -45,6 +48,8 @@ import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
+import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
+import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 
 type FIRSortField =
@@ -74,6 +79,13 @@ function FIRRegisterPageContent() {
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  // Date Range Search Filter (From - To)
+  const [dateFrom, setDateFrom] = useState<string>(
+    () => searchParams.get("dateFrom") || searchParams.get("from") || ""
+  );
+  const [dateTo, setDateTo] = useState<string>(
+    () => searchParams.get("dateTo") || searchParams.get("to") || ""
+  );
 
   // Status Filter with Dropdown and Checkboxes
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(ALL_FIR_STATUS_KEYS);
@@ -322,6 +334,11 @@ function FIRRegisterPageContent() {
   const [assignmentDirections, setAssignmentDirections] = useState("");
   const [assignmentSubmitting, setAssignmentSubmitting] = useState(false);
 
+  // Transfer FIR & Link/Duplicate FIR Modals
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isLinkDuplicateModalOpen, setIsLinkDuplicateModalOpen] = useState(false);
+  const [selectedFirForAction, setSelectedFirForAction] = useState<string | undefined>(undefined);
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -469,9 +486,20 @@ function FIRRegisterPageContent() {
         }
       }
 
+      // Date Range Filter (From - To)
+      if (dateFrom || dateTo) {
+        const firDateStr = (fir.firDate || fir.incidentDateFrom || "").slice(0, 10);
+        if (dateFrom && firDateStr && firDateStr < dateFrom) {
+          return false;
+        }
+        if (dateTo && firDateStr && firDateStr > dateTo) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [firs, selectedStatuses, searchQuery, columnSearch, isIo, isSho, isSuperior, isMhc, currentUser]);
+  }, [firs, selectedStatuses, searchQuery, dateFrom, dateTo, columnSearch, isIo, isSho, isSuperior, isMhc, currentUser]);
 
   // Sorted FIRs
   const sortedFirs = useMemo(() => {
@@ -664,6 +692,44 @@ function FIRRegisterPageContent() {
                   </Link>
                 </div>
               )}
+
+              {fir.isTransferred && (
+                <div className="pt-0.5">
+                  <span
+                    className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300"
+                    title={`Transferred to ${fir.transferredToPoliceStation || ""}, ${fir.transferredToDistrict || ""}, ${fir.transferredToState || ""}`}
+                  >
+                    <ArrowRightLeft className="w-2.5 h-2.5 text-amber-600" />
+                    <span>Transferred ({fir.transferredToState || "Inter-State"})</span>
+                  </span>
+                </div>
+              )}
+
+              {fir.isDuplicate && (
+                <div className="pt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-300">
+                    <Copy className="w-2.5 h-2.5 text-purple-600" />
+                    <span>Duplicate FIR</span>
+                  </span>
+                </div>
+              )}
+
+              {fir.isCrossFir && (
+                <div className="pt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300">
+                    <span>Cross-FIR</span>
+                  </span>
+                </div>
+              )}
+
+              {!fir.isDuplicate && !fir.isCrossFir && (fir.linkedFirsList?.length ?? 0) > 0 && (
+                <div className="pt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-300">
+                    <Link2 className="w-2.5 h-2.5 text-blue-600" />
+                    <span>Linked ({fir.linkedFirsList?.length})</span>
+                  </span>
+                </div>
+              )}
             </div>
           </td>
         );
@@ -820,28 +886,110 @@ function FIRRegisterPageContent() {
             </div>
           </div>
         </div>
+
+        {/* Top Right Actions: Transfer FIR (Inter-State Only) & Link / Duplicate FIR */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            type="button"
+            onClick={() => {
+              setSelectedFirForAction(undefined);
+              setIsTransferModalOpen(true);
+            }}
+            className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-700"
+            title="Transfer FIR to another State / UT under BNSS (Inter-State Only)"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
+            <span>Transfer FIR (Inter-State)</span>
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => {
+              setSelectedFirForAction(undefined);
+              setIsLinkDuplicateModalOpen(true);
+            }}
+            className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-700"
+            title="Link two FIRs (Duplicate / Cross-FIR / Connected)"
+          >
+            <Link2 className="w-3.5 h-3.5 text-purple-400" />
+            <span>Link / Duplicate FIR</span>
+          </Button>
+        </div>
       </div>
 
       {/* Search & Table Filter Controls */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search FIR No., Complainant, Accused, Section, Place, IO..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-2xs"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Left: Search Bar & Date Range Search */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search FIR No., Complainant, Accused, Section, Place, IO..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-2xs"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                title="Clear Search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Date Range Search: From - To */}
+          <div
+            className={`flex items-center gap-2 bg-white border rounded-lg px-2.5 py-1.5 shadow-2xs transition-colors shrink-0 ${
+              dateFrom || dateTo ? "border-red-400 bg-red-50/20" : "border-slate-200"
+            }`}
+          >
+            <Calendar className={`w-3.5 h-3.5 shrink-0 ${dateFrom || dateTo ? "text-red-600" : "text-slate-500"}`} />
+            <div className="flex items-center gap-1.5 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer py-0.5"
+                  title="Date From (प्रारम्भिक दिनांक से खोजें)"
+                />
+              </div>
+
+              <span className="text-slate-300 font-light">|</span>
+
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer py-0.5"
+                  title="Date To (अंतिम दिनांक तक खोजें)"
+                />
+              </div>
+
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                  title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-100 p-0.5 rounded transition-colors cursor-pointer ml-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right Tools: Master FIR Category Dropdown, Status Dropdown, Columns Dropdown, Refresh */}
@@ -1116,8 +1264,8 @@ function FIRRegisterPageContent() {
                     <EmptyState
                       title="No FIRs Found"
                       description={
-                        searchQuery
-                          ? "No FIR records matched your search terms."
+                        searchQuery || dateFrom || dateTo
+                          ? "No FIR records matched your search terms or date filter."
                           : "No First Information Reports in the selected category."
                       }
                     />
@@ -1285,6 +1433,28 @@ function FIRRegisterPageContent() {
           </div>
         </div>
       )}
+
+      {/* Transfer FIR Modal (Inter-State Only) */}
+      <TransferFIRModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        firs={firs}
+        onSuccess={() => {
+          fetchFirs();
+        }}
+        preSelectedFirId={selectedFirForAction}
+      />
+
+      {/* Link / Duplicate FIR Modal */}
+      <LinkDuplicateFIRModal
+        isOpen={isLinkDuplicateModalOpen}
+        onClose={() => setIsLinkDuplicateModalOpen(false)}
+        firs={firs}
+        onSuccess={() => {
+          fetchFirs();
+        }}
+        preSelectedFirId={selectedFirForAction}
+      />
     </div>
   );
 }

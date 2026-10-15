@@ -315,7 +315,7 @@ function PropertySeizurePageContent() {
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
   const { currentUser } = useAuth();
-  const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
+  const { language: globalLang } = useLanguage();
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
@@ -383,14 +383,10 @@ function PropertySeizurePageContent() {
     });
   }, [activeFir, currentUser]);
 
-  // Handle language switch
-  const handleToggleLanguage = (newLang: "hi" | "en", syncGlobal = true) => {
+  // Handle language switch (strictly local to this form template, does NOT change whole website)
+  const handleToggleLanguage = (newLang: "hi" | "en") => {
     setTemplateLang(newLang);
-    if (syncGlobal && setGlobalLanguage) {
-      setGlobalLanguage(newLang);
-    }
     const targetBase = newLang === "hi" ? DEFAULT_SAMPLE_HI : DEFAULT_SAMPLE_EN;
-    const currentBase = newLang === "hi" ? DEFAULT_SAMPLE_EN : DEFAULT_SAMPLE_HI;
 
     // If viewing official sample case (or no active FIR chosen), swap all fields to target language
     if (!selectedFirId) {
@@ -431,56 +427,24 @@ function PropertySeizurePageContent() {
       updated.stampDistrictName = targetBase.stampDistrictName;
       updated.stampThanaName = targetBase.stampThanaName;
 
-      // Smart swap for default texts if user hasn't typed custom values
-      if (prev.propertyTypeOtherText === currentBase.propertyTypeOtherText || !prev.propertyTypeOtherText) {
-        updated.propertyTypeOtherText = targetBase.propertyTypeOtherText;
-      }
-      if (prev.identificationDetails === currentBase.identificationDetails || !prev.identificationDetails) {
-        updated.identificationDetails = targetBase.identificationDetails;
-      }
-      if (prev.estimatedValue === currentBase.estimatedValue || !prev.estimatedValue) {
-        updated.estimatedValue = targetBase.estimatedValue;
-      }
-      if (prev.sealSampleDescription === currentBase.sealSampleDescription || !prev.sealSampleDescription) {
-        updated.sealSampleDescription = targetBase.sealSampleDescription;
-      }
-      if (prev.copyHandedToPerson === currentBase.copyHandedToPerson || !prev.copyHandedToPerson) {
-        updated.copyHandedToPerson = targetBase.copyHandedToPerson;
-      }
-      if (prev.accusedSignPlace === currentBase.accusedSignPlace || !prev.accusedSignPlace) {
-        updated.accusedSignPlace = targetBase.accusedSignPlace;
-      }
+      updated.propertyTypeOtherText = targetBase.propertyTypeOtherText;
+      updated.identificationDetails = targetBase.identificationDetails;
+      updated.estimatedValue = targetBase.estimatedValue;
+      updated.sealSampleDescription = targetBase.sealSampleDescription;
+      updated.copyHandedToPerson = targetBase.copyHandedToPerson;
+      updated.accusedSignPlace = targetBase.accusedSignPlace;
 
       // Lists: witnesses, propertySummaryLines, seizureGrounds, seizedArticles
-      if (
-        !prev.witnesses ||
-        prev.witnesses.length === 0 ||
-        JSON.stringify(prev.witnesses.map((w) => w.name)) === JSON.stringify(currentBase.witnesses.map((w) => w.name))
-      ) {
+      if (!prev.witnesses || prev.witnesses.length <= 2) {
         updated.witnesses = targetBase.witnesses;
       }
-
-      if (
-        !prev.propertySummaryLines ||
-        prev.propertySummaryLines.length === 0 ||
-        JSON.stringify(prev.propertySummaryLines.map((s) => s.text)) === JSON.stringify(currentBase.propertySummaryLines.map((s) => s.text))
-      ) {
+      if (!prev.propertySummaryLines || prev.propertySummaryLines.length <= 2) {
         updated.propertySummaryLines = targetBase.propertySummaryLines;
       }
-
-      if (
-        !prev.seizureGrounds ||
-        prev.seizureGrounds.length === 0 ||
-        JSON.stringify(prev.seizureGrounds.map((g) => g.text)) === JSON.stringify(currentBase.seizureGrounds.map((g) => g.text))
-      ) {
+      if (!prev.seizureGrounds || prev.seizureGrounds.length <= 2) {
         updated.seizureGrounds = targetBase.seizureGrounds;
       }
-
-      if (
-        !prev.seizedArticles ||
-        prev.seizedArticles.length === 0 ||
-        JSON.stringify(prev.seizedArticles.map((a) => a.description)) === JSON.stringify(currentBase.seizedArticles.map((a) => a.description))
-      ) {
+      if (!prev.seizedArticles || prev.seizedArticles.length <= 2) {
         updated.seizedArticles = targetBase.seizedArticles.map((art, idx) => ({
           ...art,
           photoUrl: prev.seizedArticles?.[idx]?.photoUrl || art.photoUrl,
@@ -490,15 +454,6 @@ function PropertySeizurePageContent() {
       return updated;
     });
   };
-
-  // Synchronize when global navbar language changes
-  useEffect(() => {
-    if (globalLang === "hi" || globalLang === "en") {
-      if (globalLang !== templateLang) {
-        handleToggleLanguage(globalLang, false);
-      }
-    }
-  }, [globalLang]);
 
   const handleFieldChange = (field: keyof PropertySeizureFormData, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
@@ -754,7 +709,10 @@ function PropertySeizurePageContent() {
       <FIRWorkspaceNav firId={selectedFirId} />
 
       {/* Control Action Toolbar */}
-      <div className="no-print bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      <div
+        data-no-translate="true"
+        className="no-translate no-print bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3"
+      >
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-700">
@@ -774,8 +732,8 @@ function PropertySeizurePageContent() {
             </select>
           </div>
 
-          {/* Language Toggle */}
-          <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50">
+          {/* Template Language Toggle (Only changes document form language) */}
+          <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5 bg-slate-50" title="Template Language (प्रपत्र भाषा)">
             <button
               type="button"
               onClick={() => handleToggleLanguage("hi")}
@@ -783,7 +741,7 @@ function PropertySeizurePageContent() {
                 templateLang === "hi" ? "bg-teal-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              हिन्दी
+              Hindi
             </button>
             <button
               type="button"
@@ -919,7 +877,8 @@ function PropertySeizurePageContent() {
       <div className="flex justify-center">
         <div
           id="property-seizure-printable"
-          className="w-full max-w-4xl bg-white border border-slate-300 p-6 sm:p-12 text-slate-950 font-serif shadow-sm space-y-8 leading-relaxed"
+          data-no-translate="true"
+          className="no-translate w-full max-w-4xl bg-white border border-slate-300 p-6 sm:p-12 text-slate-950 font-serif shadow-sm space-y-8 leading-relaxed"
           style={{ minHeight: "1150px" }}
         >
           {/* ================= PAGE 1 ================= */}

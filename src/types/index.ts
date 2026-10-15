@@ -1203,6 +1203,42 @@ export type MainFIRStatus =
   | 'Untraced'
   | 'Cancelled';
 
+export interface FIRTransferRecord {
+  id: string;
+  firId: string;
+  firNumber: string;
+  transferType: "INTER_STATE";
+  sourceState: string;
+  sourceDistrict: string;
+  sourcePoliceStation: string;
+  targetState: string;
+  targetDistrict: string;
+  targetPoliceStation: string;
+  transferReason: string;
+  statutoryGround: string;
+  orderNumber?: string;
+  orderDate?: string;
+  dispatchDate: string;
+  dispatchTime?: string;
+  transferredBy: string;
+  transferredByRank?: string;
+  remarks?: string;
+  timestamp: string;
+}
+
+export interface LinkedFIREntry {
+  id: string;
+  firId: string;
+  firNumber: string;
+  cctnsFirNumber?: string;
+  complainantName?: string;
+  firDate?: string;
+  linkType: "DUPLICATE" | "CROSS" | "CONNECTED";
+  reason: string;
+  linkedAt: string;
+  linkedBy: string;
+}
+
 export interface FIRCaseDiaryItem {
   id: string;
   firId?: string;
@@ -1615,6 +1651,26 @@ export interface FIRItem {
   finalFormDate?: string;
   courtName?: string;
   finalFormSummary?: string;
+
+  // Inter-State Transfer (Statutory Jurisdiction / Zero FIR Transfer)
+  isTransferred?: boolean;
+  transferType?: "INTER_STATE";
+  transferredToState?: string;
+  transferredToDistrict?: string;
+  transferredToPoliceStation?: string;
+  transferredAt?: string;
+  transferredBy?: string;
+  transferReason?: string;
+  transferStatutoryGround?: string;
+  transferOrderNumber?: string;
+  transferOrderDate?: string;
+  transferRecord?: FIRTransferRecord;
+  transferHistory?: FIRTransferRecord[];
+
+  // Reciprocal FIR Linking & Duplicate Tagging
+  isDuplicate?: boolean;
+  isCrossFir?: boolean;
+  linkedFirsList?: LinkedFIREntry[];
 
   auditTrail?: FIRAuditRecord[];
   createdAt: string;
