@@ -62,7 +62,9 @@ function isExcluded(node: Node): boolean {
       id.includes("proforma") ||
       id.includes("official-sheet") ||
       id.includes("cctns") ||
-      id.includes("print-canvas")
+      id.includes("print-canvas") ||
+      id.includes("seizure") ||
+      id.includes("printable")
     ) {
       return true;
     }

@@ -29,30 +29,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
       {/* FIR Investigation Workspace Tabs */}
       <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-        <Link
-          href={`/fir-workspace/builder${querySuffix}`}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            isBuilder
-              ? "text-blue-950 bg-blue-50 border border-blue-300 shadow-2xs"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          <FileText className={`w-3.5 h-3.5 ${isBuilder ? "text-blue-700" : "text-blue-600"}`} />
-          <span>Template Builder</span>
-        </Link>
-
-        <Link
-          href={`/fir-workspace/drafts${querySuffix}`}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            isDrafts
-              ? "text-red-950 bg-red-50 border border-red-300 shadow-2xs"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          }`}
-        >
-          <Scale className={`w-3.5 h-3.5 ${isDrafts ? "text-red-700" : "text-red-600"}`} />
-          <span>Final Form (Sec 193 BNSS)</span>
-        </Link>
-
+        {/* 1. Statutory Notice Generator */}
         <Link
           href={`/fir-workspace/templates${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -65,6 +42,20 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           <span>Statutory Notice Generator</span>
         </Link>
 
+        {/* 2. Case Diaries / Zimni */}
+        <Link
+          href={`/fir-workspace/zimni${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isZimni
+              ? "text-amber-950 bg-amber-50 border border-amber-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <ScrollText className={`w-3.5 h-3.5 ${isZimni ? "text-amber-700" : "text-amber-600"}`} />
+          <span>Case Diaries (Zimni)</span>
+        </Link>
+
+        {/* 3. Arrest Docs and IIF-III */}
         <Link
           href={`/fir-workspace/arrest-docs${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -77,18 +68,33 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           <span>Arrest Docs and IIF-III</span>
         </Link>
 
+        {/* 4. Property Seizure Form IIF-IV */}
         <Link
-          href={`/fir-workspace/zimni${querySuffix}`}
+          href={`/fir-workspace/property-seizure${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            isZimni
-              ? "text-amber-950 bg-amber-50 border border-amber-300 shadow-2xs"
+            isPropertySeizure
+              ? "text-teal-950 bg-teal-50 border border-teal-300 shadow-2xs"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
           }`}
         >
-          <ScrollText className={`w-3.5 h-3.5 ${isZimni ? "text-amber-700" : "text-amber-600"}`} />
-          <span>Case Diaries / Zimni</span>
+          <PackageCheck className={`w-3.5 h-3.5 ${isPropertySeizure ? "text-teal-700" : "text-teal-600"}`} />
+          <span>Property Seizure Form IIF-IV</span>
         </Link>
 
+        {/* 5. ChargeSheet/Final report and IIF-V */}
+        <Link
+          href={`/fir-workspace/drafts${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isDrafts
+              ? "text-red-950 bg-red-50 border border-red-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <Scale className={`w-3.5 h-3.5 ${isDrafts ? "text-red-700" : "text-red-600"}`} />
+          <span>ChargeSheet/Final report and IIF-V</span>
+        </Link>
+
+        {/* 6. Kalandra */}
         <Link
           href={`/fir-workspace/kalandra${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -101,16 +107,17 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           <span>Kalandra</span>
         </Link>
 
+        {/* 7. Template Builder */}
         <Link
-          href={`/fir-workspace/property-seizure${querySuffix}`}
+          href={`/fir-workspace/builder${querySuffix}`}
           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-            isPropertySeizure
-              ? "text-teal-950 bg-teal-50 border border-teal-300 shadow-2xs"
+            isBuilder
+              ? "text-blue-950 bg-blue-50 border border-blue-300 shadow-2xs"
               : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
           }`}
         >
-          <PackageCheck className={`w-3.5 h-3.5 ${isPropertySeizure ? "text-teal-700" : "text-teal-600"}`} />
-          <span>Property Seizure (IIF-IV)</span>
+          <FileText className={`w-3.5 h-3.5 ${isBuilder ? "text-blue-700" : "text-blue-600"}`} />
+          <span>Template Builder</span>
         </Link>
       </div>
 

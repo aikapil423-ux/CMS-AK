@@ -820,15 +820,6 @@ function FIRRegisterPageContent() {
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Link href="/fir-workspace">
-            <Button variant="outline" className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5">
-              <UserCheck className="w-4 h-4 text-blue-600" />
-              Investigation Workspace
-            </Button>
-          </Link>
-        </div>
       </div>
 
       {/* Search & Table Filter Controls */}
