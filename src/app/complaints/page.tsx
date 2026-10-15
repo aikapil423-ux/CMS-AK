@@ -1290,16 +1290,16 @@ function ComplaintListContent() {
       )}
 
       {/* Filter and Search Controls */}
-      <Card className="border-slate-200 !overflow-visible relative z-30">
-        <CardContent className="p-4 space-y-3 !overflow-visible">
-          {/* Main Controls Row: Status Dropdown with Checkboxes + Search + Category */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <Card className="border-slate-200 !overflow-visible relative z-30 shadow-xs">
+        <CardContent className="p-2 sm:p-2.5 space-y-2 !overflow-visible">
+          {/* Main Controls: Single Row Space-Optimized Flex Bar */}
+          <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
             {/* Status Dropdown Button with Checkboxes */}
-            <div className="relative z-40" ref={statusDropdownRef}>
+            <div className="relative z-40 shrink-0 w-full sm:w-auto sm:min-w-[150px]" ref={statusDropdownRef}>
               <button
                 type="button"
                 onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                className={`w-full h-10 px-3 text-xs sm:text-sm font-semibold rounded-lg border flex items-center justify-between gap-2 transition-all shadow-2xs ${
+                className={`w-full h-8.5 px-2.5 text-xs font-semibold rounded-lg border flex items-center justify-between gap-2 transition-all shadow-2xs cursor-pointer ${
                   statusDropdownOpen
                     ? "border-blue-600 ring-2 ring-blue-100 bg-white text-blue-900"
                     : !isAllSelected && selectedStatuses.length > 0
@@ -1307,11 +1307,11 @@ function ComplaintListContent() {
                     : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800"
                 }`}
               >
-                <div className="flex items-center gap-2 truncate">
+                <div className="flex items-center gap-1.5 truncate">
                   <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span className="truncate">{getStatusButtonLabel()}</span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   {selectedStatuses.length > 0 && selectedStatuses.length < ALL_STATUS_KEYS.length && (
                     <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
                       {selectedStatuses.length}
@@ -1335,7 +1335,7 @@ function ComplaintListContent() {
                     <button
                       type="button"
                       onClick={handleToggleAll}
-                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 transition-colors"
+                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 transition-colors cursor-pointer"
                     >
                       {isAllSelected ? "Deselect All" : "Select All"}
                     </button>
@@ -1348,18 +1348,18 @@ function ComplaintListContent() {
                       tabIndex={0}
                       onClick={handleToggleAll}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleAll(); }}
-                      className={`flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer transition-colors border select-none ${
+                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors border select-none ${
                         isAllSelected
                           ? "bg-blue-50 border-blue-200 text-blue-950 font-bold"
                           : "hover:bg-slate-50 border-transparent text-slate-800"
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
                           checked={isAllSelected}
                           onChange={() => {}}
-                          className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
+                          className="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
                         />
                         <span className="text-xs">All Complaints</span>
                       </div>
@@ -1391,18 +1391,18 @@ function ComplaintListContent() {
                           tabIndex={0}
                           onClick={() => handleToggleStatus(opt.key)}
                           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleStatus(opt.key); }}
-                          className={`flex items-center justify-between px-2.5 py-2 rounded-lg cursor-pointer transition-colors select-none ${
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors select-none ${
                             isChecked
                               ? "bg-slate-100 text-slate-900 font-semibold"
                               : "hover:bg-slate-50 text-slate-700"
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={() => {}}
-                              className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
+                              className="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
                             />
                             <span className="text-xs">{opt.label}</span>
                           </div>
@@ -1425,14 +1425,14 @@ function ComplaintListContent() {
                     <button
                       type="button"
                       onClick={() => setSelectedStatuses([...ALL_STATUS_KEYS])}
-                      className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                      className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
                     >
                       Reset Filter
                     </button>
                     <button
                       type="button"
                       onClick={() => setStatusDropdownOpen(false)}
-                      className="px-3 py-1 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-md transition-colors shadow-2xs"
+                      className="px-3 py-1 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-md transition-colors shadow-2xs cursor-pointer"
                     >
                       Apply
                     </button>
@@ -1441,24 +1441,24 @@ function ComplaintListContent() {
               )}
             </div>
 
-            {/* Search Bar (2 cols on lg) */}
-            <div className="relative lg:col-span-2">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            {/* Search Bar (flex-1 expands to fill space) */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by Complaint No, Complainant Name, Phone, Accused, Subject, Station..."
-                className="w-full h-10 pl-9 pr-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0b192c] focus:outline-none"
+                placeholder="Search complaint no, complainant, phone, accused, station..."
+                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none placeholder:text-slate-400"
               />
             </div>
 
-            {/* Category Filter: All Categories | NCR | FIR Recommend | Closure */}
-            <div>
+            {/* Category Filter */}
+            <div className="shrink-0">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full h-10 px-3 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium"
+                className="h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium cursor-pointer"
               >
                 <option value="ALL">All Categories</option>
                 <option value="NCR">NCR</option>
@@ -1466,41 +1466,27 @@ function ComplaintListContent() {
                 <option value="CLOSURE">Closure</option>
               </select>
             </div>
-          </div>
 
-          {/* Date Range Search: Date From & Date To (दिनांक से - तक खोजें) */}
-          <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 text-slate-700 font-bold shrink-0">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                <span>Date Range:</span>
-              </div>
-
-              {/* Date From Input */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 focus-within:ring-2 focus-within:ring-[#0b192c] focus-within:bg-white transition-all">
-                <span className="text-[11px] font-semibold text-slate-500">From:</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer"
-                  title="Search complaints registered from this date"
-                />
-              </div>
-
-              {/* Date To Input */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 focus-within:ring-2 focus-within:ring-[#0b192c] focus-within:bg-white transition-all">
-                <span className="text-[11px] font-semibold text-slate-500">To:</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer"
-                  title="Search complaints registered up to this date"
-                />
-              </div>
-
-              {/* Clear Dates Button */}
+            {/* Compact Date Range Filter (Inline) */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
+              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                title="Date from"
+              />
+              <span className="text-slate-300 text-xs shrink-0">-</span>
+              <span className="text-[11px] font-semibold text-slate-500 shrink-0">To:</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                title="Date to"
+              />
               {(dateFrom || dateTo) && (
                 <button
                   type="button"
@@ -1508,18 +1494,16 @@ function ComplaintListContent() {
                     setDateFrom("");
                     setDateTo("");
                   }}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                  title="Clear date range filters"
+                  className="p-0.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                  title="Clear dates"
                 >
-                  <X className="w-3 h-3" />
-                  <span>Clear Dates</span>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
-            {/* Quick Presets: Today | Last 7 Days | This Month */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-[11px] text-slate-400 font-medium">Quick:</span>
+            {/* Quick Date Presets: Segmented Pill */}
+            <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80 shrink-0 h-8.5">
               <button
                 type="button"
                 onClick={() => {
@@ -1527,11 +1511,12 @@ function ComplaintListContent() {
                   setDateFrom(today);
                   setDateTo(today);
                 }}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
                   dateFrom && dateTo && dateFrom === dateTo && dateFrom === new Date().toISOString().split("T")[0]
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    ? "bg-white text-blue-700 shadow-2xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
+                title="Today's complaints"
               >
                 Today
               </button>
@@ -1545,9 +1530,14 @@ function ComplaintListContent() {
                   setDateFrom(from);
                   setDateTo(to);
                 }}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                  dateFrom && dateTo && dateTo === new Date().toISOString().split("T")[0] && dateFrom !== dateTo
+                    ? "bg-white text-blue-700 shadow-2xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                title="Last 7 days"
               >
-                Last 7 Days
+                7 Days
               </button>
               <button
                 type="button"
@@ -1558,20 +1548,21 @@ function ComplaintListContent() {
                   setDateFrom(from);
                   setDateTo(to);
                 }}
-                className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                title="This month"
               >
-                This Month
+                Month
               </button>
             </div>
           </div>
 
           {/* Active Status & Date Badges / Filter Summary */}
           {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo) && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-              <span className="text-[11px] font-semibold text-slate-500">Filtered by:</span>
+            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filters:</span>
               {/* Date Filter Badge */}
               {(dateFrom || dateTo) && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-full text-xs font-medium">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
                   <Calendar className="w-3 h-3 text-amber-700" />
                   <span>
                     {dateFrom && dateTo
@@ -1598,13 +1589,13 @@ function ComplaintListContent() {
                 return (
                   <span
                     key={k}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-full text-xs font-medium"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-[11px] font-medium"
                   >
                     <span>{opt?.label}</span>
                     <button
                       type="button"
                       onClick={() => handleToggleStatus(k)}
-                      className="hover:text-blue-950 font-bold ml-0.5"
+                      className="hover:text-blue-950 font-bold ml-0.5 cursor-pointer"
                       title="Remove status filter"
                     >
                       ×
