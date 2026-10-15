@@ -31,6 +31,9 @@ import {
   CheckCircle,
   Globe,
   Languages,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -416,6 +419,7 @@ function ZimniWorkspaceContent() {
     zimniNumber: number;
     fileName: string;
   } | null>(null);
+  const [showAdvancedBorders, setShowAdvancedBorders] = useState(false);
 
   // Sync with global top bar language switcher
   useEffect(() => {
@@ -1031,485 +1035,367 @@ function ZimniWorkspaceContent() {
 
   return (
     <div className="space-y-4 pb-20 animate-in fade-in-50">
-      {/* Top Header / Actions Bar */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800">
-            <ScrollText className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-[#0b192c] tracking-tight flex items-center gap-2">
-              <span>केस डायरी (रिपोर्ट जिमनी) जनरेटर</span>
-              <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-300">
-                फार्म 25.54 (1)
-              </span>
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Statutory Case Diary / Zimni under Section 175 BNSS &amp; PPR 25.54 • सम्पूर्ण प्रोफार्मा १००% एडिटेबल (Border, Content, Header)
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {saveStatus && (
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg animate-in fade-in">
-              {saveStatus}
-            </span>
-          )}
-
-          {/* Bilingual Language Selector */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-300 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => handleToggleLanguage("hi")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
-                templateLang === "hi"
-                  ? "bg-amber-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-              }`}
-              title="हिन्दी प्रारूप (Hindi Proforma)"
-            >
-              <Languages className="w-3.5 h-3.5" />
-              <span>हिन्दी</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleLanguage("en")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-black transition-all ${
-                templateLang === "en"
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
-              }`}
-              title="English Statutory Proforma"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>English</span>
-            </button>
-          </div>
-
-          <Button
-            size="sm"
-            onClick={handleSaveToFir}
-            disabled={isSavingToFir}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs gap-1.5 shadow-sm"
-            title="Save directly to the selected FIR's Case Diaries (Zimni) tab"
-          >
-            {isSavingToFir ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>सहेज रहे हैं...</span>
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-200" />
-                <span>एफ.आई.आर. में सहेजें (Save to FIR)</span>
-              </>
-            )}
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handleSaveDraft}
-            variant="outline"
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
-          >
-            <Save className="w-3.5 h-3.5 text-blue-600" />
-            <span>ड्राफ्ट सहेजें (Save)</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handleDownload}
-            variant="outline"
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
-            title="Download clean offline A4 document"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-600" />
-            <span>डाउनलोड A4</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handlePrint}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shadow-sm"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>प्रिंट / PDF निकालें</span>
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleCopy}
-            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? "Copied" : "टेक्स्ट कॉपी"}</span>
-          </Button>
-        </div>
-      </div>
-
       {/* Navigation across IO Workspace */}
       <FIRWorkspaceNav firId={selectedFirId} />
 
-      {/* Configuration & Active FIR Selector Header */}
-      <div className="no-print bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-          {/* Active FIR Selector */}
-          <div className="lg:col-span-6">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
-              Select Active FIR Case (सक्रिय एफ.आई.आर. केस चुनें) *
-            </label>
-            <select
-              value={selectedFirId}
-              onChange={(e) => setSelectedFirId(e.target.value)}
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+      {/* Minimalist Top Bar & Document Controls */}
+      <div className="no-print bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Left: Case Diary Title + FIR Selector */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-700 flex items-center justify-center font-bold shrink-0">
+                <ScrollText className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-sm font-bold text-slate-900 leading-tight">
+                    {templateLang === "en" ? "Case Diary (Zimni)" : "केस डायरी (रिपोर्ट जिमनी)"}
+                  </h1>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                    Form 25.54(1)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 font-medium">Sec 175 BNSS • Punjab Police Rules</p>
+              </div>
+            </div>
+
+            <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+            {/* Active FIR Selector Pill */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">FIR:</span>
+              <select
+                value={selectedFirId}
+                onChange={(e) => setSelectedFirId(e.target.value)}
+                className="text-xs font-bold bg-transparent text-slate-900 focus:outline-none cursor-pointer max-w-[200px] sm:max-w-[260px] truncate"
+              >
+                {firs.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.firNumber} — {f.complainantName || "Complaint"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Auto-Fill Button */}
+            <button
+              type="button"
+              onClick={() => handleAutoFillFromFir()}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+              title="Auto-fill details from selected FIR"
             >
-              {firs.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.firNumber} — {f.actsAndSections?.slice(0, 40)} ({f.complainantName || "Complaint"})
-                </option>
-              ))}
-            </select>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Auto-Fill</span>
+            </button>
           </div>
 
-          {/* Quick Buttons for Auto-Fill, Save to FIR and Reset */}
-          <div className="lg:col-span-6 flex items-center gap-2 flex-wrap justify-start lg:justify-end">
-            <Button
+          {/* Right: Actions, Language & Controls */}
+          <div className="flex items-center gap-2 flex-wrap justify-start lg:justify-end">
+            {saveStatus && (
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg animate-in fade-in">
+                {saveStatus}
+              </span>
+            )}
+
+            {/* Language Pill */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("hi")}
+                className={`px-2 py-0.5 rounded transition-all ${
+                  templateLang === "hi"
+                    ? "bg-white text-slate-900 shadow-2xs font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                हिन्दी
+              </button>
+              <button
+                type="button"
+                onClick={() => handleToggleLanguage("en")}
+                className={`px-2 py-0.5 rounded transition-all ${
+                  templateLang === "en"
+                    ? "bg-white text-slate-900 shadow-2xs font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                EN
+              </button>
+            </div>
+
+            {/* Customize Borders & Layout Toggle */}
+            <button
               type="button"
+              onClick={() => setShowAdvancedBorders((p) => !p)}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-colors cursor-pointer ${
+                showAdvancedBorders
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+              }`}
+              title="Toggle border rules, thickness and proforma options"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Format & Borders</span>
+              {showAdvancedBorders ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+
+            {/* Secondary Tools */}
+            <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                title="Download Clean A4 HTML"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                title={copied ? "Copied" : "Copy Plain Text"}
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                title="Save Draft in Browser"
+              >
+                <Save className="w-3.5 h-3.5 text-slate-600" />
+              </button>
+            </div>
+
+            {/* Print / PDF Button */}
+            <Button
+              size="sm"
+              onClick={handlePrint}
+              variant="outline"
+              className="border-slate-300 text-slate-800 font-bold text-xs gap-1.5 h-7.5 px-3"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print / PDF</span>
+            </Button>
+
+            {/* Save to FIR Button */}
+            <Button
               size="sm"
               onClick={handleSaveToFir}
               disabled={isSavingToFir}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-xs"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 h-7.5 px-3 shadow-2xs"
             >
               {isSavingToFir ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
               ) : (
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Save to FIR</span>
+                </>
               )}
-              <span>केस डायरी FIR में सहेजें (Save)</span>
-            </Button>
-
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => handleAutoFillFromFir()}
-              className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>FIR डेटा लोड करें (Auto-Fill)</span>
-            </Button>
-
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleResetToImageSample}
-              className="border-amber-300 text-amber-900 hover:bg-amber-50 text-xs font-bold gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
-              <span>मूल सैंपल लोड करें (Reset to Sample)</span>
             </Button>
           </div>
         </div>
 
-        {/* Visibility Toggles & Font Size */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Toggle Header Visibility */}
-            <button
-              type="button"
-              onClick={() => setData((p) => ({ ...p, showHeader: !p.showHeader }))}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                data.showHeader
-                  ? "bg-amber-50 text-amber-900 border-amber-300"
-                  : "bg-slate-50 text-slate-500 border-slate-200 line-through"
-              }`}
-            >
-              {data.showHeader ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              <span>हेडर ब्लॉक {data.showHeader ? "सक्रिय" : "छिपा हुआ"}</span>
-            </button>
-
-            {/* Toggle Case Heading Visibility */}
-            <button
-              type="button"
-              onClick={() => setData((p) => ({ ...p, showCaseHeading: !p.showCaseHeading }))}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                data.showCaseHeading
-                  ? "bg-amber-50 text-amber-900 border-amber-300"
-                  : "bg-slate-50 text-slate-500 border-slate-200 line-through"
-              }`}
-            >
-              {data.showCaseHeading ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              <span>राज्य / बनाम विवरण {data.showCaseHeading ? "दिखाएं" : "छिपाएं"}</span>
-            </button>
-          </div>
-
-          {/* Font Size & Language Selector */}
-          <div className="flex items-center gap-3">
-            {/* Bilingual Switcher in Toolbar */}
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-slate-600 text-[11px]">भाषा:</span>
-              <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-300">
-                <button
-                  type="button"
-                  onClick={() => handleToggleLanguage("hi")}
-                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
-                    templateLang === "hi"
-                      ? "bg-amber-600 text-white"
-                      : "text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  हिन्दी
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleLanguage("en")}
-                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
-                    templateLang === "en"
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  English
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-slate-600 text-[11px]">फॉन्ट आकार:</span>
-              {(["compact", "normal", "large"] as const).map((sz) => (
-                <button
-                  key={sz}
-                  type="button"
-                  onClick={() => setFontSize(sz)}
-                  className={`px-2 py-0.5 rounded text-xs font-bold uppercase transition-colors ${
-                    fontSize === sz
-                      ? "bg-amber-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {sz === "compact" ? "छोटा" : sz === "normal" ? "मध्यम" : "बड़ा"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ================= GRANULAR BORDER & LINE CONTROLLER (HORIZONTAL & VERTICAL LINES) ================= */}
-        <div className="pt-2 border-t border-slate-200 space-y-2.5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 flex items-center gap-1">
-                <span>📐 बॉर्डर व रेखा नियंत्रक (Border &amp; Line Manager):</span>
-              </span>
-            </div>
-
-            {/* Presets */}
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-[11px] font-bold text-slate-600">प्रीसेट:</span>
-              <button
-                type="button"
-                onClick={() => applyPreset("original")}
-                className="px-2.5 py-1 rounded text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 shadow-2xs"
-                title="हरियाणा पुलिस मूल प्रारूप (बाहरी बॉक्स + कॉलम रेखाएं, पंक्तियों के बीच रेखाएं नहीं)"
-              >
-                ★ मूल प्रारूप (Photo Sample)
-              </button>
-              <button
-                type="button"
-                onClick={() => applyPreset("full_grid")}
-                className="px-2.5 py-1 rounded text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300"
-                title="हर पंक्ति में क्षैतिज रेखा चालू करें"
-              >
-                ▦ पूर्ण ग्रिड (Full Grid)
-              </button>
-              <button
-                type="button"
-                onClick={() => applyPreset("none")}
-                className="px-2.5 py-1 rounded text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
-                title="बिना बॉर्डर"
-              >
-                बिना बॉर्डर (None)
-              </button>
-            </div>
-
-            {/* Line Thickness */}
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-slate-600">मोटाई:</span>
-              {(["1px", "2px", "3px"] as const).map((w) => (
-                <button
-                  key={w}
-                  type="button"
-                  onClick={() => handleSetBorderWidth(w)}
-                  className={`px-2 py-0.5 rounded text-xs font-bold transition-colors ${
-                    (data.borderWidth || "2px") === w
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                >
-                  {w === "1px" ? "1px (पतली)" : w === "2px" ? "2px (मानक)" : "3px (मोटी)"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Granular Toggles for Vertical & Horizontal Border Lines */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
-            {/* Vertical Lines (खड़ी रेखाएं) */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-700 block">
-                खड़ी रेखाएं (Vertical Lines) जोड़ें / हटाएं:
-              </span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleToggleVerticalBorder("outerLeft")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.verticalBorders?.outerLeft
-                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  | बायां बॉर्डर (Outer Left)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleVerticalBorder("col1ToCol2")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.verticalBorders?.col1ToCol2
-                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  | कॉलम १-२ रेखा (तिथि - क्रं.स.)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleVerticalBorder("col2ToCol3")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.verticalBorders?.col2ToCol3
-                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  | कॉलम २-३ रेखा (क्रं.स. - विवरण)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleVerticalBorder("outerRight")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.verticalBorders?.outerRight
-                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  | दायां बॉर्डर (Outer Right)
-                </button>
-              </div>
-            </div>
-
-            {/* Horizontal Lines (आड़ी / क्षैतिज रेखाएं) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-700 block">
-                  आड़ी / क्षैतिज रेखाएं (Horizontal Lines) जोड़ें / हटाएं:
-                </span>
-                <div className="flex items-center gap-1.5">
+        {/* Collapsible Format & Borders Drawer */}
+        {showAdvancedBorders && (
+          <div className="pt-3 border-t border-slate-200/80 space-y-3 bg-slate-50/70 p-3 rounded-lg animate-in fade-in duration-200 text-xs">
+            {/* Row 1: Presets, Thickness, Font Size, Reset */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Presets:</span>
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 shadow-2xs">
                   <button
                     type="button"
-                    onClick={handleAddAllHorizontalBorders}
-                    className="text-[11px] font-bold text-blue-700 hover:underline px-1"
-                    title="सभी प्रविष्टियों के नीचे रेखा जोड़ें"
+                    onClick={() => applyPreset("original")}
+                    className={`px-2 py-1 rounded text-xs font-bold transition-all ${
+                      data.borderStyle === "box" && !data.entries.some((e) => e.hasBottomBorder)
+                        ? "bg-amber-100 text-amber-900 font-black shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                   >
-                    + सबमें जोड़ें
+                    ★ Photo Sample
                   </button>
-                  <span className="text-slate-300">|</span>
                   <button
                     type="button"
-                    onClick={handleRemoveAllHorizontalBorders}
-                    className="text-[11px] font-bold text-red-600 hover:underline px-1"
-                    title="सभी प्रविष्टियों की रेखाएं हटाएं"
+                    onClick={() => applyPreset("full_grid")}
+                    className="px-2 py-1 rounded text-xs font-bold text-slate-600 hover:text-slate-900"
                   >
-                    - सब हटाएं (मूल)
+                    ▦ Full Grid
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPreset("none")}
+                    className="px-2 py-1 rounded text-xs font-bold text-slate-600 hover:text-slate-900"
+                  >
+                    None
+                  </button>
+                </div>
+
+                <div className="h-4 w-px bg-slate-300 mx-1" />
+
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thickness:</span>
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+                  {(["1px", "2px", "3px"] as const).map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => handleSetBorderWidth(w)}
+                      className={`px-2 py-0.5 rounded text-xs font-bold transition-all ${
+                        (data.borderWidth || "2px") === w
+                          ? "bg-slate-900 text-white"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="h-4 w-px bg-slate-300 mx-1" />
+
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Text Size:</span>
+                <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+                  {(["compact", "normal", "large"] as const).map((sz) => (
+                    <button
+                      key={sz}
+                      type="button"
+                      onClick={() => setFontSize(sz)}
+                      className={`px-2 py-0.5 rounded text-xs font-bold transition-all ${
+                        fontSize === sz ? "bg-amber-600 text-white" : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {sz === "compact" ? "Small" : sz === "normal" ? "Medium" : "Large"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Reset to Sample Button */}
+              <button
+                type="button"
+                onClick={handleResetToImageSample}
+                className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-amber-800 transition-colors"
+                title="Reset to default official sample"
+              >
+                <RotateCcw className="w-3 h-3 text-amber-700" />
+                <span>Reset to Sample</span>
+              </button>
+            </div>
+
+            {/* Row 2: Visibility & Granular Border Toggles */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+              {/* Vertical Lines */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Vertical Lines (खड़ी रेखाएं)
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVerticalBorder("outerLeft")}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.verticalBorders?.outerLeft
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    Outer Left
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVerticalBorder("col1ToCol2")}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.verticalBorders?.col1ToCol2
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    Col 1-2 (Date/Sr)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVerticalBorder("col2ToCol3")}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.verticalBorders?.col2ToCol3
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    Col 2-3 (Sr/Narration)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleVerticalBorder("outerRight")}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.verticalBorders?.outerRight
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    Outer Right
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleToggleHorizontalBorder("outerTop")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.horizontalBorders?.outerTop
-                      ? "bg-blue-100 text-blue-900 border-blue-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  — ऊपरी आउटर रेखा
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleHorizontalBorder("headerBottom")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.horizontalBorders?.headerBottom
-                      ? "bg-blue-100 text-blue-900 border-blue-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  — हेडर के नीचे रेखा
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleHorizontalBorder("caseHeadingBottom")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.horizontalBorders?.caseHeadingBottom
-                      ? "bg-blue-100 text-blue-900 border-blue-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  — राज्य/बनाम रेखा
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleHorizontalBorder("closingTop")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.horizontalBorders?.closingTop
-                      ? "bg-blue-100 text-blue-900 border-blue-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  — हस्ताक्षर के ऊपर रेखा
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleToggleHorizontalBorder("outerBottom")}
-                  className={`px-2.5 py-1 rounded text-xs font-bold border transition-colors ${
-                    data.horizontalBorders?.outerBottom
-                      ? "bg-blue-100 text-blue-900 border-blue-300"
-                      : "bg-white text-slate-400 border-slate-200 line-through"
-                  }`}
-                >
-                  — निचली आउटर रेखा
-                </button>
+              {/* Horizontal Lines & Sections */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Section Blocks & Horizontal Lines
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setData((p) => ({ ...p, showHeader: !p.showHeader }))}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.showHeader
+                        ? "bg-amber-50 text-amber-800 border-amber-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    Header Block
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setData((p) => ({ ...p, showCaseHeading: !p.showCaseHeading }))}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors ${
+                      data.showCaseHeading
+                        ? "bg-amber-50 text-amber-800 border-amber-300"
+                        : "bg-white text-slate-400 border-slate-200 line-through"
+                    }`}
+                  >
+                    State / Versus Block
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddAllHorizontalBorders}
+                    className="text-[11px] font-bold text-blue-700 hover:underline px-1"
+                  >
+                    + Row Lines
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAllHorizontalBorders}
+                    className="text-[11px] font-bold text-slate-500 hover:underline px-1"
+                  >
+                    - Row Lines
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ================= EDITABLE OFFICIAL ZIMNI LEGAL DOCUMENT CANVAS ================= */}
-      <div className="flex justify-center">
+      <div className="flex justify-center bg-slate-100/60 p-2 sm:p-6 rounded-2xl border border-slate-200/70">
         <div
           id="zimni-printable-canvas"
-          className={`w-full max-w-4xl bg-white border border-slate-300 shadow-md rounded-xl p-6 sm:p-10 transition-all font-serif text-slate-900 ${
+          className={`w-full max-w-4xl bg-white border border-slate-300 shadow-sm rounded-lg p-6 sm:p-10 transition-all font-serif text-slate-900 ${
             fontSize === "compact" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
           }`}
           style={{ minHeight: "1050px", lineHeight: "1.6" }}
@@ -2001,79 +1887,60 @@ function ZimniWorkspaceContent() {
             </div>
           </div>
 
-          {/* Quick Bottom Button to Add More Entries */}
-          <div className="no-print mt-4 flex items-center justify-center">
-            <Button
+          {/* Minimalist Bottom Button to Add Next Entry */}
+          <div className="no-print mt-6 flex items-center justify-center">
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               onClick={() => handleAddEntryRow()}
-              className="border-dashed border-amber-400 bg-amber-50/50 hover:bg-amber-100 text-amber-900 font-bold text-xs gap-1.5"
+              className="px-4 py-2 rounded-lg border border-dashed border-slate-300 hover:border-amber-400 bg-white hover:bg-amber-50/40 text-slate-700 hover:text-amber-900 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-2xs"
             >
-              <Plus className="w-4 h-4 text-amber-700" />
-              <span>+ अगली जिमनी प्रविष्टि / पंक्ति जोड़ें (Add Entry)</span>
-            </Button>
+              <Plus className="w-3.5 h-3.5 text-amber-700" />
+              <span>+ अगली जिमनी प्रविष्टि जोड़ें (Add Next Entry)</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Saved Success Confirmation Modal */}
+      {/* Minimalist Saved Success Modal */}
       {savedSuccessModal?.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-xl max-w-md w-full p-5 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                <CheckCircle className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
+                <Check className="w-5 h-5 stroke-[2.5]" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900">
-                  केस डायरी सफलतापूर्वक FIR में सहेजी गई!
+                <h3 className="text-sm font-bold text-slate-900">
+                  Case Diary Saved Successfully
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">
-                  FIR No: <span className="font-mono font-bold text-blue-700">{savedSuccessModal.firNumber}</span> • जिमनी #{savedSuccessModal.zimniNumber}
+                <p className="text-xs text-slate-500">
+                  FIR <span className="font-mono font-bold text-slate-800">{savedSuccessModal.firNumber}</span> • Zimni #{savedSuccessModal.zimniNumber}
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
-              <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                <span>
-                  <strong>मूल दस्तावेज़ सुरक्षित (Original Preserved):</strong> संबंधित FIR के <strong>Case Diaries (Zimni)</strong> सब-टैब में सम्पूर्ण प्रोफार्मा ओरिजिनल फॉर्मेट में सुरक्षित हो गया है।
-                </span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                <span>
-                  <strong>डेटाबेस में प्रोसेस व इंडेक्स (AI Database Indexed):</strong> केस डायरी के सभी अनुसंधान तथ्य, गवाह पूछताछ, अभियुक्त तलाश व कानूनी धाराएं डेटाबेस में स्थायी रूप से प्रोसेस हो गई हैं।
-                </span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                <span>
-                  <strong>सुविधाएं:</strong> FIR केस डायरी सब-टैब में <strong>Preview</strong>, <strong>Download</strong> और <strong>Delete</strong> के विकल्प सक्रिय हैं।
-                </span>
-              </div>
-            </div>
+            <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+              यह जिमनी संबंधित FIR के <strong>Case Diaries (Zimni)</strong> रजिस्टर में सुरक्षित हो गई है। आप इसे FIR प्रोफ़ाइल से कभी भी देख या डाउनलोड कर सकते हैं।
+            </p>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-1">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => setSavedSuccessModal(null)}
-                className="text-xs font-bold"
+                className="text-xs font-semibold h-8"
               >
-                यहाँ संपादन जारी रखें (Continue Editing)
+                Continue Editing
               </Button>
               <Button
                 type="button"
                 size="sm"
                 onClick={() => router.push(`/fir/${savedSuccessModal.firId}?tab=case_diaries`)}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold gap-1.5 shadow-sm"
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold gap-1.5 h-8"
               >
-                <span>FIR केस डायरी सब-टैब खोलें</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>Open in FIR Profile</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>
           </div>
