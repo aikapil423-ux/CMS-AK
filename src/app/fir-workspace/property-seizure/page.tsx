@@ -159,14 +159,14 @@ const DEFAULT_SAMPLE_HI: PropertySeizureFormData = {
     {
       id: "wit_1",
       name: "ASI दीपक",
-      addressAndPhone: "चौकी P.S Cyber Crime Panipat",
+      addressAndPhone: "थाना साईबर क्राईम, पानीपत",
       signatureText: "दीपक",
     },
     {
       id: "wit_2",
-      name: "HC Moninder No.1630/PPT",
-      addressAndPhone: "P.S Cyber Crime Panipat",
-      signatureText: "Moninder",
+      name: "HC मनिन्दर नं. 1630/PPT",
+      addressAndPhone: "थाना साईबर क्राईम, पानीपत",
+      signatureText: "मनिन्दर",
     },
   ],
 
@@ -315,7 +315,7 @@ function PropertySeizurePageContent() {
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
   const { currentUser } = useAuth();
-  const { language: globalLang } = useLanguage();
+  const { language: globalLang, setLanguage: setGlobalLanguage } = useLanguage();
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
@@ -346,8 +346,6 @@ function PropertySeizurePageContent() {
     setFirs(allFirs);
     if (firIdParam && allFirs.some((f) => f.id === firIdParam || f.firNumber === firIdParam)) {
       setSelectedFirId(firIdParam);
-    } else if (allFirs.length > 0 && !selectedFirId) {
-      setSelectedFirId(allFirs[0].id);
     }
   }, [firIdParam]);
 
@@ -386,31 +384,142 @@ function PropertySeizurePageContent() {
   }, [activeFir, currentUser]);
 
   // Handle language switch
-  const handleToggleLanguage = (newLang: "hi" | "en") => {
-    if (newLang === templateLang) return;
+  const handleToggleLanguage = (newLang: "hi" | "en", syncGlobal = true) => {
     setTemplateLang(newLang);
-    const targetBase = newLang === "en" ? DEFAULT_SAMPLE_EN : DEFAULT_SAMPLE_HI;
+    if (syncGlobal && setGlobalLanguage) {
+      setGlobalLanguage(newLang);
+    }
+    const targetBase = newLang === "hi" ? DEFAULT_SAMPLE_HI : DEFAULT_SAMPLE_EN;
+    const currentBase = newLang === "hi" ? DEFAULT_SAMPLE_EN : DEFAULT_SAMPLE_HI;
 
-    setFormData((prev) => ({
-      ...prev,
-      deliveryClauseText: targetBase.deliveryClauseText,
-      propertyTypeOtherText: targetBase.propertyTypeOtherText,
-      isProfessionalReceiver: newLang === "en" ? "No" : "नहीं",
-      isIdentificationRequired: newLang === "en" ? "No" : "नहीं",
-      stampDistrictName: targetBase.stampDistrictName,
-      stampThanaName: targetBase.stampThanaName,
-      propertySummaryLines: targetBase.propertySummaryLines,
-      seizureGrounds: targetBase.seizureGrounds,
-      seizedArticles: targetBase.seizedArticles,
-    }));
+    // If viewing official sample case (or no active FIR chosen), swap all fields to target language
+    if (!selectedFirId) {
+      setFormData((prev) => ({
+        ...targetBase,
+        accusedSignImg: prev.accusedSignImg,
+        ioSignImg: prev.ioSignImg,
+        stampImg: prev.stampImg,
+      }));
+      return;
+    }
+
+    // If an active FIR is selected, translate clauses, options, and boilerplate items
+    setFormData((prev) => {
+      const updated = { ...prev };
+
+      // Option fields (Yes / No, Gender)
+      if (prev.isProfessionalReceiver === "हाँ" || prev.isProfessionalReceiver === "Yes") {
+        updated.isProfessionalReceiver = newLang === "hi" ? "हाँ" : "Yes";
+      } else {
+        updated.isProfessionalReceiver = newLang === "hi" ? "नहीं" : "No";
+      }
+
+      if (prev.isIdentificationRequired === "हाँ" || prev.isIdentificationRequired === "Yes") {
+        updated.isIdentificationRequired = newLang === "hi" ? "हाँ" : "Yes";
+      } else {
+        updated.isIdentificationRequired = newLang === "hi" ? "नहीं" : "No";
+      }
+
+      if (prev.gender === "Male" || prev.gender === "पुरुष") {
+        updated.gender = newLang === "hi" ? "पुरुष" : "Male";
+      } else if (prev.gender === "Female" || prev.gender === "महिला") {
+        updated.gender = newLang === "hi" ? "महिला" : "Female";
+      }
+
+      // Boilerplate legal texts and stamp labels
+      updated.deliveryClauseText = targetBase.deliveryClauseText;
+      updated.stampDistrictName = targetBase.stampDistrictName;
+      updated.stampThanaName = targetBase.stampThanaName;
+
+      // Smart swap for default texts if user hasn't typed custom values
+      if (prev.propertyTypeOtherText === currentBase.propertyTypeOtherText || !prev.propertyTypeOtherText) {
+        updated.propertyTypeOtherText = targetBase.propertyTypeOtherText;
+      }
+      if (prev.identificationDetails === currentBase.identificationDetails || !prev.identificationDetails) {
+        updated.identificationDetails = targetBase.identificationDetails;
+      }
+      if (prev.estimatedValue === currentBase.estimatedValue || !prev.estimatedValue) {
+        updated.estimatedValue = targetBase.estimatedValue;
+      }
+      if (prev.sealSampleDescription === currentBase.sealSampleDescription || !prev.sealSampleDescription) {
+        updated.sealSampleDescription = targetBase.sealSampleDescription;
+      }
+      if (prev.copyHandedToPerson === currentBase.copyHandedToPerson || !prev.copyHandedToPerson) {
+        updated.copyHandedToPerson = targetBase.copyHandedToPerson;
+      }
+      if (prev.accusedSignPlace === currentBase.accusedSignPlace || !prev.accusedSignPlace) {
+        updated.accusedSignPlace = targetBase.accusedSignPlace;
+      }
+
+      // Lists: witnesses, propertySummaryLines, seizureGrounds, seizedArticles
+      if (
+        !prev.witnesses ||
+        prev.witnesses.length === 0 ||
+        JSON.stringify(prev.witnesses.map((w) => w.name)) === JSON.stringify(currentBase.witnesses.map((w) => w.name))
+      ) {
+        updated.witnesses = targetBase.witnesses;
+      }
+
+      if (
+        !prev.propertySummaryLines ||
+        prev.propertySummaryLines.length === 0 ||
+        JSON.stringify(prev.propertySummaryLines.map((s) => s.text)) === JSON.stringify(currentBase.propertySummaryLines.map((s) => s.text))
+      ) {
+        updated.propertySummaryLines = targetBase.propertySummaryLines;
+      }
+
+      if (
+        !prev.seizureGrounds ||
+        prev.seizureGrounds.length === 0 ||
+        JSON.stringify(prev.seizureGrounds.map((g) => g.text)) === JSON.stringify(currentBase.seizureGrounds.map((g) => g.text))
+      ) {
+        updated.seizureGrounds = targetBase.seizureGrounds;
+      }
+
+      if (
+        !prev.seizedArticles ||
+        prev.seizedArticles.length === 0 ||
+        JSON.stringify(prev.seizedArticles.map((a) => a.description)) === JSON.stringify(currentBase.seizedArticles.map((a) => a.description))
+      ) {
+        updated.seizedArticles = targetBase.seizedArticles.map((art, idx) => ({
+          ...art,
+          photoUrl: prev.seizedArticles?.[idx]?.photoUrl || art.photoUrl,
+        }));
+      }
+
+      return updated;
+    });
   };
+
+  // Synchronize when global navbar language changes
+  useEffect(() => {
+    if (globalLang === "hi" || globalLang === "en") {
+      if (globalLang !== templateLang) {
+        handleToggleLanguage(globalLang, false);
+      }
+    }
+  }, [globalLang]);
 
   const handleFieldChange = (field: keyof PropertySeizureFormData, val: any) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
+  const handleSelectFir = (firId: string) => {
+    setSelectedFirId(firId);
+    if (!firId) {
+      const base = templateLang === "hi" ? DEFAULT_SAMPLE_HI : DEFAULT_SAMPLE_EN;
+      setFormData({
+        ...base,
+        accusedSignImg: formData.accusedSignImg,
+        ioSignImg: formData.ioSignImg,
+        stampImg: formData.stampImg,
+      });
+    }
+  };
+
   const handleResetSample = () => {
-    const base = templateLang === "en" ? DEFAULT_SAMPLE_EN : DEFAULT_SAMPLE_HI;
+    const base = templateLang === "hi" ? DEFAULT_SAMPLE_HI : DEFAULT_SAMPLE_EN;
+    setSelectedFirId("");
     setFormData({ ...base });
   };
 
@@ -653,7 +762,7 @@ function PropertySeizurePageContent() {
             </span>
             <select
               value={selectedFirId}
-              onChange={(e) => setSelectedFirId(e.target.value)}
+              onChange={(e) => handleSelectFir(e.target.value)}
               className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:border-teal-500 max-w-xs"
             >
               <option value="">{templateLang === "hi" ? "-- नमूना केस (FIR 60) --" : "-- Sample Case (FIR 60) --"}</option>

@@ -1224,15 +1224,69 @@ export default function FIRProfilePage() {
             Print Statutory FIR Copy
           </Button>
 
-          {/* Crime Details Form (IIF-II) Button */}
+          {/* Crime Details Form (IIF-II) Button with continuous glow while pending */}
           <Button
             size="sm"
             onClick={() => setIsCrimeDetailsOpen(true)}
-            className="bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs gap-1.5 shadow-xs"
-            title="CCTNS Integrated Investigation Form II (IIF-II) / अपराध विवरण प्रपत्र"
+            className={`font-bold text-xs gap-1.5 transition-all duration-300 cursor-pointer ${
+              !isCrimeDetailsFilled
+                ? "bg-amber-600 hover:bg-amber-700 text-white shadow-[0_0_18px_rgba(245,158,11,0.85)] animate-pulse ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 border border-amber-300"
+                : "bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs"
+            }`}
+            title={
+              !isCrimeDetailsFilled
+                ? "अनिवार्य: अपराध विवरण प्रपत्र (IIF-II) दर्ज करें ताकि गिरफ़्तारी प्रपत्र तैयार किए जा सकें"
+                : "CCTNS Integrated Investigation Form II (IIF-II) / अपराध विवरण प्रपत्र (सत्यापित)"
+            }
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Crime Details (IIF-II)</span>
+            {!isCrimeDetailsFilled ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+            ) : (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+            )}
+            <Sparkles className={`w-3.5 h-3.5 ${!isCrimeDetailsFilled ? "text-amber-200 animate-spin" : "text-emerald-200"}`} />
+            <span>
+              {!isCrimeDetailsFilled
+                ? "Crime Details (IIF-II) • अनिवार्य"
+                : "Crime Details (IIF-II) ✓"}
+            </span>
+          </Button>
+
+          {/* Arrest Docs & IIF-III Action Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (!isCrimeDetailsFilled) {
+                alert(
+                  "⚠️ वैधानिक रोक: अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!\n\nजब तक IIF-II फॉर्म भरकर FIR प्रोफाइल के दस्तावेज़ पैनल में सुरक्षित नहीं होगा, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) तैयार नहीं किए जा सकते।\n\nकृपया पहले चमक रहे 'Crime Details (IIF-II)' बटन पर क्लिक करके प्रपत्र भरें।"
+                );
+                setIsCrimeDetailsOpen(true);
+                return;
+              }
+              router.push(`/fir-workspace/arrest-docs?firId=${fir.id}`);
+            }}
+            className={`text-xs font-bold gap-1.5 transition-all cursor-pointer ${
+              !isCrimeDetailsFilled
+                ? "border-slate-200 bg-slate-100 text-slate-400 hover:bg-slate-200/60"
+                : "border-rose-300 text-rose-800 bg-rose-50/70 hover:bg-rose-100 shadow-2xs"
+            }`}
+            title={
+              !isCrimeDetailsFilled
+                ? "IIF-II लंबित होने के कारण गिरफ़्तारी प्रपत्र लॉक हैं"
+                : "Open Arrest Docs and IIF-III Workspace"
+            }
+          >
+            <ShieldAlert className={`w-3.5 h-3.5 ${!isCrimeDetailsFilled ? "text-slate-400" : "text-rose-600"}`} />
+            <span>Arrest Docs and IIF-III</span>
+            {!isCrimeDetailsFilled && (
+              <span className="text-[10px] px-1 py-0.2 rounded bg-slate-200 text-slate-600 font-mono">
+                Locked
+              </span>
+            )}
           </Button>
 
           {/* Assign / Reassign IO */}
@@ -1285,6 +1339,38 @@ export default function FIRProfilePage() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </Link>
+        </div>
+      )}
+
+      {/* CRIME DETAILS PENDING ALERT BANNER */}
+      {!isCrimeDetailsFilled && (
+        <div className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 p-3.5 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 animate-bounce" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-black text-amber-950">
+                  ⚠️ अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) लंबित है
+                </p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-300">
+                  अनिवार्य / MANDATORY
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-800 mt-0.5">
+                जब तक IIF-II फॉर्म भरकर दस्तावेज़ पैनल में सुरक्षित नहीं किया जाता, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) जनरेट नहीं हो सकते। ऊपर दिया गया IIF-II बटन तब तक लगातार चमकता रहेगा।
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setIsCrimeDetailsOpen(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shadow-sm animate-pulse cursor-pointer shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+            <span>IIF-II प्रपत्र अभी भरें</span>
+          </Button>
         </div>
       )}
 
@@ -1799,11 +1885,31 @@ export default function FIRProfilePage() {
               <Button
                 size="sm"
                 onClick={() => setIsCrimeDetailsOpen(true)}
-                className="border-indigo-300 text-indigo-900 bg-indigo-50/70 hover:bg-indigo-100 font-bold text-xs gap-1.5 cursor-pointer"
-                variant="outline"
+                className={`font-bold text-xs gap-1.5 cursor-pointer transition-all ${
+                  !isCrimeDetailsFilled
+                    ? "bg-amber-600 hover:bg-amber-700 text-white shadow-[0_0_15px_rgba(245,158,11,0.8)] animate-pulse ring-2 ring-amber-400"
+                    : "border-indigo-300 text-indigo-900 bg-indigo-50/70 hover:bg-indigo-100"
+                }`}
+                variant={!isCrimeDetailsFilled ? "primary" : "outline"}
+                title={
+                  !isCrimeDetailsFilled
+                    ? "अनिवार्य: अपराध विवरण प्रपत्र (IIF-II) दर्ज करें ताकि गिरफ़्तारी प्रपत्र तैयार किए जा सकें"
+                    : "CCTNS Integrated Investigation Form II (IIF-II)"
+                }
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Crime Details (IIF-II)</span>
+                {!isCrimeDetailsFilled ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  </span>
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                )}
+                <span>
+                  {!isCrimeDetailsFilled
+                    ? "Crime Details (IIF-II) • अनिवार्य"
+                    : "Crime Details (IIF-II)"}
+                </span>
               </Button>
             </div>
           </div>
