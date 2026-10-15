@@ -241,6 +241,13 @@ export function MobileHeader() {
                   >
                     {t("ACT and SECTIONs")}
                   </Link>
+                  <Link
+                    href="/tada"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-amber-800 bg-amber-50/60 hover:bg-amber-100"
+                  >
+                    {t("TA DA Form (यात्रा भत्ता प्रपत्र)")}
+                  </Link>
                 </>
               )}
 

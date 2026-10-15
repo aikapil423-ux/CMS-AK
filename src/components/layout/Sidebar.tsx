@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Scale,
   HardDrive,
+  ReceiptText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -122,6 +123,7 @@ export function Sidebar() {
 
   // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
   const managementNavItems: NavItem[] = [
+    { name: "TA DA Form", href: "/tada", icon: ReceiptText, badge: "Bill", badgeColor: "bg-amber-100 text-amber-800 border-amber-200" },
     { name: "Storage Optimization", href: "/settings?tab=storage-optimization", icon: HardDrive, badge: "Lossless", badgeColor: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-blue-100 text-blue-700 border-blue-200" },
     { name: "Settings", href: "/settings", icon: Settings },

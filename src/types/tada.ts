@@ -1,0 +1,191 @@
+/**
+ * Types for Travelling Allowance (TA/DA) Bill & Tour Programme System
+ */
+
+export interface TourProgrammeJourneyRow {
+  id: string;
+  srNo: number;
+  departureDdNo: string;
+  postingAndDepStation: string;
+  departureDate: string;
+  departureTime: string;
+  arrivalStation: string;
+  arrivalDdNo: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  purposeOfJourney: string;
+  modeOfVehicle: string;
+  distanceKm: string;
+  noOfDays: string;
+}
+
+export interface TourProgrammeForm {
+  // A. Header
+  department: string;
+  district: string;
+  employeeName: string;
+  designation: string;
+  beltEmployeeNumber: string;
+  month: string;
+  year: string;
+
+  // B. Journey Table Rows
+  journeys: TourProgrammeJourneyRow[];
+
+  // C. Signatures & Approvals
+  claimantName: string;
+  claimantDesignationBelt: string;
+  claimantSignatureImg?: string;
+  forwardingRemarks: string;
+  forwardingOfficerNameTitle: string;
+  forwardingOfficerSignatureImg?: string;
+  approvalRemarks: string;
+  approvingOfficerNameTitle: string;
+  approvingOfficerSignatureImg?: string;
+}
+
+export interface TAClaimJourneyRow {
+  id: string;
+  srNo: number;
+  // Departure
+  departureStation: string;
+  departureDate: string;
+  departureTime: string;
+  // Arrival
+  arrivalStation: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  // Journey
+  purposeOfJourney: string;
+  modeOfTravel: string;
+  accommodationClass: string;
+  // Fare & Allowance
+  railSteamerFareClass: string;
+  railSteamerFareAmount: number;
+  roadMileageKm: string;
+  roadMileageAmount: number;
+  actualExpenses: number;
+  dailyAllowanceDays: number;
+  dailyAllowanceRate: number;
+  dailyAllowanceAmount: number; // = days * rate
+  totalAmount: number; // = railSteamerFareAmount + roadMileageAmount + actualExpenses + dailyAllowanceAmount
+  remarks: string;
+}
+
+export interface TAClaimJourneyDetailsForm {
+  // A. Header
+  claimMonth: string;
+  claimYear: string;
+  employeeName: string;
+  designation: string;
+  basicPay: string;
+  headquarters: string;
+  gradeOfGovtServant: string;
+
+  // B. Journey & Expenses Table
+  journeys: TAClaimJourneyRow[];
+
+  // C. Totals & Deductions
+  totalClaimAmount: number;
+  totalClaimAmountWordsEn: string;
+  totalClaimAmountWordsHi: string;
+
+  amountOfAdvanceTaken: number;
+  treasuryVoucherNumber: string;
+  treasuryVoucherDate: string;
+
+  passedForPaymentAmount: number;
+  passedAmountWordsEn: string;
+  passedAmountWordsHi: string;
+
+  minusAdvanceDrawn: number;
+  advanceRefNumber: string;
+  advanceRefDate: string;
+
+  netPayableAmount: number; // = passedForPaymentAmount - minusAdvanceDrawn
+  netPayableAmountWordsEn: string;
+  netPayableAmountWordsHi: string;
+
+  claimantSignatureImg?: string;
+  ddoSignatureImg?: string;
+  ddoNameTitle: string;
+
+  printedInstructionsText: string;
+}
+
+export interface TABillAccountingDetails {
+  treasuryCode: string;
+  ddoCode: string;
+  majorHead: string;
+  subMajorHead: string;
+  minorHead: string;
+  subHeadScheme: string;
+  detailedHead: string;
+  objectCode: string;
+  demandGrantNumber: string;
+  planNonPlan: "P" | "NP" | "";
+  votedCharged: "V" | "C" | "";
+  majorHeadStampImg?: string;
+}
+
+export interface TABillMainPageForm {
+  // A. Bill Details
+  billNumber: string;
+  billDate: string;
+  establishmentOf: string;
+  voucherNumber: string;
+  voucherDate: string;
+
+  // B. Accounting Details (11 codes preserved as text)
+  accounting: TABillAccountingDetails;
+
+  // C. Certificates
+  certContentsVerified: boolean;
+  certTaRulesCompliance: boolean;
+  certRemarks: string;
+  certifyingOfficerSignatureImg?: string;
+  certifyingOfficerNameTitle: string;
+
+  // D. Appropriation (Budget)
+  financialYearFrom: string;
+  financialYearTo: string;
+  appropriationAmount: number;
+  expenditureIncludingBill: number;
+  balanceAvailable: number; // = appropriationAmount - expenditureIncludingBill
+  passedForAmount: number;
+  passedAmountWordsEn: string;
+  passedAmountWordsHi: string;
+  controllingOfficerSignatureImg?: string;
+  controllingOfficerNameTitle: string;
+  ddoSignatureImg?: string;
+  ddoNameTitle: string;
+
+  // E. For Use in Treasury Office
+  treasuryPayAmount: number;
+  treasuryPayAmountWordsEn: string;
+  treasuryPayAmountWordsHi: string;
+  treasuryClerkSignatureImg?: string;
+  treasuryAstSignatureImg?: string;
+  treasuryOfficerSignatureImg?: string;
+
+  // F. For Use in AG Office
+  agAdmittedAmount: number;
+  agObjectedAmount: number;
+  agReasonsOfObjections: string;
+  agAccountsOfficerSignatureImg?: string;
+}
+
+export interface TADABillRecord {
+  id: string;
+  userId: string; // Isolated to owner user
+  userName: string;
+  userRole?: string;
+  status: "DRAFT" | "SUBMITTED" | "APPROVED";
+  createdAt: string;
+  updatedAt: string;
+
+  // Linked Forms
+  form1TourProgramme: TourProgrammeForm;
+  form2JourneyDetails: TAClaimJourneyDetailsForm;
+  form3MainPage: TABillMainPageForm;
+}

@@ -30,6 +30,8 @@ export const CMS_DICTIONARY: Record<string, string> = {
   "FIR Module": "एफ.आई.आर. मॉड्यूल",
   "Investigation Workspace": "अनुसंधान कार्यक्षेत्र",
   "Storage Optimization": "स्टोरेज अनुकूलन",
+  "TA DA Form": "टी.ए. डी.ए. फॉर्म (यात्रा भत्ता)",
+  "Travelling Allowance": "यात्रा भत्ता",
   "Dropdown Manager": "ड्रॉपडाउन प्रबंधक",
   "Settings": "सेटिंग्स",
   "ROZNAMCHA GD": "रोजनामचा आम",

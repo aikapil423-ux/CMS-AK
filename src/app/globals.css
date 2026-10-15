@@ -111,4 +111,8 @@ body {
     page-break-inside: avoid;
     page-break-after: auto;
   }
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
 }
