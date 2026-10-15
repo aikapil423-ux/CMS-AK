@@ -238,6 +238,8 @@ export default function FIRProfilePage() {
 
   const isCrimeDetailsFilled = Boolean(
     fir?.crimeDetailsFilled ||
+    (fir as any)?.crimeDetailsData ||
+    (typeof window !== "undefined" && Boolean(window.localStorage?.getItem(`haryana_police_cms_fir_crimedetails_${firId}`))) ||
     fir?.documents?.some(
       (d) =>
         d.title.toLowerCase().includes("crime detail") ||
@@ -253,6 +255,33 @@ export default function FIRProfilePage() {
     try {
       const item = firService.getFirById(firId);
       if (item) {
+        // Rehydrate dedicated crimeDetailsData if missing on the item
+        if (!item.crimeDetailsData && typeof window !== "undefined" && window.localStorage) {
+          try {
+            const raw = window.localStorage.getItem(`haryana_police_cms_fir_crimedetails_${firId}`);
+            if (raw) {
+              const parsedCrime = JSON.parse(raw);
+              item.crimeDetailsData = parsedCrime;
+              item.crimeDetailsFilled = true;
+              if (
+                !item.documents?.some(
+                  (d) => d.category === "CCTNS_IIF2" || d.title.includes("IIF-II") || d.title.includes("Crime Detail")
+                )
+              ) {
+                const crimeDoc: FIRDocumentItem = {
+                  id: `doc-crime-detail-${item.id}`,
+                  title: `Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र - ${item.cctnsFirNumber || item.firNumber}`,
+                  fileName: `Crime_Detail_IIF_II_${item.firNumber.replace(/[\/\s]/g, "_")}.html`,
+                  category: "CCTNS_IIF2",
+                  uploadedBy: parsedCrime.submittedBy || "Investigating Officer",
+                  uploadedAt: parsedCrime.submittedAt?.replace("T", " ").slice(0, 16) || new Date().toISOString().replace("T", " ").slice(0, 16),
+                  fileSize: "68.5 KB",
+                };
+                item.documents = [crimeDoc, ...(item.documents || [])];
+              }
+            }
+          } catch (_) {}
+        }
         setFir(item);
         setSelectedIoId(item.assignedIoId || "");
         setAssignmentDirections(item.assignedDirections || "");
@@ -793,11 +822,31 @@ export default function FIRProfilePage() {
     setDocPreviewItem(newDoc);
   };
 
-  const handleDownloadDocument = (doc: FIRDocumentItem) => {
-    if (doc.dataUrl) {
+  const handleOpenDocPreview = async (doc: FIRDocumentItem) => {
+    let item = { ...doc };
+    if (!item.dataUrl && typeof window !== "undefined") {
+      const idb =
+        (await evidenceBlobStore.get(doc.id)) ||
+        (doc.fileName ? await evidenceBlobStore.get(doc.fileName) : null) ||
+        (await evidenceBlobStore.get(`crime_details_${firId}`));
+      if (idb) item.dataUrl = idb;
+    }
+    setDocPreviewItem(item);
+  };
+
+  const handleDownloadDocument = async (doc: FIRDocumentItem) => {
+    let dataUrl = doc.dataUrl;
+    if (!dataUrl && typeof window !== "undefined") {
+      const idb =
+        (await evidenceBlobStore.get(doc.id)) ||
+        (doc.fileName ? await evidenceBlobStore.get(doc.fileName) : null) ||
+        (await evidenceBlobStore.get(`crime_details_${firId}`));
+      if (idb) dataUrl = idb;
+    }
+    if (dataUrl) {
       const link = document.createElement("a");
-      link.href = doc.dataUrl;
-      link.download = doc.fileName || `${doc.title}.pdf`;
+      link.href = dataUrl;
+      link.download = doc.fileName || `${doc.title}.html`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1179,15 +1228,11 @@ export default function FIRProfilePage() {
           <Button
             size="sm"
             onClick={() => setIsCrimeDetailsOpen(true)}
-            className={`${
-              !isCrimeDetailsFilled
-                ? "bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700 text-white font-black text-xs gap-1.5 shadow-md shadow-amber-500/30 ring-2 ring-amber-400 animate-pulse"
-                : "bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs gap-1.5 shadow-xs"
-            }`}
+            className="bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs gap-1.5 shadow-xs"
             title="CCTNS Integrated Investigation Form II (IIF-II) / अपराध विवरण प्रपत्र"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            {isCrimeDetailsFilled ? "Crime Details (IIF-II)" : "Fill Crime Details (IIF-II) 🚨"}
+            <span>Crime Details (IIF-II)</span>
           </Button>
 
           {/* Assign / Reassign IO */}
@@ -1243,48 +1288,8 @@ export default function FIRProfilePage() {
         </div>
       )}
 
-      {/* CRIME DETAILS PENDING GLOWING ALERT / VERIFIED BANNER */}
-      {!isCrimeDetailsFilled ? (
-        <div className="relative overflow-hidden rounded-2xl border-2 border-amber-500 bg-gradient-to-r from-amber-600 via-rose-600 to-amber-700 p-4 sm:p-5 text-white shadow-xl shadow-amber-500/30 animate-pulse">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 shadow-inner border border-white/20">
-                <AlertTriangle className="w-6 h-6 text-yellow-300 animate-bounce" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-yellow-400 text-slate-950 shadow-xs">
-                    CRIME DETAILS FORM (IIF-II) PENDING
-                  </span>
-                  <span className="text-[11px] font-semibold text-amber-100">
-                    CCTNS Statutory Mandate • FIR के तुरंत बाद भरना अनिवार्य
-                  </span>
-                </div>
-                <h3 className="text-sm sm:text-base font-bold text-white tracking-wide">
-                  🚨 अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!
-                </h3>
-                <p className="text-xs text-amber-100 max-w-2xl leading-relaxed">
-                  जब तक IIF-II फॉर्म सबमिट होकर केस डाक्यूमेंट्स में दर्ज नहीं होगा, तब तक इस FIR में किसी भी अभियुक्त के{" "}
-                  <strong className="text-yellow-300 underline font-black">
-                    गिरफ्तारी व पेशी दस्तावेज (Arrest & Surrender Docs) नहीं बनाए जा सकते
-                  </strong>।
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <Button
-                size="sm"
-                onClick={() => setIsCrimeDetailsOpen(true)}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-black text-xs gap-1.5 shadow-lg shadow-black/20 hover:scale-105 transition-transform cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4 text-slate-950" />
-                अपराध विवरण प्रपत्र भरें (Fill IIF-II Form) →
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
+      {/* CRIME DETAILS VERIFIED BANNER */}
+      {isCrimeDetailsFilled && (
         <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-3 text-emerald-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
@@ -1794,15 +1799,11 @@ export default function FIRProfilePage() {
               <Button
                 size="sm"
                 onClick={() => setIsCrimeDetailsOpen(true)}
-                className={`${
-                  !isCrimeDetailsFilled
-                    ? "bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shadow-md shadow-amber-500/30 animate-pulse ring-2 ring-amber-400 cursor-pointer"
-                    : "border-indigo-300 text-indigo-900 bg-indigo-50/70 hover:bg-indigo-100 font-bold text-xs gap-1.5 cursor-pointer"
-                }`}
-                variant={isCrimeDetailsFilled ? "outline" : "primary"}
+                className="border-indigo-300 text-indigo-900 bg-indigo-50/70 hover:bg-indigo-100 font-bold text-xs gap-1.5 cursor-pointer"
+                variant="outline"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{isCrimeDetailsFilled ? "Crime Details (IIF-II)" : "Fill Crime Details (IIF-II) 🚨"}</span>
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Crime Details (IIF-II)</span>
               </Button>
             </div>
           </div>
@@ -1887,7 +1888,7 @@ export default function FIRProfilePage() {
                               {/* Preview */}
                               <button
                                 type="button"
-                                onClick={() => setDocPreviewItem(doc)}
+                                onClick={() => handleOpenDocPreview(doc)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                                 title="Instant Preview without downloading"
                               >
@@ -2386,6 +2387,7 @@ export default function FIRProfilePage() {
           onClose={() => setIsCrimeDetailsOpen(false)}
           onSubmitted={(updatedFir) => {
             setFir(updatedFir);
+            fetchFir();
           }}
           currentUserName={currentUser.name}
         />

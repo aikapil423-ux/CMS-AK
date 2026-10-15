@@ -17,6 +17,7 @@ import {
   MapPin,
   ShieldAlert,
   Gavel,
+  PackageCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -125,7 +126,7 @@ export default function FIRWorkspacePage() {
           </Card>
         </Link>
 
-        {/* 3. Arrest Docs (गिरफ्तारी प्रपत्र) */}
+        {/* 3. Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र) */}
         <Link href="/fir-workspace/arrest-docs" className="block group">
           <Card className="border-slate-200 hover:border-rose-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-rose-50/20 h-full">
             <CardContent className="p-5 flex flex-col justify-between h-full">
@@ -135,7 +136,7 @@ export default function FIRWorkspacePage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm group-hover:text-rose-800 transition-colors">
-                    Arrest Docs (गिरफ्तारी प्रपत्र)
+                    Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र)
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
                     Arrest memo, Fard Jamatalashi, Grounds of arrest, Pehchan Patr, Fard Baramadgi, Remand & Medical letters.
@@ -143,7 +144,7 @@ export default function FIRWorkspacePage() {
                 </div>
               </div>
               <div className="flex items-center justify-end text-xs font-bold text-rose-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
-                <span>Open Arrest Docs</span>
+                <span>Open Arrest Docs and IIF-III</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>
@@ -199,6 +200,36 @@ export default function FIRWorkspacePage() {
               </div>
               <div className="flex items-center justify-end text-xs font-bold text-emerald-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
                 <span>Open Kalandra Workspace</span>
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 6. Property Seizure Form IIF-IV */}
+        <Link href="/fir-workspace/property-seizure" className="block group">
+          <Card className="border-slate-200 hover:border-teal-500 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-teal-50/20 h-full">
+            <CardContent className="p-5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
+                  <PackageCheck className="w-5 h-5 text-teal-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="font-bold text-slate-900 text-sm group-hover:text-teal-800 transition-colors">
+                      Property Seizure Form IIF-IV (सम्पत्ति तलाशी एवं जब्ती फार्म)
+                    </h3>
+                    <span className="text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded font-bold">
+                      CCTNS IIF-IV
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    तलाशी / पेशी / बरामदगी फार्म ज़ेर धारा 51/102/165 CrPC (धारा 50/106/185 BNSS), गवाह सूची, सीलबंद माल व प्राप्ति पावती।
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-xs font-bold text-teal-700 mt-4 group-hover:translate-x-1 transition-all gap-1">
+                <span>Open Property Seizure</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             </CardContent>

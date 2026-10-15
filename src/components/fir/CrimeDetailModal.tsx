@@ -56,158 +56,251 @@ export function CrimeDetailModal({
 
   const [placeSubTab, setPlaceSubTab] = useState<"general" | "shown_by">("general");
 
+  // Check if FIR already has saved crime details data (from fir props or dedicated localStorage backup)
+  const savedCrimeData = React.useMemo(() => {
+    if ((fir as any)?.crimeDetailsData) return (fir as any).crimeDetailsData;
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        const raw = window.localStorage.getItem(`haryana_police_cms_fir_crimedetails_${fir.id}`);
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+    }
+    return undefined;
+  }, [fir]);
+
   // Form State initialized with FIR's existing data where available
-  const [isHeinous, setIsHeinous] = useState(fir.isHeinous || false);
-  const [isSensitive, setIsSensitive] = useState(fir.isSensitive || false);
+  const [isHeinous, setIsHeinous] = useState(savedCrimeData?.isHeinous ?? fir.isHeinous ?? false);
+  const [isSensitive, setIsSensitive] = useState(savedCrimeData?.isSensitive ?? fir.isSensitive ?? false);
 
   // 1. Place of Occurrence
-  const [longitude, setLongitude] = useState("76.8485° E");
-  const [latitude, setLatitude] = useState("30.7046° N");
+  const [longitude, setLongitude] = useState(savedCrimeData?.placeOfOccurrence?.longitude || "76.8485° E");
+  const [latitude, setLatitude] = useState(savedCrimeData?.placeOfOccurrence?.latitude || "30.7046° N");
   const [visitDateTime, setVisitDateTime] = useState(
-    new Date().toISOString().slice(0, 16)
+    savedCrimeData?.placeOfOccurrence?.visitDateTime || new Date().toISOString().slice(0, 16)
   );
-  const [beatNo, setBeatNo] = useState(fir.beatNumber || "Beat No. 4");
-  const [majorPlaceType, setMajorPlaceType] = useState("Commercial Area / Market Complex");
-  const [minorPlaceType, setMinorPlaceType] = useState("Vehicle Parking Lot");
+  const [beatNo, setBeatNo] = useState(savedCrimeData?.placeOfOccurrence?.beatNo || fir.beatNumber || "Beat No. 1");
+  const [majorPlaceType, setMajorPlaceType] = useState(
+    savedCrimeData?.placeOfOccurrence?.majorPlaceType || "Commercial / Residential Area"
+  );
+  const [minorPlaceType, setMinorPlaceType] = useState(
+    savedCrimeData?.placeOfOccurrence?.minorPlaceType || "Public Street / Commercial Premises"
+  );
   const [gist, setGist] = useState(
-    fir.briefFacts || fir.incidentDetails?.slice(0, 300) || ""
+    savedCrimeData?.placeOfOccurrence?.gist || fir.briefFacts || fir.incidentDetails?.slice(0, 300) || ""
   );
   const [description, setDescription] = useState(
-    fir.incidentDetails || "Occurrence place inspected. Physical scene examined and site plan drafted."
+    savedCrimeData?.placeOfOccurrence?.description ||
+      fir.incidentDetails ||
+      "घटनास्थल का मुआयना किया गया। भौतिक स्थिति का निरीक्षण कर नजरी नक्शा मौका तैयार किया गया।"
   );
   const [physicalEvidenceDetails, setPhysicalEvidenceDetails] = useState(
-    "Car window pane broken glass fragments collected. Tyre marks photographed. CCTV camera location noted."
+    savedCrimeData?.placeOfOccurrence?.physicalEvidenceDetails ||
+      "घटनास्थल से भौतिक साक्ष्य संकलित किए गए। घटनास्थल की वीडियोग्राफी / फोटोग्राफी करवाई गई।"
   );
 
+  // Four Boundaries of Crime Scene
+  const [eastBoundary, setEastBoundary] = useState(savedCrimeData?.placeOfOccurrence?.eastBoundary || "रास्ता / मुख्य मार्ग");
+  const [westBoundary, setWestBoundary] = useState(savedCrimeData?.placeOfOccurrence?.westBoundary || "मकान / खुला स्थान");
+  const [northBoundary, setNorthBoundary] = useState(savedCrimeData?.placeOfOccurrence?.northBoundary || "सड़क / आम गली");
+  const [southBoundary, setSouthBoundary] = useState(savedCrimeData?.placeOfOccurrence?.southBoundary || "प्लाॅट / खाली भूमि");
+
   // Shown By
-  const [shownByName, setShownByName] = useState(fir.complainantName || "");
-  const [shownByRelative, setShownByRelative] = useState(fir.complainantFatherSpouse || "");
-  const [shownByRelationType, setShownByRelationType] = useState("Father");
-  const [shownByGender, setShownByGender] = useState(fir.complainantGender || "Male");
-  const [shownByMobile, setShownByMobile] = useState(fir.complainantMobile || "");
-  const [shownByAge, setShownByAge] = useState(String(fir.complainantAge || 34));
-  const [shownByAddress, setShownByAddress] = useState(fir.complainantAddress || "Sector 29, Gurugram");
-  const [shownByDistrict, setShownByDistrict] = useState(fir.district || "Gurugram");
-  const [shownByPs, setShownByPs] = useState(fir.policeStation || "Sector 29 Police Station");
+  const [shownByName, setShownByName] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.name || fir.complainantName || ""
+  );
+  const [shownByRelative, setShownByRelative] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.relativeName || fir.complainantFatherSpouse || ""
+  );
+  const [shownByRelationType, setShownByRelationType] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.relationType || "Father"
+  );
+  const [shownByGender, setShownByGender] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.gender || fir.complainantGender || "Male"
+  );
+  const [shownByMobile, setShownByMobile] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.mobile || fir.complainantMobile || ""
+  );
+  const [shownByAge, setShownByAge] = useState(
+    String(savedCrimeData?.placeOfOccurrence?.shownBy?.age || fir.complainantAge || 35)
+  );
+  const [shownByAddress, setShownByAddress] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.address || fir.complainantAddress || fir.incidentPlace || ""
+  );
+  const [shownByDistrict, setShownByDistrict] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.district || fir.district || ""
+  );
+  const [shownByPs, setShownByPs] = useState(
+    savedCrimeData?.placeOfOccurrence?.shownBy?.policeStation || fir.policeStation || ""
+  );
 
   // 2. Modus Operandi List
-  const [motive, setMotive] = useState("CARRY AWAY PROPERTY / FRAUDULENT GAIN");
-  const [conveyanceType, setConveyanceType] = useState("Motorcycle / Two Wheeler");
-  const [conveyanceColor, setConveyanceColor] = useState("Dark Colour (Black)");
-  const [conveyanceNumber, setConveyanceNumber] = useState("Without Number Plate");
-  const [majorHead, setMajorHead] = useState(fir.categoryDisplay || "PROPERTY THEFT");
-  const [minorHead, setMinorHead] = useState("THEFT FROM VEHICLE / CONVEYANCE");
-  const [method, setMethod] = useState("BREAKING CAR WINDOW PANE BY BLUNT INSTRUMENT");
-  const [characterAssumed, setCharacterAssumed] = useState("PASSERBY / RIDER");
-  const [languageDialect, setLanguageDialect] = useState("HINDI / HARYANVI");
-  const [specialFeature, setSpecialFeature] = useState("RIDER WEARING HELMET TO CONCEAL IDENTITY");
+  const [motive, setMotive] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.motive || "COMMISSION OF COGNIZABLE OFFENCE / FRAUDULENT GAIN"
+  );
+  const [conveyanceType, setConveyanceType] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.conveyance?.split("(")[0]?.trim() || "Motorcycle / Two Wheeler"
+  );
+  const [conveyanceColor, setConveyanceColor] = useState("Dark / Normal");
+  const [conveyanceNumber, setConveyanceNumber] = useState("");
+  const [majorHead, setMajorHead] = useState(fir.categoryDisplay || "OFFENCE HEAD");
+  const [minorHead, setMinorHead] = useState(fir.bnsSections?.[0] ? `UNDER SEC ${fir.bnsSections[0]}` : "COGNIZABLE OFFENCE");
+  const [method, setMethod] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.method || "PHYSICAL COMMISSION / FORCED ENTRY"
+  );
+  const [characterAssumed, setCharacterAssumed] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.characterAssumed || "PASSERBY / UNKNOWN"
+  );
+  const [languageDialect, setLanguageDialect] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.languageDialect || "HINDI / LOCAL DIALECT"
+  );
+  const [specialFeature, setSpecialFeature] = useState(
+    savedCrimeData?.modusOperandi?.[0]?.specialFeature || "CONCEALED IDENTITY"
+  );
 
-  const [modusList, setModusList] = useState<any[]>([
-    {
-      id: "mo-1",
-      motive: "CARRY AWAY PROPERTY / FRAUDULENT GAIN",
-      conveyance: "Motorcycle (Black Pulsar), No Plate",
-      crimeHead: `${fir.categoryDisplay || "PROPERTY THEFT"} - THEFT FROM VEHICLE`,
-      method: "BREAKING CAR WINDOW PANE BY BLUNT INSTRUMENT",
-      specialFeature: "RIDER WEARING HELMET TO CONCEAL IDENTITY",
-    },
-  ]);
-
-  // 3. Accused List
-  const [accusedType, setAccusedType] = useState<"Known" | "Unknown">("Unknown");
-  const [accusedName, setAccusedName] = useState("Unknown Suspect (Helmet worn)");
-  const [accusedAlias, setAccusedAlias] = useState("");
-  const [accusedGender, setAccusedGender] = useState("Male");
-  const [accusedAge, setAccusedAge] = useState("25-30");
-  const [accusedBuild, setAccusedBuild] = useState("Normal / Medium");
-  const [accusedComplexion, setAccusedComplexion] = useState("Brownish Dark");
-  const [accusedHeight, setAccusedHeight] = useState("5 ft 8 in (172 cm)");
-  const [accusedClothes, setAccusedClothes] = useState("Black jacket, dark trousers, full face helmet");
-  const [accusedMarks, setAccusedMarks] = useState("Face concealed under black helmet visor");
-
-  const [accusedEntries, setAccusedEntries] = useState<any[]>(
-    fir.accusedList?.map((a, idx) => ({
-      id: a.id || `acc-${idx + 1}`,
-      accusedType: a.isIdentified ? "Known" : "Unknown",
-      name: a.name || "Unknown suspect",
-      alias: a.alias || "",
-      gender: "Male",
-      age: "25-30",
-      description: a.physicalDescription || "Rider on Pulsar bike",
-    })) || [
+  const [modusList, setModusList] = useState<any[]>(
+    savedCrimeData?.modusOperandi || [
       {
-        id: "acc-1",
-        accusedType: "Unknown",
-        name: "Unknown suspect (Motorcycle helmet worn)",
-        alias: "",
-        gender: "Male",
-        age: "25-30",
-        description: "Medium build, black jacket, rider on Pulsar bike without number plate",
+        id: "mo-1",
+        motive: "COMMISSION OF COGNIZABLE OFFENCE / FRAUDULENT GAIN",
+        conveyance: "Motorcycle / Two Wheeler",
+        crimeHead: `${fir.categoryDisplay || "OFFENCE"} - INVESTIGATION`,
+        method: "COMMISSION OF REPORTED OFFENCE",
+        specialFeature: "CONCEALED IDENTITY",
       },
     ]
   );
 
-  // 4. Victim List
-  const [victimName, setVictimName] = useState(fir.complainantName || "Vikas Sharma");
-  const [victimGender, setVictimGender] = useState(fir.complainantGender || "Male");
-  const [victimCondition, setVictimCondition] = useState("Not Injured");
-  const [victimInjury, setVictimInjury] = useState("None (Loss of personal property only)");
-  const [victimStatement, setVictimStatement] = useState(
-    "प्रार्थी ने अपनी गाड़ी पार्क की थी। वापस आने पर खिड़की का शीशा टूटा मिला और अंदर रखा बैग चोरी हो चुका था।"
+  // 3. Accused List
+  const [accusedType, setAccusedType] = useState<"Known" | "Unknown">("Unknown");
+  const [accusedName, setAccusedName] = useState("");
+  const [accusedAlias, setAccusedAlias] = useState("");
+  const [accusedGender, setAccusedGender] = useState("Male");
+  const [accusedAge, setAccusedAge] = useState("25-35");
+  const [accusedBuild, setAccusedBuild] = useState("Normal / Medium");
+  const [accusedComplexion, setAccusedComplexion] = useState("Wheatish / Brownish");
+  const [accusedHeight, setAccusedHeight] = useState("5 ft 8 in (172 cm)");
+  const [accusedClothes, setAccusedClothes] = useState("साधारण वस्त्र (Normal Clothes)");
+  const [accusedMarks, setAccusedMarks] = useState("कोई स्पष्ट पहचान चिह्न नहीं (None visible)");
+
+  const [accusedEntries, setAccusedEntries] = useState<any[]>(
+    savedCrimeData?.accusedSuspects ||
+      (fir.accusedList && fir.accusedList.length > 0
+        ? fir.accusedList.map((a, idx) => ({
+            id: a.id || `acc-${idx + 1}`,
+            accusedType: a.isIdentified ? "Known" : "Unknown",
+            name: a.name || "Unknown suspect",
+            alias: a.alias || "",
+            gender: "Male",
+            age: "25-35",
+            description: a.physicalDescription || "Normal build",
+            clothes: "साधारण वस्त्र",
+            marks: (a as any).identificationMarks || "कोई स्पष्ट पहचान चिह्न नहीं",
+          }))
+        : [
+            {
+              id: "acc-1",
+              accusedType: "Unknown",
+              name: "अज्ञात संदिग्ध (Unknown Suspect)",
+              alias: "",
+              gender: "Male",
+              age: "25-35",
+              description: "मध्यम कद-काठी",
+              clothes: "साधारण वस्त्र",
+              marks: "कोई विशेष पहचान नहीं",
+            },
+          ])
   );
 
-  const [victimEntries, setVictimEntries] = useState<any[]>([
-    {
-      id: "vic-1",
-      name: fir.complainantName || "Vikas Sharma",
-      gender: fir.complainantGender || "Male",
-      condition: "Not Injured",
-      injury: "Property loss quantified at ₹94,000",
-      statement: "प्रार्थी ने अपनी गाड़ी पार्क की थी। वापस आने पर खिड़की का शीशा टूटा मिला और अंदर रखा बैग चोरी हो चुका था।",
-    },
-  ]);
+  // 4. Victim List
+  const [victimName, setVictimName] = useState(fir.complainantName || "");
+  const [victimRelative, setVictimRelative] = useState(fir.complainantFatherSpouse || "");
+  const [victimGender, setVictimGender] = useState(fir.complainantGender || "Male");
+  const [victimAge, setVictimAge] = useState(String(fir.complainantAge || 35));
+  const [victimAddress, setVictimAddress] = useState(fir.complainantAddress || "");
+  const [victimOccupation, setVictimOccupation] = useState("Business / Private");
+  const [victimCondition, setVictimCondition] = useState("Not Injured");
+  const [victimInjury, setVictimInjury] = useState("None (Loss of property / rights only)");
+  const [victimStatement, setVictimStatement] = useState(
+    fir.briefFacts || fir.incidentDetails || "घटना के संबंध में आवश्यक साक्ष्य एवं विवरण दर्ज कराए गए।"
+  );
+
+  const [victimEntries, setVictimEntries] = useState<any[]>(
+    savedCrimeData?.victims || [
+      {
+        id: "vic-1",
+        name: fir.complainantName || "शिकायतकर्ता / पीड़ित",
+        relativeName: fir.complainantFatherSpouse || "",
+        gender: fir.complainantGender || "Male",
+        age: String(fir.complainantAge || 35),
+        dob: "",
+        nationality: "Indian",
+        religion: "Hindu",
+        caste: "General",
+        occupation: "Business / Private",
+        address: fir.complainantAddress || "",
+        condition: "Not Injured",
+        injury: "None / Not Injured",
+        statement: fir.briefFacts || fir.incidentDetails || "घटना के संबंध में आवश्यक साक्ष्य एवं विवरण दर्ज कराए गए।",
+      },
+    ]
+  );
 
   // 5. Witness List
-  const [witnessName, setWitnessName] = useState("Rameshwar Dayal");
-  const [witnessRelative, setWitnessRelative] = useState("Sh. Jai Kishan");
-  const [witnessRole, setWitnessRole] = useState("Valet Parking Guard / Eye-witness");
-  const [witnessMobile, setWitnessMobile] = useState("9812904411");
-  const [witnessStatement, setWitnessStatement] = useState(
-    "मैंने रात करीब 10:15 बजे दो युवकों को बिना नंबर की पल्सर मोटरसाइकिल पर गाड़ी के पास रुकते और फिर तेजी से गलेरिया रोड की तरफ भागते देखा था।"
-  );
+  const [witnessName, setWitnessName] = useState("");
+  const [witnessRelative, setWitnessRelative] = useState("");
+  const [witnessRole, setWitnessRole] = useState("Eye-witness / Spot Witness");
+  const [witnessMobile, setWitnessMobile] = useState("");
+  const [witnessStatement, setWitnessStatement] = useState("");
 
-  const [witnessEntries, setWitnessEntries] = useState<any[]>([
-    {
-      id: "wit-1",
-      name: "Rameshwar Dayal",
-      relativeName: "Sh. Jai Kishan",
-      role: "Valet Parking Guard / Eye-witness",
-      mobile: "9812904411",
-      statement: "मैंने रात करीब 10:15 बजे दो युवकों को बिना नंबर की पल्सर मोटरसाइकिल पर गाड़ी के पास रुकते और फिर तेजी से भागते देखा था।",
-    },
-  ]);
+  const [witnessEntries, setWitnessEntries] = useState<any[]>(
+    savedCrimeData?.witnesses ||
+      ((fir as any).arrestWitnesses?.length
+        ? (fir as any).arrestWitnesses.map((w: any, idx: number) => ({
+            id: w.id || `wit-${idx + 1}`,
+            name: w.name,
+            relativeName: "",
+            role: "Independent Witness",
+            mobile: "",
+            statement: "मौका व तथ्यों की पुष्टि की गई।",
+          }))
+        : [])
+  );
 
   // 6. Property of Interest
-  const [hasProperty, setHasProperty] = useState<boolean>(true);
+  const [hasProperty, setHasProperty] = useState<boolean>(
+    savedCrimeData?.propertyOfInterest?.hasProperty ??
+      Boolean(fir.stolenPropertyDetails || fir.propertiesList?.length || fir.totalPropertyEstimatedValue)
+  );
   const [propCategory, setPropCategory] = useState("ELECTRICAL / VALUABLE GADGETS & CASH");
-  const [propType, setPropType] = useState("HP Laptop Pavilion, Leather Bag, Cash Currency");
+  const [propType, setPropType] = useState("Goods / Valuable Property");
   const [propEstimatedValue, setPropEstimatedValue] = useState(
-    String(fir.totalPropertyEstimatedValue || 94000)
+    String(fir.totalPropertyEstimatedValue || 0)
   );
   const [propRecoveredValue, setPropRecoveredValue] = useState("0");
-  const [propDesc, setPropDesc] = useState(
-    fir.stolenPropertyDetails || "HP Laptop Serial HP-8849201, Black leather bag, Rs 24,000 currency notes"
-  );
+  const [propDesc, setPropDesc] = useState(fir.stolenPropertyDetails || "");
 
-  const [propertyEntries, setPropertyEntries] = useState<any[]>([
-    {
-      id: "prop-1",
-      category: "ELECTRICAL / VALUABLE GADGETS & CASH",
-      description: fir.stolenPropertyDetails || "HP Laptop Serial HP-8849201, Black leather bag, Rs 24,000 currency notes",
-      estimatedValue: fir.totalPropertyEstimatedValue || 94000,
-      recoveredValue: 0,
-    },
-  ]);
+  const [propertyEntries, setPropertyEntries] = useState<any[]>(
+    savedCrimeData?.propertyOfInterest?.properties ||
+      (fir.stolenPropertyDetails
+        ? [
+            {
+              id: "prop-1",
+              category: "PROPERTY / OFFENCE MATERIAL",
+              description: fir.stolenPropertyDetails,
+              estimatedValue: Number(fir.totalPropertyEstimatedValue) || 0,
+              recoveredValue: 0,
+            },
+          ]
+        : fir.propertiesList?.length
+        ? fir.propertiesList.map((p, idx) => ({
+            id: p.id || `prop-${idx + 1}`,
+            category: p.propertyType || "PROPERTY",
+            description: p.description || (p as any).propertyName || "",
+            estimatedValue: Number(p.estimatedValue) || 0,
+            recoveredValue: Number((p as any).recoveredValue) || 0,
+          }))
+        : [])
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -327,6 +420,10 @@ export function CrimeDetailModal({
         gist,
         description,
         physicalEvidenceDetails,
+        eastBoundary,
+        westBoundary,
+        northBoundary,
+        southBoundary,
         shownBy: {
           name: shownByName,
           relativeName: shownByRelative,
@@ -351,6 +448,17 @@ export function CrimeDetailModal({
       submittedBy: currentUserName,
     };
 
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(
+          `haryana_police_cms_fir_crimedetails_${fir.id}`,
+          JSON.stringify(crimeDetailsPayload)
+        );
+      } catch (e) {
+        console.warn("Direct localStorage backup failed:", e);
+      }
+    }
+
     const updated = firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
     setIsSubmitting(false);
 
@@ -372,6 +480,8 @@ export function CrimeDetailModal({
       crimeHead: `${majorHead} - ${minorHead}`,
       method,
       specialFeature,
+      characterAssumed,
+      languageDialect,
     };
     setModusList([...modusList, newEntry]);
   };
@@ -386,7 +496,9 @@ export function CrimeDetailModal({
       alias: accusedAlias,
       gender: accusedGender,
       age: accusedAge,
-      description: `${accusedBuild}, ${accusedComplexion}, Height: ${accusedHeight}, Clothes: ${accusedClothes}`,
+      description: `${accusedBuild}, ${accusedComplexion}, Height: ${accusedHeight}`,
+      clothes: accusedClothes || "साधारण वस्त्र",
+      marks: accusedMarks || "कोई स्पष्ट पहचान नहीं",
     };
     setAccusedEntries([...accusedEntries, newEntry]);
     setAccusedName("");
@@ -399,7 +511,15 @@ export function CrimeDetailModal({
     const newEntry = {
       id: `vic-${Date.now()}`,
       name: victimName,
+      relativeName: victimRelative || shownByRelative || "",
       gender: victimGender,
+      age: victimAge || shownByAge || "",
+      dob: "",
+      nationality: "Indian",
+      religion: "Hindu",
+      caste: "General",
+      occupation: victimOccupation || "Business / Private",
+      address: victimAddress || shownByAddress || "",
       condition: victimCondition,
       injury: victimInjury,
       statement: victimStatement,
@@ -418,6 +538,7 @@ export function CrimeDetailModal({
       role: witnessRole,
       mobile: witnessMobile,
       statement: witnessStatement,
+      address: shownByAddress || "",
     };
     setWitnessEntries([...witnessEntries, newEntry]);
     setWitnessName("");
@@ -747,6 +868,55 @@ export function CrimeDetailModal({
                       className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs leading-relaxed"
                     />
                   </div>
+
+                  {/* Crime Scene Boundaries */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                    <label className="block font-bold text-slate-800 text-xs">
+                      Boundaries of Place of Occurrence (घटनास्थल की चौहद्दी विवरण - पूर्व, पश्चिम, उत्तर, दक्षिण)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">पूर्व (East Boundary)</label>
+                        <input
+                          type="text"
+                          value={eastBoundary}
+                          onChange={(e) => setEastBoundary(e.target.value)}
+                          placeholder="उदा. रास्ता / पड़ोसी भवन / मुख्य मार्ग"
+                          className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">पश्चिम (West Boundary)</label>
+                        <input
+                          type="text"
+                          value={westBoundary}
+                          onChange={(e) => setWestBoundary(e.target.value)}
+                          placeholder="उदा. मकान / खुला स्थान / सड़क"
+                          className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">उत्तर (North Boundary)</label>
+                        <input
+                          type="text"
+                          value={northBoundary}
+                          onChange={(e) => setNorthBoundary(e.target.value)}
+                          placeholder="उदा. सड़क / गली / भवन"
+                          className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">दक्षिण (South Boundary)</label>
+                        <input
+                          type="text"
+                          value={southBoundary}
+                          onChange={(e) => setSouthBoundary(e.target.value)}
+                          placeholder="उदा. प्लाॅट / खुला मैदान / सर्विस लेन"
+                          className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 /* Shown By Sub-tab */
@@ -909,13 +1079,24 @@ export function CrimeDetailModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Method (तरीका)</label>
                     <input
                       type="text"
                       value={method}
                       onChange={(e) => setMethod(e.target.value)}
+                      placeholder="e.g. Forced Entry / Robbery / Snatching"
+                      className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Character Assumed (चरित्रधारण)</label>
+                    <input
+                      type="text"
+                      value={characterAssumed}
+                      onChange={(e) => setCharacterAssumed(e.target.value)}
+                      placeholder="e.g. Passerby / Courier / Customer"
                       className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
                     />
                   </div>
@@ -925,6 +1106,7 @@ export function CrimeDetailModal({
                       type="text"
                       value={languageDialect}
                       onChange={(e) => setLanguageDialect(e.target.value)}
+                      placeholder="e.g. Hindi / Haryanvi / Local"
                       className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
                     />
                   </div>
@@ -934,6 +1116,7 @@ export function CrimeDetailModal({
                       type="text"
                       value={specialFeature}
                       onChange={(e) => setSpecialFeature(e.target.value)}
+                      placeholder="e.g. Mask / Helmet / Disguise"
                       className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
                     />
                   </div>
@@ -1163,6 +1346,49 @@ export function CrimeDetailModal({
                       type="text"
                       value={victimInjury}
                       onChange={(e) => setVictimInjury(e.target.value)}
+                      className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Relative Name (पिता/पति)</label>
+                    <input
+                      type="text"
+                      value={victimRelative}
+                      onChange={(e) => setVictimRelative(e.target.value)}
+                      placeholder="उदा. पिता/पति का नाम"
+                      className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Age (वर्ष)</label>
+                    <input
+                      type="text"
+                      value={victimAge}
+                      onChange={(e) => setVictimAge(e.target.value)}
+                      placeholder="उदा. 35"
+                      className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Occupation (व्यवसाय)</label>
+                    <input
+                      type="text"
+                      value={victimOccupation}
+                      onChange={(e) => setVictimOccupation(e.target.value)}
+                      placeholder="उदा. व्यापार / सेवा"
+                      className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Address (पता)</label>
+                    <input
+                      type="text"
+                      value={victimAddress}
+                      onChange={(e) => setVictimAddress(e.target.value)}
+                      placeholder="उदा. पता / कालोनी"
                       className="w-full p-2 rounded-lg border border-slate-200 bg-white text-xs"
                     />
                   </div>
@@ -1497,7 +1723,7 @@ export function CrimeDetailModal({
               className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md gap-1.5 cursor-pointer"
             >
               <Eye className="w-4 h-4" />
-              <span>Confirm &amp; Submit Crime Details (पूर्वावलोकन एवं सबमिट) →</span>
+              <span>पूर्वावलोकन देखें एवं पुष्टि करें (Preview &amp; Confirm) →</span>
             </Button>
           </div>
         </div>
@@ -1556,10 +1782,10 @@ export function CrimeDetailModal({
                   onClick={handleSaveToFirProfile}
                   disabled={isSubmitting}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs gap-1.5 shadow-lg shadow-emerald-900/40 cursor-pointer animate-pulse"
-                  title="Save Crime Details Form to FIR Profile Documents"
+                  title="Confirm and Save Crime Details Form to FIR Profile Documents"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>{isSubmitting ? "सहेजा जा रहा है..." : "FIR Profile में सहेजें (Save to FIR)"}</span>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isSubmitting ? "सहेजा जा रहा है..." : "✓ पुष्टि करें एवं अंतिम सबमिट करें (Confirm & Final Submit)"}</span>
                 </Button>
 
                 <button
@@ -1917,15 +2143,29 @@ export function CrimeDetailModal({
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td className="border border-slate-600 px-1 py-1 text-center">1</td>
-                          <td className="border border-slate-600 px-1.5 py-1 font-bold uppercase">{victimName}</td>
-                          <td className="border border-slate-600 px-1.5 py-1">Father: {shownByRelative || "Ramesh Singh"}</td>
-                          <td className="border border-slate-600 px-1 py-1 text-center font-mono">02/12/1990 / {shownByAge}</td>
-                          <td className="border border-slate-600 px-1 py-1 text-center">{victimGender}</td>
-                          <td className="border border-slate-600 px-1 py-1 text-center">Indian</td>
-                          <td className="border border-slate-600 px-1 py-1 text-center">Hindu</td>
-                        </tr>
+                        {victimEntries && victimEntries.length > 0 ? (
+                          victimEntries.map((vic, idx) => (
+                            <tr key={vic.id || idx}>
+                              <td className="border border-slate-600 px-1 py-1 text-center font-mono">{idx + 1}</td>
+                              <td className="border border-slate-600 px-1.5 py-1 font-bold uppercase">{vic.name || "—"}</td>
+                              <td className="border border-slate-600 px-1.5 py-1">{vic.relativeName ? `Father/Spouse: ${vic.relativeName}` : (shownByRelative ? `Father: ${shownByRelative}` : "—")}</td>
+                              <td className="border border-slate-600 px-1 py-1 text-center font-mono">{vic.dob ? `${vic.dob} / ` : ""}{vic.age || shownByAge || "—"}</td>
+                              <td className="border border-slate-600 px-1 py-1 text-center">{vic.gender || "—"}</td>
+                              <td className="border border-slate-600 px-1 py-1 text-center">{vic.nationality || "Indian"}</td>
+                              <td className="border border-slate-600 px-1 py-1 text-center">{vic.religion || "Hindu"}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="border border-slate-600 px-1 py-1 text-center">1</td>
+                            <td className="border border-slate-600 px-1.5 py-1 font-bold uppercase">{victimName || fir.complainantName || "—"}</td>
+                            <td className="border border-slate-600 px-1.5 py-1">{shownByRelative ? `Father: ${shownByRelative}` : "—"}</td>
+                            <td className="border border-slate-600 px-1 py-1 text-center font-mono">{shownByAge || "—"}</td>
+                            <td className="border border-slate-600 px-1 py-1 text-center">{victimGender || "Male"}</td>
+                            <td className="border border-slate-600 px-1 py-1 text-center">Indian</td>
+                            <td className="border border-slate-600 px-1 py-1 text-center">Hindu</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
 
@@ -1947,16 +2187,31 @@ export function CrimeDetailModal({
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td className="border border-slate-600 px-1 py-1">General (No)</td>
-                          <td className="border border-slate-600 px-1.5 py-1">Business / Private</td>
-                          <td className="border border-slate-600 px-2 py-1 text-[9px]">
-                            <div>Present Address: {shownByAddress}, {shownByDistrict}</div>
-                            <div>Permanent Address: {shownByAddress}, {shownByDistrict}</div>
-                          </td>
-                          <td className="border border-slate-600 px-1.5 py-1 font-semibold">{victimInjury || "Simple Hurt / None"}</td>
-                          <td className="border border-slate-600 px-1.5 py-1">{physicalEvidenceDetails?.slice(0, 45) || "Blunt Force / Weapon"}</td>
-                        </tr>
+                        {victimEntries && victimEntries.length > 0 ? (
+                          victimEntries.map((vic, idx) => (
+                            <tr key={vic.id || idx}>
+                              <td className="border border-slate-600 px-1 py-1">{vic.caste || "General"}</td>
+                              <td className="border border-slate-600 px-1.5 py-1">{vic.occupation || "Business / Private"}</td>
+                              <td className="border border-slate-600 px-2 py-1 text-[9px]">
+                                <div>Present Address: {vic.address || shownByAddress || "—"}{shownByDistrict ? `, ${shownByDistrict}` : ""}</div>
+                                <div>Permanent Address: {vic.address || shownByAddress || "—"}{shownByDistrict ? `, ${shownByDistrict}` : ""}</div>
+                              </td>
+                              <td className="border border-slate-600 px-1.5 py-1 font-semibold">{vic.injury || vic.condition || "None / Not Injured"}</td>
+                              <td className="border border-slate-600 px-1.5 py-1">{vic.statement?.slice(0, 50) || "—"}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="border border-slate-600 px-1 py-1">General</td>
+                            <td className="border border-slate-600 px-1.5 py-1">Business / Private</td>
+                            <td className="border border-slate-600 px-2 py-1 text-[9px]">
+                              <div>Present Address: {shownByAddress || "—"}{shownByDistrict ? `, ${shownByDistrict}` : ""}</div>
+                              <div>Permanent Address: {shownByAddress || "—"}{shownByDistrict ? `, ${shownByDistrict}` : ""}</div>
+                            </td>
+                            <td className="border border-slate-600 px-1.5 py-1 font-semibold">{victimInjury || "None / Not Injured"}</td>
+                            <td className="border border-slate-600 px-1.5 py-1">{physicalEvidenceDetails?.slice(0, 45) || "—"}</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -2045,14 +2300,16 @@ export function CrimeDetailModal({
                       <tbody>
                         {accusedEntries.map((acc, idx) => (
                           <tr key={idx}>
-                            <td className="border border-slate-600 px-1 py-1 text-center">{idx + 1}</td>
+                            <td className="border border-slate-600 px-1 py-1 text-center font-mono">{idx + 1}</td>
                             <td className="border border-slate-600 px-1.5 py-1 font-bold">{acc.accusedType}</td>
                             <td className="border border-slate-600 px-2 py-1 font-bold">
                               {acc.name} {acc.alias ? `(${acc.alias})` : ""}
                             </td>
-                            <td className="border border-slate-600 px-1.5 py-1 text-center">{acc.gender || "Male"} / {acc.age || "25-30"}</td>
-                            <td className="border border-slate-600 px-2 py-1">{acc.description}</td>
-                            <td className="border border-slate-600 px-2 py-1">{accusedClothes} • {accusedMarks}</td>
+                            <td className="border border-slate-600 px-1.5 py-1 text-center">{acc.gender || "Male"} / {acc.age || "25-35"}</td>
+                            <td className="border border-slate-600 px-2 py-1">{acc.description || "—"}</td>
+                            <td className="border border-slate-600 px-2 py-1">
+                              {acc.clothes ? acc.clothes : (accusedClothes || "साधारण वस्त्र")} {acc.marks ? `• ${acc.marks}` : (accusedMarks ? `• ${accusedMarks}` : "")}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -2075,17 +2332,27 @@ export function CrimeDetailModal({
                         </tr>
                       </thead>
                       <tbody>
-                        {witnessEntries.map((wit, idx) => (
-                          <tr key={idx}>
-                            <td className="border border-slate-600 px-1 py-1 text-center">{idx + 1}</td>
-                            <td className="border border-slate-600 px-2 py-1 font-bold">
-                              {wit.name} {wit.relativeName ? `s/o ${wit.relativeName}` : ""}
+                        {witnessEntries && witnessEntries.length > 0 ? (
+                          witnessEntries.map((wit, idx) => (
+                            <tr key={idx}>
+                              <td className="border border-slate-600 px-1 py-1 text-center font-mono">{idx + 1}</td>
+                              <td className="border border-slate-600 px-2 py-1 font-bold">
+                                {wit.name} {wit.relativeName ? `s/o ${wit.relativeName}` : ""}
+                              </td>
+                              <td className="border border-slate-600 px-2 py-1">{wit.role || "Spot Witness"}</td>
+                              <td className="border border-slate-600 px-2 py-1 font-mono text-[9px]">
+                                {wit.mobile || "—"} {wit.address ? `(${wit.address})` : ""}
+                              </td>
+                              <td className="border border-slate-600 px-2 py-1 italic">{wit.statement || "—"}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="border border-slate-600 px-2 py-2 text-center text-slate-500 italic">
+                              कोई स्वतंत्र साक्षी अभी दर्ज नहीं / Witnesses to be examined during ongoing investigation
                             </td>
-                            <td className="border border-slate-600 px-2 py-1">{wit.role}</td>
-                            <td className="border border-slate-600 px-2 py-1 font-mono text-[9px]">{wit.mobile || "—"}</td>
-                            <td className="border border-slate-600 px-2 py-1 italic">{wit.statement}</td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -2102,10 +2369,10 @@ export function CrimeDetailModal({
                       <div><strong>निरीक्षण दिनांक व समय:</strong> {visitDateTime} hrs</div>
                     </div>
                     <div className="border-t border-slate-400 pt-2 grid grid-cols-2 gap-2 text-[10px]">
-                      <div><strong>पूर्व (East):</strong> Shop No. 19 / Commercial Pathway</div>
-                      <div><strong>पश्चिम (West):</strong> Main Road / Parking Entry Gate</div>
-                      <div><strong>उत्तर (North):</strong> Commercial Complex Block A</div>
-                      <div><strong>दक्षिण (South):</strong> Service Lane &amp; Pedestrian Walkway</div>
+                      <div><strong>पूर्व (East):</strong> {eastBoundary || "रास्ता / मुख्य मार्ग"}</div>
+                      <div><strong>पश्चिम (West):</strong> {westBoundary || "मकान / खुला स्थान"}</div>
+                      <div><strong>उत्तर (North):</strong> {northBoundary || "सड़क / गली"}</div>
+                      <div><strong>दक्षिण (South):</strong> {southBoundary || "प्लाॅट / कृषि भूमि"}</div>
                     </div>
                     <div className="border-t border-slate-400 pt-2 text-[10px]">
                       <strong>विवेचक द्वारा घटनास्थल निरीक्षण की संक्षिप्त टिप्पणी:</strong>
@@ -2123,7 +2390,7 @@ export function CrimeDetailModal({
                       <p><strong>निरीक्षणकर्ता अधिकारी:</strong> {currentUserName}</p>
                       <p><strong>पद / बेल्ट सं.:</strong> Sub-Inspector / Investigating Officer</p>
                       <p><strong>थाना:</strong> {fir.policeStation}, {fir.district}</p>
-                      <p className="text-[10px] text-slate-500 font-mono">Date: {visitDateTime.slice(0, 10)}</p>
+                      <p className="text-[10px] text-slate-500 font-mono">Date: {visitDateTime ? visitDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)}</p>
                     </div>
 
                     <div className="text-center space-y-12">
@@ -2139,6 +2406,39 @@ export function CrimeDetailModal({
                   {/* Page 2 Number */}
                   <div className="text-center font-bold text-xs pt-4">
                     2
+                  </div>
+
+                  {/* Bottom Confirmation Action Banner (no-print) */}
+                  <div className="bg-emerald-50 border-2 border-emerald-400 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg my-6 no-print">
+                    <div className="space-y-1">
+                      <h5 className="font-bold text-sm text-emerald-950 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>प्रपत्र पूर्वावलोकन सत्यापन (Crime Details Proforma Verification)</span>
+                      </h5>
+                      <p className="text-xs text-emerald-800">
+                        कृपया ऊपर भरे गए समस्त विवरणों की भली-भांति जाँच कर लें। सबमिट करने पर यह अपराध विवरण प्रपत्र FIR प्रोफाइल के दस्तावेजों में पंजीकृत हो जाएगा।
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowPdfPreview(false)}
+                        className="text-xs font-semibold bg-white hover:bg-slate-50 cursor-pointer"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                        वापस संपादन करें
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSaveToFirProfile}
+                        disabled={isSubmitting}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md gap-1.5 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>{isSubmitting ? "सहेजा जा रहा है..." : "✓ पुष्टि करें एवं अंतिम सबमिट करें"}</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

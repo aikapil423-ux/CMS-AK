@@ -138,6 +138,25 @@ export type ArrestDocsFormData = Omit<Partial<NoticeFormData>, "arrestWitnesses"
   hospitalName?: string;
   medicalOfficerName?: string;
 
+  // Haryana Police Fard Specific Fields (Templates 2, 5, 7, 8 matching photo format)
+  policePost?: string;
+  districtHeader?: string;
+  complainantLine?: string;
+  accusedLine?: string;
+  firDetailsLine?: string;
+  fardTitle?: string;
+  accusedSign?: string;
+  accusedLabel?: string;
+  accusedLineSign?: string;
+  gazettedOfficerSign?: string;
+  gazettedOfficerLabel?: string;
+  stampThanaName?: string;
+  stampDistrictName?: string;
+  ioSign?: string;
+  ioStationLabel?: string;
+  ioDistrictLabel?: string;
+  ioDate?: string;
+
   // Form 26.8(1) Specific Fields
   headerVersion?: string;
   arrestYear?: string;
@@ -530,37 +549,43 @@ const DEFAULT_SAMPLE_DATA_HI: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_jamatalashi: {
     headerDept: "हरियाणा पुलिस",
-    policeStation: "थाना शहर पानीपत",
+    policePost: "थाना साईबर क्राईम",
+    districtHeader: "जिला पानीपत",
+    complainantLine: "शिकायतकर्ता- प्रवीन पुत्र सुरेश निवासी गांव डाहर जिला पानीपत ।",
+    accusedLine: "विरुद्ध- सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ।",
+    firDetailsLine: "अभियोग न० 60 दिनांक 04.06.25 धारा 318(4) BNS थाना साईबर क्राईम पानीपत ।",
+    fardTitle: "फ़र्द जामातलाशी अभियुक्त सावन",
+    docTitle: "फ़र्द जामातलाशी अभियुक्त सावन",
+    docSubTitle: "अंतर्गत धारा 50 भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023",
+    noticeeName: "सावन",
+    noticeeFather: "जयकंवर",
+    noticeeAddress: "गांव खानपुर कला तहसील गोहाना जिला सोनीपत",
+    complainantName: "प्रवीन",
+    complainantFather: "सुरेश",
+    complainantAddress: "गांव डाहर जिला पानीपत",
+    complaintNo: "60",
+    issueDate: "04.06.25",
+    sectionsOfLaw: "318(4) BNS",
+    policeStation: "थाना साईबर क्राईम पानीपत",
     district: "जिला पानीपत",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "धारा 318(4), 316(2) BNS, 2023",
-    docTitle: "फर्द जामातलाशी अभियुक्त",
-    docSubTitle: "अंतर्गत धारा 50 भारतीय नागरिक सुरक्षा संहिता (BNSS), 2023 / धारा 51 दंड प्रक्रिया संहिता",
-    noticeeName: "विकास शर्मा",
-    noticeeFather: "रमेश चंद शर्मा",
-    noticeeAge: "34 वर्ष",
-    noticeeAddress: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत",
-    noticeeRole: "गिरफ्तार अभियुक्त",
-    arrestDate: "18.09.2026",
-    arrestTime: "11:30 प्रात:",
-    arrestPlace: "रेलवे रोड चौक, पानीपत",
-    introNarrative: `आज दिनांक 18.09.2026 को वक्त 11:30 प्रात: पर स्थान रेलवे रोड चौक, पानीपत से उपरोक्त मुकदमा में गिरफ्तार अभियुक्त श्री विकास शर्मा सुपुत्र श्री रमेश चंद शर्मा, उम्र लगभग 34 वर्ष, साकिन मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत की गिरफ्तारी के तुरंत बाद नियमानुसार व स्वतंत्र गवाहान की उपस्थिति में जिस्मानी जामातलाशी ली गई। जामातलाशी के दौरान अभियुक्त के कब्जे व पहने हुए कपड़ों से निम्नलिखित सामान, नकदी व व्यक्तिगत दस्तावेज बरामद हुए:`,
+    introNarrative: `निम्नलिखित साक्षियों के सामने अभियोग उपरोक्त में पुलिस अभिरक्षा में आरोपी सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत की जामातलाशी विधिनुसार अमल में लाई गई। दौराने जामातलाशी आरोपी के कब्जा व जिस्मानी जामा से निम्नलिखित सामान, नकदी व मोबाइल बरामद हुए:`,
     jamaTalashiItems: [
-      { id: "jt_1", srNo: "1.", description: "नकदी भारतीय मुद्रा कुल 1,450/- रुपये (500 के दो नोट, 200 के दो नोट, 50 का एक नोट)", quantity: "1,450/-", identification: "नोट नंबर अंकित" },
-      { id: "jt_2", srNo: "2.", description: "एक मोबाइल फोन मार्क सैमसंग गैलेक्सी A14, रंग नीला, मय वोडाफोन सिम कार्ड (चालू हालत)", quantity: "1", identification: "IMEI: 358491029481920" },
-      { id: "jt_3", srNo: "3.", description: "पर्स चमड़ा भूरा रंग जिसमें आधार कार्ड (8492-3810-4921) व ड्राइविंग लाइसेंस व फोटो", quantity: "1", identification: "व्यक्तिगत दस्तावेज" },
-      { id: "jt_4", srNo: "4.", description: "कलाई घड़ी फास्टट्रैक स्टील बेल्ट चालू हालत", quantity: "1", identification: "धातु डायल" },
+      { id: "jt_1", srNo: "1.", description: "नकदी भारतीय मुद्रा कुल ₹2,000/- रुपये (500 के कुल 4 नोट, अपराध की एवज में प्राप्त राशि)", quantity: "2,000/-", identification: "नोट नंबर अंकित" },
+      { id: "jt_2", srNo: "2.", description: "एक मोबाइल फोन मार्क वीवो रंग नीला मय सिम कार्ड चालू हालत (वारदात में प्रयुक्त)", quantity: "1", identification: "IMEI: 864920194820194" },
+      { id: "jt_3", srNo: "3.", description: "पर्स जिसमें आधार कार्ड (सावन पुत्र जयकंवर) व व्यक्तिगत दस्तावेज", quantity: "1", identification: "पहचान पत्र" },
     ],
-    receiptClauseText: "जामातलाशी में बरामद उपरोक्त संपूर्ण सामान को कब्जा पुलिस में लिया गया तथा फर्द जामातलाशी की एक प्रति अभियुक्त को निःशुल्क प्रदान कर दी गई है। अभियुक्त व उपस्थित दोनों स्वतंत्र गवाहान ने फर्द को सही मानकर अपने-अपने हस्ताक्षर किए।",
+    receiptClauseText: "जामातलाशी में बरामद उपरोक्त संपूर्ण सामान को कब्जा पुलिस में लेकर फ़र्द जामातलाशी तैयार की गई। जिस पर आरोपी व साक्षी ने अपने-अपने हस्ताक्षर किए।",
+    accusedSign: "सावन",
+    accusedLineSign: "आरोपी- सावन पुत्र जयकंवर",
     arrestWitnesses: [
-      { id: "wit_1", name: "बलजीत सिंह सुपुत्र हरनाम सिंह", address: "वार्ड न0 5, पानीपत" },
-      { id: "wit_2", name: "रमेश लाल सुपुत्र वेद प्रकाश", address: "न्यू बस स्टैंड, पानीपत" },
+      { id: "wit_1", name: "साक्षी- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "सुरेंद्र पाल",
-    officerRank: "उप-निरीक्षक (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "थाना साईबर क्राईम",
+    ioDistrictLabel: "जिला पानीपत",
+    ioDate: "दिनांक 09.06.25",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -644,32 +669,43 @@ const DEFAULT_SAMPLE_DATA_HI: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_baramadgi: {
     headerDept: "हरियाणा पुलिस",
-    policeStation: "थाना शहर पानीपत",
+    policePost: "थाना साईबर क्राईम",
+    districtHeader: "जिला पानीपत",
+    complainantLine: "शिकायतकर्ता- प्रवीन पुत्र सुरेश निवासी गांव डाहर जिला पानीपत ।",
+    accusedLine: "विरुद्ध- सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ।",
+    firDetailsLine: "अभियोग न० 60 दिनांक 04.06.25 धारा 318(4) BNS थाना साईबर क्राईम पानीपत ।",
+    fardTitle: "फ़र्द बरामदगी माल मुकदमा आरोपी सावन",
+    docTitle: "फ़र्द बरामदगी माल मुकदमा आरोपी सावन",
+    docSubTitle: "अंतर्गत धारा 23(2) भारतीय साक्ष्य अधिनियम, 2023",
+    noticeeName: "सावन",
+    noticeeFather: "जयकंवर",
+    noticeeAddress: "गांव खानपुर कला तहसील गोहाना जिला सोनीपत",
+    recoveryPlace: "गामडी मोड़, खानपुर कलां, गोहाना से",
+    complainantName: "प्रवीन",
+    complainantFather: "सुरेश",
+    complainantAddress: "गांव डाहर जिला पानीपत",
+    complaintNo: "60",
+    issueDate: "04.06.25",
+    sectionsOfLaw: "318(4) BNS",
+    policeStation: "थाना साईबर क्राईम पानीपत",
     district: "जिला पानीपत",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "धारा 318(4), 316(2) BNS, 2023",
-    docTitle: "फर्द बरामदगी / जब्ती सूची (Seizure Memo)",
-    docSubTitle: "अंतर्गत धारा 23(2) भारतीय साक्ष्य अधिनियम, 2023 / धारा 27 भारतीय साक्ष्य अधिनियम, 1872",
-    noticeeName: "विकास शर्मा",
-    noticeeFather: "रमेश चंद शर्मा",
-    noticeeAddress: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत",
-    recoveryPlace: "अभियुक्त के रिहायशी मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत के शयनकक्ष की अलमारी से",
-    introNarrative: `आज दिनांक 18.09.2026 को मुकदमा उपरोक्त में गिरफ्तार अभियुक्त श्री विकास शर्मा सुपुत्र श्री रमेश चंद शर्मा, साकिन मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत द्वारा पुलिस हिरासत में दिए गए इकबालिया बयान (फर्द इंकिशाफ) के आधार पर अभियुक्त की स्वयं की निशानदेही पर अभियुक्त के रिहायशी मकान के शयनकक्ष से उपस्थित स्वतंत्र पंच गवाहान के समक्ष निम्नलिखित सामान/मशरूका/नकदी बरामद की गई:`,
+    introNarrative: `निम्नलिखित साक्षियों के सामने अभियोग उपरोक्त में आरोपी सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत द्वारा अपने इकबालिया बयान के अनुसार बताए गए स्थान से वारदात में प्रयुक्त सिम कार्ड व नकदी की बरामदगी विधिनुसार अमल में लाई गई:`,
     recoveryItems: [
-      { id: "rec_1", srNo: "1.", description: "ठगी की राशि में से नकदी कुल 1,20,000/- रुपये (500-500 के कुल 240 नोट)", quantity: "1,20,000/-", sealDetails: "सफेद कपड़े में सील मोहर 'SP'" },
-      { id: "rec_2", srNo: "2.", description: "एक लैपटॉप मार्क डेल (काले रंग का) जिसमें फर्जी एग्रीमेंट व बिलिंग रिकॉर्ड संग्रहित है", quantity: "1", sealDetails: "कपड़े में सील मोहर 'SP'" },
-      { id: "rec_3", srNo: "3.", description: "फर्जी लेटरपैड व 2 मोहरें (स्टैम्प) जो धोखाधड़ी में इस्तेमाल की गई", quantity: "2 स्टैम्प", sealDetails: "डिब्बे में सील मोहर 'SP'" },
+      { id: "rec_1", srNo: "1.", description: "एक एयरटेल सिम कार्ड मोबाइल न० 9518061533 (साईबर ठगी में प्रयुक्त)", quantity: "1", sealDetails: "डिब्बे में सीलबंद मोहर 'IO'" },
+      { id: "rec_2", srNo: "2.", description: "अपराध से प्राप्त नकदी कुल ₹2,000/- रुपये (500 के कुल 4 नोट)", quantity: "2,000/-", sealDetails: "लिफाफे में सीलबंद मोहर 'IO'" },
     ],
-    receiptClauseText: "उपरोक्त बरामदशुदा माल को स्वतंत्र पंच गवाहान की उपस्थिति में सफेद कपड़े व डिब्बे में रखकर सील मोहर 'SP' से सीलबंद किया गया। नमूना मोहर अलग से कपड़े के टुकड़े पर सुरक्षित रखा गया। गवाहान व अभियुक्त ने फर्द को पढ़कर सही मानकर हस्ताक्षर किए।",
+    receiptClauseText: "उपरोक्त बरामदशुदा माल को साक्षी के समक्ष सीलबंद किया गया। नमूना मोहर सुरक्षित रखी गई। जिस पर आरोपी व साक्षी ने अपने-अपने हस्ताक्षर किए।",
+    accusedSign: "सावन",
+    accusedLineSign: "आरोपी- सावन पुत्र जयकंवर",
     arrestWitnesses: [
-      { id: "wit_1", name: "बलजीत सिंह सुपुत्र हरनाम सिंह", address: "वार्ड न0 5, पानीपत (स्वतंत्र पंच गवाह)" },
-      { id: "wit_2", name: "रमेश लाल सुपुत्र वेद प्रकाश", address: "न्यू बस स्टैंड, पानीपत (स्वतंत्र पंच गवाह)" },
+      { id: "wit_1", name: "साक्षी- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "सुरेंद्र पाल",
-    officerRank: "उप-निरीक्षक (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "थाना साईबर क्राईम",
+    ioDistrictLabel: "जिला पानीपत",
+    ioDate: "दिनांक 09.06.25",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -706,59 +742,81 @@ const DEFAULT_SAMPLE_DATA_HI: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_nishandehi: {
     headerDept: "हरियाणा पुलिस",
-    policeStation: "थाना शहर पानीपत",
+    policePost: "थाना साईबर क्राईम",
+    districtHeader: "जिला पानीपत",
+    complainantLine: "शिकायतकर्ता- प्रवीन पुत्र सुरेश निवासी गांव डाहर जिला पानीपत ।",
+    accusedLine: "विरुद्ध- सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ।",
+    firDetailsLine: "अभियोग न० 60 दिनांक 04.06.25 धारा 318(4) BNS थाना साईबर क्राईम पानीपत ।",
+    fardTitle: "फ़र्द निशानदेही मौका आरोपी सावन",
+    docTitle: "फ़र्द निशानदेही मौका आरोपी सावन",
+    docSubTitle: "अंतर्गत धारा 23(2) भारतीय साक्ष्य अधिनियम, 2023",
+    noticeeName: "सावन",
+    noticeeFather: "जयकंवर",
+    noticeeAddress: "गांव खानपुर कला तहसील गोहाना जिला सोनीपत",
+    pointingOutPlace: "गामडी मोड़ बस अड्डा (सिम कार्ड देने व नकदी प्राप्त करने का स्थान)",
+    complainantName: "प्रवीन",
+    complainantFather: "सुरेश",
+    complainantAddress: "गांव डाहर जिला पानीपत",
+    complaintNo: "60",
+    issueDate: "04.06.25",
+    sectionsOfLaw: "318(4) BNS",
+    policeStation: "थाना साईबर क्राईम पानीपत",
     district: "जिला पानीपत",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "धारा 318(4), 316(2) BNS, 2023",
-    docTitle: "फर्द निशानदेही मौका/स्थान (Pointing Out Memo)",
-    docSubTitle: "Accused Pointing Out & Demarcation Proforma",
-    noticeeName: "विकास शर्मा",
-    noticeeFather: "रमेश चंद शर्मा",
-    noticeeAddress: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत",
-    pointingOutPlace: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत (जहां अभियुक्त ने ठगी की राशि व लैपटॉप छिपाया था)",
-    introNarrative: `आज दिनांक 18.09.2026 को मुकदमा उपरोक्त में अभियुक्त श्री विकास शर्मा सुपुत्र श्री रमेश चंद शर्मा, साकिन मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत पुलिस पार्टी व उपस्थित स्वतंत्र गवाहान को साथ लेकर अपने बताए अनुसार स्थान पर पहुंचा और उंगली से इशारा करके निशानदेही की कि 'यही वह स्थान है जहां मैंने वारदात का सामान छिपाया है।'`,
+    introNarrative: `निम्नलिखित साक्षियों के सामने आरोपी सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ने पुलिस पार्टी व साक्षी को ले जाकर उस स्थान की निशानदेही कराई जहाँ उसने दिपांशु को सिम कार्ड सौंपा था तथा ₹2,000/- नकद लिए थे। उक्त निशानदेही मौका की सीमाएं निम्न प्रकार हैं:`,
     boundariesList: [
-      { id: "bd_1", direction: "पूर्व (East)", detail: "मकान न0 411 (पड़ोसी)" },
-      { id: "bd_2", direction: "पश्चिम (West)", detail: "मकान न0 413 (पड़ोसी)" },
-      { id: "bd_3", direction: "उत्तर (North)", detail: "मुख्य गली (20 फीट चौड़ी सड़क)" },
-      { id: "bd_4", direction: "दक्षिण (South)", detail: "खाली प्लॉट / खुला स्थान" },
+      { id: "bd_1", direction: "पूर्व (East)", detail: "मुख्य सड़क गोहाना-पानीपत मार्ग" },
+      { id: "bd_2", direction: "पश्चिम (West)", detail: "गामडी बस स्टॉप यात्री शेड" },
+      { id: "bd_3", direction: "उत्तर (North)", detail: "चाय की दुकान (मदन लाल)" },
+      { id: "bd_4", direction: "दक्षिण (South)", detail: "कृषि भूमि (रामेश्वर)" },
     ],
-    verificationClauseText: "उक्त निशानदेही अभियुक्त ने उपस्थित गवाहान के समक्ष स्वेच्छा से कराई है। गवाहान व अभियुक्त ने फर्द को सही मानकर हस्ताक्षर किए।",
+    verificationClauseText: "उक्त निशानदेही आरोपी सावन ने साक्षी के समक्ष स्वेच्छा से कराई है। मौके पर फर्द निशानदेही तैयार की गई जिस पर आरोपी व साक्षी ने अपने-अपने हस्ताक्षर किए।",
+    accusedSign: "सावन",
+    accusedLineSign: "आरोपी- सावन पुत्र जयकंवर",
     arrestWitnesses: [
-      { id: "wit_1", name: "बलजीत सिंह सुपुत्र हरनाम सिंह", address: "वार्ड न0 5, पानीपत" },
-      { id: "wit_2", name: "रमेश लाल सुपुत्र वेद प्रकाश", address: "न्यू बस स्टैंड, पानीपत" },
+      { id: "wit_1", name: "साक्षी- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "सुरेंद्र पाल",
-    officerRank: "उप-निरीक्षक (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "थाना साईबर क्राईम",
+    ioDistrictLabel: "जिला पानीपत",
+    ioDate: "दिनांक 09.06.25",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
   fard_inkeshaf: {
     headerDept: "हरियाणा पुलिस",
-    policeStation: "थाना शहर पानीपत",
+    policePost: "थाना साईबर क्राईम",
+    districtHeader: "जिला पानीपत",
+    complainantLine: "शिकायतकर्ता- प्रवीन पुत्र सुरेश निवासी गांव डाहर जिला पानीपत ।",
+    accusedLine: "विरुद्ध- सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ।",
+    firDetailsLine: "अभियोग न० 60 दिनांक 04.06.25 धारा 318(4) BNS थाना साईबर क्राईम पानीपत ।",
+    fardTitle: "अपराध स्वीकार कथन आरोपी सावन",
+    docTitle: "अपराध स्वीकार कथन आरोपी सावन (फर्द इंकिशाफ)",
+    docSubTitle: "अंतर्गत धारा 23(2) भारतीय साक्ष्य अधिनियम, 2023 / धारा 27 साक्ष्य अधिनियम",
+    noticeeName: "सावन",
+    noticeeFather: "जयकंवर",
+    noticeeAddress: "गांव खानपुर कला तहसील गोहाना जिला सोनीपत",
+    complainantName: "प्रवीन",
+    complainantFather: "सुरेश",
+    complainantAddress: "गांव डाहर जिला पानीपत",
+    complaintNo: "60",
+    issueDate: "04.06.25",
+    sectionsOfLaw: "318(4) BNS",
+    policeStation: "थाना साईबर क्राईम पानीपत",
     district: "जिला पानीपत",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "धारा 318(4), 316(2) BNS, 2023",
-    docTitle: "फर्द इंकिशाफ / इकबालिया बयान अभियुक्त",
-    docSubTitle: "अंतर्गत धारा 23(2) भारतीय साक्ष्य अधिनियम, 2023 / धारा 27 भारतीय साक्ष्य अधिनियम, 1872",
-    noticeeName: "विकास शर्मा",
-    noticeeFather: "रमेश चंद शर्मा",
-    noticeeAddress: "मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत",
-    introNarrative: `आज दिनांक 18.09.2026 को मुकदमा उपरोक्त में पुलिस हिरासत में मौजूद अभियुक्त श्री विकास शर्मा सुपुत्र श्री रमेश चंद शर्मा, उम्र 34 वर्ष, साकिन मकान न0 412, सेक्टर 7, अर्बन एस्टेट, पानीपत ने उपस्थित स्वतंत्र गवाहान के समक्ष बिना किसी डर, दबाव या प्रलोभन के स्वेच्छा से निम्नलिखित इकबालिया बयान दिया:`,
-    disclosureNarrative: `बयान दिया कि मैंने अपने साथी के साथ मिलकर परिवादी से 4,50,000/- रुपये की धोखाधड़ी की थी। उस राशि में से मैंने 1,20,000/- रुपये नकदी तथा धोखाधड़ी में इस्तेमाल किया गया लैपटॉप अपने घर (मकान न0 412, सेक्टर 7, अर्बन एस्टेट) के अंदर वाले शयनकक्ष की लकड़ी की अलमारी के गुप्त खाने में छिपाकर रखे हुए हैं, जो मेरे अलावा किसी अन्य को मालूम नहीं हैं। मैं चलकर पुलिस पार्टी को वह स्थान बताकर उक्त रुपये व लैपटॉप बरामद करवा सकता हूँ।`,
-    verificationClauseText: "अभियुक्त ने उक्त बयान पुलिस हिरासत में स्वतंत्र गवाहान के समक्ष बिना किसी भय, प्रलोभन अथवा जोर-जबरदस्ती के स्वेच्छा से दिया है। बयान सुनाकर सही मानकर अभियुक्त ने हस्ताक्षर किए।",
+    introNarrative: `निम्नलिखित साक्षियो के सामने अभियोग उपरोक्त मे पुलिस अभिरक्षा मे आरोपी सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ने अपनी मर्जी से बिना किसी डर भय दबाव लोभ लालच के अपना अपराध स्वीकार कथन अंकित करवाया कि मै उपरोक्त नाम पते का रहने वाला हु व मजदूरी करता हूं। मै अविवाहित हूं। मेरा दिपांशु पुत्र जगपाल निवासी गांव गामडी जो मेरा दोस्त है। गामडी गांव मेरे गांव के साथ लगता ही है। अप्रैल माह मे दिपांशु ने मुझसे कहा कि उसके रोहतक के कुछ यार दोस्त है जो जिसके पास USDT या क्रिप्टोबैरेशी है उसके साथ साईबर फ्राड करके USDT चुराते है। उसने मुझसे कहा कि उन्हे कालिंग के लिये सिमो की आवश्यकता है। उसने मुझसे यह कहा कि अगर मै उसे मेरे नाम पर सिम निकलवाकर दुगां तो उसके बदले मुझे 2000 हजार रुपये मिलेगे। मैने लालच मे आकर मेरे नाम पर एक सिम जिसका नम्बर 9518061533 निकलवाकर अप्रैल माह 2025 मे दिपांशु को दे दी। दिपांशु ने इसके बदले मुझे 2000 रुपये कैश दिये। जो पैसे मुझे सिम बेचने के लिये मिले थे वह मैने खाने पीने में खर्च कर दिये। आज आपने दिपांशु व मुझे एक साथ पकड़ लिया है। मेरा सिम कहा गया है किसके पास गया है उसके बारे मे दिपांशु ही बता सकता है। जो आरोपी सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत का अपराध स्वीकार कथन अंकित किया गया। जिस पर आरोपी व साक्षी ने अपने हस्ताक्षर किये।`,
+    accusedSign: "सावन",
+    accusedLineSign: "आरोपी- सावन पुत्र जयकंवर",
     arrestWitnesses: [
-      { id: "wit_1", name: "बलजीत सिंह सुपुत्र हरनाम सिंह", address: "वार्ड न0 5, पानीपत" },
-      { id: "wit_2", name: "रमेश लाल सुपुत्र वेद प्रकाश", address: "न्यू बस स्टैंड, पानीपत" },
+      { id: "wit_1", name: "साक्षी- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "सुरेंद्र पाल",
-    officerRank: "उप-निरीक्षक (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "थाना साईबर क्राईम",
+    ioDistrictLabel: "जिला पानीपत",
+    ioDate: "दिनांक 09.06.25",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -992,37 +1050,43 @@ const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_jamatalashi: {
     headerDept: "HARYANA POLICE",
-    policeStation: "PS City Panipat",
+    policePost: "POLICE STATION CYBER CRIME",
+    districtHeader: "DISTRICT PANIPAT",
+    complainantLine: "Complainant- Praveen s/o Suresh r/o Village Dahar, District Panipat .",
+    accusedLine: "Accused- Sawan s/o Jaikanwar r/o Village Khanpur Kalan, Tehsil Gohana, District Sonipat .",
+    firDetailsLine: "FIR No. 60 Dated 04.06.2025 u/s Section 318(4) BNS Police Station Cyber Crime, Panipat .",
+    fardTitle: "PERSONAL SEARCH MEMO (FARD JAMA TALASHI) ACCUSED SAWAN",
+    docTitle: "PERSONAL SEARCH MEMO (FARD JAMA TALASHI) ACCUSED SAWAN",
+    docSubTitle: "Under Section 50 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
+    noticeeName: "Sawan",
+    noticeeFather: "Jaikanwar",
+    noticeeAddress: "Village Khanpur Kalan, Tehsil Gohana, District Sonipat",
+    complainantName: "Praveen",
+    complainantFather: "Suresh",
+    complainantAddress: "Village Dahar, District Panipat",
+    complaintNo: "60",
+    issueDate: "04.06.2025",
+    sectionsOfLaw: "Section 318(4) BNS",
+    policeStation: "Cyber Crime Police Station, Panipat",
     district: "District Panipat",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
-    docTitle: "FARD JAMA TALASHI (PERSONAL SEARCH MEMO)",
-    docSubTitle: "Under Section 50 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 / Section 51 CrPC",
-    noticeeName: "Vikas Sharma",
-    noticeeFather: "Ramesh Chand Sharma",
-    noticeeAge: "34 Years",
-    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
-    noticeeRole: "Arrested Accused",
-    arrestDate: "18.09.2026",
-    arrestTime: "11:30 AM",
-    arrestPlace: "Railway Road Chowk, Panipat",
-    introNarrative: `Today on 18.09.2026 at 11:30 AM at Railway Road Chowk, Panipat, immediately after the arrest of accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, age approx 34 years, r/o House No. 412, Sector 7, Urban Estate, Panipat in the above case, personal search was conducted in the presence of independent witnesses in accordance with statutory procedure. Upon search, the following articles, cash and personal documents were recovered:`,
+    introNarrative: `In the presence of the following witnesses, in police custody in the above-mentioned case, personal search of accused Sawan son of Jaikanwar, resident of Village Khanpur Kalan, Tehsil Gohana, District Sonipat was conducted in accordance with statutory procedure. During personal search, the following articles, cash and mobile phone were recovered from his physical possession:`,
     jamaTalashiItems: [
-      { id: "jt_1", srNo: "1.", description: "Cash Indian Currency total Rs. 1,450/- (Two notes of 500, two of 200, one of 50)", quantity: "1,450/-", identification: "Currency note numbers noted" },
-      { id: "jt_2", srNo: "2.", description: "One Samsung Galaxy A14 mobile phone, blue color, with Vodafone SIM card (working condition)", quantity: "1", identification: "IMEI: 358491029481920" },
-      { id: "jt_3", srNo: "3.", description: "Brown leather wallet containing Aadhaar card, driving license and photographs", quantity: "1", identification: "Personal identity documents" },
-      { id: "jt_4", srNo: "4.", description: "Fastrack wrist watch with steel strap in running condition", quantity: "1", identification: "Metallic dial" },
+      { id: "jt_1", srNo: "1.", description: "Cash Indian Currency Rs. 2,000/- (4 notes of denomination 500, received in commission of offence)", quantity: "2,000/-", identification: "Currency note numbers noted" },
+      { id: "jt_2", srNo: "2.", description: "One Vivo smartphone, blue color, with SIM card in working condition (used in commission of crime)", quantity: "1", identification: "IMEI: 864920194820194" },
+      { id: "jt_3", srNo: "3.", description: "Wallet containing Aadhaar card (Sawan s/o Jaikanwar) and personal identity cards", quantity: "1", identification: "Personal identity documents" },
     ],
-    receiptClauseText: "All the above articles recovered in personal search have been taken into police custody and a copy of this Personal Search Memo has been provided to the accused free of cost. The accused and both independent witnesses have signed this memo admitting it to be correct.",
+    receiptClauseText: "All the above articles recovered in personal search were taken into police custody and Personal Search Memo (Fard Jama Talashi) prepared. The accused and witness verified and signed.",
+    accusedSign: "Sawan",
+    accusedLineSign: "Accused- Sawan s/o Jaikanwar",
     arrestWitnesses: [
-      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
-      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+      { id: "wit_1", name: "Witness- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "Surender Pal",
-    officerRank: "Sub-Inspector (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "Police Station Cyber Crime",
+    ioDistrictLabel: "District Panipat",
+    ioDate: "Dated 09.06.2025",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -1106,32 +1170,43 @@ const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_baramadgi: {
     headerDept: "HARYANA POLICE",
-    policeStation: "PS City Panipat",
+    policePost: "POLICE STATION CYBER CRIME",
+    districtHeader: "DISTRICT PANIPAT",
+    complainantLine: "Complainant- Praveen s/o Suresh r/o Village Dahar, District Panipat .",
+    accusedLine: "Accused- Sawan s/o Jaikanwar r/o Village Khanpur Kalan, Tehsil Gohana, District Sonipat .",
+    firDetailsLine: "FIR No. 60 Dated 04.06.2025 u/s Section 318(4) BNS Police Station Cyber Crime, Panipat .",
+    fardTitle: "SEIZURE & RECOVERY MEMO (FARD BARAMADGI) ACCUSED SAWAN",
+    docTitle: "SEIZURE & RECOVERY MEMO (FARD BARAMADGI) ACCUSED SAWAN",
+    docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023",
+    noticeeName: "Sawan",
+    noticeeFather: "Jaikanwar",
+    noticeeAddress: "Village Khanpur Kalan, Tehsil Gohana, District Sonipat",
+    recoveryPlace: "Gamdi Mor, Khanpur Kalan, Gohana",
+    complainantName: "Praveen",
+    complainantFather: "Suresh",
+    complainantAddress: "Village Dahar, District Panipat",
+    complaintNo: "60",
+    issueDate: "04.06.2025",
+    sectionsOfLaw: "Section 318(4) BNS",
+    policeStation: "Cyber Crime Police Station, Panipat",
     district: "District Panipat",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
-    docTitle: "SEIZURE & RECOVERY MEMO (FARD BARAMADGI)",
-    docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023 / Section 27 Indian Evidence Act",
-    noticeeName: "Vikas Sharma",
-    noticeeFather: "Ramesh Chand Sharma",
-    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
-    recoveryPlace: "Bedroom cupboard of accused's residence at House No. 412, Sector 7, Urban Estate, Panipat",
-    introNarrative: `Today on 18.09.2026, pursuant to the voluntary disclosure statement made in police custody by arrested accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, r/o House No. 412, Sector 7, Urban Estate, Panipat, and upon his pointing out in the presence of independent witnesses, the following incriminating articles/money/property were recovered from the bedroom of his residence:`,
+    introNarrative: `In the presence of the following witnesses, in the above-mentioned case, recovery of the SIM card and cash used in commission of the offence was effected in accordance with statutory procedure from the place disclosed by accused Sawan son of Jaikanwar, resident of Village Khanpur Kalan, Tehsil Gohana, District Sonipat in his voluntary confession:`,
     recoveryItems: [
-      { id: "rec_1", srNo: "1.", description: "Cheated cash amount totaling Rs. 1,20,000/- (240 notes of denomination 500)", quantity: "1,20,000/-", sealDetails: "Sealed in white cloth with seal mark 'SP'" },
-      { id: "rec_2", srNo: "2.", description: "One Dell laptop (black color) containing fraudulent agreements and billing records", quantity: "1", sealDetails: "Sealed in cloth with seal mark 'SP'" },
-      { id: "rec_3", srNo: "3.", description: "Forged letterheads and 2 rubber stamps used in the offence", quantity: "2 Stamps", sealDetails: "Sealed in box with seal mark 'SP'" },
+      { id: "rec_1", srNo: "1.", description: "One Airtel SIM card bearing mobile number 9518061533 (used in cyber fraud)", quantity: "1", sealDetails: "Sealed in parcel box with seal mark 'IO'" },
+      { id: "rec_2", srNo: "2.", description: "Crime proceeds cash totaling Rs. 2,000/- (4 notes of denomination 500)", quantity: "2,000/-", sealDetails: "Sealed in envelope with seal mark 'IO'" },
     ],
-    receiptClauseText: "The seized articles were packed and sealed in the presence of independent panch witnesses with seal mark 'SP'. Sample seal impression was preserved separately. Witnesses and the accused verified the memo and signed.",
+    receiptClauseText: "The seized articles and proceeds were packed and sealed in the presence of the witness. Specimen seal was preserved. The accused and witness verified and signed.",
+    accusedSign: "Sawan",
+    accusedLineSign: "Accused- Sawan s/o Jaikanwar",
     arrestWitnesses: [
-      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat (Independent Panch)" },
-      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat (Independent Panch)" },
+      { id: "wit_1", name: "Witness- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "Surender Pal",
-    officerRank: "Sub-Inspector (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "Police Station Cyber Crime",
+    ioDistrictLabel: "District Panipat",
+    ioDate: "Dated 09.06.2025",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -1168,59 +1243,81 @@ const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 
   fard_nishandehi: {
     headerDept: "HARYANA POLICE",
-    policeStation: "PS City Panipat",
+    policePost: "POLICE STATION CYBER CRIME",
+    districtHeader: "DISTRICT PANIPAT",
+    complainantLine: "Complainant- Praveen s/o Suresh r/o Village Dahar, District Panipat .",
+    accusedLine: "Accused- Sawan s/o Jaikanwar r/o Village Khanpur Kalan, Tehsil Gohana, District Sonipat .",
+    firDetailsLine: "FIR No. 60 Dated 04.06.2025 u/s Section 318(4) BNS Police Station Cyber Crime, Panipat .",
+    fardTitle: "POINTING OUT & DEMARCATION MEMO (FARD NISHANDEHI) ACCUSED SAWAN",
+    docTitle: "POINTING OUT & DEMARCATION MEMO (FARD NISHANDEHI) ACCUSED SAWAN",
+    docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023",
+    noticeeName: "Sawan",
+    noticeeFather: "Jaikanwar",
+    noticeeAddress: "Village Khanpur Kalan, Tehsil Gohana, District Sonipat",
+    pointingOutPlace: "Gamdi Mor Bus Stop (Place of handing over SIM and cash transfer)",
+    complainantName: "Praveen",
+    complainantFather: "Suresh",
+    complainantAddress: "Village Dahar, District Panipat",
+    complaintNo: "60",
+    issueDate: "04.06.2025",
+    sectionsOfLaw: "Section 318(4) BNS",
+    policeStation: "Cyber Crime Police Station, Panipat",
     district: "District Panipat",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
-    docTitle: "POINTING OUT & DEMARCATION MEMO (FARD NISHANDEHI)",
-    docSubTitle: "Accused Pointing Out & Demarcation Proforma",
-    noticeeName: "Vikas Sharma",
-    noticeeFather: "Ramesh Chand Sharma",
-    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
-    pointingOutPlace: "House No. 412, Sector 7, Urban Estate, Panipat (where accused concealed cheated cash and laptop)",
-    introNarrative: `Today on 18.09.2026, accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, r/o House No. 412, Sector 7, Urban Estate, Panipat, accompanied the police party and independent witnesses to the site and pointed out with his finger that 'this is the place where I concealed the cheated cash and laptop.'`,
+    introNarrative: `In the presence of the following witnesses, accused Sawan son of Jaikanwar, resident of Village Khanpur Kalan, Tehsil Gohana, District Sonipat led the police party and witness to the spot and pointed out the place where he handed over the SIM card to Deepanshu and received Rs. 2,000/- in cash. The boundaries and environs of the said pointing out spot are as follows:`,
     boundariesList: [
-      { id: "bd_1", direction: "East", detail: "House No. 411 (Neighbor)" },
-      { id: "bd_2", direction: "West", detail: "House No. 413 (Neighbor)" },
-      { id: "bd_3", direction: "North", detail: "Main Street (20 ft wide road)" },
-      { id: "bd_4", direction: "South", detail: "Open Plot / Vacant Land" },
+      { id: "bd_1", direction: "East", detail: "Main Road Gohana-Panipat Highway" },
+      { id: "bd_2", direction: "West", detail: "Gamdi Bus Stop passenger shed" },
+      { id: "bd_3", direction: "North", detail: "Tea stall (Madan Lal)" },
+      { id: "bd_4", direction: "South", detail: "Agricultural land (Rameshwar)" },
     ],
-    verificationClauseText: "The pointing out was done voluntarily by the accused in the presence of independent witnesses. Witnesses and accused signed this memo.",
+    verificationClauseText: "The pointing out was voluntarily conducted by accused Sawan in the presence of the witness. The Pointing Out Memo was prepared on the spot and signed by the accused and witness.",
+    accusedSign: "Sawan",
+    accusedLineSign: "Accused- Sawan s/o Jaikanwar",
     arrestWitnesses: [
-      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
-      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+      { id: "wit_1", name: "Witness- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "Surender Pal",
-    officerRank: "Sub-Inspector (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "Police Station Cyber Crime",
+    ioDistrictLabel: "District Panipat",
+    ioDate: "Dated 09.06.2025",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
   fard_inkeshaf: {
     headerDept: "HARYANA POLICE",
-    policeStation: "PS City Panipat",
-    district: "District Panipat",
-    complaintNo: "128/2026",
-    issueDate: "18.09.2026",
-    sectionsOfLaw: "Section 318(4), 316(2) BNS, 2023",
-    docTitle: "VOLUNTARY DISCLOSURE STATEMENT (FARD INKESHAF)",
+    policePost: "POLICE STATION CYBER CRIME",
+    districtHeader: "DISTRICT PANIPAT",
+    complainantLine: "Complainant- Praveen s/o Suresh r/o Village Dahar, District Panipat .",
+    accusedLine: "Accused- Sawan s/o Jaikanwar r/o Village Khanpur Kalan, Tehsil Gohana, District Sonipat .",
+    firDetailsLine: "FIR No. 60 Dated 04.06.2025 u/s Section 318(4) BNS Police Station Cyber Crime, Panipat .",
+    fardTitle: "CONFESSION / DISCLOSURE STATEMENT (FARD INKESHAF) ACCUSED SAWAN",
+    docTitle: "CONFESSION / DISCLOSURE STATEMENT (FARD INKESHAF) ACCUSED SAWAN",
     docSubTitle: "Under Section 23(2) Bharatiya Sakshya Adhiniyam, 2023 / Section 27 Indian Evidence Act",
-    noticeeName: "Vikas Sharma",
-    noticeeFather: "Ramesh Chand Sharma",
-    noticeeAddress: "House No. 412, Sector 7, Urban Estate, Panipat",
-    introNarrative: `Today on 18.09.2026, accused Vikas Sharma s/o Sh. Ramesh Chand Sharma, age 34 years, r/o House No. 412, Sector 7, Urban Estate, Panipat, while in police custody, voluntarily made the following disclosure statement in the presence of independent witnesses without any threat, coercion or inducement:`,
-    disclosureNarrative: `Statement recorded: 'I along with my accomplice cheated the complainant of Rs. 4,50,000/-. Out of that amount, I have hidden Rs. 1,20,000/- cash and the laptop used in the cheating inside the secret cavity of the wooden cupboard in my bedroom at House No. 412, Sector 7, Urban Estate, Panipat, which is within my exclusive knowledge. I can lead the police party to the spot and get the cash and laptop recovered.'`,
-    verificationClauseText: "The accused made the above voluntary disclosure statement in police custody without any coercion or pressure. After having the statement read over, the accused admitted it as correct and signed.",
+    noticeeName: "Sawan",
+    noticeeFather: "Jaikanwar",
+    noticeeAddress: "Village Khanpur Kalan, Tehsil Gohana, District Sonipat",
+    complainantName: "Praveen",
+    complainantFather: "Suresh",
+    complainantAddress: "Village Dahar, District Panipat",
+    complaintNo: "60",
+    issueDate: "04.06.2025",
+    sectionsOfLaw: "Section 318(4) BNS",
+    policeStation: "Cyber Crime Police Station, Panipat",
+    district: "District Panipat",
+    introNarrative: `In the presence of the following witnesses, in police custody in the above-mentioned case, accused Sawan son of Jaikanwar, resident of Village Khanpur Kalan, Tehsil Gohana, District Sonipat voluntarily recorded his confession without any fear, pressure, threat or inducement as follows: 'I am a resident of the above address and work as a daily wager. I am unmarried. My friend Deepanshu son of Jagpal is a resident of Village Gamdi, which is adjacent to my village. In the month of April, Deepanshu told me that some of his friends in Rohtak fraudulently steal USDT/cryptocurrency and require SIM cards for calling purposes. He asked me to procure a SIM card in my name in exchange for Rs. 2,000/-. Out of greed, I got a SIM card No. 9518061533 issued in my name and handed it over to Deepanshu in April 2025, for which he gave me Rs. 2,000/- in cash. I spent that money on personal expenses. Today, the police apprehended both Deepanshu and me together. Where the SIM card went and who possesses it can only be stated by Deepanshu.' The confession and disclosure statement of accused Sawan son of Jaikanwar was recorded, read over, and signed by the accused and the witness.`,
+    accusedSign: "Sawan",
+    accusedLineSign: "Accused- Sawan s/o Jaikanwar",
     arrestWitnesses: [
-      { id: "wit_1", name: "Baljeet Singh s/o Harnam Singh", address: "Ward No. 5, Panipat" },
-      { id: "wit_2", name: "Ramesh Lal s/o Ved Prakash", address: "New Bus Stand, Panipat" },
+      { id: "wit_1", name: "Witness- HC Moninder No.1630/PPT", address: "", signature: "Moninder" },
     ],
-    officerName: "Surender Pal",
-    officerRank: "Sub-Inspector (SI)",
-    officerPno: "04291885",
-    officerPhone: "9812034567",
+    ioSign: "IO Sign",
+    ioStationLabel: "Police Station Cyber Crime",
+    ioDistrictLabel: "District Panipat",
+    ioDate: "Dated 09.06.2025",
+    stampThanaName: "PS. CYBER CRIME",
+    stampDistrictName: "PANIPAT",
     customClauses: [],
   },
 
@@ -1546,6 +1643,44 @@ function ArrestDocsContent() {
       if (targetBase.recoveryItems && (!prev.recoveryItems || prev.recoveryItems === currentBase.recoveryItems)) {
         updated.recoveryItems = targetBase.recoveryItems;
       }
+
+      // Explicit syncing for templates 2, 5, 7, 8 (Haryana Police Fard documents)
+      if (["fard_jamatalashi", "fard_baramadgi", "fard_nishandehi", "fard_inkeshaf"].includes(selectedTemplate)) {
+        if (!prev.policePost || prev.policePost === currentBase.policePost) updated.policePost = targetBase.policePost;
+        if (!prev.districtHeader || prev.districtHeader === currentBase.districtHeader) updated.districtHeader = targetBase.districtHeader;
+        if (!prev.complainantLine || prev.complainantLine === currentBase.complainantLine) updated.complainantLine = targetBase.complainantLine;
+        if (!prev.accusedLine || prev.accusedLine === currentBase.accusedLine) updated.accusedLine = targetBase.accusedLine;
+        if (!prev.firDetailsLine || prev.firDetailsLine === currentBase.firDetailsLine) updated.firDetailsLine = targetBase.firDetailsLine;
+        if (!prev.fardTitle || prev.fardTitle === currentBase.fardTitle) updated.fardTitle = targetBase.fardTitle;
+        if (!prev.introNarrative || prev.introNarrative === currentBase.introNarrative) updated.introNarrative = targetBase.introNarrative;
+        if (!prev.accusedLineSign || prev.accusedLineSign === currentBase.accusedLineSign) updated.accusedLineSign = targetBase.accusedLineSign;
+        if (!prev.accusedSign || prev.accusedSign === currentBase.accusedSign) updated.accusedSign = targetBase.accusedSign;
+        if (!prev.accusedLabel || prev.accusedLabel === currentBase.accusedLabel) updated.accusedLabel = targetBase.accusedLabel;
+        if (!prev.gazettedOfficerLabel || prev.gazettedOfficerLabel === currentBase.gazettedOfficerLabel) updated.gazettedOfficerLabel = targetBase.gazettedOfficerLabel;
+        if (!prev.ioStationLabel || prev.ioStationLabel === currentBase.ioStationLabel) updated.ioStationLabel = targetBase.ioStationLabel;
+        if (!prev.ioDistrictLabel || prev.ioDistrictLabel === currentBase.ioDistrictLabel) updated.ioDistrictLabel = targetBase.ioDistrictLabel;
+        if (!prev.ioDate || prev.ioDate === currentBase.ioDate) updated.ioDate = targetBase.ioDate;
+        if (!prev.receiptClauseText || prev.receiptClauseText === currentBase.receiptClauseText) updated.receiptClauseText = targetBase.receiptClauseText;
+        if (!prev.verificationClauseText || prev.verificationClauseText === currentBase.verificationClauseText) updated.verificationClauseText = targetBase.verificationClauseText;
+        if (!prev.disclosureNarrative || prev.disclosureNarrative === currentBase.disclosureNarrative) updated.disclosureNarrative = targetBase.disclosureNarrative;
+        if (!prev.recoveryPlace || prev.recoveryPlace === currentBase.recoveryPlace) updated.recoveryPlace = targetBase.recoveryPlace;
+        if (!prev.pointingOutPlace || prev.pointingOutPlace === currentBase.pointingOutPlace) updated.pointingOutPlace = targetBase.pointingOutPlace;
+        if (!prev.stampThanaName || prev.stampThanaName === currentBase.stampThanaName) updated.stampThanaName = targetBase.stampThanaName;
+        if (!prev.stampDistrictName || prev.stampDistrictName === currentBase.stampDistrictName) updated.stampDistrictName = targetBase.stampDistrictName;
+        if (!prev.arrestWitnesses || JSON.stringify(prev.arrestWitnesses) === JSON.stringify(currentBase.arrestWitnesses)) {
+          updated.arrestWitnesses = targetBase.arrestWitnesses;
+        }
+        if (!prev.jamaTalashiItems || JSON.stringify(prev.jamaTalashiItems) === JSON.stringify(currentBase.jamaTalashiItems)) {
+          updated.jamaTalashiItems = targetBase.jamaTalashiItems;
+        }
+        if (!prev.recoveryItems || JSON.stringify(prev.recoveryItems) === JSON.stringify(currentBase.recoveryItems)) {
+          updated.recoveryItems = targetBase.recoveryItems;
+        }
+        if (!prev.boundariesList || JSON.stringify(prev.boundariesList) === JSON.stringify(currentBase.boundariesList)) {
+          updated.boundariesList = targetBase.boundariesList;
+        }
+      }
+
       return updated;
     });
   };
@@ -1727,10 +1862,6 @@ function ArrestDocsContent() {
   };
 
   const handlePrint = () => {
-    if (!isCrimeDetailsFilled) {
-      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज प्रिंट नहीं किए जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
-      return;
-    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       let iframe = document.getElementById("cms-print-iframe") as HTMLIFrameElement | null;
@@ -1763,10 +1894,6 @@ function ArrestDocsContent() {
   };
 
   const handleDownload = () => {
-    if (!isCrimeDetailsFilled) {
-      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज डाउनलोड नहीं किए जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
-      return;
-    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -1786,10 +1913,6 @@ function ArrestDocsContent() {
   };
 
   const handleOpenPreview = () => {
-    if (!isCrimeDetailsFilled) {
-      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज का पूर्वावलोकन नहीं किया जा सकता। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
-      return;
-    }
     if (selectedTemplate === "arrest_memo") {
       const html = generateArrestMemo4PageHtml(formData, activeFir, templateLang);
       setPreviewHtml(html);
@@ -1803,10 +1926,6 @@ function ArrestDocsContent() {
   const handleSaveToFir = async () => {
     if (!activeFir) {
       alert("कृपया पहले एक सक्रिय FIR केस चुनें।");
-      return;
-    }
-    if (!isCrimeDetailsFilled) {
-      alert("वैधानिक चेतावनी (Statutory Warning): अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरे बिना गिरफ्तारी दस्तावेज FIR Profile में सहेजे नहीं जा सकते। कृपया पहले FIR Profile में जाकर Crime Details Form भरें।");
       return;
     }
 
@@ -2174,6 +2293,554 @@ function ArrestDocsContent() {
     </div>
   );
 
+  // Authentic Haryana Police Fard Memo Document Component (Exact Stationery Layout from Photo media_1792045629238_7e6b9b20.png)
+  const renderHaryanaPoliceFardDocument = (templateType: ArrestDocTemplateType) => {
+    const isJamatalashi = templateType === "fard_jamatalashi";
+    const isBaramadgi = templateType === "fard_baramadgi";
+    const isNishandehi = templateType === "fard_nishandehi";
+    const isInkeshaf = templateType === "fard_inkeshaf";
+
+    const defaultTitle = isJamatalashi
+      ? templateLang === "hi" ? "फ़र्द जामातलाशी अभियुक्त सावन" : "PERSONAL SEARCH MEMO (FARD JAMA TALASHI) ACCUSED SAWAN"
+      : isBaramadgi
+      ? templateLang === "hi" ? "फ़र्द बरामदगी माल मुकदमा आरोपी सावन" : "SEIZURE & RECOVERY MEMO (FARD BARAMADGI) ACCUSED SAWAN"
+      : isNishandehi
+      ? templateLang === "hi" ? "फ़र्द निशानदेही मौका आरोपी सावन" : "POINTING OUT & DEMARCATION MEMO (FARD NISHANDEHI) ACCUSED SAWAN"
+      : templateLang === "hi" ? "अपराध स्वीकार कथन आरोपी सावन" : "CONFESSION / DISCLOSURE STATEMENT (FARD INKESHAF) ACCUSED SAWAN";
+
+    return (
+      <div className="space-y-6 text-slate-900 leading-relaxed font-serif">
+        {/* Top Official Line: Thana / Post Name on Left, District on Right (Underlined, exact to photo) */}
+        <div className="flex items-center justify-between gap-4 border-b-2 border-slate-900 pb-2">
+          <input
+            type="text"
+            value={formData.policePost ?? (templateLang === "hi" ? "थाना साईबर क्राईम" : "POLICE STATION CYBER CRIME")}
+            onChange={(e) => handleFieldChange("policePost", e.target.value)}
+            className="font-bold underline text-base sm:text-lg bg-transparent border-none outline-none tracking-wide text-slate-900 w-80"
+            placeholder={templateLang === "hi" ? "थाना का नाम" : "Police Station Name"}
+          />
+          <input
+            type="text"
+            value={formData.districtHeader ?? (templateLang === "hi" ? "जिला पानीपत" : "DISTRICT PANIPAT")}
+            onChange={(e) => handleFieldChange("districtHeader", e.target.value)}
+            className="font-bold underline text-base sm:text-lg text-right bg-transparent border-none outline-none tracking-wide text-slate-900 w-64 ml-auto"
+            placeholder={templateLang === "hi" ? "जिला का नाम" : "District Name"}
+          />
+        </div>
+
+        {/* 3 Case Metadata Lines (Left-aligned, underlined / dotted, exact to photo media_1792045629238_7e6b9b20.png) */}
+        <div className="space-y-2 pt-1 text-sm sm:text-base font-normal text-slate-900">
+          <div className="flex items-center gap-1.5 border-b border-dotted border-slate-400 pb-0.5">
+            <input
+              type="text"
+              value={formData.complainantLine ?? (templateLang === "hi" ? "शिकायतकर्ता- प्रवीन पुत्र सुरेश निवासी गांव डाहर जिला पानीपत ।" : "Complainant- Praveen s/o Suresh r/o Village Dahar, District Panipat .")}
+              onChange={(e) => handleFieldChange("complainantLine", e.target.value)}
+              className="w-full bg-transparent outline-none text-slate-900 font-medium"
+              placeholder={templateLang === "hi" ? "शिकायतकर्ता विवरण..." : "Complainant details..."}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 border-b border-dotted border-slate-400 pb-0.5">
+            <input
+              type="text"
+              value={formData.accusedLine ?? (templateLang === "hi" ? "विरुद्ध- सावन पुत्र जयकंवर निवासी गांव खानपुर कला तहसील गोहाना जिला सोनीपत ।" : "Accused- Sawan s/o Jaikanwar r/o Village Khanpur Kalan, Tehsil Gohana, District Sonipat .")}
+              onChange={(e) => handleFieldChange("accusedLine", e.target.value)}
+              className="w-full bg-transparent outline-none text-slate-900 font-medium"
+              placeholder={templateLang === "hi" ? "विरुद्ध (आरोपी) विवरण..." : "Accused details..."}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 border-b border-dotted border-slate-400 pb-0.5">
+            <input
+              type="text"
+              value={formData.firDetailsLine ?? (templateLang === "hi" ? "अभियोग न० 60 दिनांक 04.06.25 धारा 318(4) BNS थाना साईबर क्राईम पानीपत ।" : "FIR No. 60 Dated 04.06.2025 u/s Section 318(4) BNS Police Station Cyber Crime, Panipat .")}
+              onChange={(e) => handleFieldChange("firDetailsLine", e.target.value)}
+              className="w-full bg-transparent outline-none text-slate-900 font-medium"
+              placeholder={templateLang === "hi" ? "अभियोग विवरण..." : "FIR details..."}
+            />
+          </div>
+        </div>
+
+        {/* Center Title: Underlined Bold Heading (Exact to photo) */}
+        <div className="text-center pt-2 pb-1">
+          <input
+            type="text"
+            value={formData.fardTitle || defaultTitle}
+            onChange={(e) => handleFieldChange("fardTitle", e.target.value)}
+            className="font-black text-center text-lg sm:text-xl underline tracking-wide text-slate-950 bg-transparent border-none outline-none w-full"
+          />
+        </div>
+
+        {/* Optional Place Line for Baramadgi / Nishandehi */}
+        {isBaramadgi && (
+          <div className="flex items-center gap-2 text-xs sm:text-sm border-b border-dotted border-slate-400 pb-1">
+            <span className="font-bold shrink-0 text-slate-800">
+              {templateLang === "hi" ? "बरामदगी का स्थान (Place of Recovery):" : "Place of Recovery:"}
+            </span>
+            <input
+              type="text"
+              value={formData.recoveryPlace || ""}
+              onChange={(e) => handleFieldChange("recoveryPlace", e.target.value)}
+              className="w-full bg-transparent outline-none font-bold text-slate-900"
+              placeholder={templateLang === "hi" ? "बरामदगी का स्थान दर्ज करें" : "Enter place of recovery"}
+            />
+          </div>
+        )}
+
+        {isNishandehi && (
+          <div className="flex items-center gap-2 text-xs sm:text-sm border-b border-dotted border-slate-400 pb-1">
+            <span className="font-bold shrink-0 text-slate-800">
+              {templateLang === "hi" ? "निशानदेही का स्थान (Place of Demarcation):" : "Place of Pointing Out / Demarcation:"}
+            </span>
+            <input
+              type="text"
+              value={formData.pointingOutPlace || ""}
+              onChange={(e) => handleFieldChange("pointingOutPlace", e.target.value)}
+              className="w-full bg-transparent outline-none font-bold text-slate-900"
+              placeholder={templateLang === "hi" ? "निशानदेही का स्थान दर्ज करें" : "Enter place of demarcation"}
+            />
+          </div>
+        )}
+
+        {/* Official Continuous Police Narrative Paragraph (Typewriter Running Police Memo text) */}
+        <div className="space-y-1">
+          <textarea
+            rows={isInkeshaf ? 14 : isBaramadgi ? 5 : isJamatalashi ? 4 : 4}
+            value={formData.introNarrative || ""}
+            onChange={(e) => handleFieldChange("introNarrative", e.target.value)}
+            className="w-full text-xs sm:text-[13px] leading-relaxed text-slate-950 bg-transparent border border-dashed border-slate-300 hover:border-slate-500 focus:border-slate-800 rounded p-2.5 outline-none resize-y font-normal"
+            style={{ textAlign: "justify" }}
+            placeholder={templateLang === "hi" ? "यहाँ फर्द का आधिकारिक विवरण लिखें..." : "Enter official narrative here..."}
+          />
+        </div>
+
+        {/* 1. Specific Items Table for Template 2 (FARD JAMATALASHI) */}
+        {isJamatalashi && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold underline text-slate-800">
+                {templateLang === "hi" ? "बरामदशुदा जामातलाशी सामान की सूची (Articles Inventory):" : "Inventory of Personal Search Articles:"}
+              </span>
+              <button
+                type="button"
+                onClick={handleAddJamaTalashiRow}
+                className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सामान जोड़ें" : "Add Item"}
+              </button>
+            </div>
+            <TableResizeToolbar
+              hasCustomSizes={jamaTalashiTableResize.hasCustomSizes}
+              onReset={jamaTalashiTableResize.resetSizes}
+            />
+            <table className="w-full border-collapse border border-slate-400 text-xs">
+              <thead>
+                <tr className="bg-slate-100">
+                  <th
+                    style={{
+                      width: jamaTalashiTableResize.colWidths[0] ? `${jamaTalashiTableResize.colWidths[0]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-12 text-center font-bold"
+                  >
+                    {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
+                    <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(0, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: jamaTalashiTableResize.colWidths[1] ? `${jamaTalashiTableResize.colWidths[1]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 text-left font-bold"
+                  >
+                    {templateLang === "hi" ? "विवरण सामान / नकदी / दस्तावेज" : "Description of Articles / Cash / Documents"}
+                    <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(1, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: jamaTalashiTableResize.colWidths[2] ? `${jamaTalashiTableResize.colWidths[2]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-28 text-center font-bold"
+                  >
+                    {templateLang === "hi" ? "तादाद / रकम" : "Quantity / Amount"}
+                    <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(2, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: jamaTalashiTableResize.colWidths[3] ? `${jamaTalashiTableResize.colWidths[3]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-44 text-left font-bold"
+                  >
+                    {templateLang === "hi" ? "पहचान / विशेष चिन्ह" : "Identification / Marks"}
+                    <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(3, e)} />
+                  </th>
+                  <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(formData.jamaTalashiItems || []).map((it, idx) => (
+                  <tr
+                    key={it.id}
+                    style={{
+                      height: jamaTalashiTableResize.rowHeights[idx] ? `${jamaTalashiTableResize.rowHeights[idx]}px` : undefined,
+                    }}
+                  >
+                    <td className="relative border border-slate-400 p-2 text-center">
+                      {idx + 1}
+                      <TableRowResizer onResize={(e) => jamaTalashiTableResize.startRowResize(idx, e)} />
+                    </td>
+                    <td className="border border-slate-400 p-2">
+                      <input
+                        type="text"
+                        value={it.description}
+                        onChange={(e) => handleUpdateJamaTalashiRow(it.id, "description", e.target.value)}
+                        className="w-full bg-transparent outline-none"
+                      />
+                    </td>
+                    <td className="border border-slate-400 p-2 text-center">
+                      <input
+                        type="text"
+                        value={it.quantity}
+                        onChange={(e) => handleUpdateJamaTalashiRow(it.id, "quantity", e.target.value)}
+                        className="w-full text-center bg-transparent outline-none font-bold"
+                      />
+                    </td>
+                    <td className="border border-slate-400 p-2">
+                      <input
+                        type="text"
+                        value={it.identification || ""}
+                        onChange={(e) => handleUpdateJamaTalashiRow(it.id, "identification", e.target.value)}
+                        className="w-full bg-transparent outline-none text-slate-700"
+                      />
+                    </td>
+                    <td className="no-print border border-slate-400 p-1.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteJamaTalashiRow(it.id)}
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        title="Delete Item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 2. Specific Items Table for Template 5 (FARD BARAMADGI) */}
+        {isBaramadgi && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold underline text-slate-800">
+                {templateLang === "hi" ? "बरामदशुदा माल का विस्तृत विवरण (Inventory of Seized Property):" : "Inventory of Seized Property:"}
+              </span>
+              <button
+                type="button"
+                onClick={handleAddRecoveryRow}
+                className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "बरामदगी जोड़ें" : "Add Item"}
+              </button>
+            </div>
+            <TableResizeToolbar
+              hasCustomSizes={recoveryTableResize.hasCustomSizes}
+              onReset={recoveryTableResize.resetSizes}
+            />
+            <table className="w-full border-collapse border border-slate-400 text-xs">
+              <thead>
+                <tr className="bg-slate-100">
+                  <th
+                    style={{
+                      width: recoveryTableResize.colWidths[0] ? `${recoveryTableResize.colWidths[0]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-12 text-center font-bold"
+                  >
+                    {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
+                    <TableColResizer onResize={(e) => recoveryTableResize.startColResize(0, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: recoveryTableResize.colWidths[1] ? `${recoveryTableResize.colWidths[1]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 text-left font-bold"
+                  >
+                    {templateLang === "hi" ? "बरामद सामान/नकदी का विवरण" : "Description of Recovered Property / Cash"}
+                    <TableColResizer onResize={(e) => recoveryTableResize.startColResize(1, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: recoveryTableResize.colWidths[2] ? `${recoveryTableResize.colWidths[2]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-28 text-center font-bold"
+                  >
+                    {templateLang === "hi" ? "तादाद / संख्या" : "Quantity"}
+                    <TableColResizer onResize={(e) => recoveryTableResize.startColResize(2, e)} />
+                  </th>
+                  <th
+                    style={{
+                      width: recoveryTableResize.colWidths[3] ? `${recoveryTableResize.colWidths[3]}px` : undefined,
+                    }}
+                    className="relative border border-slate-400 p-2 w-48 text-left font-bold"
+                  >
+                    {templateLang === "hi" ? "मोहर व सीलबंद पार्सल" : "Seal & Packaging Particulars"}
+                    <TableColResizer onResize={(e) => recoveryTableResize.startColResize(3, e)} />
+                  </th>
+                  <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(formData.recoveryItems || []).map((it, idx) => (
+                  <tr
+                    key={it.id}
+                    style={{
+                      height: recoveryTableResize.rowHeights[idx] ? `${recoveryTableResize.rowHeights[idx]}px` : undefined,
+                    }}
+                  >
+                    <td className="relative border border-slate-400 p-2 text-center">
+                      {idx + 1}
+                      <TableRowResizer onResize={(e) => recoveryTableResize.startRowResize(idx, e)} />
+                    </td>
+                    <td className="border border-slate-400 p-2">
+                      <input
+                        type="text"
+                        value={it.description}
+                        onChange={(e) => handleUpdateRecoveryRow(it.id, "description", e.target.value)}
+                        className="w-full bg-transparent outline-none"
+                      />
+                    </td>
+                    <td className="border border-slate-400 p-2 text-center">
+                      <input
+                        type="text"
+                        value={it.quantity}
+                        onChange={(e) => handleUpdateRecoveryRow(it.id, "quantity", e.target.value)}
+                        className="w-full text-center bg-transparent outline-none font-bold"
+                      />
+                    </td>
+                    <td className="border border-slate-400 p-2">
+                      <input
+                        type="text"
+                        value={it.sealDetails}
+                        onChange={(e) => handleUpdateRecoveryRow(it.id, "sealDetails", e.target.value)}
+                        className="w-full bg-transparent outline-none"
+                      />
+                    </td>
+                    <td className="no-print border border-slate-400 p-1.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRecoveryRow(it.id)}
+                        className="text-red-500 hover:text-red-700 cursor-pointer"
+                        title="Delete Item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 3. Specific Boundaries Section for Template 7 (FARD NISHANDEHI) */}
+        {isNishandehi && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold underline text-slate-800">
+                {templateLang === "hi" ? "चौहद्दी व सीमाएं (Boundaries & Environs):" : "Boundaries & Environs:"}
+              </span>
+              <button
+                type="button"
+                onClick={handleAddBoundaryRow}
+                className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सीमा बिंदु जोड़ें" : "Add Boundary"}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {(formData.boundariesList || []).map((bd) => (
+                <div key={bd.id} className="flex items-center gap-2 border border-slate-300 p-2 bg-slate-50 rounded">
+                  <input
+                    type="text"
+                    value={bd.direction}
+                    onChange={(e) => handleUpdateBoundaryRow(bd.id, "direction", e.target.value)}
+                    className="font-bold w-28 bg-transparent outline-none border-b border-dotted border-slate-400"
+                  />
+                  <input
+                    type="text"
+                    value={bd.detail}
+                    onChange={(e) => handleUpdateBoundaryRow(bd.id, "detail", e.target.value)}
+                    className="w-full bg-transparent outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteBoundaryRow(bd.id)}
+                    className="no-print text-red-500 hover:text-red-700 p-1 cursor-pointer"
+                    title="Delete Boundary"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Receipt / Verification Clause (for 2, 5, 7) */}
+        {(isJamatalashi || isBaramadgi || isNishandehi) && (
+          <div className="space-y-1">
+            <textarea
+              rows={2}
+              value={formData.receiptClauseText || formData.verificationClauseText || ""}
+              onChange={(e) => {
+                handleFieldChange("receiptClauseText", e.target.value);
+                handleFieldChange("verificationClauseText", e.target.value);
+              }}
+              className="w-full text-xs p-2.5 border border-slate-300 rounded outline-none resize-y italic text-slate-800"
+              placeholder={templateLang === "hi" ? "तस्दीक व सत्यापन नोट..." : "Verification note..."}
+            />
+          </div>
+        )}
+
+        {/* Dynamic Custom Clauses (Add/Delete) */}
+        {renderCustomClausesSection()}
+
+        {/* ================= EXACT SIGNATURE & RUBBER STAMP ARRANGEMENT FROM PHOTO media_1792045629238_7e6b9b20.png ================= */}
+        <div className="pt-6 border-t-2 border-slate-400 space-y-6">
+          {/* Row 1: Left Accused, Right Witness(es) */}
+          <div className="flex items-start justify-between gap-8">
+            {/* Left Column: Accused (आरोपी- सावन पुत्र जयकंवर) */}
+            <div className="w-1/2 space-y-2">
+              <input
+                type="text"
+                value={formData.accusedLineSign ?? (templateLang === "hi" ? "आरोपी- सावन पुत्र जयकंवर" : "Accused- Sawan s/o Jaikanwar")}
+                onChange={(e) => handleFieldChange("accusedLineSign", e.target.value)}
+                className="font-bold underline text-sm sm:text-base text-slate-900 bg-transparent border-none outline-none w-full"
+                placeholder={templateLang === "hi" ? "आरोपी- नाम व पिता का नाम" : "Accused- Name & Father"}
+              />
+              <div className="pl-6 pt-1">
+                <input
+                  type="text"
+                  value={formData.accusedSign ?? (templateLang === "hi" ? "सावन" : "Sawan")}
+                  onChange={(e) => handleFieldChange("accusedSign", e.target.value)}
+                  className="font-serif italic text-lg sm:text-xl font-black text-slate-900 bg-transparent border-b border-dotted border-slate-400 w-48 outline-none"
+                  placeholder={templateLang === "hi" ? "हस्ताक्षर आरोपी" : "Accused Signature"}
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Witness(es) (साक्षी- HC Moninder No.1630/PPT) */}
+            <div className="w-1/2 space-y-3">
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddWitnessRow}
+                  className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "साक्षी जोड़ें" : "Add Witness"}
+                </button>
+              </div>
+
+              {(formData.arrestWitnesses || []).map((w) => (
+                <div key={w.id} className="group relative text-right space-y-1">
+                  <div className="flex items-center justify-end gap-2">
+                    <input
+                      type="text"
+                      value={w.signature || (templateLang === "hi" ? "Moninder" : "Moninder")}
+                      onChange={(e) => handleUpdateWitnessRow(w.id, "signature", e.target.value)}
+                      className="text-right font-serif italic text-base sm:text-lg font-bold text-slate-800 bg-transparent border-b border-dotted border-slate-400 w-44 outline-none"
+                      placeholder={templateLang === "hi" ? "हस्ताक्षर साक्षी" : "Witness Signature"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteWitnessRow(w.id)}
+                      className="no-print text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shrink-0"
+                      title={templateLang === "hi" ? "साक्षी हटाएं" : "Delete Witness"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={w.name}
+                    onChange={(e) => handleUpdateWitnessRow(w.id, "name", e.target.value)}
+                    className="text-right font-bold underline text-sm sm:text-base text-slate-900 bg-transparent border-none outline-none w-full"
+                    placeholder={templateLang === "hi" ? "साक्षी- नाम व बेल्ट न०" : "Witness- Name & Belt No."}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Row 2: Spaced Down Right Column: Investigating Officer (IO) Block */}
+          <div className="flex justify-end pr-2 pt-4">
+            <div className="text-right space-y-1 w-64">
+              <input
+                type="text"
+                value={formData.ioSign || (templateLang === "hi" ? "IO Sign" : "IO Sign")}
+                onChange={(e) => handleFieldChange("ioSign", e.target.value)}
+                className="text-right font-serif italic text-base font-bold text-slate-800 bg-transparent border-b border-dotted border-slate-400 w-44 ml-auto outline-none"
+                placeholder={templateLang === "hi" ? "हस्ताक्षर IO" : "IO Signature"}
+              />
+              <input
+                type="text"
+                value={formData.ioStationLabel ?? (templateLang === "hi" ? "थाना साईबर क्राईम" : "Police Station Cyber Crime")}
+                onChange={(e) => handleFieldChange("ioStationLabel", e.target.value)}
+                className="text-right font-medium text-xs sm:text-sm text-slate-800 bg-transparent border-none outline-none w-full"
+                placeholder={templateLang === "hi" ? "थाना का नाम" : "Police Station"}
+              />
+              <input
+                type="text"
+                value={formData.ioDistrictLabel ?? (templateLang === "hi" ? "जिला पानीपत" : "District Panipat")}
+                onChange={(e) => handleFieldChange("ioDistrictLabel", e.target.value)}
+                className="text-right font-medium text-xs sm:text-sm text-slate-800 bg-transparent border-none outline-none w-full"
+                placeholder={templateLang === "hi" ? "जिला का नाम" : "District"}
+              />
+              <input
+                type="text"
+                value={formData.ioDate ?? (templateLang === "hi" ? "दिनांक 09.06.25" : "Dated 09.06.2025")}
+                onChange={(e) => handleFieldChange("ioDate", e.target.value)}
+                className="text-right font-medium text-xs sm:text-sm text-slate-700 bg-transparent border-none outline-none w-full"
+                placeholder={templateLang === "hi" ? "दिनांक" : "Date"}
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Circular Rubber Stamp (matching photo media_1792045629238_7e6b9b20.png) */}
+          <div className="flex flex-col items-center justify-center pt-2 pb-2">
+            <div
+              className="w-36 h-36 rounded-full border-4 p-1 flex items-center justify-center relative shadow-sm"
+              style={{
+                transform: "rotate(-3deg)",
+                borderColor: "#1e295d",
+                color: "#1e295d",
+              }}
+            >
+              <div className="w-full h-full rounded-full border border-dashed border-indigo-900/60 flex flex-col items-center justify-center text-center p-1.5 relative overflow-hidden">
+                <div className="text-[9px] font-black tracking-widest uppercase">
+                  POLICE STATION
+                </div>
+                <div className="my-0.5 text-center">
+                  <div className="text-xs">★</div>
+                  <input
+                    type="text"
+                    value={formData.stampThanaName || "PS. CYBER CRIME"}
+                    onChange={(e) => handleFieldChange("stampThanaName", e.target.value.toUpperCase())}
+                    className="text-[11px] font-black uppercase text-center w-28 bg-transparent border-none outline-none tracking-wider text-indigo-950"
+                  />
+                </div>
+                <div className="text-[8px] font-black tracking-wider uppercase">
+                  ★ {formData.stampDistrictName || "PANIPAT"} (HARYANA) ★
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono pt-1 text-center">
+              {templateLang === "hi" ? "(थाना आधिकारिक मुहर - संपादन योग्य)" : "(Police Station Seal - Editable)"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Header */}
@@ -2184,7 +2851,7 @@ function ArrestDocsContent() {
           </div>
           <div>
             <h1 className="text-xl font-black text-[#0b192c] tracking-tight">
-              Arrest & Custody Documentation (गिरफ्तारी प्रपत्र स्टूडियो)
+              Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र स्टूडियो)
             </h1>
             <p className="text-xs text-slate-500 font-medium">
               100% Fully In-Place Editable • Add/Delete Any Point, Row, Witness or Custom Paragraph
@@ -2226,9 +2893,9 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             onClick={handleSaveToFir}
-            disabled={isSavingToFir || !isCrimeDetailsFilled}
+            disabled={isSavingToFir}
             className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
-            title={!isCrimeDetailsFilled ? "Crime Details Form pending" : "Save this document to FIR Profile Documents with Universal Evidence processing"}
+            title="Save this document to FIR Profile Documents with Universal Evidence processing"
           >
             {isSavingToFir ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             <span>{isSavingToFir ? (templateLang === "hi" ? "सहेजा जा रहा है..." : "Saving...") : (templateLang === "hi" ? "FIR Profile में सहेजें" : "Save to FIR")}</span>
@@ -2237,9 +2904,8 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             variant="outline"
-            disabled={!isCrimeDetailsFilled}
             onClick={handleOpenPreview}
-            className="border-blue-300 bg-blue-50/70 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed text-blue-800 font-bold text-xs gap-1.5 cursor-pointer"
+            className="border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-blue-800 font-bold text-xs gap-1.5 cursor-pointer"
             title="4-पृष्ठ पूर्वावलोकन (Preview exact 4 A4 pages)"
           >
             <Eye className="w-3.5 h-3.5 text-blue-700" />
@@ -2248,9 +2914,8 @@ function ArrestDocsContent() {
 
           <Button
             size="sm"
-            disabled={!isCrimeDetailsFilled}
             onClick={handlePrint}
-            className="bg-rose-700 hover:bg-rose-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
+            className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
             {templateLang === "hi" ? "प्रिंट A4 प्रपत्र" : "Print A4 Document"}
@@ -2258,9 +2923,8 @@ function ArrestDocsContent() {
           <Button
             size="sm"
             variant="outline"
-            disabled={!isCrimeDetailsFilled}
             onClick={handleDownload}
-            className="border-slate-300 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs gap-1.5 cursor-pointer"
+            className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             {templateLang === "hi" ? "डाउनलोड A4" : "Download A4"}
@@ -2398,75 +3062,8 @@ function ArrestDocsContent() {
         </div>
       </div>
 
-      {/* STATUTORY PREREQUISITE WARNING BANNER */}
-      {!isCrimeDetailsFilled && activeFir && (
-        <div className="bg-gradient-to-r from-red-600 via-rose-700 to-red-800 text-white rounded-2xl p-5 sm:p-6 shadow-xl border-2 border-red-400 space-y-4 animate-pulse">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0 border border-white/30 shadow-inner">
-                <ShieldAlert className="w-7 h-7 text-amber-300 animate-bounce" />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-400 text-slate-950 shadow-sm">
-                    STATUTORY PREREQUISITE BLOCKED
-                  </span>
-                  <span className="text-xs font-mono text-red-200">
-                    FIR #{activeFir.firNumber}
-                  </span>
-                </div>
-                <h2 className="text-base sm:text-lg font-black tracking-wide text-white">
-                  🚨 अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!
-                </h2>
-                <p className="text-xs sm:text-sm text-red-100 leading-relaxed max-w-3xl">
-                  CCTNS व आपराधिक प्रक्रिया संहिता (BNSS) की अनिवार्य प्रक्रिया के अनुसार, <strong>FIR दर्ज होने के तुरंत बाद IO द्वारा अपराध विवरण प्रपत्र (IIF-II) भरा जाना अनिवार्य है</strong>। जब तक IIF-II फॉर्म सबमिट होकर केस डाक्यूमेंट्स में दर्ज नहीं हो जाता, तब तक <strong>Arrest & Surrender Documents (गिरफ्तारी मेमो, जामातलाशी, पेशी रिमांड, आदि) नहीं बनाए जा सकते।</strong>
-                </p>
-              </div>
-            </div>
-
-            <div className="shrink-0 self-end sm:self-center">
-              <Link href={`/fir/${activeFir.id}?openCrimeDetails=true`}>
-                <Button
-                  size="sm"
-                  className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs gap-2 px-5 py-2.5 shadow-lg shadow-black/30 hover:scale-105 transition-all cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-slate-950" />
-                  <span>FIR Profile में IIF-II प्रपत्र भरें (Fill Crime Details) →</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Fully Editable Official Legal Document Canvas OR Locked Placeholder */}
-      {!isCrimeDetailsFilled && activeFir ? (
-        <div className="bg-white border-2 border-dashed border-red-300 rounded-2xl p-10 sm:p-14 text-center max-w-2xl mx-auto space-y-5 shadow-sm my-6">
-          <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-200 shadow-inner">
-            <Lock className="w-8 h-8 text-red-600" />
-          </div>
-          <div className="space-y-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-200 inline-block">
-              Arrest Documents Generation Locked
-            </span>
-            <h3 className="text-lg sm:text-xl font-black text-slate-900">
-              गिरफ्तारी प्रपत्र निर्माण लॉक है (Crime Details Pending)
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-              इस FIR (No: <strong>{activeFir.firNumber}</strong>) के लिए अभी तक <strong>Crime Details Form (IIF-II) / अपराध विवरण प्रपत्र</strong> सबमिट नहीं हुआ है। CCTNS व BNSS वैधानिक अनुपालन के लिए पहले IIF-II फॉर्म भरें।
-            </p>
-          </div>
-          <div className="pt-3">
-            <Link href={`/fir/${activeFir.id}?openCrimeDetails=true`}>
-              <Button className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-md gap-2 cursor-pointer hover:scale-105 transition-all">
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>अपराध विवरण प्रपत्र भरें (Fill Crime Detail Form IIF-II) →</span>
-              </Button>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex justify-center">
+      {/* Fully Editable Official Legal Document Canvas */}
+      <div className="flex justify-center">
         <div
           id="arrest-printable-doc"
           className={`w-full max-w-4xl transition-all ${
@@ -2494,146 +3091,7 @@ function ArrestDocsContent() {
           )}
 
           {/* ================= 2. FARD JAMATALASHI ================= */}
-          {selectedTemplate === "fard_jamatalashi" && (
-            <div className="space-y-6">
-              {renderOfficialHeader()}
-
-              <textarea
-                rows={4}
-                value={formData.introNarrative || ""}
-                onChange={(e) => handleFieldChange("introNarrative", e.target.value)}
-                className="w-full text-xs leading-relaxed p-2 border border-slate-300 outline-none resize-y"
-              />
-
-              {/* Items Table */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">
-                    {templateLang === "hi" ? "बरामदशुदा जामातलाशी सामान की सूची:" : "Inventory of Personal Search Articles:"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAddJamaTalashiRow}
-                    className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सामान जोड़ें" : "Add Item"}
-                  </button>
-                </div>
-                <TableResizeToolbar
-                  hasCustomSizes={jamaTalashiTableResize.hasCustomSizes}
-                  onReset={jamaTalashiTableResize.resetSizes}
-                />
-                <table className="w-full border-collapse border border-slate-400 text-xs">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th
-                        style={{
-                          width: jamaTalashiTableResize.colWidths[0] ? `${jamaTalashiTableResize.colWidths[0]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-12 text-center font-bold"
-                      >
-                        {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
-                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(0, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: jamaTalashiTableResize.colWidths[1] ? `${jamaTalashiTableResize.colWidths[1]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 text-left font-bold"
-                      >
-                        {templateLang === "hi" ? "विवरण सामान / नकदी / दस्तावेज" : "Description of Articles / Cash / Documents"}
-                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(1, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: jamaTalashiTableResize.colWidths[2] ? `${jamaTalashiTableResize.colWidths[2]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-28 text-center font-bold"
-                      >
-                        {templateLang === "hi" ? "तादाद / रकम" : "Quantity / Amount"}
-                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(2, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: jamaTalashiTableResize.colWidths[3] ? `${jamaTalashiTableResize.colWidths[3]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-36 text-left font-bold"
-                      >
-                        {templateLang === "hi" ? "पहचान / विशेष चिन्ह" : "Identification / Marks"}
-                        <TableColResizer onResize={(e) => jamaTalashiTableResize.startColResize(3, e)} />
-                      </th>
-                      <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.jamaTalashiItems || []).map((it, idx) => (
-                      <tr
-                        key={it.id}
-                        style={{
-                          height: jamaTalashiTableResize.rowHeights[idx] ? `${jamaTalashiTableResize.rowHeights[idx]}px` : undefined,
-                        }}
-                      >
-                        <td className="relative border border-slate-400 p-2 text-center">
-                          {idx + 1}
-                          <TableRowResizer onResize={(e) => jamaTalashiTableResize.startRowResize(idx, e)} />
-                        </td>
-                        <td className="border border-slate-400 p-2">
-                          <input
-                            type="text"
-                            value={it.description}
-                            onChange={(e) => handleUpdateJamaTalashiRow(it.id, "description", e.target.value)}
-                            className="w-full bg-transparent outline-none"
-                          />
-                        </td>
-                        <td className="border border-slate-400 p-2 text-center">
-                          <input
-                            type="text"
-                            value={it.quantity}
-                            onChange={(e) => handleUpdateJamaTalashiRow(it.id, "quantity", e.target.value)}
-                            className="w-full text-center bg-transparent outline-none font-bold"
-                          />
-                        </td>
-                        <td className="border border-slate-400 p-2">
-                          <input
-                            type="text"
-                            value={it.identification || ""}
-                            onChange={(e) => handleUpdateJamaTalashiRow(it.id, "identification", e.target.value)}
-                            className="w-full bg-transparent outline-none text-slate-700"
-                          />
-                        </td>
-                        <td className="no-print border border-slate-400 p-1.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteJamaTalashiRow(it.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Receipt Clause */}
-              <div className="space-y-1">
-                <span className="text-xs font-bold underline">
-                  {templateLang === "hi" ? "रसीद व सुपुर्दगी की पुष्टि:" : "Receipt & Delivery Confirmation:"}
-                </span>
-                <textarea
-                  rows={2}
-                  value={formData.receiptClauseText || ""}
-                  onChange={(e) => handleFieldChange("receiptClauseText", e.target.value)}
-                  className="w-full text-xs p-2 border border-slate-300 outline-none resize-y"
-                />
-              </div>
-
-              {renderWitnessesSection()}
-              {renderCustomClausesSection()}
-              {renderOfficerSignBlock()}
-            </div>
-          )}
+          {selectedTemplate === "fard_jamatalashi" && renderHaryanaPoliceFardDocument("fard_jamatalashi")}
 
           {/* ================= 3. GROUNDS OF ARREST ================= */}
           {selectedTemplate === "grounds_of_arrest" && (
@@ -2789,156 +3247,7 @@ function ArrestDocsContent() {
           )}
 
           {/* ================= 5. FARD BARAMADGI ================= */}
-          {selectedTemplate === "fard_baramadgi" && (
-            <div className="space-y-6">
-              {renderOfficialHeader()}
-
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold shrink-0">{templateLang === "hi" ? "बरामदगी का स्थान:" : "Place of Recovery:"}</span>
-                <input
-                  type="text"
-                  value={formData.recoveryPlace || ""}
-                  onChange={(e) => handleFieldChange("recoveryPlace", e.target.value)}
-                  className="w-full border-b border-dotted border-slate-700 outline-none font-bold"
-                />
-              </div>
-
-              <textarea
-                rows={4}
-                value={formData.introNarrative || ""}
-                onChange={(e) => handleFieldChange("introNarrative", e.target.value)}
-                className="w-full text-xs leading-relaxed p-2 border border-slate-300 outline-none resize-y"
-              />
-
-              {/* Recovery Items Table */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">
-                    {templateLang === "hi" ? "बरामदशुदा माल का विस्तृत विवरण (Inventory):" : "Inventory of Seized / Recovered Property:"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAddRecoveryRow}
-                    className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "बरामदगी जोड़ें" : "Add Item"}
-                  </button>
-                </div>
-                <TableResizeToolbar
-                  hasCustomSizes={recoveryTableResize.hasCustomSizes}
-                  onReset={recoveryTableResize.resetSizes}
-                />
-                <table className="w-full border-collapse border border-slate-400 text-xs">
-                  <thead>
-                    <tr className="bg-slate-100">
-                      <th
-                        style={{
-                          width: recoveryTableResize.colWidths[0] ? `${recoveryTableResize.colWidths[0]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-12 text-center font-bold"
-                      >
-                        {templateLang === "hi" ? "क्र0 सं0" : "Sr. No."}
-                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(0, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: recoveryTableResize.colWidths[1] ? `${recoveryTableResize.colWidths[1]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 text-left font-bold"
-                      >
-                        {templateLang === "hi" ? "बरामद सामान/नकदी का विवरण" : "Description of Recovered Property / Cash"}
-                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(1, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: recoveryTableResize.colWidths[2] ? `${recoveryTableResize.colWidths[2]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-28 text-center font-bold"
-                      >
-                        {templateLang === "hi" ? "तादाद / संख्या" : "Quantity"}
-                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(2, e)} />
-                      </th>
-                      <th
-                        style={{
-                          width: recoveryTableResize.colWidths[3] ? `${recoveryTableResize.colWidths[3]}px` : undefined,
-                        }}
-                        className="relative border border-slate-400 p-2 w-44 text-left font-bold"
-                      >
-                        {templateLang === "hi" ? "मोहर व सीलबंद पार्सल" : "Seal & Packaging Particulars"}
-                        <TableColResizer onResize={(e) => recoveryTableResize.startColResize(3, e)} />
-                      </th>
-                      <th className="no-print border border-slate-400 p-1.5 w-10 text-center"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.recoveryItems || []).map((it, idx) => (
-                      <tr
-                        key={it.id}
-                        style={{
-                          height: recoveryTableResize.rowHeights[idx] ? `${recoveryTableResize.rowHeights[idx]}px` : undefined,
-                        }}
-                      >
-                        <td className="relative border border-slate-400 p-2 text-center">
-                          {idx + 1}
-                          <TableRowResizer onResize={(e) => recoveryTableResize.startRowResize(idx, e)} />
-                        </td>
-                        <td className="border border-slate-400 p-2">
-                          <input
-                            type="text"
-                            value={it.description}
-                            onChange={(e) => handleUpdateRecoveryRow(it.id, "description", e.target.value)}
-                            className="w-full bg-transparent outline-none"
-                          />
-                        </td>
-                        <td className="border border-slate-400 p-2 text-center">
-                          <input
-                            type="text"
-                            value={it.quantity}
-                            onChange={(e) => handleUpdateRecoveryRow(it.id, "quantity", e.target.value)}
-                            className="w-full text-center bg-transparent outline-none font-bold"
-                          />
-                        </td>
-                        <td className="border border-slate-400 p-2">
-                          <input
-                            type="text"
-                            value={it.sealDetails}
-                            onChange={(e) => handleUpdateRecoveryRow(it.id, "sealDetails", e.target.value)}
-                            className="w-full bg-transparent outline-none"
-                          />
-                        </td>
-                        <td className="no-print border border-slate-400 p-1.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRecoveryRow(it.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Sealing Note */}
-              <div className="space-y-1">
-                <span className="text-xs font-bold underline">
-                  {templateLang === "hi" ? "सीलबंद कार्यवाही व नमूना मोहर:" : "Sealing Proceedings & Specimen Seal:"}
-                </span>
-                <textarea
-                  rows={2}
-                  value={formData.receiptClauseText || ""}
-                  onChange={(e) => handleFieldChange("receiptClauseText", e.target.value)}
-                  className="w-full text-xs p-2 border border-slate-300 outline-none resize-y"
-                />
-              </div>
-
-              {renderWitnessesSection()}
-              {renderCustomClausesSection()}
-              {renderOfficerSignBlock()}
-            </div>
-          )}
+          {selectedTemplate === "fard_baramadgi" && renderHaryanaPoliceFardDocument("fard_baramadgi")}
 
           {/* ================= 6. REMAND APPLICATION ================= */}
           {selectedTemplate === "remand_application" && (
@@ -3040,127 +3349,10 @@ function ArrestDocsContent() {
           )}
 
           {/* ================= 7. FARD NISHANDEHI ================= */}
-          {selectedTemplate === "fard_nishandehi" && (
-            <div className="space-y-6">
-              {renderOfficialHeader()}
-
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold shrink-0">{templateLang === "hi" ? "निशानदेही का स्थान:" : "Place of Pointing Out / Demarcation:"}</span>
-                <input
-                  type="text"
-                  value={formData.pointingOutPlace || ""}
-                  onChange={(e) => handleFieldChange("pointingOutPlace", e.target.value)}
-                  className="w-full border-b border-dotted border-slate-700 outline-none font-bold"
-                />
-              </div>
-
-              <textarea
-                rows={3}
-                value={formData.introNarrative || ""}
-                onChange={(e) => handleFieldChange("introNarrative", e.target.value)}
-                className="w-full text-xs leading-relaxed p-2 border border-slate-300 outline-none resize-y"
-              />
-
-              {/* Dynamic Boundaries */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold underline">
-                    {templateLang === "hi" ? "चौहद्दी व सीमाएं (Boundaries):" : "Boundaries & Environs:"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleAddBoundaryRow}
-                    className="no-print text-xs text-rose-700 hover:text-rose-900 font-bold flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> {templateLang === "hi" ? "सीमा बिंदु जोड़ें" : "Add Boundary"}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {(formData.boundariesList || []).map((bd) => (
-                    <div key={bd.id} className="flex items-center gap-2 border border-slate-300 p-2 bg-slate-50">
-                      <input
-                        type="text"
-                        value={bd.direction}
-                        onChange={(e) => handleUpdateBoundaryRow(bd.id, "direction", e.target.value)}
-                        className="font-bold w-28 bg-transparent outline-none border-b border-dotted border-slate-400"
-                      />
-                      <input
-                        type="text"
-                        value={bd.detail}
-                        onChange={(e) => handleUpdateBoundaryRow(bd.id, "detail", e.target.value)}
-                        className="w-full bg-transparent outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteBoundaryRow(bd.id)}
-                        className="no-print text-red-500 hover:text-red-700 p-1"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-xs font-bold underline">
-                  {templateLang === "hi" ? "तस्दीक व सत्यापन नोट:" : "Attestation & Verification Note:"}
-                </span>
-                <textarea
-                  rows={2}
-                  value={formData.verificationClauseText || ""}
-                  onChange={(e) => handleFieldChange("verificationClauseText", e.target.value)}
-                  className="w-full text-xs p-2 border border-slate-300 outline-none resize-y"
-                />
-              </div>
-
-              {renderWitnessesSection()}
-              {renderCustomClausesSection()}
-              {renderOfficerSignBlock()}
-            </div>
-          )}
+          {selectedTemplate === "fard_nishandehi" && renderHaryanaPoliceFardDocument("fard_nishandehi")}
 
           {/* ================= 8. FARD INKESAHF ================= */}
-          {selectedTemplate === "fard_inkeshaf" && (
-            <div className="space-y-6">
-              {renderOfficialHeader()}
-
-              <textarea
-                rows={3}
-                value={formData.introNarrative || ""}
-                onChange={(e) => handleFieldChange("introNarrative", e.target.value)}
-                className="w-full text-xs leading-relaxed p-2 border border-slate-300 outline-none resize-y"
-              />
-
-              <div className="space-y-1">
-                <span className="text-xs font-bold underline">
-                  {templateLang === "hi" ? "बयान अभियुक्त (In Disclosure Narrative):" : "Accused Disclosure Statement:"}
-                </span>
-                <textarea
-                  rows={5}
-                  value={formData.disclosureNarrative || ""}
-                  onChange={(e) => handleFieldChange("disclosureNarrative", e.target.value)}
-                  className="w-full text-xs p-3 border border-slate-400 outline-none resize-y leading-relaxed bg-slate-50/40"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <span className="text-xs font-bold underline">
-                  {templateLang === "hi" ? "सत्यापन नोट (Verification):" : "Verification Note:"}
-                </span>
-                <textarea
-                  rows={2}
-                  value={formData.verificationClauseText || ""}
-                  onChange={(e) => handleFieldChange("verificationClauseText", e.target.value)}
-                  className="w-full text-xs p-2 border border-slate-300 outline-none resize-y"
-                />
-              </div>
-
-              {renderWitnessesSection()}
-              {renderCustomClausesSection()}
-              {renderOfficerSignBlock()}
-            </div>
-          )}
+          {selectedTemplate === "fard_inkeshaf" && renderHaryanaPoliceFardDocument("fard_inkeshaf")}
 
           {/* ================= 9. MEDICAL LETTER ================= */}
           {selectedTemplate === "medical_letter" && (
@@ -3399,7 +3591,6 @@ function ArrestDocsContent() {
           )}
         </div>
       </div>
-      )}
 
       {/* 4 A4 Pages Preview Modal */}
       {isPreviewModalOpen && (

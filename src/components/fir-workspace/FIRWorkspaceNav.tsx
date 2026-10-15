@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert, Gavel } from "lucide-react";
+import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert, Gavel, PackageCheck } from "lucide-react";
 
 interface FIRWorkspaceNavProps {
   firId?: string | null;
@@ -23,6 +23,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
   const isZimni = pathname.includes("/fir-workspace/zimni");
   const isArrestDocs = pathname.includes("/fir-workspace/arrest-docs");
   const isKalandra = pathname.includes("/fir-workspace/kalandra");
+  const isPropertySeizure = pathname.includes("/fir-workspace/property-seizure");
 
   return (
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -73,7 +74,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           }`}
         >
           <ShieldAlert className={`w-3.5 h-3.5 ${isArrestDocs ? "text-rose-700" : "text-rose-600"}`} />
-          <span>Arrest Docs</span>
+          <span>Arrest Docs and IIF-III</span>
         </Link>
 
         <Link
@@ -98,6 +99,18 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
         >
           <Gavel className={`w-3.5 h-3.5 ${isKalandra ? "text-emerald-700" : "text-emerald-600"}`} />
           <span>Kalandra</span>
+        </Link>
+
+        <Link
+          href={`/fir-workspace/property-seizure${querySuffix}`}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            isPropertySeizure
+              ? "text-teal-950 bg-teal-50 border border-teal-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <PackageCheck className={`w-3.5 h-3.5 ${isPropertySeizure ? "text-teal-700" : "text-teal-600"}`} />
+          <span>Property Seizure (IIF-IV)</span>
         </Link>
       </div>
 

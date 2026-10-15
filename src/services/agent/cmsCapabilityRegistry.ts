@@ -550,7 +550,7 @@ export const CMS_ACTIONS: ActionMetadata[] = [
     backendEffects: "रीड-ओनली।",
     databaseEntities: ["FIRItem"],
     confirmationRequired: false,
-    synonyms: ["arrest docs workspace kholo", "arrest memo page", "form 26.8 desk", "arrest documents kholo"],
+    synonyms: ["arrest docs workspace kholo", "arrest memo page", "form 26.8 desk", "arrest documents kholo", "arrest docs and iif-iii", "arrest docs and iif-3", "iif-iii kholo"],
   },
   {
     id: "act_nav_zimni",

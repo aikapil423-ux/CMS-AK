@@ -15,6 +15,7 @@ import {
   LegalAnalysisReport,
 } from "@/types";
 import { ComplaintService } from "./complaintService";
+import { evidenceBlobStore } from "./evidenceBlobStore";
 
 const FIRS_STORAGE_KEY = "haryana_police_cms_firs_v1";
 
@@ -430,29 +431,114 @@ function notifyListeners() {
   });
 }
 
+function sanitizeFirForStorage(fir: FIRItem): FIRItem {
+  return {
+    ...fir,
+    documents: fir.documents?.map((d) => {
+      // If dataUrl is large (e.g. over 15KB), do not choke localStorage quota
+      if (d.dataUrl && d.dataUrl.length > 15000) {
+        return {
+          ...d,
+          dataUrl: undefined, // Preserved in evidenceBlobStore
+        };
+      }
+      return d;
+    }),
+    caseDiaries: fir.caseDiaries?.map((c) => {
+      if (c.dataUrl && c.dataUrl.length > 15000) {
+        return {
+          ...c,
+          dataUrl: undefined,
+        };
+      }
+      return c;
+    }),
+  };
+}
+
 function loadFirsFromStorage(): FIRItem[] {
+  let list: FIRItem[] = [];
   if (typeof window !== "undefined" && window.localStorage) {
     try {
       const raw = window.localStorage.getItem(FIRS_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          list = parsed;
         }
       }
     } catch (e) {
       console.warn("Failed to read FIRs from localStorage:", e);
     }
   }
-  return [...INITIAL_MOCK_FIRS];
+
+  if (list.length === 0) {
+    list = [...INITIAL_MOCK_FIRS];
+  }
+
+  // Rehydrate crimeDetailsData and document for any FIR that has a dedicated backup
+  if (typeof window !== "undefined" && window.localStorage) {
+    list = list.map((fir) => {
+      try {
+        const backupKey = `haryana_police_cms_fir_crimedetails_${fir.id}`;
+        const backupRaw = window.localStorage.getItem(backupKey);
+        if (backupRaw) {
+          const parsedCrime = JSON.parse(backupRaw);
+          if (parsedCrime) {
+            const hasDoc = fir.documents?.some(
+              (d) => d.category === "CCTNS_IIF2" || d.title.includes("IIF-II") || d.title.includes("Crime Detail")
+            );
+            const crimeDoc: FIRDocumentItem = hasDoc
+              ? (fir.documents?.find((d) => d.category === "CCTNS_IIF2" || d.title.includes("IIF-II")) as FIRDocumentItem)
+              : {
+                  id: `doc-crime-detail-${fir.id}`,
+                  title: `Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र - ${fir.cctnsFirNumber || fir.firNumber}`,
+                  fileName: `Crime_Detail_IIF_II_${fir.firNumber.replace(/[\/\s]/g, "_")}.html`,
+                  category: "CCTNS_IIF2",
+                  uploadedBy: parsedCrime.submittedBy || "Investigating Officer",
+                  uploadedAt: parsedCrime.submittedAt?.replace("T", " ").slice(0, 16) || new Date().toISOString().replace("T", " ").slice(0, 16),
+                  fileSize: "68.5 KB",
+                };
+
+            const existingDocs = (fir.documents || []).filter(
+              (d) => !d.title.toLowerCase().includes("crime detail") && d.category !== "CCTNS_IIF2"
+            );
+
+            return {
+              ...fir,
+              crimeDetailsFilled: true,
+              crimeDetailsData: fir.crimeDetailsData || parsedCrime,
+              crimeDetailsFilledAt: fir.crimeDetailsFilledAt || parsedCrime.submittedAt || new Date().toISOString(),
+              crimeDetailsFilledBy: fir.crimeDetailsFilledBy || parsedCrime.submittedBy || "Investigating Officer",
+              documents: hasDoc ? fir.documents : [crimeDoc, ...existingDocs],
+            };
+          }
+        }
+      } catch (_) {}
+      return fir;
+    });
+  }
+
+  return list;
 }
 
 function saveFirsToStorage(items: FIRItem[]) {
   if (typeof window !== "undefined" && window.localStorage) {
     try {
-      window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(items));
+      const sanitized = items.map(sanitizeFirForStorage);
+      window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(sanitized));
     } catch (e) {
-      console.warn("Failed to write FIRs to localStorage:", e);
+      console.warn("Storage quota exceeded in firService, attempting fallback strip:", e);
+      try {
+        const stripped = items.map((f) => ({
+          ...f,
+          documents: f.documents?.map((d) => ({ ...d, dataUrl: undefined })),
+          caseDiaries: f.caseDiaries?.map((c) => ({ ...c, dataUrl: undefined })),
+        }));
+        window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(stripped));
+      } catch (err2) {
+        console.error("Critical: LocalStorage full for FIRs:", err2);
+      }
     }
   }
 }
@@ -718,6 +804,38 @@ export const firService = {
       fileSize: htmlContent ? `${(htmlContent.length / 1024).toFixed(1)} KB` : "68.5 KB",
       dataUrl,
     };
+
+    // Store full-fidelity HTML in persistent IndexedDB evidenceBlobStore
+    if (typeof window !== "undefined" && dataUrl) {
+      try {
+        evidenceBlobStore.put(docId, dataUrl, {
+          fileName: crimeDoc.fileName,
+          mimeType: "text/html",
+        });
+        evidenceBlobStore.put(crimeDoc.fileName, dataUrl, {
+          fileName: crimeDoc.fileName,
+          mimeType: "text/html",
+        });
+        evidenceBlobStore.put(`crime_details_${firId}`, dataUrl, {
+          fileName: crimeDoc.fileName,
+          mimeType: "text/html",
+        });
+      } catch (err) {
+        console.warn("Failed to store crime details doc in evidenceBlobStore:", err);
+      }
+    }
+
+    // Always persist to dedicated localStorage backup key to guarantee 100% persistence on page refresh
+    if (typeof window !== "undefined" && window.localStorage) {
+      try {
+        window.localStorage.setItem(
+          `haryana_police_cms_fir_crimedetails_${firId}`,
+          JSON.stringify(crimeDetailsData)
+        );
+      } catch (err) {
+        console.warn("Failed to backup crime details to dedicated key:", err);
+      }
+    }
 
     const existingDocs = fir.documents || [];
     const filteredDocs = existingDocs.filter(
