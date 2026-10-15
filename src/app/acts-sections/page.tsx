@@ -30,6 +30,8 @@ import {
   Printer,
   Type,
   Gavel,
+  Table as TableIcon,
+  LayoutList,
 } from "lucide-react";
 import { ActsService } from "@/services/actsService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -44,6 +46,7 @@ function ActsAndSectionsContent() {
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<"A_TO_Z" | "Z_TO_A" | "YEAR_DESC" | "SECTIONS_DESC">("A_TO_Z");
+  const [viewMode, setViewMode] = useState<"TABLE" | "CARDS">("TABLE");
 
   // Upload Modal State (Simplified: Only File + Name, everything else auto-processed by AI)
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -641,6 +644,36 @@ function ActsAndSectionsContent() {
               <option value="SECTIONS_DESC">Most Sections</option>
             </select>
           </div>
+
+          {/* View Mode Toggle: Table (default) / Cards */}
+          <div className="flex items-center rounded-xl border border-slate-300 p-0.5 bg-slate-100 shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode("TABLE")}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === "TABLE"
+                  ? "bg-white text-blue-700 shadow-2xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="तालिका प्रारूप (Table Format)"
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("CARDS")}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                viewMode === "CARDS"
+                  ? "bg-white text-blue-700 shadow-2xs border border-slate-200/80"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+              title="कार्ड प्रारूप (Card Format)"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span>Cards</span>
+            </button>
+          </div>
         </form>
 
         {/* Categories Chips */}
@@ -689,23 +722,228 @@ function ActsAndSectionsContent() {
         </div>
       )}
 
-      {/* Main List Format of Acts (user requested: "jo bhi save ho vo list format me ho") */}
-      <div className="space-y-4">
-        {filteredAndSortedActs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
-              <Scale className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-800">No matching acts or sections found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              No results found for &ldquo;{activeSearchQuery}&rdquo;. Try adjusting your keywords or upload a new act document.
-            </p>
-            <Button size="sm" variant="outline" onClick={handleClearSearch} className="text-xs">
-              View All Acts
-            </Button>
+      {/* Main Table or Card Format of Acts (user requested: "act and sections page me list nhi table format me dekhe") */}
+      {filteredAndSortedActs.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
+            <Scale className="w-6 h-6" />
           </div>
-        ) : (
-          filteredAndSortedActs.map((act, index) => {
+          <h3 className="font-bold text-sm text-slate-800">No matching acts or sections found</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            No results found for &ldquo;{activeSearchQuery}&rdquo;. Try adjusting your keywords or upload a new act document.
+          </p>
+          <Button size="sm" variant="outline" onClick={handleClearSearch} className="text-xs">
+            View All Acts
+          </Button>
+        </div>
+      ) : viewMode === "TABLE" ? (
+        <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+          <table className="w-full text-xs text-left border-collapse min-w-[1050px]">
+            <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="p-3 border-r border-slate-200 text-center w-12">क्र. सं.</th>
+                <th className="p-3 border-r border-slate-200 min-w-[280px]">कानून का नाम एवं विवरण (Act Name &amp; Details)</th>
+                <th className="p-3 border-r border-slate-200 w-44">अधिनियम सं. व दिनांक (Act No. &amp; Dates)</th>
+                <th className="p-3 border-r border-slate-200 w-32 text-center">धाराएं व अध्याय (Sections &amp; Chapters)</th>
+                <th className="p-3 border-r border-slate-200 min-w-[240px]">प्रमुख धाराएं (Key Sections)</th>
+                <th className="p-3 text-center min-w-[200px]">कार्रवाई (Actions)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredAndSortedActs.map((act, index) => {
+                const formatBadgeColor =
+                  act.fileFormat === "PDF"
+                    ? "bg-red-50 text-red-700 border-red-200"
+                    : act.fileFormat === "DOCX"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-slate-100 text-slate-700 border-slate-200";
+
+                return (
+                  <tr key={act.id} className="hover:bg-blue-50/20 transition-colors">
+                    {/* 1. Sr. No. */}
+                    <td className="p-3 border-r border-slate-200 text-center font-bold text-slate-600 font-mono align-top">
+                      #{index + 1}
+                    </td>
+
+                    {/* 2. Act Title & Details */}
+                    <td className="p-3 border-r border-slate-200 space-y-1.5 align-top">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${formatBadgeColor}`}>
+                          {act.fileFormat}
+                        </span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                          {act.categoryLabel}
+                        </span>
+                        {act.isCustomUpload && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Custom Upload
+                          </span>
+                        )}
+                      </div>
+                      <h3
+                        onClick={() => {
+                          setActiveActModal(act);
+                          setModalActiveTab("VERBATIM");
+                        }}
+                        className="font-bold text-slate-900 text-sm hover:text-blue-700 cursor-pointer transition-colors"
+                      >
+                        {act.title}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-sans">
+                        {act.description}
+                      </p>
+                    </td>
+
+                    {/* 3. Act Number & Dates */}
+                    <td className="p-3 border-r border-slate-200 space-y-1 font-mono text-[11px] align-top">
+                      <div className="font-bold text-slate-800">{act.actNumber}</div>
+                      <div className="text-slate-500">
+                        <span className="text-slate-400">Enacted:</span> {act.enactmentDate || "—"}
+                      </div>
+                      <div className="text-slate-500">
+                        <span className="text-slate-400">Effective:</span> {act.effectiveDate || "—"}
+                      </div>
+                    </td>
+
+                    {/* 4. Sections & Chapters */}
+                    <td className="p-3 border-r border-slate-200 text-center align-top">
+                      <div className="inline-flex flex-col gap-1 items-center">
+                        <span className="px-2.5 py-1 bg-blue-50 text-blue-900 border border-blue-200 rounded-md font-bold text-xs font-mono">
+                          {act.totalSections} Sec
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {act.totalChapters} Chapters
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* 5. Key Sections */}
+                    <td className="p-3 border-r border-slate-200 align-top">
+                      {act.keySections && act.keySections.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {act.keySections.slice(0, 5).map((sec) => (
+                            <button
+                              key={sec.sectionNumber}
+                              type="button"
+                              onClick={() => {
+                                setActiveActModal(act);
+                                setModalActiveTab("VERBATIM");
+                                setVerbatimSearchQuery(sec.sectionNumber);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-slate-200 bg-slate-50 hover:bg-amber-50 hover:border-amber-300 text-slate-700 hover:text-amber-900 transition-colors cursor-pointer"
+                              title={`${sec.title}: ${sec.description} (Click to view Verbatim Text)`}
+                            >
+                              <span className="font-bold text-amber-700 font-mono">Sec {sec.sectionNumber}</span>
+                              <span className="truncate max-w-[90px]">{sec.title}</span>
+                            </button>
+                          ))}
+                          {act.keySections.length > 5 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActModal(act);
+                                setModalActiveTab("SECTIONS");
+                                setSectionFilterQuery("");
+                              }}
+                              className="text-[10px] px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-800 font-bold hover:bg-amber-100 transition-colors cursor-pointer"
+                            >
+                              +{act.keySections.length - 5} More
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">—</span>
+                      )}
+                    </td>
+
+                    {/* 6. Action Buttons */}
+                    <td className="p-3 text-center align-top">
+                      <div className="flex flex-col gap-1.5 items-stretch max-w-[190px] mx-auto">
+                        <div className="grid grid-cols-2 gap-1">
+                          {/* Verbatim Text */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActModal(act);
+                              setModalActiveTab("VERBATIM");
+                              setVerbatimSearchQuery("");
+                            }}
+                            className="inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 border border-amber-300 rounded-md font-bold text-[10px] cursor-pointer shadow-2xs"
+                            title="Verbatim Text (शब्द-ब-शब्द)"
+                          >
+                            <FileText className="w-3 h-3 text-amber-700 shrink-0" />
+                            <span>Verbatim</span>
+                          </button>
+
+                          {/* PDF Preview */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActModal(act);
+                              setModalActiveTab("DOCUMENT");
+                            }}
+                            className="inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-md font-bold text-[10px] cursor-pointer shadow-2xs"
+                            title="Original PDF Preview"
+                          >
+                            <Eye className="w-3 h-3 text-blue-600 shrink-0" />
+                            <span>Preview</span>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-1">
+                          {/* Browse Sections */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActModal(act);
+                              setModalActiveTab("SECTIONS");
+                              setSectionFilterQuery("");
+                            }}
+                            className="inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-[#0b192c] hover:bg-[#152e50] text-white rounded-md font-bold text-[10px] cursor-pointer shadow-2xs"
+                            title="Browse All Sections"
+                          >
+                            <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span>Sections</span>
+                          </button>
+
+                          {/* Download */}
+                          {(act.fileUrl || act.fileDataUrl) ? (
+                            <a
+                              href={act.fileUrl || act.fileDataUrl}
+                              download={act.fileName || `${act.shortName}.pdf`}
+                              className="inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md font-bold text-[10px] cursor-pointer shadow-2xs"
+                              title="Download Document"
+                            >
+                              <Download className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>Download</span>
+                            </a>
+                          ) : (
+                            <div />
+                          )}
+                        </div>
+
+                        {/* Custom Upload Delete */}
+                        {act.isCustomUpload && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomAct(act.id, act.title)}
+                            className="inline-flex items-center justify-center gap-1 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-50 py-0.5 rounded cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Delete Act</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredAndSortedActs.map((act, index) => {
             const formatBadgeColor =
               act.fileFormat === "PDF"
                 ? "bg-red-50 text-red-700 border-red-200"
@@ -813,7 +1051,6 @@ function ActsAndSectionsContent() {
                   {/* Row 4: Action Buttons (Verbatim Text, Preview, Sections, Download) */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* 1. VERBATIM TEXT Button (user specifically requested "VERBATIM TEXT feature ko mere sb en sbhi documents me apply kr do") */}
                       <Button
                         size="sm"
                         variant="outline"
@@ -828,7 +1065,6 @@ function ActsAndSectionsContent() {
                         <span>Verbatim Text (शब्द-ब-शब्द)</span>
                       </Button>
 
-                      {/* 2. Original Document Preview Button (user requested "esme original documet me dekhe jiska preview aur download kiya ja ske") */}
                       <Button
                         size="sm"
                         variant="outline"
@@ -842,7 +1078,6 @@ function ActsAndSectionsContent() {
                         <span>Original PDF Preview</span>
                       </Button>
 
-                      {/* 3. Browse Sections Button */}
                       <Button
                         size="sm"
                         variant="primary"
@@ -857,7 +1092,6 @@ function ActsAndSectionsContent() {
                         <span>Browse Sections ({act.totalSections})</span>
                       </Button>
 
-                      {/* 4. Download PDF / Document Button */}
                       {(act.fileUrl || act.fileDataUrl) && (
                         <a
                           href={act.fileUrl || act.fileDataUrl}
@@ -886,9 +1120,9 @@ function ActsAndSectionsContent() {
                 </CardContent>
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL 1: UPLOAD DOCUMENT / ACT IN ANY FORMAT                              */}
@@ -1813,90 +2047,107 @@ function ActsAndSectionsContent() {
                         </span>
                       </div>
 
-                      <div className="space-y-3">
-                        {standardFilteredSections.map((sec) => (
-                          <div
-                            key={sec.sectionNumber}
-                            className="p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 shadow-2xs space-y-2 text-xs"
-                          >
-                            {/* Section Header */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-900 border border-blue-200">
-                                  Section {sec.sectionNumber}
-                                </span>
-                                <h5 className="font-bold text-slate-900 text-sm">{sec.title}</h5>
-                              </div>
+                      {standardFilteredSections.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
+                          No sections matching &ldquo;{sectionFilterQuery}&rdquo;.
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+                          <table className="w-full text-xs text-left border-collapse min-w-[850px]">
+                            <thead className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                              <tr>
+                                <th className="p-2.5 border-r border-slate-200 w-24 text-center">धारा (Sec)</th>
+                                <th className="p-2.5 border-r border-slate-200 min-w-[180px]">शीर्षक व अध्याय (Title &amp; Chapter)</th>
+                                <th className="p-2.5 border-r border-slate-200 min-w-[260px]">विवरण व दण्ड (Description &amp; Punishment)</th>
+                                <th className="p-2.5 border-r border-slate-200 w-44">वर्गीकरण (Classification)</th>
+                                <th className="p-2.5 text-center w-28">शब्द-ब-शब्द (Verbatim)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {standardFilteredSections.map((sec) => (
+                                <tr key={sec.sectionNumber} className="hover:bg-blue-50/20 transition-colors">
+                                  {/* 1. Section Number */}
+                                  <td className="p-2.5 border-r border-slate-200 text-center align-top">
+                                    <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200 whitespace-nowrap">
+                                      Sec {sec.sectionNumber}
+                                    </span>
+                                  </td>
 
-                              {/* Classification badges */}
-                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                                {sec.cognizable && (
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full border ${
-                                      sec.cognizable === "Cognizable"
-                                        ? "bg-red-50 text-red-700 border-red-200"
-                                        : "bg-slate-100 text-slate-700 border-slate-200"
-                                    }`}
-                                  >
-                                    {sec.cognizable}
-                                  </span>
-                                )}
-                                {sec.bailable && (
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full border ${
-                                      sec.bailable === "Bailable"
-                                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                        : "bg-rose-50 text-rose-700 border-rose-200"
-                                    }`}
-                                  >
-                                    {sec.bailable}
-                                  </span>
-                                )}
-                                {sec.triableBy && (
-                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                    {sec.triableBy}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                                  {/* 2. Title & Chapter */}
+                                  <td className="p-2.5 border-r border-slate-200 align-top space-y-1">
+                                    <h5 className="font-bold text-slate-900 text-xs sm:text-sm">{sec.title}</h5>
+                                    {sec.chapter && (
+                                      <div className="text-[10px] text-slate-400 font-mono">{sec.chapter}</div>
+                                    )}
+                                  </td>
 
-                            {/* Chapter indicator */}
-                            {sec.chapter && (
-                              <div className="text-[10px] text-slate-400 font-mono">
-                                {sec.chapter}
-                              </div>
-                            )}
+                                  {/* 3. Description & Punishment */}
+                                  <td className="p-2.5 border-r border-slate-200 align-top space-y-1.5">
+                                    <p className="text-slate-700 leading-relaxed font-sans text-xs">
+                                      {sec.description}
+                                    </p>
+                                    {sec.punishment && (
+                                      <div className="p-1.5 bg-amber-50 border border-amber-200 rounded text-amber-950 font-medium text-[11px] flex items-start gap-1">
+                                        <strong className="shrink-0 text-amber-900">Punishment:</strong>
+                                        <span>{sec.punishment}</span>
+                                      </div>
+                                    )}
+                                  </td>
 
-                            {/* Description */}
-                            <p className="text-slate-700 leading-relaxed font-sans">
-                              {sec.description}
-                            </p>
+                                  {/* 4. Classification Badges */}
+                                  <td className="p-2.5 border-r border-slate-200 align-top space-y-1">
+                                    <div className="flex flex-wrap gap-1 text-[10px] font-bold">
+                                      {sec.cognizable && (
+                                        <span
+                                          className={`px-1.5 py-0.5 rounded border ${
+                                            sec.cognizable === "Cognizable"
+                                              ? "bg-red-50 text-red-700 border-red-200"
+                                              : "bg-slate-100 text-slate-700 border-slate-200"
+                                          }`}
+                                        >
+                                          {sec.cognizable}
+                                        </span>
+                                      )}
+                                      {sec.bailable && (
+                                        <span
+                                          className={`px-1.5 py-0.5 rounded border ${
+                                            sec.bailable === "Bailable"
+                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                              : "bg-rose-50 text-rose-700 border-rose-200"
+                                          }`}
+                                        >
+                                          {sec.bailable}
+                                        </span>
+                                      )}
+                                      {sec.triableBy && (
+                                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                          {sec.triableBy}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
 
-                            {/* Punishment line if available */}
-                            {sec.punishment && (
-                              <div className="p-2 bg-amber-50/70 border border-amber-200 rounded-lg text-amber-950 font-medium text-[11px] flex items-start gap-1.5">
-                                <strong className="shrink-0 text-amber-900">Punishment:</strong>
-                                <span>{sec.punishment}</span>
-                              </div>
-                            )}
-
-                            {/* Verbatim snippet button */}
-                            <div className="pt-1 flex items-center justify-end">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setModalActiveTab("VERBATIM");
-                                  setVerbatimSearchQuery(sec.sectionNumber);
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-md border border-amber-200 transition-colors cursor-pointer"
-                              >
-                                <FileText className="w-3 h-3 text-amber-600" />
-                                <span>View Verbatim Statutory Text &rarr;</span>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                                  {/* 5. Verbatim Button */}
+                                  <td className="p-2.5 text-center align-top">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setModalActiveTab("VERBATIM");
+                                        setVerbatimSearchQuery(sec.sectionNumber);
+                                      }}
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded border border-amber-200 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+                                      title="View Verbatim Text"
+                                    >
+                                      <FileText className="w-3 h-3 text-amber-600" />
+                                      <span>Verbatim</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
