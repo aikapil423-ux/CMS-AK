@@ -1302,8 +1302,8 @@ export default function FIRProfilePage() {
             </Button>
           )}
 
-          {/* Submit Final Form */}
-          {fir.status === "UNDER_INVESTIGATION" && (
+          {/* Submit Final Form (Hidden as requested) */}
+          {/* {fir.status === "UNDER_INVESTIGATION" && (
             <Button
               size="sm"
               variant="outline"
@@ -1313,7 +1313,7 @@ export default function FIRProfilePage() {
               <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
               File Final Report (Sec 193 BNSS)
             </Button>
-          )}
+          )} */}
         </div>
       </div>
 

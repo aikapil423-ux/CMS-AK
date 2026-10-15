@@ -19,6 +19,9 @@ import {
   ArrowRight,
   Layers,
   Copy,
+  CheckSquare,
+  Square,
+  Network,
 } from "lucide-react";
 import { FIRItem, LinkedFIREntry } from "@/types";
 import { firService } from "@/services/firService";
@@ -29,7 +32,7 @@ interface LinkDuplicateFIRModalProps {
   isOpen: boolean;
   onClose: () => void;
   firs: FIRItem[];
-  onSuccess: (result: { primary: FIRItem; target: FIRItem }) => void;
+  onSuccess: (result: { primary: FIRItem; targets: FIRItem[] }) => void;
   preSelectedFirId?: string;
 }
 
@@ -39,38 +42,38 @@ const LINK_TYPES = [
     label: "Duplicate FIR (दोहराव प्राथमिकी)",
     subtitle: "Same Occurrence / Babubhai Doctrine",
     description:
-      "Second FIR registered for the same incident / continuous transaction. Clubbed under T.T. Antony (2001) & Babubhai (2010) SC ruling.",
+      "Multiple FIRs registered for the same incident / continuous transaction. Clubbed together under T.T. Antony (2001) & Babubhai (2010) SC rulings.",
     badgeClass: "bg-purple-100 text-purple-800 border-purple-300",
   },
   {
     key: "CROSS",
-    label: "Cross-FIR / Counter Case (क्रॉस प्राथमिकी)",
+    label: "Cross-FIR / Counter Cases (क्रॉस प्राथमिकी)",
     subtitle: "Mutual Clashes / Rival Parties",
     description:
-      "Cross-allegations between two opposing parties regarding the same fight/incident. Both cases investigated jointly by the same IO.",
+      "Cross-allegations between multiple opposing factions regarding the same fight/incident. All connected counter cases investigated jointly.",
     badgeClass: "bg-rose-100 text-rose-800 border-rose-300",
   },
   {
     key: "CONNECTED",
-    label: "Connected Matter (संबद्ध प्रकरण)",
-    subtitle: "Conspiracy / Gang Syndicate",
+    label: "Connected Matter / Gang Syndicate (संबद्ध प्रकरण)",
+    subtitle: "Conspiracy / Gang Syndicate / Stolen Property",
     description:
-      "Distinct FIRs connected via common criminal conspiracy, interstate syndicate, recovery of common stolen property, or common accused.",
+      "Multiple distinct FIRs connected via common criminal conspiracy, interstate syndicate, recovery of common stolen property, or common accused.",
     badgeClass: "bg-blue-100 text-blue-800 border-blue-300",
   },
 ] as const;
 
 const LINK_REASON_PRESETS = [
-  "Identical place, time, and incident reported in both FIRs; duplicate registration clubbed under Babubhai doctrine",
+  "Identical place, time, and incident reported in multiple FIRs; clubbed under Babubhai doctrine",
   "Mutual cross-cases registered by rival groups arising out of the same altercation/clash",
-  "Common interstate crime syndicate and recovered property linked across both cases",
-  "Judicial order / SP direction directing joint trial or simultaneous investigation of both FIRs",
-  "Supplementary evidence and identical prime suspect identified in both crimes",
+  "Common interstate crime syndicate and recovered property linked across all these cases",
+  "Judicial order / SP direction directing joint trial or simultaneous investigation of all linked FIRs",
+  "Supplementary evidence and identical prime suspect identified in this series of crimes",
 ];
 
 const DELINK_REASON_PRESETS = [
   "Subsequent investigation established distinct occurrences and unrelated accused persons",
-  "Judicial order directing separate and independent trial for both FIRs",
+  "Judicial order directing separate and independent trial for these FIRs",
   "Inadvertent linkage / clerical data entry oversight",
   "Separate chargesheet / final report prepared by independent investigation teams",
 ];
@@ -85,15 +88,13 @@ export function LinkDuplicateFIRModal({
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"LINK" | "MANAGE">("LINK");
 
-  // === LINK MODE STATE ===
+  // === LINK MODE STATE (Supports linking 2, 3, 4, 5+ FIRs together!) ===
   const [primaryFirId, setPrimaryFirId] = useState<string>(preSelectedFirId || "");
-  const [targetFirId, setTargetFirId] = useState<string>("");
+  const [targetFirIds, setTargetFirIds] = useState<string[]>([]);
   const [primarySearch, setPrimarySearch] = useState("");
   const [targetSearch, setTargetSearch] = useState("");
   const [isPrimaryOpen, setIsPrimaryOpen] = useState(false);
-  const [isTargetOpen, setIsTargetOpen] = useState(false);
   const primaryDropdownRef = useRef<HTMLDivElement>(null);
-  const targetDropdownRef = useRef<HTMLDivElement>(null);
 
   const [linkType, setLinkType] = useState<"DUPLICATE" | "CROSS" | "CONNECTED">("DUPLICATE");
   const [linkReasonPreset, setLinkReasonPreset] = useState(LINK_REASON_PRESETS[0]);
@@ -123,9 +124,6 @@ export function LinkDuplicateFIRModal({
     function handleClickOutside(event: MouseEvent) {
       if (primaryDropdownRef.current && !primaryDropdownRef.current.contains(event.target as Node)) {
         setIsPrimaryOpen(false);
-      }
-      if (targetDropdownRef.current && !targetDropdownRef.current.contains(event.target as Node)) {
-        setIsTargetOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -160,14 +158,31 @@ export function LinkDuplicateFIRModal({
         f.firNumber.toLowerCase().includes(q) ||
         (f.cctnsFirNumber?.toLowerCase().includes(q) ?? false) ||
         f.complainantName.toLowerCase().includes(q) ||
-        f.actsAndSections.toLowerCase().includes(q)
+        f.actsAndSections.toLowerCase().includes(q) ||
+        f.incidentPlace.toLowerCase().includes(q)
       );
     });
   }, [firs, targetSearch, selectedPrimaryFir]);
 
-  const selectedTargetFir = useMemo(() => {
-    return firs.find((f) => f.id === targetFirId || f.firNumber === targetFirId);
-  }, [firs, targetFirId]);
+  const selectedTargetFirsList = useMemo(() => {
+    return firs.filter((f) => targetFirIds.includes(f.id) || targetFirIds.includes(f.firNumber));
+  }, [firs, targetFirIds]);
+
+  // Toggle Target FIR Selection
+  const toggleSelectTargetFir = (firId: string) => {
+    setTargetFirIds((prev) =>
+      prev.includes(firId) ? prev.filter((id) => id !== firId) : [...prev, firId]
+    );
+  };
+
+  const handleSelectAllTargets = () => {
+    const idsToAdd = filteredTargetFirs.map((f) => f.id);
+    setTargetFirIds((prev) => Array.from(new Set([...prev, ...idsToAdd])));
+  };
+
+  const handleClearTargets = () => {
+    setTargetFirIds([]);
+  };
 
   // Manage Tab: FIRs that have linked list
   const firsWithLinks = useMemo(() => {
@@ -181,19 +196,15 @@ export function LinkDuplicateFIRModal({
     return firs.find((f) => f.id === manageSelectedFirId || f.firNumber === manageSelectedFirId) || firs[0];
   }, [firs, firsWithLinks, manageSelectedFirId]);
 
-  // Submit Link
+  // Submit Link Multiple FIRs
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPrimaryFir) {
       alert("Please select the Primary FIR.");
       return;
     }
-    if (!selectedTargetFir) {
-      alert("Please select the Target FIR to link.");
-      return;
-    }
-    if (selectedPrimaryFir.id === selectedTargetFir.id) {
-      alert("Cannot link an FIR to itself.");
+    if (targetFirIds.length === 0) {
+      alert("Please select at least one Target FIR to link (You can select multiple FIRs).");
       return;
     }
 
@@ -203,16 +214,17 @@ export function LinkDuplicateFIRModal({
 
     setIsSubmitting(true);
     try {
-      const res = firService.linkFirs({
+      const res = firService.linkMultipleFirs({
         primaryFirId: selectedPrimaryFir.id,
-        targetFirId: selectedTargetFir.id,
+        targetFirIds,
         linkType,
         reason: finalReason,
         officerName,
       });
 
+      const totalLinked = 1 + res.targets.length;
       setToastMessage(
-        `Successfully linked ${res.primary.firNumber} and ${res.target.firNumber} as ${linkType}.`
+        `Successfully linked ${totalLinked} FIRs (${res.primary.firNumber} + ${res.targets.map((t) => t.firNumber).join(", ")}) as ${linkType}.`
       );
       onSuccess(res);
 
@@ -250,9 +262,10 @@ export function LinkDuplicateFIRModal({
       setIsDelinkConfirmOpen(false);
       setDelinkTargetNumber("");
 
-      if (res.target) {
-        onSuccess({ primary: res.primary, target: res.target });
-      }
+      onSuccess({
+        primary: res.primary,
+        targets: res.target ? [res.target] : [],
+      });
 
       setTimeout(() => {
         setToastMessage(null);
@@ -265,6 +278,8 @@ export function LinkDuplicateFIRModal({
   };
 
   if (!isOpen) return null;
+
+  const totalCasesInCluster = (selectedPrimaryFir ? 1 : 0) + targetFirIds.length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in-50">
@@ -281,14 +296,14 @@ export function LinkDuplicateFIRModal({
                   Link / Duplicate FIR
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500 text-white uppercase tracking-wider">
-                  Club Cases
+                  Multi-FIR Linking
                 </span>
                 <span className="text-xs text-slate-300 font-medium">
-                  | दो FIR को आपस में लिंक / डुप्लीकेट करें
+                  | दो या अधिक FIR को आपस में लिंक / डुप्लीकेट करें
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Reciprocal FIR clubbing under Babubhai doctrine (Duplicate), Cross-FIR, or Connected Offences
+                Reciprocal FIR clubbing under Babubhai doctrine (Duplicate), Cross-FIR, or Connected Offences (Link 2, 3, 4+ FIRs)
               </p>
             </div>
           </div>
@@ -313,8 +328,8 @@ export function LinkDuplicateFIRModal({
                   : "bg-transparent text-slate-600 border-transparent hover:text-slate-900"
               }`}
             >
-              <Link2 className="w-3.5 h-3.5" />
-              <span>Link Two FIRs (दो FIR लिंक करें)</span>
+              <Network className="w-3.5 h-3.5" />
+              <span>Link FIRs Cluster (FIR संबद्ध करें)</span>
             </button>
             <button
               type="button"
@@ -331,7 +346,7 @@ export function LinkDuplicateFIRModal({
           </div>
           <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pb-2">
             <Scale className="w-3.5 h-3.5 text-purple-600" />
-            <span>Hon&apos;ble SC T.T. Antony / Babubhai Doctrine Compliant</span>
+            <span>Hon&apos;ble SC T.T. Antony / Babubhai Multi-Case Doctrine Compliant</span>
           </div>
         </div>
 
@@ -347,141 +362,208 @@ export function LinkDuplicateFIRModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {activeTab === "LINK" ? (
             <form onSubmit={handleLinkSubmit} className="space-y-5">
-              {/* Dual FIR Selection Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Column 1: Primary FIR */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                      Primary FIR (मुख्य प्राथमिकी)
-                    </span>
-                    <span className="text-[10px] text-slate-500">Case No. 1</span>
-                  </div>
+              {/* Cluster Size Counter Banner */}
+              <div className="p-3 bg-purple-50/80 border border-purple-200 rounded-xl flex items-center justify-between text-xs text-purple-950">
+                <div className="flex items-center gap-2">
+                  <Network className="w-4 h-4 text-purple-700" />
+                  <span className="font-bold">
+                    Multi-FIR Link Cluster:{" "}
+                    <span className="text-purple-700 underline">
+                      {totalCasesInCluster} FIR{totalCasesInCluster === 1 ? "" : "s"}
+                    </span>{" "}
+                    being connected
+                  </span>
+                </div>
+                <span className="text-[11px] text-purple-800">
+                  Select 1 Primary Lead FIR + 1 or more Target FIRs (2, 3, 4+ cases)
+                </span>
+              </div>
 
-                  <div className="relative" ref={primaryDropdownRef}>
-                    <div
-                      onClick={() => setIsPrimaryOpen(!isPrimaryOpen)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs flex items-center justify-between cursor-pointer hover:border-purple-500 shadow-2xs"
-                    >
-                      {selectedPrimaryFir ? (
-                        <div className="truncate">
-                          <span className="font-mono font-bold text-red-700">{selectedPrimaryFir.firNumber}</span>
-                          <span className="text-slate-400 mx-1">|</span>
-                          <span className="text-slate-700 font-semibold">{selectedPrimaryFir.complainantName}</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">Select Primary FIR...</span>
-                      )}
-                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isPrimaryOpen ? "rotate-90" : ""}`} />
-                    </div>
+              {/* Step 1: Primary Anchor FIR */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                    Step 1: Select Primary / Anchor FIR (मुख्य प्राथमिकी - लीड केस) <span className="text-red-500">*</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500">Lead Case</span>
+                </div>
 
-                    {isPrimaryOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden text-xs max-h-56 flex flex-col">
-                        <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
-                          <Search className="w-3.5 h-3.5 text-slate-400" />
-                          <input
-                            type="text"
-                            placeholder="Search FIR..."
-                            value={primarySearch}
-                            onChange={(e) => setPrimarySearch(e.target.value)}
-                            className="w-full bg-transparent text-xs focus:outline-hidden"
-                            autoFocus
-                          />
-                        </div>
-                        <div className="overflow-y-auto divide-y divide-slate-100">
-                          {filteredPrimaryFirs.map((f) => (
-                            <div
-                              key={f.id}
-                              onClick={() => {
-                                setPrimaryFirId(f.id);
-                                setIsPrimaryOpen(false);
-                              }}
-                              className="p-2 hover:bg-purple-50 cursor-pointer"
-                            >
-                              <div className="font-mono font-bold text-red-700">{f.firNumber}</div>
-                              <div className="text-[11px] text-slate-700">{f.complainantName} - {f.actsAndSections}</div>
-                            </div>
-                          ))}
-                        </div>
+                <div className="relative" ref={primaryDropdownRef}>
+                  <div
+                    onClick={() => setIsPrimaryOpen(!isPrimaryOpen)}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs flex items-center justify-between cursor-pointer hover:border-purple-500 shadow-2xs"
+                  >
+                    {selectedPrimaryFir ? (
+                      <div className="truncate">
+                        <span className="font-mono font-bold text-red-700">{selectedPrimaryFir.firNumber}</span>
+                        <span className="text-slate-400 mx-1">|</span>
+                        <span className="text-slate-700 font-semibold">{selectedPrimaryFir.complainantName}</span>
+                        <span className="text-slate-400 mx-1">|</span>
+                        <span className="text-slate-500 text-[11px]">{selectedPrimaryFir.actsAndSections}</span>
                       </div>
+                    ) : (
+                      <span className="text-slate-400">Select Primary Lead FIR...</span>
                     )}
+                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isPrimaryOpen ? "rotate-90" : ""}`} />
                   </div>
 
-                  {selectedPrimaryFir && (
-                    <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 space-y-1">
-                      <div className="font-semibold text-slate-800">Date: {formatDate(selectedPrimaryFir.firDate)}</div>
-                      <div className="text-slate-600 truncate">{selectedPrimaryFir.actsAndSections}</div>
-                      <div className="text-[10px] text-slate-500 truncate">Place: {selectedPrimaryFir.incidentPlace}</div>
+                  {isPrimaryOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden text-xs max-h-56 flex flex-col">
+                      <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
+                        <Search className="w-3.5 h-3.5 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search FIR..."
+                          value={primarySearch}
+                          onChange={(e) => setPrimarySearch(e.target.value)}
+                          className="w-full bg-transparent text-xs focus:outline-hidden"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="overflow-y-auto divide-y divide-slate-100">
+                        {filteredPrimaryFirs.map((f) => (
+                          <div
+                            key={f.id}
+                            onClick={() => {
+                              setPrimaryFirId(f.id);
+                              // Remove primary from target if already there
+                              setTargetFirIds((prev) => prev.filter((id) => id !== f.id));
+                              setIsPrimaryOpen(false);
+                            }}
+                            className="p-2 hover:bg-purple-50 cursor-pointer"
+                          >
+                            <div className="font-mono font-bold text-red-700">{f.firNumber}</div>
+                            <div className="text-[11px] text-slate-700">{f.complainantName} - {f.actsAndSections}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Column 2: Target FIR */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
-                      Target FIR (संबद्ध होने वाली FIR)
-                    </span>
-                    <span className="text-[10px] text-slate-500">Case No. 2</span>
-                  </div>
-
-                  <div className="relative" ref={targetDropdownRef}>
-                    <div
-                      onClick={() => setIsTargetOpen(!isTargetOpen)}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs flex items-center justify-between cursor-pointer hover:border-purple-500 shadow-2xs"
-                    >
-                      {selectedTargetFir ? (
-                        <div className="truncate">
-                          <span className="font-mono font-bold text-red-700">{selectedTargetFir.firNumber}</span>
-                          <span className="text-slate-400 mx-1">|</span>
-                          <span className="text-slate-700 font-semibold">{selectedTargetFir.complainantName}</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">Select Target FIR to Link...</span>
-                      )}
-                      <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isTargetOpen ? "rotate-90" : ""}`} />
+                {selectedPrimaryFir && (
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">Date: {formatDate(selectedPrimaryFir.firDate)} {selectedPrimaryFir.firTime || "10:00"} hrs</span>
+                      <span className="text-slate-500 font-mono text-[10px]">{selectedPrimaryFir.cctnsFirNumber || "LOCAL"}</span>
                     </div>
+                    <div className="text-slate-600 truncate">{selectedPrimaryFir.actsAndSections}</div>
+                    <div className="text-[10px] text-slate-500 truncate">Place: {selectedPrimaryFir.incidentPlace}</div>
+                  </div>
+                )}
+              </div>
 
-                    {isTargetOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden text-xs max-h-56 flex flex-col">
-                        <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-1.5">
-                          <Search className="w-3.5 h-3.5 text-slate-400" />
-                          <input
-                            type="text"
-                            placeholder="Search FIR..."
-                            value={targetSearch}
-                            onChange={(e) => setTargetSearch(e.target.value)}
-                            className="w-full bg-transparent text-xs focus:outline-hidden"
-                            autoFocus
-                          />
-                        </div>
-                        <div className="overflow-y-auto divide-y divide-slate-100">
-                          {filteredTargetFirs.map((f) => (
-                            <div
-                              key={f.id}
-                              onClick={() => {
-                                setTargetFirId(f.id);
-                                setIsTargetOpen(false);
-                              }}
-                              className="p-2 hover:bg-purple-50 cursor-pointer"
-                            >
-                              <div className="font-mono font-bold text-red-700">{f.firNumber}</div>
-                              <div className="text-[11px] text-slate-700">{f.complainantName} - {f.actsAndSections}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+              {/* Step 2: Target FIRs (Multi-Select: 1, 2, 3, 4, 5+ FIRs) */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                    Step 2: Select Target FIR(s) to Link (संबद्ध होने वाली अन्य FIRs - एक या एकाधिक) <span className="text-red-500">*</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                      {targetFirIds.length} Target FIR{targetFirIds.length === 1 ? "" : "s"} Selected
+                    </span>
+                    {filteredTargetFirs.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleSelectAllTargets}
+                        className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                    )}
+                    {targetFirIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearTargets}
+                        className="text-[11px] font-semibold text-red-600 hover:text-red-800 underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
                     )}
                   </div>
+                </div>
 
-                  {selectedTargetFir && (
-                    <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-700 space-y-1">
-                      <div className="font-semibold text-slate-800">Date: {formatDate(selectedTargetFir.firDate)}</div>
-                      <div className="text-slate-600 truncate">{selectedTargetFir.actsAndSections}</div>
-                      <div className="text-[10px] text-slate-500 truncate">Place: {selectedTargetFir.incidentPlace}</div>
-                    </div>
+                {/* Selected Target FIR Chips */}
+                {selectedTargetFirsList.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-lg border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-400 mr-1 uppercase">Linking:</span>
+                    {selectedTargetFirsList.map((fir) => (
+                      <span
+                        key={fir.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 border border-purple-300 rounded-md text-[11px] text-purple-950 font-medium"
+                      >
+                        <span className="font-mono font-bold text-purple-800">{fir.firNumber}</span>
+                        <span className="text-slate-500 text-[10px]">({fir.complainantName})</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectTargetFir(fir.id)}
+                          className="w-3.5 h-3.5 text-slate-400 hover:text-red-600 rounded-full flex items-center justify-center cursor-pointer ml-0.5"
+                          title="Remove from linkage list"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search Bar for Targets */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search target FIRs by number, complainant, sections to link..."
+                    value={targetSearch}
+                    onChange={(e) => setTargetSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 shadow-2xs"
+                  />
+                </div>
+
+                {/* Target FIRs Checkbox List */}
+                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl shadow-inner">
+                  {filteredTargetFirs.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 text-xs">No available target FIRs.</div>
+                  ) : (
+                    filteredTargetFirs.map((fir) => {
+                      const isSelected = targetFirIds.includes(fir.id);
+                      return (
+                        <div
+                          key={fir.id}
+                          onClick={() => toggleSelectTargetFir(fir.id)}
+                          className={`p-2.5 flex items-start gap-3 cursor-pointer transition-colors hover:bg-purple-50/60 ${
+                            isSelected ? "bg-purple-50/80 font-medium" : ""
+                          }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-purple-700" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono font-bold text-red-700 text-xs">{fir.firNumber}</span>
+                              <span className="text-[10px] text-slate-500">{formatDate(fir.firDate)}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-800 font-semibold truncate mt-0.5">
+                              {fir.complainantName}
+                            </div>
+                            <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                              {fir.actsAndSections} — {fir.incidentPlace}
+                            </div>
+                            {fir.linkedFirsList && fir.linkedFirsList.length > 0 && (
+                              <span className="inline-block mt-1 text-[9px] font-bold bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200">
+                                Already linked with {fir.linkedFirsList.length} FIR(s)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -549,7 +631,7 @@ export function LinkDuplicateFIRModal({
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Enter judicial order reference, SP memo number, or specific common points linking both cases..."
+                    placeholder="Enter judicial order reference, SP memo number, or specific common points linking this cluster of cases..."
                     value={customLinkReason}
                     onChange={(e) => setCustomLinkReason(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-purple-500 shadow-2xs"
@@ -567,37 +649,44 @@ export function LinkDuplicateFIRModal({
                     />
                   </div>
                   <div className="flex items-end pb-1 text-[11px] text-slate-500">
-                    <span>Both FIR records will be linked reciprocally in their respective dossiers and audit trails.</span>
+                    <span>All selected FIR records will be linked reciprocally in their respective dossiers and audit trails.</span>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !selectedPrimaryFir || !selectedTargetFir}
-                  className="px-5 py-2 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Linking FIRs...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Link2 className="w-3.5 h-3.5" />
-                      <span>Link Both FIRs (दोनों FIR को लिंक करें)</span>
-                    </>
-                  )}
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                <span className="text-xs text-slate-500">
+                  {targetFirIds.length === 0
+                    ? "Select target FIRs above to link"
+                    : `${totalCasesInCluster} FIRs will be reciprocally linked`}
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !selectedPrimaryFir || targetFirIds.length === 0}
+                    className="px-5 py-2 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Linking FIRs...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Link2 className="w-3.5 h-3.5" />
+                        <span>Link All {totalCasesInCluster} FIRs Together (संबद्ध करें)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           ) : (
@@ -628,13 +717,13 @@ export function LinkDuplicateFIRModal({
                       <span className="text-xs text-slate-600 ml-2">Complainant: {manageFir.complainantName}</span>
                     </div>
                     <span className="text-xs text-slate-500">
-                      Total Links: {manageFir.linkedFirsList?.length || 0}
+                      Total Links in Cluster: {manageFir.linkedFirsList?.length || 0}
                     </span>
                   </div>
 
                   {(!manageFir.linkedFirsList || manageFir.linkedFirsList.length === 0) ? (
                     <div className="p-6 text-center text-slate-400 text-xs bg-white rounded-lg border border-slate-200">
-                      This FIR has no linked or duplicate FIRs. Use the &quot;Link Two FIRs&quot; tab to connect cases.
+                      This FIR has no linked or duplicate FIRs. Use the &quot;Link FIRs Cluster&quot; tab to connect cases.
                     </div>
                   ) : (
                     <div className="space-y-2.5">

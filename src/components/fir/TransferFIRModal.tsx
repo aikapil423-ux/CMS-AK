@@ -20,6 +20,9 @@ import {
   ChevronRight,
   ExternalLink,
   Scale,
+  CheckSquare,
+  Square,
+  Layers,
 } from "lucide-react";
 import { FIRItem, FIRTransferRecord } from "@/types";
 import { firService } from "@/services/firService";
@@ -30,7 +33,7 @@ interface TransferFIRModalProps {
   isOpen: boolean;
   onClose: () => void;
   firs: FIRItem[];
-  onSuccess: (updatedFir: FIRItem) => void;
+  onSuccess: (updatedFirs: FIRItem[]) => void;
   preSelectedFirId?: string;
 }
 
@@ -115,11 +118,11 @@ export function TransferFIRModal({
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"TRANSFER" | "HISTORY">("TRANSFER");
 
-  // Selection state
-  const [selectedFirId, setSelectedFirId] = useState<string>(preSelectedFirId || "");
+  // Selection state (Supports MULTIPLE FIRs - 1, 2, 3 or more!)
+  const [selectedFirIds, setSelectedFirIds] = useState<string[]>(() =>
+    preSelectedFirId ? [preSelectedFirId] : []
+  );
   const [firSearchQuery, setFirSearchQuery] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Destination Details (Inter-State only)
   const [targetState, setTargetState] = useState(INTER_STATE_LIST[0]);
@@ -148,7 +151,7 @@ export function TransferFIRModal({
   // Pre-selection sync
   useEffect(() => {
     if (preSelectedFirId) {
-      setSelectedFirId(preSelectedFirId);
+      setSelectedFirIds((prev) => (prev.includes(preSelectedFirId) ? prev : [preSelectedFirId, ...prev]));
     }
   }, [preSelectedFirId]);
 
@@ -176,18 +179,7 @@ export function TransferFIRModal({
     }
   }, [isOpen, activeTab]);
 
-  // Click outside listener for dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Filter FIRs for dropdown
+  // Filter FIRs for list
   const filteredFirs = useMemo(() => {
     const q = firSearchQuery.trim().toLowerCase();
     if (!q) return firs;
@@ -203,9 +195,25 @@ export function TransferFIRModal({
     });
   }, [firs, firSearchQuery]);
 
-  const selectedFir = useMemo(() => {
-    return firs.find((f) => f.id === selectedFirId || f.firNumber === selectedFirId);
-  }, [firs, selectedFirId]);
+  const selectedFirsList = useMemo(() => {
+    return firs.filter((f) => selectedFirIds.includes(f.id) || selectedFirIds.includes(f.firNumber));
+  }, [firs, selectedFirIds]);
+
+  // Selection helpers
+  const toggleSelectFir = (firId: string) => {
+    setSelectedFirIds((prev) =>
+      prev.includes(firId) ? prev.filter((id) => id !== firId) : [...prev, firId]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    const idsToAdd = filteredFirs.map((f) => f.id);
+    setSelectedFirIds((prev) => Array.from(new Set([...prev, ...idsToAdd])));
+  };
+
+  const handleClearAllSelected = () => {
+    setSelectedFirIds([]);
+  };
 
   // Filter history
   const filteredHistory = useMemo(() => {
@@ -225,8 +233,8 @@ export function TransferFIRModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFir) {
-      alert("Please select an FIR to transfer.");
+    if (selectedFirIds.length === 0) {
+      alert("Please select at least one FIR to transfer (You can select multiple FIRs).");
       return;
     }
     if (!targetDistrict.trim()) {
@@ -246,8 +254,8 @@ export function TransferFIRModal({
 
     setIsSubmitting(true);
     try {
-      const updated = firService.transferFirInterState({
-        firId: selectedFir.id,
+      const updatedList = firService.transferMultipleFirsInterState({
+        firIds: selectedFirIds,
         targetState,
         targetDistrict: targetDistrict.trim(),
         targetPoliceStation: targetPoliceStation.trim(),
@@ -263,10 +271,10 @@ export function TransferFIRModal({
       });
 
       setToastMessage(
-        `FIR ${selectedFir.firNumber} successfully transferred to ${targetPoliceStation}, ${targetDistrict} (${targetState}).`
+        `Successfully transferred ${updatedList.length} FIR(s) to ${targetPoliceStation}, ${targetDistrict} (${targetState}).`
       );
       loadHistory();
-      onSuccess(updated);
+      onSuccess(updatedList);
 
       setTimeout(() => {
         setToastMessage(null);
@@ -296,14 +304,14 @@ export function TransferFIRModal({
                   Transfer FIR (Inter-State Only)
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 uppercase tracking-wider">
-                  Inter-State
+                  Batch & Multi-FIR
                 </span>
                 <span className="text-xs text-slate-300 font-medium">
                   | अंतर्राज्यीय स्थानांतरण
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Statutory transfer of FIR docket to another State / UT under BNSS 2023 / Zero FIR Jurisdiction
+                Statutory transfer of FIR docket(s) to another State / UT under BNSS 2023 / Zero FIR Jurisdiction
               </p>
             </div>
           </div>
@@ -329,7 +337,7 @@ export function TransferFIRModal({
               }`}
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Transfer FIR (स्थानांतरण प्रपत्र)</span>
+              <span>Transfer FIR Form (स्थानांतरण प्रपत्र)</span>
             </button>
             <button
               type="button"
@@ -370,113 +378,126 @@ export function TransferFIRModal({
                     Inter-State Jurisdiction Boundary Notice (अंतर्राज्यीय क्षेत्राधिकार निर्देश)
                   </p>
                   <p className="text-[11px] text-amber-800">
-                    This statutory action is strictly for transfer to another State or Union Territory outside Haryana (e.g. Zero FIR transfer, court orders, or central agency takeover). For intra-Haryana police station transfers, use district administrative GD protocol.
+                    This statutory action transfers case docket(s) to another State / UT outside Haryana. You can select single or multiple FIRs (e.g. series of connected inter-state scam FIRs, continuous offences, or clubbed Zero FIRs) to transfer together under one dispatch order.
                   </p>
                 </div>
               </div>
 
-              {/* Step 1: Select Source FIR */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Step 1: Select FIR to Transfer (प्राथमिकी का चयन करें) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative" ref={dropdownRef}>
-                  <div
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs flex items-center justify-between cursor-pointer hover:border-blue-500 transition-colors shadow-2xs"
-                  >
-                    {selectedFir ? (
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="font-mono font-bold text-red-700">{selectedFir.firNumber}</span>
-                        <span className="text-slate-400">|</span>
-                        <span className="font-semibold text-slate-800">{selectedFir.complainantName}</span>
-                        <span className="text-slate-400">|</span>
-                        <span className="text-slate-500 truncate">{selectedFir.actsAndSections}</span>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400">-- Search & Select FIR from Register --</span>
-                    )}
-                    <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isDropdownOpen ? "rotate-90" : ""}`} />
+              {/* Step 1: Select Source FIRs (Supports Multi-Select: 1, 2, 3 or more FIRs) */}
+              <div className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Select FIR(s) to Transfer (प्राथमिकी का चयन करें - एक या अधिक) <span className="text-red-500">*</span>
+                    </span>
                   </div>
-
-                  {/* Dropdown Popover */}
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 overflow-hidden text-xs max-h-60 flex flex-col">
-                      <div className="p-2 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-                        <Search className="w-3.5 h-3.5 text-slate-400" />
-                        <input
-                          type="text"
-                          placeholder="Search FIR No., Complainant, Sections, Place..."
-                          value={firSearchQuery}
-                          onChange={(e) => setFirSearchQuery(e.target.value)}
-                          className="w-full bg-transparent text-xs focus:outline-hidden"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="overflow-y-auto divide-y divide-slate-100">
-                        {filteredFirs.length === 0 ? (
-                          <div className="p-4 text-center text-slate-400 text-xs">No matching FIR found.</div>
-                        ) : (
-                          filteredFirs.map((fir) => (
-                            <div
-                              key={fir.id}
-                              onClick={() => {
-                                setSelectedFirId(fir.id);
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`p-2.5 hover:bg-blue-50 cursor-pointer transition-colors ${
-                                selectedFirId === fir.id ? "bg-blue-50/80 font-bold" : ""
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="font-mono font-bold text-red-700">{fir.firNumber}</span>
-                                <span className="text-[10px] text-slate-500">{formatDate(fir.firDate)}</span>
-                              </div>
-                              <div className="text-[11px] text-slate-800 font-semibold mt-0.5">{fir.complainantName}</div>
-                              <div className="text-[10px] text-slate-500 truncate mt-0.5">{fir.actsAndSections}</div>
-                              {fir.isTransferred && (
-                                <span className="inline-block mt-1 text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded border border-amber-300">
-                                  Already Transferred ({fir.transferredToState})
-                                </span>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                      {selectedFirIds.length} FIR{selectedFirIds.length === 1 ? "" : "s"} Selected
+                    </span>
+                    {filteredFirs.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleSelectAllFiltered}
+                        className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Select All Filtered
+                      </button>
+                    )}
+                    {selectedFirIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllSelected}
+                        className="text-[11px] font-semibold text-red-600 hover:text-red-800 underline cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {/* Selected FIR Summary Card */}
-                {selectedFir && (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs text-slate-700 mt-2">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                      <div className="flex items-center gap-2">
-                        <Scale className="w-4 h-4 text-red-700" />
-                        <span className="font-mono font-black text-red-700">{selectedFir.firNumber}</span>
-                        <span className="text-slate-400">/</span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 bg-white border border-slate-200 rounded">
-                          {selectedFir.cctnsFirNumber || "LOCAL"}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-500">Date: {formatDate(selectedFir.firDate)} {selectedFir.firTime || "10:00"} hrs</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Complainant:</span>
-                        <span className="font-bold text-slate-800">{selectedFir.complainantName}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Acts & Sections:</span>
-                        <span className="font-semibold text-slate-800">{selectedFir.actsAndSections}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px]">Current Station & State:</span>
-                        <span className="font-semibold text-slate-800">{selectedFir.policeStation}, Gurugram (Haryana)</span>
-                      </div>
-                    </div>
+                {/* Selected Chips */}
+                {selectedFirsList.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 p-2 bg-white rounded-lg border border-slate-200">
+                    <span className="text-[10px] font-bold text-slate-400 mr-1 uppercase">Selected:</span>
+                    {selectedFirsList.map((fir) => (
+                      <span
+                        key={fir.id}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-300 rounded-md text-[11px] text-amber-950 font-medium"
+                      >
+                        <span className="font-mono font-bold text-red-700">{fir.firNumber}</span>
+                        <span className="text-slate-500 text-[10px]">({fir.complainantName})</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSelectFir(fir.id)}
+                          className="w-3.5 h-3.5 text-slate-400 hover:text-red-600 rounded-full flex items-center justify-center cursor-pointer ml-0.5"
+                          title="Remove from batch"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 )}
+
+                {/* Search Bar for Selection */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by FIR No., Complainant, Accused, Sections, Place to select..."
+                    value={firSearchQuery}
+                    onChange={(e) => setFirSearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  />
+                </div>
+
+                {/* FIR Multi-Select List */}
+                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl shadow-inner">
+                  {filteredFirs.length === 0 ? (
+                    <div className="p-4 text-center text-slate-400 text-xs">No matching FIR found.</div>
+                  ) : (
+                    filteredFirs.map((fir) => {
+                      const isSelected = selectedFirIds.includes(fir.id);
+                      return (
+                        <div
+                          key={fir.id}
+                          onClick={() => toggleSelectFir(fir.id)}
+                          className={`p-2.5 flex items-start gap-3 cursor-pointer transition-colors hover:bg-blue-50/60 ${
+                            isSelected ? "bg-blue-50/80 font-medium" : ""
+                          }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-300" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono font-bold text-red-700 text-xs">{fir.firNumber}</span>
+                              <span className="text-[10px] text-slate-500">{formatDate(fir.firDate)} {fir.firTime || "10:00"} hrs</span>
+                            </div>
+                            <div className="text-[11px] text-slate-800 font-semibold truncate mt-0.5">
+                              {fir.complainantName}
+                              {fir.complainantMobile ? ` • ${fir.complainantMobile}` : ""}
+                            </div>
+                            <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                              {fir.actsAndSections} — {fir.incidentPlace}
+                            </div>
+                            {fir.isTransferred && (
+                              <span className="inline-block mt-1 text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded border border-amber-300">
+                                Transferred ({fir.transferredToState})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Step 2: Destination State / UT (Inter-State Only) */}
@@ -581,7 +602,7 @@ export function TransferFIRModal({
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Provide detailed facts explaining why this matter falls within the jurisdiction of the destination state..."
+                    placeholder="Provide detailed facts explaining why these cases fall within the jurisdiction of the destination state..."
                     value={customTransferReason}
                     onChange={(e) => setCustomTransferReason(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-2xs"
@@ -672,31 +693,40 @@ export function TransferFIRModal({
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !selectedFir}
-                  className="px-5 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Processing Inter-State Transfer...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ArrowRightLeft className="w-3.5 h-3.5" />
-                      <span>Confirm Inter-State Transfer (स्थानांतरित करें)</span>
-                    </>
-                  )}
-                </button>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                <span className="text-xs text-slate-500">
+                  {selectedFirIds.length === 0
+                    ? "Select FIR(s) above to proceed"
+                    : `${selectedFirIds.length} FIR${selectedFirIds.length > 1 ? "s" : ""} will be transferred simultaneously`}
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || selectedFirIds.length === 0}
+                    className="px-5 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <span>Processing Inter-State Transfer...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRightLeft className="w-3.5 h-3.5" />
+                        <span>
+                          Confirm Transfer ({selectedFirIds.length} FIR{selectedFirIds.length > 1 ? "s" : ""})
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           ) : (
