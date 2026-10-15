@@ -487,276 +487,301 @@ function KalandraWorkspaceContent() {
   }, [records, recordSearch]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-50/70 p-3 sm:p-5 lg:p-6 space-y-4 font-sans">
       {/* Investigation Workspace Navigation */}
-      <FIRWorkspaceNav
-        rightAction={
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <button
-              onClick={() => setLang("hi")}
-              className={`px-2 py-1 text-xs font-bold rounded ${
-                lang === "hi" ? "bg-white text-emerald-800 shadow-2xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              हिंदी
-            </button>
-            <button
-              onClick={() => setLang("en")}
-              className={`px-2 py-1 text-xs font-bold rounded ${
-                lang === "en" ? "bg-white text-emerald-800 shadow-2xs" : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              English
-            </button>
-          </div>
-        }
-      />
+      <FIRWorkspaceNav firId={linkedFirId} />
 
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white rounded-2xl p-6 mb-6 shadow-md border border-emerald-800/40 relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 opacity-10 flex items-center pr-10 pointer-events-none">
-          <Gavel className="w-64 h-64 text-emerald-400" />
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* Minimalist Top Bar: Header, Controls & Tab Navigation */}
+      <div className="no-print bg-white border border-slate-200/90 rounded-xl p-3 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Title + Meta */}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+              <Gavel className="w-5 h-5 text-emerald-700" />
+            </div>
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Haryana Police Judicial & Preventive Dossier
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  {isHi ? "कलंदरा प्रपत्र एवं निवारक कार्यवाही" : "Kalandra & Preventive Proceedings"}
+                </h1>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  BNSS / BNS & CrPC
                 </span>
-                <span className="bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                  BNS / BNSS & CrPC Compliant
-                </span>
+                {linkedFirId && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-blue-600" />
+                    FIR Linked
+                  </span>
+                )}
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                {isHi ? "कलंदरा तैयारी एवं प्रबंधन प्रणाली" : "Smart Kalandra Preparation & Management System"}
-              </h1>
-              <p className="text-emerald-200/80 text-xs sm:text-sm mt-1 max-w-3xl">
+              <p className="text-xs text-slate-500 mt-0.5">
                 {isHi
-                  ? "निवारक कार्यवाही (107/151, 107/150, 145), BNS न्यूसेंस (217, 248), 72 IPC, 7/16 एवं विशेष कलंदरा हेतु द्विभाषी प्रलेखन एवं न्यायालय अग्रेषण पैकेज।"
-                  : "Bilingual intelligent document preparation for preventive proceedings (107/151, 107/150, 145), BNS infractions (217, 248), 72 IPC, 7/16 & court forwarding packages."}
+                  ? "निवारक कार्यवाही (107/151, 107/150, 145), BNS न्यूसेंस (217, 248) एवं न्यायालय प्रेषण दस्तावेज"
+                  : "Preventive proceedings (107/151, 107/150, 145), BNS infractions & judicial forwarding packages"}
               </p>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => {
-                  setSelectedTemplate(templates[0] || null);
-                  handleSelectTemplate(templates[0]);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow-sm"
+          {/* Right Action: Language toggle + New Kalandra */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setLang("hi")}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  lang === "hi" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
+                }`}
               >
-                <Plus className="w-4 h-4" />
-                <span>{isHi ? "नया कलंदरा बनाएं" : "Create New Kalandra"}</span>
-              </Button>
+                हिन्दी
+              </button>
+              <button
+                type="button"
+                onClick={() => setLang("en")}
+                className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  lang === "en" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                English
+              </button>
             </div>
+
+            <Button
+              size="sm"
+              onClick={() => {
+                setSelectedTemplate(templates[0] || null);
+                handleSelectTemplate(templates[0]);
+              }}
+              className="bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs h-8.5 gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isHi ? "नया कलंदरा" : "New Kalandra"}</span>
+            </Button>
           </div>
+        </div>
 
-          {/* Inner 5 Tabs Navigation */}
-          <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-1 text-xs">
-            <button
-              onClick={() => setActiveTab("templates")}
-              className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === "templates"
-                  ? "bg-white text-emerald-950 shadow-sm"
-                  : "bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/80"
+        {/* Inner 5 Tabs Navigation: Sleek Segmented Pills */}
+        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 overflow-x-auto text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab("templates")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "templates"
+                ? "bg-[#0b192c] text-white shadow-2xs"
+                : "bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>{isHi ? "प्रारूप (Templates)" : "Templates"}</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === "templates" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
               }`}
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{isHi ? "कलंदरा प्रारूप (Templates)" : "Kalandra Templates"}</span>
-              <span className="bg-emerald-700/60 px-1.5 py-0.2 rounded text-[10px]">
-                {templates.length}
+              {templates.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("create")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "create"
+                ? "bg-[#0b192c] text-white shadow-2xs"
+                : "bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+            }`}
+          >
+            <Edit className="w-3.5 h-3.5" />
+            <span>{isHi ? "कलंदरा तैयार करें" : "Create / Edit"}</span>
+            {selectedTemplate && (
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-emerald-100 text-emerald-800">
+                {selectedTemplate.code}
               </span>
-            </button>
+            )}
+          </button>
 
-            <button
-              onClick={() => setActiveTab("create")}
-              className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === "create"
-                  ? "bg-white text-emerald-950 shadow-sm"
-                  : "bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/80"
+          <button
+            type="button"
+            onClick={() => setActiveTab("drafts")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "drafts"
+                ? "bg-[#0b192c] text-white shadow-2xs"
+                : "bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+            }`}
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>{isHi ? "ड्राफ्ट्स" : "Drafts"}</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === "drafts" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
               }`}
             >
-              <Edit className="w-3.5 h-3.5" />
-              <span>{isHi ? "कलंदरा तैयार करें (Create / Edit)" : "Create / Edit Kalandra"}</span>
-              {selectedTemplate && (
-                <span className="bg-emerald-600 px-1.5 py-0.2 rounded text-[10px] text-white font-medium">
-                  {selectedTemplate.code}
-                </span>
-              )}
-            </button>
+              {draftsList.length}
+            </span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("drafts")}
-              className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === "drafts"
-                  ? "bg-white text-emerald-950 shadow-sm"
-                  : "bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/80"
+          <button
+            type="button"
+            onClick={() => setActiveTab("prepared")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "prepared"
+                ? "bg-[#0b192c] text-white shadow-2xs"
+                : "bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{isHi ? "तैयार कलंदरा" : "Prepared"}</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                activeTab === "prepared" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
               }`}
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isHi ? "सहेजे गए ड्राफ्ट (Saved Drafts)" : "Saved Drafts"}</span>
-              <span className="bg-amber-600/80 px-1.5 py-0.2 rounded text-[10px] text-white">
-                {draftsList.length}
-              </span>
-            </button>
+              {preparedList.length}
+            </span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab("prepared")}
-              className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === "prepared"
-                  ? "bg-white text-emerald-950 shadow-sm"
-                  : "bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/80"
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{isHi ? "तैयार / अंतिम कलंदरा (Prepared)" : "Prepared Kalandras"}</span>
-              <span className="bg-emerald-600 px-1.5 py-0.2 rounded text-[10px] text-white">
-                {preparedList.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("manager")}
-              className={`px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === "manager"
-                  ? "bg-white text-emerald-950 shadow-sm"
-                  : "bg-emerald-900/60 text-emerald-200 hover:bg-emerald-800/80"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>{isHi ? "टेम्पलेट प्रबंधक (Template Manager)" : "Template Manager"}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("manager")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === "manager"
+                ? "bg-[#0b192c] text-white shadow-2xs"
+                : "bg-slate-100/80 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>{isHi ? "टेम्पलेट प्रबंधक" : "Template Manager"}</span>
+          </button>
         </div>
       </div>
 
       {/* TAB 1: KALANDRA TEMPLATES */}
       {activeTab === "templates" && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-slate-400" />
+        <div className="space-y-3.5">
+          {/* Sleek Search & Filter Toolbar */}
+          <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
-                placeholder={isHi ? "प्रारूप, धारा या अधिनियम खोजें..." : "Search templates, sections, acts..."}
+                placeholder={isHi ? "प्रारूप, धारा या कानून खोजें..." : "Search templates, sections, acts..."}
                 value={templateSearch}
                 onChange={(e) => setTemplateSearch(e.target.value)}
-                className="w-full text-xs outline-none bg-transparent"
+                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
               />
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-xs">
               <button
+                type="button"
                 onClick={() => setTemplateFilter("ALL")}
-                className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                  templateFilter === "ALL" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                  templateFilter === "ALL"
+                    ? "bg-white text-slate-900 shadow-2xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                {isHi ? "सभी (All)" : "All"} ({templates.length})
+                {isHi ? "सभी" : "All"} ({templates.length})
               </button>
               <button
+                type="button"
                 onClick={() => setTemplateFilter("VERIFIED")}
-                className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                   templateFilter === "VERIFIED"
-                    ? "bg-emerald-700 text-white"
-                    : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                    ? "bg-white text-emerald-800 shadow-2xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <Check className="w-3 h-3" />
-                {isHi ? "सत्यापित वैधानिक" : "Verified Statutory"}
+                <Check className="w-3 h-3 text-emerald-600" />
+                {isHi ? "वैधानिक सत्यापित" : "Verified"}
               </button>
               <button
+                type="button"
                 onClick={() => setTemplateFilter("NEEDS_VERIFY")}
-                className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                   templateFilter === "NEEDS_VERIFY"
-                    ? "bg-amber-600 text-white"
-                    : "bg-amber-50 text-amber-800 hover:bg-amber-100"
+                    ? "bg-white text-amber-800 shadow-2xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <AlertTriangle className="w-3 h-3" />
-                {isHi ? "विधि सत्यापन प्रतीक्षित" : "Needs Legal Verification"}
+                <AlertTriangle className="w-3 h-3 text-amber-600" />
+                {isHi ? "सत्यापन प्रतीक्षित" : "Needs Verification"}
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Minimalist Templates Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
             {filteredTemplates.map((t) => {
               const isNeedsVerify = t.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION";
               return (
-                <Card
+                <div
                   key={t.id}
-                  className={`border transition-all flex flex-col justify-between hover:shadow-md ${
+                  className={`bg-white border rounded-xl p-3.5 flex flex-col justify-between transition-all hover:shadow-xs ${
                     isNeedsVerify
-                      ? "border-amber-200 bg-amber-50/20 hover:border-amber-400"
-                      : "border-slate-200 bg-white hover:border-emerald-400"
+                      ? "border-amber-200 hover:border-amber-300"
+                      : "border-slate-200 hover:border-slate-300"
                   }`}
                 >
-                  <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                    <div>
-                      {/* Legal Badge */}
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        {isNeedsVerify ? (
-                          <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
-                            <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
-                            {isHi ? "विधि सत्यापन प्रतीक्षित" : "Needs Legal Verification"}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                            {isHi ? "वैधानिक सत्यापित" : "Verified Statutory"}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-slate-500 font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded">
-                          {t.code}
+                  <div className="space-y-2">
+                    {/* Status Badge & Code */}
+                    <div className="flex items-center justify-between gap-1">
+                      {isNeedsVerify ? (
+                        <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-amber-200">
+                          <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                          {isHi ? "सत्यापन प्रतीक्षित" : "Needs Verification"}
                         </span>
-                      </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                          {isHi ? "वैधानिक सत्यापित" : "Verified"}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-500 font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                        {t.code}
+                      </span>
+                    </div>
 
-                      {/* Title & Section */}
-                      <h3 className="font-bold text-slate-900 text-sm leading-snug">
+                    {/* Title & Section */}
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug">
                         {isHi ? t.titleHi : t.titleEn}
                       </h3>
-                      <div className="text-xs font-semibold text-emerald-800 mt-1 flex items-center gap-1">
+                      <div className="text-[11px] font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
                         <Gavel className="w-3 h-3 text-emerald-600 shrink-0" />
                         <span>{t.section}</span>
                       </div>
+                    </div>
 
-                      {/* Description & Court */}
-                      <p className="text-xs text-slate-600 mt-2 line-clamp-2">
-                        {t.proceduralContext}
-                      </p>
+                    {/* Description */}
+                    <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                      {t.proceduralContext}
+                    </p>
 
-                      <div className="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
-                        <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                        <span className="truncate">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</span>
+                    {/* Default Court */}
+                    <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                      <span className="truncate">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</span>
+                    </div>
+
+                    {/* Legal Notice Warning if applicable */}
+                    {isNeedsVerify && (t.legalNoticeHi || t.legalNoticeEn) && (
+                      <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-lg text-[10px] text-amber-900 leading-tight">
+                        {isHi ? t.legalNoticeHi : t.legalNoticeEn}
                       </div>
+                    )}
+                  </div>
 
-                      {/* Legal Notice Warning if applicable */}
-                      {isNeedsVerify && (t.legalNoticeHi || t.legalNoticeEn) && (
-                        <div className="mt-2 p-1.5 bg-amber-100/70 border border-amber-200 rounded text-[10px] text-amber-900 leading-tight">
-                          {isHi ? t.legalNoticeHi : t.legalNoticeEn}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-2">
-                      <Button
-                        onClick={() => handleSelectTemplate(t)}
-                        className={`w-full text-xs font-bold gap-1.5 ${
-                          isNeedsVerify
-                            ? "bg-amber-600 hover:bg-amber-700 text-white"
-                            : "bg-emerald-700 hover:bg-emerald-800 text-white"
-                        }`}
-                        size="sm"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>{isHi ? "यह कलंदरा तैयार करें" : "Use This Template"}</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                  <div className="pt-3 mt-2">
+                    <Button
+                      onClick={() => handleSelectTemplate(t)}
+                      className="w-full h-8 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white gap-1.5 rounded-lg shadow-2xs cursor-pointer"
+                      size="sm"
+                    >
+                      <Edit className="w-3 h-3" />
+                      <span>{isHi ? "यह प्रारूप चुनें" : "Use Template"}</span>
+                    </Button>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -765,20 +790,20 @@ function KalandraWorkspaceContent() {
 
       {/* TAB 2: CREATE / EDIT KALANDRA */}
       {activeTab === "create" && (
-        <div className="space-y-6">
-          {/* Smart Link / Autofill Ribbon */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-4">
+          {/* Smart Link / Autofill Toolbar */}
+          <div className="bg-white p-3 rounded-xl border border-slate-200/90 shadow-2xs space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-slate-900 text-sm">
-                  {isHi ? "स्मार्ट ऑटो-फिल एवं केस लिंकिंग" : "Smart Autofill & Source Case Link"}
-                </h3>
+                <Sparkles className="w-4 h-4 text-emerald-600" />
+                <span className="font-bold text-slate-800 text-xs">
+                  {isHi ? "स्मार्ट ऑटो-फिल एवं केस सम्बद्धता" : "Autofill & Case Linkage"}
+                </span>
               </div>
 
               {selectedTemplate && selectedTemplate.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION" && (
-                <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 rounded-lg text-xs font-semibold">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <div className="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-md text-[11px] font-medium">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span>
                     {isHi
                       ? "विधि सत्यापन प्रतीक्षित प्रारूप — न्यायालय प्रस्तुत करने पूर्व धाराओं का स्थानीय सत्यापन अवश्य करें।"
@@ -788,9 +813,9 @@ function KalandraWorkspaceContent() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-500 block mb-1">
                   {isHi ? "स्रोत प्रकार (Source Type)" : "Source Type"}
                 </label>
                 <select
@@ -808,7 +833,7 @@ function KalandraWorkspaceContent() {
                         : "DIRECT";
                     setFormData((p) => ({ ...p, caseType: mappedCaseType }));
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium cursor-pointer"
                 >
                   <option value="DIRECT">{isHi ? "प्रत्यक्ष (Direct Kalandra)" : "Direct Kalandra"}</option>
                   <option value="FIR">{isHi ? "FIR से सम्बद्ध (From FIR)" : "From Registered FIR"}</option>
@@ -819,7 +844,7 @@ function KalandraWorkspaceContent() {
 
               {sourceType !== "DIRECT" && (
                 <div className="sm:col-span-2">
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-500 block mb-1">
                     {isHi ? "सम्बद्ध रिकॉर्ड चुनें" : "Select Linked Record"}
                   </label>
                   <select
@@ -828,7 +853,7 @@ function KalandraWorkspaceContent() {
                       setSelectedSourceId(e.target.value);
                       handleApplyAutofill(sourceType, e.target.value);
                     }}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium cursor-pointer"
                   >
                     <option value="">{isHi ? "-- रिकॉर्ड चुनें --" : "-- Select Record --"}</option>
                     {availableSources.map((s) => (
@@ -841,7 +866,7 @@ function KalandraWorkspaceContent() {
               )}
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-500 block mb-1">
                   {isHi ? "कलंदरा प्रारूप (Template)" : "Selected Template"}
                 </label>
                 <select
@@ -850,7 +875,7 @@ function KalandraWorkspaceContent() {
                     const tmpl = templates.find((t) => t.id === e.target.value);
                     if (tmpl) handleSelectTemplate(tmpl);
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white font-medium text-emerald-900"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium text-slate-900 cursor-pointer"
                 >
                   {templates.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -862,188 +887,187 @@ function KalandraWorkspaceContent() {
             </div>
           </div>
 
-          {/* Form Content */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs p-6 space-y-6">
+          {/* Form Content Card */}
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs p-4 sm:p-5 space-y-5">
             {/* Top Bar inside Form */}
-            <div className="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded">
-                    {formData.kalandraNumber || "KAL/2026/..."}
-                  </span>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {formData.templateTitle || (isHi ? "कलंदरा प्रपत्र" : "Kalandra Dossier")}
-                  </h2>
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  <strong>{isHi ? "धारा व कानून" : "Act & Section"}:</strong> {formData.actAndSection}
-                </div>
+            <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                  {formData.kalandraNumber || "KAL/2026/..."}
+                </span>
+                <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                  {formData.templateTitle || (isHi ? "कलंदरा प्रपत्र" : "Kalandra Dossier")}
+                </h2>
+                <span className="text-xs text-slate-500 font-medium">({formData.actAndSection})</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <Button
                   onClick={handleSaveDraft}
                   variant="outline"
-                  className="text-xs font-bold text-slate-700 border-slate-300 gap-1"
+                  size="sm"
+                  className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 gap-1 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isHi ? "ड्राफ्ट सहेजें" : "Save Draft"}</span>
                 </Button>
                 <Button
                   onClick={handleFinalise}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5"
+                  size="sm"
+                  className="h-8 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{isHi ? "कलंदरा अंतिम रूप दें एवं दस्तावेज देखें" : "Finalise & Generate Documents"}</span>
+                  <span>{isHi ? "अंतिम रूप दें एवं दस्तावेज देखें" : "Finalise & Generate"}</span>
                 </Button>
               </div>
             </div>
 
             {/* Section 1: Court, Police Station & Dates */}
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isHi ? "1. अधिकार क्षेत्र एवं न्यायालय विवरण" : "1. Jurisdiction & Court Details"}</span>
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "न्यायालय (Court / Magistrate)" : "Court of Magistrate"} *
                   </label>
                   <input
                     type="text"
                     value={formData.magistrateCourt || ""}
                     onChange={(e) => setFormData({ ...formData, magistrateCourt: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                     placeholder="e.g. Court of Sub-Divisional Magistrate (SDM), Gurugram"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "थाना (Police Station)" : "Police Station"} *
                   </label>
                   <input
                     type="text"
                     value={formData.policeStation || ""}
                     onChange={(e) => setFormData({ ...formData, policeStation: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "जिला (District)" : "District"} *
                   </label>
                   <input
                     type="text"
                     value={formData.district || ""}
                     onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                   />
                 </div>
               </div>
             </div>
 
             {/* Section 2: Parties Information */}
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-3">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isHi ? "2. पक्षकार विवरण (Parties / Accused / Respondent)" : "2. Parties Information"}</span>
               </h4>
 
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 mb-4">
-                <div className="font-bold text-xs text-slate-800 mb-2">
+              {/* Party 1 */}
+              <div className="p-3 bg-slate-50/60 rounded-xl border border-slate-200/80 space-y-2.5">
+                <div className="font-bold text-xs text-slate-800">
                   {isHi ? "प्रथम पक्ष / गैर-सायल / आरोपी (Party 1 / Respondent)" : "Party 1 / Respondent Details"}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "विपक्षी / आरोपी का नाम" : "Respondent Name"} *
                     </label>
                     <input
                       type="text"
                       value={formData.respondentName || ""}
                       onChange={(e) => setFormData({ ...formData, respondentName: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                       placeholder="e.g. Suresh Kumar"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "पिता / पति का नाम" : "Father's / Husband's Name"}
                     </label>
                     <input
                       type="text"
                       value={formData.respondentFather || ""}
                       onChange={(e) => setFormData({ ...formData, respondentFather: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                       placeholder="e.g. Sh. Ram Kishan"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "मोबाईल नंबर" : "Mobile Number"}
                     </label>
                     <input
                       type="text"
                       value={formData.respondentMobile || ""}
                       onChange={(e) => setFormData({ ...formData, respondentMobile: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                       placeholder="98XXXXXXXX"
                     />
                   </div>
                   <div className="sm:col-span-3">
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "पूरा पता (Full Address)" : "Address"} *
                     </label>
                     <input
                       type="text"
                       value={formData.respondentAddress || ""}
                       onChange={(e) => setFormData({ ...formData, respondentAddress: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                       placeholder="Village / Sector, City, District"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Second Party (if applicable) */}
-              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200">
-                <div className="font-bold text-xs text-slate-700 mb-2">
+              {/* Second Party */}
+              <div className="p-3 bg-slate-50/40 rounded-xl border border-slate-200/60 space-y-2.5">
+                <div className="font-semibold text-xs text-slate-700">
                   {isHi ? "द्वितीय पक्ष (यदि लागू हो - विवाद या पीड़ित)" : "Party 2 (If applicable - Complainant / Disputing Party)"}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "द्वितीय पक्ष का नाम" : "Party 2 Name"}
                     </label>
                     <input
                       type="text"
                       value={formData.secondPartyName || ""}
                       onChange={(e) => setFormData({ ...formData, secondPartyName: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                       placeholder="e.g. Mahesh Yadav"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "पिता का नाम" : "Father's Name"}
                     </label>
                     <input
                       type="text"
                       value={formData.secondPartyFather || ""}
                       onChange={(e) => setFormData({ ...formData, secondPartyFather: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
+                    <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                       {isHi ? "पता" : "Address"}
                     </label>
                     <input
                       type="text"
                       value={formData.secondPartyAddress || ""}
                       onChange={(e) => setFormData({ ...formData, secondPartyAddress: e.target.value })}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                      className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                     />
                   </div>
                 </div>
@@ -1051,89 +1075,89 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Section 3: Occurrence & Scene */}
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isHi ? "3. घटना स्थल एवं जांच अधिकारी" : "3. Occurrence & Investigating Officer"}</span>
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "घटना दिनांक" : "Incident Date"} *
                   </label>
                   <input
                     type="date"
                     value={formData.incidentDate || ""}
                     onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all cursor-pointer"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "समय (Time)" : "Incident Time"}
                   </label>
                   <input
                     type="time"
                     value={formData.incidentTime || ""}
                     onChange={(e) => setFormData({ ...formData, incidentTime: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all cursor-pointer"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "घटना स्थल / विवादित संपत्ति विवरण" : "Place of Occurrence / Disputed Property"} *
                   </label>
                   <input
                     type="text"
                     value={formData.incidentPlace || ""}
                     onChange={(e) => setFormData({ ...formData, incidentPlace: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                     placeholder="e.g. Main Market Chowk, Sector 29, Gurugram"
                   />
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "जांच अधिकारी का नाम" : "Investigating Officer"} *
                   </label>
                   <input
                     type="text"
                     value={formData.reportingOfficer || ""}
                     onChange={(e) => setFormData({ ...formData, reportingOfficer: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "पद (Rank)" : "Officer Rank"}
                   </label>
                   <input
                     type="text"
                     value={formData.officerRank || ""}
                     onChange={(e) => setFormData({ ...formData, officerRank: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "बेल्ट नंबर" : "Belt Number"}
                   </label>
                   <input
                     type="text"
                     value={formData.officerBelt || ""}
                     onChange={(e) => setFormData({ ...formData, officerBelt: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "सम्बद्ध GD / रपट संख्या" : "GD / Daily Diary Ref"}
                   </label>
                   <input
                     type="text"
                     value={formData.relatedGdNumber || ""}
                     onChange={(e) => setFormData({ ...formData, relatedGdNumber: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-300"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
                     placeholder="e.g. GD-0038/14-04-2026"
                   />
                 </div>
@@ -1141,14 +1165,15 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Section 4: Facts & Narrative */}
-            <div className="pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-slate-400" />
                   <span>{isHi ? "4. तथ्य एवं परिस्थितियां (कलंदरा आख्या)" : "4. Facts & Narrative Circumstances"} *</span>
                 </h4>
                 {selectedTemplate && (
                   <button
+                    type="button"
                     onClick={() => {
                       const templateStr = isHi
                         ? selectedTemplate.defaultNarrativeTemplateHi
@@ -1156,7 +1181,7 @@ function KalandraWorkspaceContent() {
                       const pop = kalandraService.populateNarrative(templateStr, formData);
                       setFormData((p) => ({ ...p, factsAndCircumstances: pop }));
                     }}
-                    className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1"
+                    className="text-[11px] text-emerald-700 hover:text-emerald-900 font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <RefreshCw className="w-3 h-3" />
                     <span>{isHi ? "प्रारूप से रीसेट करें" : "Reset from Template"}</span>
@@ -1164,17 +1189,17 @@ function KalandraWorkspaceContent() {
                 )}
               </div>
               <textarea
-                rows={6}
+                rows={5}
                 value={formData.factsAndCircumstances || ""}
                 onChange={(e) => setFormData({ ...formData, factsAndCircumstances: e.target.value })}
-                className="w-full p-3 rounded-xl border border-slate-300 text-xs leading-relaxed font-sans"
+                className="w-full p-2.5 rounded-lg border border-slate-200 text-xs leading-relaxed bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all font-sans"
                 placeholder={isHi ? "घटना का सम्पूर्ण विवरण, अशांति की आशंका एवं साक्ष्य..." : "Complete narrative of facts, apprehension of breach of peace..."}
               />
             </div>
 
             {/* Section 5: Prayer / Proposed Relief */}
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-1.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <Gavel className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isHi ? "5. प्रार्थना / प्रस्तावित वैधानिक आदेश" : "5. Prayer / Proposed Statutory Order"}</span>
               </h4>
@@ -1182,15 +1207,15 @@ function KalandraWorkspaceContent() {
                 rows={2}
                 value={formData.proposedAction || ""}
                 onChange={(e) => setFormData({ ...formData, proposedAction: e.target.value })}
-                className="w-full p-3 rounded-xl border border-slate-300 text-xs"
+                className="w-full p-2.5 rounded-lg border border-slate-200 text-xs bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 transition-all"
                 placeholder={isHi ? "e.g. विपक्षी को 1 वर्ष हेतु 50,000/- रुपये का शांति मुचलका व दो स्थानीय जामिन पाबंद फरमाए जावें।" : "Proposed prayer before court..."}
               />
             </div>
 
             {/* Section 6: Witnesses (गवाहान सूची) */}
-            <div className="pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                   <span>{isHi ? "6. फर्द फेहरिस्त गवाहान (Witnesses)" : "6. Memo of Witnesses"}</span>
                 </h4>
@@ -1198,50 +1223,51 @@ function KalandraWorkspaceContent() {
                   onClick={handleAddWitness}
                   size="sm"
                   variant="outline"
-                  className="text-xs font-bold gap-1 text-slate-700 border-slate-300"
+                  className="h-7 text-xs font-semibold gap-1 text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   <span>{isHi ? "गवाह जोड़ें" : "Add Witness"}</span>
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {(formData.witnesses || []).map((w, index) => (
-                  <div key={w.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-mono text-slate-400 font-bold w-6 text-center">#{index + 1}</span>
+                  <div key={w.id} className="p-2 bg-slate-50/60 rounded-lg border border-slate-200 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-mono text-slate-400 font-bold w-5 text-center text-[11px]">#{index + 1}</span>
                     <input
                       type="text"
                       placeholder={isHi ? "गवाह का नाम" : "Witness Name"}
                       value={w.name}
                       onChange={(e) => handleUpdateWitness(w.id, "name", e.target.value)}
-                      className="p-1.5 rounded border border-slate-300 bg-white flex-1 min-w-[140px]"
+                      className="h-7 px-2 rounded border border-slate-200 bg-white flex-1 min-w-[130px] text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
                     />
                     <input
                       type="text"
                       placeholder={isHi ? "पिता का नाम" : "Father's Name"}
                       value={w.fatherName || ""}
                       onChange={(e) => handleUpdateWitness(w.id, "fatherName", e.target.value)}
-                      className="p-1.5 rounded border border-slate-300 bg-white flex-1 min-w-[120px]"
+                      className="h-7 px-2 rounded border border-slate-200 bg-white flex-1 min-w-[120px] text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
                     />
                     <input
                       type="text"
                       placeholder={isHi ? "निवास पता / पद" : "Address / Designation"}
                       value={w.address}
                       onChange={(e) => handleUpdateWitness(w.id, "address", e.target.value)}
-                      className="p-1.5 rounded border border-slate-300 bg-white flex-2 min-w-[180px]"
+                      className="h-7 px-2 rounded border border-slate-200 bg-white flex-2 min-w-[160px] text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
                     />
                     <input
                       type="text"
                       placeholder={isHi ? "मोबाईल" : "Mobile"}
                       value={w.mobile || ""}
                       onChange={(e) => handleUpdateWitness(w.id, "mobile", e.target.value)}
-                      className="p-1.5 rounded border border-slate-300 bg-white w-28"
+                      className="h-7 px-2 rounded border border-slate-200 bg-white w-24 text-xs focus:outline-none focus:ring-1 focus:ring-slate-400"
                     />
                     <button
+                      type="button"
                       onClick={() => handleRemoveWitness(w.id)}
-                      className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                      className="p-1 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -1249,8 +1275,8 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Section 7: Supporting Documents Checklist */}
-            <div className="pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+            <div className="pt-3 border-t border-slate-100 space-y-2">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
                 <FileCheck2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isHi ? "7. फर्द फेहरिस्त कागजात / संलग्नक (Checklist)" : "7. Supporting Documents Checklist"}</span>
               </h4>
@@ -1259,10 +1285,10 @@ function KalandraWorkspaceContent() {
                 {(formData.supportingDocuments || []).map((doc) => (
                   <label
                     key={doc.id}
-                    className={`flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all ${
+                    className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-all ${
                       doc.isAttached
-                        ? "bg-emerald-50/50 border-emerald-300 text-emerald-950 font-medium"
-                        : "bg-slate-50 border-slate-200 text-slate-600"
+                        ? "bg-emerald-50/40 border-emerald-300 text-emerald-950 font-medium"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -1270,12 +1296,12 @@ function KalandraWorkspaceContent() {
                         type="checkbox"
                         checked={doc.isAttached}
                         onChange={() => handleToggleDoc(doc.id)}
-                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                        className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                       />
-                      <span>{doc.title}</span>
+                      <span className="text-xs">{doc.title}</span>
                     </div>
                     {doc.isAttached && (
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-bold">
                         {isHi ? "संलग्न" : "Attached"}
                       </span>
                     )}
@@ -1285,8 +1311,8 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Bottom Final Action Bar */}
-            <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-xs text-slate-500">
+            <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="text-[11px] text-slate-400">
                 {isHi ? "सभी फ़ील्ड भरने के बाद अंतिम रूप दें एवं प्रिंट हेतु तैयार करें।" : "Review all sections before finalisation."}
               </div>
 
@@ -1294,17 +1320,19 @@ function KalandraWorkspaceContent() {
                 <Button
                   onClick={handleSaveDraft}
                   variant="outline"
-                  className="text-xs font-bold text-slate-700 border-slate-300 gap-1.5"
+                  size="sm"
+                  className="h-8 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 gap-1.5 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{isHi ? "ड्राफ्ट सहेजें" : "Save as Draft"}</span>
                 </Button>
                 <Button
                   onClick={handleFinalise}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 shadow-sm"
+                  size="sm"
+                  className="h-8 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{isHi ? "कलंदरा अंतिम रूप दें एवं दस्तावेज देखें" : "Finalise & Generate Documents"}</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{isHi ? "अंतिम रूप दें एवं दस्तावेज देखें" : "Finalise & Generate Documents"}</span>
                 </Button>
               </div>
             </div>
@@ -1314,87 +1342,83 @@ function KalandraWorkspaceContent() {
 
       {/* TAB 3: SAVED DRAFTS */}
       {activeTab === "drafts" && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400" />
+        <div className="space-y-3.5">
+          <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 placeholder={isHi ? "ड्राफ्ट खोजें (कलंदरा सं०, गैर-सायल, धारा)..." : "Search drafts by number, respondent, section..."}
                 value={recordSearch}
                 onChange={(e) => setRecordSearch(e.target.value)}
-                className="w-full text-xs outline-none bg-transparent"
+                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
               />
             </div>
-            <div className="text-xs font-bold text-slate-500">
-              {draftsList.length} {isHi ? "ड्राफ्ट उपलब्ध" : "drafts found"}
+            <div className="text-xs font-semibold text-slate-500">
+              {draftsList.length} {isHi ? "ड्राफ्ट" : "drafts"}
             </div>
           </div>
 
           {draftsList.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
-              <Save className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="font-bold text-slate-700 text-sm">
+            <div className="p-10 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
+              <Save className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <h3 className="font-bold text-slate-700 text-xs sm:text-sm">
                 {isHi ? "कोई सहेजा गया ड्राफ्ट नहीं मिला" : "No saved drafts"}
               </h3>
-              <p className="text-xs mt-1 text-slate-400">
+              <p className="text-[11px] mt-1 text-slate-400">
                 {isHi ? "नया कलंदरा बनाकर 'ड्राफ्ट सहेजें' पर क्लिक करें।" : "Create a new Kalandra and save it as a draft."}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {draftsList.map((rec) => (
-                <Card key={rec.id} className="border border-slate-200 hover:border-emerald-300 transition-all bg-white">
-                  <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          {rec.kalandraNumber}
-                        </span>
-                        <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">
-                          DRAFT
-                        </span>
-                      </div>
-
-                      <h4 className="font-bold text-slate-900 text-sm">{rec.templateTitle}</h4>
-                      <div className="text-xs text-emerald-800 font-semibold mt-0.5">{rec.actAndSection}</div>
-
-                      <div className="mt-3 text-xs text-slate-600 space-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                        <div>
-                          <strong>{isHi ? "गैर-सायल / आरोपी" : "Respondent"}:</strong> {rec.respondentName}
-                        </div>
-                        <div>
-                          <strong>{isHi ? "स्थान" : "Place"}:</strong> {rec.incidentPlace || "-"}
-                        </div>
-                        <div>
-                          <strong>{isHi ? "जांच अधिकारी" : "IO"}:</strong> {rec.reportingOfficer}
-                        </div>
-                      </div>
+                <div key={rec.id} className="border border-slate-200 hover:border-slate-300 transition-all bg-white rounded-xl p-3.5 flex flex-col justify-between space-y-3 shadow-2xs">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        {rec.kalandraNumber}
+                      </span>
+                      <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-2 py-0.5 rounded">
+                        DRAFT
+                      </span>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between border-t border-slate-100 gap-2">
-                      <Button
-                        onClick={() => handleDeleteRecord(rec.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-2"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{rec.templateTitle}</h4>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">{rec.actAndSection}</div>
 
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          onClick={() => handleEditRecord(rec)}
-                          size="sm"
-                          className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1"
-                        >
-                          <Edit className="w-3 h-3" />
-                          <span>{isHi ? "जारी रखें" : "Resume Editing"}</span>
-                        </Button>
+                    <div className="mt-2.5 text-xs text-slate-600 space-y-1 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                      <div>
+                        <strong>{isHi ? "गैर-सायल / आरोपी" : "Respondent"}:</strong> {rec.respondentName}
+                      </div>
+                      <div>
+                        <strong>{isHi ? "स्थान" : "Place"}:</strong> {rec.incidentPlace || "-"}
+                      </div>
+                      <div>
+                        <strong>{isHi ? "जांच अधिकारी" : "IO"}:</strong> {rec.reportingOfficer}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100 gap-2">
+                    <Button
+                      onClick={() => handleDeleteRecord(rec.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 h-7.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+
+                    <Button
+                      onClick={() => handleEditRecord(rec)}
+                      size="sm"
+                      className="h-7.5 bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs gap-1 rounded-lg cursor-pointer"
+                    >
+                      <Edit className="w-3 h-3" />
+                      <span>{isHi ? "जारी रखें" : "Resume"}</span>
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -1403,106 +1427,104 @@ function KalandraWorkspaceContent() {
 
       {/* TAB 4: PREPARED KALANDRAS */}
       {activeTab === "prepared" && (
-        <div className="space-y-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400" />
+        <div className="space-y-3.5">
+          <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
               <input
                 type="text"
                 placeholder={isHi ? "तैयार कलंदरा खोजें..." : "Search prepared kalandras..."}
                 value={recordSearch}
                 onChange={(e) => setRecordSearch(e.target.value)}
-                className="w-full text-xs outline-none bg-transparent"
+                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
               />
             </div>
-            <div className="text-xs font-bold text-slate-500">
-              {preparedList.length} {isHi ? "कलंदरा उपलब्ध" : "records found"}
+            <div className="text-xs font-semibold text-slate-500">
+              {preparedList.length} {isHi ? "कलंदरा" : "records"}
             </div>
           </div>
 
           {preparedList.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
-              <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="font-bold text-slate-700 text-sm">
+            <div className="p-10 text-center bg-white rounded-xl border border-slate-200 text-slate-500">
+              <CheckCircle2 className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <h3 className="font-bold text-slate-700 text-xs sm:text-sm">
                 {isHi ? "कोई अंतिम कलंदरा तैयार नहीं है" : "No finalised Kalandras"}
               </h3>
-              <p className="text-xs mt-1 text-slate-400">
+              <p className="text-[11px] mt-1 text-slate-400">
                 {isHi ? "ड्राफ्ट से अंतिम रूप देकर यहां देखें।" : "Finalise a draft to view the completed document package."}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {preparedList.map((rec) => (
-                <Card key={rec.id} className="border border-slate-200 hover:border-emerald-400 transition-all bg-white shadow-2xs">
-                  <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="font-mono text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
-                          {rec.kalandraNumber}
-                        </span>
-                        <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          {rec.status}
-                        </span>
-                      </div>
-
-                      <h4 className="font-bold text-slate-900 text-sm leading-snug">{rec.templateTitle}</h4>
-                      <div className="text-xs text-emerald-800 font-semibold mt-0.5 flex items-center gap-1">
-                        <Gavel className="w-3 h-3 text-emerald-600" />
-                        <span>{rec.actAndSection}</span>
-                      </div>
-
-                      <div className="mt-3 text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                        <div>
-                          <strong>{isHi ? "गैर-सायल" : "Respondent"}:</strong>{" "}
-                          <span className="font-semibold text-slate-800">{rec.respondentName}</span>
-                          {rec.respondentFather ? ` (${isHi ? "पिता" : "S/o"}: ${rec.respondentFather})` : ""}
-                        </div>
-                        <div>
-                          <strong>{isHi ? "न्यायालय" : "Court"}:</strong> {rec.magistrateCourt}
-                        </div>
-                        <div>
-                          <strong>{isHi ? "थाना" : "PS"}:</strong> {rec.policeStation}
-                        </div>
-                        <div>
-                          <strong>{isHi ? "गवाह" : "Witnesses"}:</strong> {rec.witnesses?.length || 0} |{" "}
-                          <strong>{isHi ? "संलग्नक" : "Docs"}:</strong> {rec.supportingDocuments?.filter((d) => d.isAttached).length || 0}
-                        </div>
-                      </div>
+                <div key={rec.id} className="border border-slate-200 hover:border-slate-300 transition-all bg-white rounded-xl p-3.5 flex flex-col justify-between space-y-3 shadow-2xs">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        {rec.kalandraNumber}
+                      </span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold px-2 py-0.5 rounded flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {rec.status}
+                      </span>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between border-t border-slate-100 gap-2">
+                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug">{rec.templateTitle}</h4>
+                    <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                      <Gavel className="w-3 h-3 text-emerald-600" />
+                      <span>{rec.actAndSection}</span>
+                    </div>
+
+                    <div className="mt-2.5 text-xs text-slate-600 space-y-1 bg-slate-50/70 p-2.5 rounded-lg border border-slate-100">
+                      <div>
+                        <strong>{isHi ? "गैर-सायल" : "Respondent"}:</strong>{" "}
+                        <span className="font-semibold text-slate-800">{rec.respondentName}</span>
+                        {rec.respondentFather ? ` (${isHi ? "पिता" : "S/o"}: ${rec.respondentFather})` : ""}
+                      </div>
+                      <div>
+                        <strong>{isHi ? "न्यायालय" : "Court"}:</strong> {rec.magistrateCourt}
+                      </div>
+                      <div>
+                        <strong>{isHi ? "थाना" : "PS"}:</strong> {rec.policeStation}
+                      </div>
+                      <div>
+                        <strong>{isHi ? "गवाह" : "Witnesses"}:</strong> {rec.witnesses?.length || 0} |{" "}
+                        <strong>{isHi ? "संलग्नक" : "Docs"}:</strong> {rec.supportingDocuments?.filter((d) => d.isAttached).length || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-slate-100 gap-2">
+                    <Button
+                      onClick={() => handleDeleteRecord(rec.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 h-7.5 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+
+                    <div className="flex items-center gap-1.5">
                       <Button
-                        onClick={() => handleDeleteRecord(rec.id)}
-                        variant="ghost"
+                        onClick={() => handleEditRecord(rec)}
+                        variant="outline"
                         size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs px-2"
+                        className="h-7.5 text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 cursor-pointer"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Edit className="w-3 h-3 mr-1" />
+                        <span>{isHi ? "संपादित" : "Edit"}</span>
                       </Button>
-
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          onClick={() => handleEditRecord(rec)}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs font-semibold text-slate-700 border-slate-300"
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          <span>{isHi ? "संपादित" : "Edit"}</span>
-                        </Button>
-                        <Button
-                          onClick={() => handleOpenPackage(rec)}
-                          size="sm"
-                          className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 shadow-2xs"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>{isHi ? "दस्तावेज पैकेज देखें" : "View Package"}</span>
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={() => handleOpenPackage(rec)}
+                        size="sm"
+                        className="h-7.5 bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs gap-1 shadow-2xs cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>{isHi ? "दस्तावेज" : "View"}</span>
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -1511,14 +1533,14 @@ function KalandraWorkspaceContent() {
 
       {/* TAB 5: TEMPLATE MANAGER */}
       {activeTab === "manager" && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="space-y-4">
+          <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {isHi ? "कलंदरा टेम्पलेट प्रबंधक (Template Manager)" : "Kalandra Template Manager"}
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                  {isHi ? "कलंदरा प्रारूप प्रबंधक" : "Kalandra Template Manager"}
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-[11px] text-slate-500 mt-0.5">
                   {isHi
                     ? "नए अधिनियमों, विशेष स्थानीय परिपत्रों या अभियानों के अनुसार नए कलंदरा प्रारूप जोड़ें या संपादित करें।"
                     : "Configure and customize Kalandra templates for local administrative rules and new enactments."}
@@ -1527,54 +1549,55 @@ function KalandraWorkspaceContent() {
 
               <Button
                 onClick={() => setCustomTemplateModal(true)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 shadow-sm"
+                size="sm"
+                className="h-8 bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs gap-1.5 shadow-2xs cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                <span>{isHi ? "नया प्रारूप बनाएं" : "Create New Template"}</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>{isHi ? "नया प्रारूप जोड़ें" : "New Template"}</span>
               </Button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="p-3">Code</th>
-                    <th className="p-3">{isHi ? "शीर्षक (Title)" : "Title"}</th>
-                    <th className="p-3">{isHi ? "धारा व कानून" : "Act & Section"}</th>
-                    <th className="p-3">{isHi ? "विधिक स्थिति" : "Legal Status"}</th>
-                    <th className="p-3">{isHi ? "डिफ़ॉल्ट न्यायालय" : "Default Court"}</th>
-                    <th className="p-3 text-right">{isHi ? "कार्रवाई" : "Action"}</th>
+                  <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                    <th className="p-2.5">Code</th>
+                    <th className="p-2.5">{isHi ? "शीर्षक (Title)" : "Title"}</th>
+                    <th className="p-2.5">{isHi ? "धारा व कानून" : "Act & Section"}</th>
+                    <th className="p-2.5">{isHi ? "विधिक स्थिति" : "Legal Status"}</th>
+                    <th className="p-2.5">{isHi ? "डिफ़ॉल्ट न्यायालय" : "Default Court"}</th>
+                    <th className="p-2.5 text-right">{isHi ? "कार्रवाई" : "Action"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {templates.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50">
-                      <td className="p-3 font-mono font-bold text-slate-700">{t.code}</td>
-                      <td className="p-3">
+                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-2.5 font-mono font-bold text-slate-700">{t.code}</td>
+                      <td className="p-2.5">
                         <div className="font-bold text-slate-900">{isHi ? t.titleHi : t.titleEn}</div>
                         <div className="text-[11px] text-slate-500 truncate max-w-xs">{t.proceduralContext}</div>
                       </td>
-                      <td className="p-3 font-semibold text-emerald-800">{t.section}</td>
-                      <td className="p-3">
+                      <td className="p-2.5 font-semibold text-emerald-700">{t.section}</td>
+                      <td className="p-2.5">
                         {t.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION" ? (
-                          <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1">
+                          <span className="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-semibold inline-flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-amber-600" />
-                            Needs Legal Verification
+                            Needs Verification
                           </span>
                         ) : (
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1">
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Verified Statutory
+                            Verified
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-slate-600">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-2.5 text-slate-600">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</td>
+                      <td className="p-2.5 text-right">
                         <Button
                           onClick={() => handleSelectTemplate(t)}
                           size="sm"
                           variant="outline"
-                          className="text-xs text-emerald-800 border-emerald-300 hover:bg-emerald-50 font-bold"
+                          className="h-7 text-xs text-slate-700 border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
                         >
                           {isHi ? "उपयोग करें" : "Use"}
                         </Button>
@@ -1590,17 +1613,17 @@ function KalandraWorkspaceContent() {
 
       {/* MODAL: VIEW DOCUMENT PACKAGE */}
       {viewingPackage && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
             {/* Modal Header */}
-            <div className="bg-slate-900 text-white p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
+            <div className="bg-[#0b192c] text-white p-3.5 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Gavel className="w-5 h-5 text-emerald-400" />
+                <Gavel className="w-4 h-4 text-emerald-400" />
                 <div>
-                  <h3 className="font-bold text-sm">
+                  <h3 className="font-bold text-xs sm:text-sm">
                     {viewingPackage.record.kalandraNumber} - {isHi ? "दस्तावेज पैकेज" : "Document Package"}
                   </h3>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-[11px] text-slate-400">
                     {viewingPackage.record.templateTitle} ({viewingPackage.record.actAndSection})
                   </div>
                 </div>
@@ -1610,14 +1633,15 @@ function KalandraWorkspaceContent() {
                 <Button
                   onClick={handlePrintDoc}
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold gap-1.5"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold h-7.5 gap-1.5 cursor-pointer"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>{isHi ? "A4 प्रिंट निकालें" : "Print Document"}</span>
+                  <Printer className="w-3 h-3" />
+                  <span>{isHi ? "A4 प्रिंट" : "Print"}</span>
                 </Button>
                 <button
+                  type="button"
                   onClick={() => setViewingPackage(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   ✕
                 </button>
@@ -1625,52 +1649,57 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Document Switcher Tabs */}
-            <div className="bg-slate-100 p-2 flex items-center gap-1.5 overflow-x-auto border-b border-slate-200 text-xs">
+            <div className="bg-slate-100 p-1.5 flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs">
               <button
+                type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "main" })}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                  viewingPackage.activeDoc === "main" ? "bg-white text-emerald-900 shadow-2xs" : "text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
+                  viewingPackage.activeDoc === "main" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 1. {isHi ? "मुख्य कलंदरा प्रपत्र" : "Main Kalandra"}
               </button>
               <button
+                type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "forwarding" })}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                  viewingPackage.activeDoc === "forwarding" ? "bg-white text-emerald-900 shadow-2xs" : "text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
+                  viewingPackage.activeDoc === "forwarding" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                2. {isHi ? "SHO प्रेषण पत्र (Forwarding Letter)" : "Forwarding Letter"}
+                2. {isHi ? "SHO प्रेषण पत्र" : "Forwarding Letter"}
               </button>
               <button
+                type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "police" })}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                  viewingPackage.activeDoc === "police" ? "bg-white text-emerald-900 shadow-2xs" : "text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
+                  viewingPackage.activeDoc === "police" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                3. {isHi ? "मौका निरीक्षण आख्या (Police Report)" : "Police Report"}
+                3. {isHi ? "मौका निरीक्षण आख्या" : "Police Report"}
               </button>
               <button
+                type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "witness" })}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                  viewingPackage.activeDoc === "witness" ? "bg-white text-emerald-900 shadow-2xs" : "text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
+                  viewingPackage.activeDoc === "witness" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                4. {isHi ? "गवाहान सूची (Witness Memo)" : "Witness List"}
+                4. {isHi ? "गवाहान सूची" : "Witness List"}
               </button>
               <button
+                type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "annexure" })}
-                className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                  viewingPackage.activeDoc === "annexure" ? "bg-white text-emerald-900 shadow-2xs" : "text-slate-600 hover:bg-slate-200"
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
+                  viewingPackage.activeDoc === "annexure" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                5. {isHi ? "संलग्नक सूची (Annexure List)" : "Annexure List"}
+                5. {isHi ? "संलग्नक सूची" : "Annexure List"}
               </button>
             </div>
 
             {/* Document Render Area */}
-            <div className="flex-1 p-6 overflow-y-auto bg-slate-50">
-              <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 min-h-[500px]">
+            <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50">
+              <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 min-h-[450px]">
                 {viewingPackage.activeDoc === "main" && (
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.mainKalandraHtml }} />
                 )}
@@ -1698,7 +1727,7 @@ function KalandraWorkspaceContent() {
                 <Button
                   onClick={handlePrintDoc}
                   size="sm"
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1"
+                  className="bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs h-8 gap-1.5 cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>{isHi ? "प्रिंट करें" : "Print"}</span>
@@ -1707,7 +1736,7 @@ function KalandraWorkspaceContent() {
                   onClick={() => setViewingPackage(null)}
                   variant="outline"
                   size="sm"
-                  className="text-xs font-semibold"
+                  className="h-8 text-xs font-semibold border-slate-200 cursor-pointer"
                 >
                   {isHi ? "बंद करें" : "Close"}
                 </Button>
@@ -1719,23 +1748,24 @@ function KalandraWorkspaceContent() {
 
       {/* MODAL: CREATE CUSTOM TEMPLATE IN MANAGER */}
       {customTemplateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="font-bold text-slate-900 text-base">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-4 sm:p-5 space-y-3.5 border border-slate-200">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base">
                 {isHi ? "नया कलंदरा प्रारूप जोड़ें" : "Create Custom Kalandra Template"}
               </h3>
               <button
+                type="button"
                 onClick={() => setCustomTemplateModal(false)}
-                className="text-slate-400 hover:text-slate-700"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-md cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "शीर्षक (हिंदी)" : "Title (Hindi)"} *
                 </label>
                 <input
@@ -1743,11 +1773,11 @@ function KalandraWorkspaceContent() {
                   value={newTemplate.titleHi || ""}
                   onChange={(e) => setNewTemplate({ ...newTemplate, titleHi: e.target.value })}
                   placeholder="e.g. कलंदरा विशेष अभियान..."
-                  className="w-full p-2 rounded-lg border border-slate-300"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
                 />
               </div>
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "शीर्षक (English)" : "Title (English)"} *
                 </label>
                 <input
@@ -1755,12 +1785,12 @@ function KalandraWorkspaceContent() {
                   value={newTemplate.titleEn || ""}
                   onChange={(e) => setNewTemplate({ ...newTemplate, titleEn: e.target.value })}
                   placeholder="e.g. Special Kalandra..."
-                  className="w-full p-2 rounded-lg border border-slate-300"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "अधिनियम व धारा (Section)" : "Act & Section"} *
                 </label>
                 <input
@@ -1768,12 +1798,12 @@ function KalandraWorkspaceContent() {
                   value={newTemplate.section || ""}
                   onChange={(e) => setNewTemplate({ ...newTemplate, section: e.target.value })}
                   placeholder="e.g. Sec 107/151 CrPC / Local Act"
-                  className="w-full p-2 rounded-lg border border-slate-300"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "विधिक सत्यापन स्थिति" : "Legal Status"}
                 </label>
                 <select
@@ -1784,7 +1814,7 @@ function KalandraWorkspaceContent() {
                       legalStatus: e.target.value as KalandraLegalStatus
                     })
                   }
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium cursor-pointer"
                 >
                   <option value="VERIFIED_STATUTORY">Verified Statutory (वैधानिक सत्यापित)</option>
                   <option value="NEEDS_LEGAL_MAPPING_VERIFICATION">
@@ -1794,7 +1824,7 @@ function KalandraWorkspaceContent() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "डिफ़ॉल्ट न्यायालय (Court)" : "Default Court"}
                 </label>
                 <input
@@ -1802,32 +1832,32 @@ function KalandraWorkspaceContent() {
                   value={newTemplate.defaultCourtHi || ""}
                   onChange={(e) => setNewTemplate({ ...newTemplate, defaultCourtHi: e.target.value })}
                   placeholder="न्यायालय उप-मंडल मजिस्ट्रेट / कार्यपालक दंडाधिकारी"
-                  className="w-full p-2 rounded-lg border border-slate-300"
+                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="font-semibold text-slate-700 block mb-1">
+                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                   {isHi ? "डिफ़ॉल्ट कलंदरा आख्या प्रारूप (Hindi Narrative Template)" : "Narrative Template"}
                 </label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   value={newTemplate.defaultNarrativeTemplateHi || ""}
                   onChange={(e) =>
                     setNewTemplate({ ...newTemplate, defaultNarrativeTemplateHi: e.target.value })
                   }
                   placeholder="सेवा में श्रीमान दंडाधिकारी... {{respondentName}}, {{incidentPlace}}..."
-                  className="w-full p-2 rounded-lg border border-slate-300 font-sans"
+                  className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-sans text-xs"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-200 flex justify-end gap-2">
+            <div className="pt-2.5 border-t border-slate-100 flex justify-end gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCustomTemplateModal(false)}
-                className="text-xs"
+                className="h-8 text-xs font-semibold border-slate-200 cursor-pointer"
               >
                 {isHi ? "रद्द करें" : "Cancel"}
               </Button>
@@ -1863,7 +1893,7 @@ function KalandraWorkspaceContent() {
                   setCustomTemplateModal(false);
                   alert(isHi ? "नया प्रारूप सफलतापूर्वक सहेज लिया गया!" : "Template saved successfully!");
                 }}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs"
+                className="h-8 bg-[#0b192c] hover:bg-slate-800 text-white font-semibold text-xs cursor-pointer shadow-2xs"
               >
                 {isHi ? "प्रारूप सहेजें" : "Save Template"}
               </Button>
