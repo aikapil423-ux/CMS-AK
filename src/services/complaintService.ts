@@ -299,6 +299,8 @@ export const ComplaintService = {
     viewerStation?: string;
     activeQueueOnly?: boolean;
     showSentToSho?: boolean;
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<ComplaintItem[]> {
     complaintsStore = loadComplaintsFromStorage();
     let list = complaintsStore.map((c) => ({
@@ -488,6 +490,29 @@ export const ComplaintService = {
           (c.firNumber && c.firNumber.toLowerCase().includes(q)) ||
           c.accusedList.some((a) => a.name.toLowerCase().includes(q) || (a.address && a.address.toLowerCase().includes(q)))
       );
+    }
+    if (filter?.dateFrom) {
+      const fromTime = new Date(`${filter.dateFrom}T00:00:00`).getTime();
+      if (!isNaN(fromTime)) {
+        list = list.filter((c) => {
+          const raw = c.createdAt || c.incidentDate;
+          if (!raw) return true;
+          const t = new Date(raw).getTime();
+          return !isNaN(t) && t >= fromTime;
+        });
+      }
+    }
+
+    if (filter?.dateTo) {
+      const toTime = new Date(`${filter.dateTo}T23:59:59.999`).getTime();
+      if (!isNaN(toTime)) {
+        list = list.filter((c) => {
+          const raw = c.createdAt || c.incidentDate;
+          if (!raw) return true;
+          const t = new Date(raw).getTime();
+          return !isNaN(t) && t <= toTime;
+        });
+      }
     }
 
     return list;
