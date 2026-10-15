@@ -1067,12 +1067,22 @@ export const firService = {
   },
 
   transferMultipleFirsInterState(payload: {
-    firIds: string[];
-    targetState: string;
-    targetDistrict: string;
-    targetPoliceStation: string;
-    statutoryGround: string;
-    transferReason: string;
+    firIds?: string[];
+    firDestinations?: Record<
+      string,
+      {
+        targetState: string;
+        targetDistrict: string;
+        targetPoliceStation: string;
+        statutoryGround?: string;
+        transferReason?: string;
+      }
+    >;
+    targetState?: string;
+    targetDistrict?: string;
+    targetPoliceStation?: string;
+    statutoryGround?: string;
+    transferReason?: string;
     orderNumber?: string;
     orderDate?: string;
     dispatchDate: string;
@@ -1085,24 +1095,41 @@ export const firService = {
     const now = new Date();
     const newRecords: FIRTransferRecord[] = [];
 
-    for (const firId of payload.firIds) {
+    // Collect all unique FIR IDs either from firIds or firDestinations keys
+    const allFirIds = Array.from(
+      new Set([
+        ...(payload.firIds || []),
+        ...Object.keys(payload.firDestinations || {}),
+      ])
+    );
+
+    for (const firId of allFirIds) {
       const fir = this.getFirById(firId);
       if (!fir) continue;
+
+      const perFirDest = payload.firDestinations?.[fir.id] || payload.firDestinations?.[fir.firNumber];
+      const targetState = perFirDest?.targetState || payload.targetState || "Delhi (NCT)";
+      const targetDistrict = perFirDest?.targetDistrict || payload.targetDistrict || "";
+      const targetPoliceStation = perFirDest?.targetPoliceStation || payload.targetPoliceStation || "";
+      const statutoryGround = perFirDest?.statutoryGround || payload.statutoryGround || "Zero FIR Transfer u/s 173(1) BNSS, 2023";
+      const transferReason = perFirDest?.transferReason || payload.transferReason || statutoryGround;
 
       const recordId = `trf-fir-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const transferRecord: FIRTransferRecord = {
         id: recordId,
         firId: fir.id,
         firNumber: fir.firNumber,
+        complainantName: fir.complainantName,
+        actsAndSections: fir.actsAndSections,
         transferType: "INTER_STATE",
         sourceState: fir.state || "Haryana",
         sourceDistrict: fir.district || "Gurugram",
         sourcePoliceStation: fir.policeStation || "Sector 29 Police Station",
-        targetState: payload.targetState,
-        targetDistrict: payload.targetDistrict,
-        targetPoliceStation: payload.targetPoliceStation,
-        transferReason: payload.transferReason,
-        statutoryGround: payload.statutoryGround,
+        targetState,
+        targetDistrict,
+        targetPoliceStation,
+        transferReason,
+        statutoryGround,
         orderNumber: payload.orderNumber,
         orderDate: payload.orderDate,
         dispatchDate: payload.dispatchDate,
@@ -1118,7 +1145,7 @@ export const firService = {
         id: `tl-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         date: `${payload.dispatchDate} ${payload.dispatchTime || "10:00"}`,
         title: "FIR Transferred (Inter-State)",
-        description: `Case docket transferred to ${payload.targetPoliceStation}, Dist. ${payload.targetDistrict}, State: ${payload.targetState}. Statutory Ground: ${payload.statutoryGround}. Sanction Order: ${payload.orderNumber || "N/A"}.`,
+        description: `Case docket transferred to ${targetPoliceStation}, Dist. ${targetDistrict}, State: ${targetState}. Statutory Ground: ${statutoryGround}. Sanction Order: ${payload.orderNumber || "N/A"}.`,
         actor: `${payload.transferredBy} (${payload.transferredByRank || "SHO"})`,
         stage: "SUPERVISORY_REVIEW",
       };
@@ -1129,19 +1156,19 @@ export const firService = {
         action: "INTER_STATE_TRANSFER",
         officerName: payload.transferredBy,
         role: payload.transferredByRank || "SHO",
-        details: `Transferred to ${payload.targetPoliceStation}, ${payload.targetDistrict}, ${payload.targetState}. Ground: ${payload.statutoryGround}`,
+        details: `Transferred to ${targetPoliceStation}, ${targetDistrict}, ${targetState}. Ground: ${statutoryGround}`,
       };
 
       const updated = this.updateFir(fir.id, {
         isTransferred: true,
         transferType: "INTER_STATE",
-        transferredToState: payload.targetState,
-        transferredToDistrict: payload.targetDistrict,
-        transferredToPoliceStation: payload.targetPoliceStation,
+        transferredToState: targetState,
+        transferredToDistrict: targetDistrict,
+        transferredToPoliceStation: targetPoliceStation,
         transferredAt: now.toISOString(),
         transferredBy: `${payload.transferredBy} (${payload.transferredByRank || "SHO"})`,
-        transferReason: payload.transferReason,
-        transferStatutoryGround: payload.statutoryGround,
+        transferReason: transferReason,
+        transferStatutoryGround: statutoryGround,
         transferOrderNumber: payload.orderNumber,
         transferOrderDate: payload.orderDate,
         transferRecord,
@@ -1193,24 +1220,49 @@ export const firService = {
   },
 
   getTransferHistory(): FIRTransferRecord[] {
+    const historyMap = new Map<string, FIRTransferRecord>();
+
+    // 1. Load from dedicated storage key
     if (typeof window !== "undefined" && window.localStorage) {
       try {
         const stored = window.localStorage.getItem("haryana_police_cms_fir_transfers_v1");
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+          const list: FIRTransferRecord[] = JSON.parse(stored);
+          list.forEach((rec) => {
+            if (rec && rec.id) {
+              historyMap.set(rec.id, rec);
+            }
+          });
+        }
       } catch {
         // fallback
       }
     }
-    // Also extract from firsStore
-    const historyList: FIRTransferRecord[] = [];
+
+    // 2. Merge from all firs in firsStore
     firsStore.forEach((fir) => {
       if (fir.transferHistory && fir.transferHistory.length > 0) {
-        historyList.push(...fir.transferHistory);
-      } else if (fir.transferRecord) {
-        historyList.push(fir.transferRecord);
+        fir.transferHistory.forEach((rec) => {
+          if (rec && rec.id) {
+            historyMap.set(rec.id, {
+              ...rec,
+              complainantName: rec.complainantName || fir.complainantName,
+              actsAndSections: rec.actsAndSections || fir.actsAndSections,
+            });
+          }
+        });
+      } else if (fir.transferRecord && fir.transferRecord.id) {
+        historyMap.set(fir.transferRecord.id, {
+          ...fir.transferRecord,
+          complainantName: fir.transferRecord.complainantName || fir.complainantName,
+          actsAndSections: fir.actsAndSections,
+        });
       }
     });
-    return historyList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    return Array.from(historyMap.values()).sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
   },
 
   linkMultipleFirs(payload: {

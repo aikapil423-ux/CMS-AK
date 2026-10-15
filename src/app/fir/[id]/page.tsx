@@ -44,6 +44,8 @@ import {
   Copy,
   TrendingUp,
   BookOpen,
+  ArrowRightLeft,
+  Globe2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
@@ -198,6 +200,10 @@ export default function FIRProfilePage() {
   const [docFileName, setDocFileName] = useState("");
   const [docFileDataUrl, setDocFileDataUrl] = useState("");
   const [docFileSize, setDocFileSize] = useState("");
+
+  // Header action dropdown states (Print, Crime Details, Arrest Docs)
+  const [headerActionsDropdownOpen, setHeaderActionsDropdownOpen] = useState(false);
+  const headerActionsDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Document actions states
   const [generateDocDropdownOpen, setGenerateDocDropdownOpen] = useState(false);
@@ -430,6 +436,12 @@ export default function FIRProfilePage() {
         !generateReportDropdownRef.current.contains(e.target as Node)
       ) {
         setGenerateReportDropdownOpen(false);
+      }
+      if (
+        headerActionsDropdownRef.current &&
+        !headerActionsDropdownRef.current.contains(e.target as Node)
+      ) {
+        setHeaderActionsDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1214,80 +1226,144 @@ export default function FIRProfilePage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Statutory Print Modal Button */}
-          <Button
-            size="sm"
-            onClick={() => setIsReceiptOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs gap-1.5 shadow-sm"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            Print Statutory FIR Copy
-          </Button>
+          {/* Actions & Forms Dropdown (Print Statutory FIR, Crime Details IIF-II, Arrest Docs IIF-III) */}
+          <div className="relative" ref={headerActionsDropdownRef}>
+            <Button
+              size="sm"
+              onClick={() => setHeaderActionsDropdownOpen(!headerActionsDropdownOpen)}
+              className={`font-bold text-xs gap-1.5 transition-all shadow-sm cursor-pointer ${
+                !isCrimeDetailsFilled
+                  ? "bg-amber-600 hover:bg-amber-700 text-white shadow-[0_0_15px_rgba(245,158,11,0.7)] ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 border border-amber-300"
+                  : "bg-slate-900 hover:bg-slate-800 text-white"
+              }`}
+              title="FIR Quick Actions & Statutory Forms"
+            >
+              <FileText className="w-3.5 h-3.5 text-white" />
+              <span>Actions &amp; Forms</span>
+              {!isCrimeDetailsFilled && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${headerActionsDropdownOpen ? "rotate-180" : ""}`} />
+            </Button>
 
-          {/* Crime Details Form (IIF-II) Button with continuous glow while pending */}
-          <Button
-            size="sm"
-            onClick={() => setIsCrimeDetailsOpen(true)}
-            className={`font-bold text-xs gap-1.5 transition-all duration-300 cursor-pointer ${
-              !isCrimeDetailsFilled
-                ? "bg-amber-600 hover:bg-amber-700 text-white shadow-[0_0_18px_rgba(245,158,11,0.85)] animate-pulse ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 border border-amber-300"
-                : "bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs"
-            }`}
-            title={
-              !isCrimeDetailsFilled
-                ? "अनिवार्य: अपराध विवरण प्रपत्र (IIF-II) दर्ज करें ताकि गिरफ़्तारी प्रपत्र तैयार किए जा सकें"
-                : "CCTNS Integrated Investigation Form II (IIF-II) / अपराध विवरण प्रपत्र (सत्यापित)"
-            }
-          >
-            {!isCrimeDetailsFilled ? (
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-              </span>
-            ) : (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
-            )}
-            <Sparkles className={`w-3.5 h-3.5 ${!isCrimeDetailsFilled ? "text-amber-200 animate-spin" : "text-emerald-200"}`} />
-            <span>
-              {!isCrimeDetailsFilled
-                ? "Crime Details (IIF-II) • अनिवार्य"
-                : "Crime Details (IIF-II) ✓"}
-            </span>
-          </Button>
+            {headerActionsDropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1.5 space-y-1 animate-in fade-in-50 text-xs">
+                <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                  <span>FIR Actions &amp; Forms</span>
+                  <span className="text-[9px] font-mono text-slate-500 font-normal">CCTNS / BNSS</span>
+                </div>
 
-          {/* Arrest Docs & IIF-III Action Button */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (!isCrimeDetailsFilled) {
-                alert(
-                  "⚠️ वैधानिक रोक: अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!\n\nजब तक IIF-II फॉर्म भरकर FIR प्रोफाइल के दस्तावेज़ पैनल में सुरक्षित नहीं होगा, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) तैयार नहीं किए जा सकते।\n\nकृपया पहले चमक रहे 'Crime Details (IIF-II)' बटन पर क्लिक करके प्रपत्र भरें।"
-                );
-                setIsCrimeDetailsOpen(true);
-                return;
-              }
-              router.push(`/fir-workspace/arrest-docs?firId=${fir.id}`);
-            }}
-            className={`text-xs font-bold gap-1.5 transition-all cursor-pointer ${
-              !isCrimeDetailsFilled
-                ? "border-slate-200 bg-slate-100 text-slate-400 hover:bg-slate-200/60"
-                : "border-rose-300 text-rose-800 bg-rose-50/70 hover:bg-rose-100 shadow-2xs"
-            }`}
-            title={
-              !isCrimeDetailsFilled
-                ? "IIF-II लंबित होने के कारण गिरफ़्तारी प्रपत्र लॉक हैं"
-                : "Open Arrest Docs and IIF-III Workspace"
-            }
-          >
-            <ShieldAlert className={`w-3.5 h-3.5 ${!isCrimeDetailsFilled ? "text-slate-400" : "text-rose-600"}`} />
-            <span>Arrest Docs and IIF-III</span>
-            {!isCrimeDetailsFilled && (
-              <span className="text-[10px] px-1 py-0.2 rounded bg-slate-200 text-slate-600 font-mono">
-                Locked
-              </span>
+                {/* 1. Print Statutory FIR Copy */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderActionsDropdownOpen(false);
+                    setIsReceiptOpen(true);
+                  }}
+                  className="w-full flex items-start gap-2.5 p-2 rounded-lg text-left hover:bg-red-50 text-slate-700 hover:text-red-900 transition-colors cursor-pointer group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-red-100 group-hover:bg-red-200 flex items-center justify-center shrink-0 mt-0.5">
+                    <Printer className="w-3.5 h-3.5 text-red-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-xs text-slate-900 group-hover:text-red-900 flex items-center justify-between">
+                      <span>Print Statutory FIR Copy</span>
+                      <span className="text-[9px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-mono">
+                        IIF-I
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 group-hover:text-red-700/80 mt-0.5">
+                      Statutory FIR copy &amp; CCTNS acknowledgment receipt
+                    </p>
+                  </div>
+                </button>
+
+                {/* 2. Crime Details (IIF-II) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderActionsDropdownOpen(false);
+                    setIsCrimeDetailsOpen(true);
+                  }}
+                  className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors cursor-pointer group ${
+                    !isCrimeDetailsFilled ? "bg-amber-50/70 hover:bg-amber-100/80" : "hover:bg-emerald-50"
+                  }`}
+                >
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                    !isCrimeDetailsFilled ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                  }`}>
+                    {isCrimeDetailsFilled ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
+                      <span>Crime Details (IIF-II)</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                        !isCrimeDetailsFilled
+                          ? "bg-amber-200 text-amber-900 animate-pulse"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        {!isCrimeDetailsFilled ? "अनिवार्य" : "✓ Filled"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {!isCrimeDetailsFilled
+                        ? "अपराध विवरण प्रपत्र दर्ज करें (अनिवार्य चरण)"
+                        : "CCTNS Integrated Investigation Form II"}
+                    </p>
+                  </div>
+                </button>
+
+                {/* 3. Arrest Docs and IIF-III */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHeaderActionsDropdownOpen(false);
+                    if (!isCrimeDetailsFilled) {
+                      alert(
+                        "⚠️ वैधानिक रोक: अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) भरना अनिवार्य है!\n\nजब तक IIF-II फॉर्म भरकर FIR प्रोफाइल के दस्तावेज़ पैनल में सुरक्षित नहीं होगा, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) तैयार नहीं किए जा सकते।\n\nकृपया पहले 'Crime Details (IIF-II)' प्रपत्र भरें।"
+                      );
+                      setIsCrimeDetailsOpen(true);
+                      return;
+                    }
+                    router.push(`/fir-workspace/arrest-docs?firId=${fir.id}`);
+                  }}
+                  className={`w-full flex items-start gap-2.5 p-2 rounded-lg text-left transition-colors cursor-pointer group ${
+                    !isCrimeDetailsFilled ? "opacity-75 hover:bg-slate-50" : "hover:bg-rose-50"
+                  }`}
+                >
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                    !isCrimeDetailsFilled ? "bg-slate-100 text-slate-400" : "bg-rose-100 text-rose-700 group-hover:bg-rose-200"
+                  }`}>
+                    <ShieldAlert className={`w-3.5 h-3.5 ${!isCrimeDetailsFilled ? "text-slate-400" : "text-rose-600"}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
+                      <span>Arrest Docs and IIF-III</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                        !isCrimeDetailsFilled
+                          ? "bg-slate-200 text-slate-600"
+                          : "bg-rose-100 text-rose-700"
+                      }`}>
+                        {!isCrimeDetailsFilled ? "Locked" : "IIF-III"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {!isCrimeDetailsFilled
+                        ? "IIF-II लंबित होने के कारण लॉक है"
+                        : "Arrest Memo, Jamatalashi, Grounds & Remand"}
+                    </p>
+                  </div>
+                </button>
+              </div>
             )}
-          </Button>
+          </div>
 
           {/* Assign / Reassign IO */}
           {(isSho || isSuperior) && (
@@ -1414,6 +1490,97 @@ export default function FIRProfilePage() {
               <Edit3 className="w-3.5 h-3.5" />
               प्रपत्र देखें / संपादित करें (Edit IIF-II)
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* INTER-STATE TRANSFERRED FIR BANNER */}
+      {fir.isTransferred && (
+        <div className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-amber-100/50 to-amber-50 p-4 text-amber-950 space-y-2.5 shadow-xs animate-in fade-in-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-bold shrink-0">
+                <ArrowRightLeft className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase text-amber-950">
+                    Inter-State Transferred Case Docket (अंतर्राज्यीय स्थानांतरित केस)
+                  </span>
+                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 uppercase tracking-wider">
+                    {fir.transferredToState || "Other State"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  यह प्राथमिकी अन्य राज्य/केंद्र शासित प्रदेश के संबंधित थाने को वैधानिक क्षेत्राधिकार नियमों के अंतर्गत स्थानांतरित की जा चुकी है।
+                </p>
+              </div>
+            </div>
+            {fir.transferredAt && (
+              <span className="text-[11px] font-bold text-amber-900 bg-white/80 px-2.5 py-1 rounded-md border border-amber-300">
+                स्थानांतरण दिनांक: {formatDate(fir.transferredAt)}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white/70 p-3 rounded-lg border border-amber-200">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">कहाँ से (Source):</span>
+              <span className="font-semibold text-slate-800">{fir.policeStation}, {fir.district} (Haryana)</span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-amber-800 block mb-0.5">कहाँ भेजा गया (Destination):</span>
+              <span className="font-black text-blue-700">
+                {fir.transferredToPoliceStation || "Jurisdictional PS"}, {fir.transferredToDistrict || ""} ({fir.transferredToState || ""})
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">आदेश व अधिकारी:</span>
+              <span className="font-medium text-slate-800">
+                {fir.transferOrderNumber ? `आदेश: ${fir.transferOrderNumber} • ` : ""}
+                {fir.transferredBy || "SHO Sector 29"}
+              </span>
+            </div>
+          </div>
+
+          {fir.transferReason && (
+            <div className="text-[11px] text-amber-900 bg-amber-100/50 p-2 rounded border border-amber-200">
+              <strong>वैधानिक आधार / कारण:</strong> {fir.transferReason}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* LINKED FIRS CLUSTER BANNER */}
+      {fir.linkedFirsList && fir.linkedFirsList.length > 0 && (
+        <div className="rounded-xl border border-purple-200 bg-purple-50/80 p-3.5 text-purple-950 space-y-2 shadow-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-purple-700" />
+              <span className="text-xs font-bold text-purple-950">
+                Linked / Connected FIRs Cluster ({fir.linkedFirsList.length} Connected Cases)
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full border border-purple-300">
+              Babubhai / Cross-Case Linked
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {fir.linkedFirsList.map((link) => (
+              <span
+                key={link.id}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-xs"
+              >
+                <span className="font-mono font-bold text-purple-900">{link.firNumber}</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                  {link.linkType}
+                </span>
+                {link.complainantName && (
+                  <span className="text-[10px] text-slate-500">({link.complainantName})</span>
+                )}
+              </span>
+            ))}
           </div>
         </div>
       )}

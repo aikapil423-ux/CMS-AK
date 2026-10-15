@@ -1207,6 +1207,8 @@ export interface FIRTransferRecord {
   id: string;
   firId: string;
   firNumber: string;
+  complainantName?: string;
+  actsAndSections?: string;
   transferType: "INTER_STATE";
   sourceState: string;
   sourceDistrict: string;
