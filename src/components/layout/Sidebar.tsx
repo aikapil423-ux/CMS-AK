@@ -13,6 +13,8 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
+  PanelLeftClose,
+  PanelLeftOpen,
   CheckCircle2,
   Flame,
   LayoutGrid,
@@ -28,7 +30,6 @@ import {
   HardDrive,
   ReceiptText,
   ClipboardList,
-  Tag,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -131,13 +132,9 @@ export function Sidebar() {
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
-  // REGISTRATIONS NAVIGATION ITEMS
+  // REGISTRATIONS NAVIGATION ITEMS (Clean slide bar: category tabs managed inside the module)
   const registrationsNavItems: NavItem[] = [
-    { name: "All Registrations", href: "/registrations", icon: ClipboardList, badge: "Hub", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "UIDB / UD", href: "/registrations?tab=uidb", icon: FileText, badge: "Sec 194", badgeColor: "bg-amber-50 text-amber-700 border-amber-200" },
-    { name: "Missing Person", href: "/registrations?tab=missing-person", icon: Users, badge: "Track", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "Missing Cattle", href: "/registrations?tab=missing-cattle", icon: Tag, badge: "Cattle", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    { name: "Lost Property", href: "/registrations?tab=lost-property", icon: Shield, badge: "CEIR", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+    { name: "Registrations Register", href: "/registrations", icon: ClipboardList, badge: "CCTNS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 

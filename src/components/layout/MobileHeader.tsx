@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
+import { TopBarPersonaSwitcher } from "./TopBarPersonaSwitcher";
 import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,6 @@ export function MobileHeader() {
   const { currentUser, logout } = useAuth();
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [roleModalOpen, setRoleModalOpen] = useState(false);
 
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
@@ -64,15 +63,8 @@ export function MobileHeader() {
             {/* Bilingual Instant Language Switcher (Hindi / English) */}
             <TopBarLanguageSwitcher isMobile={true} />
 
-            {/* Role Switcher Pill */}
-            <button
-              onClick={() => setRoleModalOpen(true)}
-              className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200/80 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 border border-slate-200/70"
-              title={t("Switch Police Role")}
-            >
-              <UserCog className="w-3.5 h-3.5 text-slate-600" />
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
+            {/* Role Switcher Dropdown */}
+            <TopBarPersonaSwitcher isMobile={true} />
 
             {/* Drawer menu trigger */}
             <button
@@ -215,32 +207,18 @@ export function MobileHeader() {
                     {t("Registrations")}
                   </div>
                   <Link
-                    href="/registrations?tab=UIDB"
+                    href="/registrations"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    UIDB / UD Register
+                    {t("Registrations Register")}
                   </Link>
                   <Link
-                    href="/registrations?tab=MISSING_PERSON"
+                    href="/acts-sections"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    Missing Person
-                  </Link>
-                  <Link
-                    href="/registrations?tab=MISSING_CATTLE"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    Missing Cattle
-                  </Link>
-                  <Link
-                    href="/registrations?tab=LOST_PROPERTY"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    Lost Property
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : (
@@ -297,7 +275,7 @@ export function MobileHeader() {
               <button
                 onClick={() => {
                   setDrawerOpen(false);
-                  setRoleModalOpen(true);
+                  window.dispatchEvent(new CustomEvent("cms-open-role-switcher"));
                 }}
                 className="w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 flex items-center gap-2"
               >
@@ -320,8 +298,6 @@ export function MobileHeader() {
         </div>
       )}
 
-      {/* Role Switcher Modal */}
-      <RoleSwitcherModal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} />
     </>
   );
 }
