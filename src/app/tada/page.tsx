@@ -85,38 +85,46 @@ export default function TADAPage() {
 
   // Load user bills strictly isolated to active user
   const loadUserBills = () => {
-    if (userId) {
-      const records = tadaService.getByUser(userId);
+    if (currentUser) {
+      const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
       setSavedBills(records);
+      return records;
     }
+    return [];
   };
 
   // Auto 01-date extraction from Roznamcha GD for last month on mount / user change
   useEffect(() => {
-    if (userId) {
-      const records = tadaService.getByUser(userId);
+    if (currentUser && currentUser.id) {
+      const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
       setSavedBills(records);
       if (records.length > 0) {
         setBill(records[0]);
-      } else if (currentUser) {
-        setBill(createBlankTADABill(userId, currentUser.name));
+      } else {
+        setBill(createBlankTADABill(currentUser.id, currentUser.name));
       }
-    }
-    if (currentUser && currentUser.id) {
+
       void tadaAutoFillService.autoSyncLastMonthBill(currentUser).then((res) => {
-        if (res.generated) {
-          if (userId) {
-            const records = tadaService.getByUser(userId);
-            setSavedBills(records);
-            if (records.length > 0) {
-              setBill(records[0]);
-            }
-          }
+        if (res.generated && res.bill) {
+          setBill(res.bill);
+          setSavedBills((prev) => {
+            const exists = prev.some((b) => b.id === res.bill.id);
+            return exists ? prev.map((b) => (b.id === res.bill.id ? res.bill : b)) : [res.bill, ...prev];
+          });
           setAutoSyncBanner(res.message);
         }
       });
     }
-  }, [userId, currentUser]);
+
+    const handleBillsChanged = () => {
+      if (currentUser) {
+        const records = tadaService.getByUser(currentUser.id, currentUser.pno, currentUser.name);
+        setSavedBills(records);
+      }
+    };
+    window.addEventListener("cms_tada_bills_changed", handleBillsChanged);
+    return () => window.removeEventListener("cms_tada_bills_changed", handleBillsChanged);
+  }, [currentUser]);
 
   const handleOpenPreview = (b: TADABillRecord) => {
     setPreviewModalBill(b);
@@ -136,6 +144,13 @@ export default function TADAPage() {
         ? await tadaAutoFillService.syncSpecificMonthBill(currentUser, monthInfo, true)
         : await tadaAutoFillService.autoSyncLastMonthBill(currentUser, true);
 
+      if (res.bill) {
+        setBill(res.bill);
+        setSavedBills((prev) => {
+          const exists = prev.some((b) => b.id === res.bill.id);
+          return exists ? prev.map((b) => (b.id === res.bill.id ? res.bill : b)) : [res.bill, ...prev];
+        });
+      }
       loadUserBills();
       setAutoSyncBanner(res.message);
       setActiveTab("HISTORY");
@@ -403,11 +418,15 @@ export default function TADAPage() {
     const toSave: TADABillRecord = {
       ...bill,
       status,
-      userId,
+      userId: currentUser?.id || userId,
       userName: bill.form1TourProgramme.employeeName || userName,
     };
-    const saved = tadaService.save(toSave, userId);
+    const saved = tadaService.save(toSave, currentUser?.id || userId);
     setBill(saved);
+    setSavedBills((prev) => {
+      const exists = prev.some((b) => b.id === saved.id);
+      return exists ? prev.map((b) => (b.id === saved.id ? saved : b)) : [saved, ...prev];
+    });
     loadUserBills();
     setSaveSuccessMsg(`सफलतापूर्वक सुरक्षित (Saved)! ID: ${saved.id}`);
     setTimeout(() => setSaveSuccessMsg(""), 4000);

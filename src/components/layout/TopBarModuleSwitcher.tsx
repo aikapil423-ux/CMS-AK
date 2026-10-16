@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Shield,
   X,
+  ClipboardList,
 } from "lucide-react";
 import { useModule, PoliceModule } from "@/context/ModuleContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -60,6 +61,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaints =
     !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
+  const isRegistrations = pathname.startsWith("/registrations");
 
 
   const handleNavigate = (path: string, moduleKey?: PoliceModule) => {
@@ -104,6 +106,17 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       badge: "CCTNS",
       color: "blue",
       isActive: isFir,
+    },
+    {
+      id: "REGISTRATIONS",
+      title: "Registrations",
+      titleHi: "पंजीकरण रजिस्टर (Registrations)",
+      desc: "UIDB / Unnatural Death, Missing Person, Missing Cattle & Lost Property",
+      href: "/registrations",
+      icon: ClipboardList,
+      badge: "Registers",
+      color: "emerald",
+      isActive: isRegistrations,
     },
   ];
 
@@ -195,6 +208,8 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                           ? "bg-amber-100 text-amber-900"
                           : mod.color === "red"
                           ? "bg-red-100 text-red-900"
+                          : mod.color === "emerald"
+                          ? "bg-emerald-100 text-emerald-900"
                           : "bg-blue-100 text-blue-900"
                       }`}
                     >
@@ -211,6 +226,8 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                               ? "bg-amber-100 text-amber-800"
                               : mod.color === "red"
                               ? "bg-red-100 text-red-800"
+                              : mod.color === "emerald"
+                              ? "bg-emerald-100 text-emerald-800"
                               : "bg-blue-100 text-blue-800"
                           }`}
                         >

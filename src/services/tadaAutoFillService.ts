@@ -510,11 +510,11 @@ export const tadaAutoFillService = {
     const newBill = this.buildTADABill(user, monthInfo, journeys);
 
     // Auto-save strictly to user's TA history
-    tadaService.save(newBill, user.id);
+    const saved = tadaService.save(newBill, user.id);
 
     return {
       generated: true,
-      bill: newBill,
+      bill: saved,
       count: journeys.length,
       monthLabel: monthInfo.label,
       message: `रोजनामचा GD से ${journeys.length} सरकारी यात्राओं की प्रविष्टियाँ निकाल कर माह ${monthInfo.label} का TA/DA फॉर्म स्वतः भर कर My TA History में सहेज दिया गया है।`,
@@ -554,11 +554,11 @@ export const tadaAutoFillService = {
 
     const journeys = await this.extractUserGDEntries(user, monthInfo);
     const newBill = this.buildTADABill(user, monthInfo, journeys);
-    tadaService.save(newBill, user.id);
+    const saved = tadaService.save(newBill, user.id);
 
     return {
       generated: true,
-      bill: newBill,
+      bill: saved,
       count: journeys.length,
       monthLabel: monthInfo.label,
       message: `रोजनामचा GD से ${journeys.length} यात्राएं निकाल कर ${monthInfo.label} का TA/DA बिल तैयार कर दिया गया है।`,
