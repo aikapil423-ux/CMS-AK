@@ -37,6 +37,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import {
@@ -2042,6 +2043,31 @@ function ArrestDocsContent() {
         currentUser.rank
       );
 
+      // 5. Trigger Auto-Suggestion in Roznamcha General Diary (PPR 22.48)
+      try {
+        await GeneralDiaryService.createFirActionSuggestion({
+          actionType: "ARREST_MEMO",
+          firId: activeFir.id,
+          firNumber: activeFir.firNumber,
+          policeStation: activeFir.policeStation,
+          district: activeFir.district,
+          officer: {
+            name: currentUser.name || "IO",
+            rank: currentUser.rank || "Sub-Inspector",
+            pno: currentUser.pno || "00000000",
+            beltNumber: (currentUser as any).beltNo || `${currentUser.pno || "IO"}/FIR`,
+          },
+          personName: formData.noticeeName || formData.accusedName || "अभियुक्त",
+          actsAndSections: activeFir.actsAndSections,
+          place: formData.arrestPlace || activeFir.incidentPlace,
+          dateTime: formData.arrestDate ? `${formData.arrestDate} ${formData.arrestTime || ""}`.trim() : undefined,
+          docTitle,
+          details: `Arrest / Surrender memo generated for ${formData.noticeeName || "accused"} under ${activeFir.actsAndSections}`,
+        });
+      } catch (gdErr) {
+        console.warn("Failed to dispatch Roznamcha GD suggestion for Arrest Memo:", gdErr);
+      }
+
       setSaveSuccessInfo({
         firId: activeFir.id,
         firNumber: activeFir.firNumber,
@@ -3803,7 +3829,18 @@ function ArrestDocsContent() {
                 <span className="font-mono text-slate-600">{saveSuccessInfo.docId}</span>
               </div>
             </div>
-            <div className="flex items-center justify-center gap-3 pt-2">
+
+            <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl text-left flex items-start gap-2.5">
+              <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
+              <div className="text-xs text-purple-900">
+                <span className="font-bold">रोजनामचा आम (GD) ऑटो-सुझाव तैयार:</span>
+                <p className="text-[11px] text-purple-700 mt-0.5 leading-relaxed">
+                  इस गिरफ्तारी / समर्पण प्रपत्र का ऑटो-सुझाव रोजनामचा GD के <strong>Suggestions & Drafts</strong> टैब में प्रेषित कर दिया गया है।
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 pt-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -3813,11 +3850,18 @@ function ArrestDocsContent() {
                 बंद करें (Close)
               </Button>
               <Link
+                href={`/general-diary?tab=SUGGESTIONS_DRAFTS`}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>रोजनामचा GD सुझाव देखें</span>
+              </Link>
+              <Link
                 href={`/fir/${saveSuccessInfo.firId}?tab=documents`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                <span>FIR Profile के Documents में देखें</span>
+                <span>FIR Profile में देखें</span>
               </Link>
             </div>
           </div>

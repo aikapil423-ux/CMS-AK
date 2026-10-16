@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ComplaintService } from "@/services/complaintService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
@@ -664,6 +665,71 @@ export default function FIRProfilePage() {
     };
 
     firService.addDocument(fir.id, newDoc);
+
+    // Auto-trigger Roznamcha GD suggestion if the added document is an Arrest Memo, Crime Detail, or Seizure Form
+    const lowerDocTitle = docTitle.toLowerCase();
+    if (
+      lowerDocTitle.includes("arrest") ||
+      lowerDocTitle.includes("surrender") ||
+      lowerDocTitle.includes("गिरफ्तारी") ||
+      lowerDocTitle.includes("समर्पण") ||
+      lowerDocTitle.includes("26.8")
+    ) {
+      void GeneralDiaryService.createFirActionSuggestion({
+        actionType: "ARREST_MEMO",
+        firId: fir.id,
+        firNumber: fir.firNumber,
+        policeStation: fir.policeStation,
+        district: fir.district,
+        officer: {
+          name: currentUser.name || "Officer",
+          rank: currentUser.rank || "Sub-Inspector",
+        },
+        actsAndSections: fir.actsAndSections,
+        docTitle,
+      }).catch((e) => console.warn("GD suggestion error:", e));
+    } else if (
+      lowerDocTitle.includes("crime detail") ||
+      lowerDocTitle.includes("iif-ii") ||
+      lowerDocTitle.includes("iif2") ||
+      lowerDocTitle.includes("अपराध विवरण")
+    ) {
+      void GeneralDiaryService.createFirActionSuggestion({
+        actionType: "CRIME_DETAILS",
+        firId: fir.id,
+        firNumber: fir.firNumber,
+        policeStation: fir.policeStation,
+        district: fir.district,
+        officer: {
+          name: currentUser.name || "Officer",
+          rank: currentUser.rank || "Sub-Inspector",
+        },
+        actsAndSections: fir.actsAndSections,
+        place: fir.incidentPlace,
+        docTitle,
+      }).catch((e) => console.warn("GD suggestion error:", e));
+    } else if (
+      lowerDocTitle.includes("seizure") ||
+      lowerDocTitle.includes("iif-iv") ||
+      lowerDocTitle.includes("iif4") ||
+      lowerDocTitle.includes("जब्ती") ||
+      lowerDocTitle.includes("तलाशी")
+    ) {
+      void GeneralDiaryService.createFirActionSuggestion({
+        actionType: "PROPERTY_SEIZURE",
+        firId: fir.id,
+        firNumber: fir.firNumber,
+        policeStation: fir.policeStation,
+        district: fir.district,
+        officer: {
+          name: currentUser.name || "Officer",
+          rank: currentUser.rank || "ASI",
+        },
+        actsAndSections: fir.actsAndSections,
+        place: fir.incidentPlace,
+        docTitle,
+      }).catch((e) => console.warn("GD suggestion error:", e));
+    }
 
     if (docFileDataUrl) {
       universalEvidenceService

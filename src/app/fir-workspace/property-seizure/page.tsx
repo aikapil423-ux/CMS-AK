@@ -18,12 +18,14 @@ import {
   PackageCheck,
   Check,
   Languages,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { FIRItem, FIRDocumentItem } from "@/types";
@@ -690,6 +692,31 @@ function PropertySeizurePageContent() {
         currentUser.rank
       );
 
+      // 5. Trigger Roznamcha GD Auto-Suggestion for Property Seizure (IIF-IV)
+      try {
+        await GeneralDiaryService.createFirActionSuggestion({
+          actionType: "PROPERTY_SEIZURE",
+          firId: activeFir.id,
+          firNumber: activeFir.firNumber,
+          policeStation: activeFir.policeStation,
+          district: activeFir.district,
+          officer: {
+            name: currentUser.name || "IO",
+            rank: currentUser.rank || "ASI",
+            pno: currentUser.pno || "00000000",
+            beltNumber: (currentUser as any).beltNo || `${currentUser.pno || "IO"}/FIR`,
+          },
+          personName: formData.personName || "अभियुक्त / संदेही",
+          actsAndSections: activeFir.actsAndSections,
+          place: formData.seizurePlace || activeFir.incidentPlace,
+          dateTime: formData.seizureDate ? `${formData.seizureDate} ${formData.seizureTime || ""}`.trim() : undefined,
+          docTitle,
+          details: `Property Seizure (IIF-IV) memo recorded for FIR #${activeFir.firNumber}`,
+        });
+      } catch (gdErr) {
+        console.warn("Failed to create Roznamcha GD suggestion for Property Seizure:", gdErr);
+      }
+
       setSaveSuccessInfo({
         firId: activeFir.id,
         firNumber: activeFir.firNumber,
@@ -818,27 +845,45 @@ function PropertySeizurePageContent() {
 
       {/* Success Notification */}
       {saveSuccessInfo && (
-        <div className="no-print bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in-50">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>
-              <strong>सफलतापूर्वक सहेजा गया:</strong> {saveSuccessInfo.docTitle} FIR #{saveSuccessInfo.firNumber} के
-              Documents Panel में सुरक्षित कर दिया गया है।
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/fir/${saveSuccessInfo.firId}?tab=documents`}
-              className="text-emerald-700 underline font-bold flex items-center gap-1 hover:text-emerald-900"
-            >
-              दस्तावेज देखें <ExternalLink className="w-3 h-3" />
-            </Link>
+        <div className="no-print bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-xl space-y-2 text-xs shadow-xs animate-in fade-in-50">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>सफलतापूर्वक सहेजा गया:</strong> {saveSuccessInfo.docTitle} FIR #{saveSuccessInfo.firNumber} के
+                Documents Panel में सुरक्षित कर दिया गया है।
+              </span>
+            </div>
             <button
               onClick={() => setSaveSuccessInfo(null)}
               className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 pt-1 border-t border-emerald-200/60 flex-wrap">
+            <div className="flex items-center gap-2 text-purple-900 bg-purple-50/80 px-2.5 py-1 rounded-lg border border-purple-200">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              <span className="text-[11px]">
+                रोजनामचा आम (GD) ऑटो-सुझाव: <strong>Suggestions &amp; Drafts</strong> टैब में प्रेषित
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/general-diary?tab=SUGGESTIONS_DRAFTS"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-md text-[11px] font-bold shadow-2xs transition-colors"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>रोजनामचा GD सुझाव देखें</span>
+              </Link>
+              <Link
+                href={`/fir/${saveSuccessInfo.firId}?tab=documents`}
+                className="text-emerald-700 underline font-bold flex items-center gap-1 hover:text-emerald-900 text-[11px]"
+              >
+                दस्तावेज देखें <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
