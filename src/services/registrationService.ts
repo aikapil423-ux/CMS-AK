@@ -409,7 +409,7 @@ export const RegistrationService = {
 
   updateEntry: (id: string, updates: Partial<RegistrationEntry>): RegistrationEntry | null => {
     const all = RegistrationService.getEntries();
-    const idx = all.findIndex((item) => item.id === id);
+    const idx = all.findIndex((item) => item.id === id || (item.regNumber && item.regNumber === id));
     if (idx === -1) return null;
     const updatedEntry = { ...all[idx], ...updates };
     all[idx] = updatedEntry;

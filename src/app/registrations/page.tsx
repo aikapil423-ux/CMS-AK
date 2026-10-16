@@ -32,7 +32,7 @@ import {
   RegistrationType,
   RegistrationStatus,
 } from "@/types/registrations";
-import { RegistrationService } from "@/services/registrationService";
+import { RegistrationService, hydrateFromIndexedDB } from "@/services/registrationService";
 import { UidbRegistrationModal } from "@/components/registrations/UidbRegistrationModal";
 import { UidbPdfPreviewModal } from "@/components/registrations/UidbPdfPreviewModal";
 import { UidbFormData, DEFAULT_UIDB_FORM, SAMPLE_UIDB_RECORD } from "@/types/uidb";
@@ -59,7 +59,16 @@ function RegistrationsContent() {
   const { t, isHindi } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<RegistrationType>("UIDB");
-  const [entries, setEntries] = useState<RegistrationEntry[]>([]);
+  const [entries, setEntries] = useState<RegistrationEntry[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return RegistrationService.getEntries();
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [recentlySavedId, setRecentlySavedId] = useState<string | null>(null);
@@ -118,10 +127,21 @@ function RegistrationsContent() {
       setActiveTab("LOST_PROPERTY");
   }, [searchParams]);
 
-  // Load entries from service
-  const loadData = () => {
+  // Load entries from service & IndexedDB
+  const loadData = async () => {
     const data = RegistrationService.getEntries();
     setEntries(data);
+    try {
+      const idbList = await hydrateFromIndexedDB();
+      if (idbList && idbList.length > 0) {
+        setEntries((prev) => {
+          if (idbList.length >= prev.length) {
+            return idbList;
+          }
+          return prev;
+        });
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -711,7 +731,6 @@ function RegistrationsContent() {
   // Quick Status Update Handler
   const handleQuickStatusUpdate = (entry: RegistrationEntry, newStatus: RegistrationStatus) => {
     if (entry.status === newStatus) {
-      setActiveStatusMenuId(null);
       return;
     }
 
@@ -719,6 +738,9 @@ function RegistrationsContent() {
 
     // 1. Update in RegistrationService
     RegistrationService.updateEntry(entry.id, { status: newStatus });
+    if (entry.regNumber) {
+      RegistrationService.updateEntry(entry.regNumber, { status: newStatus });
+    }
 
     // 2. Sync to domain-specific services
     if (entry.type === "MISSING_PERSON") {
@@ -731,13 +753,14 @@ function RegistrationsContent() {
 
     // 3. Update local table entries state
     setEntries((prev) =>
-      prev.map((e) => (e.id === entry.id ? { ...e, status: newStatus } : e))
+      prev.map((e) =>
+        e.id === entry.id || (e.regNumber && e.regNumber === entry.regNumber)
+          ? { ...e, status: newStatus }
+          : e
+      )
     );
 
-    // 4. Close menu
-    setActiveStatusMenuId(null);
-
-    // 5. Show toast notification banner
+    // 4. Show toast notification banner
     setStatusFeedback({
       regNumber: entry.regNumber,
       type: entry.type,
@@ -755,12 +778,15 @@ function RegistrationsContent() {
       {/* 1. Header (Minimalist & Clean) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
               Registrations
             </h1>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono">
-              {entries.length} Total Records
+            <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-slate-900 text-white font-mono shadow-2xs">
+              {currentTabEntries.length} {activeTab === "UIDB" ? "UIDB / UD" : activeTab === "MISSING_PERSON" ? "Missing Person" : activeTab === "MISSING_CATTLE" ? "Missing Cattle" : "Lost Property"} Records
+            </span>
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono border border-slate-200">
+              Total {entries.length} in Portal
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -955,7 +981,7 @@ function RegistrationsContent() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Register UIDB / UD</span>
+              <span>Register UIDB / UD</span>
             </button>
           )}
 
@@ -969,7 +995,7 @@ function RegistrationsContent() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-900 hover:bg-indigo-800 transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Register Missing Person</span>
+              <span>Register Missing Person</span>
             </button>
           )}
 
@@ -980,7 +1006,7 @@ function RegistrationsContent() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-900 hover:bg-emerald-800 transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Register Missing Cattle</span>
+              <span>Register Missing Cattle</span>
             </button>
           )}
 
@@ -994,7 +1020,7 @@ function RegistrationsContent() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-900 hover:bg-amber-800 transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Register Lost Property</span>
+              <span>Register Lost Property</span>
             </button>
           )}
         </div>
@@ -1255,79 +1281,36 @@ function RegistrationsContent() {
                   )}
 
                   {/* Status */}
-                  <td className="py-3 px-3 text-center align-top relative">
-                    {/* Clickable Status Badge (no edit icon; clicking this opens dropdown) */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveStatusMenuId(activeStatusMenuId === row.id ? null : row.id);
-                      }}
-                      className={`group inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border transition-all cursor-pointer ${getStatusBadge(
-                        row.status
-                      )} hover:brightness-95 hover:shadow-2xs`}
-                      title="Click to change status"
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${getStatusDot(row.status)}`} />
-                      <span>{row.status}</span>
-                      <ChevronDown
-                        className={`w-3 h-3 opacity-60 group-hover:opacity-100 transition-transform duration-150 ${
-                          activeStatusMenuId === row.id ? "rotate-180" : ""
-                        }`}
+                  <td className="py-3 px-3 text-center align-top">
+                    <div className="inline-flex items-center justify-center relative">
+                      <select
+                        value={row.status}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleQuickStatusUpdate(row, e.target.value as RegistrationStatus);
+                        }}
+                        className={`appearance-none pl-5 pr-6 py-0.5 rounded-full text-[10px] font-bold uppercase border cursor-pointer outline-none transition-all shadow-2xs hover:shadow-xs focus:ring-2 focus:ring-slate-400/20 ${getStatusBadge(
+                          row.status
+                        )}`}
+                        title="Click to change status / स्थिति बदलें"
+                      >
+                        {(STATUS_OPTIONS_BY_TYPE[row.type] || ["OPEN", "TRACED", "CLOSED"]).map((statusName) => (
+                          <option
+                            key={statusName}
+                            value={statusName}
+                            className="bg-white text-slate-900 text-xs font-semibold py-1.5"
+                          >
+                            {statusName}
+                          </option>
+                        ))}
+                      </select>
+                      {/* Status indicator dot */}
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${getStatusDot(row.status)} absolute left-2 pointer-events-none`}
                       />
-                    </button>
-
-                    {/* Status Dropdown Popover: Clean with ONLY status names */}
-                    {activeStatusMenuId === row.id && (
-                      <>
-                        {/* Invisible backdrop to dismiss on outside click */}
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveStatusMenuId(null);
-                          }}
-                        />
-
-                        {/* Floating Popover Menu */}
-                        <div
-                          className={`absolute left-1/2 -translate-x-1/2 w-32 bg-white rounded-lg shadow-lg border border-slate-200 z-50 p-1 animate-in fade-in-50 zoom-in-95 text-left ${
-                            idx >= filteredEntries.length - 2 && filteredEntries.length > 2
-                              ? "bottom-full mb-1"
-                              : "top-full mt-1"
-                          }`}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="space-y-0.5">
-                            {(STATUS_OPTIONS_BY_TYPE[row.type] || ["OPEN", "TRACED", "CLOSED"]).map((statusName) => {
-                              const isSelected = row.status === statusName;
-                              return (
-                                <button
-                                  key={statusName}
-                                  type="button"
-                                  onClick={() => handleQuickStatusUpdate(row, statusName)}
-                                  className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold uppercase transition-colors flex items-center justify-between cursor-pointer ${
-                                    isSelected
-                                      ? "bg-slate-100 text-slate-900 font-bold"
-                                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    <span
-                                      className={`w-1.5 h-1.5 rounded-full ${getStatusDot(statusName)}`}
-                                    />
-                                    <span>{statusName}</span>
-                                  </span>
-                                  {isSelected && (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </>
-                    )}
+                      {/* Dropdown Chevron */}
+                      <ChevronDown className="w-3 h-3 opacity-60 absolute right-1.5 pointer-events-none" />
+                    </div>
                   </td>
 
                   {/* Actions */}
