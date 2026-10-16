@@ -27,6 +27,8 @@ import {
   Scale,
   HardDrive,
   ReceiptText,
+  ClipboardList,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -50,21 +52,23 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha, Complaints, FIR, and Management
+  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, and Management
   const [roznamchaOpen, setRoznamchaOpen] = useState(true);
   const [complaintsOpen, setComplaintsOpen] = useState(true);
   const [firOpen, setFirOpen] = useState(true);
+  const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [managementOpen, setManagementOpen] = useState(true);
 
   // Detect active module
   const isRoznamchaPath = pathname.startsWith("/general-diary");
   const isFirPath = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
+  const isRegistrationsPath = pathname.startsWith("/registrations");
   const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR">("COMPLAINTS");
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS">("COMPLAINTS");
 
   useEffect(() => {
     if (isRoznamchaPath) {
@@ -82,23 +86,29 @@ export function Sidebar() {
       try {
         window.localStorage.setItem("cms_active_module", "COMPLAINTS");
       } catch {}
+    } else if (isRegistrationsPath) {
+      setActiveModule("REGISTRATIONS");
+      try {
+        window.localStorage.setItem("cms_active_module", "REGISTRATIONS");
+      } catch {}
     } else {
       try {
         const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR") {
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS") {
           setActiveModule(saved);
         }
       } catch {}
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath]);
+  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath]);
 
   // Check if user is on portal home page (Select Operational Module)
   const isPortalHome = pathname === "/";
 
   // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
-  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && activeModule === "ROZNAMCHA"));
-  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && activeModule === "COMPLAINTS"));
-  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && activeModule === "FIR"));
+  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && activeModule === "ROZNAMCHA"));
+  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && activeModule === "COMPLAINTS"));
+  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && activeModule === "FIR"));
+  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && activeModule === "REGISTRATIONS"));
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
@@ -118,6 +128,16 @@ export function Sidebar() {
   const firNavItems: NavItem[] = [
     { name: "FIR Register", href: "/fir", icon: Scale, badge: "CCTNS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
     { name: "Investigation Workspace", href: "/fir-workspace", icon: UserCheck },
+    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+  ];
+
+  // REGISTRATIONS NAVIGATION ITEMS
+  const registrationsNavItems: NavItem[] = [
+    { name: "All Registrations", href: "/registrations", icon: ClipboardList, badge: "Hub", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "UIDB / UD", href: "/registrations?tab=uidb", icon: FileText, badge: "Sec 194", badgeColor: "bg-amber-50 text-amber-700 border-amber-200" },
+    { name: "Missing Person", href: "/registrations?tab=missing-person", icon: Users, badge: "Track", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Missing Cattle", href: "/registrations?tab=missing-cattle", icon: Tag, badge: "Cattle", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { name: "Lost Property", href: "/registrations?tab=lost-property", icon: Shield, badge: "CEIR", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
@@ -387,6 +407,85 @@ export function Sidebar() {
             {firOpen && (
               <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
                 {firNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? t(item.name) : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-2.5 py-1.5"
+                          : "justify-center p-2",
+                        isActive
+                          ? "bg-slate-100 text-slate-900 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-3.5 h-3.5 shrink-0",
+                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+                          )}
+                        >
+                          {t(item.badge)}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* 2.8. REGISTRATIONS TOGGLE SLIDE BAR (Only visible if Registrations is open/active) */}
+        {showRegistrations && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => setRegistrationsOpen(!registrationsOpen)}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
+                isRegistrationsPath ? "bg-slate-100/50" : ""
+              )}
+              title="Toggle Registrations Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <ClipboardList className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+                    {t("Registrations")}
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {registrationsOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </span>
+              )}
+            </button>
+
+            {registrationsOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {registrationsNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
                   return (

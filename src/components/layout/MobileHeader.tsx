@@ -23,6 +23,7 @@ export function MobileHeader() {
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
+  const isRegistrations = pathname.startsWith("/registrations");
 
   return (
     <>
@@ -37,7 +38,7 @@ export function MobileHeader() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
-                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : "HP CMS"}
+                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : "HP CMS"}
                 </span>
                 <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}
@@ -208,6 +209,40 @@ export function MobileHeader() {
                     {t("Investigation Workspace")}
                   </Link>
                 </>
+              ) : isRegistrations ? (
+                <>
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    {t("Registrations")}
+                  </div>
+                  <Link
+                    href="/registrations?tab=UIDB"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    UIDB / UD Register
+                  </Link>
+                  <Link
+                    href="/registrations?tab=MISSING_PERSON"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Missing Person
+                  </Link>
+                  <Link
+                    href="/registrations?tab=MISSING_CATTLE"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Missing Cattle
+                  </Link>
+                  <Link
+                    href="/registrations?tab=LOST_PROPERTY"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Lost Property
+                  </Link>
+                </>
               ) : (
                 <>
                   <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
@@ -233,6 +268,13 @@ export function MobileHeader() {
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("FIR Register")}
+                  </Link>
+                  <Link
+                    href="/registrations"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Registrations")}
                   </Link>
                   <Link
                     href="/acts-sections"

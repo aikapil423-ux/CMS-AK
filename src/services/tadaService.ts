@@ -174,23 +174,45 @@ let inMemoryTADABills: TADABillRecord[] = [];
 
 export const tadaService = {
   getAll(): TADABillRecord[] {
-    if (typeof window === "undefined") {
-      return [...inMemoryTADABills];
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(TADA_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            inMemoryTADABills = parsed;
+            return parsed;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to read TA/DA bills from localStorage:", err);
+      }
     }
-    try {
-      const raw = localStorage.getItem(TADA_STORAGE_KEY);
-      if (!raw) return [];
-      return JSON.parse(raw);
-    } catch {
-      return [];
-    }
+    return [...inMemoryTADABills];
   },
 
-  // Strictly user-isolated: user sees only their own bills
-  getByUser(userId: string): TADABillRecord[] {
-    if (!userId) return [];
+  // Strictly user-isolated: user sees only their own bills (matches by user id, pno, or officer name)
+  getByUser(userId: string, pno?: string, name?: string): TADABillRecord[] {
+    if (!userId && !pno && !name) return [];
     const all = this.getAll();
-    return all.filter((b) => b.userId === userId);
+    const cleanId = (userId || "").trim().toLowerCase();
+    const cleanPno = (pno || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+    const cleanName = (name || "").trim().toLowerCase();
+
+    return all.filter((b) => {
+      const bUserId = (b.userId || "").trim().toLowerCase();
+      const bName = (b.userName || b.form1TourProgramme?.employeeName || "").trim().toLowerCase();
+      const bBelt = (b.form1TourProgramme?.beltEmployeeNumber || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+      // 1. Direct ID match
+      if (cleanId && bUserId === cleanId) return true;
+      // 2. Belt / PNO match
+      if (cleanPno && cleanPno.length >= 4 && (bUserId.includes(cleanPno) || bBelt.includes(cleanPno))) return true;
+      // 3. Officer Name match
+      if (cleanName && cleanName.length >= 4 && (bName.includes(cleanName) || cleanName.includes(bName))) return true;
+
+      return false;
+    });
   },
 
   getById(id: string): TADABillRecord | null {
@@ -200,7 +222,7 @@ export const tadaService = {
 
   save(bill: TADABillRecord, userId: string): TADABillRecord {
     const all = this.getAll();
-    const updated = {
+    const updated: TADABillRecord = {
       ...bill,
       userId,
       updatedAt: new Date().toISOString(),
@@ -211,32 +233,34 @@ export const tadaService = {
     } else {
       all.unshift(updated);
     }
+
+    inMemoryTADABills = [...all];
+
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(all));
+        window.dispatchEvent(new CustomEvent("cms_tada_bills_changed", { detail: updated }));
       } catch (err) {
         console.error("Failed to save TA/DA bill:", err);
       }
-    } else {
-      inMemoryTADABills = [...all];
     }
     return updated;
   },
 
   delete(id: string, userId: string): boolean {
     const all = this.getAll();
-    const filtered = all.filter((b) => !(b.id === id && b.userId === userId));
+    const filtered = all.filter((b) => !(b.id === id));
+    inMemoryTADABills = [...filtered];
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(filtered));
+        window.dispatchEvent(new CustomEvent("cms_tada_bills_changed"));
         return true;
       } catch {
         return false;
       }
-    } else {
-      inMemoryTADABills = [...filtered];
-      return true;
     }
+    return true;
   },
 
   // Utility to convert Tour Programme rows into TA Claim rows
