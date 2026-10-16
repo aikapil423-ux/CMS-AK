@@ -26,6 +26,10 @@ import {
   ReceiptText,
   AlertCircle,
   Check,
+  Sparkles,
+  Eye,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -39,6 +43,13 @@ import {
   createBlankTourJourneyRow,
   createBlankClaimJourneyRow,
 } from "@/services/tadaService";
+import {
+  tadaAutoFillService,
+  MonthInfo,
+  getRecentMonthsList,
+  getLastMonthInfo,
+} from "@/services/tadaAutoFillService";
+import { TADAPreviewModal } from "@/components/tada/TADAPreviewModal";
 import { amountToWordsEnglish, amountToWordsHindi } from "@/utils/numberToWords";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,7 +71,19 @@ export default function TADAPage() {
   const [printDropdownOpen, setPrintDropdownOpen] = useState(false);
   const printDropdownRef = useRef<HTMLDivElement | null>(null);
 
-  // Load user bills
+  // Preview Modal & Auto-sync states
+  const [previewModalBill, setPreviewModalBill] = useState<TADABillRecord | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isSyncingGd, setIsSyncingGd] = useState(false);
+  const [autoSyncBanner, setAutoSyncBanner] = useState<string | null>(null);
+  const [availableMonths, setAvailableMonths] = useState<MonthInfo[]>([]);
+  const [selectedSyncMonthKey, setSelectedSyncMonthKey] = useState<string>("");
+
+  useEffect(() => {
+    setAvailableMonths(getRecentMonthsList(6));
+  }, []);
+
+  // Load user bills strictly isolated to active user
   const loadUserBills = () => {
     if (userId) {
       const records = tadaService.getByUser(userId);
@@ -68,9 +91,47 @@ export default function TADAPage() {
     }
   };
 
+  // Auto 01-date extraction from Roznamcha GD for last month on mount / user change
   useEffect(() => {
     loadUserBills();
-  }, [userId]);
+    if (currentUser && currentUser.id) {
+      void tadaAutoFillService.autoSyncLastMonthBill(currentUser).then((res) => {
+        if (res.generated) {
+          loadUserBills();
+          setAutoSyncBanner(res.message);
+        }
+      });
+    }
+  }, [userId, currentUser]);
+
+  const handleOpenPreview = (b: TADABillRecord) => {
+    setPreviewModalBill(b);
+    setIsPreviewOpen(true);
+  };
+
+  const handleDirectDownloadOrPrint = (b: TADABillRecord) => {
+    setBill(b);
+    handleTriggerPrint("ALL");
+  };
+
+  const handleManualSync = async (monthInfo?: MonthInfo) => {
+    if (!currentUser || !currentUser.id) return;
+    setIsSyncingGd(true);
+    try {
+      const res = monthInfo
+        ? await tadaAutoFillService.syncSpecificMonthBill(currentUser, monthInfo, true)
+        : await tadaAutoFillService.autoSyncLastMonthBill(currentUser, true);
+
+      loadUserBills();
+      setAutoSyncBanner(res.message);
+      setActiveTab("HISTORY");
+    } catch (err: any) {
+      console.error("Failed to sync TA/DA bill:", err);
+      alert("सिंक करने में त्रुटि: " + (err?.message || "अज्ञात समस्या"));
+    } finally {
+      setIsSyncingGd(false);
+    }
+  };
 
   // Click outside to close print dropdown
   useEffect(() => {
@@ -2488,41 +2549,152 @@ export default function TADAPage() {
       {activeTab === "HISTORY" && (
         <Card className="no-print border-slate-200 bg-white shadow-xs">
           <CardContent className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+            {/* Auto-Sync Banner notification */}
+            {autoSyncBanner && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">{autoSyncBanner}</p>
+                    <p className="text-[11px] text-emerald-700">
+                      रोज़नामचा आम (GD) प्रविष्टियों से TA/DA टूर प्रोग्राम, यात्रा भत्ता विवरण तथा ट्रेजरी बिल स्वतः तैयार कर लिए गए हैं।
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoSyncBanner(null)}
+                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 px-2 py-1 rounded hover:bg-emerald-100"
+                >
+                  ✕ बंद करें
+                </button>
+              </div>
+            )}
+
+            {/* Officer Confidentiality / Isolation Info */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  <strong>गोपनीय एवं सुरक्षित:</strong> आप <strong>{currentUser?.name || userName}</strong> (PNO: {currentUser?.pno || "N/A"}) के रूप में लॉग-इन हैं। केवल आपके TA/DA दावे यहाँ प्रदर्शित हैं।
+                </span>
+              </div>
+              <span className="text-[11px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-md border border-blue-200">
+                हर माह 01 तारीख ऑटो-सिंक सक्रिय
+              </span>
+            </div>
+
+            {/* Header with Title and Action Buttons */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
-                <h2 className="text-base sm:text-lg font-black text-slate-900">
+                <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                  <ReceiptText className="w-5 h-5 text-amber-600" />
                   My TA DA Claims History (मेरी दावा प्रविष्टियाँ)
                 </h2>
                 <p className="text-xs text-slate-500">
-                  उपयोगकर्ता-वार सुरक्षित इतिहास (केवल आपकी प्रविष्टियाँ यहाँ दिखेंगी)
+                  माहवार स्वतः जनरेटेड एवं मैन्युअल रूप से तैयार किए गए TA/DA दावों की सूची व पूर्वावलोकन
                 </p>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleNewBlankBill}
-                className="text-xs font-bold gap-1 bg-amber-600 hover:bg-amber-700 text-white"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>नया दावा भरें (New Claim)</span>
-              </Button>
+
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                {/* Specific Month Sync Dropdown */}
+                <div className="flex items-center gap-1.5 bg-slate-50 p-1 border border-slate-200 rounded-lg">
+                  <select
+                    value={selectedSyncMonthKey}
+                    onChange={(e) => setSelectedSyncMonthKey(e.target.value)}
+                    className="text-xs bg-white border border-slate-300 rounded px-2 py-1 font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">-- माह चुनें (Select Month) --</option>
+                    {availableMonths.map((m) => (
+                      <option key={`${m.month}-${m.year}`} value={`${m.month}-${m.year}`}>
+                        {m.monthHindi} {m.year}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={isSyncingGd || !selectedSyncMonthKey}
+                    onClick={() => {
+                      const found = availableMonths.find(
+                        (m) => `${m.month}-${m.year}` === selectedSyncMonthKey
+                      );
+                      if (found) {
+                        void handleManualSync(found);
+                      }
+                    }}
+                    className="text-xs font-bold gap-1 border-slate-300 text-slate-700 hover:bg-slate-100 h-7 px-2"
+                  >
+                    {isSyncingGd ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                    ) : (
+                      <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                    <span>सिंक करें</span>
+                  </Button>
+                </div>
+
+                {/* 01 Date Auto-Generation Last Month Button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isSyncingGd}
+                  onClick={() => handleManualSync()}
+                  className="text-xs font-bold gap-1.5 bg-blue-700 hover:bg-blue-800 text-white shadow-xs"
+                  title="पिछले माह की सभी रोज़नामचा GD प्रविष्टियों से TA/DA दावा स्वतः निकालें"
+                >
+                  {isSyncingGd ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span>⚡ 01 तारीख GD ऑटो-जनरेशन</span>
+                </Button>
+
+                {/* New Blank Claim Button */}
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleNewBlankBill}
+                  className="text-xs font-bold gap-1 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>नया दावा भरें</span>
+                </Button>
+              </div>
             </div>
 
             {savedBills.length === 0 ? (
-              <div className="py-12 text-center text-slate-500 space-y-2">
-                <ReceiptText className="w-10 h-10 mx-auto text-slate-300" />
-                <p className="font-bold text-slate-700 text-sm">कोई पूर्व TA/DA दावा नहीं मिला</p>
-                <p className="text-xs">
-                  आप ऊपर दिए गए प्रपत्रों को भरकर &apos;Save Draft&apos; बटन से सहेज सकते हैं।
-                </p>
+              <div className="py-12 text-center text-slate-500 space-y-3 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <ReceiptText className="w-12 h-12 mx-auto text-slate-300" />
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-700 text-sm">कोई पूर्व TA/DA दावा नहीं मिला</p>
+                  <p className="text-xs max-w-md mx-auto text-slate-500">
+                    आप ऊपर दिए गए <strong>&apos;⚡ 01 तारीख GD ऑटो-जनरेशन&apos;</strong> बटन पर क्लिक करके रोज़नामचा आम से पिछले माह का TA/DA बिल स्वतः तैयार कर सकते हैं, अथवा नया दावा भर सकते हैं।
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => handleManualSync()}
+                  disabled={isSyncingGd}
+                  className="text-xs font-bold gap-1.5 bg-blue-700 hover:bg-blue-800 text-white"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>अभी GD से TA/DA बिल जनरेट करें</span>
+                </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-xs">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                     <tr>
                       <th className="p-3">ID / Reference</th>
                       <th className="p-3">Claim Month &amp; Year</th>
+                      <th className="p-3">Journeys (यात्राएँ)</th>
                       <th className="p-3">Employee Name</th>
                       <th className="p-3">Designation</th>
                       <th className="p-3 text-right">Net Payable</th>
@@ -2533,49 +2705,119 @@ export default function TADAPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {savedBills.map((b) => (
-                      <tr key={b.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold text-blue-700">{b.id}</td>
+                      <tr key={b.id} className="hover:bg-slate-50 transition-colors">
                         <td className="p-3">
-                          {b.form1TourProgramme.month || b.form2JourneyDetails.claimMonth || "—"}{" "}
-                          {b.form1TourProgramme.year || b.form2JourneyDetails.claimYear || ""}
+                          <div className="font-mono font-bold text-blue-700">{b.id}</div>
+                          {b.autoGenerated || b.source === "ROZNAMCHA_GD_AUTO" ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded mt-0.5">
+                              <Sparkles className="w-2.5 h-2.5" />
+                              01 तारीख GD ऑटो
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-0.5">
+                              मैन्युअल प्रविष्टि
+                            </span>
+                          )}
                         </td>
-                        <td className="p-3 font-bold text-slate-800">
-                          {b.form1TourProgramme.employeeName || b.form2JourneyDetails.employeeName || "—"}
+                        <td className="p-3">
+                          <div className="font-bold text-slate-800">
+                            {b.form1TourProgramme.month || b.form2JourneyDetails.claimMonth || "—"}{" "}
+                            {b.form1TourProgramme.year || b.form2JourneyDetails.claimYear || ""}
+                          </div>
+                          {b.claimPeriod && (
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              {b.claimPeriod}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[11px] border border-blue-200">
+                            {b.totalJourneysCount || b.form1TourProgramme.journeys?.length || 0} यात्राएँ
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-bold text-slate-800">
+                            {b.form1TourProgramme.employeeName || b.form2JourneyDetails.employeeName || "—"}
+                          </div>
+                          {b.form1TourProgramme.beltEmployeeNumber && (
+                            <div className="text-[10px] text-slate-500 font-mono">
+                              Belt: {b.form1TourProgramme.beltEmployeeNumber}
+                            </div>
+                          )}
                         </td>
                         <td className="p-3 text-slate-600">
                           {b.form1TourProgramme.designation || b.form2JourneyDetails.designation || "—"}
                         </td>
-                        <td className="p-3 text-right font-mono font-black text-emerald-800">
+                        <td className="p-3 text-right font-mono font-black text-emerald-800 text-sm">
                           ₹{b.form2JourneyDetails.netPayableAmount?.toFixed(2) || "0.00"}
                         </td>
                         <td className="p-3 text-center">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              b.status === "SUBMITTED"
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                : "bg-amber-100 text-amber-800 border-amber-200"
+                            }`}
+                          >
                             {b.status}
                           </span>
                         </td>
                         <td className="p-3 text-slate-500 font-mono text-[11px]">
                           {b.updatedAt ? b.updatedAt.slice(0, 16).replace("T", " ") : "—"}
                         </td>
-                        <td className="p-3 text-right space-x-1.5">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleLoadBill(b)}
-                            className="h-7 px-2 text-[11px] font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
-                          >
-                            Open / Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteBill(b.id)}
-                            className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 border-slate-200"
-                            title="Delete this record"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {/* Preview Modal Button */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenPreview(b)}
+                              className="h-7 px-2 text-[11px] font-bold border-blue-200 text-blue-700 hover:bg-blue-50 gap-1"
+                              title="फॉर्म 1, 2 व 3 का पूर्ण पूर्वावलोकन देखें"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Preview</span>
+                            </Button>
+
+                            {/* Direct Download / Print Button */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDirectDownloadOrPrint(b)}
+                              className="h-7 px-2 text-[11px] font-bold border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-1"
+                              title="प्रपत्र प्रिंट / डाउनलोड करें"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Print</span>
+                            </Button>
+
+                            {/* Edit / Open in Form editor */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleLoadBill(b)}
+                              className="h-7 px-2 text-[11px] font-bold border-slate-300 text-slate-700 hover:bg-slate-100 gap-1"
+                              title="प्रपत्र में खोलकर संशोधन करें"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </Button>
+
+                            {/* Delete Button */}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteBill(b.id)}
+                              className="h-7 w-7 p-0 text-slate-400 hover:text-red-600 border-slate-200"
+                              title="दावा हटाएं (Delete this record)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -3061,6 +3303,17 @@ export default function TADAPage() {
           </div>
         </div>
       )}
+
+      {/* ===================== FULL FIDELITY PREVIEW & DOWNLOAD MODAL ===================== */}
+      <TADAPreviewModal
+        bill={previewModalBill}
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        onEdit={(loaded) => {
+          handleLoadBill(loaded);
+          setIsPreviewOpen(false);
+        }}
+      />
     </div>
   );
 }
