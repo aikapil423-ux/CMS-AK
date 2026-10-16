@@ -94,7 +94,11 @@ const DEFAULT_SAMPLE_DATA: Record<string, NoticeFormData> = {
     appearanceTime: "11:00 AM",
     appearancePlace: "",
     documentsRequired: "",
-    statutoryClarification: "",
+    statutoryClarification:
+      "इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।",
+    annexureText: "शिकायत की छायाप्रति।",
+    sealLabel: "थाना/यूनिट की मोहर",
+    ioSignLabel: "जांच अधिकारी के हस्ताक्षर",
 
     stationEmail: "sho.cityambala-hry@nic.in",
     officerEmail: "io.ambala-hry@nic.in",
@@ -455,6 +459,19 @@ function NoticeTemplatesContent() {
   const [showAppearanceDirectives, setShowAppearanceDirectives] = useState(true);
   const [showDocumentsRequired, setShowDocumentsRequired] = useState(true);
   const [showStatutoryProtection, setShowStatutoryProtection] = useState(true);
+  const [noticeEditMode, setNoticeEditMode] = useState<"guided" | "fulltext">("guided");
+
+  const buildDefaultHaryanaNoticeText = useCallback(() => {
+    const p1 = `आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी ${formData.complainantName || "..................."} वासी ${formData.complainantAddress || "...................................................."} से शिकायत संख्या ${formData.complaintNo || "..................................."} दिनांक ${formData.incidentDate || "............................."} को थाना/यूनिट ${formData.policeStation || "...................................................."} में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)`;
+
+    const p2 = `इसलिये आप ${formData.noticeeName ? `${formData.noticeeName}${formData.noticeeFather ? ` आत्मज/पत्नी ${formData.noticeeFather}` : ""}${formData.noticeeAddress ? ` वासी ${formData.noticeeAddress}` : ""}${formData.noticeePhone ? ` (मोबाईल: ${formData.noticeePhone})` : ""}` : "....................................................................................."} को निर्देश दिये जाते है कि आप दिनांक ${formData.appearanceDate || "............................."} को थाना/यूनिट ${formData.appearancePlace || formData.policeStation || "................................."} में समय ${formData.appearanceTime || "........................"} पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।`;
+
+    const p3 = `शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. ${formData.stationEmail || formData.officerEmail || "..................................................................................................."} पर लिखित निवेदन दिनांक ${formData.videoConferenceDeadline || formData.appearanceDate || "............................."} से पहले भेजना सुनिश्चित करें।`;
+
+    const p4 = formData.statutoryClarification || `इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।`;
+
+    return `${p1}\n\n${p2}\n\n${p3}\n\n${p4}`;
+  }, [formData]);
 
   // Dynamic Multi-row Target Device Table for CDR Requisition (हरियाणा पुलिस प्रारूप बाबत काल डिटेल)
   const [cdrTargetRows, setCdrTargetRows] = useState<Array<{ id: string; phone: string; periodFrom: string; periodTo: string; reason: string; operator?: string; period?: string; details?: string }>>([
@@ -1789,6 +1806,59 @@ function NoticeTemplatesContent() {
           {/* ================= TEMPLATE 1: HARYANA POLICE APPEARANCE NOTICE (हरियाणा पुलिस सूचना-पत्र) ================= */}
           {activeTemplate === "haryana_notice" && (
             <div className="space-y-6 text-slate-950 font-sans text-sm">
+              {/* Customization & Editing Mode Switcher */}
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-blue-50/90 via-slate-50 to-purple-50/90 border border-blue-200 rounded-xl px-3.5 py-2.5 text-xs shadow-2xs no-print">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="font-bold text-slate-900">सूचना-पत्र संपादन (Notice Editing Mode):</span>
+                  <span className="text-[11px] text-slate-500 hidden md:inline">अपनी आवश्यकतानुसार किसी भी वाक्य, खंड या प्रारूप को संपादित करें</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setNoticeEditMode("guided")}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                      noticeEditMode === "guided"
+                        ? "bg-blue-600 text-white shadow-xs"
+                        : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    📋 संरचित प्रारूप (Guided Fields)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!formData.haryanaNoticeFullText) {
+                        const defaultFull = buildDefaultHaryanaNoticeText();
+                        handleFieldChange("haryanaNoticeFullText", defaultFull);
+                      }
+                      setNoticeEditMode("fulltext");
+                    }}
+                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                      noticeEditMode === "fulltext"
+                        ? "bg-purple-600 text-white shadow-xs"
+                        : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-100"
+                    }`}
+                  >
+                    ✍️ पूर्ण मुक्त संपादन (Full Free-Text)
+                  </button>
+                  {noticeEditMode === "fulltext" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const refreshed = buildDefaultHaryanaNoticeText();
+                        handleFieldChange("haryanaNoticeFullText", refreshed);
+                      }}
+                      title="मूल प्रारूप टेक्स्ट पुनः लोड करें"
+                      className="px-2 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-950 bg-white border border-slate-300 rounded cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3 inline mr-1" />
+                      रीसेट
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* 1. शीर्ष हेडिंग: हरियाणा पुलिस (केंद्रित, रेखांकित) */}
               <div className="text-center pt-2">
                 <input
@@ -1858,46 +1928,112 @@ function NoticeTemplatesContent() {
                 </div>
               </div>
 
-              {/* 4A. नोटिस प्राप्तकर्ता विवरण (सेवा में / प्रति) - Auto-updates dynamically when person is selected */}
-              <div className="bg-slate-50/90 border border-slate-300 rounded-lg p-3 my-2 text-xs sm:text-[13px] space-y-2 font-sans">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-purple-600" />
-                    <span>सेवा में / प्रति (Notice Recipient):</span>
-                  </span>
-                  {formData.noticeeRole && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                      {formData.noticeeRole}
+              {noticeEditMode === "fulltext" ? (
+                /* ================= पूर्ण मुक्त संपादन (Full Free-Text Editor) ================= */
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-xs text-slate-600 font-semibold pb-1">
+                    <span className="flex items-center gap-1">
+                      <span>नोटिस का सम्पूर्ण मुख्य भाग (Full Editable Body Text):</span>
                     </span>
-                  )}
+                    <VoiceInputButton
+                      onTranscript={(text) => handleFieldChange("haryanaNoticeFullText", (formData.haryanaNoticeFullText || "") + " " + text)}
+                      fieldLabel="मुख्य सूचना-पत्र"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
+                    />
+                  </div>
+                  <textarea
+                    rows={12}
+                    value={formData.haryanaNoticeFullText !== undefined ? formData.haryanaNoticeFullText : buildDefaultHaryanaNoticeText()}
+                    onChange={(e) => handleFieldChange("haryanaNoticeFullText", e.target.value)}
+                    className="w-full text-slate-950 bg-white hover:bg-slate-50 focus:bg-white border border-slate-300 focus:border-blue-500 rounded-xl p-4 text-[13.5px] sm:text-[14.5px] leading-loose text-justify font-sans shadow-inner outline-none"
+                    placeholder="यहाँ सूचना-पत्र का संपूर्ण विवरण लिखें या संपादित करें..."
+                  />
                 </div>
+              ) : (
+                /* ================= संरचित प्रारूप (Guided Fields Mode) ================= */
+                <>
+                  {/* 5. पैरा 1: परिवादी एवं शिकायत विवरण */}
+                  <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900" style={{ textIndent: "40px" }}>
+                    <span>आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी </span>
+                    <input
+                      type="text"
+                      value={formData.complainantName || ""}
+                      onChange={(e) => handleFieldChange("complainantName", e.target.value)}
+                      placeholder="..................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[140px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <VoiceInputButton
+                      onTranscript={(text) => handleFieldChange("complainantName", text)}
+                      fieldLabel="परिवादी नाम"
+                      preferredLang="hi-IN"
+                      iconOnly={true}
+                    />
+                    <span> वासी </span>
+                    <input
+                      type="text"
+                      value={formData.complainantAddress || ""}
+                      onChange={(e) => handleFieldChange("complainantAddress", e.target.value)}
+                      placeholder="...................................................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[260px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> से शिकायत संख्या </span>
+                    <input
+                      type="text"
+                      value={formData.complaintNo || ""}
+                      onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
+                      placeholder="..................................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[160px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> दिनांक </span>
+                    <input
+                      type="text"
+                      value={formData.incidentDate || ""}
+                      onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
+                      placeholder="............................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> को थाना/यूनिट </span>
+                    <input
+                      type="text"
+                      value={formData.policeStation || ""}
+                      onChange={(e) => handleFieldChange("policeStation", e.target.value)}
+                      placeholder="...................................................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[200px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)</span>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">श्री/श्रीमती:</span>
+                  {/* 6. पैरा 2: उपस्थिति निर्देश (नोटिस प्राप्तकर्ता विवरण सहित) */}
+                  <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900 pt-2" style={{ textIndent: "40px" }}>
+                    <span>इसलिये आप </span>
                     <input
                       type="text"
                       value={formData.noticeeName || ""}
                       onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
                       placeholder="नाम दर्ज करें"
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[180px] text-center inline-block"
+                      style={{ textIndent: 0 }}
                     />
                     <VoiceInputButton
                       onTranscript={(text) => handleFieldChange("noticeeName", text)}
-                      fieldLabel="नाम"
+                      fieldLabel="नोटिस प्राप्तकर्ता का नाम"
                       preferredLang="hi-IN"
                       iconOnly={true}
                     />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">सुपुत्र/पत्नी/आत्मज:</span>
+                    <span> आत्मज/पत्नी </span>
                     <input
                       type="text"
                       value={formData.noticeeFather || ""}
                       onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
                       placeholder="पिता/पति का नाम"
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[160px] text-center inline-block"
+                      style={{ textIndent: 0 }}
                     />
                     <VoiceInputButton
                       onTranscript={(text) => handleFieldChange("noticeeFather", text)}
@@ -1905,28 +2041,14 @@ function NoticeTemplatesContent() {
                       preferredLang="hi-IN"
                       iconOnly={true}
                     />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">आयु:</span>
-                    <input
-                      type="text"
-                      value={formData.noticeeAge || ""}
-                      onChange={(e) => handleFieldChange("noticeeAge", e.target.value)}
-                      placeholder="वर्ष"
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-16 text-center"
-                    />
-                    <span className="text-slate-500 text-[11px]">वर्ष</span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 sm:col-span-2">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">निवास स्थान (पता):</span>
+                    <span> वासी </span>
                     <input
                       type="text"
                       value={formData.noticeeAddress || ""}
                       onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
                       placeholder="पूरा पता"
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[240px] text-center inline-block"
+                      style={{ textIndent: 0 }}
                     />
                     <VoiceInputButton
                       onTranscript={(text) => handleFieldChange("noticeeAddress", text)}
@@ -1934,180 +2056,136 @@ function NoticeTemplatesContent() {
                       preferredLang="hi-IN"
                       iconOnly={true}
                     />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-slate-700 whitespace-nowrap">मोबाईल:</span>
+                    <span> (मोबाईल: </span>
                     <input
                       type="text"
                       value={formData.noticeePhone || ""}
                       onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
                       placeholder="मोबाईल नं."
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 5. पैरा 1: परिवादी एवं शिकायत विवरण */}
-              <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900" style={{ textIndent: "40px" }}>
-                <span>आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी </span>
-                <input
-                  type="text"
-                  value={formData.complainantName || ""}
-                  onChange={(e) => handleFieldChange("complainantName", e.target.value)}
-                  placeholder="..................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[140px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> वासी </span>
-                <input
-                  type="text"
-                  value={formData.complainantAddress || ""}
-                  onChange={(e) => handleFieldChange("complainantAddress", e.target.value)}
-                  placeholder="...................................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[260px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> से शिकायत संख्या </span>
-                <input
-                  type="text"
-                  value={formData.complaintNo || ""}
-                  onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
-                  placeholder="..................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[160px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> दिनांक </span>
-                <input
-                  type="text"
-                  value={formData.incidentDate || ""}
-                  onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
-                  placeholder="............................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> को थाना/यूनिट </span>
-                <input
-                  type="text"
-                  value={formData.policeStation || ""}
-                  onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                  placeholder="...................................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[200px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)</span>
-              </div>
-
-              {/* 6. पैरा 2: उपस्थिति निर्देश */}
-              <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900 pt-2" style={{ textIndent: "40px" }}>
-                <span>इसलिये आप </span>
-                <input
-                  type="text"
-                  value={formData.noticeeName || ""}
-                  onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
-                  placeholder="..................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[180px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> आत्मज/पत्नी </span>
-                <input
-                  type="text"
-                  value={formData.noticeeFather || ""}
-                  onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
-                  placeholder="..................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[160px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> वासी </span>
-                <input
-                  type="text"
-                  value={formData.noticeeAddress || ""}
-                  onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
-                  placeholder="...................................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[240px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                {formData.noticeePhone && (
-                  <>
-                    <span> (मोबाईल: </span>
-                    <input
-                      type="text"
-                      value={formData.noticeePhone}
-                      onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
-                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[110px] text-center inline-block"
+                      className="font-bold text-slate-950 bg-transparent border-b border-dotted border-slate-700 px-1 outline-none min-w-[120px] text-center inline-block"
                       style={{ textIndent: 0 }}
                     />
                     <span>) </span>
-                  </>
-                )}
-                <span> को निर्देश दिये जाते है कि आप दिनांक </span>
+                    <span> को निर्देश दिये जाते है कि आप दिनांक </span>
+                    <input
+                      type="text"
+                      value={formData.appearanceDate || ""}
+                      onChange={(e) => handleFieldChange("appearanceDate", e.target.value)}
+                      placeholder="............................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> को थाना/यूनिट </span>
+                    <input
+                      type="text"
+                      value={formData.appearancePlace || formData.policeStation || ""}
+                      onChange={(e) => handleFieldChange("appearancePlace", e.target.value)}
+                      placeholder="................................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[200px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> में समय </span>
+                    <input
+                      type="text"
+                      value={formData.appearanceTime || ""}
+                      onChange={(e) => handleFieldChange("appearanceTime", e.target.value)}
+                      placeholder="........................"
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[120px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।</span>
+                  </div>
+
+                  {/* 7. पैरा 3: वीडियो कॉन्फ्रेंसिंग का विकल्प */}
+                  <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900 pt-2" style={{ textIndent: "40px" }}>
+                    <span>शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. </span>
+                    <input
+                      type="text"
+                      value={formData.stationEmail || formData.officerEmail || ""}
+                      onChange={(e) => handleFieldChange("stationEmail", e.target.value)}
+                      placeholder="..................................................................................................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[320px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> पर लिखित निवेदन दिनांक </span>
+                    <input
+                      type="text"
+                      value={formData.videoConferenceDeadline || formData.appearanceDate || ""}
+                      onChange={(e) => handleFieldChange("videoConferenceDeadline", e.target.value)}
+                      placeholder="............................."
+                      className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
+                      style={{ textIndent: 0 }}
+                    />
+                    <span> से पहले भेजना सुनिश्चित करें।</span>
+                  </div>
+
+                  {/* 8. पैरा 4: वैधानिक स्पष्टीकरण (एफआईआर अंकित नहीं / गिरफ्तारी नहीं) - Fully Editable */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between text-xs text-slate-600 font-semibold pb-1">
+                      <span>वैधानिक स्पष्टीकरण एवं गैर-गिरफ्तारी सुरक्षा (Statutory Clarification):</span>
+                      <VoiceInputButton
+                        onTranscript={(text) => handleFieldChange("statutoryClarification", text)}
+                        fieldLabel="वैधानिक स्पष्टीकरण"
+                        preferredLang="hi-IN"
+                        iconOnly={true}
+                      />
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={formData.statutoryClarification !== undefined ? formData.statutoryClarification : "इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।"}
+                      onChange={(e) => handleFieldChange("statutoryClarification", e.target.value)}
+                      className="w-full text-justify leading-relaxed text-[13.5px] sm:text-[14.5px] text-slate-900 bg-white hover:bg-slate-50 focus:bg-white border border-slate-300 focus:border-blue-500 rounded-lg p-2.5 outline-none font-sans"
+                      placeholder="वैधानिक स्पष्टीकरण..."
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* 8B. अतिरिक्त खंड / Dynamic Clauses (यदि जोड़े गए हों) */}
+              {customClauses && customClauses.length > 0 && (
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">अतिरिक्त शर्तें व खंड (Custom Clauses):</p>
+                  {customClauses.map((clause, idx) => (
+                    <div key={clause.id} className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900" style={{ textIndent: "40px" }}>
+                      <p className="font-bold underline text-slate-950 mb-1" style={{ textIndent: 0 }}>
+                        {clause.title || `विशेष निर्देश ${idx + 1}`}
+                      </p>
+                      <p style={{ textIndent: "40px" }}>
+                        {clause.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 9. संलग्नक (संपादनीय) */}
+              <div className="pt-4 flex items-center gap-2">
+                <span className="font-bold text-base text-slate-950 whitespace-nowrap">संलग्न :-</span>
                 <input
                   type="text"
-                  value={formData.appearanceDate || ""}
-                  onChange={(e) => handleFieldChange("appearanceDate", e.target.value)}
-                  placeholder="............................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
-                  style={{ textIndent: 0 }}
+                  value={formData.annexureText !== undefined ? formData.annexureText : "शिकायत की छायाप्रति।"}
+                  onChange={(e) => handleFieldChange("annexureText", e.target.value)}
+                  placeholder="शिकायत की छायाप्रति।"
+                  className="font-bold text-base text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 py-0.5 outline-none flex-1"
                 />
-                <span> को थाना/यूनिट </span>
-                <input
-                  type="text"
-                  value={formData.appearancePlace || formData.policeStation || ""}
-                  onChange={(e) => handleFieldChange("appearancePlace", e.target.value)}
-                  placeholder="................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[200px] text-center inline-block"
-                  style={{ textIndent: 0 }}
+                <VoiceInputButton
+                  onTranscript={(text) => handleFieldChange("annexureText", text)}
+                  fieldLabel="संलग्न दस्तावेज"
+                  preferredLang="hi-IN"
+                  iconOnly={true}
                 />
-                <span> में समय </span>
-                <input
-                  type="text"
-                  value={formData.appearanceTime || ""}
-                  onChange={(e) => handleFieldChange("appearanceTime", e.target.value)}
-                  placeholder="........................"
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[120px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।</span>
               </div>
 
-              {/* 7. पैरा 3: वीडियो कॉन्फ्रेंसिंग का विकल्प */}
-              <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900 pt-2" style={{ textIndent: "40px" }}>
-                <span>शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. </span>
-                <input
-                  type="text"
-                  value={formData.stationEmail || formData.officerEmail || ""}
-                  onChange={(e) => handleFieldChange("stationEmail", e.target.value)}
-                  placeholder="..................................................................................................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[320px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> पर लिखित निवेदन दिनांक </span>
-                <input
-                  type="text"
-                  value={formData.videoConferenceDeadline || formData.appearanceDate || ""}
-                  onChange={(e) => handleFieldChange("videoConferenceDeadline", e.target.value)}
-                  placeholder="............................."
-                  className="font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none min-w-[130px] text-center inline-block"
-                  style={{ textIndent: 0 }}
-                />
-                <span> से पहले भेजना सुनिश्चित करें।</span>
-              </div>
-
-              {/* 8. पैरा 4: वैधानिक स्पष्टीकरण (एफआईआर अंकित नहीं / गिरफ्तारी नहीं) */}
-              <div className="text-justify leading-loose text-[13.5px] sm:text-[14.5px] text-slate-900 pt-2" style={{ textIndent: "40px" }}>
-                <span>इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।</span>
-              </div>
-
-              {/* 9. संलग्नक */}
-              <div className="pt-4 font-bold text-base text-slate-950">
-                <span>संलग्न :- &nbsp;&nbsp;शिकायत की छायाप्रति।</span>
-              </div>
-
-              {/* 10. हस्ताक्षर एवं मोहर भाग */}
+              {/* 10. हस्ताक्षर एवं मोहर भाग (संपादनीय) */}
               <div className="pt-8 flex justify-between items-start text-sm">
                 <div className="w-5/12 pt-4">
-                  <p className="font-bold text-base text-slate-950">थाना/यूनिट की मोहर</p>
+                  <input
+                    type="text"
+                    value={formData.sealLabel || "थाना/यूनिट की मोहर"}
+                    onChange={(e) => handleFieldChange("sealLabel", e.target.value)}
+                    className="font-bold text-base text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none w-full max-w-[200px]"
+                    placeholder="थाना/यूनिट की मोहर"
+                  />
                   <div className="mt-14 text-xs text-slate-400 italic">
                     [थाना/यूनिट की आधिकारिक मोहर का स्थान]
                   </div>
@@ -2115,7 +2193,13 @@ function NoticeTemplatesContent() {
 
                 <div className="w-7/12 space-y-2 text-sm text-slate-950 font-medium pl-4">
                   <div className="flex items-center gap-1.5">
-                    <span className="whitespace-nowrap font-bold">जांच अधिकारी के हस्ताक्षर</span>
+                    <input
+                      type="text"
+                      value={formData.ioSignLabel || "जांच अधिकारी के हस्ताक्षर"}
+                      onChange={(e) => handleFieldChange("ioSignLabel", e.target.value)}
+                      className="whitespace-nowrap font-bold text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border-b border-dotted border-slate-700 focus:border-blue-500 px-1 outline-none"
+                      placeholder="जांच अधिकारी के हस्ताक्षर"
+                    />
                     <span className="text-slate-500">.................................</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -4279,7 +4363,7 @@ function NoticeTemplatesContent() {
           )}
 
           {/* ================= DYNAMIC CLAUSES & CUSTOM SECTIONS (FOR EDITABLE TEMPLATES) ================= */}
-          {activeTemplate !== "cdr_requisition" && activeTemplate !== "haryana_notice" && activeTemplate !== "natgrid_proforma" && (
+          {activeTemplate !== "cdr_requisition" && activeTemplate !== "natgrid_proforma" && (
             <div className="pt-4 border-t border-slate-200 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">

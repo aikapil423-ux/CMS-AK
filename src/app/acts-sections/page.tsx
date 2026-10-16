@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Scale,
   Search,
@@ -41,8 +41,17 @@ import { Button } from "@/components/ui/button";
 
 function ActsAndSectionsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [actsList, setActsList] = useState<LegalActItem[]>([]);
   const [searchInput, setSearchInput] = useState("");
+
+  const handleCloseActModal = () => {
+    setActiveActModal(null);
+    const returnUrl = searchParams?.get("returnUrl");
+    if (returnUrl) {
+      router.push(returnUrl);
+    }
+  };
   const [activeSearchQuery, setActiveSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<"A_TO_Z" | "Z_TO_A" | "YEAR_DESC" | "SECTIONS_DESC">("A_TO_Z");
@@ -1315,7 +1324,7 @@ function ActsAndSectionsContent() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setActiveActModal(null)} />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={handleCloseActModal} />
             <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
               {/* Modal Top Header */}
               <div className="p-4 sm:p-5 bg-gradient-to-r from-[#0b192c] via-[#10243e] to-[#0b192c] text-white flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -1337,8 +1346,8 @@ function ActsAndSectionsContent() {
                   </h3>
                 </div>
                 <button
-                  onClick={() => setActiveActModal(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors"
+                  onClick={handleCloseActModal}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -2106,7 +2115,7 @@ function ActsAndSectionsContent() {
                 <span className="font-mono text-[11px]">
                   Haryana Police Statutory Repository &bull; {activeActModal.shortName} &bull; Verbatim Certified
                 </span>
-                <Button size="sm" variant="outline" onClick={() => setActiveActModal(null)}>
+                <Button size="sm" variant="outline" onClick={handleCloseActModal} className="cursor-pointer">
                   Close
                 </Button>
               </div>

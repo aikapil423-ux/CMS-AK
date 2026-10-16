@@ -575,7 +575,7 @@ export function generateNoticeDocumentHtml(
   <div class="doc-sheet">
     <!-- शीर्ष हेडिंग: हरियाणा पुलिस (केंद्रित, रेखांकित) -->
     <div class="top-header">
-      <span class="main-title">हरियाणा पुलिस</span>
+      <span class="main-title">${formData.headerDept || "हरियाणा पुलिस"}</span>
     </div>
 
     <!-- थाना/यूनिट एवं जिला अम्बाला। पंक्ति -->
@@ -592,7 +592,7 @@ export function generateNoticeDocumentHtml(
 
     <!-- मुख्य शीर्षक: सूचना-पत्र -->
     <div class="sub-title">
-      सूचना-पत्र
+      ${formData.docTitle || "सूचना-पत्र"}
     </div>
 
     <!-- क्रमांक एवं दिनांक -->
@@ -607,42 +607,56 @@ export function generateNoticeDocumentHtml(
       </tr>
     </table>
 
-    <!-- पैरा 1: परिवादी एवं शिकायत प्राप्ति विवरण -->
-    <p class="body-para">
-      आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी <span class="dotted-fill">${formData.complainantName || "..................."}</span> वासी <span class="dotted-fill">${formData.complainantAddress || "...................................................."}</span> से शिकायत संख्या <span class="dotted-fill">${formData.complaintNo || "..................................."}</span> दिनांक <span class="dotted-fill">${formData.incidentDate || "............................."}</span> को थाना/यूनिट <span class="dotted-fill">${formData.policeStation || "...................................................."}</span> में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)
-    </p>
+    ${formData.haryanaNoticeFullText ? `
+      <!-- पूर्ण कस्टम टेक्स्ट संपादन (User Customized Full Text) -->
+      <div class="body-para" style="white-space: pre-wrap; line-height: 2;">
+        ${formData.haryanaNoticeFullText}
+      </div>
+    ` : `
+      <!-- पैरा 1: परिवादी एवं शिकायत प्राप्ति विवरण -->
+      <p class="body-para">
+        ${formData.para1CustomText || `आपको इस नोटिस के माध्यम से सूचित किया जाता है कि परिवादी <span class="dotted-fill">${formData.complainantName || "..................."}</span> वासी <span class="dotted-fill">${formData.complainantAddress || "...................................................."}</span> से शिकायत संख्या <span class="dotted-fill">${formData.complaintNo || "..................................."}</span> दिनांक <span class="dotted-fill">${formData.incidentDate || "............................."}</span> को थाना/यूनिट <span class="dotted-fill">${formData.policeStation || "...................................................."}</span> में प्राप्त हुई है। (छायाप्रति साथ संलग्न है)`}
+      </p>
 
-    <!-- पैरा 2: उपस्थिति निर्देश -->
-    <p class="body-para">
-      इसलिये आप <span class="dotted-fill">${formData.noticeeName ? `${formData.noticeeName}${formData.noticeeFather ? ` पुत्र/सुपुत्र ${formData.noticeeFather}` : ""}${formData.noticeeAddress ? ` वासी ${formData.noticeeAddress}` : ""}` : "....................................................................................."}</span> को निर्देश दिये जाते है कि आप दिनांक <span class="dotted-fill">${formData.appearanceDate || "............................."}</span> को थाना/यूनिट <span class="dotted-fill">${formData.appearancePlace || formData.policeStation || "................................."}</span> में समय <span class="dotted-fill">${formData.appearanceTime || "........................"}</span> पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।
-    </p>
+      <!-- पैरा 2: उपस्थिति निर्देश -->
+      <p class="body-para">
+        ${formData.para2CustomText || `इसलिये आप <span class="dotted-fill">${formData.noticeeName ? `${formData.noticeeName}${formData.noticeeFather ? ` आत्मज/पत्नी ${formData.noticeeFather}` : ""}${formData.noticeeAddress ? ` वासी ${formData.noticeeAddress}` : ""}${formData.noticeePhone ? ` (मोबाईल: ${formData.noticeePhone})` : ""}` : "....................................................................................."}</span> को निर्देश दिये जाते है कि आप दिनांक <span class="dotted-fill">${formData.appearanceDate || "............................."}</span> को थाना/यूनिट <span class="dotted-fill">${formData.appearancePlace || formData.policeStation || "................................."}</span> में समय <span class="dotted-fill">${formData.appearanceTime || "........................"}</span> पर प्रारम्भिक जांच में सभी प्रासंगिक दस्तावेजो, साक्ष्यों और रिकार्ड सहित व्यक्तिगत तौर पर या अपने प्रतिनिधि के माध्यम से शामिल होवें।`}
+      </p>
 
-    <!-- पैरा 3: वीडियो कॉन्फ्रेंसिंग का विकल्प -->
-    <p class="body-para">
-      शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. <span class="dotted-fill">${formData.stationEmail || formData.officerEmail || "..................................................................................................."}</span> पर लिखित निवेदन दिनांक <span class="dotted-fill">${formData.videoConferenceDeadline || formData.appearanceDate || "............................."}</span> से पहले भेजना सुनिश्चित करें।
-    </p>
+      <!-- पैरा 3: वीडियो कॉन्फ्रेंसिंग का विकल्प -->
+      <p class="body-para">
+        ${formData.para3CustomText || `शिकायत की जांच के सम्बन्ध में यदि आप अपनी उपस्थिति को वीडियो कान्फ्रेंस के माध्यम से चाहते है तो इस थाना/यूनिट की ई.मेल आई.डी. <span class="dotted-fill">${formData.stationEmail || formData.officerEmail || "..................................................................................................."}</span> पर लिखित निवेदन दिनांक <span class="dotted-fill">${formData.videoConferenceDeadline || formData.appearanceDate || "............................."}</span> से पहले भेजना सुनिश्चित करें।`}
+      </p>
 
-    <!-- पैरा 4: वैधानिक स्पष्टीकरण (एफआईआर अंकित नहीं / गिरफ्तारी नहीं) -->
-    <p class="body-para">
-      इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।
-    </p>
+      <!-- पैरा 4: वैधानिक स्पष्टीकरण (एफआईआर अंकित नहीं / गिरफ्तारी नहीं) -->
+      <p class="body-para">
+        ${formData.statutoryClarification || formData.para4CustomText || "इस नोटिस के सम्बन्ध में आपको यह भी स्पष्ट किया जाता है कि यह नोटिस केवल शिकायत की जांच के सम्बन्ध में जारी किया गया है। अभी तक आपके विरुद्ध कोई भी प्रथम सूचना रिपोर्ट अंकित नहीं की गई है और शिकायत की जांच के दौरान आपको गिरफ्तार नहीं किया जायेगा।"}
+      </p>
+    `}
+
+    ${customSections && customSections.length > 0 ? customSections.map((c: any, i: number) => `
+      <div style="margin-top: 16px;">
+        <p style="font-weight: bold; margin-bottom: 4px; font-size: 11.5pt;">${c.title || `विशेष निर्देश ${i + 1}`}</p>
+        <p class="body-para">${c.content}</p>
+      </div>
+    `).join("") : ""}
 
     <!-- संलग्नक -->
     <div class="annexure-line">
-      संलग्न :- &nbsp;&nbsp;शिकायत की छायाप्रति।
+      ${formData.annexureText ? (formData.annexureText.startsWith("संलग्न") ? formData.annexureText : `संलग्न :- &nbsp;&nbsp;${formData.annexureText}`) : "संलग्न :- &nbsp;&nbsp;शिकायत की छायाप्रति।"}
     </div>
 
     <!-- हस्ताक्षर एवं मोहर तालिका -->
     <table class="bottom-table">
       <tr>
         <td style="width: 45%; vertical-align: top; padding-top: 10px;">
-          <b>थाना/यूनिट की मोहर</b>
+          <b>${formData.sealLabel || "थाना/यूनिट की मोहर"}</b>
           <div style="margin-top: 60px; color: #94a3b8; font-size: 9pt;">
             &nbsp;
           </div>
         </td>
         <td style="width: 55%; vertical-align: top; line-height: 2.1;">
-          जांच अधिकारी के हस्ताक्षर <span class="dotted-fill">.................................</span><br/>
+          ${formData.ioSignLabel || "जांच अधिकारी के हस्ताक्षर"} <span class="dotted-fill">.................................</span><br/>
           नाम व पद <span class="dotted-fill">${formData.officerName || ".................................................."} ${formData.officerRank ? `, ${formData.officerRank}` : ""}</span><br/>
           थाना/यूनिट <span class="dotted-fill">${formData.policeStation || "................................................."}</span><br/>
           मोबाईल नम्बर <span class="dotted-fill">${formData.officerPhone || "............................................."}</span><br/>

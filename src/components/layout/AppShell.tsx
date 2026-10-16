@@ -25,6 +25,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
+import { MagicEraserTool } from "@/components/ui/MagicEraserTool";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -121,6 +122,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Universal Camera & File Upload Option Selector */}
       <GlobalUploadCameraModal />
+
+      {/* Magic Eraser Cursor Tool */}
+      <MagicEraserTool />
     </div>
   );
 }

@@ -62,6 +62,7 @@ import {
   Database,
   RotateCcw,
   Loader2,
+  LayoutList,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ComplaintService } from "@/services/complaintService";
@@ -537,6 +538,7 @@ export default function ComplaintProfilePage() {
   const [uploadReportFormat, setUploadReportFormat] = useState("PDF");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportPreviewItem, setReportPreviewItem] = useState<ComplaintReportItem | null>(null);
+  const [reportsViewMode, setReportsViewMode] = useState<"table" | "cards">("table");
 
   // SHO Action States
   const [shoReEnquiryModalOpen, setShoReEnquiryModalOpen] = useState(false);
@@ -2314,7 +2316,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 {complaint.complaintNumber}
               </span>
               <StatusBadge status={getMainComplaintStatus(complaint)} />
-              <PriorityBadge priority={complaint.priority} />
             </div>
           </div>
         </div>
@@ -2652,219 +2653,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             );
           })}
         </nav>
-
-        {/* More Actions Dropdown to the right of the sub-tabs */}
-        <div className="relative shrink-0 py-1.5 pr-1.5" ref={moreActionsRef}>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setMoreActionsOpen(!moreActionsOpen)}
-            className="text-xs font-bold gap-1.5 bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-800 shadow-2xs cursor-pointer"
-          >
-            <span>More Actions</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreActionsOpen ? "rotate-180" : ""}`} />
-          </Button>
-
-          {moreActionsOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-60 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-40 animate-in fade-in-0 zoom-in-95 text-xs space-y-0.5">
-              <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                Complaint Actions
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setActiveTab("legal_assistant");
-                }}
-                className="w-full text-left px-3 py-2 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
-              >
-                <Scale className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>Legal Assistant</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setActiveTab("summary");
-                }}
-                className="w-full text-left px-3 py-2 text-blue-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors font-semibold"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>Investigation Summary</span>
-              </button>
-
-              {canAskProgress && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setProgressModalOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <Send className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="font-semibold">Ask Progress Report</span>
-                </button>
-              )}
-
-              {canAssign && !complaint.assignedEoName && (
-                <div className="border-t border-b border-slate-100 py-1 bg-slate-50/50">
-                  <div className="px-3 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                    <span>Assign EO</span>
-                    <span className="text-[9px] font-mono text-slate-400">Rank &amp; Name</span>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {MOCK_ENQUIRY_OFFICERS.map((eo) => {
-                      const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
-                      const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
-                      return (
-                        <button
-                          key={eo.id}
-                          type="button"
-                          disabled={isQuickAssigning}
-                          onClick={() => handleQuickAssignEO(eo)}
-                          className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
-                            isSelected ? "bg-blue-50 text-blue-900 font-bold" : "text-slate-700 hover:bg-blue-50 hover:text-blue-900"
-                          }`}
-                        >
-                          <span className="truncate">{label}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setShowReceiptModal(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="font-semibold">Print Official Receipt</span>
-              </button>
-
-              {canGenerateDocument && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setActiveTab("documents");
-                    setGenerateDocDropdownOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <ScrollText className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span className="font-semibold">Generate Notice / Doc</span>
-                </button>
-              )}
-
-              {canGenerateReport && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setActiveTab("reports");
-                    setGenerateReportDropdownOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <FileCheck2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="font-semibold">Generate Enquiry Report</span>
-                </button>
-              )}
-
-              {canUploadDocument && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setDocumentModalOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-blue-50 hover:text-blue-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <UploadCloud className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="font-semibold">Upload Document</span>
-                </button>
-              )}
-
-              {canUploadDocument && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setUploadReportModalOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span className="font-semibold">Upload Signed Report</span>
-                </button>
-              )}
-
-              <div className="border-t border-slate-100 my-1" />
-
-              {canTransferJustify && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setTransferModalOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-amber-50 hover:text-amber-900 flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="font-semibold">Transfer Justification</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setLinkModalOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <Link2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span className="font-semibold">Link / Club Complaints</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMoreActionsOpen(false);
-                  setNcrModalOpen(true);
-                }}
-                className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <FileCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="font-semibold">Issue NCR Reference</span>
-              </button>
-
-              {isEoPersona && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoreActionsOpen(false);
-                    setDossierModalOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-900 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
-                >
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="font-semibold">Confidential Dossier</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Tab Content Panes */}
@@ -3272,47 +3060,6 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 </CardContent>
               </Card>
 
-              {/* Quick Summary Card */}
-              <Card className="border-slate-200 shadow-xs">
-                <CardContent className="p-4 sm:p-5 space-y-2.5 text-xs">
-                  <h3 className="font-bold uppercase tracking-wider text-[#0b192c] border-b border-slate-100 pb-2">
-                    Case Meta & Registry
-                  </h3>
-                  <div className="space-y-2 text-slate-600">
-                    <div className="flex justify-between">
-                      <span>Source Channel:</span>
-                      <strong className="text-slate-900">{complaint.source.replace(/_/g, " ")}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Intake Officer:</span>
-                      <strong className="text-slate-900">{complaint.registeredBy}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>General Diary:</span>
-                      <strong className="text-emerald-700">PPR 22.48 Certified</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Documents Docket:</span>
-                      <strong className="text-slate-900">{combinedDocuments.length} Files</strong>
-                    </div>
-
-                    {complaint.assignedEoName && (
-                      <div className="pt-2.5 border-t border-slate-100">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setShowReceiptModal(true)}
-                          className="w-full text-xs font-semibold gap-1.5 text-emerald-800 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 cursor-pointer shadow-2xs"
-                        >
-                          <Printer className="w-3.5 h-3.5 text-emerald-700" />
-                          <span>Print Official Receipt</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
@@ -3730,12 +3477,39 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   <FileCheck2 className="w-5 h-5 text-amber-600" />
                   <span>Official Enquiry Reports &amp; NCRs Docket</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Legal enquiry drafts, field verification reports, compromise deeds, and Non-Cognizable Reports (NCR) recorded for this complaint.
-                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {/* View Mode Toggle: Table / Cards */}
+                <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setReportsViewMode("table")}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                      reportsViewMode === "table"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Tabular Table View"
+                  >
+                    <Table className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Table</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportsViewMode("cards")}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                      reportsViewMode === "cards"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Card Docket View"
+                  >
+                    <LayoutList className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Cards</span>
+                  </button>
+                </div>
+
                 {canUploadDocument && (
                   <Button
                     variant="outline"
@@ -3837,311 +3611,468 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
             {/* Reports List */}
             {complaint.reports && complaint.reports.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {complaint.reports.map((report) => {
-                  const isSavedInComplaint = report.status === "Saved in Complaint" || report.status === "Saved" || !report.status;
-                  const isDraftStatus = report.status === "Draft";
+              reportsViewMode === "table" ? (
+                /* TABULAR FORM VIEW */
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold">
+                          <th className="py-3 px-3.5 w-12 text-center">#</th>
+                          <th className="py-3 px-3.5">Report / Order Title</th>
+                          <th className="py-3 px-3.5 w-36">Category</th>
+                          <th className="py-3 px-3.5 w-40">Status</th>
+                          <th className="py-3 px-3.5 w-44">Officer &amp; Dispatch</th>
+                          <th className="py-3 px-3.5 w-32">Date</th>
+                          <th className="py-3 px-3.5 w-52 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {complaint.reports.map((report, idx) => {
+                          const isDraftStatus = report.status === "Draft";
 
-                  return (
-                    <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
-                      <CardContent className="p-4 space-y-3 text-xs">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1 min-w-0">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {/* Recommendation Type Badges (Gamini, Diwani, NCR, FIR, Nivaran, Razinama) */}
-                              {report.recommendationType === "GAMINI" || report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 font-semibold flex items-center gap-1">
-                                  🌾 Gamini (Land Dispute)
-                                </span>
-                              ) : report.recommendationType === "DIWANI" || report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-300 font-semibold flex items-center gap-1">
-                                  💼 Diwani (Civil Dealing)
-                                </span>
-                              ) : report.recommendationType === "NCR" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-300 font-semibold flex items-center gap-1">
-                                  📄 NCR (u/s 174 BNSS)
-                                </span>
-                              ) : report.recommendationType === "FIR" || report.recommendationType === "FIR_RECOMMENDED" || report.isFirRecommended ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-800 border border-red-300 font-semibold flex items-center gap-1">
-                                  🚨 FIR Recommended
-                                </span>
-                              ) : report.recommendationType === "NIVARAN" || report.recommendationType === "NIVARAK_PREVENTIVE" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-300 font-semibold flex items-center gap-1">
-                                  🛡️ Nivaran (BNSS 126/170)
-                                </span>
-                              ) : report.recommendationType === "RAZINAMA" || report.recommendationType === "RAJINAMA_COMPROMISE" ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold flex items-center gap-1">
-                                  🤝 Razinama (Compromise)
-                                </span>
-                              ) : (
-                                <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
-                                  {report.reportTypeLabel || report.reportType}
-                                </span>
-                              )}
+                          return (
+                            <tr key={report.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-3.5 text-center text-slate-400 font-mono align-top">
+                                {idx + 1}
+                              </td>
 
-                              {/* Version Number */}
-                              {report.versionNumber && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
-                                  v{report.versionNumber}
-                                </span>
-                              )}
+                              {/* Title & Findings */}
+                              <td className="py-3 px-3.5 align-top space-y-1">
+                                <div className="font-bold text-slate-900 text-xs sm:text-sm">
+                                  {report.title}
+                                </div>
+                              </td>
 
-                              {/* Status Badge: "Saved in Complaint" vs "Draft" vs "Sent to SHO" */}
-                              {report.sentToSho ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-mono flex items-center gap-1">
-                                  <Send className="w-3 h-3 text-blue-600" />
-                                  <span>Sent to SHO</span>
-                                </span>
-                              ) : isDraftStatus ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono">
-                                  Status: Draft
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono flex items-center gap-1">
-                                  <CheckCircle className="w-3 h-3 text-emerald-600" />
-                                  <span>Saved in Complaint</span>
-                                </span>
-                              )}
+                              {/* Category Badge */}
+                              <td className="py-3 px-3.5 align-top space-y-1">
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {report.recommendationType === "GAMINI" || report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                      🌾 Gamini
+                                    </span>
+                                  ) : report.recommendationType === "DIWANI" || report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-300 flex items-center gap-1">
+                                      💼 Diwani
+                                    </span>
+                                  ) : report.recommendationType === "NCR" ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-300 flex items-center gap-1">
+                                      📄 NCR 174
+                                    </span>
+                                  ) : report.recommendationType === "FIR" || report.recommendationType === "FIR_RECOMMENDED" || report.isFirRecommended ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-800 border border-red-300 flex items-center gap-1">
+                                      🚨 FIR
+                                    </span>
+                                  ) : report.recommendationType === "NIVARAN" || report.recommendationType === "NIVARAK_PREVENTIVE" ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-300 flex items-center gap-1">
+                                      🛡️ Nivaran
+                                    </span>
+                                  ) : report.recommendationType === "RAZINAMA" || report.recommendationType === "RAJINAMA_COMPROMISE" ? (
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                      🤝 Razinama
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
+                                      {report.reportTypeLabel || report.reportType}
+                                    </span>
+                                  )}
+                                </div>
+                                {report.isUploaded && (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 inline-block">
+                                    Uploaded File
+                                  </span>
+                                )}
+                              </td>
 
-                              {report.isUploaded && (
-                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                                  Uploaded File
-                                </span>
+                              {/* Status */}
+                              <td className="py-3 px-3.5 align-top">
+                                {report.sentToSho ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-mono flex items-center gap-1 w-fit">
+                                    <Send className="w-3 h-3 text-blue-600" />
+                                    <span>Sent to SHO</span>
+                                  </span>
+                                ) : isDraftStatus ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono inline-block">
+                                    Status: Draft
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono flex items-center gap-1 w-fit">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                    <span>Saved in Complaint</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Officer & Dispatch */}
+                              <td className="py-3 px-3.5 align-top text-xs space-y-0.5">
+                                <div className="font-medium text-slate-800">
+                                  {report.createdBy || report.officerName || "EO"}
+                                </div>
+                                <div className="text-[10px] text-slate-500">
+                                  {report.officerRank || "Investigating Officer"}
+                                </div>
+                              </td>
+
+                              {/* Date */}
+                              <td className="py-3 px-3.5 align-top text-[11px] text-slate-500 font-mono whitespace-nowrap">
+                                {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-3 px-3.5 align-top text-right">
+                                <div className="flex flex-wrap items-center justify-end gap-1">
+                                  {/* View / SHO Decision */}
+                                  {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
+                                    !isReportViewed && !complaint?.isReportViewedBySho ? (
+                                      <Button
+                                        type="button"
+                                        variant="primary"
+                                        size="sm"
+                                        onClick={() => handleViewReport(report)}
+                                        className="text-[11px] h-6 px-2.5 gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shadow-xs animate-pulse"
+                                        title="View enquiry report before approving or rejecting"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        <span>View</span>
+                                      </Button>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleViewReport(report)}
+                                          className="text-[11px] h-6 px-2 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                        >
+                                          <Eye className="w-3 h-3 text-blue-600" />
+                                          <span>View</span>
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="primary"
+                                          size="sm"
+                                          onClick={handleOpenShoApproveModal}
+                                          disabled={isShoApproving}
+                                          className="text-[11px] h-6 px-2 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
+                                        >
+                                          <CheckCircle className="w-3 h-3" />
+                                          <span>Approve</span>
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="primary"
+                                          size="sm"
+                                          onClick={() => {
+                                            setShoRejectReason("");
+                                            setShoRejectModalOpen(true);
+                                          }}
+                                          className="text-[11px] h-6 px-2 gap-1 bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer shadow-xs"
+                                        >
+                                          <X className="w-3 h-3" />
+                                          <span>Reject</span>
+                                        </Button>
+                                      </>
+                                    )
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleViewReport(report)}
+                                      className="text-[11px] h-6 px-2 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                      title="View report details"
+                                    >
+                                      <Eye className="w-3 h-3 text-blue-600" />
+                                      <span>View</span>
+                                    </Button>
+                                  )}
+
+                                  {/* Edit */}
+                                  {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
+                                        handleNavigateToReportDraft(rec, report, false);
+                                      }}
+                                      className="text-[11px] h-6 px-2 gap-1 border-slate-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100 cursor-pointer font-semibold"
+                                      title="Edit this draft report"
+                                    >
+                                      <Edit3 className="w-3 h-3 text-amber-600" />
+                                      <span>Edit</span>
+                                    </Button>
+                                  )}
+
+                                  {/* Send to SHO button */}
+                                  {isAssignedEo && !report.sentToSho && (
+                                    <Button
+                                      type="button"
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => handleOpenEoSendToShoModal(report)}
+                                      disabled={sendingReportToSho}
+                                      className="text-[11px] h-6 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                                      title="Send this Enquiry Report to SHO for Review & Approval"
+                                    >
+                                      <Send className="w-3 h-3" />
+                                      <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
+                                    </Button>
+                                  )}
+
+                                  {/* Delete Report */}
+                                  {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleDeleteReport(report.id)}
+                                      className="text-[11px] h-6 px-1.5 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                                      title="Delete report"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                /* CARDS VIEW */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {complaint.reports.map((report) => {
+                    const isSavedInComplaint = report.status === "Saved in Complaint" || report.status === "Saved" || !report.status;
+                    const isDraftStatus = report.status === "Draft";
+
+                    return (
+                      <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+                        <CardContent className="p-4 space-y-3 text-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {/* Recommendation Type Badges (Gamini, Diwani, NCR, FIR, Nivaran, Razinama) */}
+                                {report.recommendationType === "GAMINI" || report.recommendationType === "JAMINI_LAND_DISPUTE" ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300 font-semibold flex items-center gap-1">
+                                    🌾 Gamini (Land Dispute)
+                                  </span>
+                                ) : report.recommendationType === "DIWANI" || report.recommendationType === "DIWANI_CIVIL_MONEY" ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-300 font-semibold flex items-center gap-1">
+                                    💼 Diwani (Civil Dealing)
+                                  </span>
+                                ) : report.recommendationType === "NCR" ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-300 font-semibold flex items-center gap-1">
+                                    📄 NCR (u/s 174 BNSS)
+                                  </span>
+                                ) : report.recommendationType === "FIR" || report.recommendationType === "FIR_RECOMMENDED" || report.isFirRecommended ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-800 border border-red-300 font-semibold flex items-center gap-1">
+                                    🚨 FIR Recommended
+                                  </span>
+                                ) : report.recommendationType === "NIVARAN" || report.recommendationType === "NIVARAK_PREVENTIVE" ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-300 font-semibold flex items-center gap-1">
+                                    🛡️ Nivaran (BNSS 126/170)
+                                  </span>
+                                ) : report.recommendationType === "RAZINAMA" || report.recommendationType === "RAJINAMA_COMPROMISE" ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-semibold flex items-center gap-1">
+                                    🤝 Razinama (Compromise)
+                                  </span>
+                                ) : (
+                                  <span className="font-bold text-xs uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-mono">
+                                    {report.reportTypeLabel || report.reportType}
+                                  </span>
+                                )}
+
+                                {/* Status Badge: "Saved in Complaint" vs "Draft" vs "Sent to SHO" */}
+                                {report.sentToSho ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-mono flex items-center gap-1">
+                                    <Send className="w-3 h-3 text-blue-600" />
+                                    <span>Sent to SHO</span>
+                                  </span>
+                                ) : isDraftStatus ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono">
+                                    Status: Draft
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono flex items-center gap-1">
+                                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                                    <span>Saved in Complaint</span>
+                                  </span>
+                                )}
+
+                                {report.isUploaded && (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                    Uploaded File
+                                  </span>
+                                )}
+                              </div>
+
+                              <h4 className="font-bold text-sm text-slate-900 truncate">
+                                {report.title}
+                              </h4>
+                              {report.dispatchNo && (
+                                <p className="font-mono text-[11px] text-slate-500">
+                                  Dispatch: <strong className="text-slate-800">{report.dispatchNo}</strong>
+                                </p>
                               )}
                             </div>
 
-                            <h4 className="font-bold text-sm text-slate-900 truncate">
-                              {report.title}
-                            </h4>
-                            {report.dispatchNo && (
-                              <p className="font-mono text-[11px] text-slate-500">
-                                Dispatch: <strong className="text-slate-800">{report.dispatchNo}</strong>
-                              </p>
+                            <span className="text-[11px] text-slate-400 font-mono shrink-0">
+                              {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
+                            </span>
+                          </div>
+
+                          {report.conclusionSummary && (
+                            <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
+                              <span className="font-bold text-slate-900">Findings: </span>
+                              {report.conclusionSummary}
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                            <span>
+                              Created By: <strong className="text-slate-800">{report.createdBy || report.officerName}</strong> ({report.officerRank || "EO"})
+                            </span>
+                            <span className="font-mono uppercase font-semibold">
+                              {report.fileFormat || "TXT"} {report.fileSize ? `• ${report.fileSize}` : ""}
+                            </span>
+                          </div>
+
+                          {/* Action buttons: View, Edit, Download, Print, Create New Version */}
+                          <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
+                            {/* 1. View / Preview and SHO Decision Buttons */}
+                            {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
+                              !isReportViewed && !complaint?.isReportViewedBySho ? (
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleViewReport(report)}
+                                  className="text-[11px] h-7 px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shadow-xs animate-pulse"
+                                  title="View enquiry report before approving or rejecting"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Report</span>
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewReport(report)}
+                                    className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                    title="View report details"
+                                  >
+                                    <Eye className="w-3 h-3 text-blue-600" />
+                                    <span>View</span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleOpenShoApproveModal}
+                                    disabled={isShoApproving}
+                                    className="text-[11px] h-7 px-2.5 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
+                                    title="Approve report (Choose final category)"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                      setShoRejectReason("");
+                                      setShoRejectModalOpen(true);
+                                    }}
+                                    className="text-[11px] h-7 px-2.5 gap-1 bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer shadow-xs"
+                                    title="Reject / Return report to EO"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Reject Report</span>
+                                  </Button>
+                                </>
+                              )
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewReport(report)}
+                                className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                                title="View report details"
+                              >
+                                <Eye className="w-3 h-3 text-blue-600" />
+                                <span>View</span>
+                              </Button>
                             )}
-                          </div>
 
-                          <span className="text-[11px] text-slate-400 font-mono shrink-0">
-                            {formatDate(report.generatedDate || report.createdAt || new Date().toISOString())}
-                          </span>
-                        </div>
+                            {/* 2. Edit (Re-opens in Draft Editor) */}
+                            {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
+                                  handleNavigateToReportDraft(rec, report, false);
+                                }}
+                                className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100 cursor-pointer font-semibold"
+                                title="Edit this draft report"
+                              >
+                                <Edit3 className="w-3 h-3 text-amber-600" />
+                                <span>Edit</span>
+                              </Button>
+                            )}
 
-                        {report.conclusionSummary && (
-                          <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
-                            <span className="font-bold text-slate-900">Findings: </span>
-                            {report.conclusionSummary}
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                          <span>
-                            Created By: <strong className="text-slate-800">{report.createdBy || report.officerName}</strong> ({report.officerRank || "EO"})
-                          </span>
-                          <span className="font-mono uppercase font-semibold">
-                            {report.fileFormat || "TXT"} {report.fileSize ? `• ${report.fileSize}` : ""}
-                          </span>
-                        </div>
-
-                        {/* Action buttons: View, Edit, Download, Print, Create New Version */}
-                        <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
-                          {/* 1. View / Preview and SHO Decision Buttons */}
-                          {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
-                            !isReportViewed && !complaint?.isReportViewedBySho ? (
+                            {/* Send to SHO button per report: strictly only if this specific report has not been sent to SHO */}
+                            {isAssignedEo && !report.sentToSho && (
                               <Button
                                 type="button"
                                 variant="primary"
                                 size="sm"
-                                onClick={() => handleViewReport(report)}
-                                className="text-[11px] h-7 px-3 gap-1 bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shadow-xs animate-pulse"
-                                title="View enquiry report before approving or rejecting"
+                                onClick={() => handleOpenEoSendToShoModal(report)}
+                                disabled={sendingReportToSho}
+                                className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                                title="Send this Enquiry Report to SHO for Review & Approval"
                               >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>View Report</span>
+                                <Send className="w-3 h-3" />
+                                <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
                               </Button>
-                            ) : (
-                              <>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleViewReport(report)}
-                                  className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                                  title="View report details"
-                                >
-                                  <Eye className="w-3 h-3 text-blue-600" />
-                                  <span>View</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={handleOpenShoApproveModal}
-                                  disabled={isShoApproving}
-                                  className="text-[11px] h-7 px-2.5 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
-                                  title="Approve report (Choose final category)"
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                  <span>{isShoApproving ? "Approving..." : "Approve Report"}</span>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => {
-                                    setShoRejectReason("");
-                                    setShoRejectModalOpen(true);
-                                  }}
-                                  className="text-[11px] h-7 px-2.5 gap-1 bg-rose-600 hover:bg-rose-700 text-white font-bold cursor-pointer shadow-xs"
-                                  title="Reject / Return report to EO"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                  <span>Reject Report</span>
-                                </Button>
-                              </>
-                            )
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewReport(report)}
-                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                              title="View report details"
-                            >
-                              <Eye className="w-3 h-3 text-blue-600" />
-                              <span>View</span>
-                            </Button>
-                          )}
+                            )}
+                            {report.sentToSho && (
+                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
+                                <Check className="w-3 h-3 text-blue-600" />
+                                <span>Sent to SHO</span>
+                              </span>
+                            )}
 
-                          {/* 2. Edit (Re-opens in Draft Editor) */}
-                          {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
-                                handleNavigateToReportDraft(rec, report, false);
-                              }}
-                              className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100 cursor-pointer font-semibold"
-                              title="Edit this draft report"
-                            >
-                              <Edit3 className="w-3 h-3 text-amber-600" />
-                              <span>Edit</span>
-                            </Button>
-                          )}
-
-                          {/* 3. Download */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (report.dataUrl) {
-                                const link = document.createElement("a");
-                                link.href = report.dataUrl;
-                                link.download = report.fileName || `${report.title}.pdf`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              } else if (report.content) {
-                                const blob = new Blob([report.content], { type: "text/plain;charset=utf-8" });
-                                const url = URL.createObjectURL(blob);
-                                const link = document.createElement("a");
-                                link.href = url;
-                                link.download = `${report.title.replace(/[^a-zA-Z0-9_-]/g, "_")}.txt`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                URL.revokeObjectURL(url);
-                              }
-                            }}
-                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                            title="Download report file"
-                          >
-                            <Download className="w-3 h-3 text-emerald-600" />
-                            <span>Download</span>
-                          </Button>
-
-                          {/* 4. Print */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const html =
-                                report.contentHtml ||
-                                `<div style="font-family: 'Times New Roman', serif; padding: 25px; line-height: 1.6; color: #000;">
-                                  <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">${report.title}</h2>
-                                  <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${report.content || report.conclusionSummary || ""}</div>
-                                </div>`;
-                              printHtmlContent(html, report.title);
-                            }}
-                            className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
-                            title="Print official report"
-                          >
-                            <Printer className="w-3 h-3 text-blue-600" />
-                            <span>Print</span>
-                          </Button>
-
-                          {/* 5. Create New Version */}
-                          {!report.isUploaded && canCreateDocument(currentUser, complaint).allowed && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const rec = (report.recommendationType as RecommendationReportType) || "GAMINI";
-                                handleNavigateToReportDraft(rec, report, true);
-                              }}
-                              className="text-[11px] h-7 px-2.5 gap-1 border-purple-200 bg-purple-50 text-purple-800 hover:bg-purple-100 cursor-pointer font-semibold"
-                              title="Create new version based on this report"
-                            >
-                              <Plus className="w-3 h-3 text-purple-600" />
-                              <span>New Version</span>
-                            </Button>
-                          )}
-
-                          {/* Send to SHO button per report: strictly only if this specific report has not been sent to SHO */}
-                          {isAssignedEo && !report.sentToSho && (
-                            <Button
-                              type="button"
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleOpenEoSendToShoModal(report)}
-                              disabled={sendingReportToSho}
-                              className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                              title="Send this Enquiry Report to SHO for Review & Approval"
-                            >
-                              <Send className="w-3 h-3" />
-                              <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
-                            </Button>
-                          )}
-                          {report.sentToSho && (
-                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
-                              <Check className="w-3 h-3 text-blue-600" />
-                              <span>Sent to SHO</span>
-                            </span>
-                          )}
-
-                          {/* Delete Report */}
-                          {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteReport(report.id)}
-                              className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
-                              title="Delete report"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                            {/* Delete Report */}
+                            {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteReport(report.id)}
+                                className="text-[11px] h-7 px-2 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                                title="Delete report"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )
             ) : (
               <Card className="border-slate-200 border-dashed bg-slate-50/50">
                 <CardContent className="p-8 text-center space-y-3">
@@ -4199,9 +4130,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                     {combinedHistory.length} Steps
                   </span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Chronological progression of actions taken (Jo kaam pehle hua hai vo pehle)
-                </p>
+                
               </div>
 
               <div className="flex items-center gap-2">
@@ -4392,9 +4321,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
                   <span>Confidential Dossier • Enquiry Memory Notes</span>
                 </h3>
-                <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
-                  Ye record complaint se attach nahi hoga khi bhi. Ye sirf aapke personal record, secret informant leads, off-the-record observations aur strategy yaad rakhne ke liye hai. Yeh kisi supervisory officer, citizen receipt ya public case history me show nahi hota.
-                </p>
+                
               </div>
 
               <div className="shrink-0 flex flex-wrap items-center gap-2">

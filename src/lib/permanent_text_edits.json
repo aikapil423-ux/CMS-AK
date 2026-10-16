@@ -1,0 +1,65 @@
+[
+  {
+    "id": "1792151128394_zaci",
+    "timestamp": "2026-10-16T11:45:28.394Z",
+    "url": "/general-diary",
+    "originalText": "24-Hour Auto-Purge Rule (24 घंटे का स्वतः निष्कासन नियम)",
+    "newText": "24-Hour Auto-Purge Rule",
+    "tagName": "span",
+    "classes": "font-bold text-slate-900"
+  },
+  {
+    "id": "1792151237895_552h",
+    "timestamp": "2026-10-16T11:47:17.895Z",
+    "url": "/acts-sections",
+    "originalText": "कानून / ACT",
+    "newText": "ACT",
+    "tagName": "th",
+    "classes": "py-3 px-4 min-w-[280px]"
+  },
+  {
+    "id": "1792151239218_pmiw",
+    "timestamp": "2026-10-16T11:47:19.219Z",
+    "url": "/acts-sections",
+    "originalText": "अधिनियम व वर्ष / ACT NO.",
+    "newText": "ACT NO.",
+    "tagName": "th",
+    "classes": "py-3 px-4 w-40"
+  },
+  {
+    "id": "1792151239676_u4ly",
+    "timestamp": "2026-10-16T11:47:19.677Z",
+    "url": "/acts-sections",
+    "originalText": "धाराएं / PROVISIONS",
+    "newText": "PROVISIONS",
+    "tagName": "th",
+    "classes": "py-3 px-3 w-28 text-center"
+  },
+  {
+    "id": "1792151240021_uuyq",
+    "timestamp": "2026-10-16T11:47:20.021Z",
+    "url": "/acts-sections",
+    "originalText": "मुख्य धाराएं / KEY SECTIONS",
+    "newText": "KEY SECTIONS",
+    "tagName": "th",
+    "classes": "py-3 px-4 min-w-[220px]"
+  },
+  {
+    "id": "1792151241656_kzx0",
+    "timestamp": "2026-10-16T11:47:21.656Z",
+    "url": "/acts-sections",
+    "originalText": "कार्रवाई / ACTIONS",
+    "newText": "ACTIONS",
+    "tagName": "th",
+    "classes": "py-3 px-4 text-right w-56"
+  },
+  {
+    "id": "1792151438350_1ucj",
+    "timestamp": "2026-10-16T11:50:38.350Z",
+    "url": "/acts-sections",
+    "originalText": "Upload Act or Legal Document (Any Format)",
+    "newText": "Upload Act or Legal Document",
+    "tagName": "span",
+    "classes": ""
+  }
+]
