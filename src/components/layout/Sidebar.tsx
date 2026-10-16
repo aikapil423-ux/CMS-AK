@@ -48,17 +48,102 @@ export function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { t } = useLanguage();
 
-  // State for hover-to-expand and optional lock pin
-  const [isHovered, setIsHovered] = useState(false);
-  const [isPinned, setIsPinned] = useState(false);
-  const isExpanded = isHovered || isPinned;
+  // State for sidebar expanded/collapsed.
+  // By default collapsed (w-18) unless user explicitly clicks to expand it.
+  // Persisted in localStorage so once expanded, it does not close automatically!
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, and Management
-  const [roznamchaOpen, setRoznamchaOpen] = useState(true);
-  const [complaintsOpen, setComplaintsOpen] = useState(true);
-  const [firOpen, setFirOpen] = useState(true);
-  const [registrationsOpen, setRegistrationsOpen] = useState(true);
-  const [managementOpen, setManagementOpen] = useState(true);
+  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, and Management.
+  // By default CLOSED (false). When clicked, opens.
+  // Persisted in localStorage so once opened, they never close on their own!
+  const [roznamchaOpen, setRoznamchaOpen] = useState(false);
+  const [complaintsOpen, setComplaintsOpen] = useState(false);
+  const [firOpen, setFirOpen] = useState(false);
+  const [registrationsOpen, setRegistrationsOpen] = useState(false);
+  const [managementOpen, setManagementOpen] = useState(false);
+
+  // Hydrate toggle and expanded states from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedExpanded = localStorage.getItem("cms_sidebar_expanded");
+      if (savedExpanded !== null) setIsExpanded(savedExpanded === "true");
+
+      const savedRoz = localStorage.getItem("cms_toggle_roznamcha");
+      if (savedRoz !== null) setRoznamchaOpen(savedRoz === "true");
+
+      const savedComp = localStorage.getItem("cms_toggle_complaints");
+      if (savedComp !== null) setComplaintsOpen(savedComp === "true");
+
+      const savedFir = localStorage.getItem("cms_toggle_fir");
+      if (savedFir !== null) setFirOpen(savedFir === "true");
+
+      const savedReg = localStorage.getItem("cms_toggle_registrations");
+      if (savedReg !== null) setRegistrationsOpen(savedReg === "true");
+
+      const savedMgmt = localStorage.getItem("cms_toggle_management");
+      if (savedMgmt !== null) setManagementOpen(savedMgmt === "true");
+    } catch {}
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_sidebar_expanded", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleRoznamcha = () => {
+    setRoznamchaOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_toggle_roznamcha", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleComplaints = () => {
+    setComplaintsOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_toggle_complaints", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleFir = () => {
+    setFirOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_toggle_fir", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleRegistrations = () => {
+    setRegistrationsOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_toggle_registrations", String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const toggleManagement = () => {
+    setManagementOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("cms_toggle_management", String(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Detect active module
   const isRoznamchaPath = pathname.startsWith("/general-diary");
@@ -148,8 +233,6 @@ export function Sidebar() {
 
   return (
     <aside
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "hidden lg:flex lg:flex-col bg-white border-r border-slate-200/80 text-slate-700 select-none shrink-0 h-screen sticky top-0 transition-all duration-200 ease-in-out z-40",
         isExpanded ? "w-64 shadow-lg" : "w-18"
@@ -158,12 +241,15 @@ export function Sidebar() {
       {/* Insignia / Brand Header - Clean Minimalist */}
       <div className="p-3 border-b border-slate-200/80 bg-white flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shrink-0"
-            title="Haryana Police CMS"
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 flex items-center justify-center text-white shrink-0 cursor-pointer transition-all shadow-2xs active:scale-95"
+            title={isExpanded ? t("Collapse sidebar") : t("Expand sidebar")}
+            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             <Shield className="w-4 h-4" />
-          </div>
+          </button>
           {isExpanded && (
             <div className="flex-1 min-w-0 animate-in fade-in duration-150">
               <div className="flex items-center gap-1.5">
@@ -177,14 +263,16 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Pin / Unpin button when expanded */}
+        {/* Toggle Collapse/Expand button when expanded */}
         {isExpanded && (
           <button
-            onClick={() => setIsPinned(!isPinned)}
-            className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-            title={isPinned ? "Unpin sidebar (auto-collapse)" : "Pin sidebar open"}
+            type="button"
+            onClick={toggleSidebar}
+            className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+            title={t("Collapse sidebar")}
+            aria-label="Collapse sidebar"
           >
-            {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+            <PanelLeftClose className="w-4 h-4" />
           </button>
         )}
       </div>
@@ -216,9 +304,9 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={() => setRoznamchaOpen(!roznamchaOpen)}
+              onClick={toggleRoznamcha}
               className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
                 isRoznamchaPath ? "bg-slate-100/50" : ""
               )}
@@ -295,9 +383,9 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={() => setComplaintsOpen(!complaintsOpen)}
+              onClick={toggleComplaints}
               className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
                 isComplaintsPath ? "bg-slate-100/50" : ""
               )}
@@ -374,9 +462,9 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={() => setFirOpen(!firOpen)}
+              onClick={toggleFir}
               className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
                 isFirPath ? "bg-slate-100/50" : ""
               )}
@@ -453,9 +541,9 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={() => setRegistrationsOpen(!registrationsOpen)}
+              onClick={toggleRegistrations}
               className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
                 isRegistrationsPath ? "bg-slate-100/50" : ""
               )}
@@ -531,9 +619,9 @@ export function Sidebar() {
         <div className="space-y-1">
           <button
             type="button"
-            onClick={() => setManagementOpen(!managementOpen)}
+            onClick={toggleManagement}
             className={cn(
-              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left",
+              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
               isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
               isManagementPath ? "bg-slate-100/50" : ""
             )}
