@@ -243,30 +243,120 @@ const INITIAL_RECORDS: RegistrationEntry[] = [
 
 // In-memory cache to guarantee instantaneous UI updates and prevent silent loss
 let memoryStore: RegistrationEntry[] | null = null;
+const IDB_DB_NAME = "haryana_police_cms_registrations_idb";
+const IDB_STORE = "records";
+
+function getIDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      reject("IndexedDB unavailable");
+      return;
+    }
+    const req = window.indexedDB.open(IDB_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function persistToIndexedDB(data: RegistrationEntry[]): Promise<void> {
+  try {
+    const db = await getIDB();
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    store.clear();
+    for (const item of data) {
+      store.put(item);
+    }
+  } catch (err) {
+    // Non-fatal, indexedDB fallback
+  }
+}
+
+export async function hydrateFromIndexedDB(): Promise<RegistrationEntry[] | null> {
+  try {
+    const db = await getIDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const store = tx.objectStore(IDB_STORE);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        const list = req.result;
+        if (Array.isArray(list) && list.length > 0) {
+          resolve(list);
+        } else {
+          resolve(null);
+        }
+      };
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
 
 function safeSaveToLocalStorage(data: RegistrationEntry[]): void {
   if (typeof window === "undefined") return;
+
+  // Background persist to IndexedDB (virtually unlimited quota for high-res photos)
+  persistToIndexedDB(data);
+
+  // Tier 1: Try saving full data
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return;
   } catch (err) {
-    console.warn("Storage quota exceeded, attempting to store compact representation", err);
-    try {
-      // Create a lightweight copy by trimming duplicate large image arrays in historical records
-      const compact = data.map((item) => {
-        if (item.fullUidbData && item.fullUidbData.photos && item.fullUidbData.photos.length > 1) {
-          const { photos, ...restUidb } = item.fullUidbData;
-          return {
-            ...item,
-            photos: item.photos ? item.photos.slice(0, 1) : [],
-            fullUidbData: restUidb as any,
-          };
-        }
-        return item;
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
-    } catch (fallbackErr) {
-      console.warn("Could not write to localStorage, keeping in-memory store", fallbackErr);
-    }
+    console.warn("Storage quota exceeded (Tier 1), attempting Tier 2 compact representation...", err);
+  }
+
+  // Tier 2: Strip duplicate nested arrays inside fullUidbData and keep only essential thumbnails
+  try {
+    const compact1 = data.map((item) => {
+      if (item.fullUidbData) {
+        const { photos, ...restUidb } = item.fullUidbData;
+        return {
+          ...item,
+          fullUidbData: restUidb as any,
+          photos: item.photos ? item.photos.slice(0, 1) : [],
+        };
+      }
+      return item;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact1));
+    return;
+  } catch (err2) {
+    console.warn("Storage quota exceeded (Tier 2), attempting Tier 3 text-guarantee fallback...", err2);
+  }
+
+  // Tier 3: Guaranteed Text Fallback — Strips heavy base64 photos so statutory entries NEVER disappear on refresh!
+  try {
+    const compact2 = data.map((item) => {
+      const isLargeDataUrl = item.photoUrl && item.photoUrl.length > 500;
+      return {
+        ...item,
+        photoUrl: isLargeDataUrl
+          ? item.gender === "Female"
+            ? SAMPLE_FEMALE_PHOTO
+            : SAMPLE_MALE_PHOTO
+          : item.photoUrl,
+        photos: [],
+        fullUidbData: item.fullUidbData
+          ? {
+              ...item.fullUidbData,
+              photos: [],
+              photoUrl: undefined,
+            }
+          : undefined,
+      };
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact2));
+  } catch (finalErr) {
+    console.error("Critical: Cannot write to localStorage. Keeping in-memory cache active.", finalErr);
   }
 }
 
@@ -283,8 +373,14 @@ export const RegistrationService = {
         safeSaveToLocalStorage(INITIAL_RECORDS);
         return [...INITIAL_RECORDS];
       }
-      memoryStore = JSON.parse(data);
-      return [...(memoryStore || INITIAL_RECORDS)];
+      const parsed = JSON.parse(data);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        memoryStore = [...INITIAL_RECORDS];
+        safeSaveToLocalStorage(INITIAL_RECORDS);
+        return [...INITIAL_RECORDS];
+      }
+      memoryStore = parsed;
+      return [...memoryStore];
     } catch {
       memoryStore = [...INITIAL_RECORDS];
       return [...INITIAL_RECORDS];
