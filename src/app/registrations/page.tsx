@@ -10,6 +10,9 @@ import {
   Printer,
   Trash2,
   Edit2,
+  Edit3,
+  ChevronDown,
+  Check,
   X,
   MapPin,
   Calendar,
@@ -42,6 +45,122 @@ import { MissingPersonPreviewModal } from "@/components/missing-person/MissingPe
 import { missingPersonService } from "@/services/missingPersonService";
 import { MissingPersonRecord } from "@/types/missingPerson";
 
+interface StatusOptionItem {
+  value: RegistrationStatus;
+  labelEn: string;
+  labelHi: string;
+  badgeStyle: string;
+  dotColor: string;
+  description: string;
+}
+
+const STATUS_OPTIONS_MAP: Record<RegistrationType, StatusOptionItem[]> = {
+  UIDB: [
+    {
+      value: "OPEN",
+      labelEn: "Open (Unidentified)",
+      labelHi: "जांच जारी (अज्ञात शव)",
+      badgeStyle: "bg-amber-50 text-amber-800 border-amber-300",
+      dotColor: "bg-amber-500",
+      description: "जांच सक्रिय है, शिनाख्त व पंचनामा कार्यवाही जारी",
+    },
+    {
+      value: "TRACED",
+      labelEn: "Identified / Traced",
+      labelHi: "पहचान हुई (शिनाख्त)",
+      badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-300",
+      dotColor: "bg-emerald-500",
+      description: "परिजनों द्वारा शव की शिनाख्त पूर्ण हो चुकी है",
+    },
+    {
+      value: "CLOSED",
+      labelEn: "Inquest Closed",
+      labelHi: "निस्तारित (फाइल क्लोज)",
+      badgeStyle: "bg-slate-100 text-slate-700 border-slate-300",
+      dotColor: "bg-slate-400",
+      description: "धारा 194 BNSS के अंतर्गत जांच समाप्त व रिकॉर्ड संधारित",
+    },
+  ],
+  MISSING_PERSON: [
+    {
+      value: "OPEN",
+      labelEn: "Open (Searching)",
+      labelHi: "तलाशी जारी (सक्रिय)",
+      badgeStyle: "bg-amber-50 text-amber-800 border-amber-300",
+      dotColor: "bg-amber-500",
+      description: "गुमशुदा व्यक्ति की सक्रिय खोजबीन व वायरलेस प्रसारण जारी",
+    },
+    {
+      value: "TRACED",
+      labelEn: "Traced / Reunited",
+      labelHi: "दस्तयाब (मिल गया)",
+      badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-300",
+      dotColor: "bg-emerald-500",
+      description: "गुमशुदा व्यक्ति सकुशल बरामद / परिजनों के सुपुर्द",
+    },
+    {
+      value: "CLOSED",
+      labelEn: "Case Closed",
+      labelHi: "समाप्त (फाइल बंद)",
+      badgeStyle: "bg-slate-100 text-slate-700 border-slate-300",
+      dotColor: "bg-slate-400",
+      description: "अंतिम रपट रोजनामचा दर्ज कर फाइल समाप्त की गई",
+    },
+  ],
+  LOST_PROPERTY: [
+    {
+      value: "OPEN",
+      labelEn: "Open (Tracking)",
+      labelHi: "गुमशुदगी दर्ज (ट्रैकिंग)",
+      badgeStyle: "bg-amber-50 text-amber-800 border-amber-200",
+      dotColor: "bg-amber-500",
+      description: "संपत्ति / मोबाइल CEIR व पुलिस जांच में दर्ज",
+    },
+    {
+      value: "TRACED",
+      labelEn: "Traced / Found",
+      labelHi: "बरामद (प्राप्त हुआ)",
+      badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-300",
+      dotColor: "bg-emerald-500",
+      description: "खोई हुई संपत्ति बरामद / पुलिस अभिरक्षा में उपलब्ध",
+    },
+    {
+      value: "CLOSED",
+      labelEn: "Handed Over (Closed)",
+      labelHi: "सुपुर्द / समाप्त",
+      badgeStyle: "bg-slate-100 text-slate-700 border-slate-200",
+      dotColor: "bg-slate-400",
+      description: "मालिक को सत्यापन उपरांत सुपुर्द किया गया",
+    },
+  ],
+  MISSING_CATTLE: [
+    {
+      value: "OPEN",
+      labelEn: "Open (Searching)",
+      labelHi: "तलाशी जारी",
+      badgeStyle: "bg-amber-50 text-amber-800 border-amber-200",
+      dotColor: "bg-amber-500",
+      description: "मवेशी की तलाश जारी है",
+    },
+    {
+      value: "RESTORED",
+      labelEn: "Restored to Owner",
+      labelHi: "मालिक को सुपुर्द",
+      badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-200",
+      dotColor: "bg-emerald-500",
+      description: "टैग सत्यापन उपरांत पशुपालक को सौंपा गया",
+    },
+    {
+      value: "CLOSED",
+      labelEn: "Case Closed",
+      labelHi: "निस्तारित",
+      badgeStyle: "bg-slate-100 text-slate-700 border-slate-200",
+      dotColor: "bg-slate-400",
+      description: "कार्यवाही पूर्ण",
+    },
+  ],
+};
+
 function RegistrationsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -58,6 +177,15 @@ function RegistrationsContent() {
     type: RegistrationType;
     message: string;
     entry: RegistrationEntry;
+  } | null>(null);
+
+  // Status update interactive menu state & feedback banner
+  const [activeStatusMenuId, setActiveStatusMenuId] = useState<string | null>(null);
+  const [statusFeedback, setStatusFeedback] = useState<{
+    regNumber: string;
+    type: RegistrationType;
+    oldStatus: RegistrationStatus;
+    newStatus: RegistrationStatus;
   } | null>(null);
 
   // Comprehensive UIDB CCTNS Form and PDF states
@@ -663,6 +791,74 @@ function RegistrationsContent() {
     }
   };
 
+  // Status dot style helper
+  const getStatusDot = (status: RegistrationStatus) => {
+    switch (status) {
+      case "OPEN":
+        return "bg-amber-500";
+      case "TRACED":
+      case "RESTORED":
+        return "bg-emerald-500";
+      case "CLOSED":
+        return "bg-slate-400";
+      default:
+        return "bg-slate-400";
+    }
+  };
+
+  // Close status dropdown on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveStatusMenuId(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Quick Status Update Handler
+  const handleQuickStatusUpdate = (entry: RegistrationEntry, newStatus: RegistrationStatus) => {
+    if (entry.status === newStatus) {
+      setActiveStatusMenuId(null);
+      return;
+    }
+
+    const oldStatus = entry.status;
+
+    // 1. Update in RegistrationService
+    RegistrationService.updateEntry(entry.id, { status: newStatus });
+
+    // 2. Sync to domain-specific services
+    if (entry.type === "MISSING_PERSON") {
+      missingPersonService.updateStatus(entry.id, newStatus as any);
+      missingPersonService.updateStatus(entry.regNumber, newStatus as any);
+    } else if (entry.type === "LOST_PROPERTY") {
+      lostPropertyService.updateStatus(entry.id, newStatus as any);
+      lostPropertyService.updateStatus(entry.regNumber, newStatus as any);
+    }
+
+    // 3. Update local table entries state
+    setEntries((prev) =>
+      prev.map((e) => (e.id === entry.id ? { ...e, status: newStatus } : e))
+    );
+
+    // 4. Close menu
+    setActiveStatusMenuId(null);
+
+    // 5. Show toast notification banner
+    setStatusFeedback({
+      regNumber: entry.regNumber,
+      type: entry.type,
+      oldStatus,
+      newStatus,
+    });
+
+    setTimeout(() => {
+      setStatusFeedback(null);
+    }, 4500);
+  };
+
   return (
     <div className="space-y-4 pb-12">
       {/* 1. Header (Minimalist & Clean) */}
@@ -731,6 +927,48 @@ function RegistrationsContent() {
               <X className="w-4 h-4" />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Quick Status Update Notification */}
+      {statusFeedback && (
+        <div className="bg-sky-50 border border-sky-300 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-xs sm:text-sm text-sky-950">
+                  स्थिति अपडेट की गई (Status Updated)
+                </span>
+                <span className="px-2 py-0.5 bg-sky-100 text-sky-900 rounded font-mono text-[11px] font-bold border border-sky-300">
+                  {statusFeedback.regNumber}
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {statusFeedback.oldStatus} ➔
+                </span>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${getStatusBadge(
+                    statusFeedback.newStatus
+                  )}`}
+                >
+                  {statusFeedback.newStatus}
+                </span>
+              </div>
+              <p className="text-xs text-sky-800 mt-0.5">
+                पंजीकरण संख्या {statusFeedback.regNumber} का स्टेटस सफलतापूर्वक &quot;{statusFeedback.newStatus}&quot; में बदल दिया गया है।
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStatusFeedback(null)}
+            className="text-sky-700 hover:text-sky-950 p-1.5 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
+            title="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -924,7 +1162,7 @@ function RegistrationsContent() {
           </button>
         </div>
       ) : (
-        <div className="overflow-x-auto border border-slate-200/80 rounded-xl bg-white shadow-2xs">
+        <div className="overflow-x-auto border border-slate-200/80 rounded-xl bg-white shadow-2xs min-h-[320px] pb-8">
           <table className="w-full text-xs text-left border-collapse min-w-[850px]">
             <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80 text-[11px] uppercase tracking-wider">
               <tr>
@@ -959,7 +1197,7 @@ function RegistrationsContent() {
                     <th className="py-2.5 px-4 min-w-[200px]">Owner Details</th>
                   </>
                 )}
-                <th className="py-2.5 px-3 w-24 text-center">Status</th>
+                <th className="py-2.5 px-3 w-36 text-center">Status / स्थिति</th>
                 <th className="py-2.5 px-4 text-right w-24">Actions</th>
               </tr>
             </thead>
@@ -1126,14 +1364,127 @@ function RegistrationsContent() {
                   )}
 
                   {/* Status */}
-                  <td className="py-3 px-3 text-center align-top">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${getStatusBadge(
-                        row.status
-                      )}`}
-                    >
-                      {row.status}
-                    </span>
+                  <td className="py-3 px-3 text-center align-top relative">
+                    <div className="inline-flex items-center justify-center gap-1.5">
+                      {/* Status Badge with click-to-update trigger */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveStatusMenuId(activeStatusMenuId === row.id ? null : row.id);
+                        }}
+                        className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border transition-all shadow-2xs hover:shadow-xs focus:outline-hidden focus:ring-2 focus:ring-slate-400/20 cursor-pointer ${getStatusBadge(
+                          row.status
+                        )} hover:brightness-95`}
+                        title="स्थिति अपडेट करें / Click to update status"
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${getStatusDot(row.status)}`} />
+                        <span>{row.status}</span>
+                        <ChevronDown
+                          className={`w-3 h-3 opacity-60 group-hover:opacity-100 transition-transform duration-150 ${
+                            activeStatusMenuId === row.id ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {/* Dedicated Update Icon button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveStatusMenuId(activeStatusMenuId === row.id ? null : row.id);
+                        }}
+                        className={`p-1 rounded-md text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer ${
+                          activeStatusMenuId === row.id ? "bg-slate-200 text-slate-900" : ""
+                        }`}
+                        title="स्थिति बदलें (All Status Options)"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Status Dropdown Popover */}
+                    {activeStatusMenuId === row.id && (
+                      <>
+                        {/* Invisible backdrop to dismiss on outside click */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveStatusMenuId(null);
+                          }}
+                        />
+
+                        {/* Floating Popover Menu */}
+                        <div
+                          className={`absolute right-2 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 z-50 p-2 animate-in fade-in-50 zoom-in-95 text-left ${
+                            idx >= filteredEntries.length - 2 && filteredEntries.length > 2
+                              ? "bottom-full mb-1.5"
+                              : "top-full mt-1.5"
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="px-2 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                                Update Status / स्थिति बदलें
+                              </span>
+                            </div>
+                            <span className="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 font-semibold">
+                              {row.regNumber}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1">
+                            {(STATUS_OPTIONS_MAP[row.type] || []).map((opt) => {
+                              const isSelected = row.status === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  onClick={() => handleQuickStatusUpdate(row, opt.value)}
+                                  className={`w-full text-left px-2.5 py-2 rounded-lg transition-colors flex items-start gap-2.5 cursor-pointer ${
+                                    isSelected
+                                      ? "bg-slate-100 font-medium text-slate-900 border border-slate-200"
+                                      : "hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-transparent"
+                                  }`}
+                                >
+                                  <span
+                                    className={`w-2 h-2 rounded-full mt-1 shrink-0 ${opt.dotColor}`}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="text-xs font-bold text-slate-900">
+                                        {opt.value}
+                                      </span>
+                                      {isSelected ? (
+                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                          <Check className="w-3 h-3 text-emerald-600 shrink-0" /> Current
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] text-slate-400">
+                                          Select
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[11px] font-medium text-slate-700 mt-0.5">
+                                      {opt.labelHi}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">
+                                      {opt.labelEn}
+                                    </div>
+                                    <div className="text-[9.5px] text-slate-500 mt-0.5 leading-tight">
+                                      {opt.description}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </td>
 
                   {/* Actions */}

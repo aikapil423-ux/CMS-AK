@@ -181,6 +181,36 @@ export const lostPropertyService = {
     return this.save(record);
   },
 
+  updateStatus(idOrRegNum: string, status: "OPEN" | "TRACED" | "CLOSED"): boolean {
+    const list = this.getAll();
+    const target = idOrRegNum?.toLowerCase().trim();
+    const idx = list.findIndex(
+      (r) =>
+        r.id?.toLowerCase().trim() === target ||
+        r.registrationNumber?.toLowerCase().trim() === target
+    );
+    if (idx >= 0) {
+      const updated = {
+        ...list[idx],
+        status,
+        updatedAt: new Date().toISOString(),
+      };
+      list[idx] = updated;
+      inMemoryRecords = [...list];
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          window.dispatchEvent(new CustomEvent("cms_lost_property_changed", { detail: updated }));
+          return true;
+        } catch (err) {
+          console.error("Failed to update lost property status:", err);
+        }
+      }
+      return true;
+    }
+    return false;
+  },
+
   delete(id: string): boolean {
     const list = this.getAll();
     const filtered = list.filter((r) => r.id !== id && r.registrationNumber !== id);
