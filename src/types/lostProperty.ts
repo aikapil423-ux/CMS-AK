@@ -30,7 +30,7 @@ export interface LostPropertyRecord {
   registrationYear: string; // e.g. "2019" or "2026"
   createdAt: string;
   updatedAt: string;
-  status: "REGISTERED" | "UNDER_ENQUIRY" | "TRACED" | "CLOSED";
+  status: "REGISTERED" | "UNDER_ENQUIRY" | "OPEN" | "TRACED" | "CLOSED";
 
   // 1. Property Details
   gdNumber: string; // e.g. "003"

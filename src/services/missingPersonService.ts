@@ -242,6 +242,25 @@ class MissingPersonService {
     );
   }
 
+  public updateStatus(idOrRegNum: string, status: "OPEN" | "TRACED" | "CLOSED"): boolean {
+    const target = idOrRegNum?.toLowerCase().trim();
+    const idx = this.inMemoryRecords.findIndex(
+      (r) =>
+        r.id?.toLowerCase().trim() === target ||
+        r.registrationNumber?.toLowerCase().trim() === target
+    );
+    if (idx >= 0) {
+      this.inMemoryRecords[idx] = {
+        ...this.inMemoryRecords[idx],
+        status,
+        updatedAt: new Date().toISOString(),
+      };
+      this.persist();
+      return true;
+    }
+    return false;
+  }
+
   public generateNextRegistrationNumber(yearInput?: string): string {
     const year = yearInput || "2019";
     const matchingYearRecords = this.inMemoryRecords.filter(
