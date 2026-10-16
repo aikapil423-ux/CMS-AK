@@ -241,6 +241,18 @@ const INITIAL_RECORDS: RegistrationEntry[] = [
   },
 ];
 
+// Sort helper: Always place newest records (by createdAt or date/time) at the very top
+export function sortEntriesNewestFirst(list: RegistrationEntry[]): RegistrationEntry[] {
+  return [...list].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (timeA !== timeB) return timeB - timeA;
+    const dateTimeA = `${a.date || ""} ${a.time || ""}`;
+    const dateTimeB = `${b.date || ""} ${b.time || ""}`;
+    return dateTimeB.localeCompare(dateTimeA);
+  });
+}
+
 // In-memory cache to guarantee instantaneous UI updates and prevent silent loss
 let memoryStore: RegistrationEntry[] | null = null;
 const IDB_DB_NAME = "haryana_police_cms_registrations_idb";
@@ -275,6 +287,7 @@ async function persistToIndexedDB(data: RegistrationEntry[]): Promise<void> {
     }
   } catch (err) {
     // Non-fatal, indexedDB fallback
+    console.warn("IndexedDB persist failed:", err);
   }
 }
 
@@ -288,7 +301,7 @@ export async function hydrateFromIndexedDB(): Promise<RegistrationEntry[] | null
       req.onsuccess = () => {
         const list = req.result;
         if (Array.isArray(list) && list.length > 0) {
-          resolve(list);
+          resolve(sortEntriesNewestFirst(list));
         } else {
           resolve(null);
         }
@@ -300,61 +313,77 @@ export async function hydrateFromIndexedDB(): Promise<RegistrationEntry[] | null
   }
 }
 
+// Prepares entries for localStorage by removing huge duplicated base64 structures
+function prepareForLocalStorage(items: RegistrationEntry[]): any[] {
+  return items.map((item) => {
+    // 1. Remove duplicated photos inside fullUidbData
+    let cleanedUidb = item.fullUidbData ? { ...item.fullUidbData } : undefined;
+    if (cleanedUidb) {
+      if (cleanedUidb.photos && cleanedUidb.photos.length > 0) {
+        cleanedUidb.photos = cleanedUidb.photos.map((p: any) => ({
+          ...p,
+          dataUrl: "", // strip duplicate inside nested form data
+        }));
+      }
+      cleanedUidb.photoUrl = undefined;
+    }
+
+    // 2. In item.photos, retain only metadata to avoid duplicate storage if photoUrl exists
+    let cleanedPhotos = item.photos;
+    if (cleanedPhotos && cleanedPhotos.length > 0) {
+      cleanedPhotos = cleanedPhotos.map((p, idx) => ({
+        ...p,
+        dataUrl: idx === 0 && !item.photoUrl ? p.dataUrl : "",
+      }));
+    }
+
+    // 3. Compact large base64 photos (>40KB) for localStorage, while IndexedDB keeps full resolution
+    let compactPhotoUrl = item.photoUrl;
+    if (compactPhotoUrl && compactPhotoUrl.length > 40000) {
+      compactPhotoUrl =
+        item.gender === "Female" ? SAMPLE_FEMALE_PHOTO : SAMPLE_MALE_PHOTO;
+    }
+
+    return {
+      ...item,
+      photoUrl: compactPhotoUrl,
+      photos: cleanedPhotos,
+      fullUidbData: cleanedUidb,
+    };
+  });
+}
+
 function safeSaveToLocalStorage(data: RegistrationEntry[]): void {
   if (typeof window === "undefined") return;
 
-  // Background persist to IndexedDB (virtually unlimited quota for high-res photos)
+  // 1. Persist entire full-resolution dataset to IndexedDB (virtually unlimited quota)
   persistToIndexedDB(data);
 
-  // Tier 1: Try saving full data
+  // 2. Tier 1: Try saving optimized compact version
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const compact = prepareForLocalStorage(data);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
     return;
   } catch (err) {
-    console.warn("Storage quota exceeded (Tier 1), attempting Tier 2 compact representation...", err);
+    console.warn("Storage quota exceeded (compact), attempting Tier 2 text fallback...", err);
   }
 
-  // Tier 2: Strip duplicate nested arrays inside fullUidbData and keep only essential thumbnails
+  // 3. Tier 2: Text-only guaranteed fallback — never lose any statutory record on refresh!
   try {
-    const compact1 = data.map((item) => {
-      if (item.fullUidbData) {
-        const { photos, ...restUidb } = item.fullUidbData;
-        return {
-          ...item,
-          fullUidbData: restUidb as any,
-          photos: item.photos ? item.photos.slice(0, 1) : [],
-        };
-      }
-      return item;
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact1));
-    return;
-  } catch (err2) {
-    console.warn("Storage quota exceeded (Tier 2), attempting Tier 3 text-guarantee fallback...", err2);
-  }
-
-  // Tier 3: Guaranteed Text Fallback — Strips heavy base64 photos so statutory entries NEVER disappear on refresh!
-  try {
-    const compact2 = data.map((item) => {
-      const isLargeDataUrl = item.photoUrl && item.photoUrl.length > 500;
-      return {
-        ...item,
-        photoUrl: isLargeDataUrl
-          ? item.gender === "Female"
-            ? SAMPLE_FEMALE_PHOTO
-            : SAMPLE_MALE_PHOTO
-          : item.photoUrl,
-        photos: [],
-        fullUidbData: item.fullUidbData
-          ? {
-              ...item.fullUidbData,
-              photos: [],
-              photoUrl: undefined,
-            }
-          : undefined,
-      };
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact2));
+    const textOnly = data.map((item) => ({
+      ...item,
+      photoUrl:
+        item.gender === "Female" ? SAMPLE_FEMALE_PHOTO : SAMPLE_MALE_PHOTO,
+      photos: [],
+      fullUidbData: item.fullUidbData
+        ? {
+            ...item.fullUidbData,
+            photos: [],
+            photoUrl: undefined,
+          }
+        : undefined,
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(textOnly));
   } catch (finalErr) {
     console.error("Critical: Cannot write to localStorage. Keeping in-memory cache active.", finalErr);
   }
@@ -363,33 +392,39 @@ function safeSaveToLocalStorage(data: RegistrationEntry[]): void {
 export const RegistrationService = {
   getEntries: (): RegistrationEntry[] => {
     if (memoryStore && memoryStore.length > 0) {
-      return [...memoryStore];
+      return sortEntriesNewestFirst(memoryStore);
     }
-    if (typeof window === "undefined") return INITIAL_RECORDS;
+    if (typeof window === "undefined") return sortEntriesNewestFirst(INITIAL_RECORDS);
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        memoryStore = [...INITIAL_RECORDS];
-        safeSaveToLocalStorage(INITIAL_RECORDS);
-        return [...INITIAL_RECORDS];
+        memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+        safeSaveToLocalStorage(memoryStore);
+        return [...memoryStore];
       }
       const parsed = JSON.parse(data);
       if (!Array.isArray(parsed) || parsed.length === 0) {
-        memoryStore = [...INITIAL_RECORDS];
-        safeSaveToLocalStorage(INITIAL_RECORDS);
-        return [...INITIAL_RECORDS];
+        memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+        safeSaveToLocalStorage(memoryStore);
+        return [...memoryStore];
       }
-      memoryStore = parsed;
+      memoryStore = sortEntriesNewestFirst(parsed);
       return [...memoryStore];
     } catch {
-      memoryStore = [...INITIAL_RECORDS];
-      return [...INITIAL_RECORDS];
+      memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+      return [...memoryStore];
     }
   },
 
   getEntriesByType: (type: RegistrationType): RegistrationEntry[] => {
     const all = RegistrationService.getEntries();
     return all.filter((item) => item.type === type);
+  },
+
+  setAllEntries: (entries: RegistrationEntry[]): void => {
+    const sorted = sortEntriesNewestFirst(entries);
+    memoryStore = sorted;
+    safeSaveToLocalStorage(sorted);
   },
 
   addEntry: (
@@ -401,7 +436,14 @@ export const RegistrationService = {
       id: entry.id || `reg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: entry.createdAt || new Date().toISOString(),
     };
-    const updated = [newEntry, ...all];
+    const updated = sortEntriesNewestFirst([
+      newEntry,
+      ...all.filter(
+        (item) =>
+          item.id !== newEntry.id &&
+          (!newEntry.regNumber || item.regNumber !== newEntry.regNumber)
+      ),
+    ]);
     memoryStore = updated;
     safeSaveToLocalStorage(updated);
     return newEntry;
@@ -413,8 +455,9 @@ export const RegistrationService = {
     if (idx === -1) return null;
     const updatedEntry = { ...all[idx], ...updates };
     all[idx] = updatedEntry;
-    memoryStore = [...all];
-    safeSaveToLocalStorage(all);
+    const sorted = sortEntriesNewestFirst(all);
+    memoryStore = sorted;
+    safeSaveToLocalStorage(sorted);
     return updatedEntry;
   },
 
