@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Search,
@@ -20,6 +20,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { UidbFormData, DEFAULT_UIDB_FORM, UidbUploadedPhoto, InformantIdEntry } from "@/types/uidb";
+import { RegistrationService } from "@/services/registrationService";
 import { compressImage } from "@/utils/imageCompressor";
 
 interface UidbRegistrationModalProps {
@@ -197,6 +198,34 @@ export function UidbRegistrationModal({
 
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setFormData({
+          ...DEFAULT_UIDB_FORM,
+          ...initialData,
+        });
+      } else {
+        const today = new Date().toISOString().split("T")[0];
+        const nowTime = new Date().toTimeString().slice(0, 5);
+        const nextReg = RegistrationService.generateNextRegNumber("UIDB");
+        setFormData({
+          ...DEFAULT_UIDB_FORM,
+          id: `uidb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          regNumber: nextReg,
+          date: today,
+          time: nowTime,
+          year: today.split("-")[0],
+          gdDateTime: `${today} ${nowTime}`,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      setActiveTab("general");
+      setErrors([]);
+      setHasSubmitted(false);
+    }
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
 

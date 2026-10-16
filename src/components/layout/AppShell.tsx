@@ -20,6 +20,7 @@ import {
   FileText,
   LayoutGrid,
   Scale,
+  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -111,25 +112,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
-            {/* Role Switcher Pill */}
+            {/* Police Persona Switcher Icon */}
             <button
+              type="button"
               onClick={() => setRoleModalOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 transition-colors text-left"
-              title={t("Click to switch persona")}
+              className="relative p-2 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer text-slate-700 hover:text-slate-950 shadow-2xs active:scale-95 flex items-center justify-center group"
+              title={`Switch Police Persona / पद बदलें (वर्तमान: ${currentUser.name} - ${t(currentUser.roleDisplay)})`}
+              aria-label="Switch Police Persona"
             >
-              <div className="w-6 h-6 rounded-md bg-[#0b192c] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                {currentUser.name.slice(0, 1)}
-              </div>
-              <div className="hidden sm:block">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-bold text-slate-900 leading-tight">{currentUser.name}</p>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-[#b8001f] border border-red-200">
-                    {t(currentUser.roleDisplay)}
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-mono">PNO: {currentUser.pno}</p>
-              </div>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <UserCog className="w-4 h-4 text-slate-700 group-hover:text-slate-900" />
+              <span className="absolute -bottom-1 -right-1 text-[8px] font-bold px-1 leading-none rounded bg-[#0b192c] text-white border border-white font-mono shadow-2xs">
+                {currentUser.role === "SHO"
+                  ? "SHO"
+                  : currentUser.role === "MHC_GD_INCHARGE"
+                  ? "MHC"
+                  : currentUser.role === "DSP_SUBDIV"
+                  ? "DSP"
+                  : currentUser.role === "SP_DISTRICT"
+                  ? "SP"
+                  : currentUser.rank.slice(0, 3)}
+              </span>
             </button>
           </div>
         </header>

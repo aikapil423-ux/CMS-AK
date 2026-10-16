@@ -32,7 +32,11 @@ import {
   RegistrationType,
   RegistrationStatus,
 } from "@/types/registrations";
-import { RegistrationService, hydrateFromIndexedDB } from "@/services/registrationService";
+import {
+  RegistrationService,
+  hydrateFromIndexedDB,
+  sortEntriesNewestFirst,
+} from "@/services/registrationService";
 import { UidbRegistrationModal } from "@/components/registrations/UidbRegistrationModal";
 import { UidbPdfPreviewModal } from "@/components/registrations/UidbPdfPreviewModal";
 import { UidbFormData, DEFAULT_UIDB_FORM, SAMPLE_UIDB_RECORD } from "@/types/uidb";
@@ -127,21 +131,32 @@ function RegistrationsContent() {
       setActiveTab("LOST_PROPERTY");
   }, [searchParams]);
 
-  // Load entries from service & IndexedDB
+  // Load entries from service & IndexedDB, merging and sorting newest first so refreshed records NEVER disappear
   const loadData = async () => {
-    const data = RegistrationService.getEntries();
-    setEntries(data);
+    const localData = RegistrationService.getEntries();
+    setEntries(sortEntriesNewestFirst(localData));
     try {
       const idbList = await hydrateFromIndexedDB();
       if (idbList && idbList.length > 0) {
-        setEntries((prev) => {
-          if (idbList.length >= prev.length) {
-            return idbList;
+        const map = new Map<string, RegistrationEntry>();
+        for (const item of idbList) {
+          if (item.id) map.set(item.id, item);
+        }
+        for (const item of localData) {
+          const existing = map.get(item.id);
+          if (existing && existing.photoUrl && existing.photoUrl.length > (item.photoUrl?.length || 0)) {
+            map.set(item.id, { ...item, photoUrl: existing.photoUrl, photos: existing.photos || item.photos });
+          } else {
+            map.set(item.id, { ...existing, ...item });
           }
-          return prev;
-        });
+        }
+        const merged = sortEntriesNewestFirst(Array.from(map.values()));
+        setEntries(merged);
+        RegistrationService.setAllEntries(merged);
       }
-    } catch {}
+    } catch (err) {
+      console.warn("Hydration from IndexedDB failed, using memory/localStorage entries", err);
+    }
   };
 
   useEffect(() => {
@@ -512,84 +527,115 @@ function RegistrationsContent() {
     };
   };
 
-  // Form submit handler: Validates on modal then transitions to Preview with Final Submit
-  const handleSaveUidb = (savedData: UidbFormData) => {
-    setIsUidbModalOpen(false);
-    setUidbPdfData(savedData);
-    setIsPendingFinalSubmit(true);
-    setIsUidbPdfOpen(true);
-  };
-
-  // Final Submit handler: Called from I.I.F.-X Preview Modal to officially save to database & list
-  const handleFinalSubmitUidb = (finalData: UidbFormData) => {
+  // Helper to map UidbFormData to RegistrationEntry
+  const mapUidbFormToEntry = (formData: UidbFormData): RegistrationEntry => {
     const photoUrl =
-      finalData.photos?.find((p) => p.fileSubType === "Front View" && p.dataUrl)?.dataUrl ||
-      finalData.photos?.find((p) => Boolean(p.dataUrl))?.dataUrl ||
-      (finalData as any).photoUrl ||
+      formData.photos?.find((p) => p.fileSubType === "Front View" && p.dataUrl)?.dataUrl ||
+      formData.photos?.find((p) => Boolean(p.dataUrl))?.dataUrl ||
+      (formData as any).photoUrl ||
       "";
 
     const nextReg =
-      finalData.regNumber?.trim() ||
+      formData.regNumber?.trim() ||
       RegistrationService.generateNextRegNumber("UIDB");
 
-    const newOrUpdatedEntry: RegistrationEntry = {
-      id: finalData.id || `uidb_${Date.now()}`,
+    return {
+      id: formData.id || `uidb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       type: "UIDB",
       regNumber: nextReg,
-      date: finalData.date || new Date().toISOString().split("T")[0],
-      time: finalData.time || new Date().toTimeString().slice(0, 5),
-      stationName: finalData.stationName || "PANCHKULA SECTOR-5",
-      district: finalData.district || "PANCHKULA",
-      status: finalData.status || "OPEN",
-      officerName: finalData.inquestReportPreparedBy || finalData.officerName || "Lalit Kumar",
+      date: formData.date || new Date().toISOString().split("T")[0],
+      time: formData.time || new Date().toTimeString().slice(0, 5),
+      stationName: formData.stationName || "PANCHKULA SECTOR-5",
+      district: formData.district || "PANCHKULA",
+      status: formData.status || "OPEN",
+      officerName: formData.inquestReportPreparedBy || formData.officerName || "Lalit Kumar",
       officerRank: "Inspector",
-      gender: finalData.gender || "Unidentified",
-      approxAge: finalData.ageYears
-        ? `${finalData.ageYears} Years`
-        : finalData.ageRangeFrom
-        ? `${finalData.ageRangeFrom}-${finalData.ageRangeTo} Yrs`
+      gender: formData.gender || "Unidentified",
+      approxAge: formData.ageYears
+        ? `${formData.ageYears} Years`
+        : formData.ageRangeFrom
+        ? `${formData.ageRangeFrom}-${formData.ageRangeTo} Yrs`
         : "Unknown",
-      foundLocation: finalData.placeWhereFound || "Recovery Spot",
+      foundLocation: formData.placeWhereFound || "Recovery Spot",
       identifyingMarks:
         [
-          finalData.marksTattooMarks,
-          finalData.marksScarMarks,
-          finalData.marksMoles,
-          finalData.marksOthers,
+          formData.marksTattooMarks,
+          formData.marksScarMarks,
+          formData.marksMoles,
+          formData.marksOthers,
         ]
           .filter(Boolean)
           .join(", ") || "No visible marks",
       clothingDetails:
         [
-          finalData.clothesOuterTop,
-          finalData.clothesOuterBottom,
-          finalData.clothesFootwear,
+          formData.clothesOuterTop,
+          formData.clothesOuterBottom,
+          formData.clothesFootwear,
         ]
           .filter(Boolean)
           .join(", ") || "Apparel found",
-      inquestNumber: finalData.gdNumber
-        ? `UD/194-BNSS/${finalData.gdNumber}`
-        : finalData.inquestNumber || "UD/194-BNSS",
+      inquestNumber: formData.gdNumber
+        ? `UD/194-BNSS/${formData.gdNumber}`
+        : formData.inquestNumber || "UD/194-BNSS",
       mortuaryName: "LNJP Civil Hospital Mortuary",
-      remarks: finalData.briefOfIncident || "Inquest recorded.",
-      createdAt: finalData.createdAt || new Date().toISOString(),
+      remarks: formData.briefOfIncident || "Inquest recorded.",
+      createdAt: formData.createdAt || new Date().toISOString(),
       photoUrl: photoUrl,
-      photos: finalData.photos || [],
-      fullUidbData: finalData,
+      photos: formData.photos || [],
+      fullUidbData: formData,
     };
+  };
 
-    const existing = entries.find((e) => e.id === newOrUpdatedEntry.id);
+  // Form submit handler: Saves record IMMEDIATELY so it never disappears on refresh, then transitions to Preview
+  const handleSaveUidb = (savedData: UidbFormData) => {
+    setIsUidbModalOpen(false);
+
+    const newOrUpdatedEntry = mapUidbFormToEntry(savedData);
+    const existing = entries.find(
+      (e) => e.id === newOrUpdatedEntry.id || (newOrUpdatedEntry.regNumber && e.regNumber === newOrUpdatedEntry.regNumber)
+    );
+
     let savedEntry: RegistrationEntry;
     if (existing) {
       savedEntry =
-        RegistrationService.updateEntry(newOrUpdatedEntry.id, newOrUpdatedEntry) ||
+        RegistrationService.updateEntry(existing.id, newOrUpdatedEntry) ||
+        newOrUpdatedEntry;
+    } else {
+      savedEntry = RegistrationService.addEntry(newOrUpdatedEntry);
+    }
+
+    setEntries((prev) => sortEntriesNewestFirst([savedEntry, ...prev.filter((e) => e.id !== savedEntry.id)]));
+    setRecentlySavedId(savedEntry.id);
+    setActiveTab("UIDB");
+
+    setUidbPdfData({
+      ...savedData,
+      id: savedEntry.id,
+      regNumber: savedEntry.regNumber,
+      photoUrl: savedEntry.photoUrl,
+    });
+    setIsPendingFinalSubmit(true);
+    setIsUidbPdfOpen(true);
+  };
+
+  // Final Submit handler: Called from I.I.F.-X Preview Modal to confirm and display success banner
+  const handleFinalSubmitUidb = (finalData: UidbFormData) => {
+    const newOrUpdatedEntry = mapUidbFormToEntry(finalData);
+    const existing = entries.find(
+      (e) => e.id === newOrUpdatedEntry.id || (newOrUpdatedEntry.regNumber && e.regNumber === newOrUpdatedEntry.regNumber)
+    );
+
+    let savedEntry: RegistrationEntry;
+    if (existing) {
+      savedEntry =
+        RegistrationService.updateEntry(existing.id, newOrUpdatedEntry) ||
         newOrUpdatedEntry;
     } else {
       savedEntry = RegistrationService.addEntry(newOrUpdatedEntry);
     }
 
     // Immediately guarantee the entry is in the local React state and active tab
-    setEntries((prev) => [savedEntry, ...prev.filter((e) => e.id !== savedEntry.id)]);
+    setEntries((prev) => sortEntriesNewestFirst([savedEntry, ...prev.filter((e) => e.id !== savedEntry.id)]));
     setActiveTab("UIDB");
     setSearchQuery("");
     setStatusFilter("ALL");
