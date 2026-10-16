@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { FIRItem } from "@/types";
 import { firService } from "@/services/firService";
+import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { printA4Element } from "@/utils/printElement";
@@ -460,6 +461,30 @@ export function CrimeDetailModal({
     }
 
     const updated = firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
+
+    // Trigger Roznamcha GD auto-suggestion for Crime Details IIF-II
+    try {
+      void GeneralDiaryService.createFirActionSuggestion({
+        actionType: "CRIME_DETAILS",
+        firId: fir.id,
+        firNumber: fir.firNumber,
+        policeStation: fir.policeStation,
+        district: fir.district,
+        officer: {
+          name: currentUserName || "IO",
+          rank: "Sub-Inspector",
+          beltNumber: "IO/FIR",
+        },
+        actsAndSections: fir.actsAndSections,
+        place: majorPlaceType ? `${majorPlaceType} - ${minorPlaceType}` : fir.incidentPlace,
+        dateTime: visitDateTime,
+        docTitle: `Crime Detail Form (IIF-II) - ${fir.firNumber}`,
+        details: `Crime Detail Form (IIF-II) inspected and recorded by ${currentUserName}`,
+      });
+    } catch (gdErr) {
+      console.warn("Failed to create Roznamcha GD suggestion for Crime Details:", gdErr);
+    }
+
     setIsSubmitting(false);
 
     if (updated) {
@@ -2459,6 +2484,17 @@ export function CrimeDetailModal({
                       दस्तावेज FIR प्रोफाइल के <strong>Documents</strong> टैब में पंजीकृत हो चुका है। अब इस केस के लिए <strong>Arrest &amp; Surrender Documents (गिरफ्तारी दस्तावेज)</strong> बनाने की अनुमति अनलॉक हो गई है।
                     </p>
                   </div>
+
+                  <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-xl text-left flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-purple-900">
+                      <span className="font-bold">रोजनामचा आम (GD) ऑटो-सुझाव तैयार:</span>
+                      <p className="text-[11px] text-purple-700 mt-0.5 leading-relaxed">
+                        अपराध विवरण प्रपत्र (IIF-II) का ऑटो-सुझाव रोजनामचा GD के <strong>Suggestions &amp; Drafts</strong> टैब में दर्ज हो चुका है।
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
                     <Button
                       size="sm"
@@ -2469,6 +2505,15 @@ export function CrimeDetailModal({
                       <Download className="w-3.5 h-3.5" />
                       <span>प्रपत्र डाउनलोड करें</span>
                     </Button>
+                    <a
+                      href="/general-diary?tab=SUGGESTIONS_DRAFTS"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold shadow-sm transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>रोजनामचा GD सुझाव देखें</span>
+                    </a>
                     <Button
                       size="sm"
                       onClick={() => {

@@ -14,6 +14,7 @@ import {
 import { FIRActSectionEntry } from "@/types";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { formatGDActivityDateTime, isGdRecordExpired } from "@/lib/gdDateTime";
+import { suggestionStore } from "@/lib/suggestionStore";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
 const GD_TYPES_STORAGE_KEY = "haryana_police_cms_gd_types_v4_cctns";
@@ -1243,7 +1244,11 @@ export const GeneralDiaryService = {
       | "COMPLAINT_FIR_RECOMMENDED"
       | "FIR_LODGED"
       | "OFFICER_DISPATCHED"
-      | "MALKHANA_SEIZURE";
+      | "MALKHANA_SEIZURE"
+      | "FIR_ARREST_MEMO"
+      | "FIR_CRIME_DETAILS"
+      | "FIR_PROPERTY_SEIZURE"
+      | (string & {});
     subject: string;
     narrative: string;
     officer: GDOfficerParticulars;
@@ -1289,6 +1294,9 @@ export const GeneralDiaryService = {
       FIR_LODGED: "CRIMINAL_CASE",
       OFFICER_DISPATCHED: "DEPARTURE",
       MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
+      FIR_ARREST_MEMO: "ARREST_RE_ARREST_SURRENDER",
+      FIR_CRIME_DETAILS: "INVESTIGATION_REPORTS",
+      FIR_PROPERTY_SEIZURE: "PROPERTY_SEIZURE",
     };
 
     const typeCode = event.typeCode || typeCodeMap[event.eventType] || "OTHERS";
@@ -1298,6 +1306,44 @@ export const GeneralDiaryService = {
     if (event.attachments && Array.isArray(event.attachments)) {
       relRecords.attachments = event.attachments;
     }
+
+    const defaultDisplayEn =
+      event.eventType === "COMPLAINT_REGISTERED"
+        ? "Citizen Information/Tip Received"
+        : event.eventType === "COMPLAINT_CLOSURE"
+        ? "Investigation Reports"
+        : event.eventType === "COMPLAINT_NCR"
+        ? "Non-Cognizable Report"
+        : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+        ? "Cognizable Crime / FIR Recommendation"
+        : event.eventType === "FIR_LODGED"
+        ? "Criminal case"
+        : event.eventType === "FIR_ARREST_MEMO"
+        ? "Arrest/Re-Arrest/Surrender"
+        : event.eventType === "FIR_CRIME_DETAILS"
+        ? "Crime Details Inspection"
+        : event.eventType === "FIR_PROPERTY_SEIZURE"
+        ? "Property Seizure"
+        : (typeDef?.nameEn || typeCode);
+
+    const defaultDisplayHi =
+      event.eventType === "COMPLAINT_REGISTERED"
+        ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
+        : event.eventType === "COMPLAINT_CLOSURE"
+        ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+        : event.eventType === "COMPLAINT_NCR"
+        ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
+        : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+        ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
+        : event.eventType === "FIR_LODGED"
+        ? "पंजीकरण मुकद्दमा / FIR (PPR 22.48)"
+        : event.eventType === "FIR_ARREST_MEMO"
+        ? "गिरफ्तारी / पुनः गिरफ्तारी / समर्पण (PPR 22.48)"
+        : event.eventType === "FIR_CRIME_DETAILS"
+        ? "अपराध विवरण प्रपत्र / मौका मुआयना (IIF-II)"
+        : event.eventType === "FIR_PROPERTY_SEIZURE"
+        ? "बरामदगी / जब्ती माल प्रपत्र (IIF-IV)"
+        : (typeDef?.nameHi || typeCode);
 
     const suggestionRecord: GeneralDiaryRecord = {
       id: `gd_sugg_${Date.now()}`,
@@ -1318,31 +1364,13 @@ export const GeneralDiaryService = {
         typeDef?.category ||
         (event.eventType === "COMPLAINT_NCR"
           ? "COURT_DOCUMENTATION"
-          : event.eventType === "COMPLAINT_CLOSURE" || event.eventType === "COMPLAINT_FIR_RECOMMENDED"
+          : event.eventType === "COMPLAINT_CLOSURE" ||
+            event.eventType === "COMPLAINT_FIR_RECOMMENDED" ||
+            event.eventType.startsWith("FIR_")
           ? "INVESTIGATION_PROCESS"
           : "ROUTINE_ADMINISTRATION"),
-      typeDisplay:
-        event.typeDisplay ||
-        (event.eventType === "COMPLAINT_REGISTERED"
-          ? "Citizen Information/Tip Received"
-          : event.eventType === "COMPLAINT_CLOSURE"
-          ? "Investigation Reports"
-          : event.eventType === "COMPLAINT_NCR"
-          ? "Non-Cognizable Report"
-          : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
-          ? "Cognizable Crime / FIR Recommendation"
-          : (typeDef?.nameEn || typeCode)),
-      typeDisplayHi:
-        event.typeDisplayHi ||
-        (event.eventType === "COMPLAINT_REGISTERED"
-          ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
-          : event.eventType === "COMPLAINT_CLOSURE"
-          ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
-          : event.eventType === "COMPLAINT_NCR"
-          ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
-          : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
-          ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
-          : (typeDef?.nameHi || typeCode)),
+      typeDisplay: event.typeDisplay || defaultDisplayEn,
+      typeDisplayHi: event.typeDisplayHi || defaultDisplayHi,
       subject: event.subject,
       narrative: cleanGdNarrative(event.narrative),
       activityDateTime: `${today} ${nowTime}`,
@@ -1351,6 +1379,10 @@ export const GeneralDiaryService = {
       source:
         event.eventType.startsWith("COMPLAINT_")
           ? "COMPLAINT_INTEGRATION"
+          : event.eventType.startsWith("FIR_") ||
+            event.eventType === "ARREST_RE_ARREST_SURRENDER" ||
+            event.eventType === "PROPERTY_SEIZURE"
+          ? "FIR_INTEGRATION"
           : "SYSTEM_EVENT",
       isLocked: false,
       relatedRecords: relRecords,
@@ -1374,6 +1406,169 @@ export const GeneralDiaryService = {
       window.dispatchEvent(new CustomEvent("cms-gd-updated"));
     }
     return suggestionRecord;
+  },
+
+  /**
+   * Generates a Roznamcha GD Auto-Suggestion whenever key FIR forms
+   * (Arrest/Surrender Memo Form 26.8, Crime Details IIF-II, Property Seizure IIF-IV)
+   * are saved into an FIR Profile.
+   */
+  async createFirActionSuggestion(options: {
+    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE";
+    firId: string;
+    firNumber: string;
+    policeStation?: string;
+    district?: string;
+    officer?: {
+      name: string;
+      rank?: string;
+      beltNumber?: string;
+      pno?: string;
+    };
+    personName?: string;
+    actsAndSections?: string;
+    place?: string;
+    dateTime?: string;
+    articlesSummary?: string;
+    details?: string;
+    docTitle?: string;
+    attachments?: GDUploadedDocument[];
+  }): Promise<GeneralDiaryRecord> {
+    const ps = options.policeStation || "PS City Thanesar";
+    const dist = options.district || "Kurukshetra";
+    const officer: GDOfficerParticulars = {
+      name: options.officer?.name || "Investigating Officer",
+      rank: options.officer?.rank || "Sub-Inspector",
+      beltNumber: options.officer?.beltNumber || "IO/FIR",
+      pno: options.officer?.pno || "00000000",
+    };
+
+    let eventType: "FIR_ARREST_MEMO" | "FIR_CRIME_DETAILS" | "FIR_PROPERTY_SEIZURE" = "FIR_ARREST_MEMO";
+    let typeCode = "ARREST_RE_ARREST_SURRENDER";
+    let category = "INVESTIGATION_PROCESS";
+    let typeDisplay = "Arrest/Re-Arrest/Surrender";
+    let typeDisplayHi = "गिरफ्तारी / पुनः गिरफ्तारी / समर्पण (PPR 22.48)";
+    let subject = "";
+    let narrative = "";
+    const harvestWords: string[] = [];
+    const harvestPhrases: string[] = [];
+
+    if (options.actionType === "ARREST_MEMO") {
+      eventType = "FIR_ARREST_MEMO";
+      typeCode = "ARREST_RE_ARREST_SURRENDER";
+      typeDisplay = "Arrest/Re-Arrest/Surrender";
+      typeDisplayHi = "गिरफ्तारी / पुनः गिरफ्तारी / समर्पण (PPR 22.48)";
+      const accusedLabel = options.personName || "नामजद अभियुक्त";
+      subject = `हवाला गिरफ्तारी / समर्पण न्यायालय - FIR No. ${options.firNumber} अभियुक्त ${accusedLabel}`;
+      narrative = `बवक्त हाजा, मुकद्दमा नंबर ${options.firNumber} ${
+        options.actsAndSections ? `जेर धारा ${options.actsAndSections}` : ""
+      } थाना ${ps} में नामजद अभियुक्त ${accusedLabel} बाबत गिरफ्तारी / समर्पण न्यायालय वैधानिक प्रपत्र (Form 26.8(1) / IIF-III) तैयार किया गया। धारा 47 BNSS के तहत गिरफ्तारी के कारण व कानूनी अधिकारों की लिखित सूचना दी गई तथा परिजनों को संसूचित किया गया। हसब कायदा अभियुक्त की जामा तलाशी अमल में लाई गई तथा बरामद सामान जामातलाशी मालखाना में जमा कराया गया। रपट रोजनामचा आम दर्ज की गई।`;
+
+      harvestWords.push(
+        "गिरफ्तारी",
+        "समर्पण",
+        "जामातलाशी",
+        "न्यायालय",
+        "वारंट",
+        "हवालात",
+        "PPR 22.48",
+        "BNSS",
+        "धारा 47",
+        "धारा 50",
+        "फर्द",
+        "सुपुर्दगी"
+      );
+      if (options.personName) harvestWords.push(options.personName);
+      harvestPhrases.push(
+        `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में अभियुक्त ${options.personName || ""} की गिरफ्तारी / समर्पण प्रपत्र तैयार किया गया`,
+        "धारा 47 BNSS के तहत गिरफ्तारी के कारण एवं अधिकारों से अवगत कराया गया",
+        "जामा तलाशी मुकम्मल कर माल जामातलाशी मालखाना में जमा कराया गया"
+      );
+    } else if (options.actionType === "CRIME_DETAILS") {
+      eventType = "FIR_CRIME_DETAILS";
+      typeCode = "INVESTIGATION_REPORTS";
+      typeDisplay = "Crime Details Inspection (IIF-II)";
+      typeDisplayHi = "अपराध विवरण प्रपत्र / मौका मुआयना (IIF-II)";
+      subject = `इंद्राज अपराध विवरण प्रपत्र (IIF-II) मौका मुआयना - FIR No. ${options.firNumber}`;
+      narrative = `बवक्त हाजा, मुकद्दमा नंबर ${options.firNumber} ${
+        options.actsAndSections ? `जेर धारा ${options.actsAndSections}` : ""
+      } में तफ्तीश के दौरान घटनास्थल ${
+        options.place ? `(${options.place})` : ""
+      } का मौका मुआयना व निरीक्षण किया गया। घटनास्थल की भौगोलिक स्थिति, नजरी नक्शा मौका, भौतिक साक्ष्य तथा मोडस ऑपरेंडी (Modus Operandi) का विवरण दर्ज कर अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) तैयार किया गया और FIR प्रोफाइल में संलग्न किया गया। हसब कायदा रपट रोजनामचा आम दर्ज की गई।`;
+
+      harvestWords.push(
+        "अपराध विवरण",
+        "IIF-II",
+        "मौका मुआयना",
+        "नजरी नक्शा",
+        "भौतिक साक्ष्य",
+        "घटनास्थल",
+        "साइंटिफIC एड्स",
+        "मोडस ऑपरेंडी"
+      );
+      if (options.place) harvestWords.push(options.place);
+      harvestPhrases.push(
+        `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में घटनास्थल मौका मुआयना कर IIF-II प्रपत्र भरा गया`,
+        "घटनास्थल से भौतिक साक्ष्य संकलित कर नजरी नक्शा मौका तैयार किया गया"
+      );
+    } else {
+      // PROPERTY_SEIZURE
+      eventType = "FIR_PROPERTY_SEIZURE";
+      typeCode = "PROPERTY_SEIZURE";
+      typeDisplay = "Property Seizure / Recovery (IIF-IV)";
+      typeDisplayHi = "बरामदगी / जब्ती माल प्रपत्र (IIF-IV)";
+      subject = `इंद्राज फर्द जब्ती / तलाशी माल मुकदमा (IIF-IV) - FIR No. ${options.firNumber}`;
+      narrative = `बवक्त हाजा, मुकद्दमा नंबर ${options.firNumber} में तलाशी व जब्ती की वैधानिक कार्यवाही अमल में लाई गई। मौका ${
+        options.place ? `(${options.place})` : "घटनास्थल"
+      } से ${
+        options.personName ? `मुसम्मी ${options.personName} के कब्जे से` : ""
+      } माल मुकदमा/दस्तावेज/सामग्री बरामद कर फर्द जब्ती प्रपत्र (Property Search & Seizure Form IIF-IV) तैयार किया गया। बरामदशुदा सामग्री को गवाहान के समक्ष सीलबंद किया गया तथा बा-हिफाजत मालखाना में जमा कराने हेतु रपट रोजनामचा आम दर्ज की गई।`;
+
+      harvestWords.push(
+        "जब्ती",
+        "फर्द जब्ती",
+        "IIF-IV",
+        "बरामदगी",
+        "सीलबंद",
+        "माल मुकदमा",
+        "गवाहान",
+        "मालखाना",
+        "तलाशी"
+      );
+      if (options.personName) harvestWords.push(options.personName);
+      if (options.place) harvestWords.push(options.place);
+      harvestPhrases.push(
+        `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में फर्द जब्ती माल (IIF-IV) तैयार कर माल मुकदमा सीलबंद किया गया`,
+        "बरामदा माल मुकदमा को बा-हिफाजत मालखाना में जमा कराने हेतु रपट रोजनामचा आम दर्ज की गई"
+      );
+    }
+
+    // Ingest into Roznamcha suggestion vocabulary engine
+    try {
+      suggestionStore.importHarvestedVocabulary(harvestWords, harvestPhrases);
+    } catch (e) {
+      console.warn("Failed to import harvested vocabulary:", e);
+    }
+
+    return this.generateSuggestionFromSystemEvent({
+      eventType,
+      category,
+      typeCode,
+      typeDisplay,
+      typeDisplayHi,
+      subject,
+      narrative,
+      policeStation: ps,
+      district: dist,
+      officer,
+      relatedRecords: {
+        firNumber: options.firNumber,
+        personName: options.personName,
+        destinationLocation: options.place,
+        purpose: subject,
+      },
+      attachments: options.attachments,
+    });
   },
 
   // -------------------------------------------------------------

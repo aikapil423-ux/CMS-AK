@@ -586,6 +586,9 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
     FIR_LODGED: "CRIMINAL_CASE",
     OFFICER_DISPATCHED: "DEPARTURE",
     MALKHANA_SEIZURE: "PROPERTY_SEIZURE",
+    FIR_ARREST_MEMO: "ARREST_RE_ARREST_SURRENDER",
+    FIR_CRIME_DETAILS: "INVESTIGATION_REPORTS",
+    FIR_PROPERTY_SEIZURE: "PROPERTY_SEIZURE",
   };
   const eventType = String(event.eventType || "");
   const typeCode = String(event.typeCode || typeCodeMap[eventType] || "OTHERS");
@@ -601,6 +604,12 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "Cognizable Crime / FIR Recommendation"
       : eventType === "FIR_LODGED"
       ? "Criminal case"
+      : eventType === "FIR_ARREST_MEMO"
+      ? "Arrest/Re-Arrest/Surrender"
+      : eventType === "FIR_CRIME_DETAILS"
+      ? "Crime Details Inspection"
+      : eventType === "FIR_PROPERTY_SEIZURE"
+      ? "Property Seizure"
       : typeCode;
   const defaultDisplayHi =
     eventType === "COMPLAINT_REGISTERED"
@@ -613,6 +622,12 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "संज्ञेय अपराध / FIR पंजीकरण अनुशंसा (BNSS धारा 173)"
       : eventType === "FIR_LODGED"
       ? "पंजीकरण मुकद्दमा / FIR (PPR 22.48)"
+      : eventType === "FIR_ARREST_MEMO"
+      ? "गिरफ्तारी / पुनः गिरफ्तारी / समर्पण (PPR 22.48)"
+      : eventType === "FIR_CRIME_DETAILS"
+      ? "अपराध विवरण प्रपत्र / मौका मुआयना (IIF-II)"
+      : eventType === "FIR_PROPERTY_SEIZURE"
+      ? "बरामदगी / जब्ती माल प्रपत्र (IIF-IV)"
       : typeCode;
 
   const relatedRecords = ((event.relatedRecords || {}) as Record<string, unknown>);
@@ -635,7 +650,8 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
             ? "COURT_DOCUMENTATION"
             : eventType === "COMPLAINT_REGISTERED" ||
               eventType === "COMPLAINT_CLOSURE" ||
-              eventType === "COMPLAINT_FIR_RECOMMENDED"
+              eventType === "COMPLAINT_FIR_RECOMMENDED" ||
+              eventType.startsWith("FIR_")
             ? "INVESTIGATION_PROCESS"
             : "ROUTINE_ADMINISTRATION")
       ),
@@ -654,6 +670,10 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       source:
         eventType.startsWith("COMPLAINT_")
           ? "COMPLAINT_INTEGRATION"
+          : eventType.startsWith("FIR_") ||
+            eventType === "ARREST_RE_ARREST_SURRENDER" ||
+            eventType === "PROPERTY_SEIZURE"
+          ? "FIR_INTEGRATION"
           : "SYSTEM_EVENT",
       isLocked: false,
       isDraft: true,
