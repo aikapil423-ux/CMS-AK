@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { RoleSwitcherModal } from "./RoleSwitcherModal";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
+import { TopBarPersonaSwitcher } from "./TopBarPersonaSwitcher";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -20,7 +20,6 @@ import {
   FileText,
   LayoutGrid,
   Scale,
-  UserCog,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,13 +30,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, isAuthenticated } = useAuth();
   const { t } = useLanguage();
-  const [roleModalOpen, setRoleModalOpen] = useState(false);
-
-  React.useEffect(() => {
-    const handleOpenRoleModal = () => setRoleModalOpen(true);
-    window.addEventListener("cms-open-role-switcher", handleOpenRoleModal);
-    return () => window.removeEventListener("cms-open-role-switcher", handleOpenRoleModal);
-  }, []);
 
   // If on login page or unauthenticated, render without shell
   if (!isAuthenticated) {
@@ -112,27 +104,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
-            {/* Police Persona Switcher Icon */}
-            <button
-              type="button"
-              onClick={() => setRoleModalOpen(true)}
-              className="relative p-2 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer text-slate-700 hover:text-slate-950 shadow-2xs active:scale-95 flex items-center justify-center group"
-              title={`Switch Police Persona / पद बदलें (वर्तमान: ${currentUser.name} - ${t(currentUser.roleDisplay)})`}
-              aria-label="Switch Police Persona"
-            >
-              <UserCog className="w-4 h-4 text-slate-700 group-hover:text-slate-900" />
-              <span className="absolute -bottom-1 -right-1 text-[8px] font-bold px-1 leading-none rounded bg-[#0b192c] text-white border border-white font-mono shadow-2xs">
-                {currentUser.role === "SHO"
-                  ? "SHO"
-                  : currentUser.role === "MHC_GD_INCHARGE"
-                  ? "MHC"
-                  : currentUser.role === "DSP_SUBDIV"
-                  ? "DSP"
-                  : currentUser.role === "SP_DISTRICT"
-                  ? "SP"
-                  : currentUser.rank.slice(0, 3)}
-              </span>
-            </button>
+            {/* Police Persona Switcher Icon with Dropdown */}
+            <TopBarPersonaSwitcher />
           </div>
         </header>
 
@@ -142,9 +115,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
       </div>
-
-      {/* Role Switcher Modal */}
-      <RoleSwitcherModal isOpen={roleModalOpen} onClose={() => setRoleModalOpen(false)} />
 
       {/* Floating Draggable CMS AI Agent */}
       <DraggableAgentButton />
