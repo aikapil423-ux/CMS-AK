@@ -76,6 +76,15 @@ export function LinkDuplicateFIRModal({
     }
   }, [preSelectedFirId]);
 
+  // Sync active user
+  useEffect(() => {
+    if (currentUser?.name) {
+      setOfficerName(
+        `${currentUser.name} (${currentUser.rankDisplay || currentUser.roleDisplay || "Officer"})`
+      );
+    }
+  }, [currentUser, isOpen]);
+
   // Primary FIR object
   const primaryFir = useMemo(() => {
     return firs.find((f) => f.id === primaryFirId || f.firNumber === primaryFirId);

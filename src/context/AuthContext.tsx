@@ -16,24 +16,44 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<UserSession>(DEMO_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<UserSession>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedUserId = localStorage.getItem("haryana_police_cms_user");
+        if (savedUserId) {
+          const found = DEMO_USERS.find((u) => u.id === savedUserId);
+          if (found) return found;
+        }
+      } catch {}
+    }
+    return DEMO_USERS[0];
+  });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
-  // Initialize from localStorage if available
+  // Initialize from localStorage if available on mount
   useEffect(() => {
-    const savedUserId = localStorage.getItem("haryana_police_cms_user");
-    if (savedUserId) {
-      const found = DEMO_USERS.find((u) => u.id === savedUserId);
-      if (found) setCurrentUser(found);
-    }
-  }, []);
+    try {
+      const savedUserId = localStorage.getItem("haryana_police_cms_user");
+      if (savedUserId) {
+        const found = DEMO_USERS.find((u) => u.id === savedUserId);
+        if (found && found.id !== currentUser.id) {
+          setCurrentUser(found);
+        }
+      }
+    } catch {}
+  }, [currentUser.id]);
 
   const switchUser = (userId: string) => {
     const found = DEMO_USERS.find((u) => u.id === userId);
     if (found) {
       setCurrentUser(found);
       setIsAuthenticated(true);
-      localStorage.setItem("haryana_police_cms_user", userId);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("haryana_police_cms_user", userId);
+          window.dispatchEvent(new CustomEvent("cms_user_switched", { detail: found }));
+        } catch {}
+      }
     }
   };
 

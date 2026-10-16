@@ -47,6 +47,9 @@ export function RoleSwitcherModal({ isOpen, onClose }: RoleSwitcherModalProps) {
                 onClick={() => {
                   switchUser(user.id);
                   onClose();
+                  if (typeof window !== "undefined") {
+                    window.location.reload();
+                  }
                 }}
                 className={cn(
                   "w-full text-left p-3.5 rounded-xl border transition-all flex items-center justify-between group",

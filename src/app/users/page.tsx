@@ -51,7 +51,12 @@ export default function UsersDirectoryPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => switchUser(user.id)}
+                      onClick={() => {
+                        switchUser(user.id);
+                        if (typeof window !== "undefined") {
+                          window.location.reload();
+                        }
+                      }}
                       className="text-xs"
                     >
                       Switch Persona
