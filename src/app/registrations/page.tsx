@@ -37,6 +37,10 @@ import { RegisterLostPropertyModal } from "@/components/lost-property/RegisterLo
 import { LostPropertyPreviewModal } from "@/components/lost-property/LostPropertyPreviewModal";
 import { lostPropertyService } from "@/services/lostPropertyService";
 import { LostPropertyRecord } from "@/types/lostProperty";
+import { RegisterMissingPersonModal } from "@/components/missing-person/RegisterMissingPersonModal";
+import { MissingPersonPreviewModal } from "@/components/missing-person/MissingPersonPreviewModal";
+import { missingPersonService } from "@/services/missingPersonService";
+import { MissingPersonRecord } from "@/types/missingPerson";
 
 function RegistrationsContent() {
   const router = useRouter();
@@ -68,6 +72,12 @@ function RegistrationsContent() {
   const [lostPropertyEditRecord, setLostPropertyEditRecord] = useState<LostPropertyRecord | null>(null);
   const [isLostPropertyPdfOpen, setIsLostPropertyPdfOpen] = useState(false);
   const [lostPropertyPdfData, setLostPropertyPdfData] = useState<Partial<LostPropertyRecord> | null>(null);
+
+  // Comprehensive Missing Person CCTNS Form and PDF states
+  const [isMissingPersonModalOpen, setIsMissingPersonModalOpen] = useState(false);
+  const [missingPersonEditRecord, setMissingPersonEditRecord] = useState<MissingPersonRecord | null>(null);
+  const [isMissingPersonPdfOpen, setIsMissingPersonPdfOpen] = useState(false);
+  const [missingPersonPdfData, setMissingPersonPdfData] = useState<Partial<MissingPersonRecord> | null>(null);
 
   // Other categories modals state (null if none)
   const [activeModalType, setActiveModalType] = useState<RegistrationType | null>(null);
@@ -307,6 +317,159 @@ function RegistrationsContent() {
         "Enquiry entrusted to Inspector Lalit Kumar. CDR/Tower dump verification & CEIR portal blocking initiated.",
       expectedDateToComplete: "2019-04-24",
       registeredBy: entry.officerName || "Inspector Lalit Kumar",
+    };
+  };
+
+  // Convert RegistrationEntry to MissingPersonRecord for statutory modal and preview
+  const convertEntryToMissingPersonRecord = (
+    entry: RegistrationEntry
+  ): MissingPersonRecord => {
+    const existing =
+      missingPersonService.getRecordByRegNumber(entry.regNumber) ||
+      missingPersonService.getRecordById(entry.id);
+    if (existing) return existing;
+
+    const parts = entry.personName
+      ? entry.personName.trim().split(" ")
+      : ["Monu", "Kumar"];
+    const firstName = parts[0] || "Monu";
+    const lastName = parts.slice(1).join(" ") || "Kumar";
+
+    return {
+      id: entry.id,
+      registrationNumber: entry.regNumber || "0002/2019",
+      registrationYear: entry.regNumber?.includes("/")
+        ? entry.regNumber.split("/")[1]
+        : "2019",
+      createdAt: entry.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: (entry.status as any) || "OPEN",
+      registrationDateTime: `${entry.date || "19/04/2019"} ${entry.time || "15:19"}`,
+      gdNumber: "002",
+      gdDateTime: `${entry.date || "19/04/2019"}, ${entry.time || "10:45"}`,
+      briefOfIncident: entry.remarks || "Missing Person",
+      dateTimeSinceMissing: `${entry.date || "19/04/2019"} 11:00`,
+      dateSinceMissing: entry.date || "2019-04-19",
+      timeSinceMissing: "11:00",
+      firNumber: "0042",
+      firYear: "2019",
+      placeOfMissing: entry.missingFrom || "Panchkula bus stand",
+      actsSections: [
+        { id: "act_1", act: "Police Act 1861", section: "Section 34" },
+      ],
+      complainantUid: "4829-1092-3849",
+      complainantFirstName: entry.contactPerson?.split(" ")[0] || "RAVI",
+      complainantMiddleName: "",
+      complainantLastName:
+        entry.contactPerson?.split(" ").slice(1).join(" ") || "Kumar",
+      complainantRelationType: "Father",
+      complainantRelativeName: entry.fatherOrHusbandName || "Shyam",
+      complainantMobile: entry.contactNumber || "+91 9812033441",
+      complainantLandline: "",
+      complainantEmail: "",
+      complainantGender: "Male",
+      complainantPresentAddress: {
+        houseNo: "Plot 12",
+        streetName: "Bus Stand Road",
+        colony: "Sector 5",
+        villageTownCity: "pkl",
+        tehsil: "Panchkula",
+        country: "INDIA",
+        state: "HARYANA",
+        district: entry.district || "PANCHKULA",
+        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+        pincode: "134109",
+      },
+      complainantSameAsPresent: true,
+      complainantPermanentAddress: {
+        houseNo: "Plot 12",
+        streetName: "Bus Stand Road",
+        colony: "Sector 5",
+        villageTownCity: "pkl",
+        tehsil: "Panchkula",
+        country: "INDIA",
+        state: "HARYANA",
+        district: entry.district || "PANCHKULA",
+        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+        pincode: "134109",
+      },
+      complainantNationality: "INDIA",
+      complainantIdList: [
+        { id: "cid_1", idType: "Ration Card", idNumber: "RC-HR-PKL-99201" },
+      ],
+      uid: "7719-2810-4412",
+      firstName,
+      middleName: "",
+      lastName,
+      alias: "Chhotu",
+      relationType: "Father",
+      relativeName: entry.fatherOrHusbandName || "Shyam",
+      photoUrl: entry.photoUrl,
+      gender: (entry.gender as any) || "Male",
+      majorMinor: "Major",
+      mobileNo: entry.contactNumber || "+91 9416088219",
+      landlineNo: "",
+      emailId: "",
+      dob: "1990-12-02",
+      yearOfBirth: "1990",
+      ageYears: entry.approxAge?.replace(/\D/g, "") || "28",
+      ageMonths: "4",
+      ageRangeFrom: "",
+      ageRangeTo: "",
+      sameAsComplainantAddress: true,
+      presentAddress: {
+        houseNo: "Plot 12",
+        streetName: "Bus Stand Road",
+        colony: "Sector 5",
+        villageTownCity: "pkl",
+        tehsil: "Panchkula",
+        country: "INDIA",
+        state: "HARYANA",
+        district: entry.district || "PANCHKULA",
+        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+        pincode: "134109",
+      },
+      sameAsPresentAddress: true,
+      permanentAddress: {
+        houseNo: "Plot 12",
+        streetName: "Bus Stand Road",
+        colony: "Sector 5",
+        villageTownCity: "pkl",
+        tehsil: "Panchkula",
+        country: "INDIA",
+        state: "HARYANA",
+        district: entry.district || "PANCHKULA",
+        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+        pincode: "134109",
+      },
+      nationality: "INDIA",
+      occupation: "Student / Shop Helper",
+      idList: [
+        { id: "mpid_1", idType: "Aadhar Card", idNumber: "7719 2810 4412" },
+      ],
+      heightFeet: "5",
+      heightInches: "7",
+      complexion: "Wheatish",
+      build: "Medium",
+      faceType: "Round",
+      hairColor: "Black",
+      eyeColor: "Dark Brown",
+      languagesKnown: "Hindi, Punjabi",
+      identifyingMarks:
+        entry.identifyingMarks ||
+        "Mole on right cheek, small burn scar on left forearm",
+      clothingDetails:
+        entry.clothingDetails || "Blue checked shirt, dark jeans, white sneakers",
+      habitsEccentricities: "Polite demeanor, no mental disability reported",
+      nameOfEo: entry.officerName || "ASI Sandeep Singh - 49102",
+      eoRank: entry.officerRank || "Assistant Sub Inspector",
+      eoNumber: "49102",
+      policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+      district: entry.district || "PANCHKULA",
+      expectedDateToComplete: "2019-04-26",
+      remarks:
+        entry.remarks ||
+        "WT message flashed to all police stations in Haryana and Chandigarh.",
     };
   };
 
@@ -670,7 +833,10 @@ function RegistrationsContent() {
           {activeTab === "MISSING_PERSON" && (
             <button
               type="button"
-              onClick={() => handleOpenAddModal("MISSING_PERSON")}
+              onClick={() => {
+                setMissingPersonEditRecord(null);
+                setIsMissingPersonModalOpen(true);
+              }}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-900 hover:bg-indigo-800 transition-colors shadow-2xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -980,6 +1146,11 @@ function RegistrationsContent() {
                             setUidbPdfData(convertEntryToUidbForm(row));
                             setIsPendingFinalSubmit(false);
                             setIsUidbPdfOpen(true);
+                          } else if (row.type === "MISSING_PERSON") {
+                            setMissingPersonPdfData(
+                              convertEntryToMissingPersonRecord(row)
+                            );
+                            setIsMissingPersonPdfOpen(true);
                           } else if (row.type === "LOST_PROPERTY") {
                             setLostPropertyPdfData(
                               convertEntryToLostPropertyRecord(row)
@@ -993,6 +1164,8 @@ function RegistrationsContent() {
                         title={
                           row.type === "UIDB"
                             ? "View & Print I.I.F.-X Slip"
+                            : row.type === "MISSING_PERSON"
+                            ? "View & Print Missing Person Intimation Slip"
                             : row.type === "LOST_PROPERTY"
                             ? "View & Print Lost Property Intimation Slip"
                             : "View & Print Slip"
@@ -1006,6 +1179,11 @@ function RegistrationsContent() {
                           if (row.type === "UIDB") {
                             setUidbEditData(convertEntryToUidbForm(row));
                             setIsUidbModalOpen(true);
+                          } else if (row.type === "MISSING_PERSON") {
+                            setMissingPersonEditRecord(
+                              convertEntryToMissingPersonRecord(row)
+                            );
+                            setIsMissingPersonModalOpen(true);
                           } else if (row.type === "LOST_PROPERTY") {
                             setLostPropertyEditRecord(
                               convertEntryToLostPropertyRecord(row)
@@ -1066,259 +1244,61 @@ function RegistrationsContent() {
       )}
 
       {/* ========================================================================= */}
-      {/* 5B. DEDICATED MISSING PERSON FORM MODAL                                   */}
+      {/* 5B. STATUTORY HARYANA POLICE CCTNS REGISTER MISSING PERSON MODAL          */}
       {/* ========================================================================= */}
-      {activeModalType === "MISSING_PERSON" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-2xs">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in-50">
-            <div className="p-3.5 border-b border-slate-200 flex items-center justify-between bg-indigo-900 text-white">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-indigo-300" />
-                <h3 className="font-semibold text-xs sm:text-sm">
-                  {editingEntry ? "Edit Missing Person Entry" : "Register Missing Person (गुमशुदा व्यक्ति पंजीकरण)"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="text-indigo-200 hover:text-white p-1 rounded-md"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      <RegisterMissingPersonModal
+        isOpen={isMissingPersonModalOpen}
+        onClose={() => {
+          setIsMissingPersonModalOpen(false);
+          setMissingPersonEditRecord(null);
+        }}
+        initialRecord={missingPersonEditRecord}
+        onSuccess={(savedRecord) => {
+          RegistrationService.addEntry({
+            id: savedRecord.id,
+            type: "MISSING_PERSON",
+            regNumber: savedRecord.registrationNumber,
+            date: savedRecord.dateSinceMissing,
+            time: savedRecord.timeSinceMissing,
+            stationName: savedRecord.policeStation,
+            district: savedRecord.district,
+            status: savedRecord.status,
+            personName: `${savedRecord.firstName} ${savedRecord.lastName}`.trim(),
+            fatherOrHusbandName: `${savedRecord.relationType}: ${savedRecord.relativeName}`,
+            gender: savedRecord.gender || "Male",
+            approxAge: `${savedRecord.ageYears || "28"} Years`,
+            missingFrom: savedRecord.placeOfMissing,
+            contactPerson: `${savedRecord.complainantFirstName} ${savedRecord.complainantLastName} (${savedRecord.complainantRelationType || "Father"})`.trim(),
+            contactNumber: savedRecord.complainantMobile || "",
+            address: `${savedRecord.presentAddress?.villageTownCity}, ${savedRecord.presentAddress?.district}`,
+            identifyingMarks: savedRecord.identifyingMarks,
+            clothingDetails: savedRecord.clothingDetails,
+            officerName: savedRecord.nameOfEo,
+            officerRank: savedRecord.eoRank,
+            remarks: savedRecord.remarks,
+            photoUrl: savedRecord.photoUrl,
+            createdAt: savedRecord.createdAt,
+          });
+          loadData();
+          setIsMissingPersonModalOpen(false);
+          setMissingPersonEditRecord(null);
+        }}
+      />
 
-            <form onSubmit={handleSaveForm} className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Reg. Number (पंजीकरण सं.)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.regNumber || ""}
-                    onChange={(e) => setFormData({ ...formData, regNumber: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 font-mono text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Missing Date &amp; Time (लापता होने का दिनांक व समय)
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <input
-                      type="date"
-                      required
-                      value={formData.date || ""}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs"
-                    />
-                    <input
-                      type="time"
-                      required
-                      value={formData.time || ""}
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Missing Person Name & Guardian */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Missing Person Name (लापता व्यक्ति का नाम) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Full name"
-                    value={formData.personName || ""}
-                    onChange={(e) => setFormData({ ...formData, personName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Father / Husband Name (पिता या पति का नाम)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Father / Husband / Guardian"
-                    value={formData.fatherOrHusbandName || ""}
-                    onChange={(e) => setFormData({ ...formData, fatherOrHusbandName: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Age, Gender & Height */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Gender (लिंग)</label>
-                  <select
-                    value={formData.gender || "Male"}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs bg-white"
-                  >
-                    <option value="Male">Male (पुरुष)</option>
-                    <option value="Female">Female (महिला)</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Age (आयु)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 21 Yrs"
-                    value={formData.approxAge || ""}
-                    onChange={(e) => setFormData({ ...formData, approxAge: e.target.value })}
-                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Height / Built (कद)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 5 ft 8 in, slim"
-                    value={formData.heightBuilt || ""}
-                    onChange={(e) => setFormData({ ...formData, heightBuilt: e.target.value })}
-                    className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Missing From Location */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                  Missing From Location (कहाँ से लापता हुआ - स्थान / क्षेत्र) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Near Railway Station Market, Kurukshetra"
-                  value={formData.missingFrom || ""}
-                  onChange={(e) => setFormData({ ...formData, missingFrom: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                />
-              </div>
-
-              {/* Informant / Complainant Details */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Informant Name &amp; Relation (सूचनाकर्ता का नाम व सम्बंध)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Ramesh Sharma (Father)"
-                    value={formData.contactPerson || ""}
-                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Contact Phone (मोबाइल नम्बर)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 9812034567"
-                    value={formData.contactNumber || ""}
-                    onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Address */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                  Residential Address (स्थानीय / स्थायी पता)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. H.No. 412, Mohan Nagar, Kurukshetra"
-                  value={formData.address || ""}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                />
-              </div>
-
-              {/* Clothing & Identifying Marks */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Clothing Worn When Last Seen (पहने हुए कपड़े)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="e.g. Yellow kurti, white salwar, blue slippers..."
-                    value={formData.clothingDetails || ""}
-                    onChange={(e) => setFormData({ ...formData, clothingDetails: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Identifying Marks / Distinct Features (पहचान चिन्ह)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="e.g. Birthmark on left wrist, scar on forehead..."
-                    value={formData.identifyingMarks || ""}
-                    onChange={(e) => setFormData({ ...formData, identifyingMarks: e.target.value })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Status & Officer */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Status (स्थिति)</label>
-                  <select
-                    value={formData.status || "OPEN"}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white"
-                  >
-                    <option value="OPEN">Open (तलाशी जारी / Searching)</option>
-                    <option value="TRACED">Traced / Reunited (दस्तयाब / मिल गया)</option>
-                    <option value="CLOSED">Closed (समाप्त)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Investigating Officer (IO)</label>
-                  <input
-                    type="text"
-                    value={formData.officerName || ""}
-                    onChange={(e) => setFormData({ ...formData, officerName: e.target.value })}
-                    placeholder="IO Name"
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-indigo-900 hover:bg-indigo-800 text-white font-medium"
-                >
-                  {editingEntry ? "Update Missing Person" : "Save Missing Person Record"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* ========================================================================= */}
+      {/* 5B-1. STATUTORY MISSING PERSON CCTNS PREVIEW / PRINT SLIP MODAL           */}
+      {/* ========================================================================= */}
+      {isMissingPersonPdfOpen && missingPersonPdfData && (
+        <MissingPersonPreviewModal
+          isOpen={isMissingPersonPdfOpen}
+          onClose={() => {
+            setIsMissingPersonPdfOpen(false);
+            setMissingPersonPdfData(null);
+          }}
+          record={missingPersonPdfData}
+          isNewRecord={false}
+          isPendingFinalSubmit={false}
+        />
       )}
 
       {/* ========================================================================= */}
