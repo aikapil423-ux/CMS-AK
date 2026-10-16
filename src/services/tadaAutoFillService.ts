@@ -297,7 +297,10 @@ export const tadaAutoFillService = {
     monthInfo: MonthInfo,
     tourJourneys: TourProgrammeJourneyRow[]
   ): TADABillRecord {
-    const daRate = getDaRateForRank(user.rank);
+    const userRank = user.rankDisplay || user.rank || (user as any).role || "Sub-Inspector";
+    const rankLower = userRank.toLowerCase();
+    const basicPay = rankLower.includes("inspector") ? "65000" : rankLower.includes("si") ? "53100" : "44900";
+    const daRate = getDaRateForRank(userRank);
     const nowIso = new Date().toISOString();
 
     // 1. Convert to Form 2 Claim Journeys with computed allowances
@@ -346,13 +349,13 @@ export const tadaAutoFillService = {
       department: "HARYANA POLICE DEPARTMENT",
       district: user.district || "Kurukshetra",
       employeeName: user.name,
-      designation: user.rankDisplay || user.rank,
+      designation: userRank,
       beltEmployeeNumber: (user as any).beltNo || `${user.pno || "IO"}/KKR`,
       month: monthInfo.month,
       year: monthInfo.year,
       journeys: tourJourneys,
       claimantName: user.name,
-      claimantDesignationBelt: `${user.rankDisplay || user.rank} (PNO: ${user.pno})`,
+      claimantDesignationBelt: `${userRank} (PNO: ${user.pno || "N/A"})`,
       claimantSignatureImg: "",
       forwardingRemarks: `Certified that the tours entered above for ${monthInfo.label} were performed strictly on bona fide police duties in public interest as per verified Roznamcha entries.`,
       forwardingOfficerNameTitle: "Station House Officer (SHO), PS City Thanesar",
@@ -367,8 +370,8 @@ export const tadaAutoFillService = {
       claimMonth: monthInfo.month,
       claimYear: monthInfo.year,
       employeeName: user.name,
-      designation: user.rankDisplay || user.rank,
-      basicPay: user.rank.includes("Inspector") ? "65000" : user.rank.includes("SI") ? "53100" : "44900",
+      designation: userRank,
+      basicPay: basicPay,
       headquarters: user.stationName || "PS City Thanesar, Kurukshetra",
       gradeOfGovtServant: "Group B (Executive Police)",
       journeys: claimJourneys,

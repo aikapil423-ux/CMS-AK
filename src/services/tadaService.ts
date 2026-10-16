@@ -170,9 +170,13 @@ export function createBlankTADABill(userId: string, userName = ""): TADABillReco
   };
 }
 
+let inMemoryTADABills: TADABillRecord[] = [];
+
 export const tadaService = {
   getAll(): TADABillRecord[] {
-    if (typeof window === "undefined") return [];
+    if (typeof window === "undefined") {
+      return [...inMemoryTADABills];
+    }
     try {
       const raw = localStorage.getItem(TADA_STORAGE_KEY);
       if (!raw) return [];
@@ -213,6 +217,8 @@ export const tadaService = {
       } catch (err) {
         console.error("Failed to save TA/DA bill:", err);
       }
+    } else {
+      inMemoryTADABills = [...all];
     }
     return updated;
   },
@@ -227,8 +233,10 @@ export const tadaService = {
       } catch {
         return false;
       }
+    } else {
+      inMemoryTADABills = [...filtered];
+      return true;
     }
-    return false;
   },
 
   // Utility to convert Tour Programme rows into TA Claim rows
