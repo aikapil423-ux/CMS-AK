@@ -311,8 +311,14 @@ function NewGDEntryContent() {
 
   // Form State
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
-  const [selectedOfficerId, setSelectedOfficerId] = useState<string>("usr_sho_1");
+  const [selectedOfficerId, setSelectedOfficerId] = useState<string>(() => currentUser?.id || "usr_sho_1");
   const [selectedType, setSelectedType] = useState<string>(preselectedType || "");
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      setSelectedOfficerId(currentUser.id);
+    }
+  }, [currentUser?.id]);
 
   // Officer dropdown and Add Officer state
   const [officerDropdownOpen, setOfficerDropdownOpen] = useState(false);

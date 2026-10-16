@@ -117,12 +117,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-50 transition-colors text-left"
               title={t("Click to switch persona")}
             >
-              <div className="w-5.5 h-5.5 rounded-md bg-slate-900 text-white flex items-center justify-center font-medium text-[10px]">
+              <div className="w-6 h-6 rounded-md bg-[#0b192c] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 {currentUser.name.slice(0, 1)}
               </div>
-              <div className="hidden xl:block">
-                <p className="text-xs font-medium text-slate-900 leading-tight">{currentUser.name}</p>
-                <p className="text-[10px] text-slate-500">{t(currentUser.roleDisplay)}</p>
+              <div className="hidden sm:block">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900 leading-tight">{currentUser.name}</p>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-[#b8001f] border border-red-200">
+                    {t(currentUser.roleDisplay)}
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-mono">PNO: {currentUser.pno}</p>
               </div>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>

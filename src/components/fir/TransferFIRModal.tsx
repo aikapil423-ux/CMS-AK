@@ -117,6 +117,15 @@ export function TransferFIRModal({
     }
   }, [preSelectedFirId]);
 
+  // Sync active user
+  useEffect(() => {
+    if (currentUser?.name) {
+      setTransferredBy(
+        `${currentUser.name} (${currentUser.rankDisplay || currentUser.roleDisplay || "Officer"})`
+      );
+    }
+  }, [currentUser, isOpen]);
+
   // Default order number
   useEffect(() => {
     if (!orderNumber) {

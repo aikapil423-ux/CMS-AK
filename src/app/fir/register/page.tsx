@@ -515,9 +515,17 @@ function RegisterFIRForm() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hardwareOfflineNotice, setHardwareOfflineNotice] = useState(false);
   const [officerName, setOfficerName] = useState(() => currentUser?.name || "Inspector Rajesh Kumar");
-  const [officerRank, setOfficerRank] = useState("Inspector (SHO)");
-  const [officerNumber, setOfficerNumber] = useState("SHO/2901");
+  const [officerRank, setOfficerRank] = useState(() => currentUser?.rankDisplay || currentUser?.roleDisplay || "Inspector (SHO)");
+  const [officerNumber, setOfficerNumber] = useState(() => currentUser?.pno || "SHO/2901");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setOfficerName(currentUser.name || "Inspector Rajesh Kumar");
+      setOfficerRank(currentUser.rankDisplay || currentUser.roleDisplay || "Inspector (SHO)");
+      setOfficerNumber(currentUser.pno || "SHO/2901");
+    }
+  }, [currentUser]);
 
   // Dropdown click outside listener
   useEffect(() => {

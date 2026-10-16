@@ -93,11 +93,25 @@ export default function TADAPage() {
 
   // Auto 01-date extraction from Roznamcha GD for last month on mount / user change
   useEffect(() => {
-    loadUserBills();
+    if (userId) {
+      const records = tadaService.getByUser(userId);
+      setSavedBills(records);
+      if (records.length > 0) {
+        setBill(records[0]);
+      } else if (currentUser) {
+        setBill(createBlankTADABill(userId, currentUser.name));
+      }
+    }
     if (currentUser && currentUser.id) {
       void tadaAutoFillService.autoSyncLastMonthBill(currentUser).then((res) => {
         if (res.generated) {
-          loadUserBills();
+          if (userId) {
+            const records = tadaService.getByUser(userId);
+            setSavedBills(records);
+            if (records.length > 0) {
+              setBill(records[0]);
+            }
+          }
           setAutoSyncBanner(res.message);
         }
       });
