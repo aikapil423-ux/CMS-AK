@@ -15,6 +15,7 @@ import {
   Shield,
   X,
   ClipboardList,
+  FileBarChart,
 } from "lucide-react";
 import { useModule, PoliceModule } from "@/context/ModuleContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -62,7 +63,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   const isComplaints =
     !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrations = pathname.startsWith("/registrations");
-
+  const isReports = pathname.startsWith("/reports");
 
   const handleNavigate = (path: string, moduleKey?: PoliceModule) => {
     if (moduleKey) {
@@ -117,6 +118,17 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       badge: "Registers",
       color: "emerald",
       isActive: isRegistrations,
+    },
+    {
+      id: "REPORTS",
+      title: "Reports & Audit",
+      titleHi: "रिपोर्ट्स एवं विवरण",
+      desc: "Crime SITREP, Weekly Crime Diary & IGP Meeting Presentation",
+      href: "/reports",
+      icon: FileBarChart,
+      badge: "SITREP/Audit",
+      color: "purple",
+      isActive: isReports,
     },
   ];
 

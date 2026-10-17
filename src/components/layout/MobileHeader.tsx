@@ -23,6 +23,7 @@ export function MobileHeader() {
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrations = pathname.startsWith("/registrations");
+  const isReports = pathname.startsWith("/reports");
 
   return (
     <>
@@ -37,7 +38,7 @@ export function MobileHeader() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
-                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : "HP CMS"}
+                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : "HP CMS"}
                 </span>
                 <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}

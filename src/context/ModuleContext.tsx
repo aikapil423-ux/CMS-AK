@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-export type PoliceModule = "COMPLAINTS" | "ROZNAMCHA" | "FIR" | "REGISTRATIONS";
+export type PoliceModule = "COMPLAINTS" | "ROZNAMCHA" | "FIR" | "REGISTRATIONS" | "REPORTS";
 
 interface ModuleContextType {
   activeModule: PoliceModule;
@@ -34,6 +34,8 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       setActiveModule("COMPLAINTS");
     } else if (pathname.startsWith("/registrations")) {
       setActiveModule("REGISTRATIONS");
+    } else if (pathname.startsWith("/reports")) {
+      setActiveModule("REPORTS");
     }
   }, [pathname]);
 
@@ -45,6 +47,8 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
       router.push("/fir");
     } else if (mod === "REGISTRATIONS") {
       router.push("/registrations");
+    } else if (mod === "REPORTS") {
+      router.push("/reports");
     } else {
       router.push("/complaints");
     }

@@ -486,6 +486,60 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         },
       ],
     },
+    // Panipat Hospital Rukka entry for 2026-10-14 SITREP Section X Audit
+    {
+      id: "gd_seed_pnp_001",
+      gdNumber: "GD-2026-10-14-042",
+      sequencePerDay: 42,
+      policeStation: "PS City Panipat",
+      district: "Panipat",
+      entryForOfficer: {
+        name: "SI Rajesh Kumar",
+        rank: "Sub-Inspector",
+        beltNumber: "4412/PNP",
+        pno: "08192849",
+      },
+      actualAuthor: {
+        name: "HC Satish Kumar",
+        rank: "Head Constable (MHC)",
+        beltNumber: "912/PNP",
+        pno: "05192899",
+      },
+      typeCode: "HOSPITAL_RUKKA",
+      category: "INVESTIGATION_PROCESS",
+      typeDisplay: "Hospital Rukka Received",
+      typeDisplayHi: "रुक्का अस्पताल प्राप्ति",
+      subject: "Ravinder Kumar, M, Age 34 S/o Jai Bhagwan R/o Insar Bazar Panipat, Mob: 9812400192",
+      narrative:
+        "Assault incident near Subhash Bazar Panipat on 14/10/2026 at 17:30 hours. Patient admitted in Emergency Ward, General Hospital Panipat by brother Sandeep with blunt head injuries. Rukka ID: RUKKA-PNP-2026-442 received at Police Station.",
+      activityDateTime: "2026-10-14 18:30",
+      officialCreationTimestamp: "2026-10-14T18:30:00.000Z",
+      verificationTimestamp: "2026-10-14T18:35:00.000Z",
+      status: "LOCKED",
+      source: "MANUAL_ENTRY",
+      isLocked: true,
+      verificationAuditId: "V-AUD-2026-PNP882",
+      verifiedBy: {
+        name: "Inspector Rajesh Kumar",
+        rank: "Inspector / SHO",
+        beltNumber: "04291882",
+        pno: "04291882",
+      },
+      relatedRecords: {
+        personName: "Ravinder Kumar",
+        destinationLocation: "General Hospital Panipat",
+      },
+      auditTrail: [
+        {
+          action: "CREATED",
+          performedBy: "HC Satish Kumar",
+          performedByPno: "05192899",
+          performedByRank: "Head Constable (MHC)",
+          timestamp: "2026-10-14T18:30:00.000Z",
+          auditId: "AUD-PNP-042",
+        },
+      ],
+    },
   ];
 }
 
@@ -515,6 +569,13 @@ function loadRecordsFromStorage(): GeneralDiaryRecord[] {
               window.localStorage.setItem(GD_STORAGE_KEY, JSON.stringify(cleaned));
             } catch {}
           }
+          // Ensure seed GD entries for Panipat audit exist
+          const seeds = generateSeedEntries();
+          seeds.forEach((s) => {
+            if (s.id.startsWith("gd_seed_pnp") && !cleaned.some((c: GeneralDiaryRecord) => c.id === s.id)) {
+              cleaned.push(s);
+            }
+          });
           return cleaned;
         }
       }

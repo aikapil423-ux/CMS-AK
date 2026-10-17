@@ -222,11 +222,15 @@ export interface AccusedPerson {
   alias?: string;
   fatherName?: string;
   relativeName?: string;
+  age?: number | string;
+  isArrested?: boolean;
+  custodyStatus?: 'ARRESTED' | 'ABSCONDING' | 'JUDICIAL_CUSTODY' | 'BAIL' | 'SUSPECT' | string;
   address?: string;
   phone?: string;
   relationWithComplainant?: string;
   physicalDescription?: string;
   isIdentified?: boolean;
+  isSuspect?: boolean;
 }
 
 export interface ComplaintEvidenceAttachment {
@@ -1368,6 +1372,9 @@ export interface FIRPropertyItem {
   srNo?: number;
   propertyCategory: string;
   propertyType: string;
+  brandOrMake?: string;
+  quantity?: string | number;
+  status?: string;
   natureOfProperty?: string;
   description: string;
   estimatedValue?: number | string; // undefined/empty string = unknown, 0 = 0
@@ -1405,6 +1412,9 @@ export interface FIRActionTakenData {
   isSecretFir?: boolean;
   actionTakenType?: 'INVESTIGATION_TAKEN' | 'DIRECTED_IO' | 'REFUSED' | 'TRANSFERRED';
   actionType?: 'INVESTIGATION_TAKEN' | 'DIRECTED_IO' | 'REFUSED' | 'TRANSFERRED' | 'REGISTERED_INVESTIGATION' | 'REFUSED_INVESTIGATION' | 'TRANSFERRED_JURISDICTION' | string;
+  investigationOfficerName?: string;
+  investigationOfficerRank?: string;
+  investigationOfficerMobile?: string;
   // Directed IO
   directedIoId?: string;
   directedIoName?: string;

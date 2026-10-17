@@ -13,8 +13,6 @@ import {
   LogOut,
   ChevronRight,
   ChevronDown,
-  PanelLeftClose,
-  PanelLeftOpen,
   CheckCircle2,
   Flame,
   LayoutGrid,
@@ -30,6 +28,8 @@ import {
   HardDrive,
   ReceiptText,
   ClipboardList,
+  FileBarChart,
+  BookmarkCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -48,113 +48,31 @@ export function Sidebar() {
   const { currentUser, logout } = useAuth();
   const { t } = useLanguage();
 
-  // State for sidebar expanded/collapsed.
-  // By default collapsed (w-18) unless user explicitly clicks to expand it.
-  // Persisted in localStorage so once expanded, it does not close automatically!
-  const [isExpanded, setIsExpanded] = useState(false);
+  // State for hover-to-expand and optional lock pin
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, and Management.
-  // By default CLOSED (false). When clicked, opens.
-  // Persisted in localStorage so once opened, they never close on their own!
+  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, Reports, Management, and Station Info - default CLOSED (false)
   const [roznamchaOpen, setRoznamchaOpen] = useState(false);
   const [complaintsOpen, setComplaintsOpen] = useState(false);
   const [firOpen, setFirOpen] = useState(false);
   const [registrationsOpen, setRegistrationsOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const [managementOpen, setManagementOpen] = useState(false);
-
-  // Hydrate toggle and expanded states from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedExpanded = localStorage.getItem("cms_sidebar_expanded");
-      if (savedExpanded !== null) setIsExpanded(savedExpanded === "true");
-
-      const savedRoz = localStorage.getItem("cms_toggle_roznamcha");
-      if (savedRoz !== null) setRoznamchaOpen(savedRoz === "true");
-
-      const savedComp = localStorage.getItem("cms_toggle_complaints");
-      if (savedComp !== null) setComplaintsOpen(savedComp === "true");
-
-      const savedFir = localStorage.getItem("cms_toggle_fir");
-      if (savedFir !== null) setFirOpen(savedFir === "true");
-
-      const savedReg = localStorage.getItem("cms_toggle_registrations");
-      if (savedReg !== null) setRegistrationsOpen(savedReg === "true");
-
-      const savedMgmt = localStorage.getItem("cms_toggle_management");
-      if (savedMgmt !== null) setManagementOpen(savedMgmt === "true");
-    } catch {}
-  }, []);
-
-  const toggleSidebar = () => {
-    setIsExpanded((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_sidebar_expanded", String(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const toggleRoznamcha = () => {
-    setRoznamchaOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_toggle_roznamcha", String(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const toggleComplaints = () => {
-    setComplaintsOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_toggle_complaints", String(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const toggleFir = () => {
-    setFirOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_toggle_fir", String(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const toggleRegistrations = () => {
-    setRegistrationsOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_toggle_registrations", String(next));
-      } catch {}
-      return next;
-    });
-  };
-
-  const toggleManagement = () => {
-    setManagementOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("cms_toggle_management", String(next));
-      } catch {}
-      return next;
-    });
-  };
+  const [stationInfoOpen, setStationInfoOpen] = useState(false);
 
   // Detect active module
   const isRoznamchaPath = pathname.startsWith("/general-diary");
   const isFirPath = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
   const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrationsPath = pathname.startsWith("/registrations");
+  const isReportsPath = pathname.startsWith("/reports");
   const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS">("COMPLAINTS");
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS">("COMPLAINTS");
 
   useEffect(() => {
     if (isRoznamchaPath) {
@@ -177,24 +95,30 @@ export function Sidebar() {
       try {
         window.localStorage.setItem("cms_active_module", "REGISTRATIONS");
       } catch {}
+    } else if (isReportsPath) {
+      setActiveModule("REPORTS");
+      try {
+        window.localStorage.setItem("cms_active_module", "REPORTS");
+      } catch {}
     } else {
       try {
         const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS") {
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS") {
           setActiveModule(saved);
         }
       } catch {}
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath]);
+  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath]);
 
   // Check if user is on portal home page (Select Operational Module)
   const isPortalHome = pathname === "/";
 
   // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
-  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && activeModule === "ROZNAMCHA"));
-  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && activeModule === "COMPLAINTS"));
-  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && activeModule === "FIR"));
-  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && activeModule === "REGISTRATIONS"));
+  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "ROZNAMCHA"));
+  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "COMPLAINTS"));
+  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && activeModule === "FIR"));
+  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && activeModule === "REGISTRATIONS"));
+  const showReports = !isPortalHome && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && activeModule === "REPORTS"));
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
@@ -223,6 +147,14 @@ export function Sidebar() {
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
+  // REPORTS NAVIGATION ITEMS (Exact sub-tabs as requested)
+  const reportsNavItems: NavItem[] = [
+    { name: "CrimeSITREP_District", href: "/reports?tab=crime_sitrep", icon: FileBarChart, badge: "SP SITREP", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "WEEKLY CRIME DIARY", href: "/reports?tab=weekly_crime_diary", icon: BookOpen, badge: "PPR", badgeColor: "bg-amber-50 text-amber-800 border-amber-200" },
+    { name: "IGP Meeting Presentation", href: "/reports?tab=igp_presentation", icon: FileText, badge: "Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+    { name: "Saved Reports", href: "/reports?tab=saved_reports", icon: BookmarkCheck, badge: "Saved", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  ];
+
   // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
   const managementNavItems: NavItem[] = [
     { name: "TA DA Form", href: "/tada", icon: ReceiptText, badge: "Bill", badgeColor: "bg-amber-100 text-amber-800 border-amber-200" },
@@ -233,6 +165,8 @@ export function Sidebar() {
 
   return (
     <aside
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "hidden lg:flex lg:flex-col bg-white border-r border-slate-200/80 text-slate-700 select-none shrink-0 h-screen sticky top-0 transition-all duration-200 ease-in-out z-40",
         isExpanded ? "w-64 shadow-lg" : "w-18"
@@ -241,15 +175,12 @@ export function Sidebar() {
       {/* Insignia / Brand Header - Clean Minimalist */}
       <div className="p-3 border-b border-slate-200/80 bg-white flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="w-8 h-8 rounded-lg bg-slate-900 hover:bg-slate-800 flex items-center justify-center text-white shrink-0 cursor-pointer transition-all shadow-2xs active:scale-95"
-            title={isExpanded ? t("Collapse sidebar") : t("Expand sidebar")}
-            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          <div
+            className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shrink-0"
+            title="Haryana Police CMS"
           >
             <Shield className="w-4 h-4" />
-          </button>
+          </div>
           {isExpanded && (
             <div className="flex-1 min-w-0 animate-in fade-in duration-150">
               <div className="flex items-center gap-1.5">
@@ -263,16 +194,14 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Toggle Collapse/Expand button when expanded */}
+        {/* Pin / Unpin button when expanded */}
         {isExpanded && (
           <button
-            type="button"
-            onClick={toggleSidebar}
-            className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-            title={t("Collapse sidebar")}
-            aria-label="Collapse sidebar"
+            onClick={() => setIsPinned(!isPinned)}
+            className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+            title={isPinned ? "Unpin sidebar (auto-collapse)" : "Pin sidebar open"}
           >
-            <PanelLeftClose className="w-4 h-4" />
+            {isPinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
           </button>
         )}
       </div>
@@ -304,7 +233,10 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={toggleRoznamcha}
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setRoznamchaOpen(!roznamchaOpen);
+              }}
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
@@ -383,7 +315,10 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={toggleComplaints}
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setComplaintsOpen(!complaintsOpen);
+              }}
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
@@ -462,7 +397,10 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={toggleFir}
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setFirOpen(!firOpen);
+              }}
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
@@ -541,7 +479,10 @@ export function Sidebar() {
           <div className="space-y-1">
             <button
               type="button"
-              onClick={toggleRegistrations}
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setRegistrationsOpen(!registrationsOpen);
+              }}
               className={cn(
                 "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
                 isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
@@ -615,11 +556,96 @@ export function Sidebar() {
           </div>
         )}
 
+        {/* 2.9. REPORTS TOGGLE SLIDE BAR (Only visible if Reports is open/active) */}
+        {showReports && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setReportsOpen(!reportsOpen);
+              }}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
+                isReportsPath ? "bg-slate-100/50" : ""
+              )}
+              title="Toggle Reports Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FileBarChart className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+                    {t("Reports")}
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {reportsOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </span>
+              )}
+            </button>
+
+            {reportsOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {reportsNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-2.5 py-1.5"
+                          : "justify-center p-2",
+                        isActive
+                          ? "bg-slate-100 text-slate-900 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-3.5 h-3.5 shrink-0",
+                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
         {/* 3. MANAGEMENT TOGGLE SLIDE BAR */}
         <div className="space-y-1">
           <button
             type="button"
-            onClick={toggleManagement}
+            onClick={() => {
+              if (!isExpanded) setIsPinned(true);
+              setManagementOpen(!managementOpen);
+            }}
             className={cn(
               "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
               isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
@@ -693,46 +719,75 @@ export function Sidebar() {
         </div>
 
         {/* 4. Station Info Links (Station Profile & Officer Roster) */}
-        <div className="pt-2 border-t border-slate-200/70">
-          {isExpanded && (
-            <div className="px-2 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 animate-in fade-in duration-150">
-              {t("Station Info")}
+        <div className="pt-2 border-t border-slate-200/70 space-y-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (!isExpanded) setIsPinned(true);
+              setStationInfoOpen(!stationInfoOpen);
+            }}
+            className={cn(
+              "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+              isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
+              (pathname === "/station-profile" || pathname === "/users") ? "bg-slate-100/50" : ""
+            )}
+            title="Toggle Station Info Menu"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Building2 className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              {isExpanded && (
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+                  {t("Station Info")}
+                </span>
+              )}
             </div>
+            {isExpanded && (
+              <span className="text-slate-400">
+                {stationInfoOpen ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )}
+              </span>
+            )}
+          </button>
+
+          {stationInfoOpen && (
+            <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+              <Link
+                href="/station-profile"
+                title={!isExpanded ? t("Station Profile") : undefined}
+                className={cn(
+                  "flex items-center rounded-md text-xs font-medium transition-all group",
+                  isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
+                  pathname === "/station-profile"
+                    ? "bg-slate-100 text-slate-900 font-semibold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Building2 className={cn("w-3.5 h-3.5 shrink-0", pathname === "/station-profile" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
+                  {isExpanded && <span className="truncate">{t("Station Profile")}</span>}
+                </div>
+              </Link>
+              <Link
+                href="/users"
+                title={!isExpanded ? t("Officer Roster") : undefined}
+                className={cn(
+                  "flex items-center rounded-md text-xs font-medium transition-all group",
+                  isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
+                  pathname === "/users"
+                    ? "bg-slate-100 text-slate-900 font-semibold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Users className={cn("w-3.5 h-3.5 shrink-0", pathname === "/users" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
+                  {isExpanded && <span className="truncate">{t("Officer Roster")}</span>}
+                </div>
+              </Link>
+            </nav>
           )}
-          <nav className="space-y-0.5">
-            <Link
-              href="/station-profile"
-              title={!isExpanded ? t("Station Profile") : undefined}
-              className={cn(
-                "flex items-center rounded-md text-xs font-medium transition-all group",
-                isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
-                pathname === "/station-profile"
-                  ? "bg-slate-100 text-slate-900 font-semibold"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              )}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Building2 className={cn("w-3.5 h-3.5 shrink-0", pathname === "/station-profile" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
-                {isExpanded && <span className="truncate">{t("Station Profile")}</span>}
-              </div>
-            </Link>
-            <Link
-              href="/users"
-              title={!isExpanded ? t("Officer Roster") : undefined}
-              className={cn(
-                "flex items-center rounded-md text-xs font-medium transition-all group",
-                isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
-                pathname === "/users"
-                  ? "bg-slate-100 text-slate-900 font-semibold"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              )}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Users className={cn("w-3.5 h-3.5 shrink-0", pathname === "/users" ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700")} />
-                {isExpanded && <span className="truncate">{t("Officer Roster")}</span>}
-              </div>
-            </Link>
-          </nav>
         </div>
       </div>
       {/* Footer / Logout */}
