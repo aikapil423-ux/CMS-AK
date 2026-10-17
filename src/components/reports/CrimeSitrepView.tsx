@@ -2043,11 +2043,6 @@ export function CrimeSitrepView({
             />
           </div>
 
-          {/* 24-hr Audit Window Indicator Badge */}
-          <div className="hidden xl:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200 rounded-lg" title="SITREP audits data strictly up to midnight of previous day">
-            <span>{data.cutoffTime} (24h Audit)</span>
-          </div>
-
           {/* Search Input */}
           <div className="relative min-w-[160px] max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />

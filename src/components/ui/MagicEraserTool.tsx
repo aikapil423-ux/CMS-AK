@@ -123,11 +123,16 @@ export function MagicEraserTool() {
           if (htmlEl.hasAttribute("data-magic-eraser-ui")) return;
           if (htmlEl.closest("[data-magic-eraser-ui='true']")) return;
 
-          const text = htmlEl.innerText?.trim() || htmlEl.textContent?.trim() || "";
-          if (
-            text === rule.textSnippet ||
-            (text.length === rule.textSnippet.length && text.includes(rule.textSnippet))
-          ) {
+          const text = (htmlEl.innerText || htmlEl.textContent || "").trim();
+          const normText = text.replace(/\s+/g, " ");
+          const normSnippet = (rule.textSnippet || "").trim().replace(/\s+/g, " ");
+
+          const isMatch =
+            normText === normSnippet ||
+            (normSnippet.length >= 8 && normText.includes(normSnippet)) ||
+            (normText.length >= 8 && normSnippet.includes(normText));
+
+          if (isMatch) {
             htmlEl.style.display = "none";
             htmlEl.setAttribute("data-magic-permanently-erased", "true");
           }
