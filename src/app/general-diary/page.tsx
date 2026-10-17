@@ -880,7 +880,7 @@ function GeneralDiaryContent() {
           <Clock className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-slate-900">24-Hour Auto-Purge Rule (24 घंटे का स्वतः निष्कासन नियम)</span>
+              <span className="font-bold text-slate-900">24-Hour Auto-Purge Rule</span>
               <span className="text-[10px] font-semibold bg-purple-200/70 text-purple-900 px-1.5 py-0.5 rounded font-mono">
                 PPR 22.48 Compliance
               </span>
@@ -888,9 +888,7 @@ function GeneralDiaryContent() {
             <p className="text-slate-700 leading-relaxed text-[11px]">
               Any suggested or draft General Diary entry on which no action is taken for 24 hours is automatically removed. Locked entries are permanent and never deleted under law.
             </p>
-            <p className="text-slate-500 leading-relaxed text-[10px]">
-              (सुझाव अथवा ड्राफ्ट रोजनामचा प्रविष्टि जिस पर 24 घंटे तक कोई कार्रवाई नहीं होती, वह स्वतः हट जाती है। स्थायी रोजनामचा प्रविष्टियां कानूनन कभी हटाई नहीं जातीं।)
-            </p>
+            
           </div>
         </div>
       )}

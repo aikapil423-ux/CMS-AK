@@ -732,6 +732,14 @@ export interface NoticeFormData {
   docSubTitle?: string;
   statutoryClarification?: string;
   toAuthority?: string;
+  haryanaNoticeFullText?: string;
+  para1CustomText?: string;
+  para2CustomText?: string;
+  para3CustomText?: string;
+  para4CustomText?: string;
+  annexureText?: string;
+  sealLabel?: string;
+  ioSignLabel?: string;
   cdrRows?: Array<{
     id: string;
     phone: string;

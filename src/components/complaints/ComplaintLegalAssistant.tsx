@@ -7,7 +7,6 @@ import {
   Sparkles,
   BookOpen,
   FileText,
-  AlertTriangle,
   CheckCircle2,
   ExternalLink,
   Copy,
@@ -42,8 +41,11 @@ import {
   ComplaintDocumentItem,
   LegalAnalysisReport,
   LegalSuggestionItem,
+  LegalActItem,
 } from "@/types";
 import { LegalAssistantService } from "@/services/legalAssistantService";
+import { ActsService } from "@/services/actsService";
+import { BareActViewerModal } from "@/components/acts/BareActViewerModal";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { ComplaintService } from "@/services/complaintService";
@@ -77,6 +79,12 @@ export function ComplaintLegalAssistant({
   const [detailModalSection, setDetailModalSection] =
     useState<LegalSuggestionItem | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+
+  // In-place Bare Act Viewer Modal State (No redirection away from Complaint Profile)
+  const [activeActModal, setActiveActModal] = useState<LegalActItem | null>(null);
+  const [actModalTab, setActModalTab] = useState<"VERBATIM" | "DOCUMENT" | "SECTIONS">("DOCUMENT");
+  const [targetActPage, setTargetActPage] = useState<number | null>(null);
+  const [targetSectionNo, setTargetSectionNo] = useState<string | null>(null);
 
   // Evidence Documents Modal & Preview State
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
@@ -358,12 +366,48 @@ export function ComplaintLegalAssistant({
     setTimeout(() => setCopiedSectionId(null), 2500);
   };
 
-  const handleOpenInActsPage = (item: LegalSuggestionItem) => {
+  const handleOpenInActsPage = (
+    item: LegalSuggestionItem,
+    preferredTab: "VERBATIM" | "DOCUMENT" | "SECTIONS" = "DOCUMENT"
+  ) => {
+    // 1. Try finding act in ActsService
+    const allActs = ActsService.getAllActs();
+    const normalizedItemActId = (item.actId || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const normalizedShortName = (item.actShortName || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    const matchedAct =
+      ActsService.getActById(item.actId) ||
+      allActs.find((a) => {
+        const normId = a.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normShort = a.shortName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        return (
+          normId === normalizedItemActId ||
+          normShort.includes(normalizedShortName) ||
+          normalizedShortName.includes(normShort)
+        );
+      });
+
+    if (matchedAct) {
+      setActiveActModal(matchedAct);
+      setActModalTab(preferredTab);
+      const parsedPage =
+        typeof item.pageNumber === "number"
+          ? item.pageNumber
+          : item.pageNumber
+          ? parseInt(String(item.pageNumber), 10)
+          : null;
+      setTargetActPage(!isNaN(Number(parsedPage)) ? parsedPage : null);
+      setTargetSectionNo(item.sectionNumber || null);
+      return;
+    }
+
+    // Fallback if not found locally: route with returnUrl parameter
+    const returnUrl = `/complaints/${complaint.id}?tab=legal_help`;
     const url = `/acts-sections?act=${encodeURIComponent(
       item.actId
     )}&section=${encodeURIComponent(item.sectionNumber)}&page=${
       item.pageNumber
-    }&tab=DOCUMENT`;
+    }&tab=${preferredTab}&returnUrl=${encodeURIComponent(returnUrl)}`;
     router.push(url);
   };
 
@@ -539,20 +583,7 @@ export function ComplaintLegalAssistant({
       {report && (
         <>
           {/* STATS OVERVIEW TILES */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-2xs space-y-1">
-              <div className="flex items-center justify-between text-slate-500">
-                <span className="text-[11px] font-medium text-slate-500">{isHindi ? "घटना तथ्य (शब्द)" : "Scanned Facts (Words)"}</span>
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
-              </div>
-              <div className="text-xl font-bold text-slate-900">
-                {report.scannedFactsCount}
-              </div>
-              <div className="text-[11px] text-slate-500 truncate">
-                {isHindi ? "श्रेणी: " : "Category: "}<span className="text-slate-700 font-medium user-data" data-no-translate="true">{complaint.category}</span>
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div
               onClick={() => setIsEvidenceModalOpen(true)}
               className="bg-white rounded-xl p-3.5 border border-slate-200/80 hover:border-slate-300 shadow-2xs space-y-1 cursor-pointer transition-colors"
@@ -602,60 +633,6 @@ export function ComplaintLegalAssistant({
               <div className="text-[11px] text-slate-500 truncate">
                 {report.suggestedSections.filter((s) => s.recommendationType === "PRIMARY_OFFENCE").length} {isHindi ? "मुख्य धाराएं" : "Primary Sections"}
               </div>
-            </div>
-          </div>
-
-          {/* EVIDENCE PROCESSING CALLOUT */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-slate-600" />
-                <span>{isHindi ? "दस्तावेज़ एवं साक्ष्य मूल्यांकन" : "Document & Evidence Evaluation"}</span>
-              </h4>
-              <span className="text-[10px] bg-slate-200/60 text-slate-700 font-medium px-2 py-0.5 rounded-md border border-slate-300/60">
-                AI Verified
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed user-data" data-no-translate="true">
-              {report.summary}
-            </p>
-
-            {/* Evidence Chips */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-              {report.scannedEvidenceSummary.documentsFound.map((doc, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setIsEvidenceModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-white border border-slate-200 text-slate-700 shadow-2xs hover:bg-slate-50 cursor-pointer"
-                  title="दस्तावेज़ देखने एवं डाउनलोड करने हेतु क्लिक करें"
-                >
-                  <Paperclip className="w-3 h-3 text-slate-400" />
-                  <span>{isHindi ? "दस्तावेज़" : "Document"}: {doc}</span>
-                  <Eye className="w-2.5 h-2.5 text-emerald-600 ml-0.5" />
-                </button>
-              ))}
-
-              {report.scannedEvidenceSummary.injuriesOrLossNoted.map((inj, idx) => (
-                <span
-                  key={`inj-${idx}`}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50/70 border border-rose-200/60 text-rose-800 shadow-2xs"
-                >
-                  <ShieldAlert className="w-3 h-3 text-rose-500" />
-                  <span>{isHindi ? "चोट/हानि" : "Injury/Loss"}: {inj}</span>
-                </span>
-              ))}
-
-              {report.scannedEvidenceSummary.accusedIdentified.map((acc, idx) => (
-                <span
-                  key={`acc-${idx}`}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-amber-50/70 border border-amber-200/60 text-amber-900 shadow-2xs"
-                >
-                  <AlertTriangle className="w-3 h-3 text-amber-500" />
-                  <span>{isHindi ? "आरोपी" : "Accused"}: {acc}</span>
-                </span>
-              ))}
             </div>
           </div>
 
@@ -911,16 +888,6 @@ export function ComplaintLegalAssistant({
                             {/* Actions */}
                             <td className="py-3 px-3 text-right align-top">
                               <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenInActsPage(sec)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
-                                  title={isHindi ? "Acts and Sections पेज में खोलें" : "Open in Acts & Sections Page"}
-                                >
-                                  <Scale className="w-3 h-3 text-amber-300" />
-                                  <span>{isHindi ? "अधिनियम" : "Act"}</span>
-                                </button>
-
                                 <button
                                   type="button"
                                   onClick={() => setDetailModalSection(sec)}
@@ -1588,6 +1555,19 @@ export function ComplaintLegalAssistant({
             </div>
           </div>
         </div>
+      )}
+
+      {/* In-place Bare Act Viewer Modal (Closes right back to Complaint Profile) */}
+      {activeActModal && (
+        <BareActViewerModal
+          act={activeActModal}
+          initialPageNumber={targetActPage}
+          onClose={() => {
+            setActiveActModal(null);
+            setTargetActPage(null);
+            setTargetSectionNo(null);
+          }}
+        />
       )}
     </div>
   );

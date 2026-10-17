@@ -30,7 +30,7 @@ import {
 // - Deletes suggestions and drafts without any action for >= 24 hours.
 // - Locked entries are NEVER touched under PPR 22.48.
 // ------------------------------------------------------------------
-export async function pruneExpiredSuggestionsAndDrafts(): Promise<number> {
+async function pruneExpiredSuggestionsAndDrafts(): Promise<number> {
   try {
     const candidates = await prisma.gDRecord.findMany({
       where: {
@@ -96,7 +96,7 @@ function parseJson<T>(raw: string | null | undefined, fallback: T): T {
 
 type OfficerPartials = Partial<GDOfficerParticulars>;
 
-export function cleanGdNarrative(text: string | null | undefined): string {
+function cleanGdNarrative(text: string | null | undefined): string {
   if (!text) return "";
   return text
     .replace(/\s*\[नोट:\s*मुंशी[^\]]*\]/gi, "")

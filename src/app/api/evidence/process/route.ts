@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { UniversalEvidenceRecord, EvidenceModuleType } from "@/types/evidence";
-import { extractVocabulary } from "@/app/api/suggestions/harvest/route";
+import { extractVocabulary } from "@/lib/vocabularyExtractor";
 import { losslessCompressionService } from "@/services/losslessCompressionService";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
