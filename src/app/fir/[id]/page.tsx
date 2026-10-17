@@ -74,6 +74,7 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
 import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
 import { CrimeDetailModal } from "@/components/fir/CrimeDetailModal";
+import { ModifyActsModal } from "@/components/fir/ModifyActsModal";
 
 type ActiveTab =
   | "overview"
@@ -168,6 +169,9 @@ export default function FIRProfilePage() {
 
   // Statutory Receipt Modal
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
+  // Modify Acts Modal
+  const [isModifyActsModalOpen, setIsModifyActsModalOpen] = useState(false);
 
   // Crime Details Form (IIF-II) Modal
   const [isCrimeDetailsOpen, setIsCrimeDetailsOpen] = useState(false);
@@ -1431,6 +1435,18 @@ export default function FIRProfilePage() {
             )}
           </div>
 
+          {/* Modify Acts Button */}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsModifyActsModalOpen(true)}
+            className="border-red-300 text-red-900 bg-red-50 hover:bg-red-100 font-bold text-xs gap-1.5 cursor-pointer shadow-2xs"
+            title="Modify Acts & Sections (धाराएं जोड़ें / हटाएं / संशोधित करें)"
+          >
+            <Scale className="w-3.5 h-3.5 text-red-700" />
+            <span>Modify Acts</span>
+          </Button>
+
           {/* Assign / Reassign IO */}
           {(isSho || isSuperior) && (
             <Button
@@ -1711,15 +1727,26 @@ export default function FIRProfilePage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab("legal_assistant")}
-                className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
-                title="एफआईआर में लागू धाराओं का विधिक विश्लेषण और बेयर एक्ट देखें"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>कानूनी विश्लेषण व बेयर एक्ट (Legal Help) →</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setIsModifyActsModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border border-slate-700"
+                  title="धाराएं संशोधित करें (Add / Delete / Modify Acts & Sections)"
+                >
+                  <Scale className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Modify Acts (धाराएं संशोधित करें)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("legal_assistant")}
+                  className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  title="एफआईआर में लागू धाराओं का विधिक विश्लेषण और बेयर एक्ट देखें"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>कानूनी विश्लेषण व बेयर एक्ट (Legal Help) →</span>
+                </button>
+              </div>
             </CardContent>
           </Card>
 
@@ -3758,6 +3785,20 @@ export default function FIRProfilePage() {
           onUpdated={(updated) => {
             setSelectedEvidenceRecord(updated);
             setEvidenceRefreshTrigger((c) => c + 1);
+          }}
+        />
+      )}
+
+      {/* Modify Statutory Acts & Sections Modal */}
+      {fir && isModifyActsModalOpen && (
+        <ModifyActsModal
+          isOpen={isModifyActsModalOpen}
+          onClose={() => setIsModifyActsModalOpen(false)}
+          fir={fir}
+          currentUser={currentUser}
+          onSuccess={(updatedFir) => {
+            setFir(updatedFir);
+            fetchFir();
           }}
         />
       )}

@@ -1358,6 +1358,7 @@ export const GeneralDiaryService = {
       FIR_ARREST_MEMO: "ARREST_RE_ARREST_SURRENDER",
       FIR_CRIME_DETAILS: "INVESTIGATION_REPORTS",
       FIR_PROPERTY_SEIZURE: "PROPERTY_SEIZURE",
+      FIR_ACT_SECTION_MODIFIED: "INVESTIGATION_REPORTS",
     };
 
     const typeCode = event.typeCode || typeCodeMap[event.eventType] || "OTHERS";
@@ -1385,6 +1386,8 @@ export const GeneralDiaryService = {
         ? "Crime Details Inspection"
         : event.eventType === "FIR_PROPERTY_SEIZURE"
         ? "Property Seizure"
+        : event.eventType === "FIR_ACT_SECTION_MODIFIED"
+        ? "Modification of Acts & Sections"
         : (typeDef?.nameEn || typeCode);
 
     const defaultDisplayHi =
@@ -1404,6 +1407,8 @@ export const GeneralDiaryService = {
         ? "अपराध विवरण प्रपत्र / मौका मुआयना (IIF-II)"
         : event.eventType === "FIR_PROPERTY_SEIZURE"
         ? "बरामदगी / जब्ती माल प्रपत्र (IIF-IV)"
+        : event.eventType === "FIR_ACT_SECTION_MODIFIED"
+        ? "हवाला तरमीम धाराएं / वैधानिक संशोधन (PPR 22.48)"
         : (typeDef?.nameHi || typeCode);
 
     const suggestionRecord: GeneralDiaryRecord = {
@@ -1475,7 +1480,7 @@ export const GeneralDiaryService = {
    * are saved into an FIR Profile.
    */
   async createFirActionSuggestion(options: {
-    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE";
+    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE" | "ACT_SECTION_MODIFIED";
     firId: string;
     firNumber: string;
     policeStation?: string;
@@ -1488,6 +1493,11 @@ export const GeneralDiaryService = {
     };
     personName?: string;
     actsAndSections?: string;
+    previousActs?: string;
+    newActs?: string;
+    addedActs?: string[];
+    deletedActs?: string[];
+    reason?: string;
     place?: string;
     dateTime?: string;
     articlesSummary?: string;
@@ -1504,7 +1514,7 @@ export const GeneralDiaryService = {
       pno: options.officer?.pno || "00000000",
     };
 
-    let eventType: "FIR_ARREST_MEMO" | "FIR_CRIME_DETAILS" | "FIR_PROPERTY_SEIZURE" = "FIR_ARREST_MEMO";
+    let eventType: "FIR_ARREST_MEMO" | "FIR_CRIME_DETAILS" | "FIR_PROPERTY_SEIZURE" | "FIR_ACT_SECTION_MODIFIED" = "FIR_ARREST_MEMO";
     let typeCode = "ARREST_RE_ARREST_SURRENDER";
     let category = "INVESTIGATION_PROCESS";
     let typeDisplay = "Arrest/Re-Arrest/Surrender";
@@ -1571,6 +1581,40 @@ export const GeneralDiaryService = {
       harvestPhrases.push(
         `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में घटनास्थल मौका मुआयना कर IIF-II प्रपत्र भरा गया`,
         "घटनास्थल से भौतिक साक्ष्य संकलित कर नजरी नक्शा मौका तैयार किया गया"
+      );
+    } else if (options.actionType === "ACT_SECTION_MODIFIED") {
+      eventType = "FIR_ACT_SECTION_MODIFIED";
+      typeCode = "INVESTIGATION_REPORTS";
+      typeDisplay = "Modification of Acts & Sections (धाराओं में तरमीम)";
+      typeDisplayHi = "हवाला तरमीम धाराएं / वैधानिक संशोधन (PPR 22.48)";
+      subject = `हवाला तरमीम / संशोधन धाराएं - FIR No. ${options.firNumber}`;
+
+      const addedText = options.addedActs && options.addedActs.length > 0
+        ? `इजाफा धाराएं: ${options.addedActs.join(", ")}। `
+        : "";
+      const deletedText = options.deletedActs && options.deletedActs.length > 0
+        ? `हजफ / खारिज धाराएं: ${options.deletedActs.join(", ")}। `
+        : "";
+      const reasonText = options.reason ? `वजह तरमीम (Statutory Grounds): ${options.reason}` : "";
+
+      narrative = `बवक्त हाजा, मुकद्दमा नंबर ${options.firNumber} थाना ${ps} में दौरान-ए-तफ्तीश संकलित साक्ष्य, बयानात गवाहान व वैधानिक तथ्यों के आधार पर धाराएं तरमीम (संशोधित) की गई हैं। पूर्व धाराएं: [${options.previousActs || "N/A"}] | संशोधित धाराएं: [${options.newActs || "N/A"}]। ${addedText}${deletedText}${reasonText}। हसब कायदा मिसल मुकदमा व रपट रोजनामचा आम में इंद्राज किया गया और उच्चाधिकारियों को ब-जरिए स्पेशल रिपोर्ट सूचित किया जा रहा है।`;
+
+      harvestWords.push(
+        "तरमीम धाराएं",
+        "इजाफा धारा",
+        "हजफ धारा",
+        "PPR 22.48",
+        "BNS",
+        "BNSS",
+        "तफ्तीश",
+        "मिसल मुकदमा",
+        "स्पेशल रिपोर्ट"
+      );
+      if (options.reason) harvestWords.push(options.reason);
+      if (options.newActs) harvestWords.push(options.newActs);
+      harvestPhrases.push(
+        `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में दौरान-ए-तफ्तीश धाराएं तरमीम की गईं`,
+        "वैधानिक साक्ष्यों के आधार पर धाराएं जोड़कर/हटाकर रपट रोजनामचा दर्ज की गई"
       );
     } else {
       // PROPERTY_SEIZURE
