@@ -53,12 +53,13 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, Reports, Management, and Station Info - default CLOSED (false)
+  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, Reports, Prosecution, Management, and Station Info - default CLOSED (false)
   const [roznamchaOpen, setRoznamchaOpen] = useState(false);
   const [complaintsOpen, setComplaintsOpen] = useState(false);
   const [firOpen, setFirOpen] = useState(false);
   const [registrationsOpen, setRegistrationsOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [prosecutionOpen, setProsecutionOpen] = useState(false);
   const [managementOpen, setManagementOpen] = useState(false);
   const [stationInfoOpen, setStationInfoOpen] = useState(false);
 
@@ -68,11 +69,12 @@ export function Sidebar() {
   const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrationsPath = pathname.startsWith("/registrations");
   const isReportsPath = pathname.startsWith("/reports");
+  const isProsecutionPath = pathname.startsWith("/prosecution");
   const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS">("COMPLAINTS");
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION">("COMPLAINTS");
 
   useEffect(() => {
     if (isRoznamchaPath) {
@@ -100,25 +102,31 @@ export function Sidebar() {
       try {
         window.localStorage.setItem("cms_active_module", "REPORTS");
       } catch {}
+    } else if (isProsecutionPath) {
+      setActiveModule("PROSECUTION");
+      try {
+        window.localStorage.setItem("cms_active_module", "PROSECUTION");
+      } catch {}
     } else {
       try {
         const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS") {
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS" || saved === "PROSECUTION") {
           setActiveModule(saved);
         }
       } catch {}
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath]);
+  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath, isProsecutionPath]);
 
   // Check if user is on portal home page (Select Operational Module)
   const isPortalHome = pathname === "/";
 
   // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
-  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "ROZNAMCHA"));
-  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "COMPLAINTS"));
-  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && activeModule === "FIR"));
-  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && activeModule === "REGISTRATIONS"));
-  const showReports = !isPortalHome && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && activeModule === "REPORTS"));
+  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "ROZNAMCHA"));
+  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "COMPLAINTS"));
+  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "FIR"));
+  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && !isProsecutionPath && activeModule === "REGISTRATIONS"));
+  const showReports = !isPortalHome && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isProsecutionPath && activeModule === "REPORTS"));
+  const showProsecution = !isPortalHome && (isProsecutionPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "PROSECUTION"));
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
@@ -153,6 +161,15 @@ export function Sidebar() {
     { name: "WEEKLY CRIME DIARY", href: "/reports?tab=weekly_crime_diary", icon: BookOpen, badge: "PPR", badgeColor: "bg-amber-50 text-amber-800 border-amber-200" },
     { name: "IGP Meeting Presentation", href: "/reports?tab=igp_presentation", icon: FileText, badge: "Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "Saved Reports", href: "/reports?tab=saved_reports", icon: BookmarkCheck, badge: "Saved", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  ];
+
+  // PROSECUTION NAVIGATION ITEMS
+  const prosecutionNavItems: NavItem[] = [
+    { name: "Challan Scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2, badge: "Scrutiny", badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+    { name: "Common Malpractices", href: "/prosecution?tab=challan_scrutiny&subtab=common_malpractices", icon: Scale, badge: "Rules", badgeColor: "bg-rose-50 text-rose-700 border-rose-200" },
+    { name: "Bail Reply", href: "/prosecution?tab=courts&subtab=bail_reply", icon: ReceiptText, badge: "Bail", badgeColor: "bg-amber-50 text-amber-700 border-amber-200" },
+    { name: "Status Report", href: "/prosecution?tab=courts&subtab=status_report", icon: FileText, badge: "Court", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Other Court Docs", href: "/prosecution?tab=courts&subtab=other", icon: BookmarkCheck, badge: "Misc", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   ];
 
   // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
@@ -596,6 +613,88 @@ export function Sidebar() {
                 {reportsNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-2.5 py-1.5"
+                          : "justify-center p-2",
+                        isActive
+                          ? "bg-slate-100 text-slate-900 font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-3.5 h-3.5 shrink-0",
+                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
+                          )}
+                        />
+                        {isExpanded && <span className="truncate">{item.name}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* 2.95. PROSECUTION TOGGLE SLIDE BAR (Only visible if Prosecution is open/active) */}
+        {showProsecution && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setProsecutionOpen(!prosecutionOpen);
+              }}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
+                isProsecutionPath ? "bg-slate-100/50" : ""
+              )}
+              title="Toggle Prosecution Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Scale className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+                    {t("Prosecution")}
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {prosecutionOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </span>
+              )}
+            </button>
+
+            {prosecutionOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {prosecutionNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || (pathname.startsWith("/prosecution") && item.href.includes(pathname));
                   return (
                     <Link
                       key={item.name}

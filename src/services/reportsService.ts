@@ -120,8 +120,8 @@ export const ReportsService = {
       latestDate = maxAllowed;
     }
     if (!latestDate) {
-      // Default to official sample date "2026-10-15" if within range, else maxAllowed
-      latestDate = maxAllowed >= "2026-10-15" ? "2026-10-15" : maxAllowed;
+      // By default use latest allowed date (cannot exceed today or latest record date)
+      latestDate = maxAllowed;
     }
 
     // STRICT RULE: When Report Date is selected, automatically set cutoff to previous day (up to midnight 24hrs)
