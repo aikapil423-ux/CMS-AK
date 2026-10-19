@@ -4661,7 +4661,15 @@ function RegisterFIRForm() {
 
         {/* BOTTOM NAVIGATION FOOTER */}
         <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-xs border-t border-slate-200 p-3.5 rounded-xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Step Indicator on Left */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">
+              Step {currentTabIndex + 1} of {TAB_CONFIG.length}: <span className="text-slate-800 font-bold">{TAB_CONFIG[currentTabIndex].label}</span>
+            </span>
+          </div>
+
+          {/* Action Buttons on Right */}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
             <Button
               type="button"
               variant="outline"
@@ -4673,6 +4681,7 @@ function RegisterFIRForm() {
               <ArrowLeft className="w-3.5 h-3.5" />
               Previous Tab
             </Button>
+
             <Button
               type="button"
               variant="outline"
@@ -4684,12 +4693,7 @@ function RegisterFIRForm() {
               Next Tab
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
-            <span className="text-[11px] font-semibold text-slate-400 ml-2">
-              Step {currentTabIndex + 1} of {TAB_CONFIG.length}
-            </span>
-          </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <Button
               type="button"
               variant="outline"
@@ -4701,19 +4705,22 @@ function RegisterFIRForm() {
               Save Draft
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setRegisteredFir(buildCurrentFirItem());
-                setShowReceiptModal(true);
-              }}
-              className="text-xs text-slate-700 flex items-center gap-1.5"
-            >
-              <Eye className="w-3.5 h-3.5 text-purple-600" />
-              Preview (IIF-I)
-            </Button>
+            {/* Preview (IIF-I) - ONLY visible on the last panel */}
+            {currentTabIndex === TAB_CONFIG.length - 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setRegisteredFir(buildCurrentFirItem());
+                  setShowReceiptModal(true);
+                }}
+                className="text-xs text-slate-700 flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5 text-purple-600" />
+                Preview (IIF-I)
+              </Button>
+            )}
 
             {/* Register FIR button - ONLY visible on the last panel */}
             {currentTabIndex === TAB_CONFIG.length - 1 && (
