@@ -254,6 +254,20 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
       return;
     }
 
+    const now = getNowLocal();
+    if (isDateKnown && dateFrom && (dateFrom > now.date || (dateFrom === now.date && timeFrom > now.time))) {
+      setErrorMsg("Occurrence 'From Date/Time' cannot be in the future.");
+      return;
+    }
+    if (isDateKnown && dateTo && (dateTo > now.date || (dateTo === now.date && timeTo > now.time))) {
+      setErrorMsg("Occurrence 'To Date/Time' cannot be in the future.");
+      return;
+    }
+    if (infoReceivedDate && (infoReceivedDate > now.date || (infoReceivedDate === now.date && infoReceivedTime > now.time))) {
+      setErrorMsg("Information Received Date/Time cannot be in the future.");
+      return;
+    }
+
     const item: ExtendedFIROccurrenceItem = {
       id: initialItem?.id || `occ-${Date.now()}`,
       srNo: initialItem?.srNo || 1,
