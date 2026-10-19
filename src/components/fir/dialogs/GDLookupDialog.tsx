@@ -237,6 +237,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
                 <div className="w-1/2">
                   <DatePickerDDMMYYYY
                     value={dateFrom}
+                    max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setDateFrom(e.target.value)}
                     placeholder="DD/MM/YYYY"
                     size="sm"
@@ -246,6 +247,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
                 <div className="w-1/2">
                   <DatePickerDDMMYYYY
                     value={dateTo}
+                    max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => setDateTo(e.target.value)}
                     placeholder="DD/MM/YYYY"
                     size="sm"
