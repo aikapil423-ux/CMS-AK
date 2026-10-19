@@ -1875,8 +1875,16 @@ function RegisterFIRForm() {
       if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
         tabErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
       }
+      if (complainantDob && complainantDob > getNowLocal().date) {
+        tabErrors.complainantAge = "Date of Birth cannot be in the future.";
+      }
+      if (complainantAge && Number(complainantAge) < 0) {
+        tabErrors.complainantAge = "Age cannot be negative.";
+      }
       if (!complainantMobile.trim()) {
         tabErrors.complainantMobile = "Complainant Mobile number is mandatory.";
+      } else if (complainantMobile.trim().length !== 10) {
+        tabErrors.complainantMobile = "Complainant Mobile number must be exactly 10 digits.";
       }
       if (!permDistrict || !permDistrict.trim()) {
         tabErrors.permDistrict = "Complainant District is mandatory in Address Details.";
