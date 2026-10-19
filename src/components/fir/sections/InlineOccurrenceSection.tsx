@@ -177,9 +177,9 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
 
   // Other fields
   const [isOrganisedCrime, setIsOrganisedCrime] = useState(false);
-  const [directionFromPs, setDirectionFromPs] = useState("EAST");
-  const [distanceKm, setDistanceKm] = useState("1.5");
-  const [beatNo, setBeatNo] = useState("Beat No. 2");
+  const [directionFromPs, setDirectionFromPs] = useState("");
+  const [distanceKm, setDistanceKm] = useState("");
+  const [beatNo, setBeatNo] = useState("");
   const [landmark, setLandmark] = useState("");
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -210,9 +210,9 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     setOutsideDistrict("");
     setOutsidePsName("");
     setIsOrganisedCrime(false);
-    setDirectionFromPs("EAST");
-    setDistanceKm("1.5");
-    setBeatNo("Beat No. 2");
+    setDirectionFromPs("");
+    setDistanceKm("");
+    setBeatNo("");
     setLandmark("");
     setErrorMsg(null);
   };
@@ -241,9 +241,9 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     setOutsideDistrict(occ.outsideDistrict || "");
     setOutsidePsName(occ.outsidePsName || "");
     setIsOrganisedCrime(occ.isOrganisedCrime || false);
-    setDirectionFromPs(occ.directionFromPs || "EAST");
-    setDistanceKm(String(occ.distanceKm || "1.5"));
-    setBeatNo(occ.beatNo || "Beat No. 2");
+    setDirectionFromPs(occ.directionFromPs || "");
+    setDistanceKm(occ.distanceKm !== undefined && occ.distanceKm !== null ? String(occ.distanceKm) : "");
+    setBeatNo(occ.beatNo || "");
     setLandmark(occ.landmark || "");
     setErrorMsg(null);
 
@@ -314,6 +314,17 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     // Mandatory Distance from Police Station
     if (!distanceKm || !String(distanceKm).trim()) {
       setErrorMsg("Distance from Police Station (थाने से दूरी) is mandatory.");
+      return;
+    }
+
+    const numericDistance = Number(distanceKm);
+    if (isNaN(numericDistance) || numericDistance < 0) {
+      setErrorMsg("Distance from Police Station cannot be negative (दूरी ऋणात्मक नहीं हो सकती)।");
+      return;
+    }
+
+    if (pincode && pincode.trim().length > 0 && !/^\d{6}$/.test(pincode.trim())) {
+      setErrorMsg("Pincode must contain exactly 6 digits (पिनकोड केवल 6 अंकों का होना चाहिए)।");
       return;
     }
 
@@ -773,9 +784,26 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <label className="font-bold text-slate-700 block mb-1">Pincode</label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
                   placeholder="e.g. 122001"
                   value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setPincode(onlyDigits);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) ||
+                      (e.ctrlKey || e.metaKey)
+                    ) {
+                      return;
+                    }
+                    if (!/^\d$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                 />
               </div>
@@ -827,9 +855,20 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <input
                   type="number"
                   step="0.1"
+                  min="0"
                   placeholder="e.g. 1.5"
                   value={distanceKm}
-                  onChange={(e) => setDistanceKm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "-" || e.key === "e" || e.key === "E" || e.key === "+") {
+                      e.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || (!isNaN(Number(val)) && Number(val) >= 0)) {
+                      setDistanceKm(val);
+                    }
+                  }}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                   required
                 />

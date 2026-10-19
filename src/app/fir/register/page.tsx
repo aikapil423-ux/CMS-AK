@@ -416,6 +416,25 @@ function RegisterFIRForm() {
   const [isHeinousCrime, setIsHeinousCrime] = useState(false);
   const [isSensitiveFIR, setIsSensitiveFIR] = useState(false);
   const [originalDateTime, setOriginalDateTime] = useState("");
+
+  const handleOriginalDateTimeChange = (newVal: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    const maxVal = `${now.date}T${now.time}`;
+    let clamped = newVal;
+    if (clamped && clamped > maxVal) {
+      clamped = maxVal;
+      if (targetEl) targetEl.value = clamped;
+    }
+    setOriginalDateTime(clamped);
+    if (errors.originalDateTime) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.originalDateTime;
+        return next;
+      });
+    }
+  };
+
   const [actRemarks, setActRemarks] = useState("");
   const [typeOfInfo, setTypeOfInfo] = useState<"WRITTEN" | "ORAL">("WRITTEN");
 
@@ -481,11 +500,11 @@ function RegisterFIRForm() {
       timePeriod: "Morning / General",
       infoReceivedDate: new Date().toISOString().split("T")[0],
       infoReceivedTime: new Date().toTimeString().slice(0, 5),
-      directionFromPs: "EAST",
-      distanceKm: "1.5",
+      directionFromPs: "",
+      distanceKm: "",
       area: "",
       city: "Gurugram",
-      beatNo: "Beat No. 2",
+      beatNo: "",
       isKnownDate: true,
       isForestPlace: false,
     },
@@ -774,11 +793,11 @@ function RegisterFIRForm() {
               timePeriod: "Morning / General",
               infoReceivedDate: new Date().toISOString().split("T")[0],
               infoReceivedTime: new Date().toTimeString().slice(0, 5),
-              directionFromPs: "EAST",
-              distanceKm: "1.5",
+              directionFromPs: "",
+              distanceKm: "",
               area: c.incidentPlace || "Commercial Area",
               city: c.complainantCity || "Gurugram",
-              beatNo: "Beat No. 2",
+              beatNo: "",
               isKnownDate: true,
               isForestPlace: false,
             },
@@ -886,11 +905,11 @@ function RegisterFIRForm() {
                 timePeriod: "Morning / General",
                 infoReceivedDate: new Date().toISOString().split("T")[0],
                 infoReceivedTime: new Date().toTimeString().slice(0, 5),
-                directionFromPs: "EAST",
-                distanceKm: "1.5",
+                directionFromPs: "",
+                distanceKm: "",
                 area: c.incidentPlace || "Commercial Area",
                 city: "Gurugram",
-                beatNo: "Beat No. 2",
+                beatNo: "",
                 isKnownDate: true,
                 isForestPlace: false,
               },
@@ -1421,11 +1440,11 @@ function RegisterFIRForm() {
       timeTo: "12:00",
       day: "Monday",
       timePeriod: "Morning / Pahar 1",
-      directionFromPs: "East",
-      distanceKm: "1.5",
+      directionFromPs: "",
+      distanceKm: "",
       area: "Area of incident",
       city: district,
-      beatNo: "Beat No. 1",
+      beatNo: "",
     };
 
     return {
@@ -1465,7 +1484,9 @@ function RegisterFIRForm() {
       incidentTimeTo: primaryOcc.timeTo,
       incidentDay: primaryOcc.day,
       incidentTimePeriod: primaryOcc.timePeriod,
-      distanceFromPs: `${primaryOcc.distanceKm} KM ${primaryOcc.directionFromPs}`,
+      distanceFromPs: primaryOcc.distanceKm
+        ? `${primaryOcc.distanceKm} KM ${primaryOcc.directionFromPs || ""}`.trim()
+        : (primaryOcc.directionFromPs || ""),
       incidentPlace: primaryOcc.area || "Area of incident",
       incidentLandmark: primaryOcc.landmark,
       beatNumber: primaryOcc.beatNo,
@@ -1591,6 +1612,17 @@ function RegisterFIRForm() {
         tabErrors.firTime = "FIR Registration time is mandatory.";
       } else if (firDate === nowValidation.date && firTime > nowValidation.time) {
         tabErrors.firTime = "Registration time cannot be ahead of current time.";
+      }
+      if (!gdDate) {
+        tabErrors.gdDate = "GD Entry date is mandatory.";
+      } else if (gdDate > nowValidation.date) {
+        tabErrors.gdDate = "GD Entry date cannot be in the future.";
+      }
+      if (gdTime && gdDate >= nowValidation.date && gdTime > nowValidation.time) {
+        tabErrors.gdTime = "GD Entry time cannot be ahead of current time.";
+      }
+      if (originalDateTime && originalDateTime > `${nowValidation.date}T${nowValidation.time}`) {
+        tabErrors.originalDateTime = "Original Date & Time cannot be ahead of current time.";
       }
       if (!gdEntryNumber || !gdEntryNumber.trim()) {
         tabErrors.gdEntryNumber = "GD / SD / DD Number is mandatory.";
@@ -2251,9 +2283,32 @@ function RegisterFIRForm() {
                   <input
                     type="datetime-local"
                     value={originalDateTime}
-                    onChange={(e) => setOriginalDateTime(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 text-xs font-mono"
+                    max={`${currentNow.date}T${currentNow.time}`}
+                    onChange={(e) => handleOriginalDateTimeChange(e.target.value, e.target)}
+                    onInput={(e) => {
+                      const now = getNowLocal();
+                      const maxVal = `${now.date}T${now.time}`;
+                      if (e.currentTarget.value && e.currentTarget.value > maxVal) {
+                        e.currentTarget.value = maxVal;
+                        setOriginalDateTime(maxVal);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const now = getNowLocal();
+                      const maxVal = `${now.date}T${now.time}`;
+                      if (e.currentTarget.value && e.currentTarget.value > maxVal) {
+                        e.currentTarget.value = maxVal;
+                        setOriginalDateTime(maxVal);
+                      }
+                    }}
+                    className={`w-full p-2 rounded-lg border text-xs font-mono ${
+                      errors.originalDateTime ? "border-red-500 bg-red-50/40" : "border-slate-300"
+                    }`}
+                    title={`Latest allowed date & time: ${currentNow.date} ${currentNow.time}`}
                   />
+                  {errors.originalDateTime && (
+                    <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.originalDateTime}</p>
+                  )}
                 </div>
 
                 <div>
