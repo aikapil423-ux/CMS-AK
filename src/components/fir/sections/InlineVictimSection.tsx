@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   User,
   MapPin,
@@ -103,6 +103,8 @@ export interface InlineVictimSectionProps {
   onUpdateVictim: (victim: VictimItemData) => void;
   onDeleteVictim: (id: string) => void;
   onLinkComplainantAsVictim?: () => void;
+  autofillComplainantData?: any;
+  autofillTrigger?: number;
 }
 
 export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
@@ -111,6 +113,8 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   onUpdateVictim,
   onDeleteVictim,
   onLinkComplainantAsVictim,
+  autofillComplainantData,
+  autofillTrigger,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -141,6 +145,11 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [ageRangeFrom, setAgeRangeFrom] = useState("");
   const [ageRangeTo, setAgeRangeTo] = useState("");
 
+  const YEAR_OPTIONS = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: 110 }, (_, i) => current - i);
+  }, []);
+
   // Address
   const [permHouseNo, setPermHouseNo] = useState("");
   const [permStreet, setPermStreet] = useState("");
@@ -158,6 +167,8 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [presStreet, setPresStreet] = useState("");
   const [presColony, setPresColony] = useState("");
   const [presCity, setPresCity] = useState("Gurugram");
+  const [presTehsil, setPresTehsil] = useState("Gurugram");
+  const [presPs, setPresPs] = useState("PS Sector 29 Gurugram");
   const [presDistrict, setPresDistrict] = useState("Gurugram");
   const [presState, setPresState] = useState("Haryana");
   const [presPincode, setPresPincode] = useState("");
@@ -173,6 +184,72 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [statementText, setStatementText] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Auto-fill victim form fields from complainant details
+  useEffect(() => {
+    if (autofillComplainantData && autofillTrigger) {
+      const d = autofillComplainantData;
+      if (d.firstName !== undefined) setFirstName(d.firstName);
+      if (d.middleName !== undefined) setMiddleName(d.middleName);
+      if (d.lastName !== undefined) setLastName(d.lastName);
+      if (d.aliases && d.aliases.length > 0) setAliases(d.aliases);
+      if (d.gender) setGender(d.gender);
+      if (d.maritalStatus) setMaritalStatus(d.maritalStatus);
+      if (d.relationType) setRelationType(d.relationType);
+      if (d.relativeName !== undefined) setRelativeName(d.relativeName);
+      if (d.relativeAliasName !== undefined) setRelativeAliasName(d.relativeAliasName);
+      if (d.mobile !== undefined) setMobile(d.mobile.replace(/\D/g, "").slice(0, 10));
+      if (d.landline !== undefined) setLandline(d.landline);
+      if (d.email !== undefined) setEmail(d.email);
+      if (d.category) setCategory(d.category);
+      if (d.uid !== undefined) setUid(d.uid.replace(/\D/g, "").slice(0, 12));
+      if (d.dob !== undefined) setDob(d.dob);
+      if (d.yearOfBirth !== undefined) setYearOfBirth(d.yearOfBirth);
+      if (d.ageYears !== undefined) {
+        setAgeYears(d.ageYears ? String(Math.max(0, parseInt(d.ageYears, 10))) : "");
+      }
+      if (d.ageMonths !== undefined) {
+        setAgeMonths(d.ageMonths ? String(Math.max(0, Math.min(11, parseInt(d.ageMonths, 10)))) : "");
+      }
+      if (d.ageYears) {
+        const ageNum = parseInt(d.ageYears, 10);
+        setVictimClassification(ageNum < 18 ? "Child" : "Adult");
+      } else if (d.dob) {
+        const bYear = new Date(d.dob).getFullYear();
+        const cYear = new Date().getFullYear();
+        setVictimClassification((cYear - bYear) < 18 ? "Child" : "Adult");
+      } else {
+        setVictimClassification("Adult");
+      }
+      // Permanent Address
+      if (d.permHouseNo !== undefined) setPermHouseNo(d.permHouseNo);
+      if (d.permStreet !== undefined) setPermStreet(d.permStreet);
+      if (d.permColony !== undefined) setPermColony(d.permColony);
+      if (d.permCity !== undefined) setPermCity(d.permCity);
+      if (d.permTehsil !== undefined) setPermTehsil(d.permTehsil);
+      if (d.permPs !== undefined) setPermPs(d.permPs);
+      if (d.permDistrict !== undefined) setPermDistrict(d.permDistrict);
+      if (d.permState !== undefined) setPermState(d.permState);
+      if (d.permPincode !== undefined) setPermPincode(d.permPincode.replace(/\D/g, "").slice(0, 6));
+      // Present Address
+      if (d.presentSameAsPerm !== undefined) setPresentSameAsPerm(d.presentSameAsPerm);
+      if (d.presHouseNo !== undefined) setPresHouseNo(d.presHouseNo);
+      if (d.presStreet !== undefined) setPresStreet(d.presStreet);
+      if (d.presColony !== undefined) setPresColony(d.presColony);
+      if (d.presCity !== undefined) setPresCity(d.presCity);
+      if (d.presTehsil !== undefined) setPresTehsil(d.presTehsil);
+      if (d.presPs !== undefined) setPresPs(d.presPs);
+      if (d.presDistrict !== undefined) setPresDistrict(d.presDistrict);
+      if (d.presState !== undefined) setPresState(d.presState);
+      if (d.presPincode !== undefined) setPresPincode(d.presPincode.replace(/\D/g, "").slice(0, 6));
+      // Other
+      if (d.occupation !== undefined) setOccupation(d.occupation);
+      if (d.nationality !== undefined) setNationality(d.nationality);
+
+      setSuccessNotice("Victim information form pre-filled automatically from Complainant details.");
+      setErrorMsg(null);
+    }
+  }, [autofillTrigger]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
@@ -292,9 +369,15 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   };
 
   const handleDobChange = (val: string) => {
-    setDob(val);
-    if (val) {
-      const birth = new Date(val);
+    const todayIso = new Date().toISOString().split("T")[0];
+    let clamped = val;
+    if (clamped && clamped > todayIso) {
+      clamped = todayIso;
+    }
+    setDob(clamped);
+    clearFieldError("age");
+    if (clamped) {
+      const birth = new Date(clamped);
       const now = new Date();
       if (!isNaN(birth.getTime())) {
         let age = now.getFullYear() - birth.getFullYear();
@@ -302,11 +385,41 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
         if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
           age--;
         }
-        if (age >= 0) {
-          setAgeYears(String(age));
-          setYearOfBirth(String(birth.getFullYear()));
-          setVictimClassification(age < 18 ? "Child" : "Adult");
+        age = Math.max(0, age);
+        setAgeYears(String(age));
+        setYearOfBirth(String(birth.getFullYear()));
+        setVictimClassification(age < 18 ? "Child" : "Adult");
+      }
+    }
+  };
+
+  const handleYearChange = (yearStr: string) => {
+    const cleanYear = yearStr.replace(/\D/g, "").slice(0, 4);
+    const currentYear = new Date().getFullYear();
+    let validYear = cleanYear;
+    if (cleanYear.length === 4) {
+      const numY = Number(cleanYear);
+      if (numY > currentYear) validYear = String(currentYear);
+      else if (numY < 1900) validYear = "1900";
+    }
+    setYearOfBirth(validYear);
+    clearFieldError("age");
+    if (validYear.length === 4) {
+      const yNum = Number(validYear);
+      const calcAge = Math.max(0, currentYear - yNum);
+      setAgeYears(String(calcAge));
+      setVictimClassification(calcAge < 18 ? "Child" : "Adult");
+      if (dob) {
+        const parts = dob.split("-");
+        if (parts.length === 3) {
+          const updatedDob = `${validYear}-${parts[1]}-${parts[2]}`;
+          const todayIso = new Date().toISOString().split("T")[0];
+          setDob(updatedDob > todayIso ? todayIso : updatedDob);
         }
+      } else {
+        const defaultDob = `${validYear}-01-01`;
+        const todayIso = new Date().toISOString().split("T")[0];
+        setDob(defaultDob > todayIso ? todayIso : defaultDob);
       }
     }
   };
@@ -531,10 +644,21 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   <label className="font-bold text-slate-700 block mb-1">UID (Aadhaar Number)</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     placeholder="12 digit UID"
                     maxLength={12}
                     value={uid}
-                    onChange={(e) => setUid(e.target.value)}
+                    onChange={(e) => setUid(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                    onKeyDown={(e) => {
+                      if (
+                        !/^\d$/.test(e.key) &&
+                        !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                        !e.ctrlKey &&
+                        !e.metaKey
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
                     className="w-full p-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-1 focus:ring-pink-600"
                   />
                 </div>
@@ -765,9 +889,21 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     </span>
                     <input
                       type="tel"
+                      inputMode="numeric"
                       maxLength={10}
+                      placeholder="10-digit number"
                       value={mobile}
-                      onChange={(e) => setMobile(e.target.value)}
+                      onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                      onKeyDown={(e) => {
+                        if (
+                          !/^\d$/.test(e.key) &&
+                          !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                          !e.ctrlKey &&
+                          !e.metaKey
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
                       className="w-full p-2 rounded-r-lg border border-slate-300 font-mono text-xs"
                     />
                   </div>
@@ -912,30 +1048,82 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Year of Birth</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 1996"
-                      value={yearOfBirth}
-                      onChange={(e) => setYearOfBirth(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">Year of Birth</label>
+                      <span className="text-[10px] text-blue-600 font-semibold" title="Scroll mouse wheel or choose from dropdown">Fast Scroll ⇅</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={1900}
+                        max={new Date().getFullYear()}
+                        placeholder="YYYY"
+                        list="victim-dob-years"
+                        value={yearOfBirth}
+                        onWheel={(e) => {
+                          e.currentTarget.blur();
+                          const cur = Number(yearOfBirth) || (new Date().getFullYear() - 25);
+                          const next = Math.max(1900, Math.min(new Date().getFullYear(), cur + (e.deltaY < 0 ? 1 : -1)));
+                          handleYearChange(String(next));
+                        }}
+                        onChange={(e) => handleYearChange(e.target.value)}
+                        className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                      />
+                      <select
+                        aria-label="Quick Select Year"
+                        value={yearOfBirth && YEAR_OPTIONS.includes(Number(yearOfBirth)) ? yearOfBirth : ""}
+                        onChange={(e) => handleYearChange(e.target.value)}
+                        className="w-1/2 p-1.5 rounded-lg border border-slate-300 font-mono text-xs bg-white text-slate-700"
+                      >
+                        <option value="">Year ▾</option>
+                        {YEAR_OPTIONS.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                      <datalist id="victim-dob-years">
+                        {YEAR_OPTIONS.map((yr) => (
+                          <option key={yr} value={yr} />
+                        ))}
+                      </datalist>
+                    </div>
                   </div>
                   <div>
                     <label className="font-semibold text-slate-700 block mb-1">Age in Years / Months</label>
                     <div className="flex gap-1.5">
                       <input
                         type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max="125"
                         placeholder="Yrs"
                         value={ageYears}
-                        onChange={(e) => setAgeYears(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          setAgeYears(val ? String(Math.max(0, parseInt(val, 10))) : "");
+                          clearFieldError("age");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                       <input
                         type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max="11"
                         placeholder="Mos"
                         value={ageMonths}
-                        onChange={(e) => setAgeMonths(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          setAgeMonths(val ? String(Math.max(0, Math.min(11, parseInt(val, 10)))) : "");
+                        }}
                         className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                     </div>
@@ -1173,8 +1361,21 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     <label className="font-semibold text-slate-700 block mb-1">Pincode</label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="6-digit pincode"
                       value={permPincode}
-                      onChange={(e) => setPermPincode(e.target.value)}
+                      onChange={(e) => setPermPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onKeyDown={(e) => {
+                        if (
+                          !/^\d$/.test(e.key) &&
+                          !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                          !e.ctrlKey &&
+                          !e.metaKey
+                        ) {
+                          e.preventDefault();
+                        }
+                      }}
                       className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                     />
                   </div>
@@ -1250,7 +1451,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <label className="font-semibold text-slate-700">City</label>
+                        <label className="font-semibold text-slate-700">City / Village</label>
                         <VoiceInputButton
                           onTranscript={(text) => setPresCity((prev) => (prev ? `${prev} ${text}` : text))}
                           iconOnly={true}
@@ -1263,6 +1464,38 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                         className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
                       />
                     </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">Tehsil</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresTehsil((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={presTehsil}
+                        onChange={(e) => setPresTehsil(e.target.value)}
+                        className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">Police Station</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresPs((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={presPs}
+                        onChange={(e) => setPresPs(e.target.value)}
+                        className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-semibold text-slate-700">District</label>
@@ -1279,11 +1512,39 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       />
                     </div>
                     <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="font-semibold text-slate-700">State</label>
+                        <VoiceInputButton
+                          onTranscript={(text) => setPresState((prev) => (prev ? `${prev} ${text}` : text))}
+                          iconOnly={true}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={presState}
+                        onChange={(e) => setPresState(e.target.value)}
+                        className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                      />
+                    </div>
+                    <div>
                       <label className="font-semibold text-slate-700 block mb-1">Pincode</label>
                       <input
                         type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        placeholder="6-digit pincode"
                         value={presPincode}
-                        onChange={(e) => setPresPincode(e.target.value)}
+                        onChange={(e) => setPresPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        onKeyDown={(e) => {
+                          if (
+                            !/^\d$/.test(e.key) &&
+                            !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                            !e.ctrlKey &&
+                            !e.metaKey
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                       />
                     </div>

@@ -508,12 +508,19 @@ function RegisterFIRForm() {
   const [complainantRelationType, setComplainantRelationType] = useState<string>("Father");
   const [complainantRelativeName, setComplainantRelativeName] = useState("");
   const [complainantRelativeAlias, setComplainantRelativeAlias] = useState("");
-  const [complainantSameAsVictim, setComplainantSameAsVictim] = useState(true);
+  const [complainantSameAsVictim, setComplainantSameAsVictim] = useState(false);
+  const [victimAutofillData, setVictimAutofillData] = useState<any>(null);
+  const [victimAutofillTrigger, setVictimAutofillTrigger] = useState<number>(0);
   const [complainantDob, setComplainantDob] = useState("");
   const [complainantYearOfBirth, setComplainantYearOfBirth] = useState("");
   const [complainantAge, setComplainantAge] = useState<string>("");
   const [complainantAgeMonths, setComplainantAgeMonths] = useState<string>("");
   const [complainantAgeRange, setComplainantAgeRange] = useState<string>("Not Specified");
+
+  const YEAR_OPTIONS = useMemo(() => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: 110 }, (_, i) => current - i);
+  }, []);
 
   // 3.2 Address
   const [permHouseNo, setPermHouseNo] = useState("");
@@ -532,6 +539,7 @@ function RegisterFIRForm() {
   const [presColony, setPresColony] = useState("");
   const [presCity, setPresCity] = useState("Gurugram");
   const [presTehsil, setPresTehsil] = useState("Gurugram");
+  const [presPs, setPresPs] = useState("Sector 29 Police Station");
   const [presDistrict, setPresDistrict] = useState("Gurugram");
   const [presState, setPresState] = useState("Haryana");
   const [presPincode, setPresPincode] = useState("");
@@ -1195,6 +1203,220 @@ function RegisterFIRForm() {
     setComplainantAgeRange("Not Specified");
   };
 
+  const updateComplainantAgeRange = (calcAge: number) => {
+    if (calcAge < 18) setComplainantAgeRange("Under 18 (Minor / Child)");
+    else if (calcAge <= 30) setComplainantAgeRange("18 - 30 Years (Young Adult)");
+    else if (calcAge <= 50) setComplainantAgeRange("31 - 50 Years (Middle Age)");
+    else if (calcAge <= 60) setComplainantAgeRange("51 - 60 Years (Senior)");
+    else setComplainantAgeRange("Above 60 Years (Elderly / Senior Citizen)");
+  };
+
+  const handleComplainantDobChange = (newDobIso: string) => {
+    const todayIso = getNowLocal().date;
+    let clampedDate = newDobIso;
+    if (clampedDate && clampedDate > todayIso) {
+      clampedDate = todayIso;
+    }
+    setComplainantDob(clampedDate);
+
+    if (errors.complainantAge) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.complainantAge;
+        return next;
+      });
+    }
+
+    if (clampedDate) {
+      const bDate = new Date(clampedDate);
+      if (!isNaN(bDate.getTime())) {
+        const birthYear = bDate.getFullYear();
+        setComplainantYearOfBirth(String(birthYear));
+        const today = new Date();
+        let calcAge = today.getFullYear() - birthYear;
+        const m = today.getMonth() - bDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < bDate.getDate())) {
+          calcAge--;
+        }
+        calcAge = Math.max(0, calcAge);
+        setComplainantAge(String(calcAge));
+        updateComplainantAgeRange(calcAge);
+      }
+    }
+  };
+
+  const handleComplainantYearChange = (yearStr: string) => {
+    const cleanYear = yearStr.replace(/\D/g, "").slice(0, 4);
+    const currentYear = new Date().getFullYear();
+    let validYear = cleanYear;
+    if (cleanYear.length === 4) {
+      const numY = Number(cleanYear);
+      if (numY > currentYear) {
+        validYear = String(currentYear);
+      } else if (numY < 1900) {
+        validYear = "1900";
+      }
+    }
+    setComplainantYearOfBirth(validYear);
+
+    if (errors.complainantAge) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.complainantAge;
+        return next;
+      });
+    }
+
+    if (validYear.length === 4) {
+      const yNum = Number(validYear);
+      const today = new Date();
+      const calcAge = Math.max(0, today.getFullYear() - yNum);
+      setComplainantAge(String(calcAge));
+      updateComplainantAgeRange(calcAge);
+
+      if (complainantDob) {
+        const parts = complainantDob.split("-");
+        if (parts.length === 3) {
+          const updatedDob = `${validYear}-${parts[1]}-${parts[2]}`;
+          const todayIso = getNowLocal().date;
+          setComplainantDob(updatedDob > todayIso ? todayIso : updatedDob);
+        }
+      } else {
+        const defaultDob = `${validYear}-01-01`;
+        const todayIso = getNowLocal().date;
+        setComplainantDob(defaultDob > todayIso ? todayIso : defaultDob);
+      }
+    }
+  };
+
+  // Helper to compile all known complainant fields for autofilling victim info
+  const getComplainantAsVictimData = () => {
+    return {
+      firstName: complainantFirstName,
+      middleName: complainantMiddleName,
+      lastName: complainantLastName,
+      aliases: complainantAliases,
+      gender: complainantGender,
+      maritalStatus: complainantMaritalStatus,
+      relationType: complainantRelationType,
+      relativeName: complainantRelativeName,
+      relativeAliasName: complainantRelativeAlias,
+      mobile: complainantMobile,
+      landline: complainantLandline,
+      email: complainantEmail,
+      category: complainantCategory,
+      uid: complainantUid,
+      dob: complainantDob,
+      yearOfBirth: complainantYearOfBirth,
+      ageYears: complainantAge,
+      ageMonths: complainantAgeMonths,
+      permHouseNo: permHouseNo,
+      permStreet: permStreet,
+      permColony: permColony,
+      permCity: permCity,
+      permTehsil: permTehsil,
+      permCountry: permCountry,
+      permState: permState,
+      permDistrict: permDistrict,
+      permPs: permPs,
+      permPincode: permPincode,
+      presentSameAsPerm: presentSameAsPerm,
+      presHouseNo: presentSameAsPerm ? permHouseNo : presHouseNo,
+      presStreet: presentSameAsPerm ? permStreet : presStreet,
+      presColony: presentSameAsPerm ? permColony : presColony,
+      presCity: presentSameAsPerm ? permCity : presCity,
+      presTehsil: presentSameAsPerm ? permTehsil : presTehsil,
+      presPs: presentSameAsPerm ? permPs : presPs,
+      presDistrict: presentSameAsPerm ? permDistrict : presDistrict,
+      presState: presentSameAsPerm ? permState : presState,
+      presPincode: presentSameAsPerm ? permPincode : presPincode,
+      occupation: complainantOccupation,
+      nationality: complainantNationality,
+    };
+  };
+
+  const handleToggleComplainantSameAsVictim = (checked: boolean) => {
+    setComplainantSameAsVictim(checked);
+    if (checked) {
+      setVictimAutofillData(getComplainantAsVictimData());
+      setVictimAutofillTrigger(Date.now());
+    }
+  };
+
+  // Automatically keep Present Address in sync when presentSameAsPerm is checked
+  useEffect(() => {
+    if (presentSameAsPerm) {
+      setPresHouseNo(permHouseNo);
+      setPresStreet(permStreet);
+      setPresColony(permColony);
+      setPresCity(permCity);
+      setPresTehsil(permTehsil);
+      setPresPs(permPs);
+      setPresDistrict(permDistrict);
+      setPresState(permState);
+      setPresPincode(permPincode);
+    }
+  }, [
+    presentSameAsPerm,
+    permHouseNo,
+    permStreet,
+    permColony,
+    permCity,
+    permTehsil,
+    permPs,
+    permDistrict,
+    permState,
+    permPincode,
+  ]);
+
+  // Keep Victim info updated when complainantSameAsVictim is active
+  useEffect(() => {
+    if (complainantSameAsVictim) {
+      setVictimAutofillData(getComplainantAsVictimData());
+      setVictimAutofillTrigger(Date.now());
+    }
+  }, [
+    complainantSameAsVictim,
+    complainantFirstName,
+    complainantMiddleName,
+    complainantLastName,
+    complainantGender,
+    complainantMobile,
+    complainantDob,
+    complainantAge,
+    complainantAgeMonths,
+    complainantYearOfBirth,
+    complainantUid,
+    permHouseNo,
+    permStreet,
+    permColony,
+    permCity,
+    permTehsil,
+    permPs,
+    permDistrict,
+    permState,
+    permPincode,
+    presHouseNo,
+    presStreet,
+    presColony,
+    presCity,
+    presTehsil,
+    presPs,
+    presDistrict,
+    presState,
+    presPincode,
+    presentSameAsPerm,
+    complainantOccupation,
+    complainantNationality,
+    complainantRelationType,
+    complainantRelativeName,
+    complainantRelativeAlias,
+    complainantCategory,
+    complainantMaritalStatus,
+    complainantLandline,
+    complainantEmail,
+  ]);
+
   // Validate Integer Hurt Count
   const handleHurtCountChange = (setter: (v: string) => void, val: string) => {
     const num = parseInt(val, 10);
@@ -1361,8 +1583,9 @@ function RegisterFIRForm() {
     setTempDeptEmail("");
   };
 
-  // Link Complainant as Victim (Tab 6)
+  // Link Complainant as Victim (Tab 6 / Tab 3)
   const handleLinkComplainantAsVictim = () => {
+    handleToggleComplainantSameAsVictim(true);
     const compVictim: VictimItemData = {
       id: `vic-${Date.now()}`,
       srNo: victimsList.length + 1,
