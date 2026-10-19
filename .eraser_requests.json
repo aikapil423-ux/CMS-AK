@@ -284,5 +284,16 @@
     "classes": "hidden xl:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-2",
     "parentContext": "Generate CrimeSITREP\nSave to Reports History\nView Reports History\nReport Date:\nAll Stations (4)\nPS C",
     "status": "deleted_from_code"
+  },
+  {
+    "id": "1792398755205",
+    "timestamp": "2026-10-19T08:32:35.205Z",
+    "url": "/fir/register",
+    "textSnippet": "Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 • Haryana Police CCTNS IIF-I Form",
+    "tagName": "p",
+    "ariaLabel": "",
+    "classes": "text-xs text-slate-500 mt-0.5",
+    "parentContext": "Register First Information Report (FIR)\n\nSection 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
+    "status": "deleted_from_code"
   }
 ]

@@ -1550,118 +1550,156 @@ function RegisterFIRForm() {
     };
   };
 
-  // Form Validation
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
 
-    const nowValidation = getNowLocal();
-    if (firDate > nowValidation.date) {
-      newErrors.firDate = "Registration date cannot be in the future.";
-    } else if (firDate === nowValidation.date && firTime > nowValidation.time) {
-      newErrors.firTime = "Registration time cannot be ahead of current time.";
-    }
+  // Centralized Tab Validation Errors
+  const getTabValidationErrors = (tabKey: MainTabKey): Record<string, string> => {
+    const tabErrors: Record<string, string> = {};
 
-    if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
-      newErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
-    }
-    if (!actRemarks.trim()) {
-      newErrors.actRemarks = "Remarks in Act & Section panel are mandatory.";
-    }
-    if (actsAndSectionsList.length === 0) {
-      newErrors.act_section = "At least one Act and Section must be added.";
-    }
-    if (occurrencesList.length === 0) {
-      newErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
-    } else {
-      const invalidOcc = occurrencesList.find(
-        (occ) =>
-          !occ.dateFrom?.trim() ||
-          !occ.timeFrom?.trim() ||
-          !occ.dateTo?.trim() ||
-          !occ.timeTo?.trim() ||
-          !occ.infoReceivedDate?.trim() ||
-          !occ.infoReceivedTime?.trim() ||
-          !occ.city?.trim() ||
-          !occ.directionFromPs?.trim() ||
-          !String(occ.distanceKm ?? "").trim()
-      );
-      if (invalidOcc) {
-        newErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
+    if (tabKey === "act_section") {
+      const nowValidation = getNowLocal();
+      if (!firDate) {
+        tabErrors.firDate = "FIR Registration date is mandatory.";
+      } else if (firDate > nowValidation.date) {
+        tabErrors.firDate = "Registration date cannot be in the future.";
+      }
+      if (!firTime) {
+        tabErrors.firTime = "FIR Registration time is mandatory.";
+      } else if (firDate === nowValidation.date && firTime > nowValidation.time) {
+        tabErrors.firTime = "Registration time cannot be ahead of current time.";
+      }
+      if (!gdEntryNumber || !gdEntryNumber.trim()) {
+        tabErrors.gdEntryNumber = "GD / SD / DD Number is mandatory.";
+      }
+      if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
+        tabErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
+      }
+      if (!actRemarks.trim()) {
+        tabErrors.actRemarks = "Remarks in Act & Section panel are mandatory.";
+      }
+      if (actsAndSectionsList.length === 0) {
+        tabErrors.act_section = "At least one Act and Section must be added.";
       }
     }
-    if (!complainantFirstName.trim()) {
-      newErrors.complainant = "Complainant First Name is mandatory.";
-    }
-    if (!complainantGender || !complainantGender.trim()) {
-      newErrors.complainantGender = "Complainant Gender is mandatory.";
-    }
-    if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
-      newErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
-    }
-    if (!complainantMobile.trim()) {
-      newErrors.complainantMobile = "Complainant Mobile number is mandatory.";
-    }
-    if (!permDistrict || !permDistrict.trim()) {
-      newErrors.permDistrict = "Complainant District is mandatory in Address Details.";
-    }
-    if (!permState || !permState.trim()) {
-      newErrors.permState = "Complainant State is mandatory in Address Details.";
-    }
-    if (!complainantNationality || !complainantNationality.trim()) {
-      newErrors.complainantNationality = "Complainant Nationality is mandatory.";
-    }
-    if (!firContentText.trim() && !briefFacts.trim()) {
-      newErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
-    }
-    if (!actionType || !actionType.trim()) {
-      newErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
-    }
-    if (isAccusedKnown && accusedList.length > 0) {
-      const invalidAccused = accusedList.find((acc) => {
-        const isKnownAcc =
-          acc.isKnown !== false &&
-          acc.name !== "Accused is not known" &&
-          acc.name !== "Unknown Accused" &&
-          acc.accusedType !== "Unknown-Seen";
-        if (!isKnownAcc) return false;
-        const hasName = Boolean(acc.name?.trim());
-        const hasGender = Boolean(acc.gender?.trim());
-        const hasAge = Boolean(
-          (acc.dob && acc.dob.trim()) ||
-          (acc.yearOfBirth && acc.yearOfBirth.trim()) ||
-          (acc.ageYears && acc.ageYears.trim()) ||
-          (acc.ageRangeFrom && acc.ageRangeFrom.trim()) ||
-          acc.age
+
+    if (tabKey === "occurrence") {
+      if (occurrencesList.length === 0) {
+        tabErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
+      } else {
+        const invalidOcc = occurrencesList.find(
+          (occ) =>
+            !occ.dateFrom?.trim() ||
+            !occ.timeFrom?.trim() ||
+            !occ.dateTo?.trim() ||
+            !occ.timeTo?.trim() ||
+            !occ.infoReceivedDate?.trim() ||
+            !occ.infoReceivedTime?.trim() ||
+            !occ.city?.trim() ||
+            !occ.directionFromPs?.trim() ||
+            !String(occ.distanceKm ?? "").trim()
         );
-        const firstAddr = acc.addressesList?.[0];
-        const hasCity = Boolean((acc.city && acc.city.trim()) || (firstAddr?.city && firstAddr.city.trim()));
-        const hasDistrict = Boolean((acc.district && acc.district.trim()) || (firstAddr?.district && firstAddr.district.trim()));
-        const hasState = Boolean((acc.state && acc.state.trim()) || (firstAddr?.state && firstAddr.state.trim()));
-        const hasCountry = Boolean((acc.country && acc.country.trim()) || (firstAddr?.country && firstAddr.country.trim()));
-        const hasNationality = Boolean(acc.nationality && acc.nationality.trim());
-        return !hasName || !hasGender || !hasAge || !hasCity || !hasDistrict || !hasState || !hasCountry || !hasNationality;
-      });
-      if (invalidAccused) {
-        newErrors.accused = "In Accused panel: First Name, Gender, Age Determination, Village/Town/City, District, State, Country, and Country of Nationality are mandatory for known accused.";
+        if (invalidOcc) {
+          tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
+        }
       }
     }
 
-    setErrors(newErrors);
+    if (tabKey === "complainant") {
+      if (!complainantFirstName.trim()) {
+        tabErrors.complainant = "Complainant First Name is mandatory.";
+      }
+      if (!complainantGender || !complainantGender.trim()) {
+        tabErrors.complainantGender = "Complainant Gender is mandatory.";
+      }
+      if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
+        tabErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
+      }
+      if (!complainantMobile.trim()) {
+        tabErrors.complainantMobile = "Complainant Mobile number is mandatory.";
+      }
+      if (!permDistrict || !permDistrict.trim()) {
+        tabErrors.permDistrict = "Complainant District is mandatory in Address Details.";
+      }
+      if (!permState || !permState.trim()) {
+        tabErrors.permState = "Complainant State is mandatory in Address Details.";
+      }
+      if (!complainantNationality || !complainantNationality.trim()) {
+        tabErrors.complainantNationality = "Complainant Nationality is mandatory.";
+      }
+    }
 
-    if (Object.keys(newErrors).length > 0) {
-      if (newErrors.sourceOfComplaint || newErrors.actRemarks || newErrors.act_section) setActiveTab("act_section");
-      else if (newErrors.occurrence) setActiveTab("occurrence");
-      else if (
-        newErrors.complainant ||
-        newErrors.complainantGender ||
-        newErrors.complainantAge ||
-        newErrors.complainantMobile ||
-        newErrors.permDistrict ||
-        newErrors.permState ||
-        newErrors.complainantNationality
-      ) setActiveTab("complainant");
-      else if (newErrors.fir_content || newErrors.actionType) setActiveTab("fir_content");
-      else if (newErrors.accused) setActiveTab("accused");
+    if (tabKey === "fir_content") {
+      if (!firContentText.trim() && !briefFacts.trim()) {
+        tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
+      }
+      if (!actionType || !actionType.trim()) {
+        tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
+      }
+    }
+
+    if (tabKey === "accused") {
+      if (isAccusedKnown && accusedList.length > 0) {
+        const invalidAccused = accusedList.find((acc) => {
+          const isKnownAcc =
+            acc.isKnown !== false &&
+            acc.name !== "Accused is not known" &&
+            acc.name !== "Unknown Accused" &&
+            acc.accusedType !== "Unknown-Seen";
+          if (!isKnownAcc) return false;
+          const hasName = Boolean(acc.name?.trim());
+          const hasGender = Boolean(acc.gender?.trim());
+          const hasAge = Boolean(
+            (acc.dob && acc.dob.trim()) ||
+            (acc.yearOfBirth && acc.yearOfBirth.trim()) ||
+            (acc.ageYears && acc.ageYears.trim()) ||
+            (acc.ageRangeFrom && acc.ageRangeFrom.trim()) ||
+            acc.age
+          );
+          const firstAddr = acc.addressesList?.[0];
+          const hasCity = Boolean((acc.city && acc.city.trim()) || (firstAddr?.city && firstAddr.city.trim()));
+          const hasDistrict = Boolean((acc.district && acc.district.trim()) || (firstAddr?.district && firstAddr.district.trim()));
+          const hasState = Boolean((acc.state && acc.state.trim()) || (firstAddr?.state && firstAddr.state.trim()));
+          const hasCountry = Boolean((acc.country && acc.country.trim()) || (firstAddr?.country && firstAddr.country.trim()));
+          const hasNationality = Boolean(acc.nationality && acc.nationality.trim());
+          return !hasName || !hasGender || !hasAge || !hasCity || !hasDistrict || !hasState || !hasCountry || !hasNationality;
+        });
+        if (invalidAccused) {
+          tabErrors.accused = "In Accused panel: First Name, Gender, Age Determination, Village/Town/City, District, State, Country, and Country of Nationality are mandatory for known accused.";
+        }
+      }
+    }
+
+    return tabErrors;
+  };
+
+  // Validate a specific tab and set errors if any
+  const validateTab = (tabKey: MainTabKey): boolean => {
+    const tabErrors = getTabValidationErrors(tabKey);
+    if (Object.keys(tabErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...tabErrors }));
+      return false;
+    }
+    return true;
+  };
+
+  // Full form validator (checks all tabs)
+  const validateForm = (): boolean => {
+    const combinedErrors: Record<string, string> = {};
+    for (const tab of TAB_CONFIG) {
+      const tabErrors = getTabValidationErrors(tab.key);
+      Object.assign(combinedErrors, tabErrors);
+    }
+
+    setErrors(combinedErrors);
+
+    if (Object.keys(combinedErrors).length > 0) {
+      // Navigate to the first tab that has an error
+      for (const tab of TAB_CONFIG) {
+        const tabErrors = getTabValidationErrors(tab.key);
+        if (Object.keys(tabErrors).length > 0) {
+          setActiveTab(tab.key);
+          break;
+        }
+      }
       return false;
     }
     return true;
@@ -1670,6 +1708,11 @@ function RegisterFIRForm() {
   // Final Submit Handler with Confirmation Dialog
   const handleInitiateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Only allow submission from the final signature tab
+    if (activeTab !== "signature") {
+      handleNextTab();
+      return;
+    }
     if (!validateForm()) return;
 
     setConfirmConfig({
@@ -1704,134 +1747,38 @@ function RegisterFIRForm() {
 
   // Tab Navigation Helpers
   const currentTabIndex = TAB_CONFIG.findIndex((t) => t.key === activeTab);
+
+  // Strict Next Tab: does NOT allow navigation if current panel's mandatory fields are not filled
   const handleNextTab = () => {
-    if (activeTab === "act_section") {
-      const tabErrors: Record<string, string> = {};
-      if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
-        tabErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
-      }
-      if (!actRemarks.trim()) {
-        tabErrors.actRemarks = "Remarks in Act & Section panel are mandatory.";
-      }
-      if (actsAndSectionsList.length === 0) {
-        tabErrors.act_section = "At least one Act and Section must be added.";
-      }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
-    }
-    if (activeTab === "occurrence") {
-      const tabErrors: Record<string, string> = {};
-      if (occurrencesList.length === 0) {
-        tabErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
-      } else {
-        const invalidOcc = occurrencesList.find(
-          (occ) =>
-            !occ.dateFrom?.trim() ||
-            !occ.timeFrom?.trim() ||
-            !occ.dateTo?.trim() ||
-            !occ.timeTo?.trim() ||
-            !occ.infoReceivedDate?.trim() ||
-            !occ.infoReceivedTime?.trim() ||
-            !occ.city?.trim() ||
-            !occ.directionFromPs?.trim() ||
-            !String(occ.distanceKm ?? "").trim()
-        );
-        if (invalidOcc) {
-          tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
-        }
-      }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
-    }
-    if (activeTab === "complainant") {
-      const tabErrors: Record<string, string> = {};
-      if (!complainantFirstName.trim()) {
-        tabErrors.complainant = "Complainant First Name is mandatory.";
-      }
-      if (!complainantGender || !complainantGender.trim()) {
-        tabErrors.complainantGender = "Complainant Gender is mandatory.";
-      }
-      if (!complainantDob?.trim() && !complainantAge?.trim() && !complainantYearOfBirth?.trim()) {
-        tabErrors.complainantAge = "Age & Date of Birth Particulars (DOB or Age in Years) is mandatory.";
-      }
-      if (!complainantMobile.trim()) {
-        tabErrors.complainantMobile = "Complainant Mobile number is mandatory.";
-      }
-      if (!permDistrict || !permDistrict.trim()) {
-        tabErrors.permDistrict = "Complainant District is mandatory in Address Details.";
-      }
-      if (!permState || !permState.trim()) {
-        tabErrors.permState = "Complainant State is mandatory in Address Details.";
-      }
-      if (!complainantNationality || !complainantNationality.trim()) {
-        tabErrors.complainantNationality = "Complainant Nationality is mandatory.";
-      }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
-    }
-    if (activeTab === "fir_content") {
-      const tabErrors: Record<string, string> = {};
-      if (!firContentText.trim() && !briefFacts.trim()) {
-        tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
-      }
-      if (!actionType || !actionType.trim()) {
-        tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
-      }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
-    }
-    if (activeTab === "accused") {
-      const tabErrors: Record<string, string> = {};
-      if (isAccusedKnown && accusedList.length > 0) {
-        const invalidAccused = accusedList.find((acc) => {
-          const isKnownAcc =
-            acc.isKnown !== false &&
-            acc.name !== "Accused is not known" &&
-            acc.name !== "Unknown Accused" &&
-            acc.accusedType !== "Unknown-Seen";
-          if (!isKnownAcc) return false;
-          const hasName = Boolean(acc.name?.trim());
-          const hasGender = Boolean(acc.gender?.trim());
-          const hasAge = Boolean(
-            (acc.dob && acc.dob.trim()) ||
-            (acc.yearOfBirth && acc.yearOfBirth.trim()) ||
-            (acc.ageYears && acc.ageYears.trim()) ||
-            (acc.ageRangeFrom && acc.ageRangeFrom.trim()) ||
-            acc.age
-          );
-          const firstAddr = acc.addressesList?.[0];
-          const hasCity = Boolean((acc.city && acc.city.trim()) || (firstAddr?.city && firstAddr.city.trim()));
-          const hasDistrict = Boolean((acc.district && acc.district.trim()) || (firstAddr?.district && firstAddr.district.trim()));
-          const hasState = Boolean((acc.state && acc.state.trim()) || (firstAddr?.state && firstAddr.state.trim()));
-          const hasCountry = Boolean((acc.country && acc.country.trim()) || (firstAddr?.country && firstAddr.country.trim()));
-          const hasNationality = Boolean(acc.nationality && acc.nationality.trim());
-          return !hasName || !hasGender || !hasAge || !hasCity || !hasDistrict || !hasState || !hasCountry || !hasNationality;
-        });
-        if (invalidAccused) {
-          tabErrors.accused = "In Accused panel: First Name, Gender, Age Determination, Village/Town/City, District, State, Country, and Country of Nationality are mandatory for known accused.";
-        }
-      }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
+    if (!validateTab(activeTab)) {
+      return;
     }
     if (currentTabIndex < TAB_CONFIG.length - 1) {
       setActiveTab(TAB_CONFIG[currentTabIndex + 1].key);
     }
   };
+
   const handlePrevTab = () => {
     if (currentTabIndex > 0) {
       setActiveTab(TAB_CONFIG[currentTabIndex - 1].key);
     }
+  };
+
+  // Tab click in header: strictly prevents jumping forward if preceding tabs have unfilled mandatory fields
+  const handleTabClick = (targetTabKey: MainTabKey) => {
+    const targetIndex = TAB_CONFIG.findIndex((t) => t.key === targetTabKey);
+    if (targetIndex <= currentTabIndex) {
+      setActiveTab(targetTabKey);
+      return;
+    }
+    for (let i = 0; i < targetIndex; i++) {
+      const tabToValidate = TAB_CONFIG[i].key;
+      if (!validateTab(tabToValidate)) {
+        setActiveTab(tabToValidate);
+        return;
+      }
+    }
+    setActiveTab(targetTabKey);
   };
 
   return (
@@ -1857,9 +1804,6 @@ function RegisterFIRForm() {
                 Register First Information Report (FIR)
               </h1>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 • Haryana Police CCTNS IIF-I Form
-            </p>
           </div>
         </div>
 
@@ -2073,12 +2017,13 @@ function RegisterFIRForm() {
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
-            const hasError = errors[tab.key] || (tab.key === "fir_content" && errors.actionType);
+            const tabErrors = getTabValidationErrors(tab.key);
+            const hasError = Object.keys(tabErrors).length > 0 && Object.keys(errors).some((k) => k in tabErrors);
             return (
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleTabClick(tab.key)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? "bg-[#0b192c] text-white shadow-xs font-bold"
@@ -4703,6 +4648,17 @@ function RegisterFIRForm() {
           </div>
         )}
 
+        {/* Validation Error Notice if active tab has missing mandatory fields */}
+        {Object.keys(errors).length > 0 &&
+          Object.keys(getTabValidationErrors(activeTab)).some((k) => k in errors) && (
+            <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-red-700 text-xs font-semibold flex items-center gap-2 shadow-xs animate-in fade-in-20">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>
+                आगे बढ़ने से पहले कृपया इस पैनल के सभी अनिवार्य फ़ील्ड (*) भरें (Please fill all mandatory fields marked with * in this panel before proceeding).
+              </span>
+            </div>
+          )}
+
         {/* BOTTOM NAVIGATION FOOTER */}
         <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-xs border-t border-slate-200 p-3.5 rounded-xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -4759,14 +4715,17 @@ function RegisterFIRForm() {
               Preview (IIF-I)
             </Button>
 
-            <Button
-              type="submit"
-              disabled={submitting}
-              className="bg-red-700 hover:bg-red-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md px-4"
-            >
-              <Scale className="w-3.5 h-3.5" />
-              {submitting ? "Registering..." : "Register FIR"}
-            </Button>
+            {/* Register FIR button - ONLY visible on the last panel */}
+            {currentTabIndex === TAB_CONFIG.length - 1 && (
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md px-5 py-2 transition-colors cursor-pointer"
+              >
+                <Scale className="w-4 h-4" />
+                {submitting ? "Registering..." : "Register FIR"}
+              </Button>
+            )}
           </div>
         </div>
       </form>

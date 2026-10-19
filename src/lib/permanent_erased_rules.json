@@ -150,5 +150,13 @@
     "textSnippet": "Up to Midnight of 14/10/2026 (24h Audit)",
     "tagName": "span",
     "classes": ""
+  },
+  {
+    "id": "1792398754485_ftmd",
+    "timestamp": "2026-10-19T08:32:34.485Z",
+    "url": "/fir/register",
+    "textSnippet": "Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 • Haryana Police CCTNS IIF-I Form",
+    "tagName": "p",
+    "classes": "text-xs text-slate-500 mt-0.5"
   }
 ]
