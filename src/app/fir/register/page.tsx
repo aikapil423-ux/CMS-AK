@@ -3339,10 +3339,31 @@ function RegisterFIRForm() {
                       </label>
                       <input
                         type="tel"
+                        inputMode="numeric"
                         maxLength={10}
                         placeholder="10-digit mobile number"
                         value={complainantMobile}
-                        onChange={(e) => setComplainantMobile(e.target.value)}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+                          setComplainantMobile(digitsOnly);
+                          if (errors.complainantMobile && digitsOnly.length === 10) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.complainantMobile;
+                              return next;
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (
+                            !/^\d$/.test(e.key) &&
+                            !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                            !e.ctrlKey &&
+                            !e.metaKey
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
                         className={`w-full p-2.5 rounded-lg border border-slate-300 font-mono ${getFieldHighlightClass("complainantMobile")}`}
                         required
                       />
@@ -3412,69 +3433,83 @@ function RegisterFIRForm() {
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                       <div>
-                        <span className="text-[11px] text-slate-500 block">Date of Birth (DOB)</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-slate-500 block">Date of Birth (DOB)</span>
+                          <span className="text-[10px] text-slate-400 font-semibold">(Max: Today)</span>
+                        </div>
                         <div className="mt-1">
                           <DatePickerDDMMYYYY
                             value={complainantDob}
                             max={maxAllowedFirDate}
-                            onChange={(e) => {
-                              setComplainantDob(e.target.value);
-                              if (errors.complainantAge) {
-                                setErrors((prev) => {
-                                  const next = { ...prev };
-                                  delete next.complainantAge;
-                                  return next;
-                                });
-                              }
-                              if (e.target.value) {
-                                const birthYear = new Date(e.target.value).getFullYear();
-                                setComplainantYearOfBirth(String(birthYear));
-                                const currentYear = new Date().getFullYear();
-                                const calcAge = Math.max(0, currentYear - birthYear);
-                                setComplainantAge(String(calcAge));
-                                if (calcAge < 18) setComplainantAgeRange("Under 18 (Minor / Child)");
-                                else if (calcAge <= 30) setComplainantAgeRange("18 - 30 Years (Young Adult)");
-                                else if (calcAge <= 50) setComplainantAgeRange("31 - 50 Years (Middle Age)");
-                                else if (calcAge <= 60) setComplainantAgeRange("51 - 60 Years (Senior)");
-                                else setComplainantAgeRange("Above 60 Years (Elderly / Senior Citizen)");
-                              }
-                            }}
+                            onChange={(e) => handleComplainantDobChange(e.target.value)}
                             placeholder="DD/MM/YYYY"
                             size="sm"
                           />
                         </div>
                       </div>
                       <div>
-                        <span className="text-[11px] text-slate-500 block">Year of Birth</span>
-                        <input
-                          type="number"
-                          placeholder="YYYY"
-                          value={complainantYearOfBirth}
-                          onChange={(e) => {
-                            setComplainantYearOfBirth(e.target.value);
-                            if (errors.complainantAge) {
-                              setErrors((prev) => {
-                                const next = { ...prev };
-                                delete next.complainantAge;
-                                return next;
-                              });
-                            }
-                            if (e.target.value.length === 4) {
-                              const calcAge = Math.max(0, new Date().getFullYear() - Number(e.target.value));
-                              setComplainantAge(String(calcAge));
-                            }
-                          }}
-                          className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs"
-                        />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-slate-500 block">Year of Birth</span>
+                          <span className="text-[10px] text-blue-600 font-semibold cursor-help" title="Scroll mouse wheel or choose from dropdown">Fast Scroll ⇅</span>
+                        </div>
+                        <div className="mt-1 flex gap-1">
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            min={1900}
+                            max={new Date().getFullYear()}
+                            placeholder="YYYY"
+                            list="complainant-dob-years"
+                            value={complainantYearOfBirth}
+                            onWheel={(e) => {
+                              e.currentTarget.blur();
+                              const cur = Number(complainantYearOfBirth) || (new Date().getFullYear() - 25);
+                              const next = Math.max(1900, Math.min(new Date().getFullYear(), cur + (e.deltaY < 0 ? 1 : -1)));
+                              handleComplainantYearChange(String(next));
+                            }}
+                            onChange={(e) => handleComplainantYearChange(e.target.value)}
+                            className="w-1/2 p-1.5 rounded border border-slate-300 font-mono text-xs"
+                          />
+                          <select
+                            aria-label="Quick Select Year"
+                            value={complainantYearOfBirth && YEAR_OPTIONS.includes(Number(complainantYearOfBirth)) ? complainantYearOfBirth : ""}
+                            onChange={(e) => handleComplainantYearChange(e.target.value)}
+                            className="w-1/2 p-1.5 rounded border border-slate-300 font-mono text-xs bg-white text-slate-700"
+                          >
+                            <option value="">Year ▾</option>
+                            {YEAR_OPTIONS.map((yr) => (
+                              <option key={yr} value={yr}>
+                                {yr}
+                              </option>
+                            ))}
+                          </select>
+                          <datalist id="complainant-dob-years">
+                            {YEAR_OPTIONS.map((yr) => (
+                              <option key={yr} value={yr} />
+                            ))}
+                          </datalist>
+                        </div>
                       </div>
                       <div>
                         <span className="text-[11px] text-slate-500 block">Age in Years</span>
                         <input
                           type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max="125"
                           placeholder="e.g. 35"
                           value={complainantAge}
+                          onKeyDown={(e) => {
+                            if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                          }}
                           onChange={(e) => {
-                            setComplainantAge(e.target.value);
+                            const val = e.target.value.replace(/\D/g, "");
+                            if (!val) {
+                              setComplainantAge("");
+                              return;
+                            }
+                            const num = Math.max(0, parseInt(val, 10));
+                            setComplainantAge(String(num));
                             if (errors.complainantAge) {
                               setErrors((prev) => {
                                 const next = { ...prev };
@@ -3482,6 +3517,20 @@ function RegisterFIRForm() {
                                 return next;
                               });
                             }
+                            const curYear = new Date().getFullYear();
+                            const calcYear = curYear - num;
+                            if (calcYear >= 1900) {
+                              setComplainantYearOfBirth(String(calcYear));
+                              if (complainantDob) {
+                                const parts = complainantDob.split("-");
+                                if (parts.length === 3) {
+                                  const updatedDob = `${calcYear}-${parts[1]}-${parts[2]}`;
+                                  const todayIso = getNowLocal().date;
+                                  setComplainantDob(updatedDob > todayIso ? todayIso : updatedDob);
+                                }
+                              }
+                            }
+                            updateComplainantAgeRange(num);
                           }}
                           className={`w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs ${getFieldHighlightClass("complainantAge")}`}
                         />
@@ -3490,9 +3539,18 @@ function RegisterFIRForm() {
                         <span className="text-[11px] text-slate-500 block">Age in Months</span>
                         <input
                           type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max="11"
                           placeholder="e.g. 6"
                           value={complainantAgeMonths}
-                          onChange={(e) => setComplainantAgeMonths(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                          }}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "");
+                            setComplainantAgeMonths(val ? String(Math.max(0, Math.min(11, parseInt(val, 10)))) : "");
+                          }}
                           className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs"
                         />
                       </div>
@@ -3584,10 +3642,10 @@ function RegisterFIRForm() {
                     <input
                       type="checkbox"
                       checked={complainantSameAsVictim}
-                      onChange={(e) => setComplainantSameAsVictim(e.target.checked)}
-                      className="rounded text-blue-600"
+                      onChange={(e) => handleToggleComplainantSameAsVictim(e.target.checked)}
+                      className="rounded text-blue-600 w-4 h-4"
                     />
-                    <span>Complainant is also the Victim in this offence</span>
+                    <span>Complainant is also the Victim in this offence (शिकायतकर्ता ही इस अपराध में पीड़ित है)</span>
                   </label>
                 </div>
 
@@ -3799,10 +3857,21 @@ function RegisterFIRForm() {
                         <label className="font-bold text-slate-700 block mb-1">Pincode</label>
                         <input
                           type="text"
+                          inputMode="numeric"
                           maxLength={6}
                           placeholder="6-digit pincode"
                           value={permPincode}
-                          onChange={(e) => setPermPincode(e.target.value)}
+                          onChange={(e) => setPermPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          onKeyDown={(e) => {
+                            if (
+                              !/^\d$/.test(e.key) &&
+                              !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
                           className="w-full p-2 rounded border border-slate-300 font-mono"
                         />
                       </div>
@@ -3825,8 +3894,8 @@ function RegisterFIRForm() {
                         <h5 className="font-bold text-slate-700 uppercase text-[10px]">Present Address Details</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div>
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[10px] text-slate-500 block">House / Flat</span>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">House / Flat No.</label>
                               <VoiceInputButton
                                 onTranscript={(t) => setPresHouseNo(t)}
                                 currentValue={presHouseNo}
@@ -3836,14 +3905,15 @@ function RegisterFIRForm() {
                             </div>
                             <input
                               type="text"
+                              placeholder="House No."
                               value={presHouseNo}
                               onChange={(e) => setPresHouseNo(e.target.value)}
-                              className="w-full p-1.5 rounded border border-slate-300 bg-white"
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
                             />
                           </div>
                           <div>
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[10px] text-slate-500 block">Street</span>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">Street / Gali</label>
                               <VoiceInputButton
                                 onTranscript={(t) => setPresStreet(t)}
                                 currentValue={presStreet}
@@ -3853,14 +3923,33 @@ function RegisterFIRForm() {
                             </div>
                             <input
                               type="text"
+                              placeholder="Street Name"
                               value={presStreet}
                               onChange={(e) => setPresStreet(e.target.value)}
-                              className="w-full p-1.5 rounded border border-slate-300 bg-white"
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
                             />
                           </div>
                           <div>
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[10px] text-slate-500 block">City / Town</span>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">Colony / Area</label>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresColony(t)}
+                                currentValue={presColony}
+                                fieldLabel="Present Colony"
+                                iconOnly={true}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Colony / Sector"
+                              value={presColony}
+                              onChange={(e) => setPresColony(e.target.value)}
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">Village / City</label>
                               <VoiceInputButton
                                 onTranscript={(t) => setPresCity(t)}
                                 currentValue={presCity}
@@ -3870,9 +3959,104 @@ function RegisterFIRForm() {
                             </div>
                             <input
                               type="text"
+                              placeholder="City / Village"
                               value={presCity}
                               onChange={(e) => setPresCity(e.target.value)}
-                              className="w-full p-1.5 rounded border border-slate-300 bg-white"
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">Tehsil / Sub-Division</label>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresTehsil(t)}
+                                currentValue={presTehsil}
+                                fieldLabel="Present Tehsil"
+                                iconOnly={true}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Tehsil"
+                              value={presTehsil}
+                              onChange={(e) => setPresTehsil(e.target.value)}
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">Police Station</label>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresPs(t)}
+                                currentValue={presPs}
+                                fieldLabel="Present Police Station"
+                                iconOnly={true}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="Police Station"
+                              value={presPs}
+                              onChange={(e) => setPresPs(e.target.value)}
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">District</label>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresDistrict(t)}
+                                currentValue={presDistrict}
+                                fieldLabel="Present District"
+                                iconOnly={true}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="District"
+                              value={presDistrict}
+                              onChange={(e) => setPresDistrict(e.target.value)}
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="font-bold text-slate-700 block">State</label>
+                              <VoiceInputButton
+                                onTranscript={(t) => setPresState(t)}
+                                currentValue={presState}
+                                fieldLabel="Present State"
+                                iconOnly={true}
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="State"
+                              value={presState}
+                              onChange={(e) => setPresState(e.target.value)}
+                              className="w-full p-2 rounded border border-slate-300 bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="font-bold text-slate-700 block mb-1">Pincode</label>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={6}
+                              placeholder="6-digit pincode"
+                              value={presPincode}
+                              onChange={(e) => setPresPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                              onKeyDown={(e) => {
+                                if (
+                                  !/^\d$/.test(e.key) &&
+                                  !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                                  !e.ctrlKey &&
+                                  !e.metaKey
+                                ) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              className="w-full p-2 rounded border border-slate-300 bg-white font-mono"
                             />
                           </div>
                         </div>
@@ -3955,10 +4139,21 @@ function RegisterFIRForm() {
                       <label className="font-bold text-slate-700 block mb-1">Aadhaar (UID) Number</label>
                       <input
                         type="text"
+                        inputMode="numeric"
                         maxLength={12}
                         placeholder="12-digit Aadhaar Number"
                         value={complainantUid}
-                        onChange={(e) => setComplainantUid(e.target.value)}
+                        onChange={(e) => setComplainantUid(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                        onKeyDown={(e) => {
+                          if (
+                            !/^\d$/.test(e.key) &&
+                            !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                            !e.ctrlKey &&
+                            !e.metaKey
+                          ) {
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full p-2 rounded border border-slate-300 font-mono"
                       />
                     </div>
@@ -4051,9 +4246,28 @@ function RegisterFIRForm() {
                         </div>
                         <input
                           type="text"
-                          placeholder="e.g. DL-04201100234"
+                          inputMode={tempIdType === "Aadhar Card" ? "numeric" : "text"}
+                          maxLength={tempIdType === "Aadhar Card" ? 12 : undefined}
+                          placeholder={tempIdType === "Aadhar Card" ? "12-digit Aadhaar Number" : "e.g. DL-04201100234"}
                           value={tempIdNumber}
-                          onChange={(e) => setTempIdNumber(e.target.value)}
+                          onChange={(e) => {
+                            if (tempIdType === "Aadhar Card") {
+                              setTempIdNumber(e.target.value.replace(/\D/g, "").slice(0, 12));
+                            } else {
+                              setTempIdNumber(e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (
+                              tempIdType === "Aadhar Card" &&
+                              !/^\d$/.test(e.key) &&
+                              !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"].includes(e.key) &&
+                              !e.ctrlKey &&
+                              !e.metaKey
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
                           className="w-full p-1.5 rounded border border-slate-300 bg-white font-mono"
                         />
                       </div>
@@ -4115,6 +4329,8 @@ function RegisterFIRForm() {
               onUpdateVictim={handleUpdateVictim}
               onDeleteVictim={handleDeleteVictim}
               onLinkComplainantAsVictim={handleLinkComplainantAsVictim}
+              autofillComplainantData={victimAutofillData}
+              autofillTrigger={victimAutofillTrigger}
             />
           </div>
         )}
