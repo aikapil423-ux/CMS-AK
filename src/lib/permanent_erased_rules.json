@@ -158,5 +158,21 @@
     "textSnippet": "Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023 • Haryana Police CCTNS IIF-I Form",
     "tagName": "p",
     "classes": "text-xs text-slate-500 mt-0.5"
+  },
+  {
+    "id": "1792403991190_ad3c",
+    "timestamp": "2026-10-19T09:59:51.190Z",
+    "url": "/fir-workspace/arrest-docs",
+    "textSnippet": "अभियोग (FIR No. FIR/0014/2026) में जब तक 'Crime Details (IIF-II)' फॉर्म भरकर FIR प्रोफ़ाइल के दस्तावेज़ पैनल (Documents Panel) में सेव नहीं हो जाता, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) जन",
+    "tagName": "p",
+    "classes": "text-xs text-amber-900 mt-1 max-w-3xl leading-relaxed"
+  },
+  {
+    "id": "1792403991190_92et",
+    "timestamp": "2026-10-19T09:59:51.190Z",
+    "url": "/fir-workspace/arrest-docs",
+    "textSnippet": "<div> element",
+    "tagName": "div",
+    "classes": "w-10 h-10 rounded-xl bg-amber-200 border border-amber-400 flex items-center justify-center text-amber-900 shrink-0"
   }
 ]

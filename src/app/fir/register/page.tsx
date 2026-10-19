@@ -246,11 +246,12 @@ function RegisterFIRForm() {
     });
   };
 
-  const handleFirTimeChange = (newTime: string) => {
+  const handleFirTimeChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
     const now = getNowLocal();
     let clampedTime = newTime;
     if (firDate >= now.date && clampedTime > now.time) {
       clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
     }
     setFirTime(clampedTime);
     setErrors((prev) => {
@@ -383,8 +384,33 @@ function RegisterFIRForm() {
   // TAB 1: Act & Section
   const [gdEntryNumber, setGdEntryNumber] = useState("");
   const [caseType, setCaseType] = useState<string>("ADULT");
-  const [gdDate, setGdDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [gdTime, setGdTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [gdDate, setGdDate] = useState(() => getNowLocal().date);
+  const [gdTime, setGdTime] = useState(() => getNowLocal().time);
+
+  const maxAllowedGdTime = gdDate >= currentNow.date ? currentNow.time : undefined;
+
+  const handleGdDateChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setGdDate(clampedDate);
+    if (clampedDate >= now.date && gdTime > now.time) {
+      setGdTime(now.time);
+    }
+  };
+
+  const handleGdTimeChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (gdDate >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setGdTime(clampedTime);
+  };
+
   const [sourceOfComplaint, setSourceOfComplaint] = useState("Citizen/General Public");
   const [complaintNumber, setComplaintNumber] = useState("");
   const [isHeinousCrime, setIsHeinousCrime] = useState(false);
@@ -540,9 +566,8 @@ function RegisterFIRForm() {
   const [tempDeptEmail, setTempDeptEmail] = useState("");
   const [inquestReportNo, setInquestReportNo] = useState("");
   const [courtDispatchDateTime, setCourtDispatchDateTime] = useState(() => {
-    const d = new Date();
-    d.setHours(d.getHours() + 2);
-    return `${d.toISOString().split("T")[0]}T${d.toTimeString().slice(0, 5)}`;
+    const now = getNowLocal();
+    return `${now.date}T${now.time}`;
   });
   const [roacConfirmed, setRoacConfirmed] = useState(true);
   const [freeCopyGiven, setFreeCopyGiven] = useState(true);
@@ -1993,10 +2018,18 @@ function RegisterFIRForm() {
                 type="time"
                 value={firTime}
                 max={maxAllowedFirTime}
-                onChange={(e) => handleFirTimeChange(e.target.value)}
-                onBlur={() => {
+                onChange={(e) => handleFirTimeChange(e.target.value, e.target)}
+                onInput={(e) => {
                   const now = getNowLocal();
-                  if (firDate >= now.date && firTime > now.time) {
+                  if (firDate >= now.date && e.currentTarget.value > now.time) {
+                    e.currentTarget.value = now.time;
+                    setFirTime(now.time);
+                  }
+                }}
+                onBlur={(e) => {
+                  const now = getNowLocal();
+                  if (firDate >= now.date && (e.currentTarget.value > now.time || firTime > now.time)) {
+                    e.currentTarget.value = now.time;
                     setFirTime(now.time);
                   }
                 }}
@@ -2127,7 +2160,8 @@ function RegisterFIRForm() {
                     <div className="w-1/2">
                       <DatePickerDDMMYYYY
                         value={gdDate}
-                        onChange={(e) => setGdDate(e.target.value)}
+                        max={maxAllowedFirDate}
+                        onChange={(e) => handleGdDateChange(e.target.value)}
                         placeholder="DD/MM/YYYY"
                         size="sm"
                         className={getFieldHighlightClass("gdDate")}
@@ -2136,8 +2170,24 @@ function RegisterFIRForm() {
                     <input
                       type="time"
                       value={gdTime}
-                      onChange={(e) => setGdTime(e.target.value)}
+                      max={maxAllowedGdTime}
+                      onChange={(e) => handleGdTimeChange(e.target.value, e.target)}
+                      onInput={(e) => {
+                        const now = getNowLocal();
+                        if (gdDate >= now.date && e.currentTarget.value > now.time) {
+                          e.currentTarget.value = now.time;
+                          setGdTime(now.time);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const now = getNowLocal();
+                        if (gdDate >= now.date && (e.currentTarget.value > now.time || gdTime > now.time)) {
+                          e.currentTarget.value = now.time;
+                          setGdTime(now.time);
+                        }
+                      }}
                       className={`w-1/2 p-2 rounded-lg border border-slate-300 font-mono text-xs ${getFieldHighlightClass("gdTime")}`}
+                      title={gdDate >= maxAllowedFirDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                     />
                   </div>
                 </div>
@@ -3098,6 +3148,7 @@ function RegisterFIRForm() {
                         <div className="mt-1">
                           <DatePickerDDMMYYYY
                             value={complainantDob}
+                            max={maxAllowedFirDate}
                             onChange={(e) => {
                               setComplainantDob(e.target.value);
                               if (errors.complainantAge) {
@@ -3673,6 +3724,7 @@ function RegisterFIRForm() {
                         <span className="text-[10px] text-slate-500 block mb-0.5">Date of Issue</span>
                         <DatePickerDDMMYYYY
                           value={passportIssueDate}
+                          max={maxAllowedFirDate}
                           onChange={(e) => setPassportIssueDate(e.target.value)}
                           placeholder="DD/MM/YYYY"
                           size="sm"

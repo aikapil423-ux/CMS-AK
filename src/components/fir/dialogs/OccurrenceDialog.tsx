@@ -31,6 +31,19 @@ export interface OccurrenceDialogProps {
   initialData?: ExtendedFIROccurrenceItem | null;
 }
 
+function getNowLocal() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return {
+    date: `${year}-${month}-${day}`,
+    time: `${hours}:${minutes}`,
+  };
+}
+
 export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
   isOpen,
   onClose,
@@ -39,16 +52,101 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
   initialData,
 }) => {
   const effectiveItem = initialItem || initialData;
+
+  // Dynamic real-time clock state for maximum allowable limits
+  const [currentNow, setCurrentNow] = useState(() => getNowLocal());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentNow(getNowLocal());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Occurrence Information
   const [isDateKnown, setIsDateKnown] = useState(true);
-  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().split("T")[0]);
-  const [timeFrom, setTimeFrom] = useState("10:00");
+  const [dateFrom, setDateFrom] = useState(() => getNowLocal().date);
+  const [timeFrom, setTimeFrom] = useState(() => {
+    const now = getNowLocal();
+    return now.time < "10:00" ? now.time : "10:00";
+  });
   const [dateTo, setDateTo] = useState("");
-  const [timeTo, setTimeTo] = useState("12:00");
+  const [timeTo, setTimeTo] = useState(() => getNowLocal().time);
   const [day, setDay] = useState("Monday");
-  const [infoReceivedDate, setInfoReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [infoReceivedTime, setInfoReceivedTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [infoReceivedDate, setInfoReceivedDate] = useState(() => getNowLocal().date);
+  const [infoReceivedTime, setInfoReceivedTime] = useState(() => getNowLocal().time);
   const [isForestPlace, setIsForestPlace] = useState(false);
+
+  const maxAllowedDate = currentNow.date;
+  const maxAllowedTimeFrom = dateFrom >= maxAllowedDate ? currentNow.time : undefined;
+  const maxAllowedTimeTo = dateTo >= maxAllowedDate ? currentNow.time : undefined;
+  const maxAllowedInfoReceivedTime = infoReceivedDate >= maxAllowedDate ? currentNow.time : undefined;
+
+  const handleDateFromChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setDateFrom(clampedDate);
+    if (clampedDate >= now.date && timeFrom > now.time) {
+      setTimeFrom(now.time);
+    }
+  };
+
+  const handleTimeFromChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (dateFrom >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setTimeFrom(clampedTime);
+  };
+
+  const handleDateToChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setDateTo(clampedDate);
+    if (clampedDate >= now.date && timeTo > now.time) {
+      setTimeTo(now.time);
+    }
+  };
+
+  const handleTimeToChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (dateTo >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setTimeTo(clampedTime);
+  };
+
+  const handleInfoReceivedDateChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setInfoReceivedDate(clampedDate);
+    if (clampedDate >= now.date && infoReceivedTime > now.time) {
+      setInfoReceivedTime(now.time);
+    }
+  };
+
+  const handleInfoReceivedTimeChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (infoReceivedDate >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setInfoReceivedTime(clampedTime);
+  };
 
   // Reason for Delay
   const [delayInRegistrationByPolice, setDelayInRegistrationByPolice] = useState("");
@@ -78,14 +176,15 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleClear = () => {
+    const now = getNowLocal();
     setIsDateKnown(true);
-    setDateFrom(new Date().toISOString().split("T")[0]);
-    setTimeFrom("10:00");
+    setDateFrom(now.date);
+    setTimeFrom(now.time < "10:00" ? now.time : "10:00");
     setDateTo("");
-    setTimeTo("");
+    setTimeTo(now.time);
     setDay("Monday");
-    setInfoReceivedDate(new Date().toISOString().split("T")[0]);
-    setInfoReceivedTime(new Date().toTimeString().slice(0, 5));
+    setInfoReceivedDate(now.date);
+    setInfoReceivedTime(now.time);
     setIsForestPlace(false);
     setDelayInRegistrationByPolice("");
     setDelayInReportingByComplainant("");

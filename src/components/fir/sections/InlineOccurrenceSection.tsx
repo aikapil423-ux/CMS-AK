@@ -41,6 +41,19 @@ export interface InlineOccurrenceSectionProps {
   onDeleteOccurrence: (id: string) => void;
 }
 
+function getNowLocal() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return {
+    date: `${year}-${month}-${day}`,
+    time: `${hours}:${minutes}`,
+  };
+}
+
 export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = ({
   occurrencesList,
   onAddOccurrence,
@@ -49,16 +62,100 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Dynamic real-time clock state for maximum allowable limits
+  const [currentNow, setCurrentNow] = useState(() => getNowLocal());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentNow(getNowLocal());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Occurrence Information
   const [isDateKnown, setIsDateKnown] = useState(true);
-  const [dateFrom, setDateFrom] = useState(() => new Date().toISOString().split("T")[0]);
-  const [timeFrom, setTimeFrom] = useState("10:00");
-  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split("T")[0]);
-  const [timeTo, setTimeTo] = useState("12:00");
+  const [dateFrom, setDateFrom] = useState(() => getNowLocal().date);
+  const [timeFrom, setTimeFrom] = useState(() => {
+    const now = getNowLocal();
+    return now.time < "10:00" ? now.time : "10:00";
+  });
+  const [dateTo, setDateTo] = useState(() => getNowLocal().date);
+  const [timeTo, setTimeTo] = useState(() => getNowLocal().time);
   const [day, setDay] = useState("Monday");
-  const [infoReceivedDate, setInfoReceivedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [infoReceivedTime, setInfoReceivedTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [infoReceivedDate, setInfoReceivedDate] = useState(() => getNowLocal().date);
+  const [infoReceivedTime, setInfoReceivedTime] = useState(() => getNowLocal().time);
   const [isForestPlace, setIsForestPlace] = useState(false);
+
+  const maxAllowedDate = currentNow.date;
+  const maxAllowedTimeFrom = dateFrom >= maxAllowedDate ? currentNow.time : undefined;
+  const maxAllowedTimeTo = dateTo >= maxAllowedDate ? currentNow.time : undefined;
+  const maxAllowedInfoReceivedTime = infoReceivedDate >= maxAllowedDate ? currentNow.time : undefined;
+
+  const handleDateFromChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setDateFrom(clampedDate);
+    if (clampedDate >= now.date && timeFrom > now.time) {
+      setTimeFrom(now.time);
+    }
+  };
+
+  const handleTimeFromChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (dateFrom >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setTimeFrom(clampedTime);
+  };
+
+  const handleDateToChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setDateTo(clampedDate);
+    if (clampedDate >= now.date && timeTo > now.time) {
+      setTimeTo(now.time);
+    }
+  };
+
+  const handleTimeToChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (dateTo >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setTimeTo(clampedTime);
+  };
+
+  const handleInfoReceivedDateChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setInfoReceivedDate(clampedDate);
+    if (clampedDate >= now.date && infoReceivedTime > now.time) {
+      setInfoReceivedTime(now.time);
+    }
+  };
+
+  const handleInfoReceivedTimeChange = (newTime: string, targetEl?: HTMLInputElement | null) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (infoReceivedDate >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+      if (targetEl) targetEl.value = clampedTime;
+    }
+    setInfoReceivedTime(clampedTime);
+  };
 
   // Reason for Delay
   const [delayInRegistrationByPolice, setDelayInRegistrationByPolice] = useState("");
@@ -89,15 +186,16 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   const handleClear = () => {
+    const now = getNowLocal();
     setEditingId(null);
     setIsDateKnown(true);
-    setDateFrom(new Date().toISOString().split("T")[0]);
-    setTimeFrom("10:00");
-    setDateTo(new Date().toISOString().split("T")[0]);
-    setTimeTo("12:00");
+    setDateFrom(now.date);
+    setTimeFrom(now.time < "10:00" ? now.time : "10:00");
+    setDateTo(now.date);
+    setTimeTo(now.time);
     setDay("Monday");
-    setInfoReceivedDate(new Date().toISOString().split("T")[0]);
-    setInfoReceivedTime(new Date().toTimeString().slice(0, 5));
+    setInfoReceivedDate(now.date);
+    setInfoReceivedTime(now.time);
     setIsForestPlace(false);
     setDelayInRegistrationByPolice("");
     setDelayInReportingByComplainant("");
@@ -177,13 +275,27 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
       return;
     }
 
-    // Mandatory Information Received Date/Time
     if (!infoReceivedDate.trim()) {
       setErrorMsg("Info Received Date (सूचना प्राप्त दिनांक) is mandatory.");
       return;
     }
     if (!infoReceivedTime.trim()) {
       setErrorMsg("Info Received Time (समय) is mandatory.");
+      return;
+    }
+
+    // Ensure Date and Time are not ahead of current time
+    const now = getNowLocal();
+    if (dateFrom > now.date || (dateFrom === now.date && timeFrom > now.time)) {
+      setErrorMsg("Date / Time From cannot be in the future (समय भविष्य का नहीं हो सकता).");
+      return;
+    }
+    if (isDateKnown && dateTo && (dateTo > now.date || (dateTo === now.date && timeTo > now.time))) {
+      setErrorMsg("Date / Time To cannot be in the future (समय भविष्य का नहीं हो सकता).");
+      return;
+    }
+    if (infoReceivedDate > now.date || (infoReceivedDate === now.date && infoReceivedTime > now.time)) {
+      setErrorMsg("Information Received Date / Time cannot be in the future (सूचना प्राप्त समय भविष्य का नहीं हो सकता).");
       return;
     }
 
@@ -325,7 +437,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 </label>
                 <DatePickerDDMMYYYY
                   value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
+                  max={maxAllowedDate}
+                  onChange={(e) => handleDateFromChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
@@ -338,8 +451,24 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <input
                   type="time"
                   value={timeFrom}
-                  onChange={(e) => setTimeFrom(e.target.value)}
+                  max={maxAllowedTimeFrom}
+                  onChange={(e) => handleTimeFromChange(e.target.value, e.target)}
+                  onInput={(e) => {
+                    const now = getNowLocal();
+                    if (dateFrom >= now.date && e.currentTarget.value > now.time) {
+                      e.currentTarget.value = now.time;
+                      setTimeFrom(now.time);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const now = getNowLocal();
+                    if (dateFrom >= now.date && (e.currentTarget.value > now.time || timeFrom > now.time)) {
+                      e.currentTarget.value = now.time;
+                      setTimeFrom(now.time);
+                    }
+                  }}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  title={dateFrom >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />
               </div>
@@ -350,7 +479,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <DatePickerDDMMYYYY
                   disabled={!isDateKnown}
                   value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
+                  max={maxAllowedDate}
+                  onChange={(e) => handleDateToChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
@@ -364,8 +494,24 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   type="time"
                   disabled={!isDateKnown}
                   value={timeTo}
-                  onChange={(e) => setTimeTo(e.target.value)}
+                  max={maxAllowedTimeTo}
+                  onChange={(e) => handleTimeToChange(e.target.value, e.target)}
+                  onInput={(e) => {
+                    const now = getNowLocal();
+                    if (dateTo >= now.date && e.currentTarget.value > now.time) {
+                      e.currentTarget.value = now.time;
+                      setTimeTo(now.time);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const now = getNowLocal();
+                    if (dateTo >= now.date && (e.currentTarget.value > now.time || timeTo > now.time)) {
+                      e.currentTarget.value = now.time;
+                      setTimeTo(now.time);
+                    }
+                  }}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs disabled:opacity-50"
+                  title={dateTo >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />
               </div>
@@ -395,7 +541,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 </label>
                 <DatePickerDDMMYYYY
                   value={infoReceivedDate}
-                  onChange={(e) => setInfoReceivedDate(e.target.value)}
+                  max={maxAllowedDate}
+                  onChange={(e) => handleInfoReceivedDateChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
@@ -408,8 +555,24 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <input
                   type="time"
                   value={infoReceivedTime}
-                  onChange={(e) => setInfoReceivedTime(e.target.value)}
+                  max={maxAllowedInfoReceivedTime}
+                  onChange={(e) => handleInfoReceivedTimeChange(e.target.value, e.target)}
+                  onInput={(e) => {
+                    const now = getNowLocal();
+                    if (infoReceivedDate >= now.date && e.currentTarget.value > now.time) {
+                      e.currentTarget.value = now.time;
+                      setInfoReceivedTime(now.time);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const now = getNowLocal();
+                    if (infoReceivedDate >= now.date && (e.currentTarget.value > now.time || infoReceivedTime > now.time)) {
+                      e.currentTarget.value = now.time;
+                      setInfoReceivedTime(now.time);
+                    }
+                  }}
                   className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  title={infoReceivedDate >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />
               </div>

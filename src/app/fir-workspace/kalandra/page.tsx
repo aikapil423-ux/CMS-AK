@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import {
@@ -28,6 +28,8 @@ import {
   Filter,
   Check,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Layers,
   Send,
   UserCheck
@@ -111,6 +113,22 @@ function KalandraWorkspaceContent() {
     pkg: KalandraDocumentPackage;
     activeDoc: "main" | "forwarding" | "police" | "witness" | "annexure";
   } | null>(null);
+
+  // Smooth vertical slide / scroll ref for document package
+  const docScrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollDoc = (direction: "up" | "down") => {
+    if (docScrollRef.current) {
+      const scrollAmount = direction === "up" ? -350 : 350;
+      docScrollRef.current.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    if (viewingPackage && docScrollRef.current) {
+      docScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [viewingPackage?.activeDoc]);
 
   // Manager New Template State
   const [customTemplateModal, setCustomTemplateModal] = useState(false);
@@ -364,6 +382,79 @@ function KalandraWorkspaceContent() {
     });
   };
 
+  const handlePreviewTemplate = (t: KalandraTemplate) => {
+    const sampleRecord: KalandraRecord = {
+      id: "preview-" + t.id,
+      kalandraNumber: "KAL/PRV/2026",
+      caseType: "DIRECT",
+      templateId: t.id,
+      typeCode: t.code,
+      templateTitle: isHi ? t.titleHi : t.titleEn,
+      actAndSection: t.section,
+      magistrateCourt: isHi ? t.defaultCourtHi : t.defaultCourtEn,
+      policeStation: isHi ? "थाना शहर अम्बाला" : "PS City Ambala",
+      district: isHi ? "अम्बाला" : "Ambala",
+      reportingOfficer: isHi ? "सुरेन्द्र पाल" : "Surender Pal",
+      officerRank: isHi ? "सब-इंस्पेक्टर" : "Sub-Inspector",
+      officerBelt: "SI/1104",
+      respondentName: isHi ? "रमेश कुमार" : "Ramesh Kumar",
+      respondentFather: isHi ? "सुरेश चन्द" : "Suresh Chand",
+      respondentAge: 38,
+      respondentAddress: isHi ? "मकान नं. 42, मेन बाजार, अम्बाला शहर" : "H.No. 42, Main Bazar, Ambala City",
+      respondentMobile: "9876543210",
+      incidentDate: new Date().toISOString().split("T")[0],
+      incidentTime: "11:30 AM",
+      incidentPlace: isHi ? "मेन चौक, बाजार क्षेत्र" : "Main Chowk, Bazar Area",
+      factsAndCircumstances: kalandraService.populateNarrative(
+        (isHi ? t.defaultNarrativeTemplateHi : t.defaultNarrativeTemplateEn) || "",
+        {
+          district: isHi ? "अम्बाला" : "Ambala",
+          incidentDate: new Date().toISOString().split("T")[0],
+          incidentTime: "11:30 AM",
+          incidentPlace: isHi ? "मेन चौक, बाजार क्षेत्र" : "Main Chowk, Bazar Area",
+          respondentName: isHi ? "रमेश कुमार" : "Ramesh Kumar",
+          respondentFather: isHi ? "सुरेश चन्द" : "Suresh Chand",
+          respondentAddress: isHi ? "मकान नं. 42, मेन बाजार, अम्बाला शहर" : "H.No. 42, Main Bazar, Ambala City",
+        }
+      ),
+      proposedAction: isHi
+        ? "विपक्षी को तलब फरमाकर एक वर्ष की अवधि हेतु शांति व्यवस्था बनाए रखने बाबत मुचलका व दो जामिन पाबंद फरमाए जाने का आदेश जारी करने की कृपा करें।"
+        : "It is prayed that respondent be summoned and bound down to execute personal bond with sureties for maintaining public peace.",
+      witnesses: [
+        {
+          id: "w1",
+          name: isHi ? "संजय शर्मा" : "Sanjay Sharma",
+          fatherName: isHi ? "राम लाल" : "Ram Lal",
+          address: isHi ? "दुकान नं. 12, मेन बाजार" : "Shop 12, Main Bazar",
+          mobile: "9812345678"
+        },
+        {
+          id: "w2",
+          name: isHi ? "HC कुलदीप सिंह नं. 452" : "HC Kuldeep Singh No. 452",
+          address: isHi ? "थाना शहर अम्बाला" : "PS City Ambala",
+          mobile: "9812345679"
+        }
+      ],
+      supportingDocuments: (t.supportingDocumentsList || []).map((doc, idx) => ({
+        id: `doc-${idx}`,
+        title: doc,
+        documentType: "OTHER",
+        isAttached: true
+      })),
+      status: "DRAFT",
+      language: lang,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const pkg = kalandraService.generateKalandraPackage(sampleRecord, lang);
+    setViewingPackage({
+      record: sampleRecord,
+      pkg,
+      activeDoc: "main"
+    });
+  };
+
   const handleEditRecord = (rec: KalandraRecord) => {
     setEditingRecordId(rec.id);
     const tmpl = kalandraService.getTemplateById(rec.templateId) || kalandraService.getTemplateByCode(rec.typeCode);
@@ -560,7 +651,7 @@ function KalandraWorkspaceContent() {
         </div>
 
         {/* Inner 5 Tabs Navigation: Sleek Segmented Pills */}
-        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 overflow-x-auto text-xs">
+        <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2.5 overflow-x-auto text-xs touch-pan-x scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("templates")}
@@ -656,7 +747,7 @@ function KalandraWorkspaceContent() {
 
       {/* TAB 1: KALANDRA TEMPLATES */}
       {activeTab === "templates" && (
-        <div className="space-y-3.5">
+        <div className="space-y-3.5 touch-pan-y overscroll-contain">
           {/* Sleek Search & Filter Toolbar */}
           <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
             <div className="relative flex-1 min-w-[220px]">
@@ -710,7 +801,7 @@ function KalandraWorkspaceContent() {
           </div>
 
           {/* Minimalist Templates Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 touch-pan-y">
             {filteredTemplates.map((t) => {
               const isNeedsVerify = t.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION";
               return (
@@ -771,14 +862,23 @@ function KalandraWorkspaceContent() {
                     )}
                   </div>
 
-                  <div className="pt-3 mt-2">
+                  <div className="pt-3 mt-2 grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={() => handlePreviewTemplate(t)}
+                      variant="outline"
+                      className="w-full h-8 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-100 gap-1 rounded-lg cursor-pointer transition-colors"
+                      size="sm"
+                    >
+                      <Eye className="w-3 h-3 text-slate-500" />
+                      <span>{isHi ? "पूर्वावलोकन" : "Preview"}</span>
+                    </Button>
                     <Button
                       onClick={() => handleSelectTemplate(t)}
-                      className="w-full h-8 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white gap-1.5 rounded-lg shadow-2xs cursor-pointer"
+                      className="w-full h-8 text-xs font-semibold bg-[#0b192c] hover:bg-slate-800 text-white gap-1 rounded-lg shadow-2xs cursor-pointer transition-colors"
                       size="sm"
                     >
                       <Edit className="w-3 h-3" />
-                      <span>{isHi ? "यह प्रारूप चुनें" : "Use Template"}</span>
+                      <span>{isHi ? "प्रारूप चुनें" : "Use"}</span>
                     </Button>
                   </div>
                 </div>
@@ -1557,7 +1657,7 @@ function KalandraWorkspaceContent() {
               </Button>
             </div>
 
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 touch-pan-x scrollbar-none">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
@@ -1593,14 +1693,25 @@ function KalandraWorkspaceContent() {
                       </td>
                       <td className="p-2.5 text-slate-600">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</td>
                       <td className="p-2.5 text-right">
-                        <Button
-                          onClick={() => handleSelectTemplate(t)}
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs text-slate-700 border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
-                        >
-                          {isHi ? "उपयोग करें" : "Use"}
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => handlePreviewTemplate(t)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold cursor-pointer gap-1"
+                          >
+                            <Eye className="w-3 h-3 text-slate-500" />
+                            <span>{isHi ? "देखें" : "Preview"}</span>
+                          </Button>
+                          <Button
+                            onClick={() => handleSelectTemplate(t)}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs text-slate-700 border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
+                          >
+                            {isHi ? "उपयोग करें" : "Use"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1613,15 +1724,20 @@ function KalandraWorkspaceContent() {
 
       {/* MODAL: VIEW DOCUMENT PACKAGE */}
       {viewingPackage && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden touch-none"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewingPackage(null);
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[94vh] sm:h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
             {/* Modal Header */}
-            <div className="bg-[#0b192c] text-white p-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-[#0b192c] text-white p-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <Gavel className="w-4 h-4 text-emerald-400" />
                 <div>
                   <h3 className="font-bold text-xs sm:text-sm">
-                    {viewingPackage.record.kalandraNumber} - {isHi ? "दस्तावेज पैकेज" : "Document Package"}
+                    {viewingPackage.record.kalandraNumber} - {isHi ? "दस्तावेज पैकेज पूर्वावलोकन" : "Document Package Preview"}
                   </h3>
                   <div className="text-[11px] text-slate-400">
                     {viewingPackage.record.templateTitle} ({viewingPackage.record.actAndSection})
@@ -1649,7 +1765,7 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Document Switcher Tabs */}
-            <div className="bg-slate-100 p-1.5 flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs">
+            <div className="bg-slate-100 p-1.5 flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs shrink-0 touch-pan-x scrollbar-none">
               <button
                 type="button"
                 onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "main" })}
@@ -1697,9 +1813,32 @@ function KalandraWorkspaceContent() {
               </button>
             </div>
 
-            {/* Document Render Area */}
-            <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50">
-              <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-6 min-h-[450px]">
+            {/* Document Render Area with Smooth Vertical Slide */}
+            <div
+              ref={docScrollRef}
+              className="flex-1 p-3 sm:p-6 overflow-y-auto overscroll-contain touch-pan-y bg-slate-50/80 [scrollbar-gutter:stable] scroll-smooth relative"
+            >
+              {/* Quick Slide Floating Controls */}
+              <div className="sticky top-2 float-right z-20 flex flex-col gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
+                <button
+                  type="button"
+                  onClick={() => handleScrollDoc("up")}
+                  title={isHi ? "ऊपर स्लाइड करें" : "Slide Up"}
+                  className="w-8 h-8 rounded-full bg-white/95 border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScrollDoc("down")}
+                  title={isHi ? "नीचे स्लाइड करें" : "Slide Down"}
+                  className="w-8 h-8 rounded-full bg-white/95 border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-4 sm:p-6 min-h-[450px]">
                 {viewingPackage.activeDoc === "main" && (
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.mainKalandraHtml }} />
                 )}
@@ -1719,7 +1858,7 @@ function KalandraWorkspaceContent() {
             </div>
 
             {/* Modal Footer */}
-            <div className="bg-white p-3 border-t border-slate-200 flex items-center justify-between">
+            <div className="bg-white p-3 border-t border-slate-200 flex items-center justify-between shrink-0">
               <div className="text-xs text-slate-500">
                 {isHi ? "न्यायालय प्रस्तुत करने हेतु A4 प्रिंट निकालें या पीडीएफ सेव करें।" : "Ready for print or submission before the Court."}
               </div>
@@ -1748,9 +1887,14 @@ function KalandraWorkspaceContent() {
 
       {/* MODAL: CREATE CUSTOM TEMPLATE IN MANAGER */}
       {customTemplateModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-4 sm:p-5 space-y-3.5 border border-slate-200">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-hidden touch-none"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCustomTemplateModal(false);
+          }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[92vh] sm:max-h-[88vh] flex flex-col overflow-hidden border border-slate-200">
+            <div className="flex items-center justify-between p-4 pb-3 border-b border-slate-100 shrink-0">
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
                 {isHi ? "नया कलंदरा प्रारूप जोड़ें" : "Create Custom Kalandra Template"}
               </h3>
@@ -1763,96 +1907,98 @@ function KalandraWorkspaceContent() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "शीर्षक (हिंदी)" : "Title (Hindi)"} *
-                </label>
-                <input
-                  type="text"
-                  value={newTemplate.titleHi || ""}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, titleHi: e.target.value })}
-                  placeholder="e.g. कलंदरा विशेष अभियान..."
-                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "शीर्षक (English)" : "Title (English)"} *
-                </label>
-                <input
-                  type="text"
-                  value={newTemplate.titleEn || ""}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, titleEn: e.target.value })}
-                  placeholder="e.g. Special Kalandra..."
-                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
-                />
-              </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 sm:p-5 space-y-3.5 [scrollbar-gutter:stable]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "शीर्षक (हिंदी)" : "Title (Hindi)"} *
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplate.titleHi || ""}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, titleHi: e.target.value })}
+                    placeholder="e.g. कलंदरा विशेष अभियान..."
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "शीर्षक (English)" : "Title (English)"} *
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplate.titleEn || ""}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, titleEn: e.target.value })}
+                    placeholder="e.g. Special Kalandra..."
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  />
+                </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "अधिनियम व धारा (Section)" : "Act & Section"} *
-                </label>
-                <input
-                  type="text"
-                  value={newTemplate.section || ""}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, section: e.target.value })}
-                  placeholder="e.g. Sec 107/151 CrPC / Local Act"
-                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
-                />
-              </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "अधिनियम व धारा (Section)" : "Act & Section"} *
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplate.section || ""}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, section: e.target.value })}
+                    placeholder="e.g. Sec 107/151 CrPC / Local Act"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  />
+                </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "विधिक सत्यापन स्थिति" : "Legal Status"}
-                </label>
-                <select
-                  value={newTemplate.legalStatus || "VERIFIED_STATUTORY"}
-                  onChange={(e) =>
-                    setNewTemplate({
-                      ...newTemplate,
-                      legalStatus: e.target.value as KalandraLegalStatus
-                    })
-                  }
-                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium cursor-pointer"
-                >
-                  <option value="VERIFIED_STATUTORY">Verified Statutory (वैधानिक सत्यापित)</option>
-                  <option value="NEEDS_LEGAL_MAPPING_VERIFICATION">
-                    Needs Legal Mapping Verification (विधि सत्यापन प्रतीक्षित)
-                  </option>
-                </select>
-              </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "विधिक सत्यापन स्थिति" : "Legal Status"}
+                  </label>
+                  <select
+                    value={newTemplate.legalStatus || "VERIFIED_STATUTORY"}
+                    onChange={(e) =>
+                      setNewTemplate({
+                        ...newTemplate,
+                        legalStatus: e.target.value as KalandraLegalStatus
+                      })
+                    }
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium cursor-pointer"
+                  >
+                    <option value="VERIFIED_STATUTORY">Verified Statutory (वैधानिक सत्यापित)</option>
+                    <option value="NEEDS_LEGAL_MAPPING_VERIFICATION">
+                      Needs Legal Mapping Verification (विधि सत्यापन प्रतीक्षित)
+                    </option>
+                  </select>
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "डिफ़ॉल्ट न्यायालय (Court)" : "Default Court"}
-                </label>
-                <input
-                  type="text"
-                  value={newTemplate.defaultCourtHi || ""}
-                  onChange={(e) => setNewTemplate({ ...newTemplate, defaultCourtHi: e.target.value })}
-                  placeholder="न्यायालय उप-मंडल मजिस्ट्रेट / कार्यपालक दंडाधिकारी"
-                  className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
-                />
-              </div>
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "डिफ़ॉल्ट न्यायालय (Court)" : "Default Court"}
+                  </label>
+                  <input
+                    type="text"
+                    value={newTemplate.defaultCourtHi || ""}
+                    onChange={(e) => setNewTemplate({ ...newTemplate, defaultCourtHi: e.target.value })}
+                    placeholder="न्यायालय उप-मंडल मजिस्ट्रेट / कार्यपालक दंडाधिकारी"
+                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  />
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                  {isHi ? "डिफ़ॉल्ट कलंदरा आख्या प्रारूप (Hindi Narrative Template)" : "Narrative Template"}
-                </label>
-                <textarea
-                  rows={3}
-                  value={newTemplate.defaultNarrativeTemplateHi || ""}
-                  onChange={(e) =>
-                    setNewTemplate({ ...newTemplate, defaultNarrativeTemplateHi: e.target.value })
-                  }
-                  placeholder="सेवा में श्रीमान दंडाधिकारी... {{respondentName}}, {{incidentPlace}}..."
-                  className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-sans text-xs"
-                />
+                <div className="sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                    {isHi ? "डिफ़ॉल्ट कलंदरा आख्या प्रारूप (Hindi Narrative Template)" : "Narrative Template"}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={newTemplate.defaultNarrativeTemplateHi || ""}
+                    onChange={(e) =>
+                      setNewTemplate({ ...newTemplate, defaultNarrativeTemplateHi: e.target.value })
+                    }
+                    placeholder="सेवा में श्रीमान दंडाधिकारी... {{respondentName}}, {{incidentPlace}}..."
+                    className="w-full p-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-sans text-xs"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="pt-2.5 border-t border-slate-100 flex justify-end gap-2">
+            <div className="p-3 sm:p-4 border-t border-slate-100 bg-white flex justify-end gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"

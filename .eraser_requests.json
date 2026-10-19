@@ -295,5 +295,27 @@
     "classes": "text-xs text-slate-500 mt-0.5",
     "parentContext": "Register First Information Report (FIR)\n\nSection 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023",
     "status": "deleted_from_code"
+  },
+  {
+    "id": "1792403991481",
+    "timestamp": "2026-10-19T09:59:51.481Z",
+    "url": "/fir-workspace/arrest-docs",
+    "textSnippet": "अभियोग (FIR No. FIR/0014/2026) में जब तक 'Crime Details (IIF-II)' फॉर्म भरकर FIR प्रोफ़ाइल के दस्तावेज़ पैनल (Documents Panel) में सेव नहीं हो जाता, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) जन",
+    "tagName": "p",
+    "ariaLabel": "",
+    "classes": "text-xs text-amber-900 mt-1 max-w-3xl leading-relaxed",
+    "parentContext": "⚠️ Statutory Pre-requisite: Crime Detail Form (IIF-II) is Pending\nMANDATORY\n\nअभियोग (FIR No. FIR/001",
+    "status": "pending_code_deletion"
+  },
+  {
+    "id": "1792403991527",
+    "timestamp": "2026-10-19T09:59:51.527Z",
+    "url": "/fir-workspace/arrest-docs",
+    "textSnippet": "<div> element",
+    "tagName": "div",
+    "ariaLabel": "",
+    "classes": "w-10 h-10 rounded-xl bg-amber-200 border border-amber-400 flex items-center justify-center text-amber-900 shrink-0",
+    "parentContext": "⚠️ Statutory Pre-requisite: Crime Detail Form (IIF-II) is Pending\nMANDATORY",
+    "status": "pending_code_deletion"
   }
 ]

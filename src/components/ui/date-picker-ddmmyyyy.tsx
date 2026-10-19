@@ -89,6 +89,9 @@ export function DatePickerDDMMYYYY({
     }
   };
 
+  const isoMin = min ? (min.includes("/") ? ddmmyyyyToIso(min) : min) : undefined;
+  const isoMax = max ? (max.includes("/") ? ddmmyyyyToIso(max) : max) : undefined;
+
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/[^0-9/]/g, "");
 
@@ -157,8 +160,6 @@ export function DatePickerDDMMYYYY({
     }
   };
 
-  const isoMin = min ? (min.includes("/") ? ddmmyyyyToIso(min) : min) : undefined;
-  const isoMax = max ? (max.includes("/") ? ddmmyyyyToIso(max) : max) : undefined;
   const currentIso = ddmmyyyyToIso(displayText) || (value ? (value.includes("/") ? ddmmyyyyToIso(value) : value) : "");
 
   const heightClass = size === "sm" ? "h-8 text-xs py-1" : size === "lg" ? "h-11 text-base py-2.5" : "h-9 text-xs sm:text-sm py-1.5";
