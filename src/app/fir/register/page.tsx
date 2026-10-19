@@ -1652,10 +1652,11 @@ function RegisterFIRForm() {
             !occ.infoReceivedTime?.trim() ||
             !occ.city?.trim() ||
             !occ.directionFromPs?.trim() ||
-            !String(occ.distanceKm ?? "").trim()
+            !String(occ.distanceKm ?? "").trim() ||
+            Number(occ.distanceKm) < 0
         );
         if (invalidOcc) {
-          tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and Distance from PS are mandatory.";
+          tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and non-negative Distance from PS are mandatory.";
         }
       }
     }
