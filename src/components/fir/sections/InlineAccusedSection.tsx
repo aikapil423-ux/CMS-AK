@@ -1320,6 +1320,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     <label className="font-semibold text-slate-700 block mb-1">Date of Birth (DOB)</label>
                     <DatePickerDDMMYYYY
                       value={dob}
+                      max={new Date().toISOString().split("T")[0]}
                       onChange={(e) => handleDobChange(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
@@ -1687,6 +1688,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                     <label className="font-semibold text-slate-700 block mb-1">Date of Issue</label>
                     <DatePickerDDMMYYYY
                       value={passportIssueDate}
+                      max={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setPassportIssueDate(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
