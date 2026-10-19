@@ -123,7 +123,6 @@ export type MainTabKey =
   | "victim_info"
   | "accused"
   | "property"
-  | "hurt_detail"
   | "signature";
 
 const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: string }[] = [
@@ -134,9 +133,8 @@ const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: strin
   { key: "action_taken", label: "5. Action Taken", shortTitle: "Action Taken", icon: Shield },
   { key: "victim_info", label: "6. Victim Information", shortTitle: "Victim Info", icon: Users },
   { key: "accused", label: "7. Accused", shortTitle: "Accused", icon: Crosshair },
-  { key: "property", label: "8. Property of Interest", shortTitle: "Property", icon: Package },
-  { key: "hurt_detail", label: "9. Hurt Case Detail", shortTitle: "Hurt Case", icon: Activity },
-  { key: "signature", label: "10. Signature", shortTitle: "Signature", icon: PenTool },
+  { key: "property", label: "8. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
+  { key: "signature", label: "9. Signature", shortTitle: "Signature", icon: PenTool },
 ];
 
 const MAJOR_HEADS = [
@@ -163,6 +161,19 @@ const MINOR_HEADS: Record<string, string[]> = {
   "Traffic & Motor Vehicles": ["Rash and Negligent Driving", "Fatal Accident", "Hit and Run"],
 };
 
+function getNowLocal() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  return {
+    date: `${y}-${m}-${d}`,
+    time: `${hh}:${mm}`,
+  };
+}
+
 function RegisterFIRForm() {
   const { currentUser } = useAuth();
   const router = useRouter();
@@ -175,6 +186,17 @@ function RegisterFIRForm() {
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 
   const [activeTab, setActiveTab] = useState<MainTabKey>("act_section");
+
+  // Dynamic real-time clock state for maximum allowable limits
+  const [currentNow, setCurrentNow] = useState(() => getNowLocal());
+
+  // Periodically refresh currentNow every 15s to ensure dynamic boundary check
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentNow(getNowLocal());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Linked Complaint & Status
   const [linkedComplaint, setLinkedComplaint] = useState<ComplaintItem | null>(null);
@@ -194,8 +216,53 @@ function RegisterFIRForm() {
   const [state, setState] = useState("Haryana");
   const [district, setDistrict] = useState("Gurugram");
   const [policeStation, setPoliceStation] = useState("Sector 29 Police Station");
-  const [firDate, setFirDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [firTime, setFirTime] = useState(() => new Date().toTimeString().slice(0, 5));
+
+  // Auto-populate latest local date & time
+  const [firDate, setFirDate] = useState(() => getNowLocal().date);
+  const [firTime, setFirTime] = useState(() => getNowLocal().time);
+
+  // Auto-populate latest date and time on initial mount
+  useEffect(() => {
+    const latest = getNowLocal();
+    setFirDate(latest.date);
+    setFirTime(latest.time);
+  }, []);
+
+  const maxAllowedFirDate = currentNow.date;
+  const maxAllowedFirTime = firDate >= maxAllowedFirDate ? currentNow.time : undefined;
+
+  const handleFirDateChange = (newDate: string) => {
+    const now = getNowLocal();
+    let clampedDate = newDate;
+    if (clampedDate && clampedDate > now.date) {
+      clampedDate = now.date;
+    }
+    setFirDate(clampedDate);
+
+    // If date is today, clamp time if it exceeds current time
+    if (clampedDate >= now.date && firTime > now.time) {
+      setFirTime(now.time);
+    }
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.firDate;
+      return next;
+    });
+  };
+
+  const handleFirTimeChange = (newTime: string) => {
+    const now = getNowLocal();
+    let clampedTime = newTime;
+    if (firDate >= now.date && clampedTime > now.time) {
+      clampedTime = now.time;
+    }
+    setFirTime(clampedTime);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.firTime;
+      return next;
+    });
+  };
 
   // Cascading Jurisdiction Lists and Handlers
   const availableStates = useMemo(() => getStatesList(), []);
@@ -492,7 +559,7 @@ function RegisterFIRForm() {
   const [accusedMoreThan, setAccusedMoreThan] = useState("");
   const [accusedList, setAccusedList] = useState<ExtendedAccusedPerson[]>([]);
 
-  // TAB 8: Property of Interest (Excluding Nature of Property)
+  // TAB 8: Property of Interest & Hurt Case Details
   const [propertiesList, setPropertiesList] = useState<FIRPropertyItem[]>([]);
   const [showAddPropertyForm, setShowAddPropertyForm] = useState(false);
   const [tempPropCategory, setTempPropCategory] = useState<string>(PROPERTY_CATEGORIES[0]);
@@ -500,7 +567,7 @@ function RegisterFIRForm() {
   const [tempPropDescription, setTempPropDescription] = useState("");
   const [tempPropValue, setTempPropValue] = useState("");
 
-  // TAB 9: Hurt Case Detail
+  // Hurt Case Details (Merged in Tab 8)
   const [countDeceased, setCountDeceased] = useState("0");
   const [countSeriouslyHurt, setCountSeriouslyHurt] = useState("0");
   const [countSimpleHurt, setCountSimpleHurt] = useState("0");
@@ -510,7 +577,7 @@ function RegisterFIRForm() {
   const [videoFootageAvailable, setVideoFootageAvailable] = useState(false);
   const [uploadedMedicalDocs, setUploadedMedicalDocs] = useState<string[]>([]);
 
-  // TAB 10: Signature
+  // TAB 9: Signature
   const [signatureCanvasDrawn, setSignatureCanvasDrawn] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hardwareOfflineNotice, setHardwareOfflineNotice] = useState(false);
@@ -1491,6 +1558,13 @@ function RegisterFIRForm() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    const nowValidation = getNowLocal();
+    if (firDate > nowValidation.date) {
+      newErrors.firDate = "Registration date cannot be in the future.";
+    } else if (firDate === nowValidation.date && firTime > nowValidation.time) {
+      newErrors.firTime = "Registration time cannot be ahead of current time.";
+    }
+
     if (!sourceOfComplaint || !sourceOfComplaint.trim()) {
       newErrors.sourceOfComplaint = "Source of Complaint is mandatory.";
     }
@@ -1977,7 +2051,8 @@ function RegisterFIRForm() {
               <div className="flex-1">
                 <DatePickerDDMMYYYY
                   value={firDate}
-                  onChange={(e) => setFirDate(e.target.value)}
+                  max={maxAllowedFirDate}
+                  onChange={(e) => handleFirDateChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
                 />
@@ -1985,15 +2060,26 @@ function RegisterFIRForm() {
               <input
                 type="time"
                 value={firTime}
-                onChange={(e) => setFirTime(e.target.value)}
+                max={maxAllowedFirTime}
+                onChange={(e) => handleFirTimeChange(e.target.value)}
+                onBlur={() => {
+                  const now = getNowLocal();
+                  if (firDate >= now.date && firTime > now.time) {
+                    setFirTime(now.time);
+                  }
+                }}
                 className="w-24 sm:w-28 p-1.5 rounded border border-slate-300 bg-white text-xs font-mono"
+                title={firDate >= maxAllowedFirDate ? `Latest allowed time: ${currentNow.time}` : undefined}
               />
             </div>
+            {(errors.firDate || errors.firTime) && (
+              <p className="text-[10px] text-red-600 mt-1 font-medium">{errors.firDate || errors.firTime}</p>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* B. MAIN 10 TABS NAVIGATION BAR */}
+      {/* B. MAIN 9 TABS NAVIGATION BAR */}
       <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs overflow-x-auto">
         <div className="flex items-center gap-1 min-w-max">
           {TAB_CONFIG.map((tab) => {
@@ -4376,14 +4462,8 @@ function RegisterFIRForm() {
                 )}
               </CardContent>
             </Card>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* TAB 9: HURT CASE DETAIL (NON-NEGATIVE INTEGERS VALIDATION) */}
-        {/* ========================================================================= */}
-        {activeTab === "hurt_detail" && (
-          <div className="space-y-4 animate-in fade-in-30">
+            {/* Hurt & Injury Details Card (Merged from former Tab 9) */}
             <Card className="border-slate-200">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -4399,7 +4479,7 @@ function RegisterFIRForm() {
                     setCountNonInjured("0");
                     setInjuryDescription("");
                   }}
-                  className="text-[11px] text-red-600 hover:underline font-semibold"
+                  className="text-[11px] text-red-600 hover:underline font-semibold cursor-pointer"
                 >
                   Clear Hurt Details
                 </button>
@@ -4521,7 +4601,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 10: SIGNATURE (CANVAS + HARDWARE STATUS - EXCLUDES EXTRA PDF FIELDS) */}
+        {/* TAB 9: SIGNATURE (CANVAS + HARDWARE STATUS - EXCLUDES EXTRA PDF FIELDS) */}
         {/* ========================================================================= */}
         {activeTab === "signature" && (
           <div className="space-y-4 animate-in fade-in-30">

@@ -106,6 +106,16 @@ export function DatePickerDDMMYYYY({
 
     const iso = ddmmyyyyToIso(raw);
     if (iso) {
+      if (isoMax && iso > isoMax) {
+        setDisplayText(isoToDdmmyyyy(isoMax));
+        triggerChange(isoMax);
+        return;
+      }
+      if (isoMin && iso < isoMin) {
+        setDisplayText(isoToDdmmyyyy(isoMin));
+        triggerChange(isoMin);
+        return;
+      }
       triggerChange(iso);
     } else if (!raw.trim()) {
       triggerChange("");
@@ -120,6 +130,16 @@ export function DatePickerDDMMYYYY({
     }
     const iso = ddmmyyyyToIso(displayText);
     if (iso) {
+      if (isoMax && iso > isoMax) {
+        setDisplayText(isoToDdmmyyyy(isoMax));
+        triggerChange(isoMax);
+        return;
+      }
+      if (isoMin && iso < isoMin) {
+        setDisplayText(isoToDdmmyyyy(isoMin));
+        triggerChange(isoMin);
+        return;
+      }
       setDisplayText(isoToDdmmyyyy(iso));
       triggerChange(iso);
     } else {
@@ -156,8 +176,14 @@ export function DatePickerDDMMYYYY({
         max={isoMax}
         disabled={disabled}
         onChange={(e) => {
-          const pickedIso = e.target.value;
+          let pickedIso = e.target.value;
           if (pickedIso) {
+            if (isoMax && pickedIso > isoMax) {
+              pickedIso = isoMax;
+            }
+            if (isoMin && pickedIso < isoMin) {
+              pickedIso = isoMin;
+            }
             setDisplayText(isoToDdmmyyyy(pickedIso));
             triggerChange(pickedIso);
           } else {
