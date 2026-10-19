@@ -113,13 +113,12 @@ import {
   getDynamicMajorHeads,
 } from "@/components/fir/firDropdownConstants";
 
-// Exactly 10 Main Tabs in strict order — Tag FIR is excluded
+// Exactly 7 Main Tabs in strict order — Tag FIR is excluded
 export type MainTabKey =
   | "act_section"
   | "occurrence"
   | "complainant"
   | "fir_content"
-  | "victim_info"
   | "accused"
   | "property"
   | "signature";
@@ -127,12 +126,11 @@ export type MainTabKey =
 const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: string }[] = [
   { key: "act_section", label: "1. Act & Section", shortTitle: "Act & Section", icon: Scale },
   { key: "occurrence", label: "2. Occurrence", shortTitle: "Occurrence", icon: MapPin },
-  { key: "complainant", label: "3. Complainant", shortTitle: "Complainant", icon: User },
+  { key: "complainant", label: "3. Complainant & Victim Details", shortTitle: "Complainant & Victim", icon: Users },
   { key: "fir_content", label: "4. FIR Content & Action Taken", shortTitle: "Content & Action", icon: FileText },
-  { key: "victim_info", label: "5. Victim Information", shortTitle: "Victim Info", icon: Users },
-  { key: "accused", label: "6. Accused", shortTitle: "Accused", icon: Crosshair },
-  { key: "property", label: "7. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
-  { key: "signature", label: "8. Signature", shortTitle: "Signature", icon: PenTool },
+  { key: "accused", label: "5. Accused", shortTitle: "Accused", icon: Crosshair },
+  { key: "property", label: "6. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
+  { key: "signature", label: "7. Signature", shortTitle: "Signature", icon: PenTool },
 ];
 
 const MAJOR_HEADS = [
@@ -2069,7 +2067,7 @@ function RegisterFIRForm() {
         </CardContent>
       </Card>
 
-      {/* B. MAIN 8 TABS NAVIGATION BAR */}
+      {/* B. MAIN 7 TABS NAVIGATION BAR */}
       <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs overflow-x-auto">
         <div className="flex items-center gap-1 min-w-max">
           {TAB_CONFIG.map((tab) => {
@@ -2905,7 +2903,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: COMPLAINANT (ALL DETAILS IN SINGLE PANEL) */}
+        {/* TAB 3: COMPLAINANT & VICTIM INFORMATION (ALL DETAILS IN SINGLE PANEL) */}
         {/* ========================================================================= */}
         {activeTab === "complainant" && (
           <div className="space-y-4 animate-in fade-in-30">
@@ -3844,6 +3842,15 @@ function RegisterFIRForm() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Victim Information Section (Merged into Tab 3) */}
+            <InlineVictimSection
+              victimsList={victimsList}
+              onAddVictim={handleAddVictim}
+              onUpdateVictim={handleUpdateVictim}
+              onDeleteVictim={handleDeleteVictim}
+              onLinkComplainantAsVictim={handleLinkComplainantAsVictim}
+            />
           </div>
         )}
 
@@ -4194,22 +4201,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 5: VICTIM INFORMATION (DIRECT INLINE ENTRY & RECORDED LIST) */}
-        {/* ========================================================================= */}
-        {activeTab === "victim_info" && (
-          <div className="space-y-4 animate-in fade-in-30">
-            <InlineVictimSection
-              victimsList={victimsList}
-              onAddVictim={handleAddVictim}
-              onUpdateVictim={handleUpdateVictim}
-              onDeleteVictim={handleDeleteVictim}
-              onLinkComplainantAsVictim={handleLinkComplainantAsVictim}
-            />
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 7: ACCUSED (DIRECT INLINE ENTRY & RECORDED LIST) */}
+        {/* TAB 5: ACCUSED (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "accused" && (
           <div className={`space-y-4 animate-in fade-in-30 ${autoFilledFields.accused ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
@@ -4233,7 +4225,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 8: PROPERTY OF INTEREST (EXCLUDES NATURE OF PROPERTY) */}
+        {/* TAB 6: PROPERTY OF INTEREST & HURT DETAILS */}
         {/* ========================================================================= */}
         {activeTab === "property" && (
           <div className="space-y-4 animate-in fade-in-30">
@@ -4585,7 +4577,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 9: SIGNATURE (CANVAS + HARDWARE STATUS - EXCLUDES EXTRA PDF FIELDS) */}
+        {/* TAB 7: SIGNATURE (CANVAS + HARDWARE STATUS - EXCLUDES EXTRA PDF FIELDS) */}
         {/* ========================================================================= */}
         {activeTab === "signature" && (
           <div className="space-y-4 animate-in fade-in-30">
