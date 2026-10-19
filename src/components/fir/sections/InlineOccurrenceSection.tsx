@@ -387,7 +387,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               {editingId ? "Edit Occurrence Particulars (घटना स्थल संपादित करें)" : "Place & Occurrence of Offence Form (घटना स्थल एवं समय विवरण)"}
             </CardTitle>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Fill occurrence particulars below and click &quot;{editingId ? "Update Occurrence" : "Add to Occurrence List"}&quot;.
+              Fill occurrence particulars below and click &quot;{editingId ? "Update Occurrence" : "Save / Record Occurrence"}&quot;.
             </p>
           </div>
           {editingId && (
@@ -986,7 +986,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold flex items-center gap-1.5 px-4 h-9 shadow-xs"
             >
               <Check className="w-4 h-4" />
-              {editingId ? "Update Occurrence Entry" : "Add to Occurrence List"}
+              {editingId ? "Update Occurrence Entry (अपडेट करें)" : "Save / Record Occurrence (घटना स्थल दर्ज करें)"}
             </Button>
           </div>
         </CardContent>
@@ -1040,8 +1040,14 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                         )}
                       </td>
                       <td className="p-2.5">
-                        <span className="font-semibold text-slate-900">{occ.distanceKm} KM</span>{" "}
-                        <span className="font-bold text-blue-700">({occ.directionFromPs})</span>
+                        {occ.distanceKm ? (
+                          <span className="font-semibold text-slate-900">{occ.distanceKm} KM</span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}{" "}
+                        {occ.directionFromPs && (
+                          <span className="font-bold text-blue-700">({occ.directionFromPs})</span>
+                        )}
                       </td>
                       <td className="p-2.5">
                         <span className="font-semibold text-slate-900">{occ.area}</span>
@@ -1092,7 +1098,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
               <MapPin className="w-8 h-8 text-slate-300 mx-auto mb-2" />
               <p className="font-medium text-slate-600">No occurrence entries in list yet.</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Fill the form above and click &quot;Add to Occurrence List&quot; to record occurrence points.
+                Fill the form above and click &quot;Save / Record Occurrence&quot; to record occurrence points.
               </p>
             </div>
           )}

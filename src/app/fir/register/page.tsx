@@ -488,27 +488,8 @@ function RegisterFIRForm() {
   };
 
   // TAB 2: Occurrence
-  const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>(() => [
-    {
-      id: "occ-1",
-      srNo: 1,
-      day: "Monday",
-      dateFrom: new Date().toISOString().split("T")[0],
-      dateTo: new Date().toISOString().split("T")[0],
-      timeFrom: "10:00",
-      timeTo: "12:00",
-      timePeriod: "Morning / General",
-      infoReceivedDate: new Date().toISOString().split("T")[0],
-      infoReceivedTime: new Date().toTimeString().slice(0, 5),
-      directionFromPs: "",
-      distanceKm: "",
-      area: "",
-      city: "Gurugram",
-      beatNo: "",
-      isKnownDate: true,
-      isForestPlace: false,
-    },
-  ]);
+  const [occurrencesList, setOccurrencesList] = useState<ExtendedFIROccurrenceItem[]>([]);
+
 
   // TAB 3: Complainant (3 Subtabs)
   // 3.1 Personal
@@ -1640,7 +1621,7 @@ function RegisterFIRForm() {
 
     if (tabKey === "occurrence") {
       if (occurrencesList.length === 0) {
-        tabErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list.";
+        tabErrors.occurrence = "At least one Occurrence entry must be recorded in the Occurrence list. (कृपया घटना स्थल फॉर्म भरकर 'Save / Record Occurrence' पर क्लिक करें।)";
       } else {
         const invalidOcc = occurrencesList.find(
           (occ) =>
