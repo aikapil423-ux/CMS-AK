@@ -379,7 +379,8 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                     <div className="w-3/5">
                       <DatePickerDDMMYYYY
                         value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
+                        max={maxAllowedDate}
+                        onChange={(e) => handleDateFromChange(e.target.value)}
                         placeholder="DD/MM/YYYY"
                         size="sm"
                       />
@@ -387,8 +388,24 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                     <input
                       type="time"
                       value={timeFrom}
-                      onChange={(e) => setTimeFrom(e.target.value)}
+                      max={maxAllowedTimeFrom}
+                      onChange={(e) => handleTimeFromChange(e.target.value, e.target)}
+                      onInput={(e) => {
+                        const now = getNowLocal();
+                        if (dateFrom >= now.date && e.currentTarget.value > now.time) {
+                          e.currentTarget.value = now.time;
+                          setTimeFrom(now.time);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const now = getNowLocal();
+                        if (dateFrom >= now.date && (e.currentTarget.value > now.time || timeFrom > now.time)) {
+                          e.currentTarget.value = now.time;
+                          setTimeFrom(now.time);
+                        }
+                      }}
                       className="w-2/5 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                      title={dateFrom >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                     />
                   </div>
                 </div>
@@ -399,7 +416,8 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                     <div className="w-3/5">
                       <DatePickerDDMMYYYY
                         value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
+                        max={maxAllowedDate}
+                        onChange={(e) => handleDateToChange(e.target.value)}
                         placeholder="DD/MM/YYYY"
                         size="sm"
                       />
@@ -407,8 +425,24 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                     <input
                       type="time"
                       value={timeTo}
-                      onChange={(e) => setTimeTo(e.target.value)}
+                      max={maxAllowedTimeTo}
+                      onChange={(e) => handleTimeToChange(e.target.value, e.target)}
+                      onInput={(e) => {
+                        const now = getNowLocal();
+                        if (dateTo >= now.date && e.currentTarget.value > now.time) {
+                          e.currentTarget.value = now.time;
+                          setTimeTo(now.time);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const now = getNowLocal();
+                        if (dateTo >= now.date && (e.currentTarget.value > now.time || timeTo > now.time)) {
+                          e.currentTarget.value = now.time;
+                          setTimeTo(now.time);
+                        }
+                      }}
                       className="w-2/5 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                      title={dateTo >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                     />
                   </div>
                 </div>
@@ -470,7 +504,8 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                   <div className="w-3/5">
                     <DatePickerDDMMYYYY
                       value={infoReceivedDate}
-                      onChange={(e) => setInfoReceivedDate(e.target.value)}
+                      max={maxAllowedDate}
+                      onChange={(e) => handleInfoReceivedDateChange(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
                     />
@@ -478,8 +513,24 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                   <input
                     type="time"
                     value={infoReceivedTime}
-                    onChange={(e) => setInfoReceivedTime(e.target.value)}
+                    max={maxAllowedInfoReceivedTime}
+                    onChange={(e) => handleInfoReceivedTimeChange(e.target.value, e.target)}
+                    onInput={(e) => {
+                      const now = getNowLocal();
+                      if (infoReceivedDate >= now.date && e.currentTarget.value > now.time) {
+                        e.currentTarget.value = now.time;
+                        setInfoReceivedTime(now.time);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const now = getNowLocal();
+                      if (infoReceivedDate >= now.date && (e.currentTarget.value > now.time || infoReceivedTime > now.time)) {
+                        e.currentTarget.value = now.time;
+                        setInfoReceivedTime(now.time);
+                      }
+                    }}
                     className="w-2/5 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                    title={infoReceivedDate >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   />
                 </div>
               </div>
