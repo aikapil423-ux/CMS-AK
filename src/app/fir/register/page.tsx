@@ -119,7 +119,6 @@ export type MainTabKey =
   | "occurrence"
   | "complainant"
   | "fir_content"
-  | "action_taken"
   | "victim_info"
   | "accused"
   | "property"
@@ -129,12 +128,11 @@ const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: strin
   { key: "act_section", label: "1. Act & Section", shortTitle: "Act & Section", icon: Scale },
   { key: "occurrence", label: "2. Occurrence", shortTitle: "Occurrence", icon: MapPin },
   { key: "complainant", label: "3. Complainant", shortTitle: "Complainant", icon: User },
-  { key: "fir_content", label: "4. FIR Content", shortTitle: "FIR Content", icon: FileText },
-  { key: "action_taken", label: "5. Action Taken", shortTitle: "Action Taken", icon: Shield },
-  { key: "victim_info", label: "6. Victim Information", shortTitle: "Victim Info", icon: Users },
-  { key: "accused", label: "7. Accused", shortTitle: "Accused", icon: Crosshair },
-  { key: "property", label: "8. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
-  { key: "signature", label: "9. Signature", shortTitle: "Signature", icon: PenTool },
+  { key: "fir_content", label: "4. FIR Content & Action Taken", shortTitle: "Content & Action", icon: FileText },
+  { key: "victim_info", label: "5. Victim Information", shortTitle: "Victim Info", icon: Users },
+  { key: "accused", label: "6. Accused", shortTitle: "Accused", icon: Crosshair },
+  { key: "property", label: "7. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
+  { key: "signature", label: "8. Signature", shortTitle: "Signature", icon: PenTool },
 ];
 
 const MAJOR_HEADS = [
@@ -1664,8 +1662,7 @@ function RegisterFIRForm() {
         newErrors.permState ||
         newErrors.complainantNationality
       ) setActiveTab("complainant");
-      else if (newErrors.fir_content) setActiveTab("fir_content");
-      else if (newErrors.actionType) setActiveTab("action_taken");
+      else if (newErrors.fir_content || newErrors.actionType) setActiveTab("fir_content");
       else if (newErrors.accused) setActiveTab("accused");
       return false;
     }
@@ -1785,13 +1782,6 @@ function RegisterFIRForm() {
       if (!firContentText.trim() && !briefFacts.trim()) {
         tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
       }
-      if (Object.keys(tabErrors).length > 0) {
-        setErrors((prev) => ({ ...prev, ...tabErrors }));
-        return;
-      }
-    }
-    if (activeTab === "action_taken") {
-      const tabErrors: Record<string, string> = {};
       if (!actionType || !actionType.trim()) {
         tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
       }
@@ -2079,13 +2069,13 @@ function RegisterFIRForm() {
         </CardContent>
       </Card>
 
-      {/* B. MAIN 9 TABS NAVIGATION BAR */}
+      {/* B. MAIN 8 TABS NAVIGATION BAR */}
       <div className="bg-white border border-slate-200 rounded-xl p-1.5 shadow-xs overflow-x-auto">
         <div className="flex items-center gap-1 min-w-max">
           {TAB_CONFIG.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
-            const hasError = errors[tab.key];
+            const hasError = errors[tab.key] || (tab.key === "fir_content" && errors.actionType);
             return (
               <button
                 key={tab.key}
@@ -3970,14 +3960,8 @@ function RegisterFIRForm() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* TAB 5: ACTION TAKEN */}
-        {/* ========================================================================= */}
-        {activeTab === "action_taken" && (
-          <div className="space-y-4 animate-in fade-in-30">
+            {/* Action Taken Card (Merged from former Tab 5) */}
             <Card className="border-slate-200">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -4210,7 +4194,7 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 6: VICTIM INFORMATION (DIRECT INLINE ENTRY & RECORDED LIST) */}
+        {/* TAB 5: VICTIM INFORMATION (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "victim_info" && (
           <div className="space-y-4 animate-in fade-in-30">
