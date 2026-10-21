@@ -48,7 +48,7 @@ export function FIRUploadAutoFillModal({
   currentDistrict,
   onApplyAutoFill,
 }: FIRUploadAutoFillModalProps) {
-  const [activeTab, setActiveTab] = useState<"upload" | "raw" | "processed">("upload");
+  const [activeTab, setActiveTab] = useState<"upload" | "processed">("upload");
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<string>("");
   const [savedRecord, setSavedRecord] = useState<ProcessedFIRDocumentRecord | null>(null);
@@ -178,49 +178,7 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
     }
   };
 
-  // Sample quick complaint for instant 1-click test
-  const handleLoadSampleDocument = async () => {
-    setIsProcessing(true);
-    try {
-      const sampleText = `सेवा में,
-श्रीमान थाना प्रभारी महोदय,
-थाना ${currentStation || "PS City Thanesar"}, जिला ${currentDistrict || "Kurukshetra"} (हरियाणा)।
 
-विषय: मोबाइल फोन व नकदी छीनने व मारपीट करने बाबत शिकायत।
-
-महोदय,
-सविनय निवेदन यह है कि मैं प्रार्थी विकास शर्मा पुत्र श्री रमेश शर्मा, निवासी मकान नंबर 402, सेक्टर 7, ${currentDistrict || "Kurukshetra"}, मोबाइल नंबर 9812345670 का रहने वाला हूँ।
-दिनांक 10/10/2026 को समय करीब दोपहर 01:30 बजे जब मैं मेन मार्केट बस स्टैंड के पास अपनी दुकान की तरफ जा रहा था, तभी एक अज्ञात मोटरसाइकिल सवार व्यक्ति ने आकर मेरे साथ गाली-गलौज व मारपीट की और मेरा सैमसंग मोबाइल फोन व जेब से 8,500 रुपये छीनकर फरार हो गया।
-
-अतः श्रीमान जी से प्रार्थना है कि उक्त अज्ञात आरोपी के खिलाफ सख्त कानूनी कार्रवाई कर मुकदमा दर्ज (FIR) करने की कृपा करें।
-
-प्रार्थी:
-विकास शर्मा (Vikas Sharma)
-पुत्र श्री रमेश शर्मा
-मोबाइल: 9812345670
-दिनांक: 10/10/2026`;
-
-      const blob = new Blob([sampleText], { type: "text/plain" });
-      const file = new File([blob], "complaint_snatching_market.txt", {
-        type: "text/plain",
-      });
-
-      const record = await firAutoFillService.processAndSaveDocument(
-        file,
-        targetFirNumber,
-        targetFirYear,
-        currentStation,
-        currentDistrict
-      );
-
-      setSavedRecord(record);
-      setActiveTab("processed");
-    } catch (err: any) {
-      setErrorMsg(err.message || "Error generating sample complaint");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleApply = () => {
     if (!savedRecord) return;
@@ -287,21 +245,6 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
           </button>
 
           <button
-            onClick={() => setActiveTab("raw")}
-            disabled={!savedRecord}
-            className={`py-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
-              !savedRecord
-                ? "border-transparent text-slate-300 cursor-not-allowed"
-                : activeTab === "raw"
-                ? "border-blue-600 text-blue-700 font-bold"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            2. View Raw Document ({savedRecord ? savedRecord.rawDocument.fileName : "None"})
-          </button>
-
-          <button
             onClick={() => setActiveTab("processed")}
             disabled={!savedRecord}
             className={`py-2.5 border-b-2 flex items-center gap-1.5 transition-all ${
@@ -313,7 +256,7 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
             }`}
           >
             <Database className="w-3.5 h-3.5" />
-            3. Processed Data (Ready to Auto Fill)
+            2. Processed Data (Ready to Auto Fill)
           </button>
         </div>
 
@@ -373,26 +316,7 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                 </div>
               </div>
 
-              {/* Quick Sample / Test Option */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">Quick Demo / Test Complaint</div>
-                    <div className="text-[11px] text-slate-500">
-                      Process a sample snatching/theft complaint in Hindi &amp; English to test instant auto-fill
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleLoadSampleDocument}
-                  className="text-xs text-blue-700 border-blue-200 hover:bg-blue-50"
-                >
-                  Load Sample &amp; Auto Fill
-                </Button>
-              </div>
+
 
               {/* Or Select from Existing Registered Complaints */}
               {existingComplaints.length > 0 && (
@@ -436,64 +360,7 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
             </div>
           )}
 
-          {/* TAB 2: RAW DOCUMENT PREVIEW */}
-          {activeTab === "raw" && savedRecord && (
-            <div className="space-y-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <span>Original Raw Document: {savedRecord.rawDocument.fileName}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-3">
-                    <span>Size: {(savedRecord.rawDocument.fileSize / 1024).toFixed(1)} KB</span>
-                    <span>Format: {savedRecord.rawDocument.fileType}</span>
-                    <span>Uploaded: {new Date(savedRecord.createdAt).toLocaleString("en-IN")}</span>
-                    <span className="font-mono text-blue-700 font-bold">Bound to: {savedRecord.relatedFirNumber}</span>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <a
-                    href={savedRecord.rawDocument.dataUrl}
-                    download={savedRecord.rawDocument.fileName}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download Raw
-                  </a>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleClearSaved}
-                    className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </Button>
-                </div>
-              </div>
-
-              {/* Preview Content */}
-              {savedRecord.rawDocument.fileType.startsWith("image/") ? (
-                <div className="bg-white p-4 border border-slate-200 rounded-xl flex items-center justify-center max-h-[500px] overflow-auto">
-                  <img
-                    src={savedRecord.rawDocument.dataUrl}
-                    alt="Raw Scanned Document"
-                    className="max-w-full rounded shadow-xs"
-                  />
-                </div>
-              ) : (
-                <div className="bg-white border border-slate-300 rounded-xl p-6 shadow-xs">
-                  <div className="border-b border-slate-200 pb-2 mb-3 flex items-center justify-between text-xs text-slate-500">
-                    <span className="font-mono uppercase font-bold text-slate-700">Verbatim Extracted Content</span>
-                    <span>Language: {savedRecord.rawDocument.detectedLanguage}</span>
-                  </div>
-                  <pre className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed max-h-[420px] overflow-y-auto">
-                    {savedRecord.rawDocument.rawExtractedText}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* TAB 3: PROCESSED DATA SUMMARY */}
           {activeTab === "processed" && savedRecord && (
@@ -640,7 +507,7 @@ ${c.subject || c.incidentDetails || "Written complaint regarding cognizable crim
                   <span>Complaint Body / FIR Content to be Filled</span>
                 </div>
                 <div className="bg-slate-50 p-3 rounded border border-slate-200 text-slate-800 font-mono text-[11px] max-h-36 overflow-y-auto whitespace-pre-wrap">
-                  {savedRecord.processedData.firContentText}
+                  {savedRecord.processedData?.firContentText || ""}
                 </div>
               </div>
             </div>

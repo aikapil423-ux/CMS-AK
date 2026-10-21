@@ -39,6 +39,7 @@ export interface InlineOccurrenceSectionProps {
   onAddOccurrence: (item: ExtendedFIROccurrenceItem) => void;
   onUpdateOccurrence: (item: ExtendedFIROccurrenceItem) => void;
   onDeleteOccurrence: (id: string) => void;
+  autoFilledFields?: Record<string, boolean>;
 }
 
 function getNowLocal() {
@@ -59,6 +60,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   onAddOccurrence,
   onUpdateOccurrence,
   onDeleteOccurrence,
+  autoFilledFields = {},
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -79,9 +81,22 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     const now = getNowLocal();
     return now.time < "10:00" ? now.time : "10:00";
   });
+  const getDayFromDate = (dStr: string) => {
+    if (!dStr) return "Monday";
+    try {
+      const d = new Date(dStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US", { weekday: "long" });
+      }
+    } catch {
+      // fallback
+    }
+    return "Monday";
+  };
+
   const [dateTo, setDateTo] = useState(() => getNowLocal().date);
   const [timeTo, setTimeTo] = useState(() => getNowLocal().time);
-  const [day, setDay] = useState("Monday");
+  const [day, setDay] = useState(() => getDayFromDate(getNowLocal().date));
   const [infoReceivedDate, setInfoReceivedDate] = useState(() => getNowLocal().date);
   const [infoReceivedTime, setInfoReceivedTime] = useState(() => getNowLocal().time);
   const [isForestPlace, setIsForestPlace] = useState(false);
@@ -98,6 +113,9 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
       clampedDate = now.date;
     }
     setDateFrom(clampedDate);
+    if (clampedDate) {
+      setDay(getDayFromDate(clampedDate));
+    }
     if (clampedDate >= now.date && timeFrom > now.time) {
       setTimeFrom(now.time);
     }
@@ -252,6 +270,36 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     if (formEl) formEl.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Synchronize first occurrence from autofill/prefill into the form inputs
+  const prevOccListRef = React.useRef(occurrencesList);
+  useEffect(() => {
+    if (occurrencesList && occurrencesList.length > 0 && (occurrencesList !== prevOccListRef.current || !editingId)) {
+      prevOccListRef.current = occurrencesList;
+      if (!editingId) {
+        handleEditClick(occurrencesList[0]);
+      }
+    }
+  }, [occurrencesList, editingId]);
+
+  const getFieldHighlightClass = (fieldName: string) => {
+    const isAutoFilled =
+      autoFilledFields[fieldName] ||
+      (fieldName === "dateFrom" && (autoFilledFields.occurrenceDate || autoFilledFields.dateFrom || (autoFilledFields.occurrence && Boolean(dateFrom)))) ||
+      (fieldName === "timeFrom" && (autoFilledFields.occurrenceTime || autoFilledFields.timeFrom)) ||
+      (fieldName === "dateTo" && (autoFilledFields.occurrenceDate || autoFilledFields.dateTo || (autoFilledFields.occurrence && Boolean(dateTo)))) ||
+      (fieldName === "timeTo" && (autoFilledFields.occurrenceTime || autoFilledFields.timeTo)) ||
+      (fieldName === "area" && (autoFilledFields.occurrencePlace || autoFilledFields.area || (autoFilledFields.occurrence && Boolean(area)))) ||
+      (fieldName === "city" && (autoFilledFields.occurrenceCity || autoFilledFields.city || autoFilledFields.permCity)) ||
+      (fieldName === "directionFromPs" && autoFilledFields.directionFromPs) ||
+      (fieldName === "distanceKm" && autoFilledFields.distanceKm) ||
+      (fieldName === "beatNo" && autoFilledFields.beatNo) ||
+      (fieldName === "landmark" && autoFilledFields.landmark);
+
+    return isAutoFilled
+      ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100 transition-all"
+      : "";
+  };
+
   const handleSaveOccurrence = () => {
     setErrorMsg(null);
 
@@ -290,7 +338,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
       setErrorMsg("Date / Time From cannot be in the future (समय भविष्य का नहीं हो सकता).");
       return;
     }
-    if (isDateKnown && dateTo && (dateTo > now.date || (dateTo === now.date && timeTo > now.time))) {
+    if (dateTo && (dateTo > now.date || (dateTo === now.date && timeTo > now.time))) {
       setErrorMsg("Date / Time To cannot be in the future (समय भविष्य का नहीं हो सकता).");
       return;
     }
@@ -337,8 +385,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
       isKnownDate: isDateKnown,
       dateFrom,
       timeFrom,
-      dateTo: isDateKnown ? dateTo : undefined,
-      timeTo: isDateKnown ? timeTo : undefined,
+      dateTo: dateTo || undefined,
+      timeTo: timeTo || undefined,
       day,
       timePeriod: "Morning / General",
       infoReceivedDate,
@@ -441,7 +489,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
             </div>
 
             {/* Date / Time From & To */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">
                   Date From (दिनांक से) <span className="text-red-500">*</span>
@@ -453,6 +501,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
+                  className={getFieldHighlightClass("dateFrom")}
                 />
               </div>
               <div>
@@ -478,7 +527,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                       setTimeFrom(now.time);
                     }
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs ${getFieldHighlightClass("timeFrom")}`}
                   title={dateFrom >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />
@@ -488,13 +537,14 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   Date To (दिनांक तक) <span className="text-red-500">*</span>
                 </label>
                 <DatePickerDDMMYYYY
-                  disabled={!isDateKnown}
+
                   value={dateTo}
                   max={maxAllowedDate}
                   onChange={(e) => handleDateToChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
+                  className={getFieldHighlightClass("dateTo")}
                 />
               </div>
               <div>
@@ -503,7 +553,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 </label>
                 <input
                   type="time"
-                  disabled={!isDateKnown}
+
                   value={timeTo}
                   max={maxAllowedTimeTo}
                   onChange={(e) => handleTimeToChange(e.target.value, e.target)}
@@ -521,26 +571,10 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                       setTimeTo(now.time);
                     }
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs disabled:opacity-50"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs ${getFieldHighlightClass("timeTo")}`}
                   title={dateTo >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Day of Week (दिन)</label>
-                <select
-                  value={day}
-                  onChange={(e) => setDay(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                >
-                  <option value="Monday">Monday (सोमवार)</option>
-                  <option value="Tuesday">Tuesday (मंगलवार)</option>
-                  <option value="Wednesday">Wednesday (बुधवार)</option>
-                  <option value="Thursday">Thursday (गुरुवार)</option>
-                  <option value="Friday">Friday (शुक्रवार)</option>
-                  <option value="Saturday">Saturday (शनिवार)</option>
-                  <option value="Sunday">Sunday (रविवार)</option>
-                </select>
               </div>
             </div>
 
@@ -736,7 +770,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="e.g. Sector 29 Huda Ground (Optional)"
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs ${getFieldHighlightClass("area")}`}
                 />
               </div>
             </div>
@@ -759,7 +793,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="e.g. Gurugram"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs ${getFieldHighlightClass("city")}`}
                   required
                 />
               </div>
@@ -822,7 +856,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="e.g. Near Metro Station Pillar 42"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs ${getFieldHighlightClass("landmark")}`}
                 />
               </div>
             </div>
@@ -836,7 +870,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                 <select
                   value={directionFromPs}
                   onChange={(e) => setDirectionFromPs(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold ${getFieldHighlightClass("directionFromPs")}`}
                   required
                 >
                   <option value="">-- Select Direction --</option>
@@ -869,7 +903,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                       setDistanceKm(val);
                     }
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs ${getFieldHighlightClass("distanceKm")}`}
                   required
                 />
               </div>
@@ -889,7 +923,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="e.g. Beat No. 2 / Sector 29"
                   value={beatNo}
                   onChange={(e) => setBeatNo(e.target.value)}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white text-xs ${getFieldHighlightClass("beatNo")}`}
                 />
               </div>
             </div>

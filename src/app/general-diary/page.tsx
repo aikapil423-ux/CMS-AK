@@ -286,6 +286,14 @@ function GeneralDiaryContent() {
     fetchEntries();
   }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab]);
 
+  useEffect(() => {
+    const handleGdUpdated = () => {
+      fetchEntries();
+    };
+    window.addEventListener("cms-gd-updated", handleGdUpdated);
+    return () => window.removeEventListener("cms-gd-updated", handleGdUpdated);
+  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab]);
+
   // Brief description dialog modal state (opens popup dialog on click)
   const [briefModalRecord, setBriefModalRecord] = useState<GeneralDiaryRecord | null>(null);
   const [briefModalOpen, setBriefModalOpen] = useState(false);

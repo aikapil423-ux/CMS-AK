@@ -2812,8 +2812,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
             {/* Right: Quick Action & Officer Roster Status */}
             <div className="space-y-5">
               {/* Enquiry Officer & Directions Card */}
-              <Card className="border-slate-200 shadow-xs">
-                <CardContent className="p-4 sm:p-5 space-y-3">
+              <Card className="border-slate-200 shadow-xs overflow-visible">
+                <CardContent className="p-4 sm:p-5 space-y-3 overflow-visible">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <h3 className="font-bold text-xs uppercase tracking-wider text-[#0b192c] flex items-center gap-1.5">
                       <UserCheck className="w-3.5 h-3.5 text-blue-600" />
@@ -2941,19 +2941,21 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                         </div>
 
                         {/* Supervisory Actions: Ask Progress Report & Reassign EO */}
-                        {canAssign && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="primary"
-                              onClick={() => setProgressModalOpen(true)}
-                              className="w-full text-xs font-semibold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs cursor-pointer justify-center"
-                              title="Ask Enquiry Officer for Interim Progress Report"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              <span>Ask Progress Report</span>
-                            </Button>
+                        {(canAskProgress || canAssign) && (
+                          <div className={`grid gap-2 pt-1 ${canAskProgress && canAssign ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"}`}>
+                            {canAskProgress && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="primary"
+                                onClick={() => setProgressModalOpen(true)}
+                                className="w-full text-xs font-semibold gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-2xs cursor-pointer justify-center"
+                                title="Ask Enquiry Officer for Interim Progress Report"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                <span>Ask Progress Report</span>
+                              </Button>
+                            )}
                             <div className="relative w-full" data-assign-eo-dropdown>
                               <Button
                                 type="button"
@@ -2967,12 +2969,12 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 <span>Reassign EO ▾</span>
                               </Button>
                               {assignEoDropdownOpen && (
-                                <div className="absolute right-0 bottom-full sm:bottom-auto sm:top-full mt-1 mb-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
-                                  <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                <div className="absolute right-0 top-full mt-1.5 z-50 w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-2xl py-1 text-left animate-in fade-in-50">
+                                  <div className="px-3 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between bg-slate-50/70 rounded-t-xl">
                                     <span>Select EO / IO</span>
                                     <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                                   </div>
-                                  <div className="max-h-56 overflow-y-auto py-0.5">
+                                  <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-100">
                                     {MOCK_ENQUIRY_OFFICERS.map((eo) => {
                                       const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                                       const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
@@ -2982,14 +2984,29 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                           type="button"
                                           disabled={isQuickAssigning}
                                           onClick={() => handleQuickAssignEO(eo)}
-                                          className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                          className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                                             isSelected
                                               ? "bg-blue-50 text-blue-900 font-bold"
                                               : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                           }`}
                                         >
-                                          <span className="truncate">{label}</span>
-                                          {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                          <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="truncate font-semibold text-slate-900">{label}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-normal">
+                                              <span>PNO: {eo.pno}</span>
+                                              <span>•</span>
+                                              <span className="truncate">{eo.rosterDuty || eo.shift}</span>
+                                            </div>
+                                          </div>
+                                          {isSelected ? (
+                                            <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                                          ) : (
+                                            <span className="text-[10px] text-slate-400 shrink-0 font-normal">
+                                              {eo.activeCases ?? 0} active
+                                            </span>
+                                          )}
                                         </button>
                                       );
                                     })}
@@ -3024,12 +3041,12 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                             <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign Enquiry Officer ▾
                           </Button>
                           {assignEoDropdownOpen && (
-                            <div className="absolute left-0 bottom-full sm:bottom-auto sm:top-full mt-1 mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
-                              <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 w-full min-w-[260px] bg-white border border-slate-200 rounded-xl shadow-2xl py-1 text-left animate-in fade-in-50">
+                              <div className="px-3 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between bg-slate-50/70 rounded-t-xl">
                                 <span>Select EO / IO</span>
                                 <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                               </div>
-                              <div className="max-h-56 overflow-y-auto py-0.5">
+                              <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-100">
                                 {MOCK_ENQUIRY_OFFICERS.map((eo) => {
                                   const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                                   const isSelected = complaint.assignedEoId === eo.id || complaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
@@ -3039,14 +3056,29 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                       type="button"
                                       disabled={isQuickAssigning}
                                       onClick={() => handleQuickAssignEO(eo)}
-                                      className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                      className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                                         isSelected
                                           ? "bg-blue-50 text-blue-900 font-bold"
                                           : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                       }`}
                                     >
-                                      <span className="truncate">{label}</span>
-                                      {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="truncate font-semibold text-slate-900">{label}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-normal">
+                                          <span>PNO: {eo.pno}</span>
+                                          <span>•</span>
+                                          <span className="truncate">{eo.rosterDuty || eo.shift}</span>
+                                        </div>
+                                      </div>
+                                      {isSelected ? (
+                                        <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                                      ) : (
+                                        <span className="text-[10px] text-slate-400 shrink-0 font-normal">
+                                          {eo.activeCases ?? 0} active
+                                        </span>
+                                      )}
                                     </button>
                                   );
                                 })}

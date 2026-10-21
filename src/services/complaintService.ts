@@ -3727,6 +3727,8 @@ ${reportBody}
       caseType,
       actsAndSections,
       majorAct,
+      activityDate: nowIso.split("T")[0],
+      activityTime: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       policeStation: complaint.policeStation,
       district: complaint.district || "Kurukshetra",
       entryForOfficer: {

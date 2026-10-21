@@ -1,5 +1,46 @@
 [
   {
+    "id": "ev_rec_1792556948475_xp5bd",
+    "fileId": "doc_proc_1792556939978_gcl5l",
+    "caseId": "fir-FIR-0011-2026",
+    "caseNumber": "FIR/0011/2026",
+    "module": "FIR",
+    "rawDocument": {
+      "fileName": "complaint_snatching_market.txt",
+      "fileSize": 1841,
+      "fileType": "application/pdf",
+      "mimeType": "application/pdf",
+      "dataUrl": "data:text/plain;base64,4KS44KWH4KS14KS+IOCkruClh+CkgiwK4KS24KWN4KSw4KWA4KSu4KS+4KSoIOCkpeCkvuCkqOCkviDgpKrgpY3gpLDgpK3gpL7gpLDgpYAg4KSu4KS54KWL4KSm4KSvLArgpKXgpL7gpKjgpL4gU2VjdG9yIDI5IFBvbGljZSBTdGF0aW9uLCDgpJzgpL/gpLLgpL4gR3VydWdyYW0gKOCkueCksOCkv+Ckr+CkvuCko+CkvingpaQKCuCkteCkv+Ckt+Ckrzog4KSu4KWL4KSs4KS+4KSH4KSyIOCkq+Cli+CkqCDgpLUg4KSo4KSV4KSm4KWAIOCkm+ClgOCkqOCkqOClhyDgpLUg4KSu4KS+4KSw4KSq4KWA4KSfIOCkleCksOCkqOClhyDgpKzgpL7gpKzgpKQg4KS24KS/4KSV4KS+4KSv4KSk4KWkCgrgpK7gpLngpYvgpKbgpK8sCuCkuOCkteCkv+CkqOCkryDgpKjgpL/gpLXgpYfgpKbgpKgg4KSv4KS5IOCkueCliCDgpJXgpL8g4KSu4KWI4KSCIOCkquCljeCksOCkvuCksOCljeCkpeClgCDgpLXgpL/gpJXgpL7gpLgg4KS24KSw4KWN4KSu4KS+IOCkquClgeCkpOCljeCksCDgpLbgpY3gpLDgpYAg4KSw4KSu4KWH4KS2IOCktuCksOCljeCkruCkviwg4KSo4KS/4KS14KS+4KS44KWAIOCkruCkleCkvuCkqCDgpKjgpILgpKzgpLAgNDAyLCDgpLjgpYfgpJXgpY3gpJ/gpLAgNywgR3VydWdyYW0sIOCkruCli+CkrOCkvuCkh+CksiDgpKjgpILgpKzgpLAgOTgxMjM0NTY3MCDgpJXgpL4g4KSw4KS54KSo4KWHIOCkteCkvuCksuCkviDgpLngpYLgpIHgpaQK4KSm4KS/4KSo4KS+4KSC4KSVIDEwLzEwLzIwMjYg4KSV4KWLIOCkuOCkruCkryDgpJXgpLDgpYDgpKwg4KSm4KWL4KSq4KS54KSwIDAxOjMwIOCkrOCknOClhyDgpJzgpKwg4KSu4KWI4KSCIOCkruClh+CkqCDgpK7gpL7gpLDgpY3gpJXgpYfgpJ8g4KSs4KS4IOCkuOCljeCkn+CliOCkguCkoSDgpJXgpYcg4KSq4KS+4KS4IOCkheCkquCkqOClgCDgpKbgpYHgpJXgpL7gpKgg4KSV4KWAIOCkpOCksOCkqyDgpJzgpL4g4KSw4KS54KS+IOCkpeCkviwg4KSk4KSt4KWAIOCkj+CklSDgpIXgpJzgpY3gpJ7gpL7gpKQg4KSu4KWL4KSf4KSw4KS44KS+4KSH4KSV4KS/4KSyIOCkuOCkteCkvuCksCDgpLXgpY3gpK/gpJXgpY3gpKTgpL8g4KSo4KWHIOCkhuCkleCksCDgpK7gpYfgpLDgpYcg4KS44KS+4KSlIOCkl+CkvuCksuClgC3gpJfgpLLgpYzgpJwg4KS1IOCkruCkvuCksOCkquClgOCknyDgpJXgpYAg4KSU4KSwIOCkruClh+CksOCkviDgpLjgpYjgpK7gpLjgpILgpJcg4KSu4KWL4KSs4KS+4KSH4KSyIOCkq+Cli+CkqCDgpLUg4KSc4KWH4KSsIOCkuOClhyA4LDUwMCDgpLDgpYHgpKrgpK/gpYcg4KSb4KWA4KSo4KSV4KSwIOCkq+CksOCkvuCksCDgpLngpYsg4KSX4KSv4KS+4KWkCgrgpIXgpKTgpIMg4KS24KWN4KSw4KWA4KSu4KS+4KSoIOCknOClgCDgpLjgpYcg4KSq4KWN4KSw4KS+4KSw4KWN4KSl4KSo4KS+IOCkueCliCDgpJXgpL8g4KSJ4KSV4KWN4KSkIOCkheCknOCljeCknuCkvuCkpCDgpIbgpLDgpYvgpKrgpYAg4KSV4KWHIOCkluCkv+CksuCkvuCkqyDgpLjgpJbgpY3gpKQg4KSV4KS+4KSo4KWC4KSo4KWAIOCkleCkvuCksOCljeCksOCkteCkvuCkiCDgpJXgpLAg4KSu4KWB4KSV4KSm4KSu4KS+IOCkpuCksOCljeCknCAoRklSKSDgpJXgpLDgpKjgpYcg4KSV4KWAIOCkleClg+CkquCkviDgpJXgpLDgpYfgpILgpaQKCuCkquCljeCksOCkvuCksOCljeCkpeClgDoK4KS14KS/4KSV4KS+4KS4IOCktuCksOCljeCkruCkviAoVmlrYXMgU2hhcm1hKQrgpKrgpYHgpKTgpY3gpLAg4KS24KWN4KSw4KWAIOCksOCkruClh+CktiDgpLbgpLDgpY3gpK7gpL4K4KSu4KWL4KSs4KS+4KSH4KSyOiA5ODEyMzQ1NjcwCuCkpuCkv+CkqOCkvuCkguCklTogMTAvMTAvMjAyNg==",
+      "sha256Hash": "dc5c3cf78d702c988ca72c9daee0da15e50557dc627e6c76941b496f3b0958e2",
+      "uploadedAt": "2026-10-21T04:29:08.475Z",
+      "uploadedBy": "FIR Intake Officer"
+    },
+    "extractedText": "सेवा में,\r\nश्रीमान थाना प्रभारी महोदय,\r\nथाना Sector 29 Police Station, जिला Gurugram (हरियाणा)।\r\n\r\nविषय: मोबाइल फोन व नकदी छीनने व मारपीट करने बाबत शिकायत।\r\n\r\nमहोदय,\r\nसविनय निवेदन यह है कि मैं प्रार्थी विकास शर्मा पुत्र श्री रमेश शर्मा, निवासी मकान नंबर 402, सेक्टर 7, Gurugram, मोबाइल नंबर 9812345670 का रहने वाला हूँ।\r\nदिनांक 10/10/2026 को समय करीब दोपहर 01:30 बजे जब मैं मेन मार्केट बस स्टैंड के पास अपनी दुकान की तरफ जा रहा था, तभी एक अज्ञात मोटरसाइकिल सवार व्यक्ति ने आकर मेरे साथ गाली-गलौज व मारपीट की और मेरा सैमसंग मोबाइल फोन व जेब से 8,500 रुपये छीनकर फरार हो गया।\r\n\r\nअतः श्रीमान जी से प्रार्थना है कि उक्त अज्ञात आरोपी के खिलाफ सख्त कानूनी कार्रवाई कर मुकदमा दर्ज (FIR) करने की कृपा करें।\r\n\r\nप्रार्थी:\r\nविकास शर्मा (Vikas Sharma)\r\nपुत्र श्री रमेश शर्मा\r\nमोबाइल: 9812345670\r\nदिनांक: 10/10/2026",
+    "detectedLanguage": "bilingual",
+    "structuredData": {
+      "classifiedDocumentName": "complaint_snatching_market.txt",
+      "verifiedDocumentTitle": "Official Police Case Evidence",
+      "persons": [],
+      "accusedList": []
+    },
+    "processingStatus": "PROCESSING",
+    "verificationStatus": "AI_EXTRACTED",
+    "processingVersion": 1,
+    "processingEngine": "Gemini-3.5-Flash",
+    "retryCount": 0,
+    "auditTrail": [
+      {
+        "id": "aud_1792556948475",
+        "action": "PROCESS_STARTED",
+        "performedBy": "FIR Intake Officer",
+        "timestamp": "2026-10-21T04:29:08.475Z",
+        "details": "Evidence processing initialized via Gemini 3.5 Flash."
+      }
+    ],
+    "createdAt": "2026-10-21T04:29:08.475Z",
+    "updatedAt": "2026-10-21T04:29:08.475Z"
+  },
+  {
     "id": "ev_rec_1791971959480_5zlvn",
     "fileId": "doc_1791971950062_zyhq",
     "caseId": "cmp_1791971949936",

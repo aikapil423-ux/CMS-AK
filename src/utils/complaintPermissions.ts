@@ -53,10 +53,21 @@ export function isUserAssignedEo(user: AuthUserContext, complaint: ComplaintItem
   if (complaint.assignedEoId && (complaint.assignedEoId === user.id || complaint.assignedEoId === user.pno)) return true;
   if (complaint.assignedEoPno && user.pno && complaint.assignedEoPno === user.pno) return true;
 
+  // If complaint is assigned to SHO and current logged-in user is SHO
+  if (user.role === "SHO" && isAssignedOfficerSho(complaint)) return true;
+
   if (complaint.assignedEoName && user.name) {
-    const cName = complaint.assignedEoName.toLowerCase().replace(/^(si|asi|hc|insp|inspector|sub-inspector)\.?\s+/i, "").trim();
-    const uName = user.name.toLowerCase().replace(/^(si|asi|hc|insp|inspector|sub-inspector)\.?\s+/i, "").trim();
-    if (cName === uName) return true;
+    const normalize = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/\b(sho|inspector|sub-inspector|si|asi|hc|constable|dsp|sp)\b/gi, "")
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+    const cName = normalize(complaint.assignedEoName);
+    const uName = normalize(user.name);
+    if (cName && uName && (cName === uName || cName.includes(uName) || uName.includes(cName))) {
+      return true;
+    }
     if (user.role === "ENQUIRY_OFFICER" && (cName.includes(uName) || uName.includes(cName))) {
       return true;
     }
@@ -251,6 +262,26 @@ export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): 
  * 6. Can Ask Progress Report
  * Available to SHO and Superior users when complaint is assigned to an EO.
  */
+/**
+ * Checks if the assigned Enquiry Officer on the complaint is of SHO rank/role
+ */
+export function isAssignedOfficerSho(complaint: ComplaintItem): boolean {
+  if (!isComplaintAssignedToEo(complaint)) return false;
+  const id = (complaint.assignedEoId || "").toLowerCase();
+  const rank = (complaint.assignedEoRank || "").toUpperCase();
+  const name = (complaint.assignedEoName || "").toUpperCase();
+  const role = (((complaint as any).assignedEoRole) || "").toUpperCase();
+
+  return (
+    id === "eo_sho" ||
+    rank === "SHO" ||
+    role === "SHO" ||
+    name.startsWith("SHO") ||
+    name.includes("SHO -") ||
+    name.includes("INSPECTOR RAJESH KUMAR")
+  );
+}
+
 export function canAskProgressReport(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   if (!isComplaintAssignedToEo(complaint)) {
     return {
@@ -259,6 +290,26 @@ export function canAskProgressReport(user: AuthUserContext, complaint: Complaint
     };
   }
 
+  // Jisko complaint assign hai, wo khud progress report nahi maang sakta
+  if (isUserAssignedEo(user, complaint)) {
+    return {
+      allowed: false,
+      reason: "You are the assigned enquiry officer. Progress report can only be requested by supervisory officers.",
+    };
+  }
+
+  // Agar SHO ko mark hai: SHO ko na dikhe, sirf us se upar walo ko dikhe (DSP, SP, Super Admin)
+  if (isAssignedOfficerSho(complaint)) {
+    if (isSuperiorToSho(user.role)) {
+      return { allowed: true };
+    }
+    return {
+      allowed: false,
+      reason: "Supervisory authority required: When inquiry is held by SHO, progress report can only be sought by DSP, SP or District Supervisory Officers.",
+    };
+  }
+
+  // Agar subordinate EO (SI, ASI, HC) ko assign hai: SHO ya us se upar walo ko dikhe
   if (isShoOrSuperior(user.role)) {
     return { allowed: true };
   }

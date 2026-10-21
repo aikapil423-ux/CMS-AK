@@ -70,9 +70,22 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
     const now = getNowLocal();
     return now.time < "10:00" ? now.time : "10:00";
   });
+  const getDayFromDate = (dStr: string) => {
+    if (!dStr) return "Monday";
+    try {
+      const d = new Date(dStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US", { weekday: "long" });
+      }
+    } catch {
+      // fallback
+    }
+    return "Monday";
+  };
+
   const [dateTo, setDateTo] = useState("");
   const [timeTo, setTimeTo] = useState(() => getNowLocal().time);
-  const [day, setDay] = useState("Monday");
+  const [day, setDay] = useState(() => getDayFromDate(getNowLocal().date));
   const [infoReceivedDate, setInfoReceivedDate] = useState(() => getNowLocal().date);
   const [infoReceivedTime, setInfoReceivedTime] = useState(() => getNowLocal().time);
   const [isForestPlace, setIsForestPlace] = useState(false);
@@ -89,6 +102,9 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
       clampedDate = now.date;
     }
     setDateFrom(clampedDate);
+    if (clampedDate) {
+      setDay(getDayFromDate(clampedDate));
+    }
     if (clampedDate >= now.date && timeFrom > now.time) {
       setTimeFrom(now.time);
     }
@@ -457,22 +473,7 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Day of Week</label>
-                  <select
-                    value={day}
-                    onChange={(e) => setDay(e.target.value)}
-                    className="w-full p-2 rounded-lg border border-slate-300 bg-white text-xs"
-                  >
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                  </select>
-                </div>
+
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Area of Crime a Forest Place?</label>

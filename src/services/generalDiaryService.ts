@@ -562,6 +562,10 @@ function loadRecordsFromStorage(): GeneralDiaryRecord[] {
             .filter((r: GeneralDiaryRecord) => !isGdRecordExpired(r))
             .map((r: GeneralDiaryRecord) => ({
               ...r,
+              activityDateTime:
+                r.activityDateTime && r.activityDateTime.includes("T")
+                  ? formatGDActivityDateTime(new Date(r.activityDateTime))
+                  : r.activityDateTime,
               narrative: cleanGdNarrative(r.narrative),
             }));
           if (cleaned.length !== parsed.length) {
@@ -790,7 +794,7 @@ export const GeneralDiaryService = {
     const today = new Date().toISOString().split("T")[0];
 
     // Compute status counts before filtering
-    const todayCount = list.filter((r) => r.isLocked && r.activityDateTime.startsWith(today)).length;
+    const todayCount = list.filter((r) => r.isLocked && (r.activityDateTime.startsWith(today) || localDateKey(r) === today)).length;
     const lockedCount = list.filter((r) => r.status === "LOCKED").length;
     const verifiedCount = list.filter((r) => r.status === "VERIFIED").length;
     const draftCount = list.filter((r) => r.status === "DRAFT").length;
@@ -804,13 +808,23 @@ export const GeneralDiaryService = {
 
     // Filter by Date or Date Range
     const localDateKey = (r: GeneralDiaryRecord): string => {
-      const raw = (r.activityDateTime || "").split(" ")[0];
-      if (/^\d{4}-/.test(raw)) return raw;
+      if (r._sortGdDate && /^\d{4}-\d{2}-\d{2}$/.test(r._sortGdDate)) {
+        return r._sortGdDate;
+      }
+      let raw = (r.activityDateTime || "").split(" ")[0].split("T")[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      if (/^\d{4}-/.test(raw)) {
+        const parts = raw.split("-");
+        if (parts.length >= 3) {
+          return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].slice(0, 2).padStart(2, "0")}`;
+        }
+        return raw.slice(0, 10);
+      }
       const parts = raw.split("/");
       if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
       }
-      return raw;
+      return raw.slice(0, 10);
     };
 
     if (filter.startDate) {
@@ -1291,6 +1305,9 @@ export const GeneralDiaryService = {
     memoryRecordsStore.unshift(newLockedRecord);
     resequenceLocalDay(gdRecordDateKey(newLockedRecord));
     saveRecordsToStorage(memoryRecordsStore);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("cms-gd-updated"));
+    }
     return newLockedRecord;
   },
 
@@ -1852,7 +1869,9 @@ export const GeneralDiaryService = {
               ? formatGDActivityDateTime(
                   new Date(`${payload.activityDate}T${payload.activityTime}:00`)
                 )
-              : payload.activityDateTime || new Date().toISOString(),
+              : payload.activityDateTime
+              ? (payload.activityDateTime.includes("T") ? formatGDActivityDateTime(new Date(payload.activityDateTime)) : payload.activityDateTime)
+              : formatGDActivityDateTime(new Date()),
           entryForOfficer: payload.entryForOfficer || author,
           actualAuthor: author,
           policeStation: payload.policeStation || "PS City Thanesar",

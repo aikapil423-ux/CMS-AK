@@ -2567,12 +2567,12 @@ function ComplaintListContent() {
                       <span>{selectedComplaint.assignedEoName ? "Reassign EO ▾" : "Assign Enquiry Officer ▾"}</span>
                     </Button>
                     {assignDropdownComplaintId === selectedComplaint.id && (
-                      <div className="absolute right-0 bottom-full mb-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
-                        <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                      <div className="absolute right-0 bottom-full mb-1.5 z-50 w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-2xl py-1 text-left animate-in fade-in-50">
+                        <div className="px-3 py-2 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between bg-slate-50/70 rounded-t-xl">
                           <span>Select EO / IO</span>
                           <span className="text-slate-400 font-mono text-[9px]">Rank &amp; Name</span>
                         </div>
-                        <div className="max-h-56 overflow-y-auto py-0.5">
+                        <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-100">
                           {MOCK_ENQUIRY_OFFICERS.map((eo) => {
                             const label = eo.name.startsWith(eo.rank) ? eo.name : `${eo.rank} ${eo.name}`;
                             const isSelected = selectedComplaint.assignedEoId === eo.id || selectedComplaint.assignedEoName?.toLowerCase().includes(eo.name.toLowerCase());
@@ -2586,14 +2586,29 @@ function ComplaintListContent() {
                                   handleQuickAssignEO(selectedComplaint.id, eo);
                                   setSelectedComplaint((prev) => prev ? { ...prev, assignedEoId: eo.id, assignedEoName: eo.name, assignedEoPno: eo.pno, status: "ENQUIRY_IN_PROGRESS" } : null);
                                 }}
-                                className={`w-full text-left px-3 py-1.5 text-xs font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                                className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
                                   isSelected
                                     ? "bg-blue-50 text-blue-900 font-bold"
                                     : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                 }`}
                               >
-                                <span className="truncate">{label}</span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="truncate font-semibold text-slate-900">{label}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[10px] text-slate-500 font-normal">
+                                    <span>PNO: {eo.pno}</span>
+                                    <span>•</span>
+                                    <span className="truncate">{eo.rosterDuty || eo.shift}</span>
+                                  </div>
+                                </div>
+                                {isSelected ? (
+                                  <Check className="w-4 h-4 text-blue-600 shrink-0" />
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 shrink-0 font-normal">
+                                    {eo.activeCases ?? 0} active
+                                  </span>
+                                )}
                               </button>
                             );
                           })}

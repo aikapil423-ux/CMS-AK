@@ -25,7 +25,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
-import { MagicEraserTool } from "@/components/ui/MagicEraserTool";
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {isComplaints && canRegisterComplaint && (
               <Link href="/complaints/register">
-                <Button size="sm" variant="primary" className="gap-1.5 text-xs">
+                <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
                   {t("Register Complaint")}
                 </Button>
@@ -98,7 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {isFir && canRegisterFir && (
               <Link href="/fir/register">
-                <Button size="sm" variant="primary" className="gap-1.5 text-xs">
+                <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
                   {t("Register FIR")}
                 </Button>
@@ -123,8 +123,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Universal Camera & File Upload Option Selector */}
       <GlobalUploadCameraModal />
 
-      {/* Magic Eraser Cursor Tool */}
-      <MagicEraserTool />
+
+
     </div>
   );
 }

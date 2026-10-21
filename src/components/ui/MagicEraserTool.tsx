@@ -117,25 +117,62 @@ export function MagicEraserTool() {
       permanentRules.forEach((rule) => {
         if (!rule.textSnippet || rule.textSnippet.length < 3) return;
 
+        // Skip placeholder pseudo-snippets like "<svg> element", "<div> element"
+        if (rule.textSnippet.startsWith("<") && rule.textSnippet.endsWith("> element")) return;
+
+        // Route matching: if rule has URL, ensure it applies to matching pathname
+        if (rule.url && pathname) {
+          const cleanRuleUrl = rule.url.split("?")[0].replace(/\/$/, "");
+          const cleanPathname = pathname.split("?")[0].replace(/\/$/, "");
+          if (cleanRuleUrl && cleanPathname && cleanRuleUrl !== cleanPathname) {
+            return;
+          }
+        }
+
         const elements = document.querySelectorAll(rule.tagName || "*");
         elements.forEach((el) => {
           const htmlEl = el as HTMLElement;
           if (htmlEl.hasAttribute("data-magic-eraser-ui")) return;
           if (htmlEl.closest("[data-magic-eraser-ui='true']")) return;
 
+          // Never hide root containers, body, main, modal overlays or full screen wrappers
+          if (["BODY", "HTML", "MAIN"].includes(htmlEl.tagName)) return;
+          if (htmlEl.id === "root" || htmlEl.id === "__next") return;
+          if (htmlEl.classList.contains("fixed") && htmlEl.classList.contains("inset-0")) return;
+          if (
+            htmlEl.classList.contains("max-w-6xl") ||
+            htmlEl.classList.contains("max-w-5xl") ||
+            htmlEl.classList.contains("max-w-4xl") ||
+            htmlEl.classList.contains("min-h-screen")
+          ) return;
+
           const text = (htmlEl.innerText || htmlEl.textContent || "").trim();
           const normText = text.replace(/\s+/g, " ");
           const normSnippet = (rule.textSnippet || "").trim().replace(/\s+/g, " ");
 
-          const isMatch =
-            normText === normSnippet ||
-            (normSnippet.length >= 8 && normText.includes(normSnippet)) ||
-            (normText.length >= 8 && normSnippet.includes(normText));
+          // STRICT CHECK: An erased element MUST match its snippet closely in length!
+          // Parent containers will have much longer length and must NEVER be matched!
+          const lengthDiff = Math.abs(normText.length - normSnippet.length);
+          const isDirectMatch = normText === normSnippet;
+          const isCloseMatch = lengthDiff <= 10 && normText.includes(normSnippet);
 
-          if (isMatch) {
-            htmlEl.style.display = "none";
-            htmlEl.setAttribute("data-magic-permanently-erased", "true");
+          if (!isDirectMatch && !isCloseMatch) {
+            return;
           }
+
+          // If it has children, check if a child is the actual target
+          if (htmlEl.children.length > 0) {
+            const hasChildMatch = Array.from(htmlEl.children).some((child) => {
+              const childText = (child.textContent || "").trim().replace(/\s+/g, " ");
+              return childText === normSnippet || (Math.abs(childText.length - normSnippet.length) <= 5 && childText.includes(normSnippet));
+            });
+            if (hasChildMatch) {
+              return; // let the child be erased, not this container!
+            }
+          }
+
+          htmlEl.style.display = "none";
+          htmlEl.setAttribute("data-magic-permanently-erased", "true");
         });
       });
     };

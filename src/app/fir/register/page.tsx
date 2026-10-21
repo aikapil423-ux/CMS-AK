@@ -500,7 +500,7 @@ function RegisterFIRForm() {
   const [complainantAliases, setComplainantAliases] = useState<FIRAliasEntry[]>([]);
   const [tempAlias, setTempAlias] = useState("");
   const [complainantGender, setComplainantGender] = useState<string>("");
-  const [complainantMaritalStatus, setComplainantMaritalStatus] = useState<string>("Married");
+  const [complainantMaritalStatus, setComplainantMaritalStatus] = useState<string>("");
   const [complainantCategory, setComplainantCategory] = useState<string>("GENERAL");
   const [complainantMobile, setComplainantMobile] = useState("");
   const [complainantLandline, setComplainantLandline] = useState("");
@@ -808,6 +808,10 @@ function RegisterFIRForm() {
             briefFacts: Boolean(c.incidentDetails),
             actsAndSections: true,
             occurrence: true,
+            occurrenceDate: Boolean(c.incidentDate),
+            occurrenceTime: Boolean(c.incidentTime),
+            occurrencePlace: Boolean(c.incidentPlace),
+            occurrenceCity: true,
             gdEntryNumber: true,
             gdDate: true,
             gdTime: true,
@@ -920,6 +924,10 @@ function RegisterFIRForm() {
               briefFacts: Boolean(c.incidentDetails),
               actsAndSections: true,
               occurrence: true,
+              occurrenceDate: Boolean(c.incidentDate),
+              occurrenceTime: Boolean(c.incidentTime),
+              occurrencePlace: Boolean(c.incidentPlace),
+              occurrenceCity: true,
               ...(Boolean((c as any).gdEntryNumber) ? { gdEntryNumber: true } : {}),
             });
           }
@@ -1058,6 +1066,14 @@ function RegisterFIRForm() {
         };
         setOccurrencesList([occItem]);
         newlyFilled.occurrence = true;
+        if (data.occurrence.dateFrom?.trim()) newlyFilled.occurrenceDate = true;
+        if (data.occurrence.timeFrom?.trim()) newlyFilled.occurrenceTime = true;
+        if (data.occurrence.place?.trim()) newlyFilled.occurrencePlace = true;
+        newlyFilled.occurrenceCity = true;
+        if (data.occurrence.directionFromPs?.trim()) newlyFilled.directionFromPs = true;
+        if (data.occurrence.distanceKm?.trim()) newlyFilled.distanceKm = true;
+        if (data.occurrence.beatNo?.trim()) newlyFilled.beatNo = true;
+        if (data.occurrence.landmark?.trim()) newlyFilled.landmark = true;
       }
     }
 
@@ -1138,6 +1154,7 @@ function RegisterFIRForm() {
         setComplainantFirstName("");
         setComplainantMiddleName("");
         setComplainantLastName("");
+        setComplainantMaritalStatus("");
         setComplainantMobile("");
         setComplainantEmail("");
         setComplainantRelativeName("");
@@ -2624,7 +2641,7 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card className={`border-slate-200 overflow-visible relative z-20 ${autoFilledFields.actsAndSections ? "!border-emerald-500 ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+            <Card className="border-slate-200 overflow-visible relative z-20">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
@@ -3149,7 +3166,7 @@ function RegisterFIRForm() {
         {/* TAB 2: OCCURRENCE (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "occurrence" && (
-          <div className={`space-y-5 animate-in fade-in-30 ${autoFilledFields.occurrence ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+          <div className="space-y-5 animate-in fade-in-30">
             {errors.occurrence && (
               <div className="p-3 bg-red-50 border border-red-300 rounded-lg text-red-700 text-xs font-bold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -3161,6 +3178,7 @@ function RegisterFIRForm() {
               onAddOccurrence={handleAddOccurrence}
               onUpdateOccurrence={handleUpdateOccurrence}
               onDeleteOccurrence={handleDeleteOccurrence}
+              autoFilledFields={autoFilledFields}
             />
           </div>
         )}
@@ -3308,8 +3326,9 @@ function RegisterFIRForm() {
                       <select
                         value={complainantMaritalStatus}
                         onChange={(e) => setComplainantMaritalStatus(e.target.value)}
-                        className="w-full p-2.5 rounded-lg border border-slate-300"
+                        className={`w-full p-2.5 rounded-lg border border-slate-300 font-medium ${getFieldHighlightClass("complainantMaritalStatus")}`}
                       >
+                        <option value="">Select</option>
                         {MARITAL_STATUS_OPTIONS.map((ms) => (
                           <option key={ms} value={ms}>
                             {ms}
@@ -3366,7 +3385,7 @@ function RegisterFIRForm() {
                       </select>
                     </div>
 
-                    <div className="md:col-span-2">
+                    <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-bold text-slate-700 block">Relative Name</label>
                         <VoiceInputButton
@@ -4469,7 +4488,7 @@ function RegisterFIRForm() {
         {/* TAB 5: ACCUSED (DIRECT INLINE ENTRY & RECORDED LIST) */}
         {/* ========================================================================= */}
         {activeTab === "accused" && (
-          <div className={`space-y-4 animate-in fade-in-30 ${autoFilledFields.accused ? "p-2 rounded-xl ring-2 ring-emerald-400/80 bg-emerald-50/20 shadow-xs shadow-emerald-100" : ""}`}>
+          <div className="space-y-4 animate-in fade-in-30">
             {errors.accused && (
               <div className="p-3 bg-red-50 border border-red-300 rounded-xl text-red-700 flex items-center gap-2 font-semibold text-xs shadow-xs">
                 <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
