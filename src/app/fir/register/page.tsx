@@ -199,6 +199,13 @@ function RegisterFIRForm() {
   const [submitting, setSubmitting] = useState(false);
   const [registeredFir, setRegisteredFir] = useState<FIRItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const draftKey = useMemo(() => {
+    if (complaintIdParam) return `complaint_${complaintIdParam}`;
+    if (gdNumberParam) return `gd_${gdNumberParam}`;
+    return "general";
+  }, [complaintIdParam, gdNumberParam]);
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [draftRestoredNotice, setDraftRestoredNotice] = useState<string | null>(null);
   const [saveDraftFeedback, setSaveDraftFeedback] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -933,74 +940,458 @@ function RegisterFIRForm() {
           }
         })
         .catch((e) => console.warn("Prefill error:", e));
-    } else {
-      const draft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft() : null;
-      if (draft && draft.savedAt) {
-        setDraftRestoredNotice(
-          `A saved draft from ${new Date(draft.savedAt).toLocaleTimeString()} was found. You can restore it.`
-        );
+    }
+
+    // Auto-restore draft on mount if available (for current complaint, GD, or general)
+    let savedDraft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
+    if (!savedDraft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
+      savedDraft = firService.getFirDraft("default");
+    }
+
+    if (savedDraft && savedDraft.savedAt) {
+      applyDraftData(savedDraft);
+    }
+
+    setIsDraftLoaded(true);
+  }, [complaintIdParam, gdNumberParam, draftKey]);
+
+  // Synchronous auto-save right before page unload (preserves data even on hard refresh Ctrl+F5)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isDraftLoaded && latestDraftRef.current) {
+        try {
+          firService.saveFirDraft(latestDraftRef.current, draftKey);
+          if (draftKey === "general") {
+            firService.saveFirDraft(latestDraftRef.current, "default");
+          }
+        } catch {
+          // ignore
+        }
       }
-    }
-  }, [complaintIdParam, gdNumberParam]);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDraftLoaded, draftKey]);
 
-  // Restore Draft Action
-  const handleRestoreDraft = () => {
-    const draft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft() : null;
-    if (!draft) return;
-    try {
-      if (draft.actsAndSectionsList) setActsAndSectionsList(draft.actsAndSectionsList);
-      if (draft.majorMinorHeadsList) setMajorMinorHeadsList(draft.majorMinorHeadsList);
-      if (draft.gdEntryNumber) setGdEntryNumber(draft.gdEntryNumber);
-      if (draft.occurrencesList) setOccurrencesList(draft.occurrencesList);
-      if (draft.complainantFirstName) setComplainantFirstName(draft.complainantFirstName);
-      if (draft.complainantLastName) setComplainantLastName(draft.complainantLastName);
-      if (draft.complainantMobile) setComplainantMobile(draft.complainantMobile);
-      if (draft.complainantGender) setComplainantGender(draft.complainantGender);
-      if (draft.complainantCategory) setComplainantCategory(draft.complainantCategory);
-      if (draft.complainantAge) setComplainantAge(draft.complainantAge);
-      if (draft.permHouseNo) setPermHouseNo(draft.permHouseNo);
-      if (draft.firContentText) setFirContentText(draft.firContentText);
-      if (draft.briefFacts) setBriefFacts(draft.briefFacts);
-      if (draft.reasonsForDelay) setReasonsForDelay(draft.reasonsForDelay);
-      if (draft.actionType) setActionType(draft.actionType);
-      if (draft.assignedIoId) setAssignedIoId(draft.assignedIoId);
-      if (draft.victimsList) setVictimsList(draft.victimsList);
-      if (draft.accusedList) setAccusedList(draft.accusedList);
-      if (draft.propertiesList) setPropertiesList(draft.propertiesList);
-      setDraftRestoredNotice(null);
-      setSaveDraftFeedback("Draft successfully restored!");
-      setTimeout(() => setSaveDraftFeedback(null), 3000);
-    } catch (e) {
-      console.error("Failed to restore draft:", e);
-    }
-  };
+  // Continuous auto-save with 700ms debounce whenever any field is filled or updated
+  useEffect(() => {
+    if (!isDraftLoaded) return;
 
-  // Save Draft Action
-  const handleSaveDraft = () => {
-    const currentDraft = {
+    // Check if form has any meaningful data (do not save completely blank form)
+    const hasData = Boolean(
+      gdEntryNumber ||
+      complaintNumber ||
+      complainantFirstName ||
+      complainantLastName ||
+      complainantMobile ||
+      firContentText ||
+      briefFacts ||
+      actsAndSectionsList.length > 0 ||
+      occurrencesList.length > 0 ||
+      victimsList.length > 0 ||
+      accusedList.length > 0 ||
+      propertiesList.length > 0
+    );
+
+    if (!hasData) return;
+
+    const timer = setTimeout(() => {
+      handleSaveDraft(true);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [
+    isDraftLoaded,
+    state,
+    district,
+    policeStation,
+    firDate,
+    firTime,
+    activeTab,
+    gdEntryNumber,
+    caseType,
+    gdDate,
+    gdTime,
+    sourceOfComplaint,
+    complaintNumber,
+    isHeinousCrime,
+    isSensitiveFIR,
+    originalDateTime,
+    actRemarks,
+    typeOfInfo,
+    selectedActId,
+    currentAct,
+    actsAndSectionsList,
+    majorMinorHeadsList,
+    autoFilledFields,
+    occurrencesList,
+    complainantUid,
+    complainantFirstName,
+    complainantMiddleName,
+    complainantLastName,
+    complainantAliases,
+    complainantGender,
+    complainantMaritalStatus,
+    complainantCategory,
+    complainantMobile,
+    complainantLandline,
+    complainantEmail,
+    complainantRelationType,
+    complainantRelativeName,
+    complainantRelativeAlias,
+    complainantSameAsVictim,
+    complainantDob,
+    complainantYearOfBirth,
+    complainantAge,
+    complainantAgeMonths,
+    complainantAgeRange,
+    permHouseNo,
+    permStreet,
+    permColony,
+    permCity,
+    permTehsil,
+    permCountry,
+    permState,
+    permDistrict,
+    permPs,
+    permPincode,
+    presentSameAsPerm,
+    presHouseNo,
+    presStreet,
+    presColony,
+    presCity,
+    presTehsil,
+    presPs,
+    presDistrict,
+    presState,
+    presPincode,
+    presAddressFull,
+    complainantOccupation,
+    complainantNationality,
+    passportNumber,
+    passportIssueDate,
+    passportIssuePlace,
+    identificationsList,
+    firContentText,
+    briefFacts,
+    reasonsForDelay,
+    uploadedContentFiles,
+    isSecretFir,
+    actionType,
+    assignedIoId,
+    refusedReason,
+    transferredPs,
+    transferredDistrict,
+    assignedDirections,
+    departmentList,
+    inquestReportNo,
+    courtDispatchDateTime,
+    roacConfirmed,
+    freeCopyGiven,
+    victimsList,
+    isAccusedKnown,
+    accusedMoreThan,
+    accusedList,
+    propertiesList,
+    countDeceased,
+    countSeriouslyHurt,
+    countSimpleHurt,
+    countNonInjured,
+    injuryDescription,
+    weaponUsed,
+    videoFootageAvailable,
+    uploadedMedicalDocs,
+    signatureCanvasDrawn,
+    officerName,
+    officerRank,
+    officerNumber,
+  ]);
+
+  // Construct complete snapshot of all fields across all 10 tabs
+  const buildCurrentDraft = () => {
+    return {
+      state,
+      district,
+      policeStation,
+      firDate,
+      firTime,
+      activeTab,
+      gdEntryNumber,
+      caseType,
+      gdDate,
+      gdTime,
+      sourceOfComplaint,
+      complaintNumber,
+      isHeinousCrime,
+      isSensitiveFIR,
+      originalDateTime,
+      actRemarks,
+      typeOfInfo,
+      selectedActId,
+      currentAct,
       actsAndSectionsList,
       majorMinorHeadsList,
-      gdEntryNumber,
+      autoFilledFields,
       occurrencesList,
+      complainantUid,
       complainantFirstName,
+      complainantMiddleName,
       complainantLastName,
-      complainantMobile,
+      complainantAliases,
       complainantGender,
+      complainantMaritalStatus,
       complainantCategory,
+      complainantMobile,
+      complainantLandline,
+      complainantEmail,
+      complainantRelationType,
+      complainantRelativeName,
+      complainantRelativeAlias,
+      complainantSameAsVictim,
+      complainantDob,
+      complainantYearOfBirth,
       complainantAge,
+      complainantAgeMonths,
+      complainantAgeRange,
       permHouseNo,
+      permStreet,
+      permColony,
+      permCity,
+      permTehsil,
+      permCountry,
+      permState,
+      permDistrict,
+      permPs,
+      permPincode,
+      presentSameAsPerm,
+      presHouseNo,
+      presStreet,
+      presColony,
+      presCity,
+      presTehsil,
+      presPs,
+      presDistrict,
+      presState,
+      presPincode,
+      presAddressFull,
+      complainantOccupation,
+      complainantNationality,
+      passportNumber,
+      passportIssueDate,
+      passportIssuePlace,
+      identificationsList,
       firContentText,
       briefFacts,
       reasonsForDelay,
+      uploadedContentFiles,
+      isSecretFir,
       actionType,
       assignedIoId,
+      refusedReason,
+      transferredPs,
+      transferredDistrict,
+      assignedDirections,
+      departmentList,
+      inquestReportNo,
+      courtDispatchDateTime,
+      roacConfirmed,
+      freeCopyGiven,
       victimsList,
+      isAccusedKnown,
+      accusedMoreThan,
       accusedList,
       propertiesList,
+      countDeceased,
+      countSeriouslyHurt,
+      countSimpleHurt,
+      countNonInjured,
+      injuryDescription,
+      weaponUsed,
+      videoFootageAvailable,
+      uploadedMedicalDocs,
+      signatureCanvasDrawn,
+      officerName,
+      officerRank,
+      officerNumber,
+      savedAt: new Date().toISOString(),
     };
-    firService.saveFirDraft(currentDraft);
-    setSaveDraftFeedback("Draft saved to browser storage at " + new Date().toLocaleTimeString());
-    setTimeout(() => setSaveDraftFeedback(null), 4000);
+  };
+
+  // Keep a reference to latest draft object so auto-save & beforeunload never suffer from stale closures
+  const latestDraftRef = useRef<any>(null);
+  latestDraftRef.current = buildCurrentDraft();
+
+  // Comprehensively apply saved draft fields to states
+  const applyDraftData = (draft: any) => {
+    if (!draft) return;
+    try {
+      if (draft.state) setState(draft.state);
+      if (draft.district) setDistrict(draft.district);
+      if (draft.policeStation) setPoliceStation(draft.policeStation);
+      if (draft.firDate) setFirDate(draft.firDate);
+      if (draft.firTime) setFirTime(draft.firTime);
+      if (draft.gdEntryNumber !== undefined) setGdEntryNumber(draft.gdEntryNumber);
+      if (draft.caseType) setCaseType(draft.caseType);
+      if (draft.gdDate) setGdDate(draft.gdDate);
+      if (draft.gdTime) setGdTime(draft.gdTime);
+      if (draft.sourceOfComplaint) setSourceOfComplaint(draft.sourceOfComplaint);
+      if (draft.complaintNumber !== undefined) setComplaintNumber(draft.complaintNumber);
+      if (draft.isHeinousCrime !== undefined) setIsHeinousCrime(draft.isHeinousCrime);
+      if (draft.isSensitiveFIR !== undefined) setIsSensitiveFIR(draft.isSensitiveFIR);
+      if (draft.originalDateTime !== undefined) setOriginalDateTime(draft.originalDateTime);
+      if (draft.actRemarks !== undefined) setActRemarks(draft.actRemarks);
+      if (draft.typeOfInfo) setTypeOfInfo(draft.typeOfInfo);
+      if (draft.selectedActId) setSelectedActId(draft.selectedActId);
+      if (draft.currentAct) setCurrentAct(draft.currentAct);
+      if (Array.isArray(draft.actsAndSectionsList)) setActsAndSectionsList(draft.actsAndSectionsList);
+      if (Array.isArray(draft.majorMinorHeadsList)) setMajorMinorHeadsList(draft.majorMinorHeadsList);
+      if (draft.autoFilledFields) setAutoFilledFields(draft.autoFilledFields);
+
+      if (Array.isArray(draft.occurrencesList)) setOccurrencesList(draft.occurrencesList);
+
+      if (draft.complainantUid !== undefined) setComplainantUid(draft.complainantUid);
+      if (draft.complainantFirstName !== undefined) setComplainantFirstName(draft.complainantFirstName);
+      if (draft.complainantMiddleName !== undefined) setComplainantMiddleName(draft.complainantMiddleName);
+      if (draft.complainantLastName !== undefined) setComplainantLastName(draft.complainantLastName);
+      if (Array.isArray(draft.complainantAliases)) setComplainantAliases(draft.complainantAliases);
+      if (draft.complainantGender !== undefined) setComplainantGender(draft.complainantGender);
+      if (draft.complainantMaritalStatus !== undefined) setComplainantMaritalStatus(draft.complainantMaritalStatus);
+      if (draft.complainantCategory !== undefined) setComplainantCategory(draft.complainantCategory);
+      if (draft.complainantMobile !== undefined) setComplainantMobile(draft.complainantMobile);
+      if (draft.complainantLandline !== undefined) setComplainantLandline(draft.complainantLandline);
+      if (draft.complainantEmail !== undefined) setComplainantEmail(draft.complainantEmail);
+      if (draft.complainantRelationType !== undefined) setComplainantRelationType(draft.complainantRelationType);
+      if (draft.complainantRelativeName !== undefined) setComplainantRelativeName(draft.complainantRelativeName);
+      if (draft.complainantRelativeAlias !== undefined) setComplainantRelativeAlias(draft.complainantRelativeAlias);
+      if (draft.complainantSameAsVictim !== undefined) setComplainantSameAsVictim(draft.complainantSameAsVictim);
+      if (draft.complainantDob !== undefined) setComplainantDob(draft.complainantDob);
+      if (draft.complainantYearOfBirth !== undefined) setComplainantYearOfBirth(draft.complainantYearOfBirth);
+      if (draft.complainantAge !== undefined) setComplainantAge(draft.complainantAge);
+      if (draft.complainantAgeMonths !== undefined) setComplainantAgeMonths(draft.complainantAgeMonths);
+      if (draft.complainantAgeRange !== undefined) setComplainantAgeRange(draft.complainantAgeRange);
+
+      if (draft.permHouseNo !== undefined) setPermHouseNo(draft.permHouseNo);
+      if (draft.permStreet !== undefined) setPermStreet(draft.permStreet);
+      if (draft.permColony !== undefined) setPermColony(draft.permColony);
+      if (draft.permCity !== undefined) setPermCity(draft.permCity);
+      if (draft.permTehsil !== undefined) setPermTehsil(draft.permTehsil);
+      if (draft.permCountry !== undefined) setPermCountry(draft.permCountry);
+      if (draft.permState !== undefined) setPermState(draft.permState);
+      if (draft.permDistrict !== undefined) setPermDistrict(draft.permDistrict);
+      if (draft.permPs !== undefined) setPermPs(draft.permPs);
+      if (draft.permPincode !== undefined) setPermPincode(draft.permPincode);
+      if (draft.presentSameAsPerm !== undefined) setPresentSameAsPerm(draft.presentSameAsPerm);
+      if (draft.presHouseNo !== undefined) setPresHouseNo(draft.presHouseNo);
+      if (draft.presStreet !== undefined) setPresStreet(draft.presStreet);
+      if (draft.presColony !== undefined) setPresColony(draft.presColony);
+      if (draft.presCity !== undefined) setPresCity(draft.presCity);
+      if (draft.presTehsil !== undefined) setPresTehsil(draft.presTehsil);
+      if (draft.presPs !== undefined) setPresPs(draft.presPs);
+      if (draft.presDistrict !== undefined) setPresDistrict(draft.presDistrict);
+      if (draft.presState !== undefined) setPresState(draft.presState);
+      if (draft.presPincode !== undefined) setPresPincode(draft.presPincode);
+      if (draft.presAddressFull !== undefined) setPresAddressFull(draft.presAddressFull);
+
+      if (draft.complainantOccupation !== undefined) setComplainantOccupation(draft.complainantOccupation);
+      if (draft.complainantNationality !== undefined) setComplainantNationality(draft.complainantNationality);
+      if (draft.passportNumber !== undefined) setPassportNumber(draft.passportNumber);
+      if (draft.passportIssueDate !== undefined) setPassportIssueDate(draft.passportIssueDate);
+      if (draft.passportIssuePlace !== undefined) setPassportIssuePlace(draft.passportIssuePlace);
+      if (Array.isArray(draft.identificationsList)) setIdentificationsList(draft.identificationsList);
+
+      if (draft.firContentText !== undefined) setFirContentText(draft.firContentText);
+      if (draft.briefFacts !== undefined) setBriefFacts(draft.briefFacts);
+      if (draft.reasonsForDelay !== undefined) setReasonsForDelay(draft.reasonsForDelay);
+      if (Array.isArray(draft.uploadedContentFiles)) setUploadedContentFiles(draft.uploadedContentFiles);
+
+      if (draft.isSecretFir !== undefined) setIsSecretFir(draft.isSecretFir);
+      if (draft.actionType !== undefined) setActionType(draft.actionType);
+      if (draft.assignedIoId !== undefined) setAssignedIoId(draft.assignedIoId);
+      if (draft.refusedReason !== undefined) setRefusedReason(draft.refusedReason);
+      if (draft.transferredPs !== undefined) setTransferredPs(draft.transferredPs);
+      if (draft.transferredDistrict !== undefined) setTransferredDistrict(draft.transferredDistrict);
+      if (draft.assignedDirections !== undefined) setAssignedDirections(draft.assignedDirections);
+      if (Array.isArray(draft.departmentList)) setDepartmentList(draft.departmentList);
+      if (draft.inquestReportNo !== undefined) setInquestReportNo(draft.inquestReportNo);
+      if (draft.courtDispatchDateTime !== undefined) setCourtDispatchDateTime(draft.courtDispatchDateTime);
+      if (draft.roacConfirmed !== undefined) setRoacConfirmed(draft.roacConfirmed);
+      if (draft.freeCopyGiven !== undefined) setFreeCopyGiven(draft.freeCopyGiven);
+
+      if (Array.isArray(draft.victimsList)) setVictimsList(draft.victimsList);
+
+      if (draft.isAccusedKnown !== undefined) setIsAccusedKnown(draft.isAccusedKnown);
+      if (draft.accusedMoreThan !== undefined) setAccusedMoreThan(draft.accusedMoreThan);
+      if (Array.isArray(draft.accusedList)) setAccusedList(draft.accusedList);
+
+      if (Array.isArray(draft.propertiesList)) setPropertiesList(draft.propertiesList);
+      if (draft.countDeceased !== undefined) setCountDeceased(draft.countDeceased);
+      if (draft.countSeriouslyHurt !== undefined) setCountSeriouslyHurt(draft.countSeriouslyHurt);
+      if (draft.countSimpleHurt !== undefined) setCountSimpleHurt(draft.countSimpleHurt);
+      if (draft.countNonInjured !== undefined) setCountNonInjured(draft.countNonInjured);
+      if (draft.injuryDescription !== undefined) setInjuryDescription(draft.injuryDescription);
+      if (draft.weaponUsed !== undefined) setWeaponUsed(draft.weaponUsed);
+      if (draft.videoFootageAvailable !== undefined) setVideoFootageAvailable(draft.videoFootageAvailable);
+      if (Array.isArray(draft.uploadedMedicalDocs)) setUploadedMedicalDocs(draft.uploadedMedicalDocs);
+
+      if (draft.signatureCanvasDrawn !== undefined) setSignatureCanvasDrawn(draft.signatureCanvasDrawn);
+      if (draft.officerName) setOfficerName(draft.officerName);
+      if (draft.officerRank) setOfficerRank(draft.officerRank);
+      if (draft.officerNumber) setOfficerNumber(draft.officerNumber);
+
+      if (draft.activeTab) setActiveTab(draft.activeTab);
+
+      if (draft.savedAt) {
+        const timeStr = new Date(draft.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        setLastSavedTime(timeStr);
+        setDraftRestoredNotice(`Draft automatically restored from ${timeStr}`);
+      }
+    } catch (e) {
+      console.error("Failed to apply draft data:", e);
+    }
+  };
+
+  // Save draft action (silent for auto-save, with notification for manual button)
+  const handleSaveDraft = (isAuto: boolean | React.MouseEvent = false) => {
+    const isAutoSave = typeof isAuto === "boolean" ? isAuto : false;
+    try {
+      const snap = latestDraftRef.current || buildCurrentDraft();
+      firService.saveFirDraft(snap, draftKey);
+      if (draftKey === "general") {
+        firService.saveFirDraft(snap, "default");
+      }
+      const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      setLastSavedTime(timeStr);
+      if (!isAutoSave) {
+        setSaveDraftFeedback(`Draft saved at ${timeStr}`);
+        setTimeout(() => setSaveDraftFeedback(null), 3000);
+      }
+    } catch (e) {
+      console.warn("Save draft error:", e);
+    }
+  };
+
+  // Restore draft action (manual button trigger)
+  const handleRestoreDraft = () => {
+    let draft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
+    if (!draft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
+      draft = firService.getFirDraft("default");
+    }
+    if (draft) {
+      applyDraftData(draft);
+      setSaveDraftFeedback("Draft restored successfully!");
+      setTimeout(() => setSaveDraftFeedback(null), 3000);
+    }
+  };
+
+  // Discard draft action
+  const handleDiscardDraft = () => {
+    firService.clearFirDraft(draftKey);
+    if (draftKey === "general") {
+      firService.clearFirDraft("default");
+    }
+    setDraftRestoredNotice(null);
+    setLastSavedTime(null);
+    handleClearAll();
   };
 
   // Apply auto-fill from uploaded and processed complaint document
@@ -1136,6 +1527,12 @@ function RegisterFIRForm() {
       variant: "danger",
       confirmLabel: "Yes, Clear All Fields",
       onConfirm: () => {
+        firService.clearFirDraft(draftKey);
+        if (draftKey === "general") {
+          firService.clearFirDraft("default");
+        }
+        setDraftRestoredNotice(null);
+        setLastSavedTime(null);
         setAutoFilledFields({});
         setActsAndSectionsList([]);
         setMajorMinorHeadsList([]);
@@ -2021,7 +2418,10 @@ function RegisterFIRForm() {
       const liveItem = buildCurrentFirItem();
       const created = firService.registerFir(liveItem);
 
-      firService.clearFirDraft();
+      firService.clearFirDraft(draftKey);
+      if (draftKey === "general") firService.clearFirDraft("default");
+      setDraftRestoredNotice(null);
+      setLastSavedTime(null);
       setRegisteredFir(created);
       setShowReceiptModal(true);
     } catch (err: any) {
@@ -2095,6 +2495,12 @@ function RegisterFIRForm() {
         </div>
 
         <div className="flex items-center gap-2">
+          {lastSavedTime && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-in fade-in">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Auto-saved ({lastSavedTime})
+            </span>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -2160,10 +2566,10 @@ function RegisterFIRForm() {
             <Button
               size="sm"
               variant="outline"
-              onClick={handleRestoreDraft}
-              className="text-xs bg-amber-100 border-amber-300 text-amber-900 hover:bg-amber-200"
+              onClick={handleDiscardDraft}
+              className="text-xs bg-white border-amber-300 text-red-700 hover:bg-red-50"
             >
-              Restore Draft
+              Discard Draft
             </Button>
             <button
               onClick={() => setDraftRestoredNotice(null)}
@@ -5253,7 +5659,7 @@ function RegisterFIRForm() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleSaveDraft}
+              onClick={() => handleSaveDraft(false)}
               className="text-xs text-slate-700 flex items-center gap-1.5"
             >
               <Save className="w-3.5 h-3.5 text-blue-600" />
