@@ -27,6 +27,16 @@ import { IEA_1872_SECTIONS } from "./ieaSectionsData";
 import { BSA_2023_SECTIONS } from "./bsaSectionsData";
 import { DV_ACT_2005_SECTIONS } from "./dvActSectionsData";
 import { TELECOM_ACT_2023_SECTIONS } from "./telecomActSectionsData";
+import { OFFICIAL_SECRETS_ACT_1923_SECTIONS } from "./officialSecretsActSectionsData";
+import { NSA_1980_SECTIONS } from "./nsaSectionsData";
+import { JJ_ACT_2015_SECTIONS } from "./jjActSectionsData";
+import { ITPA_1956_SECTIONS } from "./itpaSectionsData";
+import { EPA_1986_SECTIONS } from "./epaSectionsData";
+import { UAPA_1967_SECTIONS } from "./uapaSectionsData";
+import { FSSAI_2006_SECTIONS } from "./fssaiSectionsData";
+import { DRUGS_COSMETICS_ACT_SECTIONS } from "./drugsCosmeticsSectionsData";
+import { DISASTER_MANAGEMENT_ACT_SECTIONS } from "./disasterManagementSectionsData";
+import { PMLA_2002_SECTIONS } from "./pmlaSectionsData";
 
 export interface CCTNSSectionItem {
   sectionNumber: string;
@@ -226,6 +236,76 @@ export const CCTNS_ACTS_CATALOG: CCTNSActItem[] = [
     shortName: "THE TELECOMMUNICATIONS ACT, 2023",
     category: "Special & Local Laws",
     sections: TELECOM_ACT_2023_SECTIONS,
+  },
+  {
+    id: "act_official_secrets_1923",
+    title: "THE OFFICIAL SECRETS ACT, 1923",
+    shortName: "THE OFFICIAL SECRETS ACT, 1923",
+    category: "Special & Local Laws",
+    sections: OFFICIAL_SECRETS_ACT_1923_SECTIONS,
+  },
+  {
+    id: "act_nsa_1980",
+    title: "THE NATIONAL SECURITY ACT, 1980",
+    shortName: "THE NATIONAL SECURITY ACT, 1980",
+    category: "Special & Local Laws",
+    sections: NSA_1980_SECTIONS,
+  },
+  {
+    id: "act_jj_2015",
+    title: "THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT, 2015",
+    shortName: "THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT, 2015",
+    category: "Child Protection",
+    sections: JJ_ACT_2015_SECTIONS,
+  },
+  {
+    id: "act_itpa_1956",
+    title: "THE IMMORAL TRAFFIC (PREVENTION) ACT, 1956",
+    shortName: "THE IMMORAL TRAFFIC (PREVENTION) ACT, 1956",
+    category: "Special & Local Laws",
+    sections: ITPA_1956_SECTIONS,
+  },
+  {
+    id: "act_epa_1986",
+    title: "THE ENVIRONMENT (PROTECTION) ACT, 1986",
+    shortName: "THE ENVIRONMENT (PROTECTION) ACT, 1986",
+    category: "Special & Local Laws",
+    sections: EPA_1986_SECTIONS,
+  },
+  {
+    id: "act_uapa_1967",
+    title: "THE UNLAWFUL ACTIVITIES (PREVENTION) ACT, 1967",
+    shortName: "THE UNLAWFUL ACTIVITIES (PREVENTION) ACT, 1967",
+    category: "Special & Local Laws",
+    sections: UAPA_1967_SECTIONS,
+  },
+  {
+    id: "act_fssai_2006",
+    title: "THE FOOD SAFETY AND STANDARDS ACT, 2006",
+    shortName: "THE FOOD SAFETY AND STANDARDS ACT, 2006",
+    category: "Special & Local Laws",
+    sections: FSSAI_2006_SECTIONS,
+  },
+  {
+    id: "act_drugs_cosmetics_1940",
+    title: "THE DRUGS AND COSMETICS ACT, 1940",
+    shortName: "THE DRUGS AND COSMETICS ACT, 1940",
+    category: "Special & Local Laws",
+    sections: DRUGS_COSMETICS_ACT_SECTIONS,
+  },
+  {
+    id: "act_disaster_management_2005",
+    title: "THE DISASTER MANAGEMENT ACT, 2005",
+    shortName: "THE DISASTER MANAGEMENT ACT, 2005",
+    category: "Special & Local Laws",
+    sections: DISASTER_MANAGEMENT_ACT_SECTIONS,
+  },
+  {
+    id: "act_pmla_2002",
+    title: "THE PREVENTION OF MONEY-LAUNDERING ACT, 2002",
+    shortName: "THE PREVENTION OF MONEY-LAUNDERING ACT, 2002",
+    category: "Special & Local Laws",
+    sections: PMLA_2002_SECTIONS,
   },
 ];
 
@@ -498,6 +578,245 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
       map.set(normalizeKey("दूरसंचार अधिनियम, 2023"), actOption);
       map.set(normalizeKey("दूरसंचार अधिनियम"), actOption);
     }
+
+    if (cAct.id === "act_official_secrets_1923") {
+      map.set(normalizeKey("THE OFFICIAL SECRETS ACT, 1923"), actOption);
+      map.set(normalizeKey("THE OFFICIAL SECRETS ACT, 1923 1 sections"), actOption);
+      map.set(normalizeKey("THE OFFICIAL SECRETS ACT, 1923 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE OFFICIAL SECRETS ACT 1923"), actOption);
+      map.set(normalizeKey("The Official Secrets Act, 1923"), actOption);
+      map.set(normalizeKey("The Official Secrets Act 1923"), actOption);
+      map.set(normalizeKey("Official Secrets Act, 1923"), actOption);
+      map.set(normalizeKey("Official Secrets Act 1923"), actOption);
+      map.set(normalizeKey("The Official Secrets Act"), actOption);
+      map.set(normalizeKey("Official Secrets Act"), actOption);
+      map.set(normalizeKey("Official Secrets"), actOption);
+      map.set(normalizeKey("शासकीय गुप्त बात अधिनियम"), actOption);
+      map.set(normalizeKey("शासकीय गुप्त बात अधिनियम, 1923"), actOption);
+    }
+
+    if (cAct.id === "act_nsa_1980") {
+      map.set(normalizeKey("THE NATIONAL SECURITY ACT, 1980"), actOption);
+      map.set(normalizeKey("THE NATIONAL SECURITY ACT, 1980 1 sections"), actOption);
+      map.set(normalizeKey("THE NATIONAL SECURITY ACT, 1980 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE NATIONAL SECURITY ACT 1980"), actOption);
+      map.set(normalizeKey("The National Security Act, 1980"), actOption);
+      map.set(normalizeKey("The National Security Act 1980"), actOption);
+      map.set(normalizeKey("National Security Act, 1980"), actOption);
+      map.set(normalizeKey("National Security Act 1980"), actOption);
+      map.set(normalizeKey("The National Security Act"), actOption);
+      map.set(normalizeKey("National Security Act"), actOption);
+      map.set(normalizeKey("NSA, 1980"), actOption);
+      map.set(normalizeKey("NSA 1980"), actOption);
+      map.set(normalizeKey("NSA"), actOption);
+      map.set(normalizeKey("N.S.A."), actOption);
+      map.set(normalizeKey("राष्ट्रीय सुरक्षा अधिनियम"), actOption);
+      map.set(normalizeKey("राष्ट्रीय सुरक्षा अधिनियम, 1980"), actOption);
+    }
+
+    if (cAct.id === "act_jj_2015") {
+      map.set(normalizeKey("THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT, 2015"), actOption);
+      map.set(normalizeKey("THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT, 2015 1 sections"), actOption);
+      map.set(normalizeKey("THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT, 2015 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE JUVENILE JUSTICE (CARE AND PROTECTION OF CHILDREN) ACT 2015"), actOption);
+      map.set(normalizeKey("The Juvenile Justice (Care and Protection of Children) Act, 2015"), actOption);
+      map.set(normalizeKey("The Juvenile Justice (Care and Protection of Children) Act 2015"), actOption);
+      map.set(normalizeKey("Juvenile Justice (Care and Protection of Children) Act, 2015"), actOption);
+      map.set(normalizeKey("Juvenile Justice (Care and Protection of Children) Act 2015"), actOption);
+      map.set(normalizeKey("The Juvenile Justice Act, 2015"), actOption);
+      map.set(normalizeKey("Juvenile Justice Act, 2015"), actOption);
+      map.set(normalizeKey("Juvenile Justice Act 2015"), actOption);
+      map.set(normalizeKey("Juvenile Justice Act"), actOption);
+      map.set(normalizeKey("JJ Act, 2015"), actOption);
+      map.set(normalizeKey("JJ Act 2015"), actOption);
+      map.set(normalizeKey("JJ Act"), actOption);
+      map.set(normalizeKey("J.J. Act"), actOption);
+      map.set(normalizeKey("JJ ACT"), actOption);
+      map.set(normalizeKey("किशोर न्याय अधिनियम"), actOption);
+      map.set(normalizeKey("किशोर न्याय (बालकों की देखरेख और संरक्षण) अधिनियम, 2015"), actOption);
+    }
+
+    if (cAct.id === "act_itpa_1956") {
+      map.set(normalizeKey("THE IMMORAL TRAFFIC (PREVENTION) ACT, 1956"), actOption);
+      map.set(normalizeKey("THE IMMORAL TRAFFIC (PREVENTION) ACT, 1956 1 sections"), actOption);
+      map.set(normalizeKey("THE IMMORAL TRAFFIC (PREVENTION) ACT, 1956 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE IMMORAL TRAFFIC (PREVENTION) ACT 1956"), actOption);
+      map.set(normalizeKey("The Immoral Traffic (Prevention) Act, 1956"), actOption);
+      map.set(normalizeKey("The Immoral Traffic (Prevention) Act 1956"), actOption);
+      map.set(normalizeKey("Immoral Traffic (Prevention) Act, 1956"), actOption);
+      map.set(normalizeKey("Immoral Traffic (Prevention) Act 1956"), actOption);
+      map.set(normalizeKey("The Immoral Traffic Prevention Act, 1956"), actOption);
+      map.set(normalizeKey("Immoral Traffic Prevention Act, 1956"), actOption);
+      map.set(normalizeKey("Immoral Traffic Prevention Act"), actOption);
+      map.set(normalizeKey("Immoral Traffic Act, 1956"), actOption);
+      map.set(normalizeKey("Immoral Traffic Act"), actOption);
+      map.set(normalizeKey("ITPA, 1956"), actOption);
+      map.set(normalizeKey("ITPA 1956"), actOption);
+      map.set(normalizeKey("ITPA"), actOption);
+      map.set(normalizeKey("I.T.P.A."), actOption);
+      map.set(normalizeKey("अनंतिक व्यापार निवारण अधिनियम"), actOption);
+      map.set(normalizeKey("अनैतिक व्यापार (निवारण) अधिनियम, 1956"), actOption);
+      map.set(normalizeKey("SITA"), actOption);
+    }
+
+    if (cAct.id === "act_epa_1986") {
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT, 1986"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT,1986"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT,1986 1 sections"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT,1986 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT, 1986 1 sections"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT, 1986 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE ENVIRONMENT (PROTECTION) ACT 1986"), actOption);
+      map.set(normalizeKey("The Environment (Protection) Act, 1986"), actOption);
+      map.set(normalizeKey("The Environment (Protection) Act 1986"), actOption);
+      map.set(normalizeKey("The Environment Protection Act, 1986"), actOption);
+      map.set(normalizeKey("Environment (Protection) Act, 1986"), actOption);
+      map.set(normalizeKey("Environment (Protection) Act 1986"), actOption);
+      map.set(normalizeKey("Environment Protection Act, 1986"), actOption);
+      map.set(normalizeKey("Environment Protection Act 1986"), actOption);
+      map.set(normalizeKey("Environment Protection Act"), actOption);
+      map.set(normalizeKey("EPA, 1986"), actOption);
+      map.set(normalizeKey("EPA 1986"), actOption);
+      map.set(normalizeKey("EPA"), actOption);
+      map.set(normalizeKey("E.P.A."), actOption);
+      map.set(normalizeKey("पर्यावरण (संरक्षण) अधिनियम"), actOption);
+      map.set(normalizeKey("पर्यावरण (संरक्षण) अधिनियम, 1986"), actOption);
+      map.set(normalizeKey("पर्यावरण संरक्षण अधिनियम"), actOption);
+    }
+
+    if (cAct.id === "act_uapa_1967") {
+      map.set(normalizeKey("THE UNLAWFUL ACTIVITIES (PREVENTION) ACT, 1967"), actOption);
+      map.set(normalizeKey("THE UNLAWFUL ACTIVITIES (PREVENTION) ACT, 1967 1 sections"), actOption);
+      map.set(normalizeKey("THE UNLAWFUL ACTIVITIES (PREVENTION) ACT, 1967 1 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE UNLAWFUL ACTIVITIES (PREVENTION) ACT 1967"), actOption);
+      map.set(normalizeKey("The Unlawful Activities (Prevention) Act, 1967"), actOption);
+      map.set(normalizeKey("The Unlawful Activities (Prevention) Act 1967"), actOption);
+      map.set(normalizeKey("Unlawful Activities (Prevention) Act, 1967"), actOption);
+      map.set(normalizeKey("Unlawful Activities (Prevention) Act 1967"), actOption);
+      map.set(normalizeKey("The Unlawful Activities Prevention Act, 1967"), actOption);
+      map.set(normalizeKey("Unlawful Activities Prevention Act, 1967"), actOption);
+      map.set(normalizeKey("Unlawful Activities Prevention Act"), actOption);
+      map.set(normalizeKey("UAPA, 1967"), actOption);
+      map.set(normalizeKey("UAPA 1967"), actOption);
+      map.set(normalizeKey("UAPA"), actOption);
+      map.set(normalizeKey("U.A.P.A."), actOption);
+      map.set(normalizeKey("विधि-विरुद्ध क्रियाकलाप (निवारण) अधिनियम"), actOption);
+      map.set(normalizeKey("विधि-विरुद्ध क्रियाकलाप (निवारण) अधिनियम, 1967"), actOption);
+      map.set(normalizeKey("गैरकानूनी गतिविधियां रोकथाम अधिनियम"), actOption);
+    }
+
+    if (cAct.id === "act_fssai_2006") {
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT, 2006"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT,2006"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT, 2006 3 sections"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT,2006 3 sections"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT, 2006 3 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT,2006 3 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE FOOD SAFETY AND STANDARDS ACT 2006"), actOption);
+      map.set(normalizeKey("The Food Safety and Standards Act, 2006"), actOption);
+      map.set(normalizeKey("The Food Safety and Standards Act 2006"), actOption);
+      map.set(normalizeKey("Food Safety and Standards Act, 2006"), actOption);
+      map.set(normalizeKey("Food Safety and Standards Act 2006"), actOption);
+      map.set(normalizeKey("Food Safety and Standards Act"), actOption);
+      map.set(normalizeKey("Food Safety and Standard Act, 2006"), actOption);
+      map.set(normalizeKey("Food Safety and Standard Act"), actOption);
+      map.set(normalizeKey("FSSAI ACT, 2006"), actOption);
+      map.set(normalizeKey("FSSAI ACT 2006"), actOption);
+      map.set(normalizeKey("FSSAI ACT"), actOption);
+      map.set(normalizeKey("FSSAI, 2006"), actOption);
+      map.set(normalizeKey("FSSAI 2006"), actOption);
+      map.set(normalizeKey("FSSAI"), actOption);
+      map.set(normalizeKey("F.S.S.A.I."), actOption);
+      map.set(normalizeKey("खाद्य सुरक्षा और मानक अधिनियम"), actOption);
+      map.set(normalizeKey("खाद्य सुरक्षा और मानक अधिनियम, 2006"), actOption);
+      map.set(normalizeKey("खाद्य सुरक्षा मानक अधिनियम"), actOption);
+    }
+
+    if (cAct.id === "act_drugs_cosmetics_1940") {
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT,1960 2 sections"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT,1960 2 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT, 1960 2 sections"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT, 1960 2 sections select ho act me"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT, 1960 2 sections"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT,1960 2 sections"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT, 1960"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT,1960"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT, 1960"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT,1960"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT 1960"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT 1960"), actOption);
+      map.set(normalizeKey("The Drugs and Cosmetics Act, 1960"), actOption);
+      map.set(normalizeKey("Drugs and Cosmetics Act, 1960"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT, 1940"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT,1940"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT, 1940"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT,1940"), actOption);
+      map.set(normalizeKey("THE DRUGS AND COSMETICS ACT 1940"), actOption);
+      map.set(normalizeKey("THE DRUG AND COSMETICS ACT 1940"), actOption);
+      map.set(normalizeKey("The Drugs and Cosmetics Act, 1940"), actOption);
+      map.set(normalizeKey("The Drugs and Cosmetics Act 1940"), actOption);
+      map.set(normalizeKey("Drugs and Cosmetics Act, 1940"), actOption);
+      map.set(normalizeKey("Drugs and Cosmetics Act 1940"), actOption);
+      map.set(normalizeKey("Drugs and Cosmetics Act"), actOption);
+      map.set(normalizeKey("Drug and Cosmetics Act"), actOption);
+      map.set(normalizeKey("Drugs & Cosmetics Act, 1940"), actOption);
+      map.set(normalizeKey("Drugs & Cosmetics Act"), actOption);
+      map.set(normalizeKey("D&C ACT"), actOption);
+      map.set(normalizeKey("D&C ACT, 1940"), actOption);
+      map.set(normalizeKey("औषधि और प्रसाधन सामग्री अधिनियम"), actOption);
+      map.set(normalizeKey("औषधि और प्रसाधन सामग्री अधिनियम, 1940"), actOption);
+    }
+
+    if (cAct.id === "act_disaster_management_2005") {
+      map.set(normalizeKey("The Disaster Management Act, 2005 6 sections"), actOption);
+      map.set(normalizeKey("The Disaster Management Act, 2005 6 sections select ho act me"), actOption);
+      map.set(normalizeKey("The Disaster Management Act, 2005"), actOption);
+      map.set(normalizeKey("The Disaster Management Act 2005"), actOption);
+      map.set(normalizeKey("THE DISASTER MANAGEMENT ACT, 2005"), actOption);
+      map.set(normalizeKey("THE DISASTER MANAGEMENT ACT,2005"), actOption);
+      map.set(normalizeKey("THE DISASTER MANAGEMENT ACT, 2005 6 sections"), actOption);
+      map.set(normalizeKey("THE DISASTER MANAGEMENT ACT,2005 6 sections"), actOption);
+      map.set(normalizeKey("THE DISASTER MANAGEMENT ACT 2005"), actOption);
+      map.set(normalizeKey("Disaster Management Act, 2005"), actOption);
+      map.set(normalizeKey("Disaster Management Act 2005"), actOption);
+      map.set(normalizeKey("Disaster Management Act"), actOption);
+      map.set(normalizeKey("DMA, 2005"), actOption);
+      map.set(normalizeKey("DMA 2005"), actOption);
+      map.set(normalizeKey("DMA"), actOption);
+      map.set(normalizeKey("D.M.A."), actOption);
+      map.set(normalizeKey("NDMA Act"), actOption);
+      map.set(normalizeKey("NDMA Act, 2005"), actOption);
+      map.set(normalizeKey("आपदा प्रबंधन अधिनियम"), actOption);
+      map.set(normalizeKey("आपदा प्रबंधन अधिनियम, 2005"), actOption);
+    }
+
+    if (cAct.id === "act_pmla_2002") {
+      map.set(normalizeKey("prevention of money laundering act, 2002 4 sections"), actOption);
+      map.set(normalizeKey("prevention of money laundering act, 2002 4 sections select ho act me"), actOption);
+      map.set(normalizeKey("prevention of money laundering act, 2002"), actOption);
+      map.set(normalizeKey("prevention of money laundering act 2002"), actOption);
+      map.set(normalizeKey("prevention of money laundering act"), actOption);
+      map.set(normalizeKey("Prevention of Money-laundering Act, 2002"), actOption);
+      map.set(normalizeKey("Prevention of Money-laundering Act, 2002 4 sections"), actOption);
+      map.set(normalizeKey("Prevention of Money-laundering Act 2002"), actOption);
+      map.set(normalizeKey("Prevention of Money-Laundering Act, 2002"), actOption);
+      map.set(normalizeKey("Prevention of Money Laundering Act, 2002"), actOption);
+      map.set(normalizeKey("Prevention of Money Laundering Act 2002"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY-LAUNDERING ACT, 2002"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY-LAUNDERING ACT,2002"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY-LAUNDERING ACT, 2002 4 sections"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY-LAUNDERING ACT,2002 4 sections"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY LAUNDERING ACT, 2002"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY LAUNDERING ACT,2002"), actOption);
+      map.set(normalizeKey("THE PREVENTION OF MONEY LAUNDERING ACT 2002"), actOption);
+      map.set(normalizeKey("Money Laundering Act"), actOption);
+      map.set(normalizeKey("PMLA, 2002"), actOption);
+      map.set(normalizeKey("PMLA 2002"), actOption);
+      map.set(normalizeKey("PMLA"), actOption);
+      map.set(normalizeKey("P.M.L.A."), actOption);
+      map.set(normalizeKey("धन शोधन निवारण अधिनियम"), actOption);
+      map.set(normalizeKey("धन शोधन निवारण अधिनियम, 2002"), actOption);
+    }
   }
 
   // 2. Merge with Acts from ActsService (user's custom uploaded bare acts + built-ins)
@@ -623,6 +942,46 @@ export function getUnifiedActsCatalog(userActs: any[] = []): UnifiedActOption[] 
         }
         // If it's act_telecom_2023, preserve the authoritative complete 354 sections catalog
         if (existing.id === "act_telecom_2023") {
+          continue;
+        }
+        // If it's act_official_secrets_1923, preserve the authoritative complete sections catalog
+        if (existing.id === "act_official_secrets_1923") {
+          continue;
+        }
+        // If it's act_nsa_1980, preserve the authoritative complete sections catalog
+        if (existing.id === "act_nsa_1980") {
+          continue;
+        }
+        // If it's act_jj_2015, preserve the authoritative complete sections catalog
+        if (existing.id === "act_jj_2015") {
+          continue;
+        }
+        // If it's act_itpa_1956, preserve the authoritative complete sections catalog
+        if (existing.id === "act_itpa_1956") {
+          continue;
+        }
+        // If it's act_epa_1986, preserve the authoritative complete sections catalog
+        if (existing.id === "act_epa_1986") {
+          continue;
+        }
+        // If it's act_uapa_1967, preserve the authoritative complete sections catalog
+        if (existing.id === "act_uapa_1967") {
+          continue;
+        }
+        // If it's act_fssai_2006, preserve the authoritative complete sections catalog
+        if (existing.id === "act_fssai_2006") {
+          continue;
+        }
+        // If it's act_drugs_cosmetics_1940, preserve the authoritative complete sections catalog
+        if (existing.id === "act_drugs_cosmetics_1940") {
+          continue;
+        }
+        // If it's act_disaster_management_2005, preserve the authoritative complete sections catalog
+        if (existing.id === "act_disaster_management_2005") {
+          continue;
+        }
+        // If it's act_pmla_2002, preserve the authoritative complete sections catalog
+        if (existing.id === "act_pmla_2002") {
           continue;
         }
         // Merge sections: append any new sections from userAct that aren't already in existing
