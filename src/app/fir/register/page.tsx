@@ -120,8 +120,7 @@ export type MainTabKey =
   | "complainant"
   | "fir_content"
   | "accused"
-  | "property"
-  | "signature";
+  | "property";
 
 const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: string }[] = [
   { key: "act_section", label: "1. Act & Section", shortTitle: "Act & Section", icon: Scale },
@@ -129,8 +128,7 @@ const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: strin
   { key: "complainant", label: "3. Complainant & Victim Details", shortTitle: "Complainant & Victim", icon: Users },
   { key: "fir_content", label: "4. FIR Content & Action Taken", shortTitle: "Content & Action", icon: FileText },
   { key: "accused", label: "5. Accused", shortTitle: "Accused", icon: Crosshair },
-  { key: "property", label: "6. Property & Hurt Details", shortTitle: "Property & Hurt", icon: Package },
-  { key: "signature", label: "7. Signature", shortTitle: "Signature", icon: PenTool },
+  { key: "property", label: "6. Property, Hurt & Signature", shortTitle: "Property & Signature", icon: Package },
 ];
 
 const MAJOR_HEADS = [
@@ -1338,7 +1336,7 @@ function RegisterFIRForm() {
       if (draft.officerRank) setOfficerRank(draft.officerRank);
       if (draft.officerNumber) setOfficerNumber(draft.officerNumber);
 
-      if (draft.activeTab) setActiveTab(draft.activeTab);
+      if (draft.activeTab) setActiveTab(draft.activeTab === "signature" ? "property" : draft.activeTab);
 
       if (draft.savedAt) {
         const timeStr = new Date(draft.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -2392,8 +2390,8 @@ function RegisterFIRForm() {
   // Final Submit Handler with Confirmation Dialog
   const handleInitiateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Only allow submission from the final signature tab
-    if (activeTab !== "signature") {
+    // Only allow submission from the final tab
+    if (currentTabIndex !== TAB_CONFIG.length - 1) {
       handleNextTab();
       return;
     }
@@ -3856,8 +3854,9 @@ function RegisterFIRForm() {
                         <span>{errors.complainantAge}</span>
                       </p>
                     )}
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
-                      <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                      {/* Date of Birth */}
+                      <div className="sm:col-span-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-slate-500 block">Date of Birth (DOB)</span>
                           <span className="text-[10px] text-slate-400 font-semibold">(Max: Today)</span>
@@ -3872,61 +3871,39 @@ function RegisterFIRForm() {
                           />
                         </div>
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-slate-500 block">Year of Birth</span>
-                          <span className="text-[10px] text-blue-600 font-semibold cursor-help" title="Scroll mouse wheel or choose from dropdown">Fast Scroll ⇅</span>
-                        </div>
-                        <div className="mt-1 flex gap-1">
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            min={1900}
-                            max={new Date().getFullYear()}
-                            placeholder="YYYY"
-                            list="complainant-dob-years"
-                            value={complainantYearOfBirth}
-                            onWheel={(e) => {
-                              e.currentTarget.blur();
-                              const cur = Number(complainantYearOfBirth) || (new Date().getFullYear() - 25);
-                              const next = Math.max(1900, Math.min(new Date().getFullYear(), cur + (e.deltaY < 0 ? 1 : -1)));
-                              handleComplainantYearChange(String(next));
-                            }}
-                            onChange={(e) => handleComplainantYearChange(e.target.value)}
-                            className="w-1/2 p-1.5 rounded border border-slate-300 font-mono text-xs"
-                          />
-                          <select
-                            aria-label="Quick Select Year"
-                            value={complainantYearOfBirth && YEAR_OPTIONS.includes(Number(complainantYearOfBirth)) ? complainantYearOfBirth : ""}
-                            onChange={(e) => handleComplainantYearChange(e.target.value)}
-                            className="w-1/2 p-1.5 rounded border border-slate-300 font-mono text-xs bg-white text-slate-700"
-                          >
-                            <option value="">Year ▾</option>
-                            {YEAR_OPTIONS.map((yr) => (
-                              <option key={yr} value={yr}>
-                                {yr}
-                              </option>
-                            ))}
-                          </select>
-                          <datalist id="complainant-dob-years">
-                            {YEAR_OPTIONS.map((yr) => (
-                              <option key={yr} value={yr} />
-                            ))}
-                          </datalist>
-                        </div>
+
+                      {/* Year of Birth */}
+                      <div className="sm:col-span-2">
+                        <span className="text-[11px] text-slate-500 block">Year of Birth</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={1900}
+                          max={new Date().getFullYear()}
+                          placeholder="YYYY"
+                          value={complainantYearOfBirth}
+                          onWheel={(e) => e.currentTarget.blur()}
+                          onChange={(e) => handleComplainantYearChange(e.target.value)}
+                          className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs"
+                        />
                       </div>
-                      <div>
-                        <span className="text-[11px] text-slate-500 block">Age in Years</span>
+
+                      {/* Age in Years - 1/3 size */}
+                      <div className="sm:col-span-1">
+                        <span className="text-[11px] text-slate-500 block truncate" title="Age in Years">
+                          Age in Years
+                        </span>
                         <input
                           type="number"
                           inputMode="numeric"
                           min="0"
                           max="125"
-                          placeholder="e.g. 35"
+                          placeholder="Yrs"
                           value={complainantAge}
                           onKeyDown={(e) => {
                             if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
                           }}
+                          onWheel={(e) => e.currentTarget.blur()}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, "");
                             if (!val) {
@@ -3957,29 +3934,36 @@ function RegisterFIRForm() {
                             }
                             updateComplainantAgeRange(num);
                           }}
-                          className={`w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs ${getFieldHighlightClass("complainantAge")}`}
+                          className={`w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs text-center ${getFieldHighlightClass("complainantAge")}`}
                         />
                       </div>
-                      <div>
-                        <span className="text-[11px] text-slate-500 block">Age in Months</span>
+
+                      {/* Age in Months - 1/3 size */}
+                      <div className="sm:col-span-1">
+                        <span className="text-[11px] text-slate-500 block truncate" title="Age in Months">
+                          Age in Months
+                        </span>
                         <input
                           type="number"
                           inputMode="numeric"
                           min="0"
                           max="11"
-                          placeholder="e.g. 6"
+                          placeholder="0-11"
                           value={complainantAgeMonths}
                           onKeyDown={(e) => {
                             if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
                           }}
+                          onWheel={(e) => e.currentTarget.blur()}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, "");
                             setComplainantAgeMonths(val ? String(Math.max(0, Math.min(11, parseInt(val, 10)))) : "");
                           }}
-                          className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs"
+                          className="w-full mt-1 p-2 rounded border border-slate-300 font-mono text-xs text-center"
                         />
                       </div>
-                      <div>
+
+                      {/* Age Range */}
+                      <div className="sm:col-span-2">
                         <span className="text-[11px] text-slate-500 block">Age Range</span>
                         <select
                           value={complainantAgeRange}
@@ -3996,69 +3980,71 @@ function RegisterFIRForm() {
                           </option>
                         </select>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Aliases Table */}
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 uppercase text-[11px]">
-                        Aliases / Nicknames (उपनाम)
-                      </span>
-                      <VoiceInputButton
-                        onTranscript={(t) => setTempAlias(t)}
-                        currentValue={tempAlias}
-                        fieldLabel="Alias / Nickname"
-                        iconOnly={true}
-                      />
+                      {/* Aliases / Nicknames */}
+                      <div className="sm:col-span-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-800 uppercase text-[11px]">
+                            Aliases / Nicknames (उपनाम)
+                          </span>
+                          <VoiceInputButton
+                            onTranscript={(t) => setTempAlias(t)}
+                            currentValue={tempAlias}
+                            fieldLabel="Alias / Nickname"
+                            iconOnly={true}
+                          />
+                        </div>
+                        <div className="mt-1 flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Alias / Nickname"
+                            value={tempAlias}
+                            onChange={(e) => setTempAlias(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddAlias();
+                              }
+                            }}
+                            className="flex-1 p-2 rounded border border-slate-300 text-xs"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleAddAlias}
+                            className="text-xs bg-slate-700 text-white shrink-0 px-3"
+                          >
+                            Add Alias
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Alias / Nickname"
-                        value={tempAlias}
-                        onChange={(e) => setTempAlias(e.target.value)}
-                        className="flex-1 p-2 rounded border border-slate-300 text-xs"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleAddAlias}
-                        className="text-xs bg-slate-700 text-white"
-                      >
-                        Add Alias
-                      </Button>
-                    </div>
+
+                    {/* Added Aliases List */}
                     {complainantAliases.length > 0 && (
-                      <div className="overflow-x-auto border border-slate-200 rounded">
-                        <table className="w-full text-left text-xs bg-white">
-                          <thead className="bg-slate-100 font-bold border-b border-slate-200">
-                            <tr>
-                              <th className="p-2 w-12">S.No.</th>
-                              <th className="p-2">Alias Name</th>
-                              <th className="p-2 w-16 text-center">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {complainantAliases.map((a, idx) => (
-                              <tr key={a.id}>
-                                <td className="p-2 font-bold text-slate-500">{idx + 1}</td>
-                                <td className="p-2 font-semibold text-slate-800">{a.aliasName}</td>
-                                <td className="p-2 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setComplainantAliases(complainantAliases.filter((_, i) => i !== idx))
-                                    }
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      <div className="mt-2.5 pt-2 border-t border-slate-200 flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-bold text-slate-600 uppercase">
+                          Added Aliases ({complainantAliases.length}):
+                        </span>
+                        {complainantAliases.map((a, idx) => (
+                          <span
+                            key={a.id || idx}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-800 shadow-sm"
+                          >
+                            <span className="text-slate-400 font-mono text-[10px]">#{idx + 1}</span>
+                            <span>{a.aliasName}</span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setComplainantAliases(complainantAliases.filter((_, i) => i !== idx))
+                              }
+                              className="text-slate-400 hover:text-red-600 transition-colors ml-1 p-0.5 rounded hover:bg-slate-100"
+                              title="Remove alias"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -5479,14 +5465,8 @@ function RegisterFIRForm() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* TAB 7: SIGNATURE (CANVAS + HARDWARE STATUS - EXCLUDES EXTRA PDF FIELDS) */}
-        {/* ========================================================================= */}
-        {activeTab === "signature" && (
-          <div className="space-y-4 animate-in fade-in-30">
+            {/* Signature & Authentication Section (Merged into Tab 6) */}
             <Card className="border-slate-200">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">

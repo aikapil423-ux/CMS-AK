@@ -371,6 +371,37 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
+  const handleYearChange = (yearStr: string) => {
+    const cleanYear = yearStr.replace(/\D/g, "").slice(0, 4);
+    const currentYear = new Date().getFullYear();
+    let validYear = cleanYear;
+    if (cleanYear.length === 4) {
+      const numY = Number(cleanYear);
+      if (numY > currentYear) validYear = String(currentYear);
+      else if (numY < 1900) validYear = "1900";
+    }
+    setYearOfBirth(validYear);
+    clearFieldError("age");
+    if (validYear.length === 4) {
+      const yNum = Number(validYear);
+      const calcAge = Math.max(0, currentYear - yNum);
+      setAgeYears(String(calcAge));
+      setIsJuvenile(calcAge < 18);
+      if (dob) {
+        const parts = dob.split("-");
+        if (parts.length === 3) {
+          const updatedDob = `${validYear}-${parts[1]}-${parts[2]}`;
+          const todayIso = new Date().toISOString().split("T")[0];
+          setDob(updatedDob > todayIso ? todayIso : updatedDob);
+        }
+      } else {
+        const defaultDob = `${validYear}-01-01`;
+        const todayIso = new Date().toISOString().split("T")[0];
+        setDob(defaultDob > todayIso ? todayIso : defaultDob);
+      }
+    }
+  };
+
   const handleDobChange = (val: string) => {
     setDob(val);
     clearFieldError("age");
@@ -460,6 +491,9 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       }
       if (!dob?.trim() && !yearOfBirth?.trim() && !ageYears?.trim() && !ageRangeFrom?.trim()) {
         newErrors.age = "Age Determination (DOB, Year of Birth, Age in Years, or Age Range) is mandatory.";
+      }
+      if (ageRangeFrom && ageRangeTo && Number(ageRangeTo) < Number(ageRangeFrom)) {
+        newErrors.age = `Age Range "To" (${ageRangeTo}) must be greater than or equal to "From" (${ageRangeFrom}).`;
       }
       if (!city?.trim()) {
         newErrors.city = "Village / Town / City is mandatory in Address Details.";
@@ -1315,9 +1349,13 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                   <p className="text-[11px] text-red-600 font-semibold">{errors.age}</p>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Date of Birth (DOB)</label>
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                  {/* Date of Birth */}
+                  <div className="sm:col-span-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700 text-xs">Date of Birth (DOB)</label>
+                      <span className="text-[10px] text-slate-400 font-medium">(Max: Today)</span>
+                    </div>
                     <DatePickerDDMMYYYY
                       value={dob}
                       max={new Date().toISOString().split("T")[0]}
@@ -1326,67 +1364,147 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       size="sm"
                     />
                   </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Year of Birth</label>
+
+                  {/* Year of Birth */}
+                  <div className="sm:col-span-2">
+                    <label className="font-semibold text-slate-700 text-xs block mb-1">Year of Birth</label>
                     <input
                       type="number"
-                      placeholder="e.g. 1994"
+                      inputMode="numeric"
+                      min={1900}
+                      max={new Date().getFullYear()}
+                      placeholder="YYYY"
                       value={yearOfBirth}
-                      onChange={(e) => {
-                        setYearOfBirth(e.target.value);
-                        clearFieldError("age");
+                      onWheel={(e) => e.currentTarget.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
                       }}
-                      className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                      onChange={(e) => handleYearChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                      className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs"
                     />
                   </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Age in Years / Months</label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="number"
-                        placeholder="Yrs"
-                        value={ageYears}
-                        onChange={(e) => {
-                          setAgeYears(e.target.value);
-                          clearFieldError("age");
-                        }}
-                        className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Mos"
-                        value={ageMonths}
-                        onChange={(e) => {
-                          setAgeMonths(e.target.value);
-                          clearFieldError("age");
-                        }}
-                        className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
-                      />
-                    </div>
+
+                  {/* Age in Years - 1/3 size */}
+                  <div className="sm:col-span-1">
+                    <label className="font-semibold text-slate-700 text-xs block mb-1 truncate" title="Age in Years">
+                      Age (Yrs)
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="125"
+                      placeholder="Yrs"
+                      value={ageYears}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setAgeYears(val ? String(Math.max(0, parseInt(val, 10))) : "");
+                        clearFieldError("age");
+                      }}
+                      className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs text-center"
+                    />
                   </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Age Range (From - To)</label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="number"
-                        placeholder="From"
-                        value={ageRangeFrom}
-                        onChange={(e) => {
-                          setAgeRangeFrom(e.target.value);
-                          clearFieldError("age");
-                        }}
-                        className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
-                      />
-                      <input
-                        type="number"
-                        placeholder="To"
-                        value={ageRangeTo}
-                        onChange={(e) => {
-                          setAgeRangeTo(e.target.value);
-                          clearFieldError("age");
-                        }}
-                        className="w-1/2 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
-                      />
+
+                  {/* Age in Months - 1/3 size */}
+                  <div className="sm:col-span-1">
+                    <label className="font-semibold text-slate-700 text-xs block mb-1 truncate" title="Age in Months">
+                      Age (Mths)
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="11"
+                      placeholder="Mos"
+                      value={ageMonths}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
+                        setAgeMonths(val ? String(Math.max(0, Math.min(11, parseInt(val, 10)))) : "");
+                      }}
+                      className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs text-center"
+                    />
+                  </div>
+
+                  {/* Age Range (From - To) */}
+                  <div className="sm:col-span-5">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700 text-xs">
+                        Age Range (From - To)
+                      </label>
+                      {ageRangeFrom && ageRangeTo && Number(ageRangeTo) < Number(ageRangeFrom) && (
+                        <span className="text-[10px] text-red-600 font-bold animate-pulse">
+                          "To" must be ≥ {ageRangeFrom}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max="125"
+                          placeholder="From (e.g. 12)"
+                          value={ageRangeFrom}
+                          onWheel={(e) => e.currentTarget.blur()}
+                          onKeyDown={(e) => {
+                            if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                          }}
+                          onChange={(e) => {
+                            const clean = e.target.value.replace(/\D/g, "");
+                            setAgeRangeFrom(clean);
+                            clearFieldError("age");
+                          }}
+                          onBlur={() => {
+                            if (ageRangeFrom && ageRangeTo && Number(ageRangeTo) < Number(ageRangeFrom)) {
+                              setAgeRangeTo(ageRangeFrom);
+                            }
+                          }}
+                          className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                        />
+                      </div>
+                      <span className="text-slate-400 font-bold text-xs shrink-0">to</span>
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min={ageRangeFrom ? Number(ageRangeFrom) : 0}
+                          max="125"
+                          placeholder="To (e.g. 21)"
+                          value={ageRangeTo}
+                          onWheel={(e) => e.currentTarget.blur()}
+                          onKeyDown={(e) => {
+                            if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
+                          }}
+                          onChange={(e) => {
+                            const clean = e.target.value.replace(/\D/g, "");
+                            setAgeRangeTo(clean);
+                            clearFieldError("age");
+                          }}
+                          onBlur={() => {
+                            if (ageRangeFrom && ageRangeTo) {
+                              const numFrom = Number(ageRangeFrom);
+                              const numTo = Number(ageRangeTo);
+                              if (numTo < numFrom) {
+                                setAgeRangeTo(ageRangeFrom);
+                              }
+                            }
+                          }}
+                          className={`w-full p-2 h-9 rounded-lg border font-mono text-xs bg-white ${
+                            ageRangeFrom && ageRangeTo && Number(ageRangeTo) < Number(ageRangeFrom)
+                              ? "border-red-500 ring-1 ring-red-400 text-red-600"
+                              : "border-slate-300"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
