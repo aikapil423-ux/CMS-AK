@@ -451,40 +451,42 @@ const TEMPLATE_CONFIG: Record<
   },
 };
 
+function emptyNoticeTemplate(sample: NoticeFormData): NoticeFormData {
+  const blank = Object.fromEntries(Object.entries(sample).map(([key, value]) =>
+    [key, typeof value === "boolean" ? false : Array.isArray(value) ? [] : ""]
+  )) as unknown as NoticeFormData;
+  for (const key of ["headerDept", "docTitle", "docSubTitle", "noticeeRole", "recipientDesignation", "statutoryClarification", "documentsRequired"] as const) {
+    (blank as any)[key] = sample[key] || "";
+  }
+  // Identity and case facts are never supplied by the sample.
+  if (sample.natgridOtherInfo !== undefined) blank.documentsRequired = "";
+  blank.issueDate = formatDate(new Date());
+  return blank;
+}
+
 function FIRTemplatesContent() {
   const { currentUser } = useAuth();
+  const [validationError, setValidationError] = useState("");
   const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
+  const [selectedRecipient, setSelectedRecipient] = useState("default");
+  const [resetVersion, setResetVersion] = useState(0);
+  const [noticeEdited, setNoticeEdited] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<FIRNoticeTemplateType>("section_35_notice");
   const [templateLang, setTemplateLang] = useState<TemplateLanguage>(globalLang || "hi");
 
   const [formData, setFormData] = useState<NoticeFormData>(
-    (globalLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI)["section_35_notice"]
+    emptyNoticeTemplate((globalLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI)["section_35_notice"])
   );
 
   // Dynamic CDR Target Rows
   const [cdrTargetRows, setCdrTargetRows] = useState<
     Array<{ id: string; phone: string; periodFrom: string; periodTo: string; reason: string }>
-  >([
-    {
-      id: "cdr_1",
-      phone: "9812044551",
-      periodFrom: "01-08-2026",
-      periodTo: "18-09-2026",
-      reason: "आरोपी द्वारा परिवादी को फर्जी कॉल कर धोखाधड़ी करने बाबत",
-    },
-    {
-      id: "cdr_2",
-      phone: "9416022331",
-      periodFrom: "15-08-2026",
-      periodTo: "18-09-2026",
-      reason: "सह-आरोपी के साथ संपर्क व लोकेशन मिलान हेतु",
-    },
-  ]);
+  >([{ id: "cdr_1", phone: "", periodFrom: "", periodTo: "", reason: "" }]);
 
   const cdrTableResize = useTableResize({
     initialColWidths: { 0: 48, 1: 220, 2: 110, 3: 110, 4: 260, 5: 44 },
@@ -511,32 +513,34 @@ function FIRTemplatesContent() {
   // When active FIR or template changes, sync formData
   useEffect(() => {
     const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
-    const baseSample = baseSource[selectedTemplate] || baseSource.section_35_notice;
+    const baseSample = emptyNoticeTemplate(baseSource[selectedTemplate] || baseSource.section_35_notice);
     if (!activeFir) {
       setFormData(baseSample);
       return;
     }
 
-    const primaryAccused = activeFir.accusedList?.[0] || null;
+    const primaryAccused = selectedRecipient === "manual" ? null : activeFir.accusedList?.[selectedRecipient === "default" ? 0 : Number(selectedRecipient)] || null;
     const isWitness = selectedTemplate === "section_179_witness";
+    const manual = selectedRecipient === "manual";
 
-    const targetNoticeeName = isWitness
+    const targetNoticeeName = manual ? "" : isWitness
       ? activeFir.complainantName
       : primaryAccused?.name || baseSample.noticeeName;
 
-    const targetNoticeeFather = isWitness
+    const targetNoticeeFather = manual ? "" : isWitness
       ? activeFir.complainantFatherSpouse || ""
       : primaryAccused?.fatherName || baseSample.noticeeFather;
 
-    const targetNoticeeAddress = isWitness
+    const targetNoticeeAddress = manual ? "" : isWitness
       ? activeFir.complainantAddress || ""
       : primaryAccused?.address || baseSample.noticeeAddress;
 
-    const targetNoticeePhone = isWitness
+    const targetNoticeePhone = manual ? "" : isWitness
       ? activeFir.complainantMobile || ""
       : primaryAccused?.phone || baseSample.noticeePhone;
 
-    const targetNoticeeAge = (primaryAccused as any)?.age ? String((primaryAccused as any).age) : baseSample.noticeeAge || "";
+    const age = manual ? undefined : isWitness ? activeFir.complainantAge : (primaryAccused as any)?.age;
+    const targetNoticeeAge = age == null ? "" : String(age);
 
     const districtDisplay = activeFir.district
       ? templateLang === "hi"
@@ -550,6 +554,7 @@ function FIRTemplatesContent() {
 
     setFormData({
       ...baseSample,
+      appearancePlace: activeFir.policeStation || "",
       policeStation: activeFir.policeStation || baseSample.policeStation,
       district: districtDisplay,
       complaintNo: activeFir.firNumber || baseSample.complaintNo,
@@ -569,19 +574,19 @@ function FIRTemplatesContent() {
       vsName: targetNoticeeName || baseSample.vsName,
       officerName: activeFir.assignedIoName || currentUser.name || baseSample.officerName,
       officerRank: activeFir.assignedIoRank || currentUser.rankDisplay || baseSample.officerRank,
-      officerPno: activeFir.assignedIoBeltNumber || currentUser.pno || baseSample.officerPno,
-      officerPhone: activeFir.assignedIoPhone || (currentUser as any)?.phone || baseSample.officerPhone,
+      officerPno: activeFir.assignedIoBeltNumber || "",
+      officerPhone: activeFir.assignedIoPhone || "",
       arrestPoliceStation: activeFir.policeStation || baseSample.policeStation,
       arrestDistrict: activeFir.district || baseSample.district,
       casePs: activeFir.policeStation || baseSample.policeStation,
     });
 
-    if (primaryAccused?.phone) {
+    {
       setCdrTargetRows((prev) => [
         {
           id: "cdr_1",
-          phone: primaryAccused.phone || "9812044551",
-          periodFrom: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || "01-08-2026",
+          phone: primaryAccused?.phone || "",
+          periodFrom: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || "",
           periodTo: formatDate(new Date()),
           reason: templateLang === "hi"
             ? `अभियोग सं. ${activeFir.firNumber} में अभियुक्त सत्यापन हेतु`
@@ -589,9 +594,11 @@ function FIRTemplatesContent() {
         },
       ]);
     }
-  }, [activeFir, selectedTemplate, currentUser, templateLang]);
+      setNoticeEdited(false);
+  }, [activeFir, selectedTemplate, selectedRecipient, currentUser, resetVersion]);
 
   const handleFieldChange = (field: keyof NoticeFormData, val: any) => {
+    setNoticeEdited(true);
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
@@ -601,8 +608,8 @@ function FIRTemplatesContent() {
     setTemplateLang(newLang);
     setVoiceLang(newLang === "hi" ? "hi-IN" : "en-IN");
 
-    const currentBase = (templateLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
-    const targetBase = (newLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate];
+    const currentBase = emptyNoticeTemplate((templateLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate]);
+    const targetBase = emptyNoticeTemplate((newLang === "hi" ? DEFAULT_SAMPLE_DATA_HI : DEFAULT_SAMPLE_DATA_EN)[selectedTemplate]);
 
     setFormData((prev) => {
       const updated = { ...prev };
@@ -693,11 +700,8 @@ function FIRTemplatesContent() {
   }, [globalLang]);
 
   const handleResetSample = () => {
-    const baseSource = templateLang === "en" ? DEFAULT_SAMPLE_DATA_EN : DEFAULT_SAMPLE_DATA_HI;
-    const base = baseSource[selectedTemplate];
-    if (base) {
-      setFormData(base);
-    }
+    if (noticeEdited && !confirm("Reset this notice to verified case details? Unsaved edits will be removed.")) return;
+    setResetVersion((version) => version + 1);
   };
 
   // Dynamic CDR Row actions
@@ -726,12 +730,32 @@ function FIRTemplatesContent() {
     setCdrTargetRows((prev) => prev.filter((r) => r.id !== id));
   };
 
+  const validateNotice = () => {
+    const missing: string[] = [];
+    if (!activeFir) missing.push("FIR");
+    if (selectedTemplate !== "natgrid_proforma" && !formData.dispatchNo?.trim()) missing.push("Dispatch number");
+    if (!formData.officerName?.trim()) missing.push("Officer");
+    if (selectedTemplate === "section_35_notice" || selectedTemplate === "section_179_witness") {
+      for (const field of ["noticeeName", "noticeeAddress", "appearanceDate", "appearanceTime", "appearancePlace"] as const) {
+        if (!formData[field]?.trim()) missing.push(field);
+      }
+    } else if (selectedTemplate === "cdr_requisition") {
+      if (cdrTargetRows.some((r) => !r.phone.trim() || !r.periodFrom.trim() || !r.periodTo.trim() || !r.reason.trim())) missing.push("Complete CDR targets, dates and justification");
+    } else if (!formData.noticeeName?.trim() || !formData.natgridReason?.trim() || !formData.shoEmail?.trim()) {
+      missing.push("NATGRID identity, reason and official email");
+    }
+    setValidationError(missing.length ? "Complete and verify before export: " + missing.join(", ") : "");
+    return missing.length === 0;
+  };
+
   const handlePrint = () => {
+    if (!validateNotice()) return;
     const title = `Notice_${selectedTemplate}_FIR_${formData.complaintNo || "Case"}`;
     printA4Element("fir-printable-notice", title);
   };
 
   const handleDownload = () => {
+    if (!validateNotice()) return;
     const title = `Notice_${selectedTemplate}_FIR_${formData.complaintNo || "Case"}`;
     const docTitle = TEMPLATE_CONFIG[selectedTemplate]?.label || "Statutory Notice";
     downloadA4DocumentAsHtml("fir-printable-notice", title, docTitle);
@@ -748,6 +772,7 @@ function FIRTemplatesContent() {
 
   return (
     <div className="space-y-5 pb-16 animate-in fade-in-50">
+      {validationError && <div role="alert" className="p-3 border border-red-300 bg-red-50 text-red-800 rounded">{validationError}</div>}
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -838,7 +863,7 @@ function FIRTemplatesContent() {
             </label>
             <select
               value={selectedFirId}
-              onChange={(e) => setSelectedFirId(e.target.value)}
+              onChange={(e) => { if (noticeEdited && !confirm("Discard unsaved notice edits and switch FIR?")) return; setSelectedRecipient("default"); setSelectedFirId(e.target.value); }}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
             >
               {firs.map((f) => (
@@ -855,7 +880,7 @@ function FIRTemplatesContent() {
             </label>
             <select
               value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value as FIRNoticeTemplateType)}
+              onChange={(e) => { if (noticeEdited && !confirm("Discard unsaved notice edits and switch template?")) return; setSelectedRecipient("default"); setSelectedTemplate(e.target.value as FIRNoticeTemplateType); }}
               className="w-full text-xs p-2.5 rounded-lg border border-purple-300 bg-purple-50/40 font-bold text-purple-950"
             >
               {Object.entries(TEMPLATE_CONFIG).map(([key, cfg]) => (
@@ -866,6 +891,19 @@ function FIRTemplatesContent() {
             </select>
           </div>
         </div>
+
+        <label className="block text-xs font-semibold">Notice recipient
+          <select aria-label="Notice recipient" value={selectedRecipient} onChange={(e) => {
+            if (noticeEdited && !confirm("Discard unsaved notice edits and change recipient?")) return;
+            setSelectedRecipient(e.target.value);
+          }} className="ml-2 border rounded p-2">
+            {selectedTemplate === "section_179_witness" ? <option value="default">{activeFir?.complainantName || "Complainant"} — Complainant</option> : <>
+              <option value="default">{activeFir?.accusedList?.[0]?.name || "No recorded accused"}</option>
+              {activeFir?.accusedList?.slice(1).map((person, index) => <option key={index + 1} value={String(index + 1)}>{person.name}</option>)}
+            </>}
+            <option value="manual">Other person — enter verified details</option>
+          </select>
+        </label>
 
         {/* Toolbar: Template Language Switcher, Font Size, Dictation, Reset */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
@@ -1342,7 +1380,7 @@ function FIRTemplatesContent() {
                     </span>
                     <input
                       type="text"
-                      value={formData.appearanceTime || "11:00 AM"}
+                      value={formData.appearanceTime || ""}
                       onChange={(e) => handleFieldChange("appearanceTime", e.target.value)}
                       placeholder={templateLang === "hi" ? "समय" : "Time"}
                       className="w-full font-bold text-slate-950 bg-white border border-slate-300 rounded px-2 py-1"
@@ -2111,7 +2149,7 @@ function FIRTemplatesContent() {
                           </span>
                           <input
                             type="text"
-                            value={formData.district || (templateLang === "hi" ? "सिरसा" : "Sirsa")}
+                            value={formData.district || ""}
                             onChange={(e) => handleFieldChange("district", e.target.value)}
                             placeholder={templateLang === "hi" ? "सिरसा" : "Sirsa"}
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
@@ -2426,12 +2464,12 @@ function FIRTemplatesContent() {
                           </span>
                           <input
                             type="text"
-                            value={formData.noticeeDob || formData.appearanceDate || ""}
+                            value={formData.noticeeDob || ""}
                             onChange={(e) => {
                               handleFieldChange("noticeeDob", e.target.value);
                               handleFieldChange("appearanceDate", e.target.value);
                             }}
-                            placeholder="14-08-1988"
+                            placeholder="Date of birth"
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -2444,7 +2482,7 @@ function FIRTemplatesContent() {
                             type="text"
                             value={formData.noticeePhone || ""}
                             onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
-                            placeholder="9812044551, 9416022331"
+                            placeholder="Verified phone number"
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -2457,7 +2495,7 @@ function FIRTemplatesContent() {
                             type="text"
                             value={formData.accusedAadhaar || ""}
                             onChange={(e) => handleFieldChange("accusedAadhaar", e.target.value)}
-                            placeholder="8492-3810-4921"
+                            placeholder="Verified identity number"
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -2470,7 +2508,7 @@ function FIRTemplatesContent() {
                             type="text"
                             value={formData.accusedPan || ""}
                             onChange={(e) => handleFieldChange("accusedPan", e.target.value)}
-                            placeholder="ABCPS1234F"
+                            placeholder="Verified PAN"
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -2481,7 +2519,7 @@ function FIRTemplatesContent() {
                           </span>
                           <input
                             type="text"
-                            value={formData.natgridOtherInfo || formData.documentsRequired || ""}
+                            value={formData.natgridOtherInfo || ""}
                             onChange={(e) => {
                               handleFieldChange("natgridOtherInfo", e.target.value);
                               handleFieldChange("documentsRequired", e.target.value);

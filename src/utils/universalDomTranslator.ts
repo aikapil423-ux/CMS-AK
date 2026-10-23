@@ -17,6 +17,7 @@ const SORTED_REVERSE_ENTRIES = Object.entries(REVERSE_DICTIONARY).sort(
 
 // Cache for original text node contents
 const originalTextMap = new WeakMap<Node, string>();
+const translatedTextMap = new WeakMap<Node, string>();
 
 let observer: MutationObserver | null = null;
 let currentLanguage: "hi" | "en" = "en";
@@ -249,19 +250,21 @@ function translateNode(node: Text, toLang: "hi" | "en") {
   if (currentVal.length > 120 || currentVal.includes("\n")) return;
 
   // Always cache the raw initial text node value
-  if (!originalTextMap.has(node)) {
+  if (!originalTextMap.has(node) || (translatedTextMap.has(node) && translatedTextMap.get(node) !== currentVal)) {
     originalTextMap.set(node, currentVal);
   }
   const orig = originalTextMap.get(node) || currentVal;
 
   if (toLang === "hi") {
     const translated = translateStringToHindi(orig);
+    translatedTextMap.set(node, translated);
     if (translated !== currentVal) {
       node.nodeValue = translated;
     }
   } else {
     // English mode: clean any Hindi or bilingual text
     const translated = translateStringToEnglish(orig);
+    translatedTextMap.set(node, translated);
     if (translated !== currentVal) {
       node.nodeValue = translated;
     }

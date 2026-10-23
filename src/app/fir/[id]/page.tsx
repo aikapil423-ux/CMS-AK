@@ -74,6 +74,7 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
 import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
 import { CrimeDetailModal } from "@/components/fir/CrimeDetailModal";
+import { FinalReportModal } from "@/components/fir/FinalReportModal";
 import { ModifyActsModal } from "@/components/fir/ModifyActsModal";
 
 type ActiveTab =
@@ -234,6 +235,7 @@ export default function FIRProfilePage() {
 
   // Final Form (Chargesheet/Closure) Modal
   const [isFinalFormModalOpen, setIsFinalFormModalOpen] = useState(false);
+  const [isFinalReportModalOpen, setIsFinalReportModalOpen] = useState(false);
   const [finalFormType, setFinalFormType] = useState<"CHARGESHEET" | "CLOSURE" | "UNTRACED">("CHARGESHEET");
   const [courtName, setCourtName] = useState("Court of CJM, Gurugram");
   const [finalFormSummary, setFinalFormSummary] = useState("");
@@ -1500,38 +1502,6 @@ export default function FIRProfilePage() {
         </div>
       )}
 
-      {/* CRIME DETAILS PENDING ALERT BANNER */}
-      {!isCrimeDetailsFilled && (
-        <div className="rounded-xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-amber-100/60 to-amber-50 p-3.5 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs animate-in fade-in-50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-4 h-4 animate-bounce" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-black text-amber-950">
-                  ⚠️ अपराध विवरण प्रपत्र (Crime Detail Form IIF-II) लंबित है
-                </p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-300">
-                  अनिवार्य / MANDATORY
-                </span>
-              </div>
-              <p className="text-[11px] text-amber-800 mt-0.5">
-                जब तक IIF-II फॉर्म भरकर दस्तावेज़ पैनल में सुरक्षित नहीं किया जाता, तब तक गिरफ़्तारी प्रपत्र (Arrest Docs & IIF-III) जनरेट नहीं हो सकते। ऊपर दिया गया IIF-II बटन तब तक लगातार चमकता रहेगा।
-              </p>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => setIsCrimeDetailsOpen(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs gap-1.5 shadow-sm animate-pulse cursor-pointer shrink-0"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-200" />
-            <span>IIF-II प्रपत्र अभी भरें</span>
-          </Button>
-        </div>
-      )}
-
       {/* CRIME DETAILS VERIFIED BANNER */}
       {isCrimeDetailsFilled && (
         <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-3 text-emerald-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
@@ -1709,46 +1679,6 @@ export default function FIRProfilePage() {
       {/* 1. OVERVIEW TAB */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* Acts & Sections Card */}
-          <Card className="border-red-200 shadow-xs bg-red-50/30">
-            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <Scale className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-800">
-                    Statutory Offence Charged
-                  </span>
-                  <h3 className="text-sm font-black text-red-950 font-mono">
-                    {fir.actsAndSections}
-                  </h3>
-                  <p className="text-xs text-red-800">
-                    Major Act: {fir.majorAct || "Bharatiya Nyaya Sanhita, 2023"} • Classification: {fir.categoryDisplay || fir.category}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setIsModifyActsModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer border border-slate-700"
-                  title="धाराएं संशोधित करें (Add / Delete / Modify Acts & Sections)"
-                >
-                  <Scale className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Modify Acts (धाराएं संशोधित करें)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("legal_assistant")}
-                  className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                  title="एफआईआर में लागू धाराओं का विधिक विश्लेषण और बेयर एक्ट देखें"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  <span>कानूनी विश्लेषण व बेयर एक्ट (Legal Help) →</span>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Complainant Particulars */}
@@ -2459,14 +2389,14 @@ export default function FIRProfilePage() {
                 )}
               </div>
 
-              {/* Prepare Final Report Button */}
+              {/* Final Report Button */}
               <Button
                 size="sm"
-                onClick={() => setIsFinalFormModalOpen(true)}
+                onClick={() => setIsFinalReportModalOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
               >
                 <Scale className="w-3.5 h-3.5" />
-                <span>Prepare Final Report</span>
+                <span>Final Report</span>
               </Button>
             </div>
           </div>
@@ -2628,10 +2558,10 @@ export default function FIRProfilePage() {
                             size="sm"
                             onClick={() => handleSendReportToSupervisory(report)}
                             className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                            title="Send this Report to Supervisory Officer / SP for Review & Approval"
+                            title="Send this Report to SHO for Review & Approval"
                           >
                             <Send className="w-3 h-3" />
-                            <span>Send to SP</span>
+                            <span>Send to SHO</span>
                           </Button>
                         )}
                         {report.sentToSho && (
@@ -2641,17 +2571,26 @@ export default function FIRProfilePage() {
                           </span>
                         )}
 
-                        {/* 7. Delete */}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteReport(report.id)}
-                          className="text-slate-400 hover:text-red-600 h-7 w-7 p-0 cursor-pointer"
-                          title="Delete report"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        {/* 7. Delete - ONLY visible to the officer who created this report */}
+                        {(() => {
+                          const canDelete =
+                            !report.createdBy ||
+                            report.createdBy === currentUser.id ||
+                            report.createdBy === currentUser.name ||
+                            report.officerName === currentUser.name;
+                          return canDelete ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteReport(report.id)}
+                              className="text-slate-400 hover:text-red-600 h-7 w-7 p-0 cursor-pointer"
+                              title="Delete report (Creator only)"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          ) : null;
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
@@ -2678,11 +2617,11 @@ export default function FIRProfilePage() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setIsFinalFormModalOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm"
+                  onClick={() => setIsFinalReportModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Scale className="w-3.5 h-3.5" />
-                  <span>Prepare Final Report</span>
+                  <span>Final Report</span>
                 </Button>
               </div>
             </div>
@@ -2742,6 +2681,21 @@ export default function FIRProfilePage() {
           fir={fir}
           isOpen={isReceiptOpen}
           onClose={() => setIsReceiptOpen(false)}
+        />
+      )}
+
+      {/* Statutory Final Report (IIF-V u/s 193 BNSS) Modal */}
+      {isFinalReportModalOpen && fir && (
+        <FinalReportModal
+          fir={fir}
+          isOpen={isFinalReportModalOpen}
+          onClose={() => setIsFinalReportModalOpen(false)}
+          onSaved={(savedReport) => {
+            const updated = firService.getFirById(fir.id);
+            if (updated) setFir(updated);
+            fetchFir();
+          }}
+          currentUser={currentUser}
         />
       )}
 

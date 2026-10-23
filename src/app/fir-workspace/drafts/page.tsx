@@ -27,6 +27,7 @@ import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { IIFVChargesheetForm } from "@/components/fir/FinalReportModal";
 import {
   useTableResize,
   TableColResizer,
@@ -588,8 +589,29 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
         </div>
       </div>
 
-      {/* Main Statutory Proforma Canvas (Fully Directly Editable In-Place) */}
-      <div className="flex justify-center">
+      {/* If formType === "CHARGESHEET", render the official statutory I.I.F.-V format matching the PDF */}
+      {formType === "CHARGESHEET" ? (
+        activeFir ? (
+          <div className="w-full max-w-5xl mx-auto">
+            <IIFVChargesheetForm
+              fir={activeFir}
+              currentUser={currentUser}
+              inline={true}
+              onSaved={(savedReport) => {
+                setIsSubmitted(true);
+                setSubmitMessage("Final Report / Chargesheet (IIF-V) successfully submitted and registered in FIR record!");
+                setTimeout(() => setSubmitMessage(""), 5000);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="p-8 text-center bg-white border border-dashed border-slate-300 rounded-xl text-slate-500 text-xs">
+            कृपया प्रारूप लोड करने हेतु ऊपर दिए गए ड्रॉपडाउन से एक FIR का चयन करें।
+          </div>
+        )
+      ) : (
+        /* Main Statutory Proforma Canvas (for CLOSURE / UNTRACED / CANCELLED) */
+        <div className="flex justify-center">
         <div
           id="fir-printable-report"
           className="w-full max-w-4xl bg-white p-6 sm:p-10 rounded-2xl border-2 border-slate-300 shadow-md font-serif text-slate-900 leading-normal"
@@ -852,7 +874,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
                 {templateLang === "hi" ? "1. अभियुक्तों का विवरण:" : "1. Particulars of Accused Persons:"}
               </h4>
               <div className="no-print">
-                {formType === "CHARGESHEET" ? (
+                {(formType as any) === "CHARGESHEET" ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -878,7 +900,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
               </div>
             </div>
 
-            {formType === "CHARGESHEET" ? (
+            {(formType as any) === "CHARGESHEET" ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] font-sans text-slate-600 italic">
@@ -1244,6 +1266,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

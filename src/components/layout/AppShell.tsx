@@ -96,14 +96,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             )}
 
-            {isFir && canRegisterFir && (
-              <Link href="/fir/register">
-                <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white shadow-xs">
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  {t("Register FIR")}
-                </Button>
-              </Link>
-            )}
 
             {/* Police Persona Switcher Icon with Dropdown */}
             <TopBarPersonaSwitcher />

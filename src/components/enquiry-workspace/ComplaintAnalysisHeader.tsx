@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   FileSearch,
   User,
@@ -28,6 +28,7 @@ import {
 } from "@/services/complaintDocumentAnalysisService";
 
 interface ComplaintAnalysisHeaderProps {
+  beforeSelectionChange?: () => boolean;
   initialComplaintId?: string | null;
   showPersonDropdown?: boolean;
   onComplaintSelect: (complaint: ComplaintItem | null, report: ComplaintAnalysisReport | null) => void;
@@ -38,6 +39,7 @@ interface ComplaintAnalysisHeaderProps {
 }
 
 export function ComplaintAnalysisHeader({
+  beforeSelectionChange,
   initialComplaintId,
   showPersonDropdown = false,
   onComplaintSelect,
@@ -47,6 +49,7 @@ export function ComplaintAnalysisHeader({
   className = "",
 }: ComplaintAnalysisHeaderProps) {
   const { currentUser } = useAuth();
+  const analysisRequest = useRef(0);
 
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
@@ -83,7 +86,7 @@ export function ComplaintAnalysisHeader({
       const list = await getAuthorizedComplaintsForUser(currentUser);
       setComplaints(list);
       // If initialComplaintId is provided, trigger selection if it matches
-      if (initialComplaintId && !currentComplaintId) {
+      if (initialComplaintId) {
         const found = list.find((c) => c.id === initialComplaintId || c.complaintNumber === initialComplaintId);
         if (found) {
           handleComplaintChange(found.id, list);
@@ -103,6 +106,7 @@ export function ComplaintAnalysisHeader({
 
   // Handle complaint selection
   const handleComplaintChange = async (newId: string, complaintList: ComplaintItem[] = complaints) => {
+    const request = ++analysisRequest.current;
     setCurrentComplaintId(newId);
     setCurrentPersonId("");
     if (onPersonSelect) onPersonSelect(null);
@@ -127,6 +131,7 @@ export function ComplaintAnalysisHeader({
 
     try {
       const report = await analyzeComplaintWithDocuments(found);
+      if (request !== analysisRequest.current) return;
       setAnalysisReport(report);
       onComplaintSelect(found, report);
 
@@ -134,22 +139,26 @@ export function ComplaintAnalysisHeader({
       if (showPersonDropdown && report.identifiedPersons.length > 0) {
         const defaultPerson = report.identifiedPersons[0];
         setCurrentPersonId(defaultPerson.id);
-        if (onPersonSelect) onPersonSelect(defaultPerson);
+        // The parent case update must render before selecting a person.
       }
     } catch (err: any) {
+      if (request !== analysisRequest.current) return;
       console.error("Failed to analyze complaint:", err);
       setAnalysisError(err.message || "Error analyzing complaint and documents.");
       onComplaintSelect(found, null);
     } finally {
-      setIsAnalyzing(false);
+      if (request === analysisRequest.current) setIsAnalyzing(false);
     }
   };
+
+  useEffect(() => {
+    if (!analysisReport) return;
+    onPersonSelect?.(analysisReport.identifiedPersons.find((p) => p.id === currentPersonId) || null);
+  }, [analysisReport, currentPersonId]);
 
   const handlePersonChange = (pId: string) => {
     setCurrentPersonId(pId);
     if (!analysisReport) return;
-    const found = analysisReport.identifiedPersons.find((p) => p.id === pId) || null;
-    if (onPersonSelect) onPersonSelect(found);
   };
 
   const selectedComplaintObj = complaints.find((c) => c.id === currentComplaintId);
@@ -189,7 +198,7 @@ export function ComplaintAnalysisHeader({
             ) : (
               <select
                 value={currentComplaintId}
-                onChange={(e) => handleComplaintChange(e.target.value)}
+                onChange={(e) => { if (!beforeSelectionChange || beforeSelectionChange()) handleComplaintChange(e.target.value); }}
                 className={`w-full text-xs font-medium rounded-lg px-3 py-2 border outline-none transition-all cursor-pointer ${
                   currentComplaintId
                     ? "bg-blue-50/50 border-blue-400 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500"
@@ -230,7 +239,7 @@ export function ComplaintAnalysisHeader({
               ) : analysisReport && analysisReport.identifiedPersons.length > 0 ? (
                 <select
                   value={currentPersonId}
-                  onChange={(e) => handlePersonChange(e.target.value)}
+                  onChange={(e) => { if (!beforeSelectionChange || beforeSelectionChange()) handlePersonChange(e.target.value); }}
                   className="w-full text-xs font-bold rounded-lg px-3 py-2 border bg-purple-50/40 border-purple-400 text-slate-900 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                 >
                   <option value="">-- Select Person (Required) --</option>

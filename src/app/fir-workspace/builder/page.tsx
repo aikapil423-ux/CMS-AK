@@ -133,18 +133,12 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 </table>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">गवाह का मौखिक कथन (Statement of Witness):</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  मैं उपरोक्त पते का स्थायी निवासी हूँ। मैं बिना किसी भय, दबाव अथवा प्रलोभन के सत्य बयान करता हूँ कि दिनांक <strong>{{INCIDENT_DATE}}</strong> को समय लगभग <strong>{{INCIDENT_TIME}}</strong> बजे मैं <strong>{{INCIDENT_PLACE}}</strong> के पास मौजूद था। 
-</p>
-<p style="text-align: justify; line-height: 1.6;">
-  उस समय मैंने देखा कि [यहाँ गवाह द्वारा देखा गया घटनाक्रम व कथन दर्ज करें]। शिकायतकर्ता <strong>{{COMPLAINANT_NAME}}</strong> के साथ आरोपी <strong>{{ACCUSED_NAME}}</strong> द्वारा उक्त घटना कारित की गई।
-</p>
-<p style="text-align: justify; line-height: 1.6;">
-  मैंने उक्त घटना अपनी आँखों से देखी है तथा आवश्यकता पड़ने पर मैं माननीय न्यायालय में उपस्थित होकर अपनी गवाही प्रस्तुत करने हेतु तैयार हूँ।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <p style="line-height: 1.6; margin-top: 14px;">
-  <em>(नोट: साक्षी को उसका बयान बोलकर सुनाया व समझाया गया, जिसने इसे सुनकर सही माना।)</em>
+  <em>[Record whether the statement was read back and confirmed.]</em>
 </p>
 
 <br/><br/>
@@ -183,9 +177,7 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 
 <p><strong>स्थान बरामदगी:</strong> {{INCIDENT_PLACE}} &nbsp;&nbsp;&nbsp;&nbsp; <strong>दिनांक व समय:</strong> {{DATE}} वक्ता {{TIME}} बजे</p>
 
-<p style="text-align: justify; line-height: 1.6;">
-  ब-रू-ब-रू हमराह मुलाजमान व हाजिर गवाहान निम्नलिखित माल/दस्तावेज़/सामग्री को मुकदमे के अनुसंधान के दौरान विधिवत कब्जे पुलिस में लिया गया:
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <table style="width: 100%; border-collapse: collapse; margin: 12px 0; border: 1.5px solid #000; font-size: 10pt;">
   <thead>
@@ -200,22 +192,20 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
     <tr>
       <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">1</td>
       <td style="border: 1px solid #000; padding: 6px 8px;">[माल/हथियार/वाहन का विवरण, रंग, मेक, मॉडल, पहचान चिह्न]</td>
-      <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">1 नग</td>
-      <td style="border: 1px solid #000; padding: 6px 8px;">सीलशुदा सफेद कपड़े की पोटली, सील 'SP' मोहर</td>
+      <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">[Quantity]</td>
+      <td style="border: 1px solid #000; padding: 6px 8px;">[Enter actual packaging and seal details]</td>
     </tr>
     <tr>
       <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">2</td>
       <td style="border: 1px solid #000; padding: 6px 8px;">नगद धनराशि / सिम कार्ड / इलेक्ट्रॉनिक उपकरण</td>
       <td style="border: 1px solid #000; padding: 6px 8px; text-align: center;">-</td>
-      <td style="border: 1px solid #000; padding: 6px 8px;">कब्जे पुलिस लिया गया</td>
+      <td style="border: 1px solid #000; padding: 6px 8px;">[Enter verified seizure details]</td>
     </tr>
   </tbody>
 </table>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">कार्रवाई जब्ती व सीलबंदी:</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  उपरोक्त बरामद माल को सुरक्षित कपड़े के थैले/लिफाफे में रखकर गवाहान के समक्ष सील मुहर <strong>'IO'</strong> से सीलबंद किया गया तथा नमूना मोहर अलग से तैयार किया गया। बरामदगी स्थल की फोटोग्राफी/वीडियोग्राफी करवाई गई। फर्द मौके पर तैयार कर गवाहान व मुलाजमान को पढ़कर सुनाई गई, जिन्होंने सही जानकर हस्ताक्षर किए।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <br/><br/>
 <table style="width: 100%; border: none; margin-top: 20px;">
@@ -279,9 +269,7 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 </table>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">2. मौके की भौतिक स्थिति व निरीक्षण बिंदु:</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  अनुसंधान अधिकारी मय हमराह मुलाजमान घटनास्थल <strong>{{INCIDENT_PLACE}}</strong> पर पहुंचे। मौके पर शिकायतकर्ता <strong>{{COMPLAINANT_NAME}}</strong> व स्थानीय नागरिक उपस्थित मिले। घटनास्थल का बारीकी से मुआयना किया गया।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 <ul>
   <li><strong>बिंदु 'A':</strong> वह स्थान जहाँ घटना कारित हुई।</li>
   <li><strong>बिंदु 'B':</strong> वह स्थान जहाँ अभियुक्त <strong>{{ACCUSED_NAME}}</strong> वाहन लेकर खड़ा था।</li>
@@ -289,9 +277,7 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 </ul>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">3. फॉरेंसिक व वैज्ञानिक साक्ष्य संकलन:</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  घटनास्थल की फोटोग्राफी व मोबाइल वीडियोग्राफी करवाई गई। फिंगरप्रिंट विशेषज्ञ / मोबाइल फॉरेंसिक टीम द्वारा मौके से आवश्यक भौतिक साक्ष्य संकलित किए गए। नजरी नक्शा अलग से दस्ती तैयार कर केस डायरी का भाग बनाया गया।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <br/><br/>
 <div style="text-align: right;">
@@ -337,12 +323,8 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 </table>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">खुलासा बयान व जुर्म सम्बंधी कथन:</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  अभियुक्त से नियमानुसार पूछताछ की गई। अभियुक्त ने बताया कि उसने अपने साथी [साथियों के नाम] के साथ मिलकर योजना बनाई थी। दिनांक <strong>{{INCIDENT_DATE}}</strong> को उसने <strong>{{INCIDENT_PLACE}}</strong> पर पहुंचकर घटना को अंजाम दिया।
-</p>
-<p style="text-align: justify; line-height: 1.6;">
-  अभियुक्त ने जुर्म में प्रयुक्त मशरूका/सामान अपने मकान/स्थान [स्थान का नाम] पर छिपाकर रखने की बात कही तथा उक्त माल को चलकर बरामद करवाने की पेशकश की।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <br/><br/>
 <table style="width: 100%; border: none;">
@@ -402,9 +384,7 @@ export const STANDARD_FIR_INVESTIGATION_TEMPLATES: FIRInvestigationTemplate[] = 
 </table>
 
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 14px;">जामातलाशी फर्द (Personal Search Memo):</h3>
-<p style="text-align: justify; line-height: 1.6;">
-  गिरफ्तारी के उपरांत अभियुक्त की विधिवत जामातलाशी ली गई। जामातलाशी में अभियुक्त के पास से [कपड़े, नकदी, मोबाइल, पर्स इत्यादि] प्राप्त हुए जिन्हें नियमानुसार सुपुर्दगी/कब्जे में लिया गया। अभियुक्त के शरीर पर कोई बाहरी चोट का निशान नहीं पाया गया।
-</p>
+<p style="text-align: justify; line-height: 1.6;">[Record the actual statement / proceedings here, with date, place and supporting references. Do not infer facts from the case summary.]</p>
 
 <br/><br/>
 <table style="width: 100%; border: none;">
@@ -458,31 +438,31 @@ export function resolveFIRPlaceholders(content: string, fir?: FIRItem | null, cu
   const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
   const values: Record<string, string> = {
-    "{{FIR_NUMBER}}": fir?.firNumber || "FIR/0014/2026",
-    "{{POLICE_STATION}}": fir?.policeStation || "Sector 29 Police Station",
-    "{{DISTRICT}}": fir?.district || "Gurugram",
-    "{{STATE}}": fir?.state || "Haryana",
+    "{{FIR_NUMBER}}": fir?.firNumber || "",
+    "{{POLICE_STATION}}": fir?.policeStation || "",
+    "{{DISTRICT}}": fir?.district || "",
+    "{{STATE}}": fir?.state || "",
     "{{DATE}}": todayStr,
     "{{TIME}}": timeStr,
-    "{{ACTS_AND_SECTIONS}}": fir?.actsAndSections || "Sec 303(2), 305 Bharatiya Nyaya Sanhita, 2023",
-    "{{MAJOR_ACT}}": fir?.majorAct || "Bharatiya Nyaya Sanhita, 2023",
+    "{{ACTS_AND_SECTIONS}}": fir?.actsAndSections || "",
+    "{{MAJOR_ACT}}": fir?.majorAct || "",
     "{{INCIDENT_DATE}}": fir?.incidentDateFrom || todayStr,
-    "{{INCIDENT_TIME}}": fir?.incidentTimeFrom || "11:30",
-    "{{INCIDENT_PLACE}}": fir?.incidentPlace || "Sector 29 Market Complex, Gurugram",
-    "{{COMPLAINANT_NAME}}": fir?.complainantName || "Vikas Sharma",
-    "{{COMPLAINANT_FATHER}}": fir?.complainantFatherSpouse || "Sh. Ramesh Sharma",
-    "{{COMPLAINANT_MOBILE}}": fir?.complainantMobile || "9812345670",
-    "{{COMPLAINANT_ADDRESS}}": fir?.complainantAddress || "H.No. 402, Sector 29, Gurugram",
-    "{{ACCUSED_NAME}}": fir?.accusedList?.[0]?.name || "Unknown Accused / अज्ञात अभियुक्त",
-    "{{ACCUSED_ADDRESS}}": fir?.accusedList?.[0]?.address || "पता अज्ञात",
-    "{{ACCUSED_PHONE}}": fir?.accusedList?.[0]?.phone || "N/A",
-    "{{OFFICER_NAME}}": fir?.assignedIoName || "Surender Pal",
-    "{{OFFICER_RANK}}": fir?.assignedIoRank || "Sub-Inspector",
-    "{{OFFICER_BELT_NUMBER}}": fir?.assignedIoBeltNumber || "PNO-23841",
-    "{{WITNESS_NAME}}": "रमेश चंद / Sh. Ramesh Chand",
-    "{{CCTNS_FIR_NUMBER}}": fir?.cctnsFirNumber || "HR050260014",
-    "{{GD_ENTRY_NUMBER}}": fir?.gdEntryNumber || "GD-0042/28-03-2026",
-    "{{ENQUIRY_LOCATION}}": fir?.policeStation || "Sector 29 Police Station",
+    "{{INCIDENT_TIME}}": fir?.incidentTimeFrom || "",
+    "{{INCIDENT_PLACE}}": fir?.incidentPlace || "",
+    "{{COMPLAINANT_NAME}}": fir?.complainantName || "",
+    "{{COMPLAINANT_FATHER}}": fir?.complainantFatherSpouse || "",
+    "{{COMPLAINANT_MOBILE}}": fir?.complainantMobile || "",
+    "{{COMPLAINANT_ADDRESS}}": fir?.complainantAddress || "",
+    "{{ACCUSED_NAME}}": fir?.accusedList?.[0]?.name || "",
+    "{{ACCUSED_ADDRESS}}": fir?.accusedList?.[0]?.address || "",
+    "{{ACCUSED_PHONE}}": fir?.accusedList?.[0]?.phone || "",
+    "{{OFFICER_NAME}}": fir?.assignedIoName || "",
+    "{{OFFICER_RANK}}": fir?.assignedIoRank || "",
+    "{{OFFICER_BELT_NUMBER}}": fir?.assignedIoBeltNumber || "",
+    "{{WITNESS_NAME}}": "",
+    "{{CCTNS_FIR_NUMBER}}": fir?.cctnsFirNumber || "",
+    "{{GD_ENTRY_NUMBER}}": fir?.gdEntryNumber || "",
+    "{{ENQUIRY_LOCATION}}": fir?.policeStation || "",
   };
 
   if (customValues) {
@@ -494,7 +474,7 @@ export function resolveFIRPlaceholders(content: string, fir?: FIRItem | null, cu
 
   for (const [token, val] of Object.entries(values)) {
     const reg = new RegExp(token.replace(/([{}])/g, "\\$1"), "g");
-    resolved = resolved.replace(reg, val);
+    resolved = resolved.replace(reg, () => val.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
   }
 
   return resolved;
@@ -520,6 +500,8 @@ function FIRTemplateBuilderContent() {
 
   // Editor State
   const editorRef = useRef<HTMLDivElement>(null);
+  const [editingDefinition, setEditingDefinition] = useState(false);
+  const rawTemplateRef = useRef(STANDARD_FIR_INVESTIGATION_TEMPLATES[0].content);
   const [docName, setDocName] = useState("Witness Statement Memo");
   const [docCategory, setDocCategory] = useState("Witness Statement");
   const [docDescription, setDocDescription] = useState("Statement recorded under Section 180 BNSS");
@@ -605,41 +587,36 @@ function FIRTemplateBuilderContent() {
     loadSavedTemplates();
   }, [loadSavedTemplates]);
 
-  // Initial Content Load
+  // Resolve a definition only once the selected FIR has loaded.
   useEffect(() => {
-    if (editorRef.current) {
-      if (queryTemplateId) {
-        const foundStd = STANDARD_FIR_INVESTIGATION_TEMPLATES.find((t) => t.id === queryTemplateId);
-        if (foundStd) {
-          editorRef.current.innerHTML = resolveFIRPlaceholders(foundStd.content, selectedFir);
-          setDocName(foundStd.name);
-          setDocDescription(foundStd.description);
-          setDocCategory(foundStd.category);
-          setCurrentTemplateId(foundStd.id);
-          return;
-        }
-      }
-      // Default to 180 BNSS statement
-      const defaultTemplate = STANDARD_FIR_INVESTIGATION_TEMPLATES[0];
-      editorRef.current.innerHTML = resolveFIRPlaceholders(defaultTemplate.content, selectedFir);
-      setDocName(defaultTemplate.name);
-      setDocDescription(defaultTemplate.description);
-      setDocCategory(defaultTemplate.category);
-      setCurrentTemplateId(defaultTemplate.id);
+    if (!editorRef.current || !selectedFir) return;
+    const initial = STANDARD_FIR_INVESTIGATION_TEMPLATES.find((t) => t.id === queryTemplateId)
+      || STANDARD_FIR_INVESTIGATION_TEMPLATES[0];
+    if (!currentTemplateId) {
+      rawTemplateRef.current = initial.content;
+      setDocName(initial.name);
+      setDocDescription(initial.description);
+      setDocCategory(initial.category);
+      setCurrentTemplateId(initial.id);
     }
-  }, []); // Run once on mount
+    editorRef.current.innerHTML = resolveFIRPlaceholders(rawTemplateRef.current, selectedFir);
+    setEditingDefinition(false);
+    setHasUnsavedChanges(false);
+    setSaveStatus("Draft — not saved");
+  }, [selectedFir?.id]);
 
   // When selected FIR changes, prompt to re-resolve placeholders if wanted
   const handleFirChange = (firId: string) => {
     const f = firsList.find((item) => item.id === firId);
     if (!f) return;
+    if (hasUnsavedChanges && !confirm("Discard unsaved document changes and switch FIR?")) return;
     setSelectedFir(f);
   };
 
   const handleApplyFirDataToEditor = () => {
     if (!editorRef.current || !selectedFir) return;
-    const currentHtml = editorRef.current.innerHTML;
-    const resolved = resolveFIRPlaceholders(currentHtml, selectedFir);
+    if (hasUnsavedChanges && !confirm("Regenerate from the template? Unsaved document edits will be replaced.")) return;
+    const resolved = resolveFIRPlaceholders(rawTemplateRef.current, selectedFir);
     editorRef.current.innerHTML = resolved;
     setSaveStatus("FIR Data Applied");
     setHasUnsavedChanges(true);
@@ -885,50 +862,34 @@ function FIRTemplateBuilderContent() {
   const handleSaveTemplateSubmit = async () => {
     if (!saveModalName.trim() || !editorRef.current) return;
 
+    // A case-filled document is not a reusable definition. Keep the original tokens.
+    if (!editingDefinition) { alert("Open Edit Template Definition to save a reusable template. Case-specific edits belong in the case document."); return; }
     const content = editorRef.current.innerHTML;
-    const newTemplateId = currentTemplateId && !currentTemplateId.startsWith("std_")
-      ? currentTemplateId
-      : `fir-tpl-${Date.now()}`;
-
-    const newTemplateItem: FIRInvestigationTemplate = {
-      id: newTemplateId,
+    rawTemplateRef.current = content;
+    const data = {
       name: saveModalName.trim(),
-      category: saveModalCategory.trim() || "General Investigation",
-      description: saveModalDesc.trim(),
+      description: `${saveModalCategory.trim()} - ${saveModalDesc.trim()}`,
       content,
-      isCustom: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: currentUser?.name || "IO Officer",
+      createdBy: currentUser.id,
+      createdByName: currentUser.name,
+      createdByRank: currentUser.rankDisplay,
     };
-
-    // 1. Save to local storage
+    let newTemplateId: string;
     try {
-      const currentList = [...savedTemplates];
-      const existingIdx = currentList.findIndex((t) => t.id === newTemplateId);
-      if (existingIdx >= 0) {
-        currentList[existingIdx] = newTemplateItem;
-      } else {
-        currentList.unshift(newTemplateItem);
-      }
-      setSavedTemplates(currentList);
-      localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(currentList));
-    } catch (e) {
-      console.error("Local storage save error:", e);
-    }
-
-    // 2. Also attempt API save
-    try {
-      await BuilderService.createTemplate({
-        name: saveModalName.trim(),
-        description: `${saveModalCategory.trim()} - ${saveModalDesc.trim()}`,
-        content,
-        createdBy: currentUser?.id || "officer_1",
-        createdByName: currentUser?.name || "IO Officer",
-        createdByRank: currentUser?.rankDisplay || "Sub-Inspector",
-      });
-    } catch (e) {
-      console.warn("API template create fallback (already in localStorage)", e);
+      const isServerTemplate = currentTemplateId && !currentTemplateId.startsWith("std_") && !currentTemplateId.startsWith("fir-tpl-");
+      const saved = isServerTemplate
+        ? await BuilderService.updateTemplate(currentTemplateId!, data)
+        : await BuilderService.createTemplate(data);
+      newTemplateId = saved.id;
+      setCurrentTemplateId(saved.id);
+      // Discard only the matching legacy local entry after the server confirms success.
+      const remaining = savedTemplates.filter((t) => t.id !== currentTemplateId && t.id.startsWith("fir-tpl-"));
+      try { localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(remaining)); } catch { /* The server remains authoritative. */ }
+      await loadSavedTemplates();
+    } catch (error) {
+      setSaveStatus("Save failed — changes pending");
+      alert("Template could not be saved. Your document remains open; please retry.");
+      return;
     }
 
     setDocName(saveModalName.trim());
@@ -951,6 +912,8 @@ function FIRTemplateBuilderContent() {
     setDocDescription(tpl.description);
     setDocCategory(tpl.category);
 
+    rawTemplateRef.current = tpl.content;
+    setEditingDefinition(false);
     const populated = resolveFIRPlaceholders(tpl.content, selectedFir);
     if (editorRef.current) {
       editorRef.current.innerHTML = populated;
@@ -961,6 +924,7 @@ function FIRTemplateBuilderContent() {
   };
 
   const handleEditTemplateDefinition = (tpl: FIRInvestigationTemplate) => {
+    setEditingDefinition(true);
     if (hasUnsavedChanges && !confirm("आपके पास बिना सहेजे बदलाव हैं। क्या आप टेम्पलेट एडिट करना चाहते हैं?")) {
       return;
     }
@@ -970,6 +934,7 @@ function FIRTemplateBuilderContent() {
     setDocCategory(tpl.category);
 
     if (editorRef.current) {
+      rawTemplateRef.current = tpl.content;
       editorRef.current.innerHTML = tpl.content; // Load raw without resolving tokens
     }
     setActiveTab("editor");
@@ -997,14 +962,15 @@ function FIRTemplateBuilderContent() {
     if (!confirm(`क्या आप निश्चित रूप से टेम्पलेट "${tplName}" को हटाना चाहते हैं?`)) {
       return;
     }
-    const filtered = savedTemplates.filter((t) => t.id !== tplId);
-    setSavedTemplates(filtered);
-    localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(filtered));
-
-    // Try deleting from API if present
     try {
-      await BuilderService.deleteTemplate(tplId);
-    } catch {}
+      if (!tplId.startsWith("fir-tpl-")) await BuilderService.deleteTemplate(tplId);
+      const filtered = savedTemplates.filter((t) => t.id !== tplId);
+      localStorage.setItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY, JSON.stringify(filtered.filter((t) => t.id.startsWith("fir-tpl-"))));
+      setSavedTemplates(filtered);
+    } catch {
+      alert("Template could not be deleted. Please retry.");
+      return;
+    }
 
     if (currentTemplateId === tplId) {
       setCurrentTemplateId(null);
@@ -1017,9 +983,11 @@ function FIRTemplateBuilderContent() {
     setDocName("नया जांच प्रपत्र (New Investigation Document)");
     setDocCategory("General");
     setDocDescription("");
+    setEditingDefinition(true);
     const blankTpl = STANDARD_FIR_INVESTIGATION_TEMPLATES.find((t) => t.id === "std_fir_blank")!;
     if (editorRef.current) {
-      editorRef.current.innerHTML = resolveFIRPlaceholders(blankTpl.content, selectedFir);
+      rawTemplateRef.current = blankTpl.content;
+      editorRef.current.innerHTML = blankTpl.content;
     }
     setActiveTab("editor");
     setHasUnsavedChanges(false);
@@ -1027,7 +995,17 @@ function FIRTemplateBuilderContent() {
   };
 
   // ================= EXPORT & PRINT =================
+  const validateCaseDocument = () => {
+    const text = editorRef.current?.innerText || "";
+    if (editingDefinition || /\{\{[^}]+\}\}|\[(?:Enter|Record|Quantity|यहाँ)/i.test(text)) {
+      alert("Complete the case document and replace all template prompts before exporting or filing it.");
+      return false;
+    }
+    return Boolean(text.trim());
+  };
+
   const handlePrint = () => {
+    if (!validateCaseDocument()) return;
     if (editorRef.current) {
       printA4Element(editorRef.current, docName || "FIR_Document");
     } else {
@@ -1036,6 +1014,7 @@ function FIRTemplateBuilderContent() {
   };
 
   const handleDownloadWord = () => {
+    if (!validateCaseDocument()) return;
     if (!editorRef.current) return;
     const content = editorRef.current.innerHTML;
     const html = `
@@ -1207,6 +1186,14 @@ function FIRTemplateBuilderContent() {
                 <span>कोरा प्रपत्र (Blank)</span>
               </Button>
 
+              <Button type="button" size="sm" variant="outline" onClick={() => {
+                if (!editorRef.current) return;
+                if (hasUnsavedChanges && !confirm("Switch document mode? Unsaved edits will be replaced.")) return;
+                if (editingDefinition) rawTemplateRef.current = editorRef.current.innerHTML;
+                editorRef.current.innerHTML = editingDefinition ? resolveFIRPlaceholders(rawTemplateRef.current, selectedFir) : rawTemplateRef.current;
+                setEditingDefinition(!editingDefinition);
+                setHasUnsavedChanges(false);
+              }}>{editingDefinition ? "Preview Case Document" : "Edit Template Definition"}</Button>
               <Button
                 type="button"
                 size="sm"

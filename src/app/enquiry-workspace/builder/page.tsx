@@ -113,11 +113,11 @@ export const STANDARD_REPORT_TEMPLATES: StandardReportTemplate[] = [
   </tr>
 </table>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">1. Gist of Allegations:</h3>
-<p>An enquiry was marked into complaint number {{CASE_NUMBER}} wherein allegations were leveled by the complainant party. The undersigned investigating officer initiated jurisdictional field enquiry and document inspection.</p>
+<p>An enquiry was marked into complaint number {{CASE_NUMBER}} wherein allegations were leveled by the complainant party. [Enter proceedings actually undertaken.]</p>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">2. Enquiry Proceedings & Examination:</h3>
-<p>The complainant {{COMPLAINANT_NAME}} and opposite party {{ACCUSED_NAME}} along with {{PERSON_NAME}} were summoned and examined in connection with the complaint. Relevant documents, revenue records, and statements submitted on docket were scrutinized.</p>
+<p>[Enter persons actually examined, dates, and documents verified, with references.]</p>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">3. Findings & Recommendation:</h3>
-<p>Based on the material available on docket and spot enquiry, the matter has been thoroughly inspected. Report is submitted for kind perusal and supervisory orders.</p>
+<p>[Enter verified findings, supporting evidence and recommendation.]</p>
 <br/><br/>
 <div style="text-align: right;">
   <p><strong>({{OFFICER_NAME}})</strong><br/>{{OFFICER_RANK}}<br/>{{POLICE_STATION}}, {{DISTRICT}}<br/>Belt/PNO: {{OFFICER_BELT_NUMBER}}</p>
@@ -137,11 +137,11 @@ export const STANDARD_REPORT_TEMPLATES: StandardReportTemplate[] = [
 <p><strong>Inspected Location:</strong> {{INCIDENT_PLACE}}</p>
 <p><strong>Subject Person Examined on Spot:</strong> {{PERSON_NAME}} (Role: {{PERSON_ROLE}}, Mobile: {{PERSON_MOBILE}}, Address: {{PERSON_ADDRESS}})</p>
 <br/>
-<p>Today on {{DATE}}, the undersigned officer {{OFFICER_NAME}}, {{OFFICER_RANK}}, along with police team visited the spot at {{INCIDENT_PLACE}} in connection with enquiry into complaint {{CASE_NUMBER}}.</p>
+<p>[Enter actual inspection date, location, attending officers and case reference.]</p>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">Observations at Spot:</h3>
-<p>1. The spot situated at {{INCIDENT_PLACE}} was carefully inspected in the presence of local respectables and {{PERSON_NAME}}.</p>
-<p>2. Statements of surrounding witnesses were recorded without fear or favor.</p>
-<p>3. No cognizable breach of peace was witnessed at the time of inspection.</p>
+<p>1. [Record actual spot observations and persons present.]</p>
+<p>2. [Record witnesses examined and statement references.]</p>
+<p>3. [Record findings supported by the inspection.]</p>
 <br/><br/>
 <table style="width: 100%; border: none;">
   <tr>
@@ -206,11 +206,11 @@ export const STANDARD_REPORT_TEMPLATES: StandardReportTemplate[] = [
 <p><strong>Examined Person / Witness:</strong> {{PERSON_NAME}} (Role: {{PERSON_ROLE}})</p>
 <br/>
 <h3 style="font-size: 11pt; font-weight: bold;">Brief Background:</h3>
-<p>Complaint {{CASE_NUMBER}} was received regarding matter occurring on {{INCIDENT_DATE}} at {{INCIDENT_PLACE}}. Both parties joined enquiry and produced relevant documents.</p>
+<p>Complaint {{CASE_NUMBER}} was received regarding matter occurring on {{INCIDENT_DATE}} at {{INCIDENT_PLACE}}. [Record parties who actually joined and documents produced.]</p>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">Enquiry Outcome & Conclusions:</h3>
-<p>During the course of the enquiry, the dispute was examined in detail. Statements of {{COMPLAINANT_NAME}}, {{ACCUSED_NAME}} and {{PERSON_NAME}} were recorded. No cognizable offence was substantiated on spot.</p>
+<p>[Enter verified findings, statements actually recorded, and supporting evidence.]</p>
 <h3 style="font-size: 11pt; font-weight: bold; margin-top: 12px;">Recommended Action:</h3>
-<p>The enquiry is complete. It is respectfully recommended that complaint {{CASE_NUMBER}} be consigned to record (दाखिल दफ्तर) / disposed of in terms of statutory provisions.</p>
+<p>[Enter the reasoned recommendation for complaint {{CASE_NUMBER}} based on verified findings.]</p>
 <br/><br/>
 <div style="text-align: right;">
   <p><strong>({{OFFICER_NAME}})</strong><br/>{{OFFICER_RANK}}<br/>{{POLICE_STATION}}, {{DISTRICT}}<br/>PNO: {{OFFICER_BELT_NUMBER}}</p>
@@ -256,11 +256,16 @@ function TemplateDraftBuilderContent() {
       setSelectedPerson(null);
       return;
     }
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    setCurrentDraftId(null);
+    setEditingDefinition(false);
+    setSaveStatus("Unsaved changes");
     setComplaint(comp);
     setSaveModalCaseId(comp.id);
 
     const tmplContent = activeTemplateRawContent || STANDARD_REPORT_TEMPLATES[0].content;
-    const resolved = resolveDynamicPlaceholders(tmplContent, comp, undefined, selectedPerson);
+    setSelectedPerson(null);
+    const resolved = resolveDynamicPlaceholders(tmplContent, comp);
     if (editorRef.current) {
       editorRef.current.innerHTML = resolved;
     }
@@ -273,6 +278,7 @@ function TemplateDraftBuilderContent() {
     setSelectedPerson(person);
     if (!complaint) return;
 
+    if (editingDefinition) return;
     const tmplContent = activeTemplateRawContent || STANDARD_REPORT_TEMPLATES[0].content;
     const resolved = resolveDynamicPlaceholders(tmplContent, complaint, undefined, person);
     if (editorRef.current) {
@@ -282,7 +288,6 @@ function TemplateDraftBuilderContent() {
 
   // Switch available report template
   const handleSelectReportTemplate = (tmplId: string) => {
-    setSelectedReportTemplateId(tmplId);
     let chosenContent = "";
     let chosenName = "Enquiry Report";
 
@@ -299,6 +304,11 @@ function TemplateDraftBuilderContent() {
     }
 
     if (chosenContent) {
+      if (hasUnsavedChanges && !confirm("Discard unsaved changes and load another template?")) return;
+      setSelectedReportTemplateId(tmplId);
+      setEditingDefinition(false);
+      setCurrentTemplateId(std ? null : tmplId);
+      setCurrentDraftId(null);
       setActiveTemplateRawContent(chosenContent);
       setDocName(`${chosenName}${complaint ? ` - ${complaint.complaintNumber}` : ""}`);
       const resolved = resolveDynamicPlaceholders(chosenContent, complaint, undefined, selectedPerson);
@@ -311,6 +321,7 @@ function TemplateDraftBuilderContent() {
 
   // Save directly to Complaint Documents Docket
   const handleSaveReportToComplaintDocket = async () => {
+    if (!validateCaseDocument()) return;
     if (!complaint) {
       alert("Please select a complaint first.");
       return;
@@ -342,7 +353,7 @@ function TemplateDraftBuilderContent() {
   };
 
   // Auto-save & Status
-  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving..." | "Unsaved changes">("Saved");
+  const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving..." | "Unsaved changes">("Unsaved changes");
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
@@ -368,6 +379,7 @@ function TemplateDraftBuilderContent() {
 
   // Editor reference
   const editorRef = useRef<HTMLDivElement>(null);
+  const [editingDefinition, setEditingDefinition] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Formatting state trackers
@@ -429,6 +441,7 @@ function TemplateDraftBuilderContent() {
             setDocName(t.name);
             setDocDescription(t.description || "");
 
+            setActiveTemplateRawContent(t.content);
             let templateHtml = t.content;
             let activeCase = complaint;
             if (!activeCase && complaintIdParam) {
@@ -494,7 +507,7 @@ function TemplateDraftBuilderContent() {
     }
 
     autoSaveTimerRef.current = setTimeout(async () => {
-      if (!editorRef.current) return;
+      if (!editorRef.current || !currentDraftId || editingDefinition) return;
       setSaveStatus("Saving...");
       try {
         const content = editorRef.current.innerHTML;
@@ -515,6 +528,10 @@ function TemplateDraftBuilderContent() {
       }
     }, 4000);
   };
+
+  useEffect(() => () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+  }, []);
 
   // 5. Unsaved changes protection on page navigation
   useEffect(() => {
@@ -769,7 +786,9 @@ function TemplateDraftBuilderContent() {
   const handleSaveModalSubmit = async () => {
     if (!saveModalName.trim() || !editorRef.current) return;
 
+    if (saveMode === "TEMPLATE" && !editingDefinition) { alert("Open Edit Template Definition before saving a reusable template. Use Save as Draft for case-specific edits."); return; }
     const content = editorRef.current.innerHTML;
+    if (saveMode === "TEMPLATE") setActiveTemplateRawContent(content);
     const customFieldsJson = JSON.stringify(customFields);
 
     try {
@@ -843,6 +862,8 @@ function TemplateDraftBuilderContent() {
   // ================= OPEN TEMPLATE OR DRAFT =================
   const handleOpenTemplate = (t: BuilderTemplateItem) => {
     if (hasUnsavedChanges && !confirm("You have unsaved changes. Continue opening another template?")) return;
+    setEditingDefinition(false);
+    setActiveTemplateRawContent(t.content);
     setCurrentTemplateId(t.id);
     setCurrentDraftId(null); // Fresh working document based on template
     setDocName(`${t.name} (Working Document)`);
@@ -863,6 +884,7 @@ function TemplateDraftBuilderContent() {
   };
 
   const handleOpenDraft = (d: BuilderDraftItem) => {
+    setEditingDefinition(false);
     if (hasUnsavedChanges && !confirm("You have unsaved changes. Continue opening another draft?")) return;
     setCurrentDraftId(d.id);
     setCurrentTemplateId(d.templateId || null);
@@ -888,6 +910,8 @@ function TemplateDraftBuilderContent() {
     if (hasUnsavedChanges && !confirm("You have unsaved changes. Discard and create blank document?")) return;
     setCurrentTemplateId(null);
     setCurrentDraftId(null);
+    setEditingDefinition(true);
+    setActiveTemplateRawContent("<p></p>");
     setDocName("Untitled Document");
     setDocDescription("");
     setCustomFields([]);
@@ -899,7 +923,17 @@ function TemplateDraftBuilderContent() {
   };
 
   // ================= PRINT & EXPORT =================
+  const validateCaseDocument = () => {
+    const text = editorRef.current?.innerText || "";
+    if (editingDefinition || /\{\{[^}]+\}\}|\[(?:Enter|Record|Quantity|यहाँ)/i.test(text)) {
+      alert("Complete the case document and replace all template prompts before exporting or filing it.");
+      return false;
+    }
+    return Boolean(text.trim());
+  };
+
   const handlePrint = () => {
+    if (!validateCaseDocument()) return;
     if (editorRef.current) {
       printA4Element(editorRef.current, docName || "Enquiry_Document");
     } else {
@@ -908,6 +942,7 @@ function TemplateDraftBuilderContent() {
   };
 
   const handleDownloadWord = () => {
+    if (!validateCaseDocument()) return;
     if (!editorRef.current) return;
     const content = editorRef.current.innerHTML;
     const html = `
@@ -953,7 +988,8 @@ function TemplateDraftBuilderContent() {
 
       {/* 1. REQUIRED COMPLAINT & PERSON SELECTION ANALYSIS HEADER */}
       <ComplaintAnalysisHeader
-        initialComplaintId={complaintIdParam}
+        beforeSelectionChange={() => !hasUnsavedChanges || confirm("Discard unsaved document edits and change selection?")}
+        initialComplaintId={draftIdParam || templateIdParam ? null : complaintIdParam}
         showPersonDropdown={true}
         onComplaintSelect={handleComplaintSelected}
         onPersonSelect={handlePersonSelected}
@@ -1171,6 +1207,15 @@ function TemplateDraftBuilderContent() {
                 <span>Save as Draft</span>
               </Button>
 
+              <Button type="button" variant="outline" onClick={() => {
+                if (!editorRef.current) return;
+                if (hasUnsavedChanges && !confirm("Switch document mode? Unsaved edits will be replaced.")) return;
+                const raw = editingDefinition ? editorRef.current.innerHTML : activeTemplateRawContent;
+                setActiveTemplateRawContent(raw);
+                editorRef.current.innerHTML = editingDefinition ? resolveDynamicPlaceholders(raw, complaint, undefined, selectedPerson) : raw;
+                setEditingDefinition(!editingDefinition);
+                setHasUnsavedChanges(false);
+              }}>{editingDefinition ? "Preview Case Document" : "Edit Template Definition"}</Button>
               {/* Save As Template */}
               <Button
                 type="button"

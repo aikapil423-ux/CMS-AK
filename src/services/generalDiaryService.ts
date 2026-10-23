@@ -1497,7 +1497,7 @@ export const GeneralDiaryService = {
    * are saved into an FIR Profile.
    */
   async createFirActionSuggestion(options: {
-    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE" | "ACT_SECTION_MODIFIED";
+    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE" | "ACT_SECTION_MODIFIED" | "FINAL_REPORT";
     firId: string;
     firNumber: string;
     policeStation?: string;
@@ -1598,6 +1598,33 @@ export const GeneralDiaryService = {
       harvestPhrases.push(
         `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में घटनास्थल मौका मुआयना कर IIF-II प्रपत्र भरा गया`,
         "घटनास्थल से भौतिक साक्ष्य संकलित कर नजरी नक्शा मौका तैयार किया गया"
+      );
+    } else if (options.actionType === "FINAL_REPORT") {
+      eventType = "FIR_FINAL_REPORT" as any;
+      typeCode = "INVESTIGATION_REPORTS";
+      category = "INVESTIGATION_PROCESS";
+      typeDisplay = "Police Final Report / Chargesheet (IIF-V u/s 193 BNSS)";
+      typeDisplayHi = "अंतिम पुलिस प्रपत्र / चालान (IIF-V जेर धारा 193 BNSS)";
+      subject = `हवाला चालान / अंतिम पुलिस रिपोर्ट (IIF-V u/s 193 BNSS) - FIR No. ${options.firNumber}`;
+      narrative = `बवक्त हाजा, मुकद्दमा नंबर ${options.firNumber} ${
+        options.actsAndSections ? `जेर धारा ${options.actsAndSections}` : ""
+      } थाना ${ps} में तफ्तीश मुकम्मल होने उपरांत वैधानिक अंतिम रिपोर्ट (I.I.F.-V Final Form / Chargesheet under Section 193 BNSS) तैयार की गई। अभियोग में सभी साक्ष्य, फर्द मक़बूला, बयान गवाहान, एफएसएल रिपोर्ट व दस्तावेज संलग्न कर चालान तैयार किया गया तथा माननीय न्यायालय में प्रस्तुत करने हेतु रिपोर्ट रोजनामचा आम दर्ज की गई।`;
+
+      harvestWords.push(
+        "चालान",
+        "अंतिम रिपोर्ट",
+        "IIF-V",
+        "193 BNSS",
+        "दोषारोप पत्र",
+        "न्यायालय",
+        "गवाहान",
+        "साक्ष्य",
+        "तफ्तीश मुकम्मल"
+      );
+      if (options.personName) harvestWords.push(options.personName);
+      harvestPhrases.push(
+        `बवक्त हाजा मुकद्दमा नंबर ${options.firNumber} में चालान IIF-V u/s 193 BNSS तैयार किया गया`,
+        "अभियोग में तफ्तीश मुकम्मल होने उपरांत अंतिम रिपोर्ट न्यायालय प्रेषित की गई"
       );
     } else if (options.actionType === "ACT_SECTION_MODIFIED") {
       eventType = "FIR_ACT_SECTION_MODIFIED";

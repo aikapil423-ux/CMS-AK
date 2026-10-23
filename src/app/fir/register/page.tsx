@@ -128,7 +128,7 @@ const TAB_CONFIG: { key: MainTabKey; label: string; icon: any; shortTitle: strin
   { key: "complainant", label: "3. Complainant & Victim Details", shortTitle: "Complainant & Victim", icon: Users },
   { key: "fir_content", label: "4. FIR Content & Action Taken", shortTitle: "Content & Action", icon: FileText },
   { key: "accused", label: "5. Accused", shortTitle: "Accused", icon: Crosshair },
-  { key: "property", label: "6. Property, Hurt & Signature", shortTitle: "Property & Signature", icon: Package },
+  { key: "property", label: "6. Property, Hurt Details & Signature", shortTitle: "Property & Signature", icon: Package },
 ];
 
 const MAJOR_HEADS = [
@@ -1336,7 +1336,7 @@ function RegisterFIRForm() {
       if (draft.officerRank) setOfficerRank(draft.officerRank);
       if (draft.officerNumber) setOfficerNumber(draft.officerNumber);
 
-      if (draft.activeTab) setActiveTab(draft.activeTab === "signature" ? "property" : draft.activeTab);
+      if (draft.activeTab) setActiveTab((draft.activeTab as string) === "signature" ? "property" : draft.activeTab);
 
       if (draft.savedAt) {
         const timeStr = new Date(draft.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -5117,9 +5117,9 @@ function RegisterFIRForm() {
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 6: PROPERTY OF INTEREST & HURT DETAILS */}
+        {/* TAB 6: PROPERTY, HURT DETAILS & SIGNATURE (MERGED PANEL) */}
         {/* ========================================================================= */}
-        {activeTab === "property" && (
+        {(activeTab === "property" || (activeTab as string) === "signature") && (
           <div className="space-y-4 animate-in fade-in-30">
             <Card className="border-slate-200">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">

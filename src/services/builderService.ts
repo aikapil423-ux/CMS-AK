@@ -109,32 +109,32 @@ export function resolveDynamicPlaceholders(
   const timeStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
   const values: Record<string, string> = {
-    "{{CASE_NUMBER}}": complaint?.complaintNumber || "HAR-PNP-2026-CMP-00482",
-    "{{FIR_NUMBER}}": (complaint as any)?.firNumber || complaint?.complaintNumber || "FIR No. 128/2026",
-    "{{CASE_STATUS}}": complaint?.status || "UNDER_ENQUIRY",
-    "{{POLICE_STATION}}": complaint?.policeStation || "Police Station City Panipat",
-    "{{DISTRICT}}": complaint?.district || "Panipat",
+    "{{CASE_NUMBER}}": complaint?.complaintNumber || "",
+    "{{FIR_NUMBER}}": (complaint as any)?.firNumber || complaint?.complaintNumber || "",
+    "{{CASE_STATUS}}": complaint?.status || "",
+    "{{POLICE_STATION}}": complaint?.policeStation || "",
+    "{{DISTRICT}}": complaint?.district || "",
     "{{DATE}}": todayStr,
     "{{TIME}}": timeStr,
     "{{INCIDENT_DATE}}": complaint?.incidentDate ? formatDate(complaint.incidentDate) : todayStr,
-    "{{INCIDENT_PLACE}}": complaint?.incidentPlace || "Panipat",
+    "{{INCIDENT_PLACE}}": complaint?.incidentPlace || "",
     "{{ENQUIRY_DATE}}": todayStr,
-    "{{ENQUIRY_LOCATION}}": complaint?.policeStation || "Police Station City Panipat",
-    "{{OFFICER_NAME}}": complaint?.assignedEoName || "Surender Pal",
-    "{{OFFICER_RANK}}": complaint?.assignedEoRank || "Sub-Inspector",
-    "{{OFFICER_BELT_NUMBER}}": complaint?.assignedEoPno || complaint?.assignedEoBeltNumber || "PNO-23841",
-    "{{COMPLAINANT_NAME}}": (person && person.role === "Complainant" ? person.name : "") || complaint?.complainantName || "Rajesh Kumar",
-    "{{COMPLAINANT_MOBILE}}": (person && person.role === "Complainant" ? person.phone : "") || complaint?.complainantMobile || "98120XXXXX",
-    "{{COMPLAINANT_ADDRESS}}": (person && person.role === "Complainant" ? person.address : "") || complaint?.complainantAddress || "Panipat, Haryana",
-    "{{ACCUSED_NAME}}": (person && person.role === "Respondent / Accused" ? person.name : "") || complaint?.accusedList?.[0]?.name || "Vikas Sharma",
-    "{{ACCUSED_ADDRESS}}": (person && person.role === "Respondent / Accused" ? person.address : "") || complaint?.accusedList?.[0]?.address || "Panipat, Haryana",
-    "{{WITNESS_NAME}}": (person && person.role === "Witness" ? person.name : "") || "Sh. Ramesh Chand",
+    "{{ENQUIRY_LOCATION}}": complaint?.policeStation || "",
+    "{{OFFICER_NAME}}": complaint?.assignedEoName || "",
+    "{{OFFICER_RANK}}": complaint?.assignedEoRank || "",
+    "{{OFFICER_BELT_NUMBER}}": complaint?.assignedEoPno || complaint?.assignedEoBeltNumber || "",
+    "{{COMPLAINANT_NAME}}": (person && person.role === "Complainant" ? person.name : "") || complaint?.complainantName || "",
+    "{{COMPLAINANT_MOBILE}}": (person && person.role === "Complainant" ? person.phone : "") || complaint?.complainantMobile || "",
+    "{{COMPLAINANT_ADDRESS}}": (person && person.role === "Complainant" ? person.address : "") || complaint?.complainantAddress || "",
+    "{{ACCUSED_NAME}}": (person && person.role === "Respondent / Accused" ? person.name : "") || complaint?.accusedList?.[0]?.name || "",
+    "{{ACCUSED_ADDRESS}}": (person && person.role === "Respondent / Accused" ? person.address : "") || complaint?.accusedList?.[0]?.address || "",
+    "{{WITNESS_NAME}}": (person && person.role === "Witness" ? person.name : "") || "",
     "{{PERSON_NAME}}": person?.name || complaint?.complainantName || "",
-    "{{PERSON_ROLE}}": person?.role || "Complainant",
+    "{{PERSON_ROLE}}": person?.role || "",
     "{{PERSON_FATHER}}": person?.fatherOrSpouse || "",
     "{{PERSON_MOBILE}}": person?.phone || "",
     "{{PERSON_ADDRESS}}": person?.address || "",
-    "{{SECTIONS_OF_LAW}}": (complaint as any)?.sectionsOfLaw || "Section 318(4), 316(2) BNS, 2023",
+    "{{SECTIONS_OF_LAW}}": (complaint as any)?.sectionsOfLaw || "",
   };
 
   // Merge custom field values if provided
@@ -148,7 +148,7 @@ export function resolveDynamicPlaceholders(
   // Replace each token
   for (const [token, val] of Object.entries(values)) {
     const reg = new RegExp(token.replace(/([{}])/g, "\\$1"), "g");
-    resolved = resolved.replace(reg, val);
+    resolved = resolved.replace(reg, () => val.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"));
   }
 
   return resolved;

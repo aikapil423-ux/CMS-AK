@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid } from "lucide-react";
+import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid, PlusCircle, Scale, ClipboardList, FileBarChart, FileCheck2, BookmarkCheck, ReceiptText } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
@@ -24,6 +24,13 @@ export function MobileHeader() {
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrations = pathname.startsWith("/registrations");
   const isReports = pathname.startsWith("/reports");
+  const isProsecution = pathname.startsWith("/prosecution");
+
+  const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
+  const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
+  const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
+  const canRegisterComplaint = isMhc || isSho || isSuperior;
+  const canRegisterFir = isMhc || isSho || isSuperior;
 
   return (
     <>
@@ -38,7 +45,7 @@ export function MobileHeader() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
-                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : "HP CMS"}
+                  {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : isProsecution ? t("Prosecution") : "HP CMS"}
                 </span>
                 <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
                   {currentUser.rank.slice(0, 3)}
@@ -136,9 +143,16 @@ export function MobileHeader() {
                   <Link
                     href="/general-diary/new"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-semibold text-red-600 hover:bg-red-50"
                   >
-                    {t("New GD Entry")}
+                    + {t("New GD Entry")}
+                  </Link>
+                  <Link
+                    href="/general-diary?tab=SUGGESTIONS_DRAFTS"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-purple-700 hover:bg-purple-50"
+                  >
+                    ✨ {t("Auto-Suggestions & Drafts")}
                   </Link>
                   <Link
                     href="/general-diary?type=SHIFT_RELIEF_TURNOVER"
@@ -155,11 +169,11 @@ export function MobileHeader() {
                     {t("Patrol & Night Domination")}
                   </Link>
                   <Link
-                    href="/general-diary?type=SEIZURE_MUDDMAL"
+                    href="/acts-sections"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    {t("Malkhana")} & Property Seizures
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : isComplaints ? (
@@ -174,12 +188,29 @@ export function MobileHeader() {
                   >
                     {t("Complaints Register")}
                   </Link>
+                  {canRegisterComplaint && (
+                    <Link
+                      href="/complaints/register"
+                      onClick={() => setDrawerOpen(false)}
+                      className="block px-2.5 py-1.5 rounded-md text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-1.5"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      {t("Register Complaint")}
+                    </Link>
+                  )}
                   <Link
                     href="/enquiry-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("Field Enquiry Workspace")}
+                  </Link>
+                  <Link
+                    href="/acts-sections"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : isFir ? (
@@ -194,12 +225,29 @@ export function MobileHeader() {
                   >
                     {t("FIR Register")}
                   </Link>
+                  {canRegisterFir && (
+                    <Link
+                      href="/fir/register"
+                      onClick={() => setDrawerOpen(false)}
+                      className="block px-2.5 py-1.5 rounded-md text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-1.5"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      {t("Register FIR")}
+                    </Link>
+                  )}
                   <Link
                     href="/fir-workspace"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("Investigation Workspace")}
+                  </Link>
+                  <Link
+                    href="/acts-sections"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : isRegistrations ? (
@@ -220,6 +268,74 @@ export function MobileHeader() {
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("ACT and SECTIONs")}
+                  </Link>
+                </>
+              ) : isReports ? (
+                <>
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    {t("Reports")}
+                  </div>
+                  <Link
+                    href="/reports?tab=crime_sitrep"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("CrimeSITREP_District")}
+                  </Link>
+                  <Link
+                    href="/reports?tab=weekly_crime_diary"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("WEEKLY CRIME DIARY")}
+                  </Link>
+                  <Link
+                    href="/reports?tab=igp_presentation"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("IGP Meeting Presentation")}
+                  </Link>
+                  <Link
+                    href="/reports?tab=saved_reports"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Saved Reports")}
+                  </Link>
+                </>
+              ) : isProsecution ? (
+                <>
+                  <div className="pt-1 pb-1 text-[10px] uppercase font-semibold text-slate-400">
+                    {t("Prosecution")}
+                  </div>
+                  <Link
+                    href="/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Challan Scrutiny")}
+                  </Link>
+                  <Link
+                    href="/prosecution?tab=challan_scrutiny&subtab=common_malpractices"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Common Malpractices")}
+                  </Link>
+                  <Link
+                    href="/prosecution?tab=courts&subtab=bail_reply"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Bail Reply")}
+                  </Link>
+                  <Link
+                    href="/prosecution?tab=courts&subtab=status_report"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Status Report")}
                   </Link>
                 </>
               ) : (

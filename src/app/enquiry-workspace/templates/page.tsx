@@ -100,8 +100,8 @@ const DEFAULT_SAMPLE_DATA: Record<string, NoticeFormData> = {
     sealLabel: "थाना/यूनिट की मोहर",
     ioSignLabel: "जांच अधिकारी के हस्ताक्षर",
 
-    stationEmail: "sho.cityambala-hry@nic.in",
-    officerEmail: "io.ambala-hry@nic.in",
+    stationEmail: "",
+    officerEmail: "",
     videoConferenceDeadline: "",
 
     officerName: "सुरेन्द्र पाल",
@@ -363,6 +363,7 @@ const TEMPLATE_CONFIG: Record<
 
 function NoticeTemplatesContent() {
   const { currentUser } = useAuth();
+  const [validationError, setValidationError] = useState("");
   const searchParams = useSearchParams();
   const complaintIdParam = searchParams.get("complaintId");
   const templateParam = searchParams.get("template") as string | null;
@@ -525,7 +526,9 @@ function NoticeTemplatesContent() {
     const sample = DEFAULT_SAMPLE_DATA[currentType] || DEFAULT_SAMPLE_DATA["haryana_notice"];
 
     setFormData((prev) => ({
-      ...prev,
+      ...sample,
+      appearanceDate: "",
+      appearancePlace: comp.policeStation || "",
       dispatchNo: currentType === "haryana_notice" ? "" : `HP/${(comp.district || "AMB").substring(0, 3).toUpperCase()}/CT/${new Date().getFullYear()}/DOC-${comp.complaintNumber.split("-").pop() || "01"}`,
       policeStation: comp.policeStation || currentUser.stationName || sample.policeStation,
       district: comp.district ? (comp.district.startsWith("जिला") ? comp.district : `जिला ${comp.district}।`) : sample.district,
@@ -537,7 +540,9 @@ function NoticeTemplatesContent() {
       officerName: comp.assignedEoName || currentUser.name || sample.officerName,
       officerRank: comp.assignedEoRank || currentUser.rankDisplay || sample.officerRank,
       officerPno: comp.assignedEoPno || currentUser.pno || sample.officerPno,
-      officerPhone: (currentUser as any).phone || sample.officerPhone,
+      officerPhone: "",
+      stationEmail: "",
+      officerEmail: "",
     }));
   };
 
@@ -571,7 +576,7 @@ function NoticeTemplatesContent() {
       ...prev,
       noticeeName: person.name || "",
       noticeeFather: person.fatherOrSpouse || "",
-      noticeeAge: person.age !== undefined && person.age !== null ? String(person.age) : (prev.noticeeAge || ""),
+      noticeeAge: person.age !== undefined && person.age !== null ? String(person.age) : "",
       noticeeAddress: person.address || "",
       noticeePhone: person.phone || "",
       noticeeRole: roleDisplay,
@@ -691,7 +696,9 @@ function NoticeTemplatesContent() {
             officerName: found.assignedEoName || currentUser.name || sample.officerName,
             officerRank: found.assignedEoRank || currentUser.rankDisplay || sample.officerRank,
             officerPno: found.assignedEoPno || currentUser.pno || sample.officerPno,
-            officerPhone: (currentUser as any).phone || sample.officerPhone,
+            officerPhone: "",
+      stationEmail: "",
+      officerEmail: "",
 
             mhcName: sample.mhcName || "HC Devinder Kumar",
             mhcRank: sample.mhcRank || "Head Constable (MHC)",
@@ -810,7 +817,11 @@ function NoticeTemplatesContent() {
       return;
     }
     const sample = DEFAULT_SAMPLE_DATA[activeTemplate as PresetTemplateType];
-    if (sample) setFormData(sample);
+    if (sample) {
+      setFormData({ ...sample, officerName: "", officerRank: "", officerPno: "", officerPhone: "", policeStation: "", district: "" });
+      if (complaint) handleComplaintSelected(complaint, null);
+      if (selectedPerson) handlePersonSelected(selectedPerson);
+    }
     setCustomClauses([]);
     setCdrTargetRows([
       { id: "cdr_1", phone: "", periodFrom: "", periodTo: "", reason: "" },
@@ -885,7 +896,19 @@ function NoticeTemplatesContent() {
     });
   };
 
+  const validateNotice = () => {
+    const required = ["dispatchNo", "noticeeName", "noticeeAddress", "appearanceDate", "appearanceTime", "officerName"] as const;
+    const missing = required.filter((key) => !formData[key]?.trim());
+    if (!complaint || missing.length) {
+      setValidationError("Select a complaint and complete required notice fields: " + missing.join(", "));
+      return false;
+    }
+    setValidationError("");
+    return true;
+  };
+
   const handlePrint = () => {
+    if (!validateNotice()) return;
     window.print();
   };
 
@@ -1213,6 +1236,7 @@ function NoticeTemplatesContent() {
   };
 
   const handleDownloadNotice = () => {
+    if (!validateNotice()) return;
     const effectiveData = getEffectiveFormData();
     const html = generateNoticeDocumentHtml(effectiveData as any, activeTemplate, customClauses);
     const filename = `${(formData.dispatchNo || "POLICE_NOTICE").replace(/[\/\\?%*:|"<> ]/g, "_")}.html`;
@@ -1228,6 +1252,7 @@ function NoticeTemplatesContent() {
   };
 
   const handleSaveToComplaint = async (targetComplaint?: ComplaintItem) => {
+    if (!validateNotice()) return;
     const chosenComplaint = targetComplaint || complaint;
     if (!chosenComplaint?.id) {
       setSelectComplaintModalOpen(true);
@@ -1270,6 +1295,7 @@ function NoticeTemplatesContent() {
 
   return (
     <div className="space-y-5 animate-in fade-in-50 pb-20">
+      {validationError && <div role="alert" className="p-3 border border-red-300 bg-red-50 text-red-800 rounded">{validationError}</div>}
       {/* Top Workspace Navigation Tabs */}
       <EnquiryWorkspaceNav complaintId={complaint?.id} />
 
@@ -4551,7 +4577,7 @@ function NoticeTemplatesContent() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => window.print()}
+                    onClick={handlePrint}
                     className="text-xs font-semibold bg-white/10 text-white hover:bg-white/20 border-white/20"
                   >
                     <Printer className="w-3.5 h-3.5 mr-1" />
