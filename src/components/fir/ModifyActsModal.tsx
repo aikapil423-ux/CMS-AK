@@ -40,16 +40,6 @@ interface ModifyActsModalProps {
   onSuccess?: (updatedFir: FIRItem) => void;
 }
 
-const PRESET_REASONS = [
-  "MLC / मेडिकल रिपोर्ट अनुसार गंभीर चोट (धारा 118(1) BNS इजाफा)",
-  "दौरान-ए-तफ्तीश अवैध असलहा / कारतूस बरामदगी (Arms Act sec 25/27 इजाफा)",
-  "मौका मुआयना व बयानात गवाहान से आरोप असत्य पाया गया (धारा खारिज / हजफ)",
-  "पर्यवेक्षण अधिकारी (DSP / SP) के केस डायरी आदेशानुसार वैधानिक तरमीम",
-  "FSL / विधि विज्ञान प्रयोगशाला रिपोर्ट के आधार पर संशोधन",
-  "दस्तावेजों की जांच में धोखाधड़ी व कूटकरण पाए जाने पर धारा 318(4), 336(3) BNS इजाफा",
-  "घटनास्थल निरीक्षण एवं साक्ष्य संकलन उपरांत उपयुक्त धाराएं तरमीम की गईं",
-];
-
 export function ModifyActsModal({
   isOpen,
   onClose,
@@ -321,7 +311,7 @@ export function ModifyActsModal({
       await GeneralDiaryService.createFirActionSuggestion({
         actionType: "ACT_SECTION_MODIFIED",
         firId: fir.id,
-        firNumber: fir.cctnsFirNumber || fir.firNumber,
+        firNumber: fir.firNumber || fir.cctnsFirNumber || "",
         policeStation: fir.policeStation,
         district: fir.district,
         officer: {
@@ -375,7 +365,7 @@ export function ModifyActsModal({
                 </span>
               </div>
               <p className="text-[11px] text-slate-300 mt-0.5 font-medium">
-                FIR No: <strong className="text-white font-mono">{fir.cctnsFirNumber || fir.firNumber}</strong> • {fir.policeStation}, {fir.district}
+                FIR No: <strong className="text-white font-mono">{fir.firNumber || fir.cctnsFirNumber}</strong> • {fir.policeStation}, {fir.district}
               </p>
             </div>
           </div>
@@ -865,20 +855,6 @@ export function ModifyActsModal({
               <span className="text-[10px] text-slate-500 font-medium">
                 Mandatory for Case Diary &amp; Roznamcha GD
               </span>
-            </div>
-
-            {/* Quick Fill Chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {PRESET_REASONS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setReason(preset)}
-                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-900 border border-slate-200 text-slate-700 text-[11px] font-medium transition-all text-left cursor-pointer"
-                >
-                  + {preset}
-                </button>
-              ))}
             </div>
 
             <textarea

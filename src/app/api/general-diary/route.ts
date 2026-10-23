@@ -589,6 +589,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
     FIR_ARREST_MEMO: "ARREST_RE_ARREST_SURRENDER",
     FIR_CRIME_DETAILS: "INVESTIGATION_REPORTS",
     FIR_PROPERTY_SEIZURE: "PROPERTY_SEIZURE",
+    FIR_ACT_SECTION_MODIFIED: "INVESTIGATION_REPORTS",
   };
   const eventType = String(event.eventType || "");
   const typeCode = String(event.typeCode || typeCodeMap[eventType] || "OTHERS");
@@ -610,6 +611,8 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "Crime Details Inspection"
       : eventType === "FIR_PROPERTY_SEIZURE"
       ? "Property Seizure"
+      : eventType === "FIR_ACT_SECTION_MODIFIED"
+      ? "Modification of Acts & Sections (धाराओं में तरमीम)"
       : typeCode;
   const defaultDisplayHi =
     eventType === "COMPLAINT_REGISTERED"
@@ -628,6 +631,8 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "अपराध विवरण प्रपत्र / मौका मुआयना (IIF-II)"
       : eventType === "FIR_PROPERTY_SEIZURE"
       ? "बरामदगी / जब्ती माल प्रपत्र (IIF-IV)"
+      : eventType === "FIR_ACT_SECTION_MODIFIED"
+      ? "हवाला तरमीम धाराएं / वैधानिक संशोधन (PPR 22.48)"
       : typeCode;
 
   const relatedRecords = ((event.relatedRecords || {}) as Record<string, unknown>);
