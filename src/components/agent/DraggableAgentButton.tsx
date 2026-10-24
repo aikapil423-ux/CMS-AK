@@ -97,6 +97,7 @@ export function DraggableAgentButton() {
     <>
       {/* Movable Floating AI Icon Button */}
       <div
+        data-cms-agent-ui
         ref={dragRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

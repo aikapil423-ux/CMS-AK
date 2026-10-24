@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { readOperatorAttachment } from "@/services/agent/operatorAttachment";
+import { WebsiteOperatorSession } from "@/services/agent/websiteOperatorSession";
 import { CmsAgentService } from "@/services/agent/cmsAgentService";
 import { AgentMessage, ProposedDocument } from "@/types/cmsAgent";
 import { printA4Element } from "@/utils/printElement";
@@ -55,6 +57,16 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const operatorRef = useRef<WebsiteOperatorSession | null>(null);
+  const sendRef = useRef<(text: string) => void>(() => {});
+  useEffect(() => {
+    const session = new WebsiteOperatorSession();
+    operatorRef.current = session;
+    setMessages([]);
+    return () => { session.clear(); operatorRef.current = null; };
+  }, [currentUser?.id]);
+  useEffect(() => { if (!isOpen) recognitionRef.current?.abort(); }, [isOpen]);
+
   // Initialize Speech Recognition
   useEffect(() => {
     const SpeechRecognition =
@@ -74,11 +86,11 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
-        if (event.results[0].isFinal) {
+        if (event.results[event.results.length - 1].isFinal) {
           setInputText(transcript);
           // Auto submit if clear voice command
           if (transcript.trim().length > 3) {
-            handleSendMessage(transcript.trim());
+            sendRef.current(transcript.trim());
           }
         } else {
           setInputText(transcript);
@@ -86,28 +98,29 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
       };
 
       recognitionRef.current = recognition;
+      return () => { recognition.onresult = null; recognition.onend = null; recognition.abort(); };
     }
   }, [speechLang]);
 
   // Initial welcome message
   useEffect(() => {
-    if (messages.length === 0) {
+    if (true) {
       setMessages([
         {
           id: "welcome_msg",
           sender: "agent",
-          text: `जय हिन्द! मैं **हरियाणा पुलिस CMS Universal AI Operating Agent (संचालित: Gemini 3.6 Flash)** हूँ। मुझे इस वेबसाइट के संपूर्ण फ्रंटएंड (मॉड्यूल्स, पेजेस, फॉर्म्स), बैकएंड APIs और डेटाबेस की पूर्ण समझ है।\n\nआप किसी भी केस, FIR, गिरफ़्तारी, ज़िमनी, रोजनामचा (GD), शिकायत, या कानूनी धाराओं के संबंध में बोलकर अथवा लिखकर निर्देश दे सकते हैं।\n\n* **फॉर्म / डायलॉग खोलना:** सीधे बोलें, यह बिना किसी अनुमति के तुरंत खुल जाएगा।\n* **कानूनी दस्तावेज़ तैयार करना:** आपकी स्पष्ट स्वीकृति (Approval) के बाद ही सुरक्षित किया जाएगा।*`,
+          text: `जय हिन्द! मैं CMS website assistant हूँ। Current page के fields, links और buttons पढ़कर काम करता हूँ। Page खोलने या field भरने को बोलें; missing जानकारी पूछूँगा। Save/submit जैसे actions से पहले confirmation लूँगा। उदाहरण: “FIR register खोलो”, “mobile = 9812345678”, “क्या जानकारी चाहिए”।`,
           timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
           suggestedPrompts: [
             "Register complaint form kholo",
             "Add entry daailogue box kholo",
-            "FIR 125: Anil Kumar arrest docs banao",
-            "Role switcher dialogue kholo",
+            "क्या जानकारी चाहिए",
+            "Complaints page kholo",
           ],
         },
       ]);
     }
-  }, []);
+  }, [currentUser?.id]);
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -147,49 +160,12 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
     setIsLoading(true);
 
     try {
-      const response = await CmsAgentService.processUserInput(text.trim(), pathname);
-      setMessages((prev) => [...prev, response]);
-
-      // Immediate auto-execution for Form Field Fill, Navigation, or Modal Open/Close commands (Zero Permission Required)
-      const plan = response.actionPlan;
-      if (plan) {
-        const toolName = plan.executablePayload?.toolName;
-        const params = plan.executablePayload?.parameters || {};
-        const targetUrl = params.url || plan.targetRecords?.[0]?.url;
-
-        if (toolName === "fill_gd_form" || toolName === "update_field") {
-          try {
-            sessionStorage.setItem("cms_agent_pending_gd_autofill", JSON.stringify(params));
-          } catch {
-            // ignore storage errors
-          }
-          window.dispatchEvent(new CustomEvent("cms-agent-gd-autofill", { detail: params }));
-          window.dispatchEvent(new CustomEvent("cms-agent-fill-field", { detail: params }));
-
-          if (params.url && pathname !== params.url) {
-            setTimeout(() => {
-              router.push(params.url);
-            }, 250);
-          }
-        } else if (toolName === "navigate" || (plan.status === "EXECUTED" && targetUrl && !targetUrl.startsWith("MODAL:"))) {
-          if (targetUrl) {
-            setTimeout(() => {
-              router.push(targetUrl);
-              onClose();
-            }, 400);
-          }
-        } else if (toolName === "open_modal" || targetUrl === "MODAL:ROLE_SWITCHER") {
-          const modalEvent = params.modalEvent || "cms-open-role-switcher";
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent(modalEvent));
-            onClose();
-          }, 400);
-        } else if (toolName === "close_modal") {
-          setTimeout(() => {
-            onClose();
-          }, 400);
-        }
-      }
+      const session = operatorRef.current;
+      if (!session) return;
+      const answer = await session.run(text.trim(), path => router.push(path));
+      if (operatorRef.current !== session) return;
+      setMessages(prev => [...prev, {id: `agent_${Date.now()}`, sender: "agent", text: answer,
+        timestamp: new Date().toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit"})}]);
     } catch (err) {
       console.error("Agent error:", err);
       setMessages((prev) => [
@@ -205,6 +181,8 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
       setIsLoading(false);
     }
   };
+
+  sendRef.current = handleSendMessage;
 
   const handleApprovePlan = async (planId: string, actionPlan?: any) => {
     const toolName = actionPlan?.executablePayload?.toolName;
@@ -281,19 +259,28 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
     ]);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
-    const isAudio = file.type.startsWith("audio/");
-
-    handleSendMessage(`[Uploaded ${isAudio ? "Audio File" : "Document"}: ${file.name}] कृपया इस फ़ाइल के आधार पर केस रिकॉर्ड्स का विश्लेषण करें।`);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || isLoading) return;
+    const session=operatorRef.current;
+    setIsLoading(true);
+    try {
+      const result=await readOperatorAttachment(file);
+      if(!session || session!==operatorRef.current) return;
+      session.addAttachment(file.name,result.text);
+      setMessages(prev=>[...prev,{id:`file_${Date.now()}`,sender:"agent",
+        text:`${file.name}: ${result.summary}\n\n${result.text.slice(0,1200)}${result.text.length>1200?'…':''}\n\n${result.uncertainties.length?'Unclear: '+result.uncertainties.join('; '):''}\nइस जानकारी से क्या करना है? Extracted facts verify करके instruction दें।`,
+        timestamp:new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}]);
+    } catch(error) {
+      setMessages(prev=>[...prev,{id:`file_error_${Date.now()}`,sender:"agent",text:error instanceof Error?error.message:'File पढ़ी नहीं जा सकी।',timestamp:new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}]);
+    } finally {setIsLoading(false);}
   };
 
   if (!isOpen) return null;
 
   return (
-    <div
+    <div data-cms-agent-ui
       className={`fixed z-50 transition-all duration-300 ease-out flex flex-col bg-white border border-slate-300 shadow-2xl rounded-2xl overflow-hidden ${
         isExpanded
           ? "inset-4 sm:inset-8 max-w-6xl mx-auto"
@@ -310,7 +297,7 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-xs tracking-tight">Haryana Police CMS AI Agent</span>
               <span className="text-[9px] px-1.5 py-0.2 rounded bg-blue-500/30 text-blue-200 border border-blue-400/30 font-mono">
-                Gemini 3.6 Flash
+                Live website controls
               </span>
             </div>
             <p className="text-[10px] text-slate-300 flex items-center gap-1">
@@ -623,7 +610,7 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
             {isLoading && (
               <div className="flex gap-2 items-center text-slate-500 text-xs italic">
                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                <span>AI Agent केस रिकॉर्ड्स का विश्लेषण कर रहा है...</span>
+                <span>Agent command process कर रहा है; AI response में कुछ समय लग सकता है...</span>
               </div>
             )}
 
@@ -660,7 +647,7 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="audio/*,.pdf,.docx,.png,.jpg"
+                accept=".txt,.csv,.md,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.webm,.ogg"
                 className="hidden"
                 onChange={handleFileUpload}
               />
@@ -669,7 +656,8 @@ export function CmsAgentModal({ isOpen, onClose }: CmsAgentModalProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition cursor-pointer"
-                title="Attach Audio or Document"
+                title="Attach: text/DOCX read locally; PDF/image/audio processed by configured AI"
+                disabled={isLoading}
               >
                 <Paperclip className="w-4 h-4" />
               </button>

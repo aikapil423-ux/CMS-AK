@@ -1347,6 +1347,10 @@ function NoticeTemplatesContent() {
                 onClick={() => setTemplateDropdownOpen((v) => !v)}
                 className="flex items-center justify-between gap-2 text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[220px] max-w-[340px] shadow-2xs text-left cursor-pointer"
                 title="Select Police Template"
+                role="combobox"
+                aria-label="Select Police Template"
+                aria-expanded={templateDropdownOpen}
+                aria-controls="police-template-options"
               >
                 <span className="truncate">
                   {customTemplates[activeTemplate]
@@ -1369,7 +1373,7 @@ function NoticeTemplatesContent() {
               )}
 
               {templateDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-84 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden animate-in fade-in-50 zoom-in-95">
+                <div id="police-template-options" className="absolute left-0 top-full mt-1.5 w-84 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden animate-in fade-in-50 zoom-in-95">
                   {/* Preset Standard Templates */}
                   <div className="px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50">
                     Standard Notice &amp; Report Templates
