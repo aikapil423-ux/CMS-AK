@@ -6,6 +6,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const action = body.action || "PROCESS_MESSAGE";
+    if (!['GET_CAPABILITIES','GET_APPLICATION_CAPABILITIES','UNDERSTAND_PAGE_SCHEMA','GET_FIELD_METADATA','GET_ACTION_METADATA'].includes(action)) {
+      return NextResponse.json({success:false,error:'Legacy shared-session execution is disabled. Use the live website operator with user review.'},{status:410});
+    }
 
     if (action === "GET_CAPABILITIES" || action === "GET_APPLICATION_CAPABILITIES") {
       const capabilities = CmsCapabilityRegistry.getAll();

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { registerOperatorAdapter, type OperatorReceipt } from "@/services/agent/operatorAdapters";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileText,
@@ -379,6 +380,10 @@ function TemplateDraftBuilderContent() {
 
   // Editor reference
   const editorRef = useRef<HTMLDivElement>(null);
+  const operatorReceiptRef = useRef<OperatorReceipt | undefined>(undefined);
+  useEffect(() => registerOperatorAdapter({
+    id: '/enquiry-workspace/builder', matches: path => path.split('?')[0] === '/enquiry-workspace/builder', receipt: () => operatorReceiptRef.current,
+  }), []);
   const [editingDefinition, setEditingDefinition] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -791,6 +796,7 @@ function TemplateDraftBuilderContent() {
     if (saveMode === "TEMPLATE") setActiveTemplateRawContent(content);
     const customFieldsJson = JSON.stringify(customFields);
 
+    let savedRecordId = saveMode === "TEMPLATE" ? currentTemplateId : currentDraftId;
     try {
       if (saveMode === "TEMPLATE") {
         if (currentTemplateId) {
@@ -813,6 +819,7 @@ function TemplateDraftBuilderContent() {
             createdByRank: currentUser.rankDisplay,
           });
           setCurrentTemplateId(created.id);
+          savedRecordId = created.id;
         }
       } else {
         // DRAFT
@@ -842,9 +849,11 @@ function TemplateDraftBuilderContent() {
             createdByRank: currentUser.rankDisplay,
           });
           setCurrentDraftId(created.id);
+          savedRecordId = created.id;
         }
       }
 
+      if (savedRecordId) operatorReceiptRef.current = {id:savedRecordId,label:saveMode === "TEMPLATE" ? "Template saved" : "Draft saved",revision:(operatorReceiptRef.current?.revision || 0)+1};
       setDocName(saveModalName.trim());
       setDocDescription(saveModalDesc.trim());
       setSaveStatus("Saved");
@@ -1200,6 +1209,7 @@ function TemplateDraftBuilderContent() {
               {/* Save As Draft */}
               <Button
                 type="button"
+                data-agent-operation="read"
                 onClick={() => openSaveModal("DRAFT")}
                 className="text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1.5 cursor-pointer shadow-xs"
               >
@@ -1219,6 +1229,7 @@ function TemplateDraftBuilderContent() {
               {/* Save As Template */}
               <Button
                 type="button"
+                data-agent-operation="read"
                 onClick={() => openSaveModal("TEMPLATE")}
                 className="text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white gap-1.5 cursor-pointer shadow-xs"
               >
@@ -1659,6 +1670,7 @@ function TemplateDraftBuilderContent() {
           <div className="bg-slate-100 p-4 sm:p-8 rounded-2xl border border-slate-200 shadow-inner flex justify-center overflow-x-auto min-h-[900px]">
             <div
               ref={editorRef}
+              aria-label="Document body"
               contentEditable
               suppressContentEditableWarning
               onInput={handleContentChange}

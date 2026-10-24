@@ -1,0 +1,8 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const ts=require('typescript');const vm=require('node:vm');const exportsObject={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/operatorExperience.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObject});
+const {normaliseFieldValue,privatePlanningSnapshot,redactSensitiveText}=exportsObject;
+const field=(id,label,value,type='text')=>({id,label,value,type,kind:'field',disabled:false,section:''});
+test('India tomorrow conversion works across month boundary',()=>assert.equal(normaliseFieldValue(field('d','Date','','date'),'कल',new Date('2026-10-31T20:00:00Z')),'2026-11-02'));
+test('Hindi digits and evening time are normalized',()=>assert.equal(normaliseFieldValue(field('t','Time','','time'),'शाम ५ बजे'),'17:00'));
+test('unrelated populated values and sensitive fields excluded',()=>{const s=privatePlanningSnapshot({path:'/',title:'Test',errors:[],controls:[field('n','Name','Private Person'),field('a','Aadhaar','123456789012'),field('s','Search','Arms')]},'Search Arms');assert.equal(s.controls.length,2);assert.equal(s.controls[0].value,undefined);assert.equal(s.controls[1].value,'Arms');});
+test('redaction applies to user text and attachments',()=>assert.equal(redactSensitiveText('1234 5678 9012 ABCDE1234F'),'[REDACTED ID] [REDACTED ID]'));

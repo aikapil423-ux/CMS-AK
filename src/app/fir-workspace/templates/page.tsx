@@ -862,6 +862,7 @@ function FIRTemplatesContent() {
               {templateLang === "hi" ? "सक्रिय अभियोग (FIR) चुनें *" : "Select Active FIR Case *"}
             </label>
             <select
+              aria-label="Select Active FIR Case"
               value={selectedFirId}
               onChange={(e) => { if (noticeEdited && !confirm("Discard unsaved notice edits and switch FIR?")) return; setSelectedRecipient("default"); setSelectedFirId(e.target.value); }}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
@@ -879,6 +880,7 @@ function FIRTemplatesContent() {
               {templateLang === "hi" ? "नोटिस / मांग पत्र प्रपत्र चुनें *" : "Select Notice / Memo Proforma *"}
             </label>
             <select
+              aria-label="Select Notice / Memo Proforma"
               value={selectedTemplate}
               onChange={(e) => { if (noticeEdited && !confirm("Discard unsaved notice edits and switch template?")) return; setSelectedRecipient("default"); setSelectedTemplate(e.target.value as FIRNoticeTemplateType); }}
               className="w-full text-xs p-2.5 rounded-lg border border-purple-300 bg-purple-50/40 font-bold text-purple-950"

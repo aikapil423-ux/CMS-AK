@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { registerOperatorAdapter, type OperatorReceipt } from "@/services/agent/operatorAdapters";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileText,
@@ -500,6 +501,10 @@ function FIRTemplateBuilderContent() {
 
   // Editor State
   const editorRef = useRef<HTMLDivElement>(null);
+  const operatorReceiptRef = useRef<OperatorReceipt | undefined>(undefined);
+  useEffect(() => registerOperatorAdapter({
+    id: '/fir-workspace/builder', matches: path => path.split('?')[0] === '/fir-workspace/builder', receipt: () => operatorReceiptRef.current,
+  }), []);
   const [editingDefinition, setEditingDefinition] = useState(false);
   const rawTemplateRef = useRef(STANDARD_FIR_INVESTIGATION_TEMPLATES[0].content);
   const [docName, setDocName] = useState("Witness Statement Memo");
@@ -896,6 +901,7 @@ function FIRTemplateBuilderContent() {
     setDocCategory(saveModalCategory.trim());
     setDocDescription(saveModalDesc.trim());
     setCurrentTemplateId(newTemplateId);
+    operatorReceiptRef.current = {id:newTemplateId,label:"Template saved",revision:(operatorReceiptRef.current?.revision || 0)+1};
     setSaveStatus("Saved to My Templates");
     setLastSavedAt(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
     setHasUnsavedChanges(false);
@@ -1197,6 +1203,7 @@ function FIRTemplateBuilderContent() {
               <Button
                 type="button"
                 size="sm"
+                data-agent-operation="read"
                 onClick={openSaveModal}
                 className="text-xs h-8 bg-blue-700 hover:bg-blue-800 text-white gap-1.5 font-bold shadow-2xs"
               >
@@ -1760,6 +1767,7 @@ function FIRTemplateBuilderContent() {
           <div className="bg-slate-200/60 p-4 md:p-8 rounded-xl flex justify-center overflow-x-auto min-h-[700px]">
             <div
               ref={editorRef}
+              aria-label="Document body"
               contentEditable
               onInput={handleContentChange}
               className="bg-white text-slate-900 shadow-md p-8 md:p-14 min-h-[1050px] w-full max-w-[850px] outline-none rounded-sm border border-slate-300 transition-shadow focus:shadow-lg"

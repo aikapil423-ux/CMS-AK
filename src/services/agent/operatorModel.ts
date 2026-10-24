@@ -21,7 +21,7 @@ export async function generateOperatorJson(system:string,parts:unknown[]):Promis
   const model=await operatorModel();
   const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY!},signal:AbortSignal.timeout(90000),
-    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts}],generationConfig:{temperature:0,responseMimeType:'application/json'}})});
+    body:JSON.stringify({systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts}],generationConfig:{temperature:0,responseMimeType:'application/json',...(model.startsWith('gemini-3')?{thinkingConfig:{thinkingLevel:'low'}}:{})}})});
   if(!response.ok) throw Error(`AI service unavailable (${response.status})`);
   const body=await response.json();
   const raw=body.candidates?.[0]?.content?.parts?.map((p:{text?:string})=>p.text || '').join('') || '';

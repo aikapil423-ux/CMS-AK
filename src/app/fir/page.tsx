@@ -844,6 +844,10 @@ function FIRRegisterPageContent() {
   };
 
   const handleConfirmAssign = () => {
+    if (!isSho) {
+      alert("Access Denied: Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
+      return;
+    }
     if (!selectedFirForAssign || !selectedIoId) return;
     const selectedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === selectedIoId);
     if (!selectedOfficer) return;
@@ -1314,14 +1318,14 @@ function FIRRegisterPageContent() {
                               <Printer className="w-3.5 h-3.5" />
                             </Button>
 
-                            {/* Assign / Reassign IO (SHO / Superior only) */}
-                            {canRegisterFir && (
+                            {/* Assign / Change IO (SHO only) */}
+                            {isSho && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleOpenAssign(fir)}
-                                className="h-7 w-7 p-0 border-slate-200 text-slate-600 hover:text-amber-700"
-                                title="Assign or Re-assign IO"
+                                className="h-7 w-7 p-0 border-slate-200 text-slate-600 hover:text-amber-700 cursor-pointer"
+                                title={fir.assignedIoId ? "Change IO" : "Assign IO"}
                               >
                                 <UserCheck className="w-3.5 h-3.5" />
                               </Button>
@@ -1357,7 +1361,9 @@ function FIRRegisterPageContent() {
             <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-sm">Assign Investigating Officer (IO)</h3>
+                <h3 className="font-bold text-sm">
+                  {selectedFirForAssign?.assignedIoId ? "Change Investigating Officer (IO)" : "Assign Investigating Officer (IO)"}
+                </h3>
               </div>
               <button
                 onClick={() => setIsAssignModalOpen(false)}
@@ -1426,7 +1432,7 @@ function FIRRegisterPageContent() {
                   disabled={!selectedIoId || assignmentSubmitting}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                 >
-                  {assignmentSubmitting ? "Assigning..." : "Confirm IO Assignment"}
+                  {assignmentSubmitting ? "Saving..." : (selectedFirForAssign?.assignedIoId ? "Confirm Change IO" : "Confirm IO Assignment")}
                 </Button>
               </div>
             </div>

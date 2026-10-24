@@ -1,3 +1,4 @@
+import { operatorAdapters } from './operatorAdapters';
 /** Live website operator. Controls are discovered afresh; no arbitrary selectors or scripts from a model. */
 export interface WebsiteControl {
   id: string;
@@ -18,8 +19,12 @@ export interface WebsiteSnapshot {
   errors: string[];
 }
 export type OperatorAction = { type: "fill"; id: string; value: string } | { type: "click"; id: string } | { type: "navigate"; path: string };
-export interface OperatorPlan { message: string; actions: OperatorAction[]; question?: string; continue?:boolean }
+export interface OperatorPlan { message: string; actions: OperatorAction[]; question?: string; continue?:boolean; choices?:{label:string;actions:OperatorAction[]}[] }
 export interface OperatorRoute { path: string; title: string }
+export function missingRequired(control:WebsiteControl):boolean {
+  return control.kind==='field' && !!control.required && !control.disabled &&
+    (!control.value || (['checkbox','radio'].includes(control.type) && control.value==='false'));
+}
 
 export function splitWorkflow(text:string):string[] {
   return text.split(/\s+(?:and then|then|uske baad|phir|फिर|उसके बाद)\s+|\s+(?:aur|और|and)\s+(?=(?:open|click|fill|search|save|download|print)\b)/i).map(s=>s.trim()).filter(Boolean);
@@ -79,11 +84,11 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
   const q = normalizeCommand(text);
   const fields = snapshot.controls.filter(c => c.kind === "field" && !c.disabled);
   if (/^(help|madad|मदद|kya kar|क्या कर)/.test(q) || /missing|required|क्या बाकी|kya baki|क्या जानकारी|kya jankari/.test(q)) {
-    const missing = fields.filter(c => c.required && !c.value);
+    const missing = fields.filter(missingRequired);
     return {message: missing.length ? `ये जानकारी चाहिए: ${missing.map(c => c.label).join(", ")}` : `इस पेज पर ${fields.length} fields और ${snapshot.controls.filter(c=>c.kind !== "field").length} actions उपलब्ध हैं। Field का नाम और value बोलें, या page/button का नाम बताएं।`, actions:[]};
   }
   // Extract multiple explicit values. Keep original spelling of user facts.
-  const clauses = text.split(/[,;\n]|\s+(?:aur|और|and)\s+/i);
+  const clauses = text.split(/[;\n]|,(?=\s*[^,;\n=:]{1,80}\s*[:=])|\s+(?:aur|और|and)\s+(?=[^,;\n=:]{1,80}\s*[:=])/i);
   const actions: OperatorAction[] = [];
   for (const clause of clauses) {
     const pair = clause.match(/^(?:.*?\b(?:fill|set)\s+)?(.+?)\s*(?:=|:|\s+(?:mein|me|में|is|hai|है)\s+)\s*(.+?)(?:\s+(?:kar do|karo|भर दो|fill kar do))?$/i)
@@ -91,7 +96,7 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
     if (pair) {
       const found = matchControls(fields, pair[1]);
       if (found.length === 1) actions.push({type:"fill", id:found[0].id, value:pair[2].trim()});
-      else if (found.length > 1) return {message:"",actions:[],question:`कौन सा field? ${found.map(c=>`${c.section}: ${c.label}`).join(" / ")}`};
+      else if (found.length > 1) return {message:"",actions:[],question:'कौन सा field?',choices:found.map(c=>({label:`${c.section}: ${c.label}`,actions:[{type:'fill',id:c.id,value:pair[2].trim()}]}))};
     }
   }
   if (actions.length) return {message:"दी हुई जानकारी भर रहा हूँ।", actions};
@@ -110,12 +115,12 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
     const ranked = routes.map(r => ({r,score:scoreLabel(`${r.title} ${r.path.replace(/[-/]/g," ")}`,query)})).sort((a,b)=>b.score-a.score);
     if (ranked[0]?.score >= 30 && ranked[0].score > (ranked[1]?.score || 0)) return {message:`${ranked[0].r.title} खोल रहा हूँ।`,actions:[{type:"navigate",path:ranked[0].r.path}]};
     const ties = ranked.filter(r=>r.score>=30 && r.score===ranked[0]?.score);
-    if(ties.length>1) return {message:'',actions:[],question:`कौन सा page खोलना है? ${ties.slice(0,5).map(({r})=>`${r.title} (${r.path})`).join(' / ')}`};
+    if(ties.length>1) return {message:'',actions:[],question:'कौन सा page खोलना है?',choices:ties.slice(0,8).map(({r})=>({label:`${r.title} (${r.path})`,actions:[{type:'navigate',path:r.path}]}))};
   }
   const target = q.replace(/\b(open|click|press|button|tab|karo|kar do|please|dabao|select)\b|दबाओ|दबाएं|चुनो/g," ").trim();
   const found = matchControls(snapshot.controls.filter(c=>c.kind!=="field" && !c.disabled), target);
   if (found.length === 1) return {message:found[0].label,actions:[{type:"click",id:found[0].id}]};
-  if (found.length > 1) return {message:"",actions:[],question:`कौन सा action? ${found.slice(0,5).map(c=>`${c.section}: ${c.label}`).join(" / ")}`};
+  if (found.length > 1) return {message:"",actions:[],question:'कौन सा action?',choices:found.slice(0,8).map(c=>({label:`${c.section}: ${c.label}`,actions:[{type:'click',id:c.id}]}))};
   const field = matchControls(fields, target);
   if (field.length === 1) return {message:"",actions:[],question:`${field[0].label} में क्या भरना है?`};
   return {message:"", actions:[], question:"कौन सा page, field या button? उसका नाम बताएं। जैसे ‘mobile = 9812345678’, ‘FIR register खोलो’, या ‘Documents tab खोलो’।"};
@@ -160,11 +165,13 @@ export class LiveWebsiteBridge {
         href:el instanceof HTMLAnchorElement && el.origin === location.origin ? el.pathname+el.search : undefined,
         options:el instanceof HTMLSelectElement ? Array.from(el.options).filter(o=>!o.disabled).map(o=>({value:o.value,label:o.text})) : undefined});
     });
-    return {path:location.pathname+location.search,title:document.querySelector('main h1')?.textContent || document.title,controls,
+    const snapshot:WebsiteSnapshot = {path:location.pathname+location.search,title:document.querySelector('main h1')?.textContent || document.title,controls,
       errors:Array.from(document.querySelectorAll<HTMLElement>('[role="alert"],[aria-invalid="true"]')).filter(el=>this.visible(el)).map(el=>el.textContent?.trim() || el.getAttribute('aria-label') || "Invalid field").filter(Boolean).slice(0,15)};
+    return operatorAdapters(snapshot.path).reduce((s,a)=>a.enrich?.(s)||s,snapshot);
   }
   requiresApproval(control: WebsiteControl): boolean {
     const el=this.elements.get(control.id);
+    if(/^(search|preview|table view|cards view|next page|previous page)$/i.test(control.label) && el?.getAttribute('type')!=='submit') return false;
     return !(control.kind === "link" && !!control.href) && !['tab','combobox'].includes(control.type) && el?.getAttribute('data-agent-operation')!=='read';
   }
   async perform(action: OperatorAction, approved = false): Promise<string> {
@@ -173,21 +180,38 @@ export class LiveWebsiteBridge {
     if (!el || !el.isConnected || !this.visible(el)) throw Error("Page बदल गया है। कृपया command दोबारा दें।");
     const current = this.snapshot().controls.find(c=>c.id===action.id);
     if (!current || current.disabled) throw Error("यह control अभी available/enabled नहीं है।");
+    if(operatorAdapters(location.pathname+location.search).some(a=>a.canOperate?.(action.id,action.type)===false)) throw Error('इस module में इस action की अनुमति नहीं है।');
     if (/password|permission|role switch|switch.*persona/i.test(current.label)) throw Error("Account/permission controls सीधे user को operate करने होंगे।");
     if (action.type === 'click') {
       if (/sign out|logout|switch.*persona|role switch|password|permission|delete account/i.test(current.label)) throw Error("Account/permission controls सीधे user को operate करने होंगे।");
       if (this.requiresApproval(current) && !approved) throw Error("इस action की confirmation चाहिए।");
+      const write=this.requiresApproval(current) && /save|submit|register|send|delete|issue|सहेज|जमा|भेज/i.test(current.label);
+      const previousReceipts=operatorAdapters(location.pathname+location.search).map(a=>{const r=a.receipt?.();return r?`${r.id}:${r.revision}`:'';});
+      const previousStatuses=Array.from(document.querySelectorAll('[role="status"],[data-agent-receipt]')).map(n=>n.textContent?.trim());
       el.click();
       await new Promise(r=>setTimeout(r,350));
       const after = this.snapshot();
-      return after.errors.length ? `Action के बाद validation: ${after.errors.join("; ")}` : `“${current.label}” activate किया। Official save तभी complete मानें जब website receipt/record confirmation दिखाए।`;
+      if(after.errors.length) throw Error(`Action के बाद validation: ${after.errors.join('; ')}`);
+      if(write) {
+        for(let i=0;i<20;i++) {
+          const receipt=operatorAdapters(location.pathname+location.search).map(a=>a.receipt?.()).find(r=>r&&!previousReceipts.includes(`${r.id}:${r.revision}`));
+          if(receipt) return `Verified receipt: ${receipt.label} (${receipt.id})${receipt.url?' '+receipt.url:''}`;
+          const status=Array.from(document.querySelectorAll<HTMLElement>('[role="status"],[data-agent-receipt]')).filter(n=>this.visible(n)).map(n=>n.textContent?.trim()).find(t=>t&&!previousStatuses.includes(t)&&/saved|success|created|deleted|सफल|सहेज/i.test(t));
+          if(status) return `Website confirmation: ${status}`;
+          await new Promise(r=>setTimeout(r,150));
+        }
+        return `“${current.label}” activate किया; save/submit receipt अभी verify नहीं हुई। Duplicate रोकने के लिए वही action दोबारा न चलाएं; record check करें।`;
+      }
+      return `“${current.label}” activate किया।`;
     }
     if (current.kind !== 'field') throw Error("यह editable field नहीं है।");
     if (current.type === 'file') { el.click(); return "File picker खुला है; file चुनें।"; }
     const value = action.value;
+    let expectedValue=value;
     if (el instanceof HTMLSelectElement) {
       const choices = Array.from(el.options).filter(o=>!o.disabled && (o.value === value || normalizeCommand(o.text) === normalizeCommand(value)));
       if (choices.length!==1) throw Error(`इनमें से चुनें: ${current.options?.map(o=>o.label).join(" / ")}`);
+      expectedValue=choices[0].value;
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!.call(el,choices[0].value);
       el.dispatchEvent(new Event('change',{bubbles:true}));
     } else if (el instanceof HTMLInputElement && ['checkbox','radio'].includes(el.type)) {
@@ -205,7 +229,7 @@ export class LiveWebsiteBridge {
     await new Promise(r=>setTimeout(r,100));
     const after = this.snapshot().controls.find(c=>c.id===action.id);
     if (!after) throw Error("Field बदल गया; value verify नहीं हो सकी।");
-    if (!current.options && !['checkbox','radio'].includes(current.type) && after.value !== value) throw Error("Form ने value accept नहीं की। सही format में बताएं।");
+    if (!['checkbox','radio'].includes(current.type) && after.value !== expectedValue) throw Error("Form ने value accept नहीं की। सही format में बताएं।");
     const input = el as HTMLInputElement;
     if (input.validity && !input.validity.valid) throw Error(`${current.label}: ${input.validationMessage}`);
     return `${current.label} भरा और value verify की।`;

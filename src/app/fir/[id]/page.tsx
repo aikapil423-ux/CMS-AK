@@ -246,7 +246,7 @@ export default function FIRProfilePage() {
     currentUser.role === "DSP_SUBDIV" ||
     currentUser.role === "SP_DISTRICT" ||
     currentUser.role === "SUPER_ADMIN";
-  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
+  const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") && !isMhc;
   const isIo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
 
   const isCrimeDetailsFilled = Boolean(
@@ -458,8 +458,8 @@ export default function FIRProfilePage() {
   }, []);
 
   const handleConfirmAssign = () => {
-    if (isMhc || (!isSho && !isSuperior)) {
-      alert("Access Denied: MHC cannot assign EO/IO. Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
+    if (!isSho) {
+      alert("Access Denied: Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
       return;
     }
     if (!fir || !selectedIoId) return;
@@ -1450,15 +1450,15 @@ export default function FIRProfilePage() {
           </Button>
 
           {/* Assign / Reassign IO */}
-          {(isSho || isSuperior) && (
+          {isSho && (
             <Button
               size="sm"
               variant="outline"
               onClick={() => setIsAssignModalOpen(true)}
-              className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5"
+              className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
             >
               <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-              {fir.assignedIoId ? "Reassign IO" : "Assign IO"}
+              {fir.assignedIoId ? "Change IO" : "Assign IO"}
             </Button>
           )}
 
@@ -1723,10 +1723,10 @@ export default function FIRProfilePage() {
                     Investigating Officer
                   </h3>
                 </div>
-                {(isSho || isSuperior) && (
+                {isSho && (
                   <button
                     onClick={() => setIsAssignModalOpen(true)}
-                    className="text-[11px] text-blue-600 font-bold hover:underline"
+                    className="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer"
                   >
                     Change IO
                   </button>
@@ -1757,11 +1757,11 @@ export default function FIRProfilePage() {
                 ) : (
                   <div className="text-center py-4 text-slate-500">
                     <p>No Investigating Officer assigned yet.</p>
-                    {(isSho || isSuperior) && !isMhc ? (
+                    {isSho ? (
                       <Button
                         size="sm"
                         onClick={() => setIsAssignModalOpen(true)}
-                        className="mt-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        className="mt-2 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer"
                       >
                         Assign IO Now
                       </Button>
@@ -2720,7 +2720,9 @@ export default function FIRProfilePage() {
             <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-sm">Assign Investigating Officer (IO)</h3>
+                <h3 className="font-bold text-sm">
+                  {fir?.assignedIoId ? "Change Investigating Officer (IO)" : "Assign Investigating Officer (IO)"}
+                </h3>
               </div>
               <button
                 onClick={() => setIsAssignModalOpen(false)}
@@ -2777,7 +2779,7 @@ export default function FIRProfilePage() {
                   disabled={!selectedIoId || assignmentSubmitting}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                 >
-                  {assignmentSubmitting ? "Assigning..." : "Confirm IO Assignment"}
+                  {assignmentSubmitting ? "Saving..." : (fir?.assignedIoId ? "Confirm Change IO" : "Confirm IO Assignment")}
                 </Button>
               </div>
             </div>

@@ -4,7 +4,7 @@ const ts=require('typescript');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const exportsObject={};
-vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/websiteOperator.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObject});
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/websiteOperator.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObject,require:()=>({operatorAdapters:()=>[]})});
 const {planLocally}=exportsObject;
 const field=(id,label)=>({id,label,kind:'field',type:'text',disabled:false,section:'',required:true,value:''});
 const snapshot={path:'/new',title:'New',controls:[field('name','Name'),field('mobile','Mobile')],errors:[]};
@@ -27,3 +27,5 @@ test('visible named template opens on current screen',()=>{const p=planLocally('
 const {splitWorkflow}=exportsObject;
 test('workflow preserves explicit order across languages',()=>{assert.equal(splitWorkflow('acts kholo then search Arms').join('|'),'acts kholo|search Arms');assert.equal(splitWorkflow('टेम्पलेट खोलो फिर प्रिंट दबाओ').length,2);});
 test('search button command is not treated as query text',()=>{const p=planLocally('Search button click karo',{...snapshot,controls:[field('q','Search query'),button('s','Search')]},[]);assert.equal(p.actions[0].type,'click');assert.equal(p.actions[0].id,'s');});
+test('template option commas remain part of the supplied value',()=>{const p=planLocally('Notice Proforma = Witness Order (Section 179 BNSS, 2023)',{...snapshot,controls:[field('template','Notice Proforma')]},[]);assert.equal(p.actions[0].value,'Witness Order (Section 179 BNSS, 2023)');});
+test('names containing and are preserved',()=>{const p=planLocally('name = Ram and Shyam',snapshot,[]);assert.equal(p.actions[0].value,'Ram and Shyam');});

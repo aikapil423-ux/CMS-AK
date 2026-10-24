@@ -57,6 +57,7 @@ function templateSaveHarness(id, fail = false) {
   const context = {
     saveModalName: 'Reusable notice', saveModalCategory: 'Notice', saveModalDesc: '',
     editorRef: {current:{innerHTML:'<p>{{FIR_NUMBER}}</p>'}}, rawTemplateRef: {current:''},
+    operatorReceiptRef: {current: undefined},
     editingDefinition: true, currentTemplateId: id, currentUser:{id:'io',name:'Officer',rankDisplay:'SI'},
     savedTemplates: [], FIR_CUSTOM_TEMPLATES_STORAGE_KEY: 'test-only',
     localStorage: {setItem() {}}, loadSavedTemplates: async () => {}, alert: () => {},
