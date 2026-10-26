@@ -22,6 +22,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize from localStorage if available on mount
   useEffect(() => {
     try {
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        if (
+          params.get("autologin") === "true" ||
+          params.get("auto") === "1" ||
+          params.get("login") === "true" ||
+          params.has("autologin")
+        ) {
+          localStorage.removeItem("cms_demo_logged_out");
+          const targetUserId =
+            params.get("user") ||
+            localStorage.getItem("haryana_police_cms_user") ||
+            "usr_sho_1";
+          const found =
+            DEMO_USERS.find((u) => u.id === targetUserId) ||
+            DEMO_USERS.find((u) => u.role === "SHO") ||
+            DEMO_USERS[0];
+          setCurrentUser(found);
+          setIsAuthenticated(true);
+          localStorage.setItem("haryana_police_cms_user", found.id);
+          return;
+        }
+      }
       setIsAuthenticated(localStorage.getItem("cms_demo_logged_out") !== "true");
       const savedUserId = localStorage.getItem("haryana_police_cms_user");
       if (savedUserId) {
