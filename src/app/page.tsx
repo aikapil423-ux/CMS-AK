@@ -23,6 +23,7 @@ import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { firService } from "@/services/firService";
 import { RegistrationService } from "@/services/registrationService";
+import { isUserAssignedIo } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
 
 export default function PostLoginPortalPage() {
@@ -30,22 +31,24 @@ export default function PostLoginPortalPage() {
   const { currentUser } = useAuth();
   const { switchToModule } = useModule();
 
-  const [complaintCount, setComplaintCount] = useState(6);
-  const [gdCount, setGdCount] = useState(4);
-  const [firCount, setFirCount] = useState(3);
-  const [regCount, setRegCount] = useState(8);
+  const [complaintCount, setComplaintCount] = useState<number | null>(null);
+  const [gdCount, setGdCount] = useState<number | null>(null);
+  const [firCount, setFirCount] = useState<number | null>(null);
+  const [regCount, setRegCount] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadStats() {
       try {
         const [complaints, gdEntries] = await Promise.all([
           ComplaintService.getComplaints(),
-          GeneralDiaryService.getEntries(),
+          GeneralDiaryService.getEntries({date:new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date())}),
         ]);
-        setComplaintCount(complaints.length);
+        setComplaintCount(complaints.filter(c=>! /^(COMPLETE|DISPOSED|FIR_REGISTER|TRANSFERRED)/.test(String(c.status).toUpperCase().replace(/ /g,"_"))).length);
         setGdCount(gdEntries.length);
         const firs = firService.getAllFirs();
-        setFirCount(firs.length);
+        const isIo = currentUser.role === "ENQUIRY_OFFICER";
+        const visibleFirs = isIo ? firs.filter((f) => isUserAssignedIo(currentUser, f)) : firs;
+        setFirCount(visibleFirs.length);
         const regs = RegistrationService.getEntries();
         setRegCount(regs.length);
       } catch (e) {
@@ -135,7 +138,7 @@ export default function PostLoginPortalPage() {
             <div className="pt-1 flex flex-wrap gap-2 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-slate-400" />
-                {gdCount} Entries Today
+                {gdCount ?? "—"} Entries Today
               </span>
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Lock className="w-3 h-3 text-emerald-600" />
@@ -182,7 +185,7 @@ export default function PostLoginPortalPage() {
             <div className="pt-1 flex flex-wrap gap-2 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <FileText className="w-3 h-3 text-slate-400" />
-                {complaintCount} Active Complaints
+                {complaintCount ?? "—"} Active Complaints
               </span>
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-amber-500" />
@@ -229,7 +232,7 @@ export default function PostLoginPortalPage() {
             <div className="pt-1 flex flex-wrap gap-2 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Scale className="w-3 h-3 text-slate-400" />
-                {firCount} Registered FIRs
+                {firCount ?? "—"} Registered FIRs
               </span>
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-rose-500" />
@@ -276,7 +279,7 @@ export default function PostLoginPortalPage() {
             <div className="pt-1 flex flex-wrap gap-2 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <ClipboardList className="w-3 h-3 text-slate-400" />
-                {regCount} Total Entries
+                {regCount ?? "—"} Total Entries
               </span>
               <span className="bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60 text-[11px] font-normal flex items-center gap-1.5">
                 <Clock className="w-3 h-3 text-indigo-500" />

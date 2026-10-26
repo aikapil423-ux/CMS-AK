@@ -8,6 +8,7 @@ vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/websit
 const {planLocally}=exportsObject;
 const field=(id,label)=>({id,label,kind:'field',type:'text',disabled:false,section:'',required:true,value:''});
 const snapshot={path:'/new',title:'New',controls:[field('name','Name'),field('mobile','Mobile')],errors:[]};
+test('Hindi speech complaint navigation works without model',()=>{const p=planLocally('रजिस्टर कंप्लेंट पेज खोलो',snapshot,[{path:'/complaints/new',title:'Register Complaint'}]);assert.equal(p.actions[0]?.path,'/complaints/new');});
 test('fills supplied facts and preserves spelling',()=>{const p=planLocally('name = Ramesh Kumar, mobile = 9812345678',snapshot,[]);assert.equal(p.actions.length,2);assert.equal(p.actions[0].value,'Ramesh Kumar');});
 test('ambiguous names ask instead of selecting first',()=>{const p=planLocally('name = Ramesh',{...snapshot,controls:[field('a','Name'),field('b','Name')]},[]);assert.equal(p.actions.length,0);assert.ok(p.question);});
 test('new route works without hardcoded command entry',()=>{const p=planLocally('evidence vault kholo',snapshot,[{path:'/evidence-vault',title:'Evidence vault'},{path:'/users',title:'Users'}]);assert.equal(p.actions[0].path,'/evidence-vault');});

@@ -22,12 +22,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { firService } from "@/services/firService";
-import { FIRItem } from "@/types";
+import { FIRItem, ComplaintReportItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { IIFVChargesheetForm } from "@/components/fir/FinalReportModal";
+import { generateIIFVChargesheetHtmlFromFir } from "@/utils/iifvChargesheetGenerator";
 import {
   useTableResize,
   TableColResizer,
@@ -96,10 +97,13 @@ function FIRFinalFormContent() {
   const { language: globalLang } = useLanguage();
   const searchParams = useSearchParams();
   const firIdParam = searchParams.get("firId");
+  const typeParam = searchParams.get("type");
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>(firIdParam || "");
-  const [formType, setFormType] = useState<FinalFormType>("CHARGESHEET");
+  const [formType, setFormType] = useState<FinalFormType>(
+    (typeParam as FinalFormType) || "CHARGESHEET"
+  );
   const [templateLang, setTemplateLang] = useState<"hi" | "en">(globalLang || "hi");
 
   // Editable Proforma Fields
@@ -203,10 +207,23 @@ function FIRFinalFormContent() {
   useEffect(() => {
     const list = firService.getAllFirs();
     setFirs(list);
+    if (firIdParam) {
+      const match = list.find((f) => f.id === firIdParam || f.firNumber === firIdParam);
+      if (match) {
+        setSelectedFirId(match.id);
+        return;
+      }
+    }
     if (!selectedFirId && list.length > 0) {
       setSelectedFirId(list[0].id);
     }
-  }, []);
+  }, [firIdParam]);
+
+  useEffect(() => {
+    if (typeParam && (typeParam in FINAL_FORM_CONFIGS || typeParam === "CHARGESHEET")) {
+      setFormType(typeParam as FinalFormType);
+    }
+  }, [typeParam]);
 
   const activeFir = firs.find(
     (f) => f.id === selectedFirId || f.firNumber === selectedFirId
@@ -384,6 +401,43 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
       `${investigatingOfficer} (${ioRank})`,
       investigationSummary
     );
+
+    // Persist full statutory IIF-V document in activeFir.reports so it matches preview 100%
+    const formConfig = FINAL_FORM_CONFIGS[formType];
+    const reportNum = `${formType === "CHARGESHEET" ? "CS" : "FR"}/${activeFir.firYear || new Date().getFullYear()}/${Date.now().toString().slice(-4)}`;
+    const fullHtml = generateIIFVChargesheetHtmlFromFir(
+      activeFir,
+      {
+        reportType: formType,
+        conclusionSummary: investigationSummary,
+        dispatchNo: reportNum,
+      },
+      currentUser
+    );
+
+    const reportItem: ComplaintReportItem = {
+      id: `rep_final_${Date.now()}`,
+      complaintId: activeFir.id,
+      versionNumber: 1,
+      title: `I.I.F.-V ${formConfig.label} (${formConfig.titleHindi}) - FIR No. ${activeFir.firNumber}`,
+      reportType: formType,
+      reportTypeLabel: `I.I.F.-V ${formConfig.label} (Sec 193 BNSS)`,
+      dispatchNo: `${reportNum}/C-1`,
+      generatedDate: new Date().toISOString().slice(0, 10),
+      officerName: investigatingOfficer,
+      officerRank: ioRank,
+      officerPno: ioBelt,
+      conclusionSummary: investigationSummary,
+      content: `${formConfig.label} u/s 193 BNSS\nCourt: ${courtName}\nFIR No: ${activeFir.firNumber}\nInvestigating Officer: ${investigatingOfficer} (${ioRank})\n\n${investigationSummary}`,
+      contentHtml: fullHtml,
+      dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`,
+      fileName: `IIF-V_${formType}_FIR_${activeFir.firNumber}.html`,
+      fileFormat: "Official I.I.F.-V (Statutory Document)",
+      status: "Finalized",
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser.name || "IO",
+    };
+    firService.addReport(activeFir.id, reportItem);
 
     setIsSubmitted(true);
     setSubmitMessage(
@@ -594,6 +648,7 @@ Forwarded by SHO: ${shoName} (PS ${policeStation}, Distt ${district})`;
         activeFir ? (
           <div className="w-full max-w-5xl mx-auto">
             <IIFVChargesheetForm
+              key={activeFir.id}
               fir={activeFir}
               currentUser={currentUser}
               inline={true}

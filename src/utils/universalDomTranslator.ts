@@ -18,6 +18,7 @@ const SORTED_REVERSE_ENTRIES = Object.entries(REVERSE_DICTIONARY).sort(
 // Cache for original text node contents
 const originalTextMap = new WeakMap<Node, string>();
 const translatedTextMap = new WeakMap<Node, string>();
+const originalAttributeMap = new WeakMap<Element, Map<string,{original:string;translated:string}>>();
 
 let observer: MutationObserver | null = null;
 let currentLanguage: "hi" | "en" = "en";
@@ -282,19 +283,20 @@ function translateAttributes(el: Element, toLang: "hi" | "en") {
     const val = el.getAttribute(attr);
     if (!val || !val.trim()) continue;
 
-    const origKey = `data-orig-${attr}`;
-    if (!el.hasAttribute(origKey)) {
-      el.setAttribute(origKey, val);
-    }
-    const orig = el.getAttribute(origKey) || val;
+    let attributes=originalAttributeMap.get(el);
+    if(!attributes){attributes=new Map();originalAttributeMap.set(el,attributes);}
+    const previous=attributes.get(attr);
+    const orig=previous && previous.translated===val?previous.original:val;
 
     if (toLang === "hi") {
       const translated = translateStringToHindi(orig);
+      attributes.set(attr,{original:orig,translated});
       if (translated !== val) {
         el.setAttribute(attr, translated);
       }
     } else {
       const translated = translateStringToEnglish(orig);
+      attributes.set(attr,{original:orig,translated});
       if (translated !== val) {
         el.setAttribute(attr, translated);
       }

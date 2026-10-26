@@ -1,0 +1,10 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const ts=require('typescript'),fs=require('node:fs'),vm=require('node:vm');
+const moduleExports={};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/operatorVoice.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:moduleExports});
+const event=(...parts)=>({results:parts.map(([transcript,isFinal])=>({0:{transcript},isFinal}))});
+test('voice submits completed Hindi command once without Send click',()=>{const sent=[];const turn=moduleExports.voiceTurn(()=>{},t=>sent.push(t),()=>{});turn.result(event(['रजिस्टर',false]));assert.equal(sent.length,0);turn.result(event(['रजिस्टर कंप्लेंट पेज खोलो',true]));turn.end();turn.end();assert.deepEqual(sent,['रजिस्टर कंप्लेंट पेज खोलो']);});
+test('voice retains all final segments and excludes interim suffix',()=>{const sent=[];const turn=moduleExports.voiceTurn(()=>{},t=>sent.push(t),()=>{});turn.result(event(['open complaints',true],['then search Arms',true],['noise',false]));turn.end();assert.deepEqual(sent,['open complaints then search Arms']);});
+test('cancel and error discard completed transcript',()=>{let count=0;const turn=moduleExports.voiceTurn(()=>{},()=>count++,()=>{});turn.result(event(['save',true]));turn.cancel();turn.end();assert.equal(count,0);});
+test('spoken stop cancels without submitting',()=>{let sent=0,stopped=0;const turn=moduleExports.voiceTurn(()=>{},()=>sent++,()=>stopped++);turn.result(event(['रुको',true]));turn.end();assert.equal(sent,0);assert.equal(stopped,1);});

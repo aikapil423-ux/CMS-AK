@@ -45,7 +45,14 @@ export function ScrutinyPerformView() {
 
   // Form state
   const availableFirs = ProsecutionService.getAvailableFirs();
-  const [selectedFirNumber, setSelectedFirNumber] = useState(availableFirs[0]?.firNumber || "");
+  const [selectedFirNumber, setSelectedFirNumber] = useState("");
+  const [saveError,setSaveError]=useState("");
+  const caseConflict=(record:ScrutinyPerformaRecord)=>{
+    const current=availableFirs.find(f=>f.firNumber===record.firNumber&&f.policeStation===record.policeStation);
+    if(!current)return 'Linked FIR is unavailable. Verify this saved snapshot before use.';
+    return current.accusedNames!==record.accusedNames||current.ioName!==record.investigationOfficer||current.actsAndSections!==record.actsAndSections
+      ?`Saved snapshot differs from current FIR. Current accused: ${current.accusedNames}; IO: ${current.ioName}; sections: ${current.actsAndSections}. Review before using this record.`:'';
+  };
   const [courtName, setCourtName] = useState("Court of Ld. Chief Judicial Magistrate, Panipat");
   const [challanType, setChallanType] = useState<ScrutinyPerformaRecord["challanType"]>("FINAL_CHARGESHEET");
   const [scrutinyOfficer, setScrutinyOfficer] = useState("Sh. D.S. Yadav, Ld. Deputy ADA");
@@ -68,18 +75,20 @@ export function ScrutinyPerformView() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const firMeta = availableFirs.find((f) => f.firNumber === selectedFirNumber) || availableFirs[0];
+    setSaveError('');
+    const firMeta = availableFirs.find((f) => f.firNumber === selectedFirNumber);
+    if(!firMeta){setSaveError('Select the correct FIR before saving.');return;}
 
     const newRecord: ScrutinyPerformaRecord = {
       id: `SCR-${Date.now()}`,
       scrutinyNumber: `SCR/${new Date().getFullYear()}/${String(records.length + 1).padStart(4, "0")}`,
-      firNumber: selectedFirNumber || firMeta?.firNumber || "FIR/0284/2026",
-      policeStation: firMeta?.policeStation || "PS City Panipat",
-      district: "Panipat",
-      actsAndSections: firMeta?.actsAndSections || "Sec 304, 3(5) BNS",
+      firNumber: firMeta.firNumber,
+      policeStation: firMeta.policeStation,
+      district: firMeta.district,
+      actsAndSections: firMeta.actsAndSections,
       complainantName: firMeta?.complainantName || "State",
       accusedNames: firMeta?.accusedNames || "Accused",
-      investigationOfficer: firMeta?.ioName || "SI Sandeep Singh",
+      investigationOfficer: firMeta.ioName,
       ioRankAndBelt: firMeta?.ioRank || "Sub-Inspector",
       submissionDate: new Date().toLocaleDateString("en-IN"),
       scrutinyDate: new Date().toLocaleDateString("en-IN"),
@@ -91,7 +100,8 @@ export function ScrutinyPerformView() {
       challanType,
     };
 
-    await ProsecutionService.saveScrutinyRecord(newRecord);
+    try {await ProsecutionService.saveScrutinyRecord(newRecord);}
+    catch(error){setSaveError(error instanceof Error?error.message:'Save failed');return;}
     await loadData();
     setIsModalOpen(false);
     // Reset form
@@ -237,6 +247,7 @@ export function ScrutinyPerformView() {
                     <td className="py-2.5 px-3">
                       <span className="font-bold text-slate-900">{r.firNumber}</span>
                       <span className="block text-[11px] text-slate-500">{r.policeStation}</span>
+                      {caseConflict(r) && <p className="mt-1 text-xs text-amber-800" role="status">{caseConflict(r)}</p>}
                     </td>
                     <td className="py-2.5 px-3 font-medium text-slate-700 max-w-xs truncate" title={r.actsAndSections}>
                       {r.actsAndSections}
@@ -309,14 +320,17 @@ export function ScrutinyPerformView() {
             </div>
 
             <form onSubmit={handleSave} className="p-4 space-y-4 overflow-y-auto text-xs">
+              {saveError && <p role="alert" className="text-red-700">{saveError}</p>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] font-bold text-slate-700 block mb-1">Select Case FIR</label>
                   <select
                     value={selectedFirNumber}
+                    required
                     onChange={(e) => handleFirSelect(e.target.value)}
                     className="w-full p-2 border border-slate-200 rounded-lg bg-white font-medium"
                   >
+                    <option value="" disabled>-- Select FIR (Required) --</option>
                     {availableFirs.map((f) => (
                       <option key={f.firNumber} value={f.firNumber}>
                         {f.firNumber} - {f.policeStation} ({f.actsAndSections})

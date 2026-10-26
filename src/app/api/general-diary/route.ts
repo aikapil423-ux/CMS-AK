@@ -760,8 +760,7 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
     const pageSize = Math.max(1, parseInt(searchParams.get("pageSize") || "15") || 15);
 
-    // Prune suggestions and drafts on which no action has been taken for 24 hours
-    await pruneExpiredSuggestionsAndDrafts();
+    // Reading the register must never delete drafts or suggestions.
 
     // Fetch ALL rows once — status counts are GLOBAL, so tab badges
     // (e.g. the Register count) never change with the active tab.

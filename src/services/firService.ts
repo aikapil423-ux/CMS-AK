@@ -18,6 +18,7 @@ import {
 } from "@/types";
 import { ComplaintService } from "./complaintService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
+import { nextFirNumber, firPendingDays } from '@/lib/firIntegrity';
 
 const FIRS_STORAGE_KEY = "haryana_police_cms_firs_v1";
 
@@ -688,11 +689,11 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     stolenPropertyDetails: "Defrauded amount: Rs. 1,45,000/- transferred to A/C 99882211003",
     totalPropertyEstimatedValue: 145000,
     registeredBy: "Inspector Rajesh Kumar (SHO)",
-    assignedIoId: "eo-004",
-    assignedIoName: "ASI Vikram Singh",
-    assignedIoRank: "Assistant Sub Inspector",
-    assignedIoBeltNumber: "ASI/4112",
-    assignedIoPhone: "9812300004",
+    assignedIoId: "eo_1",
+    assignedIoName: "SI Vikram Singh",
+    assignedIoRank: "Sub Inspector",
+    assignedIoBeltNumber: "742/KKR",
+    assignedIoPhone: "9812034567",
     assignedAt: "2026-03-31 16:30",
     assignedDirections: "Liaise with Cyber Cell Gurugram, send freezing notices under Sec 106 BNSS to Canara Bank and payment gateway.",
     daysPending: 7,
@@ -1024,7 +1025,7 @@ function saveFirsToStorage(items: FIRItem[]) {
         }));
         window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(stripped));
       } catch (err2) {
-        console.error("Critical: LocalStorage full for FIRs:", err2);
+        throw new Error('FIR save failed: browser storage is full or unavailable. Free storage and retry; changes have not been saved.');
       }
     }
   }
@@ -1052,6 +1053,7 @@ export const firService = {
     return [...firsStore].map((fir) => ({
       ...fir,
       mainStatus: getMainFIRStatus(fir),
+      daysPending: firPendingDays(fir),
     }));
   },
 
@@ -1068,10 +1070,8 @@ export const firService = {
   generateNextFirNumber(): { firNumber: string; firYear: number } {
     const year = new Date().getFullYear();
     const list = this.getAllFirs();
-    const currentYearFirs = list.filter((f) => f.firYear === year);
-    const nextSeq = (currentYearFirs.length + 1).toString().padStart(4, "0");
     return {
-      firNumber: `FIR/${nextSeq}/${year}`,
+      firNumber: nextFirNumber(list,year),
       firYear: year,
     };
   },
@@ -1228,8 +1228,9 @@ export const firService = {
 
     newFir.mainStatus = getMainFIRStatus(newFir);
 
-    firsStore = [newFir, ...firsStore];
-    saveFirsToStorage(firsStore);
+    const nextStore = [newFir, ...firsStore];
+    saveFirsToStorage(nextStore);
+    firsStore = nextStore;
 
     if (newFir.sourceComplaintId) {
       try {
@@ -1262,8 +1263,9 @@ export const firService = {
     };
     updated.mainStatus = getMainFIRStatus(updated);
 
-    firsStore[idx] = updated;
-    saveFirsToStorage(firsStore);
+    const nextStore = firsStore.map((fir,index)=>index===idx?updated:fir);
+    saveFirsToStorage(nextStore);
+    firsStore = nextStore;
     notifyListeners();
     return updated;
   },

@@ -1,4 +1,5 @@
 "use client";
+import { useUnsavedDocument } from "@/hooks/useUnsavedDocument";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
@@ -356,7 +357,9 @@ function TemplateDraftBuilderContent() {
   // Auto-save & Status
   const [saveStatus, setSaveStatus] = useState<"Saved" | "Saving..." | "Unsaved changes">("Unsaved changes");
   const [lastSavedAt, setLastSavedAt] = useState<string>("");
+  const [libraryError,setLibraryError]=useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  useUnsavedDocument(hasUnsavedChanges);
 
   // Modals
   const [saveModalOpen, setSaveModalOpen] = useState(false);
@@ -417,6 +420,7 @@ function TemplateDraftBuilderContent() {
   // 2. Fetch Templates & Drafts list
   const fetchTemplatesAndDrafts = useCallback(async () => {
     setManagementLoading(true);
+    setLibraryError("");
     try {
       const [tList, dList] = await Promise.all([
         BuilderService.getTemplates({ search: searchQuery, sortBy, sortOrder }),
@@ -426,6 +430,7 @@ function TemplateDraftBuilderContent() {
       setDraftsList(dList);
     } catch (err) {
       console.error("Failed to load templates/drafts list:", err);
+      setLibraryError("Templates/drafts could not be loaded. Retry when the connection is restored.");
     } finally {
       setManagementLoading(false);
     }
@@ -977,6 +982,7 @@ function TemplateDraftBuilderContent() {
 
   return (
     <div className="space-y-4 animate-in fade-in-50 pb-20">
+      {libraryError && <p role="alert" className="p-3 text-sm text-red-700 bg-red-50">{libraryError}<button type="button" className="ml-3 underline" onClick={()=>void fetchTemplatesAndDrafts()}>Retry</button></p>}
       {/* ================= 1. FIELD ENQUIRY WORKSPACE SUB-NAVIGATION TABS ================= */}
       <EnquiryWorkspaceNav
         complaintId={complaint?.id}

@@ -170,7 +170,7 @@ export const BuilderService = {
       return data.templates || [];
     } catch (err) {
       console.warn("BuilderService.getTemplates fallback:", err);
-      return [];
+      throw err;
     }
   },
 
@@ -272,7 +272,7 @@ export const BuilderService = {
       return data.drafts || [];
     } catch (err) {
       console.warn("BuilderService.getDrafts fallback:", err);
-      return [];
+      throw err;
     }
   },
 

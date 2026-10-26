@@ -70,6 +70,7 @@ import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate } from "@/lib/utils";
 import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { generateIIFVChargesheetHtmlFromFir } from "@/utils/iifvChargesheetGenerator";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
 import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
@@ -789,8 +790,29 @@ export default function FIRProfilePage() {
 
   const displayReports = useMemo<ComplaintReportItem[]>(() => {
     if (!fir) return [];
-    const list = [...(fir.reports || [])];
+    const list = (fir.reports || []).map((r) => {
+      // Ensure any chargesheet/final form report has authentic statutory HTML matching preview
+      const isChargesheetOrFinal =
+        r.reportType === "CHARGESHEET" ||
+        r.reportType === "CLOSURE" ||
+        r.reportType === "UNTRACED" ||
+        r.reportType === "CANCELLED" ||
+        r.title?.toLowerCase().includes("final form") ||
+        r.title?.toLowerCase().includes("chargesheet");
+
+      if (!r.contentHtml && isChargesheetOrFinal) {
+        const syntheticHtml = generateIIFVChargesheetHtmlFromFir(fir, r, currentUser);
+        return {
+          ...r,
+          contentHtml: syntheticHtml,
+          dataUrl: r.dataUrl || `data:text/html;charset=utf-8,${encodeURIComponent(syntheticHtml)}`,
+        };
+      }
+      return r;
+    });
+
     if (fir.finalFormType && !list.some((r) => r.reportType === fir.finalFormType)) {
+      const syntheticHtml = generateIIFVChargesheetHtmlFromFir(fir, undefined, currentUser);
       list.unshift({
         id: `final-form-${fir.id}`,
         complaintId: fir.id,
@@ -816,13 +838,16 @@ export default function FIRProfilePage() {
         }\n\nSummary of Findings:\n${
           fir.finalFormSummary || "Final form submitted on conclusion of investigation."
         }`,
+        contentHtml: syntheticHtml,
+        dataUrl: `data:text/html;charset=utf-8,${encodeURIComponent(syntheticHtml)}`,
+        fileFormat: "Official I.I.F.-V (Statutory Document)",
         status: "Saved in Complaint",
         versionNumber: 1,
         createdAt: fir.finalFormDate || fir.createdAt,
       });
     }
     return list;
-  }, [fir]);
+  }, [fir, currentUser]);
 
   const handleGenerateDocumentTemplate = (templateKey: string) => {
     if (!fir) return;
@@ -962,6 +987,11 @@ export default function FIRProfilePage() {
     if (!fir) return;
     setGenerateReportDropdownOpen(false);
 
+    if (typeKey === "CHARGESHEET" || typeKey === "CLOSURE" || typeKey === "UNTRACED" || typeKey === "CANCELLED") {
+      router.push(`/fir-workspace/drafts?firId=${encodeURIComponent(fir.id)}&type=${typeKey}`);
+      return;
+    }
+
     let title = "";
     const repType = typeKey;
     const dispatchNo = `DISP/${fir.firYear || 2026}/${fir.firNumber.replace(/[^0-9]/g, "").slice(-4) || "001"}/${typeKey}`;
@@ -1100,9 +1130,19 @@ export default function FIRProfilePage() {
       link.click();
       document.body.removeChild(link);
     } else {
+      const isChargesheetOrFinal =
+        report.reportType === "CHARGESHEET" ||
+        report.reportType === "CLOSURE" ||
+        report.reportType === "UNTRACED" ||
+        report.reportType === "CANCELLED" ||
+        report.title?.toLowerCase().includes("final form") ||
+        report.title?.toLowerCase().includes("chargesheet");
+
       const html =
         report.contentHtml ||
-        `
+        (isChargesheetOrFinal && fir
+          ? generateIIFVChargesheetHtmlFromFir(fir, report, currentUser)
+          : `
         <div style="font-family: 'Times New Roman', Times, serif; padding: 25px; line-height: 1.6; color: #000;">
           <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
             <h2 style="margin: 0; text-transform: uppercase;">Haryana Police</h2>
@@ -1118,7 +1158,7 @@ export default function FIRProfilePage() {
             report.content || report.conclusionSummary || ""
           }</div>
         </div>
-      `;
+      `);
       downloadA4DocumentAsHtml(
         html,
         report.fileName || `${(report.dispatchNo || "POLICE_REPORT").replace(/[\/\\?%*:|"<>]/g, "_")}.html`,
@@ -1128,9 +1168,19 @@ export default function FIRProfilePage() {
   };
 
   const handlePrintReport = (report: ComplaintReportItem) => {
+    const isChargesheetOrFinal =
+      report.reportType === "CHARGESHEET" ||
+      report.reportType === "CLOSURE" ||
+      report.reportType === "UNTRACED" ||
+      report.reportType === "CANCELLED" ||
+      report.title?.toLowerCase().includes("final form") ||
+      report.title?.toLowerCase().includes("chargesheet");
+
     const html =
       report.contentHtml ||
-      `
+      (isChargesheetOrFinal && fir
+        ? generateIIFVChargesheetHtmlFromFir(fir, report, currentUser)
+        : `
       <div style="font-family: 'Times New Roman', Times, serif; padding: 25px; line-height: 1.6; color: #000;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
           <h2 style="margin: 0; text-transform: uppercase;">Haryana Police</h2>
@@ -1146,7 +1196,7 @@ export default function FIRProfilePage() {
           report.content || report.conclusionSummary || ""
         }</div>
       </div>
-    `;
+    `);
     printHtmlContent(html, report.title);
   };
 
@@ -2392,7 +2442,7 @@ export default function FIRProfilePage() {
               {/* Final Report Button */}
               <Button
                 size="sm"
-                onClick={() => setIsFinalReportModalOpen(true)}
+                onClick={() => router.push(`/fir-workspace/drafts?firId=${encodeURIComponent(fir.id)}&type=CHARGESHEET`)}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
               >
                 <Scale className="w-3.5 h-3.5" />
@@ -3233,109 +3283,136 @@ export default function FIRProfilePage() {
       )}
 
       {/* MODAL: REPORT PREVIEW */}
-      {reportPreviewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            onClick={() => setReportPreviewItem(null)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
-            <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="min-w-0 pr-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                    {reportPreviewItem.reportTypeLabel || reportPreviewItem.reportType}
-                  </span>
-                  <span className="text-xs font-mono text-slate-400">
-                    {reportPreviewItem.dispatchNo || "DISP/2026/FIR"}
-                  </span>
-                </div>
-                <h3 className="font-bold text-sm sm:text-base text-white truncate mt-0.5">
-                  {reportPreviewItem.title}
-                </h3>
-              </div>
+      {reportPreviewItem && (() => {
+        const isChargesheetOrFinal =
+          reportPreviewItem.reportType === "CHARGESHEET" ||
+          reportPreviewItem.reportType === "CLOSURE" ||
+          reportPreviewItem.reportType === "UNTRACED" ||
+          reportPreviewItem.reportType === "CANCELLED" ||
+          reportPreviewItem.title?.toLowerCase().includes("final form") ||
+          reportPreviewItem.title?.toLowerCase().includes("chargesheet");
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handlePrintReport(reportPreviewItem)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
-                  title="Print authentic legal report"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print A4</span>
-                </button>
+        const previewHtml =
+          reportPreviewItem.contentHtml ||
+          (isChargesheetOrFinal && fir
+            ? generateIIFVChargesheetHtmlFromFir(fir, reportPreviewItem, currentUser)
+            : undefined);
 
-                <button
-                  type="button"
-                  onClick={() => handleDownloadReport(reportPreviewItem)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
-                  title="Download report file"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setReportPreviewItem(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 flex items-center justify-center min-h-[400px]">
-              <div className="w-full max-w-3xl bg-white p-8 rounded-xl border border-slate-300 shadow-sm font-sans text-xs sm:text-sm text-slate-900 leading-relaxed space-y-4">
-                <div className="text-center pb-3 border-b-2 border-slate-900">
-                  <div className="inline-block px-3 py-1 bg-slate-900 text-white font-mono font-bold text-[10px] rounded uppercase mb-1">
-                    State Police Department • State of Haryana
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+              onClick={() => setReportPreviewItem(null)}
+            />
+            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+              <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div className="min-w-0 pr-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                      {reportPreviewItem.reportTypeLabel || reportPreviewItem.reportType}
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">
+                      {reportPreviewItem.dispatchNo || "DISP/2026/FIR"}
+                    </span>
                   </div>
-                  <h3 className="font-black text-base tracking-wider uppercase text-slate-900">
-                    HARYANA POLICE
+                  <h3 className="font-bold text-sm sm:text-base text-white truncate mt-0.5">
+                    {reportPreviewItem.title}
                   </h3>
-                  <p className="text-xs font-bold text-slate-700 uppercase">{reportPreviewItem.title}</p>
-                  <div className="flex items-center justify-center gap-4 text-[11px] font-mono text-slate-500 mt-1">
-                    <span>Dispatch No: {reportPreviewItem.dispatchNo || "N/A"}</span>
-                    <span>•</span>
-                    <span>Date: {formatDate(reportPreviewItem.generatedDate)}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 font-semibold mt-1">
-                    FIR No: {fir.firNumber} | Police Station: {fir.policeStation} | District: {fir.district}
-                  </p>
                 </div>
 
-                <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans pt-2">
-                  {reportPreviewItem.content || reportPreviewItem.conclusionSummary || "Statutory report drafted for judicial submission."}
-                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handlePrintReport(reportPreviewItem)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                    title="Print authentic legal report"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print A4</span>
+                  </button>
 
-                <div className="pt-8 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
-                  <div>
-                    <p className="font-bold text-slate-800">Station House Officer</p>
-                    <p className="text-[11px] text-slate-500">Police Station {fir.policeStation}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-800">
-                      {reportPreviewItem.officerName || fir.assignedIoName || "Investigating Officer"}
-                    </p>
-                    <p className="text-[11px] text-slate-500 font-mono">
-                      {reportPreviewItem.officerRank || "IO / SI"} • CMS Verified
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadReport(reportPreviewItem)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+                    title="Download report file"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReportPreviewItem(null)}
+                    className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-            </div>
 
-            <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
-              <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
-              <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
-                Close Preview
-              </Button>
+              {previewHtml ? (
+                /* Authentic Statutory A4 Proforma (Identical to Step 2 Statutory Preview) */
+                <div className="flex-1 w-full bg-slate-100 overflow-hidden flex flex-col">
+                  <iframe
+                    title={reportPreviewItem.title}
+                    srcDoc={previewHtml}
+                    className="w-full h-full border-0 bg-white"
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 flex items-center justify-center min-h-[400px]">
+                  <div className="w-full max-w-3xl bg-white p-8 rounded-xl border border-slate-300 shadow-sm font-sans text-xs sm:text-sm text-slate-900 leading-relaxed space-y-4">
+                    <div className="text-center pb-3 border-b-2 border-slate-900">
+                      <div className="inline-block px-3 py-1 bg-slate-900 text-white font-mono font-bold text-[10px] rounded uppercase mb-1">
+                        State Police Department • State of Haryana
+                      </div>
+                      <h3 className="font-black text-base tracking-wider uppercase text-slate-900">
+                        HARYANA POLICE
+                      </h3>
+                      <p className="text-xs font-bold text-slate-700 uppercase">{reportPreviewItem.title}</p>
+                      <div className="flex items-center justify-center gap-4 text-[11px] font-mono text-slate-500 mt-1">
+                        <span>Dispatch No: {reportPreviewItem.dispatchNo || "N/A"}</span>
+                        <span>•</span>
+                        <span>Date: {formatDate(reportPreviewItem.generatedDate)}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 font-semibold mt-1">
+                        FIR No: {fir.firNumber} | Police Station: {fir.policeStation} | District: {fir.district}
+                      </p>
+                    </div>
+
+                    <div className="whitespace-pre-wrap text-slate-800 leading-relaxed font-sans pt-2">
+                      {reportPreviewItem.content || reportPreviewItem.conclusionSummary || "Statutory report drafted for judicial submission."}
+                    </div>
+
+                    <div className="pt-8 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                      <div>
+                        <p className="font-bold text-slate-800">Station House Officer</p>
+                        <p className="text-[11px] text-slate-500">Police Station {fir.policeStation}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-slate-800">
+                          {reportPreviewItem.officerName || fir.assignedIoName || "Investigating Officer"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 font-mono">
+                          {reportPreviewItem.officerRank || "IO / SI"} • CMS Verified
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+                <span>Date: {formatDate(reportPreviewItem.generatedDate)} • Officer: {reportPreviewItem.officerName}</span>
+                <Button variant="outline" size="sm" onClick={() => setReportPreviewItem(null)}>
+                  Close Preview
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MODAL: UPLOAD SIGNED REPORT */}
       {uploadReportModalOpen && (

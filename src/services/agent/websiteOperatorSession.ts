@@ -118,7 +118,11 @@ export class WebsiteOperatorSession {
           this.publish('planning','AI planning');
           const res=await fetch('/api/cms-agent/operator',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.any([AbortSignal.timeout(110000),this.controller!.signal]),body:JSON.stringify({text:redactSensitiveText(text),snapshot:privatePlanningSnapshot(snapshot,text),history:this.history.slice(-10).map(h=>({...h,text:redactSensitiveText(h.text)})),attachments:this.attachments.map(a=>({...a,text:redactSensitiveText(a.text)}))})});
           if(res.ok) {plan=await res.json();usedModel=true;}
-          else {this.stepFailed=true;this.retryText=text;this.experience.metrics.failures++;this.record('planning','failed');return 'AI planner unavailable है। Configuration/quota check करें या page और field का exact नाम दें।';}
+          else {const detail=await res.json().catch(()=>({}));this.stepFailed=true;this.retryText=text;this.experience.metrics.failures++;this.record('planning','failed');
+            const code=String(detail.error||'').match(/\((\d{3})\)/)?.[1];
+            if(code==='503'||code==='502'||code==='504')return 'AI provider अभी temporarily unavailable है (HTTP '+code+')। Command execute नहीं हुई। थोड़ी देर बाद retry कहें; page खोलने के लिए उसका exact नाम भी बोल सकते हैं।';
+            if(code==='429')return 'AI provider की quota/rate limit पूरी हो गई है (HTTP 429)। Command execute नहीं हुई। Quota उपलब्ध होने पर retry करें।';
+            return 'AI planner response उपलब्ध नहीं है। Command execute नहीं हुई। Page/field का exact नाम दें या retry करें।';}
         } catch {if(generation!==this.generation)return 'Task रोक दिया।';this.stepFailed=true;this.retryText=text;this.experience.metrics.failures++;this.record('planning','failed');return 'AI planner response नहीं मिला; command execute नहीं की।';}
       }
     }
@@ -131,8 +135,9 @@ export class WebsiteOperatorSession {
     }
     if(plan.choices?.length){this.choices={path:snapshot.path,fingerprint:JSON.stringify(snapshot.controls),items:plan.choices};this.experience.choices=plan.choices.map(c=>c.label);this.experience.metrics.questions++;this.publish('question');this.stepFailed=true;return plan.question||'एक option चुनें।';}
     const results:string[]=[];
-    for(const action of plan.actions)if(action.type==='fill'){const field=snapshot.controls.find(c=>c.id===action.id);if(field)action.value=normaliseFieldValue(field,action.value);}
-    if(usedModel && !reviewed && plan.actions.some(a=>a.type==='fill')){
+    let convertedDate=false;
+    for(const action of plan.actions)if(action.type==='fill'){const field=snapshot.controls.find(c=>c.id===action.id);if(field){const normalized=normaliseFieldValue(field,action.value);if(['date','time'].includes(field.type)&&normalized!==action.value)convertedDate=true;action.value=normalized;}}
+    if((usedModel || convertedDate) && !reviewed && plan.actions.some(a=>a.type==='fill')){
       this.review={path:snapshot.path,fingerprint:JSON.stringify(snapshot.controls),plan,text};
       this.experience.review=plan.actions.filter(a=>a.type==='fill').map(a=>({label:snapshot.controls.find(c=>c.id===a.id)?.label||a.id,before:snapshot.controls.find(c=>c.id===a.id)?.value||'',after:a.value}));
       this.publish('review');return 'AI ने ये field changes प्रस्तावित किए हैं। Existing/source facts में conflict हो तो सुधार बताएं। Apply के लिए हाँ, रोकने के लिए cancel।';
@@ -155,6 +160,8 @@ export class WebsiteOperatorSession {
       const live=this.bridge.snapshot();
       const target=live.controls.find(c=>c.id===action.id);
       if(!target) {this.stepFailed=true;results.push('Screen बदल गई; अगले step के लिए current field/button बताएं।');break;}
+      const original=snapshot.controls.find(c=>c.id===action.id);
+      if(action.type==='fill' && original?.value!==target.value){this.stepFailed=true;results.push(`${target.label} planning के बाद बदला है। Manual edit overwrite नहीं की।`);break;}
       if(action.type==='click' && this.bridge.requiresApproval(target)) {
         const missing=live.controls.find(missingRequired);
         if(missing && /save|submit|register|सहेज|जमा/i.test(target.label)) {

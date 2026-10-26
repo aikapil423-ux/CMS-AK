@@ -290,6 +290,7 @@ export const ProsecutionService = {
       localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(updated));
     } catch (e) {
       console.error("Failed to save scrutiny record", e);
+      throw new Error('Scrutiny record could not be saved. Check browser storage and retry.');
     }
   },
 
@@ -447,6 +448,8 @@ export const ProsecutionService = {
   // Helper to get all FIR options for dropdowns
   getAvailableFirs: () => {
     return firService.getAllFirs().map((f) => ({
+      id: f.id,
+      district: f.district,
       firNumber: f.firNumber,
       policeStation: f.policeStation,
       actsAndSections: f.actsAndSections || "BNS",

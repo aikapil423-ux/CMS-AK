@@ -51,6 +51,7 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
 import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
+import { isUserAssignedIo } from "@/lib/firIntegrity";
 
 type FIRSortField =
   | "firNumber"
@@ -360,14 +361,18 @@ function FIRRegisterPageContent() {
       const data = firService.getAllFirs();
       setFirs(data);
 
-      const underInvestigation = data.filter((f) => f.status === "UNDER_INVESTIGATION").length;
-      const chargesheetFiled = data.filter((f) => f.status === "CHARGESHEET_FILED").length;
-      const closureFiled = data.filter((f) => f.status === "CLOSURE_REPORT_FILED").length;
-      const untracedCancelled = data.filter((f) => f.status === "UNTRACED" || f.status === "CANCELLED").length;
-      const pendingReview = data.filter((f) => f.status === "PENDING_SUPERVISORY_REVIEW").length;
+      const relevantData = isIo && !isSho && !isSuperior && !isMhc
+        ? data.filter((f) => isUserAssignedIo(currentUser, f))
+        : data;
+
+      const underInvestigation = relevantData.filter((f) => f.status === "UNDER_INVESTIGATION").length;
+      const chargesheetFiled = relevantData.filter((f) => f.status === "CHARGESHEET_FILED").length;
+      const closureFiled = relevantData.filter((f) => f.status === "CLOSURE_REPORT_FILED").length;
+      const untracedCancelled = relevantData.filter((f) => f.status === "UNTRACED" || f.status === "CANCELLED").length;
+      const pendingReview = relevantData.filter((f) => f.status === "PENDING_SUPERVISORY_REVIEW").length;
 
       setStatusCounts({
-        all: data.length,
+        all: relevantData.length,
         underInvestigation,
         chargesheetFiled,
         closureFiled,
@@ -411,10 +416,7 @@ function FIRRegisterPageContent() {
 
       // IO Filter for logged in IO
       if (isIo && !isSho && !isSuperior && !isMhc) {
-        const matchesIo =
-          fir.assignedIoId === currentUser.id ||
-          fir.assignedIoName?.toLowerCase().includes(currentUser.name.toLowerCase());
-        if (!matchesIo) return false;
+        if (!isUserAssignedIo(currentUser, fir)) return false;
       }
 
       // Search Filter
@@ -1266,10 +1268,12 @@ function FIRRegisterPageContent() {
                 <tr>
                   <td colSpan={8} className="py-12 text-center">
                     <EmptyState
-                      title="No FIRs Found"
+                      title={isIo ? `No FIRs Assigned to ${currentUser.name}` : "No FIRs Found"}
                       description={
                         searchQuery || dateFrom || dateTo
                           ? "No FIR records matched your search terms or date filter."
+                          : isIo
+                          ? "You currently have no First Information Reports assigned for investigation."
                           : "No First Information Reports in the selected category."
                       }
                     />

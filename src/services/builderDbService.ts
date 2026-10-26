@@ -91,7 +91,7 @@ export const BuilderDbService = {
       });
     } catch (err) {
       console.error("BuilderDbService.getTemplates error:", err);
-      return [];
+      throw new Error('Templates could not be loaded. Please retry.');
     }
   },
 
@@ -210,7 +210,7 @@ export const BuilderDbService = {
       });
     } catch (err) {
       console.error("BuilderDbService.getDrafts error:", err);
-      return [];
+      throw new Error('Drafts could not be loaded. Please retry.');
     }
   },
 

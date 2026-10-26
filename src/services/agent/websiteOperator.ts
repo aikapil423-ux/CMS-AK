@@ -32,6 +32,9 @@ export function splitWorkflow(text:string):string[] {
 
 // Normalize command vocabulary only. Field values retain the user's original text.
 const commandAliases: [RegExp, string][] = [
+  [/रजिस्टर|रेजिस्टर/gu, 'register'],
+  [/कंप्लेंट|कम्प्लेंट|कंप्लेन्ट|कम्प्लेन्ट/gu, 'complaint'],
+  [/पेज/gu, 'page'],
   [/टेम्पलेट(?:्स)?|टेंपलेट(?:्स)?|प्रारूप|\btemplates?\b/gu, 'template'],
   [/बटन|\bbuttons?\b/gu, 'button'],
   [/फील्ड इन्क्वायरी|फील्ड एनक्वायरी|जांच कार्यक्षेत्र|जाँच कार्यक्षेत्र|\bfield enquiry\b|\benquiry workspace\b/gu, 'enquiry'],

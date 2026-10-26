@@ -1,4 +1,5 @@
 "use client";
+import { useUnsavedDocument } from "@/hooks/useUnsavedDocument";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
@@ -511,7 +512,9 @@ function FIRTemplateBuilderContent() {
   const [docCategory, setDocCategory] = useState("Witness Statement");
   const [docDescription, setDocDescription] = useState("Statement recorded under Section 180 BNSS");
   const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
+  const [libraryError,setLibraryError]=useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  useUnsavedDocument(hasUnsavedChanges);
   const [saveStatus, setSaveStatus] = useState<string>("Ready");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
@@ -542,13 +545,14 @@ function FIRTemplateBuilderContent() {
     if (queryFirId) {
       const match = all.find((f) => f.id === queryFirId || f.firNumber === queryFirId);
       if (match) setSelectedFir(match);
-    } else if (all.length > 0) {
-      setSelectedFir(all[0]);
+    } else {
+      setSelectedFir(null);
     }
   }, [queryFirId]);
 
   // Load Saved Custom Templates from localStorage and API
   const loadSavedTemplates = useCallback(async () => {
+    setLibraryError("");
     let localCustom: FIRInvestigationTemplate[] = [];
     try {
       const raw = localStorage.getItem(FIR_CUSTOM_TEMPLATES_STORAGE_KEY);
@@ -583,6 +587,7 @@ function FIRTemplateBuilderContent() {
       }
     } catch (e) {
       console.warn("BuilderService fetch failed, using local", e);
+      setLibraryError("Server template library unavailable. Only locally available templates are shown.");
     }
 
     setSavedTemplates(localCustom);
@@ -1061,6 +1066,7 @@ function FIRTemplateBuilderContent() {
 
   return (
     <div className="space-y-4 animate-in fade-in-50 pb-20">
+      {libraryError && <p role="alert" className="p-3 text-sm text-red-700 bg-red-50">{libraryError}<button type="button" className="ml-3 underline" onClick={()=>void loadSavedTemplates()}>Retry</button></p>}
       {/* 1. Sub-navigation tabs */}
       <FIRWorkspaceNav
         firId={selectedFir?.id}
@@ -1123,6 +1129,7 @@ function FIRTemplateBuilderContent() {
               onChange={(e) => handleFirChange(e.target.value)}
               className="text-xs font-semibold bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-xs"
             >
+              <option value="" disabled>-- Select FIR (Required) --</option>
               {firsList.map((fir) => (
                 <option key={fir.id} value={fir.id}>
                   {fir.firNumber} — {fir.complainantName} ({fir.policeStation})

@@ -1,3 +1,4 @@
+import { comparativeCrimeRows } from "@/lib/reportIntegrity";
 import {
   CrimeSitrepData,
   WeeklyCrimeDiaryData,
@@ -107,7 +108,7 @@ export const ReportsService = {
 
   // 1. DYNAMIC CRIME SITREP (Strict 24-hr audit of the back day of latest date)
   getCrimeSitrep: async (filterDate?: string, filterStation?: string, district?: string): Promise<CrimeSitrepData> => {
-    const activeDistrict = (district || "Panipat").toUpperCase();
+    const activeDistrict = (district || "Kurukshetra").toUpperCase();
 
     const allFirs = firService.getAllFirs();
     const allGd = await GeneralDiaryService.getEntries();
@@ -435,8 +436,8 @@ export const ReportsService = {
     const activeStation = filterStation && filterStation !== "ALL" ? filterStation : "PS City Thanesar";
     const activeDistrict = district || "Kurukshetra";
 
-    const allFirs = firService.getAllFirs();
-    const allComplaints = await ComplaintService.getComplaints();
+    const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
+    const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
     const stationUsers = DEMO_USERS.filter(
       (u) => !u.stationName || u.stationName.toLowerCase().includes(activeStation.toLowerCase())
     );
@@ -566,75 +567,10 @@ export const ReportsService = {
   // 3. DYNAMIC IGP MEETING PRESENTATION (Computed live from website cases)
   getIgpPresentationData: async (district?: string): Promise<IgpPresentationData> => {
     const activeDistrict = district || "Kurukshetra";
-    const allFirs = firService.getAllFirs();
-    const allComplaints = await ComplaintService.getComplaints();
+    const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
+    const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
 
-    // Group actual FIRs by category
-    const categoriesCount = {
-      person: allFirs.filter((f) => f.category === "CRIME_AGAINST_PERSON" || f.actsAndSections?.includes("302") || f.actsAndSections?.includes("307")).length,
-      women: allFirs.filter((f) => f.category === "CRIME_AGAINST_WOMEN_CHILDREN" || f.actsAndSections?.includes("376") || f.actsAndSections?.includes("498A")).length,
-      property: allFirs.filter((f) => f.category === "PROPERTY_THEFT_BURGLARY" || f.actsAndSections?.includes("379") || f.actsAndSections?.includes("380")).length,
-      lsl: allFirs.filter((f) => f.category === "ARMS_EXCISE_NDPS_ACT" || f.actsAndSections?.toLowerCase().includes("act")).length,
-    };
-
-    const comparativeRows: ComparativeCrimeRow[] = [
-      {
-        category: "Crime Against Person",
-        head: "Bodily Offences (Murder/Hurt)",
-        reg2025: 0,
-        reg2026: categoriesCount.person,
-        change: categoriesCount.person,
-        changePct: 0.0,
-        workoutPct2025: 0.0,
-        workoutPct2026: categoriesCount.person > 0 ? 100.0 : 0.0,
-        workoutChange: 0.0,
-        arrestRate2025: 0.0,
-        arrestRate2026: categoriesCount.person > 0 ? 100.0 : 0.0,
-        arrestRateChange: 0.0,
-      },
-      {
-        category: "Crime Against Women",
-        head: "Women Safety & Domestic Offences",
-        reg2025: 0,
-        reg2026: categoriesCount.women,
-        change: categoriesCount.women,
-        changePct: 0.0,
-        workoutPct2025: 0.0,
-        workoutPct2026: categoriesCount.women > 0 ? 100.0 : 0.0,
-        workoutChange: 0.0,
-        arrestRate2025: 0.0,
-        arrestRate2026: categoriesCount.women > 0 ? 100.0 : 0.0,
-        arrestRateChange: 0.0,
-      },
-      {
-        category: "Crime Against Property",
-        head: "Theft, Burglary & Robbery",
-        reg2025: 0,
-        reg2026: categoriesCount.property,
-        change: categoriesCount.property,
-        changePct: 0.0,
-        workoutPct2025: 0.0,
-        workoutPct2026: categoriesCount.property > 0 ? 100.0 : 0.0,
-        workoutChange: 0.0,
-        arrestRate2025: 0.0,
-        arrestRate2026: categoriesCount.property > 0 ? 100.0 : 0.0,
-        arrestRateChange: 0.0,
-      },
-      {
-        category: "Local and Special Laws",
-        head: "Arms, Excise & Special Acts",
-        reg2025: 0,
-        reg2026: categoriesCount.lsl,
-        change: categoriesCount.lsl,
-        changePct: 0.0,
-        workoutPct2025: 0.0,
-        workoutPct2026: categoriesCount.lsl > 0 ? 100.0 : 0.0,
-        workoutChange: 0.0,
-        arrestRate2025: 0.0,
-        arrestRate2026: categoriesCount.lsl > 0 ? 100.0 : 0.0,
-        arrestRateChange: 0.0,
-      },
-    ];
+    const comparativeRows = comparativeCrimeRows(allFirs);
 
     // Station UI pendency dynamically counted per station
     const stationsSet = Array.from(new Set(allFirs.map((f) => f.policeStation || "PS City Thanesar")));
@@ -776,7 +712,7 @@ export const ReportsService = {
   },
 
   generateAndSaveCrimeSitrep: async (district?: string, referenceDate?: string): Promise<SavedReportEntry> => {
-    const activeDistrict = (district || "Panipat").toUpperCase();
+    const activeDistrict = (district || "Kurukshetra").toUpperCase();
     const sitrep = await ReportsService.getCrimeSitrep(referenceDate, undefined, activeDistrict);
     const reportId = `SITREP-${activeDistrict}-${Date.now().toString().slice(-6)}`;
     sitrep.id = reportId;

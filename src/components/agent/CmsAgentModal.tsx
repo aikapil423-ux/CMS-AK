@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { WebsiteOperatorSession } from '@/services/agent/websiteOperatorSession';
 import { newExperience, type OperatorExperience } from '@/services/agent/operatorExperience';
 import { readOperatorAttachment } from '@/services/agent/operatorAttachment';
+import { voiceTurn } from '@/services/agent/operatorVoice';
 
 type Message={id:string;sender:'user'|'agent';text:string;feedback?:boolean};
 interface CmsAgentModalProps {isOpen:boolean;onClose:()=>void;anchorPosition:{x:number;y:number}}
@@ -215,53 +216,56 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   }, [size, position]);
 
   const sessionRef=useRef<WebsiteOperatorSession|null>(null);
+  const attachmentAbortRef=useRef<AbortController|null>(null);
+  const voiceTurnRef=useRef<ReturnType<typeof voiceTurn>|null>(null);
+  const busyRef=useRef(false);
+  const sendRef=useRef<(text:string)=>void>(()=>{});sendRef.current=text=>{void send(text);};
   const recognitionRef=useRef<any>(null);const uploadRef=useRef<HTMLInputElement>(null);const endRef=useRef<HTMLDivElement>(null);
   const spokenRef=useRef(spoken);spokenRef.current=spoken;
   const append=(text:string)=>setMessages(prev=>[...prev,{id:crypto.randomUUID(),sender:'agent',text}]);
   useEffect(()=>{
     const session=new WebsiteOperatorSession(setExperience);sessionRef.current=session;setExperience(newExperience());setMessages([welcome]);setFiles([]);setInput('');
-    return ()=>{session.clear();if(sessionRef.current===session)sessionRef.current=null;};
+    return ()=>{voiceTurnRef.current?.cancel();recognitionRef.current?.abort();attachmentAbortRef.current?.abort();session.clear();if(sessionRef.current===session)sessionRef.current=null;};
   },[currentUser.id,isAuthenticated]);
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'});},[messages,experience.phase]);
   useEffect(()=>{
     const Recognition=(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if(!Recognition)return;
     const recognition=new Recognition();recognition.lang=lang;recognition.continuous=false;recognition.interimResults=true;
-    recognition.onstart=()=>setListening(true);recognition.onend=()=>setListening(false);
-    recognition.onerror=(event:any)=>{setListening(false);setError(`Voice input: ${event.error}. Text se command de sakte hain.`);};
-    recognition.onresult=(event:any)=>{
-      let transcript='';for(let i=event.resultIndex;i<event.results.length;i++)transcript+=event.results[i][0].transcript;
-      if(/^(stop|ruko|रुको)$/i.test(transcript.trim())){sessionRef.current?.stop();window.speechSynthesis?.cancel();return;}
-      setInput(transcript); // User can correct names/numbers before sending.
-    };
+    recognition.onstart=()=>{setListening(true);voiceTurnRef.current=voiceTurn(setInput,text=>sendRef.current(text),stop);};
+    recognition.onend=()=>{setListening(false);voiceTurnRef.current?.end();};
+    recognition.onerror=(event:any)=>{voiceTurnRef.current?.cancel();setListening(false);setError(`Voice input: ${event.error}. Text se command de sakte hain.`);};
+    recognition.onresult=(event:any)=>voiceTurnRef.current?.result(event);
     recognitionRef.current=recognition;
-    return ()=>{recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort();recognitionRef.current=null;};
+    return ()=>{voiceTurnRef.current?.cancel();recognition.onstart=null;recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort();recognitionRef.current=null;};
   },[lang]);
-  useEffect(()=>{if(!isOpen){recognitionRef.current?.abort();window.speechSynthesis?.cancel();}},[isOpen]);
+  useEffect(()=>{if(!isOpen){voiceTurnRef.current?.cancel();recognitionRef.current?.abort();window.speechSynthesis?.cancel();}},[isOpen]);
   useEffect(()=>()=>window.speechSynthesis?.cancel(),[]);
   async function send(text=input){
-    if(!text.trim()||loading)return;
+    if(!text.trim())return;
+    if(busyRef.current||loading){setInput(text);setError('Pehla command chal raha hai. Yeh command draft mein hai; complete hone par bhejein.');return;}
     if(!isAuthenticated){setError('Pehle sign in karein.');return;}
     const session=sessionRef.current;if(!session)return;
+    busyRef.current=true;voiceTurnRef.current?.cancel();recognitionRef.current?.abort();
     setMessages(prev=>[...prev,{id:crypto.randomUUID(),sender:'user',text}]);setInput('');setLoading(true);setError('');
     try{
       const answer=await session.run(text,path=>router.push(path));
       if(sessionRef.current!==session)return;
       append(answer);
       if(spokenRef.current && 'speechSynthesis' in window){window.speechSynthesis.cancel();const speech=new SpeechSynthesisUtterance(answer);speech.lang=lang;window.speechSynthesis.speak(speech);}
-    }catch(e){setError(e instanceof Error?e.message:'Command failed');}finally{setLoading(false);}
+    }catch(e){setError(e instanceof Error?e.message:'Command failed');}finally{busyRef.current=false;setLoading(false);}
   }
   async function upload(event:React.ChangeEvent<HTMLInputElement>){
     const file=event.target.files?.[0];event.target.value='';if(!file||loading)return;
-    const session=sessionRef.current;setLoading(true);setError('');
+    const session=sessionRef.current;const controller=new AbortController();attachmentAbortRef.current=controller;setLoading(true);setError('');
     try{
-      const result=await readOperatorAttachment(file);if(!session||session!==sessionRef.current)return;
+      const result=await readOperatorAttachment(file,controller.signal);if(controller.signal.aborted||!session||session!==sessionRef.current)return;
       session.addAttachment(file.name,result.text);
       setFiles(prev=>[...prev,{name:file.name,summary:result.summary,preview:result.text,uncertainties:result.uncertainties}].slice(-3));
       append(`${file.name}: ${result.summary} Extracted facts/source preview dekhkar batayein kya karna hai. Unclear details guess nahi ki jayengi.`);
-    }catch(e){setError(e instanceof Error?e.message:'Attachment failed');}finally{setLoading(false);}
+    }catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Attachment failed');}finally{if(attachmentAbortRef.current===controller){attachmentAbortRef.current=null;setLoading(false);}}
   }
-  function stop(){sessionRef.current?.stop();recognitionRef.current?.abort();window.speechSynthesis?.cancel();}
+  function stop(){voiceTurnRef.current?.cancel();attachmentAbortRef.current?.abort();sessionRef.current?.stop();recognitionRef.current?.abort();window.speechSynthesis?.cancel();}
   function reset(){stop();const session=new WebsiteOperatorSession(setExperience);sessionRef.current=session;setExperience(newExperience());setMessages([welcome]);setFiles([]);setInput('');setError('');}
   function exportReport(){const data=sessionRef.current?.report();const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='cms-agent-quality-report.json';a.click();URL.revokeObjectURL(url);}
   if(!isOpen)return null;
@@ -400,7 +404,7 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
         <input ref={uploadRef} type="file" accept=".txt,.csv,.md,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.webm,.ogg" className="hidden" onChange={upload}/>
         <button type="button" disabled={loading} aria-label="Attach document or audio" onClick={()=>uploadRef.current?.click()}><Paperclip size={18}/></button>
         <button type="button" aria-label={listening?'Stop microphone':'Start microphone'} onClick={()=>{if(listening)recognitionRef.current?.stop();else if(recognitionRef.current){try{recognitionRef.current.start();}catch{setError('Microphone busy; retry karein.');}}else setError('Voice recognition unavailable; text input use karein.');}}><Mic size={18} className={listening?'text-red-600':''}/></button>
-        <input aria-label="Agent command" placeholder="Kaam batayein; voice transcript yahan edit kar sakte hain…" value={input} onChange={e=>setInput(e.target.value)} className="flex-1 min-w-0 border rounded-lg p-2 text-xs"/>
+        <input aria-label="Agent command" placeholder="Mic par bolein; bolna khatam hone par command auto-send hogi…" value={input} onChange={e=>{voiceTurnRef.current?.cancel();setInput(e.target.value);}} className="flex-1 min-w-0 border rounded-lg p-2 text-xs"/>
         {loading?<button type="button" aria-label="Stop task" onClick={stop}><Square size={18}/></button>:<button type="submit" aria-label="Send command" disabled={!input.trim()}><Send size={18}/></button>}
       </form>
     </footer>

@@ -16,23 +16,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<UserSession>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedUserId = localStorage.getItem("haryana_police_cms_user");
-        if (savedUserId) {
-          const found = DEMO_USERS.find((u) => u.id === savedUserId);
-          if (found) return found;
-        }
-      } catch {}
-    }
-    return DEMO_USERS[0];
-  });
+  const [currentUser, setCurrentUser] = useState<UserSession>(DEMO_USERS[0]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
   // Initialize from localStorage if available on mount
   useEffect(() => {
     try {
+      setIsAuthenticated(localStorage.getItem("cms_demo_logged_out") !== "true");
       const savedUserId = localStorage.getItem("haryana_police_cms_user");
       if (savedUserId) {
         const found = DEMO_USERS.find((u) => u.id === savedUserId);
@@ -41,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {}
-  }, [currentUser.id]);
+  }, []);
 
   const switchUser = (userId: string) => {
     const found = DEMO_USERS.find((u) => u.id === userId);
@@ -50,6 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       if (typeof window !== "undefined") {
         try {
+          localStorage.removeItem("cms_demo_logged_out");
           localStorage.setItem("haryana_police_cms_user", userId);
           window.dispatchEvent(new CustomEvent("cms_user_switched", { detail: found }));
         } catch {}
@@ -70,11 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ) || DEMO_USERS[0];
     setCurrentUser(found);
     setIsAuthenticated(true);
+    localStorage.removeItem("cms_demo_logged_out");
     localStorage.setItem("haryana_police_cms_user", found.id);
     return true;
   };
 
   const logout = () => {
+    localStorage.setItem("cms_demo_logged_out", "true");
     setIsAuthenticated(false);
   };
 

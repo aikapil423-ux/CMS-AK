@@ -125,7 +125,7 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
               <h2 className="text-sm font-black text-slate-900 uppercase">
                 1. Comparative Crime Data Analysis (2-Year Snapshot)
               </h2>
-              <span className="text-[11px] text-slate-500 font-mono">01.01.2025 - 09.10.2026</span>
+              <span className="text-[11px] text-slate-500 font-mono">2025 / 2026 — available CMS records</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border border-slate-300 text-left">
@@ -136,8 +136,8 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
                     <th className="p-2 border-r border-slate-300 text-center w-20">2026 Regd.</th>
                     <th className="p-2 border-r border-slate-300 text-center w-20">Change</th>
                     <th className="p-2 border-r border-slate-300 text-center w-20">Change %</th>
-                    <th className="p-2 border-r border-slate-300 text-center w-24">2026 Workout %</th>
-                    <th className="p-2 text-center w-24">2026 Arrest Rate</th>
+                    <th className="p-2 border-r border-slate-300 text-center w-24">2026 Chargesheet %</th>
+                    <th className="p-2 text-center w-24">2026 Cases with Arrest %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">

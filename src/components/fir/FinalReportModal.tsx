@@ -23,7 +23,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FIRItem, ComplaintReportItem } from "@/types";
 import { firService } from "@/services/firService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
-import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml } from "@/utils/printElement";
+import { generateIIFVChargesheetHtml } from "@/utils/iifvChargesheetGenerator";
 
 interface ActSectionRow {
   sNo: number;
@@ -568,11 +569,66 @@ export function IIFVChargesheetForm({
     try {
       const now = new Date();
       const reportId = `rep_final_${Date.now()}`;
+
+      // Build or extract full statutory HTML matching preview
+      let fullHtml = "";
+      if (previewRef.current && previewRef.current.innerHTML.trim().length > 100) {
+        try {
+          fullHtml = getA4DocumentHtml(
+            previewRef.current,
+            `I.I.F.-V Final Report / Chargesheet - FIR No. ${fir.firNumber}`
+          );
+        } catch (e) {
+          console.warn("Could not extract from previewRef, generating directly:", e);
+        }
+      }
+
+      if (!fullHtml || fullHtml.length < 200) {
+        fullHtml = generateIIFVChargesheetHtml({
+          court,
+          district,
+          ps,
+          year,
+          firNo,
+          firDate,
+          reportNo,
+          reportDate,
+          actRows,
+          finalFormType: "Chargesheet",
+          ifChargeSheet: "Chargesheet",
+          ioName,
+          ioRank,
+          ioNo,
+          complainantName,
+          complainantFather,
+          propertyRows,
+          accusedPersonList,
+          accusedNotChargeSheeted,
+          witnessesList,
+          falseFirAction,
+          labAnalysis,
+          briefFacts,
+          referNoticeServed,
+          referNoticeDate,
+          referNoticeAck,
+          despatchedOn,
+          noOfEnclosures,
+          listOfEnclosures,
+          shoName,
+          shoRank,
+          shoNo,
+        });
+      }
+
+      const safeReportNo = (reportNo || "01").replace(/[\/\\?%*:|"<>]/g, "_");
+      const fileName = `IIF-V_Chargesheet_FIR_${fir.firNumber}_${safeReportNo}.html`;
+      const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`;
+
       const reportItem: ComplaintReportItem = {
         id: reportId,
         complaintId: fir.id,
         versionNumber: 1,
-        title: `Final Form / Chargesheet No. ${reportNo} - FIR No. ${fir.firNumber}`,
+        title: `I.I.F.-V Final Form / Chargesheet (Sec 193 BNSS) - FIR No. ${fir.firNumber}`,
         reportType: "CHARGESHEET",
         reportTypeLabel: "I.I.F.-V Final Form / Chargesheet (Sec 193 BNSS)",
         dispatchNo: `${reportNo}/C-1`,
@@ -582,13 +638,25 @@ export function IIFVChargesheetForm({
         officerPno: ioNo,
         conclusionSummary: `Statutory Police Report (IIF-V u/s 193 BNSS) submitted to ${court}. ${accusedPersonList.length} accused person(s) sent for trial under Section(s) ${actRows.map(r => r.sections).join(", ")}.`,
         content: `I.I.F.-V | FINAL FORM / REPORT UNDER SECTION 193 BNSS\nCourt: ${court}\nFIR No: ${firNo} dated ${firDate}\nDistrict: ${district}, PS: ${ps}\nChargesheet No: ${reportNo}\nIO: ${ioName} (${ioRank})\nBrief Facts: ${briefFacts}`,
-        fileFormat: "PDF / Official I.I.F.-V",
-        status: "Saved",
+        contentHtml: fullHtml,
+        dataUrl: dataUrl,
+        fileName: fileName,
+        fileFormat: "Official I.I.F.-V (Statutory Document)",
+        status: "Finalized",
         createdAt: now.toISOString(),
         createdBy: currentUser.id || currentUser.name || "IO",
       };
 
-      // 1. Add report to FIR
+      // 1. Submit final form in firService (updates FIR status to CHARGESHEET_FILED & timeline)
+      firService.submitFinalForm(
+        fir.id,
+        "CHARGESHEET",
+        court,
+        `${ioName} (${ioRank})`,
+        briefFacts
+      );
+
+      // 2. Add full statutory report to FIR
       firService.addReport(fir.id, reportItem);
 
       // 2. Add auto-suggestion in draft to Roznamcha GD

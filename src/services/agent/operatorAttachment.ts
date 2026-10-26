@@ -35,17 +35,20 @@ async function docxText(file:File):Promise<string> {
   throw Error('DOCX document text not found');
 }
 
-export async function readOperatorAttachment(file:File):Promise<OperatorAttachment> {
+export async function readOperatorAttachment(file:File,signal?:AbortSignal):Promise<OperatorAttachment> {
+  signal?.throwIfAborted();
   if(!file.size || file.size>8*1024*1024) throw Error('File खाली है या 8 MB से बड़ी है।');
   const ext=file.name.split('.').pop()?.toLowerCase();
   if(['txt','csv','md','json','docx'].includes(ext || '')) {
     const text=ext==='docx'?await docxText(file):await file.text();
+    signal?.throwIfAborted();
     if(!text.trim()) throw Error('File में readable text नहीं मिला।');
     if(text.length>40000) throw Error('File में 40,000 से अधिक characters हैं। छोटा document दें।');
     return {text,summary:`${text.length} characters पढ़े।`,uncertainties:[]};
   }
   const data=new FormData();data.append('file',file);
-  const res=await fetch('/api/cms-agent/attachment',{method:'POST',body:data,signal:AbortSignal.timeout(110000)});
+  const timeout=AbortSignal.timeout(110000);
+  const res=await fetch('/api/cms-agent/attachment',{method:'POST',body:data,signal:signal?AbortSignal.any([signal,timeout]):timeout});
   const result=await res.json();
   if(!res.ok || !result.text?.trim()) throw Error(result.error || 'File readable नहीं है; साफ copy upload करें।');
   return result;

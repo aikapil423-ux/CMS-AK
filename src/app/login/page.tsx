@@ -60,7 +60,7 @@ export default function LoginPage() {
           <div className="border-b border-slate-100 pb-3 mb-4">
             <h2 className="text-base font-bold text-slate-900">Police Personnel Login</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enter your official credentials to access station records
+              Demo access only — credentials are not verified. Do not use for production case data.
             </p>
           </div>
 

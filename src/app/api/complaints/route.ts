@@ -51,6 +51,7 @@ function writeComplaintsToFile(items: ComplaintItem[]): void {
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(items, null, 2), "utf-8");
   } catch (e) {
     console.error("Error writing complaints-store.json:", e);
+    throw new Error('Complaint could not be saved. Please retry.');
   }
 }
 

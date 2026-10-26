@@ -1042,19 +1042,19 @@ function NoticeTemplatesContent() {
 
           noticeeName: complaint?.complainantName || "Person Concerned / Entity",
           noticeeFather: complaint?.complainantFatherSpouse || "",
-          noticeeAge: "Adult",
+          noticeeAge: "",
           noticeeAddress: complaint?.complainantAddress || "Haryana",
           noticeePhone: complaint?.complainantMobile || "",
           noticeeRole: "Noticee / Recipient",
 
           complaintNo: complaint?.complaintNumber || "COMPLAINT-REF-01",
           complainantName: complaint?.complainantName || "State / Citizen",
-          incidentDate: new Date().toISOString().split("T")[0],
+          incidentDate: complaint?.incidentDate || "",
           sectionsOfLaw: "Statutory Police Proforma / BNSS",
           allegationsBrief: pData.subTitle || "Document proforma processed from uploaded file.",
 
-          appearanceDate: new Date().toISOString().split("T")[0],
-          appearanceTime: "11:00 AM",
+          appearanceDate: "",
+          appearanceTime: "",
           appearancePlace: pData.headerLeft || "Office of Enquiry Officer",
           documentsRequired: "Relevant documents and records",
 

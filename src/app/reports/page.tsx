@@ -10,11 +10,13 @@ import { IgpPresentationView } from "@/components/reports/IgpPresentationView";
 import { SavedReportsView } from "@/components/reports/SavedReportsView";
 import { FileBarChart, RefreshCw, BookmarkCheck } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from '@/context/AuthContext';
 
 function ReportsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isHindi } = useLanguage();
+  const { currentUser } = useAuth();
 
   const tabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState<ReportTab>(() => {
@@ -40,9 +42,9 @@ function ReportsContent() {
     setIsLoading(true);
     try {
       const [sitrep, weekly, igp] = await Promise.all([
-        ReportsService.getCrimeSitrep(),
-        ReportsService.getWeeklyCrimeDiary(),
-        ReportsService.getIgpPresentationData(),
+        ReportsService.getCrimeSitrep(undefined,undefined,currentUser.district),
+        ReportsService.getWeeklyCrimeDiary(currentUser.stationName,currentUser.district),
+        ReportsService.getIgpPresentationData(currentUser.district),
       ]);
       setSitrepData(sitrep);
       setWeeklyData(weekly);
@@ -56,7 +58,7 @@ function ReportsContent() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentUser.district,currentUser.stationName]);
 
   const handleAuditLive = async () => {
     setIsAuditing(true);
@@ -65,7 +67,7 @@ function ReportsContent() {
   };
 
   const handleGenerateAndSaveSITREP = async () => {
-    const generated = await ReportsService.generateAndSaveCrimeSitrep(sitrepData?.district || "PANIPAT");
+    const generated = await ReportsService.generateAndSaveCrimeSitrep(currentUser.district);
     setSitrepData(generated.data as CrimeSitrepData);
   };
 

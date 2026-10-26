@@ -503,9 +503,6 @@ function FIRTemplatesContent() {
   useEffect(() => {
     const list = firService.getAllFirs();
     setFirs(list);
-    if (!selectedFirId && list.length > 0) {
-      setSelectedFirId(list[0].id);
-    }
   }, []);
 
   const activeFir = firs.find((f) => f.id === selectedFirId || f.firNumber === selectedFirId);
@@ -867,6 +864,7 @@ function FIRTemplatesContent() {
               onChange={(e) => { if (noticeEdited && !confirm("Discard unsaved notice edits and switch FIR?")) return; setSelectedRecipient("default"); setSelectedFirId(e.target.value); }}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
             >
+              <option value="">-- Select FIR (Required) --</option>
               {firs.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.firNumber} — {f.actsAndSections.slice(0, 45)} ({f.complainantName})
