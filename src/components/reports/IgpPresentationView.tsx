@@ -153,7 +153,7 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
                         {row.change > 0 ? `+${row.change}` : row.change}
                       </td>
                       <td className={`p-1.5 border-r border-slate-300 text-center font-mono ${row.changePct < 0 ? "text-emerald-700 font-bold" : "text-red-700 font-bold"}`}>
-                        {row.changePct}%
+                        {row.reg2025 === 0 ? 'N/A' : `${row.changePct}%`}
                       </td>
                       <td className="p-1.5 border-r border-slate-300 text-center font-mono font-bold text-blue-900">{row.workoutPct2026}%</td>
                       <td className="p-1.5 text-center font-mono">{row.arrestRate2026}</td>

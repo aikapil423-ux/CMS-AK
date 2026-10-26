@@ -820,6 +820,7 @@ function FIRTemplatesContent() {
           <Button
             size="sm"
             onClick={handlePrint}
+            disabled={!activeFir}
             className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" />
@@ -829,6 +830,7 @@ function FIRTemplatesContent() {
             size="sm"
             variant="outline"
             onClick={handleDownload}
+            disabled={!activeFir}
             className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
@@ -838,6 +840,7 @@ function FIRTemplatesContent() {
             size="sm"
             variant="outline"
             onClick={handleCopy}
+            disabled={!activeFir}
             className="border-slate-300 text-slate-700 font-bold text-xs gap-1.5 cursor-pointer"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}

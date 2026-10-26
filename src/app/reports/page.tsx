@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ReportTab, CrimeSitrepData, WeeklyCrimeDiaryData, IgpPresentationData } from "@/types/reports";
 import { ReportsService } from "@/services/reportsService";
@@ -37,27 +37,42 @@ function ReportsContent() {
   const [igpData, setIgpData] = useState<IgpPresentationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuditing, setIsAuditing] = useState(false);
+  const [loadErrors,setLoadErrors]=useState<Partial<Record<ReportTab,string>>>({});
+  const loadGeneration=useRef(0);
 
   const loadData = async () => {
+    const generation=++loadGeneration.current;
     setIsLoading(true);
+    setLoadErrors({});
     try {
-      const [sitrep, weekly, igp] = await Promise.all([
+      const [sitrep, weekly, igp] = await Promise.allSettled([
         ReportsService.getCrimeSitrep(undefined,undefined,currentUser.district),
         ReportsService.getWeeklyCrimeDiary(currentUser.stationName,currentUser.district),
         ReportsService.getIgpPresentationData(currentUser.district),
       ]);
-      setSitrepData(sitrep);
-      setWeeklyData(weekly);
-      setIgpData(igp);
+      if(generation!==loadGeneration.current)return;
+      setSitrepData(sitrep.status==='fulfilled'?sitrep.value:null);
+      setWeeklyData(weekly.status==='fulfilled'?weekly.value:null);
+      setIgpData(igp.status==='fulfilled'?igp.value:null);
+      const errors:Partial<Record<ReportTab,string>>={};
+      for(const [tab,result] of [['CrimeSITREP_District',sitrep],['WEEKLY CRIME DIARY',weekly],['IGP Meeting Presentation',igp]] as const){
+        if(result.status==='rejected'){
+          console.error(`Failed to load ${tab}`,result.reason);
+          errors[tab]='Report load नहीं हो सकी। Connection/data service check करके Retry करें।';
+        }
+      }
+      setLoadErrors(errors);
     } catch (e) {
       console.error("Failed to load reports data", e);
+      if(generation===loadGeneration.current)setLoadErrors({'CrimeSITREP_District':'Reports could not be loaded. Please retry.','WEEKLY CRIME DIARY':'Reports could not be loaded. Please retry.','IGP Meeting Presentation':'Reports could not be loaded. Please retry.'});
     } finally {
-      setIsLoading(false);
+      if(generation===loadGeneration.current)setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    return ()=>{loadGeneration.current++;};
   }, [currentUser.district,currentUser.stationName]);
 
   const handleAuditLive = async () => {
@@ -177,6 +192,10 @@ function ReportsContent() {
         </div>
       ) : (
         <>
+          {loadErrors[activeTab] && <div role="alert" className="bg-red-50 border border-red-200 rounded-xl p-5 text-sm text-red-800">
+            <p>{loadErrors[activeTab]}</p>
+            <button type="button" className="mt-3 underline font-semibold" onClick={()=>void loadData()}>Retry report</button>
+          </div>}
           {activeTab === "CrimeSITREP_District" && sitrepData && (
             <CrimeSitrepView
               data={sitrepData}

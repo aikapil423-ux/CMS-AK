@@ -53,13 +53,13 @@ export function Sidebar() {
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
 
-  // Toggle slide bar states for Roznamcha, Complaints, FIR, Registrations, Reports, Prosecution, Management, and Station Info - default CLOSED (false)
-  const [roznamchaOpen, setRoznamchaOpen] = useState(false);
-  const [complaintsOpen, setComplaintsOpen] = useState(false);
-  const [firOpen, setFirOpen] = useState(false);
-  const [registrationsOpen, setRegistrationsOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
-  const [prosecutionOpen, setProsecutionOpen] = useState(false);
+  // Toggle slide bar states: Modules above Management are open by default (true). Management and Station Info default closed (false).
+  const [roznamchaOpen, setRoznamchaOpen] = useState(true);
+  const [complaintsOpen, setComplaintsOpen] = useState(true);
+  const [firOpen, setFirOpen] = useState(true);
+  const [registrationsOpen, setRegistrationsOpen] = useState(true);
+  const [reportsOpen, setReportsOpen] = useState(true);
+  const [prosecutionOpen, setProsecutionOpen] = useState(true);
   const [managementOpen, setManagementOpen] = useState(false);
   const [stationInfoOpen, setStationInfoOpen] = useState(false);
 
