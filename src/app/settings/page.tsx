@@ -804,7 +804,7 @@ function SettingsPageContent() {
               <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
                 <span className="text-[11px] font-bold text-slate-500 uppercase">Station Name</span>
                 <p className="text-sm font-bold text-slate-900">{currentUser.stationName}</p>
-                <span className="text-xs text-slate-500 font-mono">Code: HAR-KKR-PS-01</span>
+                <span className="text-xs text-slate-500 font-mono">Code: HAR-PNP-PS-01</span>
               </div>
 
               <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">

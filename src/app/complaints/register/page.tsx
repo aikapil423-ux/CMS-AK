@@ -349,6 +349,21 @@ export default function RegisterComplaintPage() {
     "WALK_IN_STATION" | "CM_WINDOW_HARYANA" | "CITIZEN_PORTAL_HARPATH" | "EMERGENCY_112" | "SP_OFFICE_REFERENCE"
   >("WALK_IN_STATION");
   const [priorityLevel, setPriorityLevel] = useState<"ROUTINE" | "URGENT" | "CRITICAL_SENSITIVE" | "CM_WINDOW_VIP">("ROUTINE");
+  const [fivePNumber, setFivePNumber] = useState<string>("");
+  const [officeReferenceNumber, setOfficeReferenceNumber] = useState<string>("");
+  const [sourceOffice, setSourceOffice] = useState<string>("SP Office Panipat");
+  const [autoStationComplaintNo, setAutoStationComplaintNo] = useState<string>("");
+
+  // Auto-generate Station Complaint Number on load or station change
+  useEffect(() => {
+    try {
+      const ps = currentUser?.stationName || "PS City Panipat";
+      const nextNo = ComplaintService.generateNextComplaintNumber(ps);
+      setAutoStationComplaintNo(nextNo);
+    } catch (e) {
+      console.warn("Could not compute next complaint number:", e);
+    }
+  }, [currentUser?.stationName]);
 
   // 1. Complainant Details (Supports multiple complainants)
   const [complainants, setComplainants] = useState<ComplainantFormItem[]>([
@@ -364,14 +379,14 @@ export default function RegisterComplaintPage() {
       nationality: "Indian",
       countryCode: "+91",
       presentAddress: "",
-      presentCity: "Kurukshetra",
-      presentDistrict: "Kurukshetra",
+      presentCity: "Panipat",
+      presentDistrict: "Panipat",
       presentState: "Haryana",
       presentCountry: "India",
       isPermanentSameAsPresent: true,
       permanentAddress: "",
-      permanentCity: "Kurukshetra",
-      permanentDistrict: "Kurukshetra",
+      permanentCity: "Panipat",
+      permanentDistrict: "Panipat",
       permanentState: "Haryana",
       permanentCountry: "India",
       mobile: "",
@@ -595,6 +610,9 @@ export default function RegisterComplaintPage() {
     if (!draft) return;
     if (draft.sourceChannel) setSourceChannel(draft.sourceChannel);
     if (draft.priorityLevel) setPriorityLevel(draft.priorityLevel);
+    if (draft.fivePNumber) setFivePNumber(draft.fivePNumber);
+    if (draft.officeReferenceNumber) setOfficeReferenceNumber(draft.officeReferenceNumber);
+    if (draft.sourceOffice) setSourceOffice(draft.sourceOffice);
     if (Array.isArray(draft.complainants) && draft.complainants.length > 0) setComplainants(draft.complainants);
     if (typeof draft.isAccusedKnown === "boolean") setIsAccusedKnown(draft.isAccusedKnown);
     if (Array.isArray(draft.accusedList) && draft.accusedList.length > 0) setAccusedList(draft.accusedList);
@@ -913,14 +931,14 @@ export default function RegisterComplaintPage() {
         nationality: "Indian",
         countryCode: "+91",
         presentAddress: "",
-        presentCity: "Kurukshetra",
-        presentDistrict: currentUser.district || "Kurukshetra",
+        presentCity: "Panipat",
+        presentDistrict: currentUser.district || "Panipat",
         presentState: "Haryana",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
         permanentAddress: "",
-        permanentCity: "Kurukshetra",
-        permanentDistrict: currentUser.district || "Kurukshetra",
+        permanentCity: "Panipat",
+        permanentDistrict: currentUser.district || "Panipat",
         permanentState: "Haryana",
         permanentCountry: "India",
         mobile: "",
@@ -1013,14 +1031,14 @@ export default function RegisterComplaintPage() {
         nationality: "Indian",
         countryCode: "+91",
         presentAddress: "",
-        presentCity: "Kurukshetra",
-        presentDistrict: "Kurukshetra",
+        presentCity: "Panipat",
+        presentDistrict: "Panipat",
         presentState: "Haryana",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
         permanentAddress: "",
-        permanentCity: "Kurukshetra",
-        permanentDistrict: "Kurukshetra",
+        permanentCity: "Panipat",
+        permanentDistrict: "Panipat",
         permanentState: "Haryana",
         permanentCountry: "India",
         mobile: "",
@@ -2361,7 +2379,10 @@ export default function RegisterComplaintPage() {
         {
           source: sourceChannel,
           priority: priorityLevel,
-          category: incidentCategory,
+      category: incidentCategory,
+          fivePNumber: fivePNumber.trim() || undefined,
+          officeReferenceNumber: officeReferenceNumber.trim() || fivePNumber.trim() || undefined,
+          sourceOffice: sourceOffice.trim() || undefined,
           incidentDate: isDateTimeKnown ? incidentDate : (incidentApproxPeriod || "Undated"),
           incidentTime: isDateTimeKnown ? incidentTime : undefined,
           isIncidentDateTimeKnown: isDateTimeKnown,
@@ -2690,8 +2711,8 @@ export default function RegisterComplaintPage() {
           beltNumber: (createdComplaint as any).assignedEoBeltNumber || (currentUser as any).beltNumber || "Station Staff",
           pno: createdComplaint.assignedEoPno || currentUser.pno || "00000000",
         },
-        policeStation: currentUser.stationName || "PS City Thanesar",
-        district: currentUser.district || "Kurukshetra",
+        policeStation: currentUser.stationName || "PS City Panipat",
+        district: currentUser.district || "Panipat",
         relatedRecords: {
           complaintNumber: createdComplaint.complaintNumber,
           personName: primaryCompName,
@@ -2961,6 +2982,18 @@ export default function RegisterComplaintPage() {
                 Single Unified Police Station Intake Form (PPR Rule 22.48 / Section 173 BNSS)
               </p>
             </div>
+          {/* Station auto-computed complaint number preview badge */}
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-md flex items-center gap-1.5 font-mono shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-slate-500 font-sans font-semibold">Station Register Next No:</span>
+              <span className="text-slate-900 font-bold">{autoStationComplaintNo || "Loading..."}</span>
+              <span className="text-[10px] text-slate-400 font-sans">({currentUser?.stationName || "PS City Panipat"})</span>
+            </span>
+            <span className="text-[10px] text-slate-500">
+              (जब तक रजिस्टर नहीं होता, तब तक यह नंबर रिजर्व रहेगा)
+            </span>
+          </div>
           </div>
         </div>
 
@@ -3502,7 +3535,7 @@ export default function RegisterComplaintPage() {
                             handleComplainantChange(idx, "presentCity", e.target.value);
                             if (idx === 0) markFieldAsEdited("complainantPresentCity");
                           }}
-                          placeholder="e.g. Kurukshetra"
+                          placeholder="e.g. Panipat"
                           className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentCity`]
                               ? "border-red-500 bg-red-50"
@@ -3542,7 +3575,7 @@ export default function RegisterComplaintPage() {
                             handleComplainantChange(idx, "presentDistrict", e.target.value);
                             if (idx === 0) markFieldAsEdited("complainantPresentDistrict");
                           }}
-                          placeholder="e.g. Kurukshetra"
+                          placeholder="e.g. Panipat"
                           className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentDistrict`]
                               ? "border-red-500 bg-red-50"
@@ -4350,11 +4383,70 @@ export default function RegisterComplaintPage() {
                     <option value="CM_WINDOW_HARYANA">CM Window (VIP)</option>
                     <option value="CITIZEN_PORTAL_HARPATH">Citizen Portal (HarPath)</option>
                     <option value="EMERGENCY_112">Emergency 112 Call</option>
-                    <option value="SP_OFFICE_REFERENCE">SP Office Reference</option>
+                    <option value="SP_OFFICE_REFERENCE">5-P / SP Office Reference (Office Transfer)</option>
+                    <option value="FIVE_P_BRANCH">5-P Branch Office Transfer</option>
                     <option value="POSTAL_APPLICATION">Postal Application</option>
                     <option value="WOMEN_HELPDESK">Women Helpdesk</option>
                   </select>
                 </div>
+
+              {/* 5-P Office Transfer Details (Only shown if 5-P / Office Transfer or entered) */}
+              {(intakeMode === "SP_OFFICE_REFERENCE" || intakeMode === "FIVE_P_BRANCH" || fivePNumber) && (
+                <div className="sm:col-span-12 p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2 animate-in fade-in-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                      <label className="text-xs font-bold text-purple-950 uppercase tracking-wider">
+                        5-P Office Transfer & Reference Particulars (एसपी कार्यालय / 5-P शाखा ट्रांसफर)
+                      </label>
+                    </div>
+                    <span className="text-[10px] font-semibold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200 font-mono">
+                      Office Transfer Rule
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        5-P Complaint / Diary Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={fivePNumber}
+                        onChange={(e) => setFivePNumber(e.target.value)}
+                        placeholder="e.g. 5-P/2026/0894 or SP-PNP/124"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-600 font-mono font-bold text-purple-950"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Source Office Name
+                      </label>
+                      <input
+                        type="text"
+                        value={sourceOffice}
+                        onChange={(e) => setSourceOffice(e.target.value)}
+                        placeholder="e.g. SP Office Panipat / DSP Office"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                        Office Reference / Dispatch Number
+                      </label>
+                      <input
+                        type="text"
+                        value={officeReferenceNumber}
+                        onChange={(e) => setOfficeReferenceNumber(e.target.value)}
+                        placeholder="e.g. DISP-SP/2026/410"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-600 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-purple-800">
+                    नोट: 5-P ऑफिस से ट्रांसफर होकर आई इस शिकायत का 5-P नंबर एवं थाना का अलग से ऑटो-जनरेटेड नंबर दोनों रिकॉर्ड में सुरक्षित रहेंगे।
+                  </p>
+                </div>
+              )}
 
                 {/* Subject Headline */}
                 <div className="sm:col-span-4">

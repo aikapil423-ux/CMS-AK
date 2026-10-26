@@ -16,7 +16,27 @@ function loadModule(file, context = {}) {
   return exports;
 }
 
-const { isUserAssignedIo, nextFirNumber, firPendingDays } = loadModule('src/lib/firIntegrity.ts');
+const { isUserAssignedIo, isFirVisibleToUser, nextFirNumber, firPendingDays } = loadModule('src/lib/firIntegrity.ts');
+
+test('SHO sees only FIRs from their assigned police station', () => {
+  const shoPanipat = { id: 'usr_sho_1', name: 'Inspector Rajesh Kumar', role: 'SHO', stationName: 'PS City Panipat' };
+  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat' };
+  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat' };
+  const modelTownFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Model Town Panipat' };
+
+  assert.equal(isFirVisibleToUser(shoPanipat, cityFir), true);
+  assert.equal(isFirVisibleToUser(shoPanipat, chandniBaghFir), false);
+  assert.equal(isFirVisibleToUser(shoPanipat, modelTownFir), false);
+});
+
+test('Superior district officer (SP) sees FIRs from all police stations', () => {
+  const spPanipat = { id: 'usr_sp_1', name: 'Sh. Mayank Mishra, IPS', role: 'SP_DISTRICT', stationName: 'District Police Office Panipat' };
+  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat' };
+  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat' };
+
+  assert.equal(isFirVisibleToUser(spPanipat, cityFir), true);
+  assert.equal(isFirVisibleToUser(spPanipat, chandniBaghFir), true);
+});
 
 test('SI Vikram matches FIR assigned via MOCK_ENQUIRY_OFFICERS id (eo_1)', () => {
   const vikramUser = { id: 'usr_eo_1', name: 'Sub-Inspector Vikram Singh', pno: 'HR-07182930', role: 'ENQUIRY_OFFICER' };
@@ -40,4 +60,28 @@ test('Null or empty IO details safely return false', () => {
   const vikramUser = { id: 'usr_eo_1', name: 'Sub-Inspector Vikram Singh', pno: 'HR-07182930' };
   assert.equal(isUserAssignedIo(vikramUser, {}), false);
   assert.equal(isUserAssignedIo(null, { assignedIoName: 'SI Vikram Singh' }), false);
+});
+
+test('nextFirNumber correctly scopes per police station and resets on new year', () => {
+  const firs = [
+    { firNumber: 'FIR/0001/2026', firYear: 2026, policeStation: 'PS City Panipat' },
+    { firNumber: 'FIR/0002/2026', firYear: 2026, policeStation: 'PS City Panipat' },
+    { firNumber: 'FIR/0003/2026', firYear: 2026, policeStation: 'PS City Panipat' },
+    // Another station has registered up to 0005
+    { firNumber: 'FIR/0005/2026', firYear: 2026, policeStation: 'PS Model Town Panipat' },
+    // An old year 2025 has higher numbers
+    { firNumber: 'FIR/0120/2025', firYear: 2025, policeStation: 'PS City Panipat' },
+  ];
+
+  // For PS City Panipat in 2026: last was 0003, next MUST be 0004/2026
+  assert.equal(nextFirNumber(firs, 2026, 'PS City Panipat'), 'FIR/0004/2026');
+
+  // For PS Model Town Panipat in 2026: last was 0005, next MUST be 0006/2026
+  assert.equal(nextFirNumber(firs, 2026, 'PS Model Town Panipat'), 'FIR/0006/2026');
+
+  // For a fresh station (e.g. PS Samalkha) with 0 records in 2026: next MUST start at 0001/2026
+  assert.equal(nextFirNumber(firs, 2026, 'PS Samalkha'), 'FIR/0001/2026');
+
+  // New year (1st Jan 12:00 AM onwards -> 2027): MUST reset to 0001/2027
+  assert.equal(nextFirNumber(firs, 2027, 'PS City Panipat'), 'FIR/0001/2027');
 });

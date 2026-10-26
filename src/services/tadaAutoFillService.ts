@@ -114,7 +114,7 @@ export function getRecentMonthsList(count = 6): MonthInfo[] {
 }
 
 /**
- * Extract destination distance estimation (in KM) for official travel around Kurukshetra/Haryana
+ * Extract destination distance estimation (in KM) for official travel around Panipat/Haryana
  */
 function estimateDistanceKm(destination: string): string {
   const lower = (destination || "").toLowerCase();
@@ -208,7 +208,7 @@ export const tadaAutoFillService = {
         id: `auto_tour_gd_${gd.id || idx}`,
         srNo: idx + 1,
         departureDdNo: gd.gdNumber || `GD-${actDate}-${String(idx + 1).padStart(3, "0")}`,
-        postingAndDepStation: gd.policeStation || user.stationName || "PS City Thanesar",
+        postingAndDepStation: gd.policeStation || user.stationName || "PS City Panipat",
         departureDate: actDate,
         departureTime: actTime,
         arrivalStation: dest,
@@ -231,7 +231,7 @@ export const tadaAutoFillService = {
           day: "04",
           depTime: "09:30 AM",
           arrTime: "04:45 PM",
-          dest: "Hon'ble District & Sessions Courts, Kurukshetra",
+          dest: "Hon'ble District & Sessions Courts, Panipat",
           purpose: "Production of Case Property & Remand Papers in FIR 45/2026",
           vehicle: "Govt Gypsy HR-07-G-1234",
           dist: "14",
@@ -271,7 +271,7 @@ export const tadaAutoFillService = {
           id: `auto_tour_std_${user.id}_${monthInfo.monthNumber}_${sIdx}`,
           srNo: journeys.length + 1,
           departureDdNo: `GD-${dateStr}-00${sIdx + 3}`,
-          postingAndDepStation: user.stationName || "PS City Thanesar",
+          postingAndDepStation: user.stationName || "PS City Panipat",
           departureDate: dateStr,
           departureTime: item.depTime,
           arrivalStation: item.dest,
@@ -347,7 +347,7 @@ export const tadaAutoFillService = {
     // 2. Form 1: Tour Programme
     const form1: TourProgrammeForm = {
       department: "HARYANA POLICE DEPARTMENT",
-      district: user.district || "Kurukshetra",
+      district: user.district || "Panipat",
       employeeName: user.name,
       designation: userRank,
       beltEmployeeNumber: (user as any).beltNo || `${user.pno || "IO"}/KKR`,
@@ -358,10 +358,10 @@ export const tadaAutoFillService = {
       claimantDesignationBelt: `${userRank} (PNO: ${user.pno || "N/A"})`,
       claimantSignatureImg: "",
       forwardingRemarks: `Certified that the tours entered above for ${monthInfo.label} were performed strictly on bona fide police duties in public interest as per verified Roznamcha entries.`,
-      forwardingOfficerNameTitle: "Station House Officer (SHO), PS City Thanesar",
+      forwardingOfficerNameTitle: "Station House Officer (SHO), PS City Panipat",
       forwardingOfficerSignatureImg: "",
       approvalRemarks: `Approved for submission under Punjab Police Rules & Haryana Civil Services (TA) Rules.`,
-      approvingOfficerNameTitle: "Superintendent of Police (SP), Kurukshetra",
+      approvingOfficerNameTitle: "Superintendent of Police (SP), Panipat",
       approvingOfficerSignatureImg: "",
     };
 
@@ -372,7 +372,7 @@ export const tadaAutoFillService = {
       employeeName: user.name,
       designation: userRank,
       basicPay: basicPay,
-      headquarters: user.stationName || "PS City Thanesar, Kurukshetra",
+      headquarters: user.stationName || "PS City Panipat, Panipat",
       gradeOfGovtServant: "Group B (Executive Police)",
       journeys: claimJourneys,
       totalClaimAmount: totalClaim,
@@ -392,7 +392,7 @@ export const tadaAutoFillService = {
       netPayableAmountWordsHi: wordsHi,
       claimantSignatureImg: "",
       ddoSignatureImg: "",
-      ddoNameTitle: "DSP (HQ) / DDO, Kurukshetra",
+      ddoNameTitle: "DSP (HQ) / DDO, Panipat",
       printedInstructionsText:
         "1. Copy of original tour programme approved by the competent authority should invariably be attached with the claim.\n2. In case of transfer at a distance more than 500 kms, the details of members of the family with age be given.\n3. All official journey departures and arrivals verified from Roznamcha General Diary under PPR 22.48.",
     };
@@ -401,7 +401,7 @@ export const tadaAutoFillService = {
     const form3: TABillMainPageForm = {
       billNumber: billRefId,
       billDate: `${monthInfo.nextMonthYear}-${monthInfo.nextMonthNum}-01`, // 01st date of following month
-      establishmentOf: `${user.stationName || "PS City Thanesar"}, Haryana Police`,
+      establishmentOf: `${user.stationName || "PS City Panipat"}, Haryana Police`,
       voucherNumber: "",
       voucherDate: "",
       accounting: {
@@ -422,7 +422,7 @@ export const tadaAutoFillService = {
       certTaRulesCompliance: true,
       certRemarks: `Auto-verified from Roznamcha General Diary entries for the month of ${monthInfo.label}.`,
       certifyingOfficerSignatureImg: "",
-      certifyingOfficerNameTitle: "SHO / Reader to SP, Kurukshetra",
+      certifyingOfficerNameTitle: "SHO / Reader to SP, Panipat",
       financialYearFrom: monthInfo.year,
       financialYearTo: String(Number(monthInfo.year) + 1),
       appropriationAmount: 250000,
@@ -432,9 +432,9 @@ export const tadaAutoFillService = {
       passedAmountWordsEn: wordsEn,
       passedAmountWordsHi: wordsHi,
       controllingOfficerSignatureImg: "",
-      controllingOfficerNameTitle: "Superintendent of Police, Kurukshetra",
+      controllingOfficerNameTitle: "Superintendent of Police, Panipat",
       ddoSignatureImg: "",
-      ddoNameTitle: "DSP (HQ) / DDO, Kurukshetra",
+      ddoNameTitle: "DSP (HQ) / DDO, Panipat",
       treasuryPayAmount: totalClaim,
       treasuryPayAmountWordsEn: wordsEn,
       treasuryPayAmountWordsHi: wordsHi,

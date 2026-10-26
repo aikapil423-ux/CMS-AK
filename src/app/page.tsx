@@ -398,7 +398,7 @@ export default function PostLoginPortalPage() {
         <div className="flex items-center gap-2">
           <Building className="w-3.5 h-3.5 text-slate-400" />
           <span>
-            <strong className="font-semibold text-slate-800">{currentUser.stationName}</strong> • Kurukshetra District • Haryana Police
+            <strong className="font-semibold text-slate-800">{currentUser.stationName}</strong> • Panipat District • Haryana Police
           </span>
         </div>
         <div className="flex items-center gap-3">

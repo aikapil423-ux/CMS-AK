@@ -80,7 +80,7 @@ export function BailReplyView() {
     const newRecord: BailReplyRecord = {
       id: `BAIL-${Date.now()}`,
       applicationNo: `BA/${Math.floor(100 + Math.random() * 900)}/${new Date().getFullYear()}`,
-      firNumber: selectedFir || firMeta?.firNumber || "FIR/0284/2026",
+      firNumber: selectedFir || firMeta?.firNumber || "FIR/0004/2026",
       policeStation: firMeta?.policeStation || "PS City Panipat",
       courtName,
       applicantAccusedName: applicantName || firMeta?.accusedNames || "Accused",

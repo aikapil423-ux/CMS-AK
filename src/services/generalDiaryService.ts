@@ -40,8 +40,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_001",
       gdNumber: `GD-${today}-001`,
       sequencePerDay: 1,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Malkeet",
         rank: "Sub-Inspector",
@@ -100,8 +100,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_002",
       gdNumber: `GD-${today}-002`,
       sequencePerDay: 2,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Malkeet",
         rank: "Sub-Inspector",
@@ -158,8 +158,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_003",
       gdNumber: `GD-${today}-003`,
       sequencePerDay: 3,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "ASI Ramesh Chander",
         rank: "Assistant Sub-Inspector",
@@ -216,8 +216,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_004",
       gdNumber: `GD-${today}-004`,
       sequencePerDay: 4,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Malkeet",
         rank: "Sub-Inspector",
@@ -252,7 +252,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       },
       relatedRecords: {
         vehicleNumber: "HR-07-G-1102",
-        destinationLocation: "Sector 7, Kurukshetra",
+        destinationLocation: "Sector 7, Panipat",
       },
       auditTrail: [
         {
@@ -277,8 +277,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_005",
       gdNumber: `GD-${today}-005`,
       sequencePerDay: 5,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Malkeet",
         rank: "Sub-Inspector",
@@ -312,7 +312,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         pno: "04291882",
       },
       relatedRecords: {
-        destinationLocation: "Sector 7, Kurukshetra",
+        destinationLocation: "Sector 7, Panipat",
       },
       auditTrail: [
         {
@@ -337,8 +337,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_seed_006",
       gdNumber: `GD-${today}-006`,
       sequencePerDay: 6,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "HC Devinder Kumar",
         rank: "Head Constable (MHC)",
@@ -372,7 +372,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
         pno: "04291882",
       },
       relatedRecords: {
-        complaintNumber: "HAR-KKR-2026-CMP-00486",
+        complaintNumber: "HAR-PNP-2026-CMP-CYB-0001",
       },
       auditTrail: [
         {
@@ -398,8 +398,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_sugg_001",
       gdNumber: "GD-PENDING-SUGGESTION",
       sequencePerDay: 0,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Vikram Singh",
         rank: "Sub-Inspector",
@@ -416,7 +416,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       category: "INVESTIGATION_PROCESS",
       typeDisplay: "Complaint Received / Disposal",
       typeDisplayHi: "प्राप्ति / निपटान शिकायत दरख्वास्त (PPR 22.48)",
-      subject: "प्राप्ति दरख्वास्त शिकायत क्रमांक HAR-KKR-2026-CMP-00483 मनजानिब Ramphal Sharma",
+      subject: "प्राप्ति दरख्वास्त शिकायत क्रमांक HAR-PNP-2026-CMP-CTY-0002 मनजानिब Ramphal Sharma",
       narrative:
         "बवक्त 02:15 PM, मुसम्मी Ramphal Sharma (मो: 9812048192) द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय 'बाबत धोखाधड़ी व फर्जी इकरारनामा' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में दर्ज करके जांच अधिकारी Sub-Inspector Vikram Singh को धारा 173(3) BNSS के तहत 14 दिन में प्रारंभिक जांच हेतु सौंपा गया।",
       activityDateTime: `${today} 14:15`,
@@ -425,7 +425,7 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       source: "COMPLAINT_INTEGRATION",
       isLocked: false,
       relatedRecords: {
-        complaintNumber: "HAR-KKR-2026-CMP-00483",
+        complaintNumber: "HAR-PNP-2026-CMP-CTY-0002",
         personName: "Ramphal Sharma",
       },
       auditTrail: [
@@ -445,8 +445,8 @@ function generateSeedEntries(): GeneralDiaryRecord[] {
       id: "gd_draft_001",
       gdNumber: "GD-DRAFT",
       sequencePerDay: 0,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "EHC Kuldeep Singh",
         rank: "EHC (Driver)",
@@ -1043,8 +1043,8 @@ export const GeneralDiaryService = {
     const actualAuthor = entry.actualAuthor || defaultAuthor;
     const entryForOfficer = entry.entryForOfficer || defaultOfficer;
     const activityDateTime = entry.activityDateTime || nowIso;
-    const policeStation = entry.policeStation || "PS City Thanesar";
-    const district = entry.district || "Kurukshetra";
+    const policeStation = entry.policeStation || "PS City Panipat";
+    const district = entry.district || "Panipat";
     const narrative = entry.narrative || "";
 
     if (entry.id) {
@@ -1249,8 +1249,8 @@ export const GeneralDiaryService = {
       id: `gd_${Date.now()}`,
       gdNumber,
       sequencePerDay: sequence,
-      policeStation: payload.policeStation || "PS City Thanesar",
-      district: payload.district || "Kurukshetra",
+      policeStation: payload.policeStation || "PS City Panipat",
+      district: payload.district || "Panipat",
       entryForOfficer: payload.entryForOfficer || verifier,
       actualAuthor: payload.actualAuthor || verifier,
       typeCode: payload.typeCode,
@@ -1522,8 +1522,8 @@ export const GeneralDiaryService = {
     docTitle?: string;
     attachments?: GDUploadedDocument[];
   }): Promise<GeneralDiaryRecord> {
-    const ps = options.policeStation || "PS City Thanesar";
-    const dist = options.district || "Kurukshetra";
+    const ps = options.policeStation || "PS City Panipat";
+    const dist = options.district || "Panipat";
     const officer: GDOfficerParticulars = {
       name: options.officer?.name || "Investigating Officer",
       rank: options.officer?.rank || "Sub-Inspector",
@@ -1901,8 +1901,8 @@ export const GeneralDiaryService = {
               : formatGDActivityDateTime(new Date()),
           entryForOfficer: payload.entryForOfficer || author,
           actualAuthor: author,
-          policeStation: payload.policeStation || "PS City Thanesar",
-          district: payload.district || "Kurukshetra",
+          policeStation: payload.policeStation || "PS City Panipat",
+          district: payload.district || "Panipat",
           source: payload.source || "MANUAL_ENTRY",
           relatedRecords: payload.relatedRecords || {},
           attachments: payload.attachments || [],
@@ -1922,7 +1922,7 @@ export const GeneralDiaryService = {
           subject: entryOrSubject,
           narrative: narrative || "",
           typeCode: typeof entryType === "string" ? entryType : "OTHERS",
-          policeStation: station || "PS City Thanesar",
+          policeStation: station || "PS City Panipat",
           relatedRecords: {
             complaintNumber: relatedComplaintNumber,
           },

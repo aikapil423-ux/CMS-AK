@@ -20,12 +20,12 @@ import { ComplaintService } from "./complaintService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
 import { nextFirNumber, firPendingDays } from '@/lib/firIntegrity';
 
-const FIRS_STORAGE_KEY = "haryana_police_cms_firs_v1";
+const FIRS_STORAGE_KEY = "haryana_police_cms_firs_v2";
 
 const INITIAL_MOCK_FIRS: FIRItem[] = [
   {
     id: "fir-pnp-001",
-    firNumber: "FIR/0284/2026",
+    firNumber: "FIR/0004/2026",
     firYear: 2026,
     firDate: "2026-10-14",
     firTime: "08:15",
@@ -34,7 +34,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-001",
     sourceComplaintNumber: "COMP/2026/01490",
-    cctnsFirNumber: "HR060260284",
+    cctnsFirNumber: "HR060260004",
     cctnsSyncStatus: "SYNCED",
     category: "PROPERTY_THEFT_BURGLARY",
     categoryDisplay: "Snatching",
@@ -112,7 +112,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-pnp-002",
-    firNumber: "FIR/0189/2026",
+    firNumber: "FIR/0001/2026",
     firYear: 2026,
     firDate: "2026-10-14",
     firTime: "11:45",
@@ -121,7 +121,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-002",
     sourceComplaintNumber: "COMP/2026/01491",
-    cctnsFirNumber: "HR060260189",
+    cctnsFirNumber: "HR060260001",
     cctnsSyncStatus: "SYNCED",
     category: "VEHICLE_THEFT",
     categoryDisplay: "MV Theft",
@@ -175,7 +175,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-pnp-003",
-    firNumber: "FIR/0215/2026",
+    firNumber: "FIR/0001/2026",
     firYear: 2026,
     firDate: "2026-10-14",
     firTime: "16:20",
@@ -184,7 +184,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-003",
     sourceComplaintNumber: "COMP/2026/01492",
-    cctnsFirNumber: "HR060260215",
+    cctnsFirNumber: "HR060260001",
     cctnsSyncStatus: "SYNCED",
     category: "SPECIAL_ACTS",
     categoryDisplay: "NDPS Act, 1985",
@@ -261,7 +261,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-pnp-004",
-    firNumber: "FIR/0098/2026",
+    firNumber: "FIR/0002/2026",
     firYear: 2026,
     firDate: "2026-10-14",
     firTime: "20:30",
@@ -270,7 +270,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-004",
     sourceComplaintNumber: "COMP/2026/01493",
-    cctnsFirNumber: "HR060260098",
+    cctnsFirNumber: "HR060260002",
     cctnsSyncStatus: "SYNCED",
     category: "CRIMES_AGAINST_PERSON",
     categoryDisplay: "Kidnapping",
@@ -334,7 +334,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-pnp-005",
-    firNumber: "FIR/0312/2026",
+    firNumber: "FIR/0003/2026",
     firYear: 2026,
     firDate: "2026-10-15",
     firTime: "09:30",
@@ -343,7 +343,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-005",
     sourceComplaintNumber: "COMP/2026/01540",
-    cctnsFirNumber: "HR060260312",
+    cctnsFirNumber: "HR060260003",
     cctnsSyncStatus: "SYNCED",
     category: "VIOLENT_CRIME",
     categoryDisplay: "Murder",
@@ -427,7 +427,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-pnp-006",
-    firNumber: "FIR/0315/2026",
+    firNumber: "FIR/0002/2026",
     firYear: 2026,
     firDate: "2026-10-15",
     firTime: "16:40",
@@ -436,7 +436,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     state: "Haryana",
     sourceComplaintId: "comp-pnp-006",
     sourceComplaintNumber: "COMP/2026/01552",
-    cctnsFirNumber: "HR060260315",
+    cctnsFirNumber: "HR060260002",
     cctnsSyncStatus: "SYNCED",
     category: "NARCOTICS_NDPS",
     categoryDisplay: "NDPS Act",
@@ -503,16 +503,16 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-001",
-    firNumber: "FIR/0014/2026",
+    firNumber: "FIR/0002/2026",
     firYear: 2026,
     firDate: "2026-03-28",
     firTime: "11:30",
-    policeStation: "Sector 29 Police Station",
-    district: "Gurugram",
+    policeStation: "PS City Panipat",
+    district: "Panipat",
     state: "Haryana",
     sourceComplaintId: "comp-001",
     sourceComplaintNumber: "COMP/2026/00142",
-    cctnsFirNumber: "HR050260014",
+    cctnsFirNumber: "HR060260002",
     cctnsSyncStatus: "SYNCED",
     category: "PROPERTY_THEFT_BURGLARY",
     categoryDisplay: "Theft / Burglary",
@@ -526,8 +526,8 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     incidentDateTo: "2026-03-27",
     incidentTimeFrom: "21:00",
     incidentTimeTo: "23:30",
-    incidentPlace: "Sector 29 Commercial Complex, Near Huda City Centre",
-    incidentLandmark: "Opposite Metro Pillar 114",
+    incidentPlace: "Sector 11-12 Commercial Complex, Panipat",
+    incidentLandmark: "Opposite Skylark Tourist Complex, Panipat",
     distanceFromPs: "1.5 KM East",
     beatNumber: "Beat No. 4",
     incidentDetails: "Complainant reported breaking of car window pane and theft of laptop bag containing HP Pavilion laptop, office identity card, and cash worth Rs. 24,000/- while parked outside market complex.",
@@ -539,9 +539,9 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     complainantGender: "MALE",
     complainantAge: 34,
     complainantMobile: "9812345670",
-    complainantAddress: "H.No. 402, Sector 29",
-    complainantCity: "Gurugram",
-    complainantDistrict: "Gurugram",
+    complainantAddress: "H.No. 402, Sector 11, Panipat",
+    complainantCity: "Panipat",
+    complainantDistrict: "Panipat",
     complainantState: "Haryana",
     isAccusedKnown: false,
     accusedList: [
@@ -589,7 +589,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
       {
         id: "doc-001",
         title: "Original Written Complaint / Tehreer",
-        fileName: "tehreer_fir_0014_2026.pdf",
+        fileName: "tehreer_fir_0002_2026.pdf",
         category: "COMPLAINT_COPY",
         uploadedBy: "Inspector Rajesh Kumar",
         uploadedAt: "2026-03-28 11:35",
@@ -608,7 +608,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         id: "tl-001",
         date: "2026-03-28 11:30",
         title: "FIR Registered",
-        description: "FIR No. FIR/0014/2026 registered under Section 303(2), 305 BNS.",
+        description: "FIR No. FIR/0002/2026 registered under Section 303(2), 305 BNS.",
         actor: "Inspector Rajesh Kumar (SHO)",
         stage: "REGISTERED",
       },
@@ -644,14 +644,14 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-002",
-    firNumber: "FIR/0015/2026",
+    firNumber: "FIR/0003/2026",
     firYear: 2026,
     firDate: "2026-03-31",
     firTime: "15:45",
-    policeStation: "Sector 29 Police Station",
-    district: "Gurugram",
+    policeStation: "PS City Panipat",
+    district: "Panipat",
     state: "Haryana",
-    cctnsFirNumber: "HR050260015",
+    cctnsFirNumber: "HR060260003",
     cctnsSyncStatus: "SYNCED",
     category: "CYBER_CRIME",
     categoryDisplay: "Cyber / Financial Fraud",
@@ -673,9 +673,9 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     complainantGender: "FEMALE",
     complainantAge: 42,
     complainantMobile: "9876543210",
-    complainantAddress: "Flat 12B, Palm Grove Heights, Sector 29",
-    complainantCity: "Gurugram",
-    complainantDistrict: "Gurugram",
+    complainantAddress: "H.No. 12B, Model Town, Panipat",
+    complainantCity: "Panipat",
+    complainantDistrict: "Panipat",
     complainantState: "Haryana",
     isAccusedKnown: false,
     accusedList: [
@@ -692,10 +692,10 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     assignedIoId: "eo_1",
     assignedIoName: "SI Vikram Singh",
     assignedIoRank: "Sub Inspector",
-    assignedIoBeltNumber: "742/KKR",
+    assignedIoBeltNumber: "742/PNP",
     assignedIoPhone: "9812034567",
     assignedAt: "2026-03-31 16:30",
-    assignedDirections: "Liaise with Cyber Cell Gurugram, send freezing notices under Sec 106 BNSS to Canara Bank and payment gateway.",
+    assignedDirections: "Liaise with Cyber Cell Panipat, send freezing notices under Sec 106 BNSS to Canara Bank and payment gateway.",
     daysPending: 7,
     caseDiaries: [
       {
@@ -725,16 +725,16 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-125",
-    firNumber: "FIR/0125/2026",
+    firNumber: "FIR/0001/2026",
     firYear: 2026,
     firDate: "2026-04-02",
     firTime: "14:15",
-    policeStation: "Sector 14 Police Station",
-    district: "Hisar",
+    policeStation: "PS Model Town Panipat",
+    district: "Panipat",
     state: "Haryana",
     sourceComplaintId: "comp-125",
     sourceComplaintNumber: "COMP/2026/00389",
-    cctnsFirNumber: "HR030260125",
+    cctnsFirNumber: "HR060260001",
     cctnsSyncStatus: "SYNCED",
     category: "PROPERTY_THEFT_BURGLARY",
     categoryDisplay: "Theft / House Trespass",
@@ -748,11 +748,11 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     incidentDateTo: "2026-04-01",
     incidentTimeFrom: "22:00",
     incidentTimeTo: "23:45",
-    incidentPlace: "Sector 14 Market Complex, Near Commercial Hub",
-    incidentLandmark: "Opposite Post Office, Sector 14",
+    incidentPlace: "Insar Market Complex, Panipat",
+    incidentLandmark: "Near Old Bus Stand Panipat",
     distanceFromPs: "2.0 KM West",
     beatNumber: "Beat No. 2",
-    incidentDetails: "Theft of commercial property and cash from electronic shop in Sector 14 Hisar. Accused Anil Kumar intercepted with stolen items.",
+    incidentDetails: "Theft of commercial property and cash from electronic shop in Insar Bazar Panipat. Accused Anil Kumar intercepted with stolen items.",
     gdEntryNumber: "GD-0038/02-04-2026",
     gdEntryDateTime: "2026-04-02 14:00",
     typeOfInformation: "WRITTEN",
@@ -761,9 +761,9 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     complainantGender: "MALE",
     complainantAge: 42,
     complainantMobile: "9812988123",
-    complainantAddress: "Shop No. 18, Sector 14",
-    complainantCity: "Hisar",
-    complainantDistrict: "Hisar",
+    complainantAddress: "Shop No. 18, Insar Bazar, Panipat",
+    complainantCity: "Panipat",
+    complainantDistrict: "Panipat",
     complainantState: "Haryana",
     isAccusedKnown: true,
     accusedList: [
@@ -771,7 +771,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         id: "acc-125-01",
         name: "Anil Kumar",
         fatherName: "Sh. Ramesh Kumar",
-        address: "H.No. 142, Street 3, Sector 14, Hisar",
+        address: "H.No. 142, Tehsil Camp, Panipat",
         isIdentified: true,
         physicalDescription: "Male, Age approx 32, Height 5ft 8in, scar on left eyebrow, dark complexion",
       },
@@ -795,7 +795,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         officer: "SI Neeraj Kumar",
         officerRole: "INVESTIGATING_OFFICER",
         summary: "Zimni No. 1: Crime spot inspection and recovery of stolen items",
-        details: "Inspected shop premises at Sector 14 Hisar. Prepared Naksha Mauka. Accused Anil Kumar intercepted at Sector 14 market.",
+        details: "Inspected shop premises at Insar Bazar Panipat. Prepared Naksha Mauka. Accused Anil Kumar intercepted at Insar Bazar market Panipat.",
         isAutoGenerated: false,
       },
     ],
@@ -814,7 +814,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         id: "tl-125-01",
         date: "2026-04-02 14:15",
         title: "FIR Registered",
-        description: "FIR No. FIR/0125/2026 registered under Section 303(2), 305, 331(4) BNS.",
+        description: "FIR No. FIR/0001/2026 registered under Section 303(2), 305, 331(4) BNS.",
         actor: "Inspector Surender Singh (SHO)",
         stage: "REGISTERED",
       },
@@ -834,7 +834,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         action: "FIR Registered",
         officerName: "Inspector Surender Singh",
         role: "SHO",
-        details: "FIR/0125/2026 created successfully.",
+        details: "FIR/0001/2026 created successfully.",
       },
     ],
     createdAt: "2026-04-02T14:15:00Z",
@@ -842,12 +842,12 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
   {
     id: "fir-003",
-    firNumber: "FIR/0010/2026",
+    firNumber: "FIR/0001/2026",
     firYear: 2026,
     firDate: "2026-02-15",
     firTime: "10:00",
-    policeStation: "Sector 29 Police Station",
-    district: "Gurugram",
+    policeStation: "PS City Panipat",
+    district: "Panipat",
     state: "Haryana",
     category: "PHYSICAL_ASSAULT_AFFRAY",
     categoryDisplay: "Physical Assault / Hurt",
@@ -858,7 +858,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     majorAct: "Bharatiya Nyaya Sanhita, 2023",
     bnsSections: ["115(2)", "351(2)", "352"],
     incidentDateFrom: "2026-02-14",
-    incidentPlace: "Main Market, Sector 29",
+    incidentPlace: "Main Market, Panipat",
     incidentDetails: "Altercation between shopkeepers over shop signage leading to simple hurt.",
     gdEntryNumber: "GD-0012/15-02-2026",
     gdEntryDateTime: "2026-02-15 09:30",
@@ -868,9 +868,9 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     complainantGender: "MALE",
     complainantAge: 29,
     complainantMobile: "9812998877",
-    complainantAddress: "Shop 14, Sector 29",
-    complainantCity: "Gurugram",
-    complainantDistrict: "Gurugram",
+    complainantAddress: "Shop 14, Main Bazar, Panipat",
+    complainantCity: "Panipat",
+    complainantDistrict: "Panipat",
     complainantState: "Haryana",
     isAccusedKnown: true,
     accusedList: [
@@ -878,7 +878,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
         id: "acc-003",
         name: "Satish Kumar",
         isIdentified: true,
-        address: "Shop 15, Sector 29",
+        address: "Shop 15, Main Bazar, Panipat",
         phone: "9812991122",
       },
     ],
@@ -890,7 +890,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     finalFormType: "CHARGESHEET",
     finalFormNumber: "CS/2026/0012",
     finalFormDate: "2026-03-25",
-    courtName: "Court of CJM, Gurugram",
+    courtName: "Court of CJM, Panipat",
     shoDecision: "APPROVE",
     shoDecisionAt: "2026-03-24",
     shoDecisionBy: "Inspector Rajesh Kumar",
@@ -1067,11 +1067,17 @@ export const firService = {
     return list.find((f) => f.sourceComplaintId === complaintId);
   },
 
-  generateNextFirNumber(): { firNumber: string; firYear: number } {
-    const year = new Date().getFullYear();
+  generateNextFirNumber(policeStation?: string, firDate?: string): { firNumber: string; firYear: number } {
+    let year = new Date().getFullYear();
+    if (firDate) {
+      const parsedYear = new Date(firDate).getFullYear();
+      if (!isNaN(parsedYear) && parsedYear > 1900) {
+        year = parsedYear;
+      }
+    }
     const list = this.getAllFirs();
     return {
-      firNumber: nextFirNumber(list,year),
+      firNumber: nextFirNumber(list, year, policeStation),
       firYear: year,
     };
   },
@@ -1079,12 +1085,14 @@ export const firService = {
   registerFir(input: Partial<FIRItem>): FIRItem {
     let { firNumber, firYear } = input.firNumber
       ? { firNumber: input.firNumber, firYear: input.firYear || new Date().getFullYear() }
-      : this.generateNextFirNumber();
+      : this.generateNextFirNumber(input.policeStation, input.firDate);
 
-    // Prevent duplicate FIR Number: if number already exists, generate a fresh sequential one
+    // Prevent duplicate FIR Number: if number already exists in this police station & year, generate a fresh sequential one
     const existingList = this.getAllFirs();
-    if (existingList.some((f) => f.firNumber === firNumber)) {
-      const fresh = this.generateNextFirNumber();
+    const norm = (s?: string) => (s || '').trim().toLowerCase();
+    const targetPs = norm(input.policeStation);
+    if (existingList.some((f) => f.firNumber === firNumber && f.firYear === firYear && (!targetPs || norm(f.policeStation) === targetPs))) {
+      const fresh = this.generateNextFirNumber(input.policeStation, input.firDate);
       firNumber = fresh.firNumber;
       firYear = fresh.firYear;
     }
@@ -1099,8 +1107,8 @@ export const firService = {
       firYear,
       firDate: input.firDate || dateStr,
       firTime: input.firTime || timeStr,
-      policeStation: input.policeStation || "Sector 29 Police Station",
-      district: input.district || "Gurugram",
+      policeStation: input.policeStation || "PS City Panipat",
+      district: input.district || "Panipat",
       state: input.state || "Haryana",
       sourceComplaintId: input.sourceComplaintId,
       sourceComplaintNumber: input.sourceComplaintNumber,
@@ -1145,8 +1153,8 @@ export const firService = {
       complainantAge: input.complainantAge,
       complainantMobile: input.complainantMobile || "",
       complainantAddress: input.complainantAddress || "",
-      complainantCity: input.complainantCity || "Gurugram",
-      complainantDistrict: input.complainantDistrict || "Gurugram",
+      complainantCity: input.complainantCity || "Panipat",
+      complainantDistrict: input.complainantDistrict || "Panipat",
       complainantState: input.complainantState || "Haryana",
       complainantMiddleName: input.complainantMiddleName,
       complainantLastName: input.complainantLastName,
@@ -1337,6 +1345,61 @@ export const firService = {
       crimeDetailsFilledAt: new Date().toISOString(),
       crimeDetailsFilledBy: filledBy,
       documents: [crimeDoc, ...filteredDocs],
+    });
+  },
+
+  assignIoWithCourtOrder(params: {
+    firId: string;
+    ioId: string;
+    ioName: string;
+    rank?: string;
+    courtName: string;
+    courtOrderNumber: string;
+    courtOrderDate: string;
+    courtOrderDocumentUrl?: string;
+    courtOrderDocumentName?: string;
+    directions?: string;
+    assignedBy?: string;
+  }): FIRItem | undefined {
+    const fir = this.getFirById(params.firId);
+    if (!fir) return undefined;
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    const timelineItem: FIRTimelineEvent = {
+      id: "tl-" + Date.now(),
+      date: dateStr + " " + timeStr,
+      title: "Court Order: Assigned for Investigation",
+      description: "Court: " + params.courtName + ", Order No: " + params.courtOrderNumber + " dated " + params.courtOrderDate + ". Assigned to " + params.ioName + " (" + (params.rank || "IO") + ").",
+      actor: params.assignedBy || "SHO",
+      stage: "ASSIGNED",
+    };
+
+    const auditItem: FIRAuditRecord = {
+      id: "aud-" + Date.now(),
+      timestamp: dateStr + " " + timeStr,
+      action: "COURT_ORDER_ASSIGNED_IO",
+      officerName: params.assignedBy || "SHO",
+      role: "SHO",
+      details: "Court Order " + params.courtOrderNumber + " assigned to " + params.ioName + " (" + (params.rank || "IO") + ")",
+    };
+
+    return this.updateFir(params.firId, {
+      assignedIoId: params.ioId,
+      assignedIoName: params.ioName,
+      assignedIoRank: params.rank || "Sub Inspector",
+      assignedAt: dateStr + " " + timeStr,
+      assignedDirections: params.directions || ("Investigation under Court Order No. " + params.courtOrderNumber + " (" + params.courtName + ")"),
+      courtName: params.courtName,
+      courtOrderNumber: params.courtOrderNumber,
+      courtOrderDate: params.courtOrderDate,
+      courtOrderDocumentUrl: params.courtOrderDocumentUrl,
+      courtOrderDocumentName: params.courtOrderDocumentName,
+      status: "UNDER_INVESTIGATION",
+      timeline: [timelineItem, ...(fir.timeline || [])],
+      auditTrail: [auditItem, ...(fir.auditTrail || [])],
     });
   },
 
@@ -1610,8 +1673,8 @@ export const firService = {
         actsAndSections: fir.actsAndSections,
         transferType: "INTER_STATE",
         sourceState: fir.state || "Haryana",
-        sourceDistrict: fir.district || "Gurugram",
-        sourcePoliceStation: fir.policeStation || "Sector 29 Police Station",
+        sourceDistrict: fir.district || "Panipat",
+        sourcePoliceStation: fir.policeStation || "PS City Panipat",
         targetState,
         targetDistrict,
         targetPoliceStation,

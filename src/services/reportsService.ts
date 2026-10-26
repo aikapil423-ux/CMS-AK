@@ -108,7 +108,7 @@ export const ReportsService = {
 
   // 1. DYNAMIC CRIME SITREP (Strict 24-hr audit of the back day of latest date)
   getCrimeSitrep: async (filterDate?: string, filterStation?: string, district?: string): Promise<CrimeSitrepData> => {
-    const activeDistrict = (district || "Kurukshetra").toUpperCase();
+    const activeDistrict = (district || "Panipat").toUpperCase();
 
     const allFirs = firService.getAllFirs();
     const allGd = await GeneralDiaryService.getEntries();
@@ -164,7 +164,7 @@ export const ReportsService = {
 
       return {
         srNo: idx + 1,
-        ps: f.policeStation || "PS City Thanesar",
+        ps: f.policeStation || "PS City Panipat",
         head: f.categoryDisplay || f.majorAct || "General Crime",
         ipcSections: typeof f.actsAndSections === "string" ? f.actsAndSections : "",
         firNo: f.firNumber || String(f.id),
@@ -433,8 +433,8 @@ export const ReportsService = {
 
   // 2. DYNAMIC WEEKLY CRIME DIARY (100% computed from active station, officers, and cases)
   getWeeklyCrimeDiary: async (filterStation?: string, district?: string): Promise<WeeklyCrimeDiaryData> => {
-    const activeStation = filterStation && filterStation !== "ALL" ? filterStation : "PS City Thanesar";
-    const activeDistrict = district || "Kurukshetra";
+    const activeStation = filterStation && filterStation !== "ALL" ? filterStation : "PS City Panipat";
+    const activeDistrict = district || "Panipat";
 
     const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
     const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
@@ -566,16 +566,16 @@ export const ReportsService = {
 
   // 3. DYNAMIC IGP MEETING PRESENTATION (Computed live from website cases)
   getIgpPresentationData: async (district?: string): Promise<IgpPresentationData> => {
-    const activeDistrict = district || "Kurukshetra";
+    const activeDistrict = district || "Panipat";
     const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
     const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
 
     const comparativeRows = comparativeCrimeRows(allFirs);
 
     // Station UI pendency dynamically counted per station
-    const stationsSet = Array.from(new Set(allFirs.map((f) => f.policeStation || "PS City Thanesar")));
+    const stationsSet = Array.from(new Set(allFirs.map((f) => f.policeStation || "PS City Panipat")));
     const uiPartAByStation: StationUiPendency[] = stationsSet.map((st, idx) => {
-      const stFirs = allFirs.filter((f) => (f.policeStation || "PS City Thanesar") === st);
+      const stFirs = allFirs.filter((f) => (f.policeStation || "PS City Panipat") === st);
       const uiCount = stFirs.filter((f) => f.status === "UNDER_INVESTIGATION" || !f.status).length;
 
       return {
@@ -712,7 +712,7 @@ export const ReportsService = {
   },
 
   generateAndSaveCrimeSitrep: async (district?: string, referenceDate?: string): Promise<SavedReportEntry> => {
-    const activeDistrict = (district || "Kurukshetra").toUpperCase();
+    const activeDistrict = (district || "Panipat").toUpperCase();
     const sitrep = await ReportsService.getCrimeSitrep(referenceDate, undefined, activeDistrict);
     const reportId = `SITREP-${activeDistrict}-${Date.now().toString().slice(-6)}`;
     sitrep.id = reportId;

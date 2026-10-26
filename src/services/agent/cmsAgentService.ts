@@ -159,7 +159,7 @@ export class CmsAgentService {
 
     // Extract Target Station for transfer
     const stMatch = raw.match(/(?:thane|station|ps)\s+([A-Za-z\s]+?)(?=\s+(?:ko|mein|me|bhejo|transfer|$))/i);
-    const targetStation = stMatch ? stMatch[1].trim() : "PS City Thanesar";
+    const targetStation = stMatch ? stMatch[1].trim() : "PS City Panipat";
 
     // -------------------------------------------------------------
     // INTENT: AI MODEL INQUIRY (Gemini 3.6 Flash)
@@ -1652,8 +1652,8 @@ export class CmsAgentService {
       templateId: tmpl.id,
       templateTitle: tmpl.titleHi,
       actAndSection: tmpl.section,
-      policeStation: "Sector 29 Police Station",
-      district: "Gurugram",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       caseType: firNumber ? "FROM_FIR" : "DIRECT",
       relatedFirNumber: firNumber,
       respondentName: respondent,
@@ -1674,8 +1674,8 @@ export class CmsAgentService {
         respondentAddress: "H.No. 112, Village Chakkarpur, Sector 28, Gurugram",
         incidentPlace: "Main Market, Sector 29, Gurugram",
         incidentDate: new Date().toISOString().split("T")[0],
-        district: "Gurugram",
-        policeStation: "Sector 29 Police Station",
+        district: "Panipat",
+        policeStation: "PS City Panipat",
       }),
       witnesses: [
         { id: "w-1", name: "ASI Virender Singh", fatherName: "Sh. Rohtas", address: "PS Sector 29, Gurugram" },
@@ -3050,7 +3050,7 @@ export class CmsAgentService {
         subject: `रवानगी अनुसंधान व तामील नोटिस बहक ${pName} बमुकद्दमा सं. ${compNumber}`,
         narrative: `वक्त पर जांच अधिकारी ${eo} हस्ब हुक्म मुलाहिजा मौका व तामील नोटिस धारा 35(3) BNSS बहक ${pName} रवाना हुए।`,
         policeStation: params.policeStation || "Civil Lines, Gurugram",
-        district: "Gurugram",
+        district: "Panipat",
         officer: {
           name: eo,
           rank: "Sub Inspector",

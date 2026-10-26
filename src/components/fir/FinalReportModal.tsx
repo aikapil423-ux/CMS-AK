@@ -129,14 +129,14 @@ export function IIFVChargesheetForm({
     const autoKeys = new Set<string>();
 
     const court = `In the Court of Chief Judicial Magistrate / JMIC, ${
-      fir.district || currentUser.district || "Kurukshetra"
+      fir.district || currentUser.district || "Panipat"
     }`;
     autoKeys.add("court");
 
-    const district = fir.district || currentUser.district || "Kurukshetra";
+    const district = fir.district || currentUser.district || "Panipat";
     autoKeys.add("district");
 
-    const ps = fir.policeStation || currentUser.stationName || "PS City Thanesar";
+    const ps = fir.policeStation || currentUser.stationName || "PS City Panipat";
     autoKeys.add("ps");
 
     const year = String(fir.firYear || (fir.firDate ? fir.firDate.slice(0, 4) : new Date().getFullYear()));
@@ -257,7 +257,7 @@ export function IIFVChargesheetForm({
             {
               sNo: 1,
               addressType: "Permanent",
-              address: "Ward No. 4, Thanesar, District Kurukshetra",
+              address: "Ward No. 4, Panipat, District Panipat",
             },
           ],
           identificationDob: "15/07/1994",
@@ -274,8 +274,8 @@ export function IIFVChargesheetForm({
               sNo: 1,
               firNo: "Nil",
               state: "Haryana",
-              district: "Kurukshetra",
-              policeStation: "PS City Thanesar",
+              district: "Panipat",
+              policeStation: "PS City Panipat",
               descriptionOfCase: "No previous criminal record found",
               convictionAcquittal: "Nil",
             },
@@ -301,7 +301,7 @@ export function IIFVChargesheetForm({
               {
                 sNo: 1,
                 addressType: "Permanent & Present",
-                address: "House No. 142, Subhash Nagar, Thanesar, Kurukshetra",
+                address: "House No. 142, Subhash Nagar, Model Town, Panipat",
                 whetherVerified: "Yes",
               },
             ],
@@ -340,8 +340,8 @@ export function IIFVChargesheetForm({
                 sNo: 1,
                 firNo: "Nil",
                 state: "Haryana",
-                district: "Kurukshetra",
-                policeStation: "PS City Thanesar",
+                district: "Panipat",
+                policeStation: "PS City Panipat",
                 descriptionOfCase: "No previous criminal convictions",
                 convictionAcquittal: "Nil",
               },

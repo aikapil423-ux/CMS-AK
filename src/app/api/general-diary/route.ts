@@ -73,8 +73,8 @@ async function pruneExpiredSuggestionsAndDrafts(): Promise<number> {
 // - Every entry is persisted in SQLite (searchable forever).
 // ------------------------------------------------------------------
 
-const DEFAULT_STATION = "PS City Thanesar";
-const DEFAULT_DISTRICT = "Kurukshetra";
+const DEFAULT_STATION = "PS City Panipat";
+const DEFAULT_DISTRICT = "Panipat";
 
 function generateAuditId(prefix: string = "AUD"): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

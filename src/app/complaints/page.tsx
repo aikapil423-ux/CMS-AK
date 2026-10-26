@@ -733,10 +733,11 @@ function ComplaintListContent() {
         category: categoryFilter,
         assignedEo: eoFilterParam,
         viewerRole: currentUser.role,
+        viewerStation: currentUser.stationName,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
       }),
-      ComplaintService.getStatusCounts(eoFilterParam),
+      ComplaintService.getStatusCounts(eoFilterParam, currentUser.stationName, currentUser.role),
     ]);
     setComplaints(data);
     setStatusCounts(counts);
@@ -784,7 +785,7 @@ function ComplaintListContent() {
       list = list.filter((c) => {
         if (col === "complaintNumber") {
           return (
-            c.complaintNumber.toLowerCase().includes(q) ||
+            c.complaintNumber.toLowerCase().includes(q) || (c.fivePNumber?.toLowerCase().includes(q) ?? false) || (c.policeStation?.toLowerCase().includes(q) ?? false) ||
             (c.priority?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "createdAt") {
@@ -987,12 +988,27 @@ function ComplaintListContent() {
       case "complaintId":
         return (
           <td key="complaintId" className="py-3 px-4 font-mono">
-            <Link
-              href={`/complaints/${c.id}`}
-              className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
-            >
-              {c.complaintNumber}
-            </Link>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Link
+                href={`/complaints/${c.id}`}
+                className="font-bold text-[#0b192c] hover:text-blue-600 hover:underline block"
+              >
+                {c.complaintNumber}
+              </Link>
+              {c.fivePNumber && (
+                <span
+                  title={`5-P Office Number: ${c.fivePNumber} (Source: ${c.sourceOffice || "SP Office"})`}
+                  className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-300 shrink-0"
+                >
+                  5-P: {c.fivePNumber}
+                </span>
+              )}
+            </div>
+            {c.policeStation && (
+              <span className="text-[10px] text-slate-400 block font-sans">
+                {c.policeStation}
+              </span>
+            )}
             {(c.isTransferred || ((c.linkedComplaintsList && c.linkedComplaintsList.length > 0) || c.linkedComplaintNumber)) && (
               <div className="mt-1 flex flex-wrap items-center gap-1">
                 {c.isTransferred && (
@@ -2059,12 +2075,19 @@ function ComplaintListContent() {
               <Card key={c.id} className="border-slate-200 shadow-xs">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <Link
                       href={`/complaints/${c.id}`}
                       className="font-mono text-xs font-bold text-[#0b192c] hover:underline"
                     >
                       {c.complaintNumber}
                     </Link>
+                    {c.fivePNumber && (
+                      <span className="text-[9px] font-mono font-bold px-1 rounded bg-purple-100 text-purple-900 border border-purple-300">
+                        5-P: {c.fivePNumber}
+                      </span>
+                    )}
+                  </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">

@@ -81,6 +81,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Officer Notifications Bell Icon */}
             <TopBarNotifications />
 
+            {/* In FIR Module (e.g. /fir Register Page), Red Register FIR Button right after Bell icon */}
+            {isFir && pathname !== "/fir/register" && canRegisterFir && (
+              <Link href="/fir/register">
+                <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold shadow-xs">
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  {t("Register FIR")}
+                </Button>
+              </Link>
+            )}
+
             {/* Universal Police Dictation (Hindi & English Voice Input) */}
             <TopBarDictation />
 

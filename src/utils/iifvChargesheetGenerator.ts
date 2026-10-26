@@ -773,7 +773,7 @@ export function generateIIFVChargesheetHtmlFromFir(
   return generateIIFVChargesheetHtml({
     court,
     district: fir.district || currentUser?.district || "Gurugram",
-    ps: fir.policeStation || currentUser?.stationName || "Sector 29 Police Station",
+    ps: fir.policeStation || currentUser?.stationName || "PS City Panipat",
     year,
     firNo: fir.firNumber,
     firDate: fir.firDate ? fir.firDate.slice(0, 10) : new Date().toISOString().slice(0, 10),

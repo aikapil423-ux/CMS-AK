@@ -286,7 +286,62 @@ function syncComplaintsToServer(items: ComplaintItem[]) {
 complaintsStore = loadComplaintsFromStorage();
 officerNotificationsStore = loadNotificationsFromStorage();
 
+
+export function getStationComplaintCode(stationName?: string): string {
+  const norm = (stationName || "").toLowerCase().trim();
+  if (norm.includes("chandni bagh")) return "CBG";
+  if (norm.includes("model town")) return "MTN";
+  if (norm.includes("cyber")) return "CYB";
+  if (norm.includes("women")) return "WMN";
+  if (norm.includes("thanesar")) return "THN";
+  if (norm.includes("rewari")) return "REW";
+  if (norm.includes("sector 29")) return "S29";
+  if (norm.includes("sector 14")) return "S14";
+  if (norm.includes("city")) return "CTY";
+  const clean = (stationName || "PS").replace(/^ps\s+/i, "").replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase();
+  return clean || "STN";
+}
+
+export function nextComplaintNumber(
+  complaints: Pick<ComplaintItem, "complaintNumber" | "policeStation">[],
+  year: number,
+  stationName?: string
+): string {
+  const targetStation = (stationName || "").toLowerCase().trim();
+  const stationCode = getStationComplaintCode(stationName);
+
+  // Filter complaints belonging to this station
+  const stationComplaints = complaints.filter((c) => {
+    if (!targetStation) return true;
+    return (c.policeStation || "").toLowerCase().trim() === targetStation;
+  });
+
+  // Find max sequential number for this station and year
+  let maxSeq = 0;
+  for (const c of stationComplaints) {
+    if (!c.complaintNumber) continue;
+    const match = c.complaintNumber.match(/(\d{3,5})$/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+
+  // If no previous record found for this station, default start from 0001
+  const nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
+  const seqPadded = String(nextSeq).padStart(4, "0");
+  return "HAR-PNP-" + year + "-CMP-" + stationCode + "-" + seqPadded;
+}
+
 export const ComplaintService = {
+  generateNextComplaintNumber(stationName?: string, year?: number): string {
+    const y = year || new Date().getFullYear();
+    const list = loadComplaintsFromStorage();
+    return nextComplaintNumber(list, y, stationName);
+  },
+
   async getComplaints(filter?: {
     search?: string;
     status?: string;
@@ -307,6 +362,30 @@ export const ComplaintService = {
       ...c,
       daysPending: computeDaysPending(c),
     }));
+
+    // 0. Station-level isolation:
+    // SHO, MHC, Duty Officer, and IO/EO see ONLY complaints of their police station.
+    // Superior district officers (DSP, SP, ASP, Super Admin) see across the district.
+    const isSuperiorRole =
+      filter?.viewerRole === "DSP_SUBDIV" ||
+      filter?.viewerRole === "SP_DISTRICT" ||
+      filter?.viewerRole === "SUPER_ADMIN";
+
+    if (!isSuperiorRole && filter?.viewerStation && filter.viewerStation.trim()) {
+      const vStn = filter.viewerStation.trim().toLowerCase();
+      const vStnCode = getStationComplaintCode(filter.viewerStation);
+
+      list = list.filter((c) => {
+        const cStn = (c.policeStation || "").trim().toLowerCase();
+        if (cStn && (cStn === vStn || cStn.includes(vStn) || vStn.includes(cStn))) {
+          return true;
+        }
+        if (c.complaintNumber && vStnCode && c.complaintNumber.toUpperCase().includes("-" + vStnCode + "-")) {
+          return true;
+        }
+        return false;
+      });
+    }
 
     // 1. Role-based visibility
     const isEo =
@@ -581,7 +660,7 @@ export const ComplaintService = {
     return this.getComplaintByIdSync(complaintNumber);
   },
 
-  async getStatusCounts(assignedEoFilter?: string): Promise<{
+  async getStatusCounts(assignedEoFilter?: string, viewerStation?: string, viewerRole?: string): Promise<{
     all: number;
     unassigned: number;
     underEnquiry: number;
@@ -596,6 +675,27 @@ export const ComplaintService = {
   }> {
     complaintsStore = loadComplaintsFromStorage();
     let baseList = [...complaintsStore];
+
+    const isSuperior =
+      viewerRole === "DSP_SUBDIV" ||
+      viewerRole === "SP_DISTRICT" ||
+      viewerRole === "SUPER_ADMIN";
+
+    if (!isSuperior && viewerStation && viewerStation.trim()) {
+      const vStn = viewerStation.trim().toLowerCase();
+      const vStnCode = getStationComplaintCode(viewerStation);
+      baseList = baseList.filter((c) => {
+        const cStn = (c.policeStation || "").trim().toLowerCase();
+        if (cStn && (cStn === vStn || cStn.includes(vStn) || vStn.includes(cStn))) {
+          return true;
+        }
+        if (c.complaintNumber && vStnCode && c.complaintNumber.toUpperCase().includes("-" + vStnCode + "-")) {
+          return true;
+        }
+        return false;
+      });
+    }
+
     if (assignedEoFilter) {
       const eo = assignedEoFilter.toLowerCase().trim();
       const eoTokens = eo
@@ -691,7 +791,7 @@ export const ComplaintService = {
     const isDirectFir = Boolean(input.directSendToFir || input.directSendToFirChoice === "YES");
     const initialStatus: ComplaintStatus = isDirectFir ? "FIR_REGISTER" : "REGISTERED";
     const initialWorkflow: WorkflowState = isDirectFir ? "FIR_REGISTER" : "NOT_ASSIGNED";
-    const generatedComplaintNumber = `HAR-KKR-2026-CMP-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    const generatedComplaintNumber = this.generateNextComplaintNumber(station);
 
     const newComplaint: ComplaintItem = {
       id: `cmp_${Date.now()}`,
@@ -757,6 +857,9 @@ export const ComplaintService = {
       policeStation: station,
       district: district,
       registeredBy: officerName,
+      fivePNumber: input.fivePNumber,
+      officeReferenceNumber: input.officeReferenceNumber || input.fivePNumber,
+      sourceOffice: input.sourceOffice,
       linkedComplaintNumber: input.linkedComplaintNumber,
       crossComplaintNumber: input.isCrossComplaint ? input.linkedComplaintNumber : undefined,
       isCrossComplaint: input.isCrossComplaint,
@@ -3053,8 +3156,8 @@ PNO: ${shoPno}
         const eoName = complaint.assignedEoName || targetReport?.officerName || "Enquiry Officer";
         const eoRank = complaint.assignedEoRank || targetReport?.officerRank || "ASI/SI";
         const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "HR-04291882";
-        const psName = complaint.policeStation || "PS City Thanesar";
-        const distName = complaint.district || "Kurukshetra";
+        const psName = complaint.policeStation || "PS City Panipat";
+        const distName = complaint.district || "Panipat";
         const dateStr = nowIso.split("T")[0];
         const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -3190,8 +3293,8 @@ ${reportBody}
         const eoName = complaint.assignedEoName || targetReport?.officerName || "Enquiry Officer";
         const eoRank = complaint.assignedEoRank || targetReport?.officerRank || "ASI/SI";
         const eoPno = complaint.assignedEoPno || targetReport?.officerPno || "HR-04291882";
-        const psName = complaint.policeStation || "PS City Thanesar";
-        const distName = complaint.district || "Kurukshetra";
+        const psName = complaint.policeStation || "PS City Panipat";
+        const distName = complaint.district || "Panipat";
         const dateStr = nowIso.split("T")[0];
         const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
         const compSubject = complaint.subject || complaint.complaintSubject || complaint.categoryDisplay || "दरख्वास्त शिकायत";
@@ -3279,8 +3382,8 @@ ${reportBody}
     if (isClosure) {
       try {
         const timeStr = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-        const psName = complaint.policeStation || "PS City Thanesar";
-        const distName = complaint.district || "Kurukshetra";
+        const psName = complaint.policeStation || "PS City Panipat";
+        const distName = complaint.district || "Panipat";
         const eoName = complaint.assignedEoName || "जांच अधिकारी";
         const eoRank = complaint.assignedEoRank || "EO";
         const eoPno = complaint.assignedEoPno || "HR-00000000";
@@ -3730,7 +3833,7 @@ ${reportBody}
       activityDate: nowIso.split("T")[0],
       activityTime: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       policeStation: complaint.policeStation,
-      district: complaint.district || "Kurukshetra",
+      district: complaint.district || "Panipat",
       entryForOfficer: {
         name: eoIoName,
         rank: eoIoRank,

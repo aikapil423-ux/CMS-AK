@@ -1,12 +1,28 @@
 import type { FIRItem } from '@/types';
 import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 
-export function nextFirNumber(firs:Pick<FIRItem,'firNumber'|'firYear'>[],year:number):string {
-  const maximum=firs.filter(f=>f.firYear===year).reduce((max,f)=>{
-    const match=/^FIR\/(\d+)\/(\d{4})$/.exec(f.firNumber);
-    return match&&Number(match[2])===year?Math.max(max,Number(match[1])):max;
-  },0);
-  return `FIR/${String(maximum+1).padStart(4,'0')}/${year}`;
+export function nextFirNumber(
+  firs: Pick<FIRItem, 'firNumber' | 'firYear' | 'policeStation'>[],
+  year: number,
+  policeStation?: string
+): string {
+  const normPs = (ps?: string) => (ps || '').trim().toLowerCase();
+  const targetPs = normPs(policeStation);
+
+  const filtered = firs.filter((f) => {
+    if (f.firYear !== year) return false;
+    if (targetPs) {
+      return normPs(f.policeStation) === targetPs;
+    }
+    return true;
+  });
+
+  const maximum = filtered.reduce((max, f) => {
+    const match = /^FIR\/(\d+)\/(\d{4})$/.exec(f.firNumber);
+    return match && Number(match[2]) === year ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+
+  return `FIR/${String(maximum + 1).padStart(4, '0')}/${year}`;
 }
 
 export function firPendingDays(fir:Pick<FIRItem,'firDate'|'status'|'finalFormDate'>,now=new Date()):number {
@@ -16,6 +32,45 @@ export function firPendingDays(fir:Pick<FIRItem,'firDate'|'status'|'finalFormDat
   if(!end)return 0;
   const days=(Date.parse(end.slice(0,10))-Date.parse(fir.firDate.slice(0,10)))/86400000;
   return Number.isFinite(days)?Math.max(0,Math.floor(days)):0;
+}
+
+export function isFirVisibleToUser(
+  user?: { id?: string; pno?: string; name?: string; role?: string; stationName?: string } | null,
+  fir?: Pick<FIRItem, 'assignedIoId' | 'assignedIoName' | 'policeStation'> | null
+): boolean {
+  if (!user || !fir) return false;
+
+  const role = user.role || '';
+  const isSuperior =
+    role === "DSP_SUBDIV" ||
+    role === "SP_DISTRICT" ||
+    role === "ASP_HQ" ||
+    role === "SUPER_ADMIN";
+
+  // Superior district officers (SP, ASP, DSP, Super Admin) see all FIRs across all stations in the district
+  if (isSuperior) {
+    return true;
+  }
+
+  // Station-level personnel: SHO, MHC, Duty Officer
+  const isStationStaff =
+    role === "SHO" ||
+    role === "MHC_GD_INCHARGE" ||
+    role === "DUTY_OFFICER" ||
+    user.id === "usr_sho_1" ||
+    user.id === "usr_mhc_1";
+
+  if (isStationStaff) {
+    // If user has a police station assigned, only show FIRs of their station
+    if (user.stationName && fir.policeStation) {
+      const norm = (s: string) => s.trim().toLowerCase();
+      return norm(user.stationName) === norm(fir.policeStation);
+    }
+    return true;
+  }
+
+  // Investigating Officer (IO / EO): only see FIRs assigned to them in their station
+  return isUserAssignedIo(user, fir);
 }
 
 export function isUserAssignedIo(

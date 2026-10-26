@@ -103,7 +103,7 @@ function ReportsContent() {
               {isHindi ? "अपराध एवं प्रशासनिक रिपोर्ट" : "Police Reports & Crime Audits"}
             </h1>
             <p className="text-xs text-slate-500 font-medium">
-              {sitrepData?.district || "Kurukshetra"} • Haryana Police
+              {sitrepData?.district || "Panipat"} • Haryana Police
             </p>
           </div>
         </div>

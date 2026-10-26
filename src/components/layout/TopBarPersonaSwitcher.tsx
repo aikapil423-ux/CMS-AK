@@ -13,23 +13,38 @@ interface TopBarPersonaSwitcherProps {
 }
 
 function getRoleBadge(user: UserSession): { badge: string; colorClass: string } {
+  if (user.role === "SP_DISTRICT" || user.rank === "SUPERINTENDENT_OF_POLICE") {
+    return { badge: "SP", colorClass: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  }
+  if (user.rank === "ADDITIONAL_SP") {
+    return { badge: "ASP", colorClass: "bg-violet-50 text-violet-700 border-violet-200" };
+  }
+  if (user.role === "DSP_SUBDIV" || user.rank === "DEPUTY_SP") {
+    return { badge: "DSP", colorClass: "bg-purple-50 text-purple-700 border-purple-200" };
+  }
   if (user.role === "SHO") {
     return { badge: "SHO", colorClass: "bg-red-50 text-red-700 border-red-200" };
-  }
-  if (user.id === "usr_eo_1") {
-    return { badge: "EO 1", colorClass: "bg-blue-50 text-blue-700 border-blue-200" };
-  }
-  if (user.id === "usr_eo_2") {
-    return { badge: "EO 2", colorClass: "bg-sky-50 text-sky-700 border-sky-200" };
-  }
-  if (user.role === "DUTY_OFFICER") {
-    return { badge: "Duty", colorClass: "bg-amber-50 text-amber-700 border-amber-200" };
   }
   if (user.role === "MHC_GD_INCHARGE") {
     return { badge: "MHC", colorClass: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
-  if (user.role === "DSP_SUBDIV") {
-    return { badge: "DSP", colorClass: "bg-purple-50 text-purple-700 border-purple-200" };
+  if (user.role === "DUTY_OFFICER") {
+    return { badge: "Duty", colorClass: "bg-amber-50 text-amber-700 border-amber-200" };
+  }
+  if (user.role === "ENQUIRY_OFFICER") {
+    if (user.rank === "INSPECTOR") {
+      return { badge: "IO-Insp", colorClass: "bg-blue-50 text-blue-700 border-blue-200" };
+    }
+    if (user.rank === "SUB_INSPECTOR") {
+      return { badge: "IO-SI", colorClass: "bg-blue-50 text-blue-700 border-blue-200" };
+    }
+    if (user.rank === "ASSISTANT_SUB_INSPECTOR") {
+      return { badge: "IO-ASI", colorClass: "bg-sky-50 text-sky-700 border-sky-200" };
+    }
+    if (user.rank === "HEAD_CONSTABLE") {
+      return { badge: "IO-HC", colorClass: "bg-cyan-50 text-cyan-700 border-cyan-200" };
+    }
+    return { badge: "IO/EO", colorClass: "bg-blue-50 text-blue-700 border-blue-200" };
   }
   return { badge: user.rank.slice(0, 3), colorClass: "bg-slate-100 text-slate-700 border-slate-200" };
 }

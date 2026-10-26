@@ -115,7 +115,7 @@ function FIRFinalFormContent() {
   const [reportNumber, setReportNumber] = useState("");
   const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
   const [policeStation, setPoliceStation] = useState(
-    globalLang === "hi" ? "थाना सैक्टर 29" : "Sector 29 Police Station"
+    globalLang === "hi" ? "थाना शहर पानीपत" : "PS City Panipat"
   );
   const [district, setDistrict] = useState(
     globalLang === "hi" ? "जिला गुरुग्राम" : "Gurugram"

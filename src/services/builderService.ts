@@ -50,7 +50,7 @@ export interface DynamicFieldDef {
 
 export const CMS_DYNAMIC_FIELDS: DynamicFieldDef[] = [
   // Case Info
-  { key: "CASE_NUMBER", token: "{{CASE_NUMBER}}", label: "Case / Complaint Number", category: "Case Info", example: "HAR-PNP-2026-CMP-00482" },
+  { key: "CASE_NUMBER", token: "{{CASE_NUMBER}}", label: "Case / Complaint Number", category: "Case Info", example: "HAR-PNP-2026-CMP-CTY-0001" },
   { key: "FIR_NUMBER", token: "{{FIR_NUMBER}}", label: "FIR Number", category: "Case Info", example: "FIR No. 128/2026" },
   { key: "CASE_STATUS", token: "{{CASE_STATUS}}", label: "Case Status", category: "Case Info", example: "UNDER_ENQUIRY" },
 

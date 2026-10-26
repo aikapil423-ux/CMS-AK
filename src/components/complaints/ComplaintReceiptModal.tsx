@@ -186,7 +186,7 @@ export function ComplaintReceiptModal({
                 Receipt of Registered Complaints
               </h1>
               <p className="text-xs font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
-                {complaint.policeStation || "PS City Thanesar"}, District {complaint.district || "Kurukshetra"}
+                {complaint.policeStation || "PS City Panipat"}, District {complaint.district || "Panipat"}
               </p>
               <p className="text-[11px] text-slate-600 italic mt-0.5">
                 (Statutory Intake Slip under PPR Rule 22.48 &amp; Section 173(3) BNSS, 2023)
@@ -196,10 +196,15 @@ export function ComplaintReceiptModal({
             {/* Acknowledgement No & Date Time */}
             <div className="border border-slate-400 p-3 bg-white flex flex-row items-center justify-between gap-2 text-xs sm:text-sm font-sans">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900">Acknowledgement No:</span>
+                <span className="font-bold text-slate-900">Station Complaint No:</span>
                 <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2.5 py-0.5 bg-slate-50">
                   {complaint.complaintNumber}
                 </span>
+                {complaint.fivePNumber && (
+                  <span className="font-mono font-bold text-purple-900 border border-purple-400 px-2.5 py-0.5 bg-purple-50">
+                    5-P Ref: {complaint.fivePNumber}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
                 <span className="font-bold text-slate-800">Date &amp; Time:</span>
@@ -360,7 +365,7 @@ export function ComplaintReceiptModal({
                   Moharrir Head Constable / Duty Officer
                 </p>
                 <p className="text-slate-600 font-mono text-[11px]">
-                  Belt No: {mhcBeltNumber} • {complaint.policeStation || "PS City Thanesar"}
+                  Belt No: {mhcBeltNumber} • {complaint.policeStation || "PS City Panipat"}
                 </p>
               </div>
             </div>

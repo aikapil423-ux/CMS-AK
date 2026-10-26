@@ -111,7 +111,7 @@ const INITIAL_SCRUTINY_RECORDS: ScrutinyPerformaRecord[] = [
   {
     id: "SCR-2026-0041",
     scrutinyNumber: "SCR/2026/0041",
-    firNumber: "FIR/0284/2026",
+    firNumber: "FIR/0004/2026",
     policeStation: "PS City Panipat",
     district: "Panipat",
     actsAndSections: "Sec 304, 3(5) BNS (Snatching)",
@@ -142,7 +142,7 @@ const INITIAL_SCRUTINY_RECORDS: ScrutinyPerformaRecord[] = [
   {
     id: "SCR-2026-0038",
     scrutinyNumber: "SCR/2026/0038",
-    firNumber: "FIR/0312/2026",
+    firNumber: "FIR/0003/2026",
     policeStation: "PS Model Town Panipat",
     district: "Panipat",
     actsAndSections: "Sec 103(1), 3(5) BNS (Murder)",
@@ -176,7 +176,7 @@ const INITIAL_BAIL_REPLIES: BailReplyRecord[] = [
   {
     id: "BAIL-2026-0012",
     applicationNo: "BA/142/2026",
-    firNumber: "FIR/0312/2026",
+    firNumber: "FIR/0003/2026",
     policeStation: "PS Model Town Panipat",
     courtName: "Court of Ld. Additional Sessions Judge-I, Panipat",
     applicantAccusedName: "Rohit @ Kalu S/o Mahesh",
@@ -199,7 +199,7 @@ const INITIAL_BAIL_REPLIES: BailReplyRecord[] = [
   {
     id: "BAIL-2026-0009",
     applicationNo: "ABA/89/2026",
-    firNumber: "FIR/0284/2026",
+    firNumber: "FIR/0004/2026",
     policeStation: "PS City Panipat",
     courtName: "Court of Ld. Sessions Judge, Panipat",
     applicantAccusedName: "Rahul S/o Naresh",
@@ -224,7 +224,7 @@ const INITIAL_STATUS_REPORTS: CourtStatusReportRecord[] = [
   {
     id: "SR-2026-0005",
     reportRefNo: "SR/HC/2026/005",
-    firNumber: "FIR/0315/2026",
+    firNumber: "FIR/0002/2026",
     policeStation: "PS Chandni Bagh Panipat",
     courtName: "Hon'ble High Court of Punjab & Haryana, Chandigarh",
     caseTitle: "Mukesh @ Billa v. State of Haryana",
@@ -243,7 +243,7 @@ const INITIAL_MISC_COURT: CourtMiscApplicationRecord[] = [
   {
     id: "MCA-2026-0021",
     applicationType: "PRODUCTION_WARRANT",
-    firNumber: "FIR/0312/2026",
+    firNumber: "FIR/0003/2026",
     policeStation: "PS Model Town Panipat",
     courtName: "Court of Ld. CJM, Panipat",
     targetPersonName: "Rohit @ Kalu S/o Mahesh (District Jail Panipat)",
@@ -256,7 +256,7 @@ const INITIAL_MISC_COURT: CourtMiscApplicationRecord[] = [
   {
     id: "MCA-2026-0019",
     applicationType: "PROCLAMATION_84_BNSS",
-    firNumber: "FIR/0284/2026",
+    firNumber: "FIR/0004/2026",
     policeStation: "PS City Panipat",
     courtName: "Court of Ld. JMIC, Panipat",
     targetPersonName: "Sanjay @ Sanju S/o Ramesh (Absconding Co-accused)",

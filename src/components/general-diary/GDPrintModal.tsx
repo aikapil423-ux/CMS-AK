@@ -143,8 +143,8 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   if (!isOpen) return null;
 
   const generateRegisterHtml = () => {
-    const policeStation = records[0]?.policeStation || "PS City Thanesar";
-    const district = records[0]?.district || "Kurukshetra";
+    const policeStation = records[0]?.policeStation || "PS City Panipat";
+    const district = records[0]?.district || "Panipat";
     const dateRangeLabel =
       startDate && endDate
         ? `${toDDMMYYYY(startDate)} to ${toDDMMYYYY(endDate)}`
@@ -302,7 +302,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
               </h3>
             </div>
             <p className="text-[11px] text-blue-200/90 print:text-slate-800 mt-0.5">
-              PS City Thanesar, Kurukshetra • Register No. II • Punjab Police Rules (PPR) 1934 Rule 22.48
+              PS City Panipat, Panipat • Register No. II • Punjab Police Rules (PPR) 1934 Rule 22.48
             </p>
             <p className="text-[11px] text-blue-200/80 print:text-slate-600 font-mono mt-0.5">
               {startDate && endDate

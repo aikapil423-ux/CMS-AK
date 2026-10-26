@@ -325,6 +325,9 @@ export interface ComplaintItem {
   assignedRosterDuty?: string;
   daysPending: number;
   targetResolutionDate?: string;
+  fivePNumber?: string;
+  officeReferenceNumber?: string;
+  sourceOffice?: string;
   linkedComplaintNumber?: string;
   crossComplaintNumber?: string;
   isCrossComplaint?: boolean;
@@ -1671,6 +1674,11 @@ export interface FIRItem {
   finalFormDate?: string;
   courtName?: string;
   finalFormSummary?: string;
+  // Court Order & Further Assignment
+  courtOrderNumber?: string;
+  courtOrderDate?: string;
+  courtOrderDocumentUrl?: string;
+  courtOrderDocumentName?: string;
 
   // Inter-State Transfer (Statutory Jurisdiction / Zero FIR Transfer)
   isTransferred?: boolean;
@@ -1686,6 +1694,13 @@ export interface FIRItem {
   transferOrderDate?: string;
   transferRecord?: FIRTransferRecord;
   transferHistory?: FIRTransferRecord[];
+
+  // Zero FIR Transferred-In metadata
+  isZeroFirTransferIn?: boolean;
+  originalZeroFirNumber?: string;
+  originalZeroFirPs?: string;
+  originalZeroFirDistrict?: string;
+  originalZeroFirDate?: string;
 
   // Reciprocal FIR Linking & Duplicate Tagging
   isDuplicate?: boolean;

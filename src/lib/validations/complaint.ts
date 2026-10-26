@@ -79,6 +79,9 @@ export const complaintRegistrationSchema = z.object({
   accusedAddress: z.string().optional(),
   accusedPhone: z.string().optional(),
   relationWithComplainant: z.string().optional(),
+  fivePNumber: z.string().optional(),
+  officeReferenceNumber: z.string().optional(),
+  sourceOffice: z.string().optional(),
   linkedComplaintNumber: z.string().optional(),
   isCrossComplaint: z.boolean().optional(),
   attachments: z

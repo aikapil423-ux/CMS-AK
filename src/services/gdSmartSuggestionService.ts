@@ -178,10 +178,10 @@ export const DEFAULT_OPEN_DEPARTURES: VerifiedDeparture[] = [
     vehicleNumber: "Govt Gypsy HR-07-G-1234",
     driverName: "EHC Kuldeep Singh",
     weaponsIssued: "Glock 9mm Pistol (Butt No. 14) + 30 live rounds",
-    destination: "Sector 7 Market, Kurukshetra",
+    destination: "Sector 7 Market, Panipat",
     purpose: "Field Investigation & Spot Enquiry",
     relatedType: "COMPLAINT",
-    caseNumber: "HAR-KKR-2026-CMP-00482",
+    caseNumber: "HAR-PNP-2026-CMP-CTY-0001",
     personName: "Kuldeep Sharma",
     isReturned: false,
   },
@@ -201,7 +201,7 @@ export const DEFAULT_OPEN_DEPARTURES: VerifiedDeparture[] = [
     destination: "Agricultural Land, Khasra 14//8, Village Mirzapur",
     purpose: "Land Boundary Dispute Field Verification",
     relatedType: "COMPLAINT",
-    caseNumber: "HAR-KKR-2026-CMP-00483",
+    caseNumber: "HAR-PNP-2026-CMP-CTY-0002",
     personName: "Baldev Singh",
     isReturned: false,
   },
@@ -236,7 +236,7 @@ export const DEFAULT_OPEN_DEPARTURES: VerifiedDeparture[] = [
     teamMembers: ["SI Pooja Rani (819/KKR)", "Ct. Vikas (892/KKR)"],
     vehicleNumber: "Govt Gypsy HR-07-G-1234",
     weaponsIssued: "Glock 9mm Pistol (Butt No. 14) + 30 live rounds",
-    destination: "District Courts Complex, Kurukshetra",
+    destination: "District Courts Complex, Panipat",
     purpose: "Supervisory Meeting & Production of Remand Papers",
     relatedType: "COURT",
     caseNumber: "FIR No. 44/2026",
@@ -510,8 +510,8 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
         id: `sugg_arrival_${dep.id}`,
         gdNumber: "GD-PENDING-SUGGESTION",
         sequencePerDay: 0,
-        policeStation: "PS City Thanesar",
-        district: "Kurukshetra",
+        policeStation: "PS City Panipat",
+        district: "Panipat",
         entryForOfficer: {
           name: dep.officerName,
           rank: dep.officerRank,
@@ -553,16 +553,16 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
     });
 
   // 2. FIR Registration suggestion for Complaint recommended for FIR within 24h
-  const comp484 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-KKR-2026-CMP-00484");
+  const comp484 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-PNP-2026-CMP-CTY-0003");
   const comp484Ms = comp484 ? new Date(comp484.updatedAt || comp484.createdAt).getTime() : 0;
   if (comp484Ms > 0 && nowMs - comp484Ms < GD_EXPIRATION_WINDOW_MS) {
-    const firDraft = generateFirFromComplaint("HAR-KKR-2026-CMP-00484", "FIR No. 45/2026", "115(2), 126(2), 351(2), 3(5) BNS", "SI Vikram Singh", "en");
+    const firDraft = generateFirFromComplaint("HAR-PNP-2026-CMP-CTY-0003", "FIR No. 45/2026", "115(2), 126(2), 351(2), 3(5) BNS", "SI Vikram Singh", "en");
     suggestions.push({
       id: "sugg_fir_cmp_00484",
       gdNumber: "GD-PENDING-SUGGESTION",
       sequencePerDay: 0,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "SI Vikram Singh",
         rank: "Sub-Inspector",
@@ -595,7 +595,7 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
           performedByRank: "Automated Integration",
           timestamp: new Date(comp484Ms).toISOString(),
           auditId: "SYS-FIR-SUGG-484",
-          remarks: "Triggered: Complaint HAR-KKR-2026-CMP-00484 recommended for FIR by SHO",
+          remarks: "Triggered: Complaint HAR-PNP-2026-CMP-CTY-0003 recommended for FIR by SHO",
         },
       ],
       _sortGdDate: todayKey,
@@ -604,16 +604,16 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
   }
 
   // 3. Complaint Intake suggestion for newly received complaint within 24h
-  const comp486 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-KKR-2026-CMP-00486");
+  const comp486 = MOCK_COMPLAINTS.find((c) => c.complaintNumber === "HAR-PNP-2026-CMP-CYB-0001");
   const comp486Ms = comp486 ? new Date(comp486.updatedAt || comp486.createdAt).getTime() : 0;
   if (comp486Ms > 0 && nowMs - comp486Ms < GD_EXPIRATION_WINDOW_MS) {
-    const compDraft = generateComplaintIntakeDraft("HAR-KKR-2026-CMP-00486", "en");
+    const compDraft = generateComplaintIntakeDraft("HAR-PNP-2026-CMP-CYB-0001", "en");
     suggestions.push({
       id: "sugg_cmp_intake_00486",
       gdNumber: "GD-PENDING-SUGGESTION",
       sequencePerDay: 0,
-      policeStation: "PS City Thanesar",
-      district: "Kurukshetra",
+      policeStation: "PS City Panipat",
+      district: "Panipat",
       entryForOfficer: {
         name: "ASI Surender Pal",
         rank: "ASI (Duty Officer)",
@@ -646,7 +646,7 @@ export function getSmartVerifiedSuggestions(): GeneralDiaryRecord[] {
           performedByRank: "Automated Integration",
           timestamp: new Date(comp486Ms).toISOString(),
           auditId: "SYS-CMP-INTAKE-486",
-          remarks: "Auto-suggested upon intake of online complaint HAR-KKR-2026-CMP-00486",
+          remarks: "Auto-suggested upon intake of online complaint HAR-PNP-2026-CMP-CYB-0001",
         },
       ],
       _sortGdDate: todayKey,

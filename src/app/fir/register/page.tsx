@@ -208,19 +208,25 @@ function RegisterFIRForm() {
   const [saveDraftFeedback, setSaveDraftFeedback] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Generated FIR Number for display
-  const [autoFirNumber, setAutoFirNumber] = useState<{ firNumber: string; firYear: number }>(() => {
-    return firService.generateNextFirNumber();
-  });
-
   // Jurisdiction & Header
   const [state, setState] = useState("Haryana");
-  const [district, setDistrict] = useState("Gurugram");
-  const [policeStation, setPoliceStation] = useState("Sector 29 Police Station");
+  const [district, setDistrict] = useState("Panipat");
+  const [policeStation, setPoliceStation] = useState(() => currentUser?.stationName || "PS City Panipat");
 
   // Auto-populate latest local date & time
   const [firDate, setFirDate] = useState(() => getNowLocal().date);
   const [firTime, setFirTime] = useState(() => getNowLocal().time);
+
+  // Generated FIR Number for display (Strictly per Police Station and Year)
+  const [autoFirNumber, setAutoFirNumber] = useState<{ firNumber: string; firYear: number }>(() => {
+    return firService.generateNextFirNumber(currentUser?.stationName || "PS City Panipat", getNowLocal().date);
+  });
+
+  // Keep FIR number reactive to policeStation or firDate changes
+  useEffect(() => {
+    const next = firService.generateNextFirNumber(policeStation, firDate);
+    setAutoFirNumber(next);
+  }, [policeStation, firDate]);
 
   // Auto-populate latest date and time on initial mount
   useEffect(() => {
@@ -422,6 +428,13 @@ function RegisterFIRForm() {
   const [isSensitiveFIR, setIsSensitiveFIR] = useState(false);
   const [originalDateTime, setOriginalDateTime] = useState("");
 
+  // Zero FIR Transferred-In States
+  const [isZeroFirTransferIn, setIsZeroFirTransferIn] = useState(false);
+  const [originalZeroFirNumber, setOriginalZeroFirNumber] = useState("");
+  const [originalZeroFirPs, setOriginalZeroFirPs] = useState("");
+  const [originalZeroFirDistrict, setOriginalZeroFirDistrict] = useState("");
+  const [originalZeroFirDate, setOriginalZeroFirDate] = useState("");
+
   const handleOriginalDateTimeChange = (newVal: string, targetEl?: HTMLInputElement | null) => {
     const now = getNowLocal();
     const maxVal = `${now.date}T${now.time}`;
@@ -531,21 +544,21 @@ function RegisterFIRForm() {
   const [permHouseNo, setPermHouseNo] = useState("");
   const [permStreet, setPermStreet] = useState("");
   const [permColony, setPermColony] = useState("");
-  const [permCity, setPermCity] = useState("Gurugram");
-  const [permTehsil, setPermTehsil] = useState("Gurugram");
+  const [permCity, setPermCity] = useState("Panipat");
+  const [permTehsil, setPermTehsil] = useState("Panipat");
   const [permCountry, setPermCountry] = useState("India");
   const [permState, setPermState] = useState("Haryana");
-  const [permDistrict, setPermDistrict] = useState("Gurugram");
-  const [permPs, setPermPs] = useState("Sector 29 Police Station");
+  const [permDistrict, setPermDistrict] = useState("Panipat");
+  const [permPs, setPermPs] = useState("PS City Panipat");
   const [permPincode, setPermPincode] = useState("");
   const [presentSameAsPerm, setPresentSameAsPerm] = useState(true);
   const [presHouseNo, setPresHouseNo] = useState("");
   const [presStreet, setPresStreet] = useState("");
   const [presColony, setPresColony] = useState("");
-  const [presCity, setPresCity] = useState("Gurugram");
-  const [presTehsil, setPresTehsil] = useState("Gurugram");
-  const [presPs, setPresPs] = useState("Sector 29 Police Station");
-  const [presDistrict, setPresDistrict] = useState("Gurugram");
+  const [presCity, setPresCity] = useState("Panipat");
+  const [presTehsil, setPresTehsil] = useState("Panipat");
+  const [presPs, setPresPs] = useState("PS City Panipat");
+  const [presDistrict, setPresDistrict] = useState("Panipat");
   const [presState, setPresState] = useState("Haryana");
   const [presPincode, setPresPincode] = useState("");
   const [presAddressFull, setPresAddressFull] = useState("");
@@ -748,8 +761,8 @@ function RegisterFIRForm() {
           if (c.complainantAge) setComplainantAge(String(c.complainantAge));
           setComplainantMobile(c.complainantMobile || "");
           setPermHouseNo(c.complainantAddress || "");
-          setPermCity(c.complainantCity || "Gurugram");
-          setPermDistrict(c.complainantDistrict || "Gurugram");
+          setPermCity(c.complainantCity || "Panipat");
+          setPermDistrict(c.complainantDistrict || "Panipat");
           setFirContentText(c.incidentDetails || found.narrative || "");
           setBriefFacts(c.incidentDetails?.slice(0, 300) || found.narrative?.slice(0, 300) || "");
           if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
@@ -790,7 +803,7 @@ function RegisterFIRForm() {
               directionFromPs: "",
               distanceKm: "",
               area: c.incidentPlace || "Commercial Area",
-              city: c.complainantCity || "Gurugram",
+              city: c.complainantCity || "Panipat",
               beatNo: "",
               isKnownDate: true,
               isForestPlace: false,
@@ -863,8 +876,8 @@ function RegisterFIRForm() {
             if (c.complainantAge) setComplainantAge(String(c.complainantAge));
             setComplainantMobile(c.complainantMobile || "");
             setPermHouseNo(c.complainantAddress || "");
-            setPermCity(c.complainantCity || "Gurugram");
-            setPermDistrict(c.complainantDistrict || "Gurugram");
+            setPermCity(c.complainantCity || "Panipat");
+            setPermDistrict(c.complainantDistrict || "Panipat");
             setFirContentText(c.incidentDetails || "");
             setBriefFacts(c.incidentDetails?.slice(0, 300) || "");
             if ((c as any).gdEntryNumber) setGdEntryNumber((c as any).gdEntryNumber);
@@ -906,7 +919,7 @@ function RegisterFIRForm() {
                 directionFromPs: "",
                 distanceKm: "",
                 area: c.incidentPlace || "Commercial Area",
-                city: "Gurugram",
+                city: "Panipat",
                 beatNo: "",
                 isKnownDate: true,
                 isForestPlace: false,
@@ -2008,8 +2021,8 @@ function RegisterFIRForm() {
       gender: complainantGender || "Male",
       victimClassification: "Adult",
       medicalExamRequiredForAge: false,
-      permCity: permCity || "Gurugram",
-      permDistrict: permDistrict || "Gurugram",
+      permCity: permCity || "Panipat",
+      permDistrict: permDistrict || "Panipat",
       permState: permState || "Haryana",
       permCountry: permCountry || "India",
       nationality: complainantNationality || "Indian",
@@ -2087,7 +2100,14 @@ function RegisterFIRForm() {
       isHeinousCrime,
       isSensitiveFIR,
       originalDateTime,
-      remarks: actRemarks,
+      isZeroFirTransferIn,
+      originalZeroFirNumber: isZeroFirTransferIn ? originalZeroFirNumber : undefined,
+      originalZeroFirPs: isZeroFirTransferIn ? originalZeroFirPs : undefined,
+      originalZeroFirDistrict: isZeroFirTransferIn ? originalZeroFirDistrict : undefined,
+      originalZeroFirDate: isZeroFirTransferIn ? originalZeroFirDate : undefined,
+      remarks: isZeroFirTransferIn && originalZeroFirNumber
+        ? `${actRemarks ? actRemarks + " | " : ""}Re-registered upon transfer from Zero FIR No. ${originalZeroFirNumber} (${originalZeroFirPs || "Other PS"}, ${originalZeroFirDistrict || ""})`
+        : actRemarks,
       typeOfInformation: typeOfInfo,
       caseType,
       actsAndSections: actsStr,
@@ -2865,7 +2885,11 @@ function RegisterFIRForm() {
                   <select
                     value={sourceOfComplaint}
                     onChange={(e) => {
-                      setSourceOfComplaint(e.target.value);
+                      const val = e.target.value;
+                      setSourceOfComplaint(val);
+                      if (val.toLowerCase().includes("zero") || val === "Other Police Stations") {
+                        setIsZeroFirTransferIn(true);
+                      }
                       if (errors.sourceOfComplaint) {
                         setErrors((prev) => {
                           const n = { ...prev };
@@ -2885,6 +2909,11 @@ function RegisterFIRForm() {
                         {source}
                       </option>
                     ))}
+                    {!sourceOfComplaintList.includes("Zero FIR Transfer In (u/s 173(1) BNSS)") && (
+                      <option value="Zero FIR Transfer In (u/s 173(1) BNSS)">
+                        Zero FIR Transfer In (u/s 173(1) BNSS)
+                      </option>
+                    )}
                   </select>
                   {errors.sourceOfComplaint && (
                     <p className="text-red-600 text-[11px] font-bold mt-1 flex items-center gap-1">
@@ -2892,6 +2921,68 @@ function RegisterFIRForm() {
                     </p>
                   )}
                 </div>
+
+                {/* Zero FIR Transferred-In Banner & Cross-Reference Box */}
+                {(isZeroFirTransferIn || sourceOfComplaint.toLowerCase().includes("zero") || sourceOfComplaint === "Other Police Stations") && (
+                  <div className="md:col-span-2 bg-amber-50/80 border border-amber-300 p-3.5 rounded-xl space-y-3 animate-in fade-in-40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse" />
+                        <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                          Zero FIR Transfer-In (प्राथमिकी स्थानान्तरण रसीद व नया नियमित नंबर)
+                        </h4>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded">
+                        Auto Sequential Number Assigned: {autoFirNumber.firNumber}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-900 leading-relaxed">
+                      इस पुलिस स्टेशन के अधिकार क्षेत्र में ट्रांसफर होकर आई Zero FIR को थाने के <strong>FIR रजिस्टर के अगले अनुक्रमिक नंबर ({autoFirNumber.firNumber})</strong> के तहत नियमित FIR के रूप में दर्ज किया जा रहा है। मूल Zero FIR का विवरण नीचे दर्ज करें:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-amber-900 block mb-0.5">Original Zero FIR No.</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 0/2026 or 004/2026"
+                          value={originalZeroFirNumber}
+                          onChange={(e) => setOriginalZeroFirNumber(e.target.value)}
+                          className="w-full p-2 rounded border border-amber-300 bg-white font-mono text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-amber-900 block mb-0.5">Original Police Station</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. PS City Sonipat"
+                          value={originalZeroFirPs}
+                          onChange={(e) => setOriginalZeroFirPs(e.target.value)}
+                          className="w-full p-2 rounded border border-amber-300 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-amber-900 block mb-0.5">Original District</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Sonipat"
+                          value={originalZeroFirDistrict}
+                          onChange={(e) => setOriginalZeroFirDistrict(e.target.value)}
+                          className="w-full p-2 rounded border border-amber-300 bg-white text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase font-bold text-amber-900 block mb-0.5">Transfer Dispatch Date</label>
+                        <DatePickerDDMMYYYY
+                          value={originalZeroFirDate}
+                          max={maxAllowedFirDate}
+                          onChange={(e) => setOriginalZeroFirDate(e.target.value)}
+                          placeholder="DD/MM/YYYY"
+                          size="sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center justify-between mb-1">

@@ -51,7 +51,7 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
 import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
-import { isUserAssignedIo } from "@/lib/firIntegrity";
+import { isUserAssignedIo, isFirVisibleToUser } from "@/lib/firIntegrity";
 
 type FIRSortField =
   | "firNumber"
@@ -361,9 +361,7 @@ function FIRRegisterPageContent() {
       const data = firService.getAllFirs();
       setFirs(data);
 
-      const relevantData = isIo && !isSho && !isSuperior && !isMhc
-        ? data.filter((f) => isUserAssignedIo(currentUser, f))
-        : data;
+      const relevantData = data.filter((f) => isFirVisibleToUser(currentUser, f));
 
       const underInvestigation = relevantData.filter((f) => f.status === "UNDER_INVESTIGATION").length;
       const chargesheetFiled = relevantData.filter((f) => f.status === "CHARGESHEET_FILED").length;
@@ -414,9 +412,12 @@ function FIRRegisterPageContent() {
         return false;
       }
 
-      // IO Filter for logged in IO
-      if (isIo && !isSho && !isSuperior && !isMhc) {
-        if (!isUserAssignedIo(currentUser, fir)) return false;
+      // Role and Police Station Visibility Check:
+      // SHO & MHC see all FIRs of their police station.
+      // Superior Officers (SP, DSP, ASP) see all FIRs across the district.
+      // IO sees only FIRs assigned to them.
+      if (!isFirVisibleToUser(currentUser, fir)) {
+        return false;
       }
 
       // Search Filter
@@ -893,7 +894,7 @@ function FIRRegisterPageContent() {
           </div>
         </div>
 
-        {/* Top Right Actions: Transfer FIR (Inter-State Only) & Link / Duplicate FIR */}
+        {/* Top Right Actions: Transfer FIR & Link / Duplicate FIR */}
         <div className="flex flex-wrap items-center gap-2.5">
           <Button
             type="button"

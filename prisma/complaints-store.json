@@ -1,7 +1,7 @@
 [
   {
     "id": "cmp_1791527802020",
-    "complaintNumber": "HAR-KKR-2026-CMP-6274",
+    "complaintNumber": "HAR-PNP-2026-CMP-CTY-0005",
     "source": "WALK_IN_STATION",
     "category": "HARASSMENT_STALKING",
     "categoryDisplay": "HARASSMENT STALKING",
@@ -42,8 +42,8 @@
     "complaintPurpose": "PRELIMINARY_ENQUIRY_BNSS_173",
     "isAccusedKnown": false,
     "accusedList": [],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS City Panipat",
+    "district": "Panipat",
     "registeredBy": "Inspector Rajesh Kumar",
     "attachments": [],
     "documents": [
@@ -921,7 +921,7 @@
   },
   {
     "id": "cmp_001",
-    "complaintNumber": "HAR-KKR-2026-CMP-00482",
+    "complaintNumber": "HAR-PNP-2026-CMP-CTY-0001",
     "source": "CM_WINDOW_HARYANA",
     "category": "FINANCIAL_FRAUD_CHEATING",
     "categoryDisplay": "Financial Fraud / Cheating",
@@ -950,8 +950,8 @@
         "relationWithComplainant": "Acquaintance via broker"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS City Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "assignedEoName": "SI Vikram Singh",
     "assignedEoPno": "07182930",
@@ -968,7 +968,7 @@
   },
   {
     "id": "cmp_002",
-    "complaintNumber": "HAR-KKR-2026-CMP-00483",
+    "complaintNumber": "HAR-PNP-2026-CMP-CTY-0002",
     "source": "WALK_IN_STATION",
     "category": "LAND_PROPERTY_DISPUTE",
     "categoryDisplay": "Land / Boundary Dispute",
@@ -994,8 +994,8 @@
         "relationWithComplainant": "Neighboring Field Owner"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS City Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "assignedEoName": "ASI Ramesh Chander",
     "assignedEoPno": "06281923",
@@ -1012,7 +1012,7 @@
   },
   {
     "id": "cmp_003",
-    "complaintNumber": "HAR-KKR-2026-CMP-00484",
+    "complaintNumber": "HAR-PNP-2026-CMP-CTY-0003",
     "source": "EMERGENCY_112",
     "category": "PHYSICAL_ASSAULT_AFFRAY",
     "categoryDisplay": "Physical Assault / Affray",
@@ -1040,8 +1040,8 @@
         "name": "3 Unidentified accomplices"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS City Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "assignedEoName": "SI Vikram Singh",
     "assignedEoPno": "07182930",
@@ -1168,8 +1168,8 @@
   },
   {
     "id": "cmp_004",
-    "complaintNumber": "HAR-KKR-2026-CMP-00485",
-    "source": "WALK_IN_STATION",
+    "complaintNumber": "HAR-PNP-2026-CMP-CTY-0004",
+    "source": "SP_OFFICE_TRANSFER",
     "category": "DOMESTIC_VIOLENCE_DOWRY",
     "categoryDisplay": "Domestic Dispute / Dowry Harassment",
     "priority": "HIGH_PRIORITY",
@@ -1198,8 +1198,8 @@
         "address": "Model Town, Pehowa"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS City Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "assignedEoName": "SI Meenakshi Sharma",
     "assignedEoPno": "08234190",
@@ -1212,11 +1212,14 @@
     "mhcName": "HC Devinder Kumar",
     "mhcRank": "Head Constable (MHC)",
     "mhcBeltNumber": "889/KKR",
-    "mhcPhone": "9813098765"
+    "mhcPhone": "9813098765",
+    "fivePNumber": "5-P/SP/2026/894",
+    "officeReferenceNumber": "DPO/PNP/5-P/Reader/2026/1418",
+    "sourceOffice": "Superintendent of Police Office, Panipat"
   },
   {
     "id": "cmp_005",
-    "complaintNumber": "HAR-KKR-2026-CMP-00486",
+    "complaintNumber": "HAR-PNP-2026-CMP-CYB-0001",
     "source": "CITIZEN_PORTAL_HARPATH",
     "category": "CYBER_CRIME",
     "categoryDisplay": "Cyber Crime / Online Fraud",
@@ -1240,8 +1243,8 @@
         "phone": "7829103948"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS Cyber Crime Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "daysPending": 17,
     "createdAt": "2026-10-03T08:30:00Z",
@@ -1279,8 +1282,8 @@
   },
   {
     "id": "cmp_006",
-    "complaintNumber": "HAR-KKR-2026-CMP-00470",
-    "source": "WALK_IN_STATION",
+    "complaintNumber": "HAR-PNP-2026-CMP-CBG-0001",
+    "source": "SP_OFFICE_TRANSFER",
     "category": "LAND_PROPERTY_DISPUTE",
     "categoryDisplay": "Civil Dispute / Tenancy",
     "priority": "ROUTINE",
@@ -1304,8 +1307,8 @@
         "address": "Shop No. 4, Salarpur Road"
       }
     ],
-    "policeStation": "PS City Thanesar",
-    "district": "Kurukshetra",
+    "policeStation": "PS Chandni Bagh Panipat",
+    "district": "Panipat",
     "registeredBy": "ASI Surender Pal",
     "assignedEoName": "HC Satish Kumar",
     "assignedEoPno": "05128394",
@@ -1317,6 +1320,51 @@
     "mhcName": "HC Devinder Kumar",
     "mhcRank": "Head Constable (MHC)",
     "mhcBeltNumber": "889/KKR",
-    "mhcPhone": "9813098765"
+    "mhcPhone": "9813098765",
+    "fivePNumber": "5-P/DPO/2026/1105",
+    "officeReferenceNumber": "5-P/DSP-HQ/2026/392",
+    "sourceOffice": "District Police Office Panipat (5-P Branch)"
+  },
+  {
+    "id": "cmp_007",
+    "complaintNumber": "HAR-PNP-2026-CMP-MTN-0001",
+    "fivePNumber": "5-P/SP/2026/972",
+    "sourceOffice": "Office of Superintendent of Police, Panipat",
+    "officeReferenceNumber": "DPO-5P-2026-781",
+    "source": "SP_OFFICE_TRANSFER",
+    "category": "FINANCIAL_FRAUD_CHEATING",
+    "categoryDisplay": "Financial Fraud / Cheating",
+    "priority": "ROUTINE",
+    "status": "ENQUIRY_IN_PROGRESS",
+    "incidentDate": "2026-10-04",
+    "incidentPlace": "Model Town Main Market, Panipat",
+    "incidentLandmark": "Near Milk Plant Chowk",
+    "incidentDetails": "Cheating and inducement of Rs. 2,50,000 under pretext of committee investment scheme. Transferred from SP Panipat 5-P Branch for preliminary enquiry.",
+    "complainantName": "Naresh Juneja",
+    "complainantFatherSpouse": "Sh. Kundan Lal Juneja",
+    "complainantGender": "MALE",
+    "complainantAge": 44,
+    "complainantMobile": "9812099312",
+    "complainantAddress": "H.No. 512, Model Town, Panipat",
+    "complainantCity": "Panipat",
+    "complainantDistrict": "Panipat",
+    "accusedList": [
+      {
+        "name": "Sunil Grover",
+        "phone": "9896014499",
+        "address": "Model Town, Panipat"
+      }
+    ],
+    "policeStation": "PS Model Town Panipat",
+    "district": "Panipat",
+    "registeredBy": "ASI Ramesh Chander",
+    "assignedEoName": "SI Vikram Singh",
+    "assignedEoPno": "HR-07182930",
+    "assignedEoRank": "SI",
+    "assignedAt": "2026-10-05T11:00:00Z",
+    "daysPending": 2,
+    "targetResolutionDate": "2026-10-20",
+    "createdAt": "2026-10-05T10:00:00Z",
+    "updatedAt": "2026-10-05T11:00:00Z"
   }
 ]
