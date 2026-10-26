@@ -24,10 +24,20 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
     if (!dest) continue;
 
     if (orig instanceof HTMLTextAreaElement) {
-      dest.textContent = orig.value;
-      (dest as HTMLTextAreaElement).value = orig.value;
-      dest.style.height = "auto";
-      dest.style.overflow = "visible";
+      // Replace textarea with auto-wrapping pre-wrap text element in print clone so EVERY typed character and line-break renders completely in Print Preview
+      const printBlock = document.createElement("div");
+      printBlock.className = dest.className;
+      printBlock.textContent = orig.value || "";
+      printBlock.style.cssText = dest.style.cssText;
+      printBlock.style.whiteSpace = "pre-wrap";
+      printBlock.style.wordBreak = "break-word";
+      printBlock.style.overflow = "visible";
+      printBlock.style.height = "auto";
+      printBlock.style.minHeight = "auto";
+      printBlock.style.display = "block";
+      printBlock.style.border = "none";
+      printBlock.style.background = "transparent";
+      dest.parentNode?.replaceChild(printBlock, dest);
     } else if (orig instanceof HTMLInputElement) {
       if (orig.type === "checkbox" || orig.type === "radio") {
         if (orig.checked) {
@@ -243,6 +253,15 @@ export function printA4Element(
           box-shadow: none !important;
           color: #000000 !important;
           resize: none !important;
+          outline: none !important;
+        }
+        input::placeholder, textarea::placeholder {
+          color: transparent !important;
+          opacity: 0 !important;
+          -webkit-text-fill-color: transparent !important;
+        }
+        [contenteditable] {
+          border-color: transparent !important;
           outline: none !important;
         }
       </style>
