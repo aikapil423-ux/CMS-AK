@@ -90,8 +90,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.setItem("cms_demo_logged_out", "true");
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cms_demo_logged_out", "true");
+        localStorage.removeItem("haryana_police_cms_user");
+      } catch {}
+    }
     setIsAuthenticated(false);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   };
 
   return (

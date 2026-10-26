@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -32,8 +32,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { currentUser, isAuthenticated } = useAuth();
   const { t } = useLanguage();
 
+  const router = useRouter();
+
+  // If unauthenticated and not on /login, redirect to /login
+  React.useEffect(() => {
+    if (!isAuthenticated && pathname !== "/login") {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, pathname, router]);
+
   // If on login page or unauthenticated, render without shell
-  if (!isAuthenticated) {
+  if (!isAuthenticated || pathname === "/login") {
     return <>{children}</>;
   }
 
