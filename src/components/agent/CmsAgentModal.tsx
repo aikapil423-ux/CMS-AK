@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Mic, Send, Paperclip, Loader2, Maximize2, Minimize2, Volume2, Square, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -21,6 +21,199 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   const [experience,setExperience]=useState<OperatorExperience>(newExperience);
   const [files,setFiles]=useState<{name:string;summary:string;preview:string;uncertainties:string[]}[]>([]);
   const [error,setError]=useState('');
+  
+  // Resizing state
+  const [size, setSize] = useState<{ width: number; height: number }>({ width: 500, height: 680 });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<{
+    direction: string;
+    startX: number;
+    startY: number;
+    startWidth: number;
+    startHeight: number;
+    startLeft: number;
+    startTop: number;
+  } | null>(null);
+
+  // Modal Position (Moving modal across page)
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingModal, setIsDraggingModal] = useState(false);
+  const dragModalRef = useRef<{
+    startX: number;
+    startY: number;
+    posX: number;
+    posY: number;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const savedW = localStorage.getItem("cms_agent_modal_w");
+      const savedH = localStorage.getItem("cms_agent_modal_h");
+      if (savedW && savedH) {
+        const w = parseInt(savedW, 10);
+        const h = parseInt(savedH, 10);
+        if (!isNaN(w) && !isNaN(h)) {
+          const maxW = typeof window !== 'undefined' ? window.innerWidth - 32 : 1200;
+          const maxH = typeof window !== 'undefined' ? window.innerHeight - 32 : 900;
+          setSize({
+            width: Math.min(Math.max(w, 320), maxW),
+            height: Math.min(Math.max(h, 400), maxH)
+          });
+        }
+      }
+
+      const savedX = localStorage.getItem("cms_agent_modal_x");
+      const savedY = localStorage.getItem("cms_agent_modal_y");
+      if (savedX && savedY) {
+        const x = parseInt(savedX, 10);
+        const y = parseInt(savedY, 10);
+        if (!isNaN(x) && !isNaN(y)) {
+          const maxLeft = typeof window !== 'undefined' ? Math.max(window.innerWidth - 100, 0) : 800;
+          const maxTop = typeof window !== 'undefined' ? Math.max(window.innerHeight - 80, 0) : 600;
+          setPosition({
+            x: Math.min(Math.max(x, 10), maxLeft),
+            y: Math.min(Math.max(y, 10), maxTop)
+          });
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Initialize position if null
+  const getActivePosition = useCallback(() => {
+    if (position) return position;
+    if (typeof window === 'undefined') return { x: 50, y: 50 };
+    return {
+      x: Math.max(16, window.innerWidth - size.width - 24),
+      y: Math.max(16, window.innerHeight - size.height - 24)
+    };
+  }, [position, size]);
+
+  // Dragging modal from header
+  const handleHeaderPointerDown = (e: React.PointerEvent) => {
+    if (expanded) return;
+    // Don't drag if clicked on header buttons
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDraggingModal(true);
+    const currPos = getActivePosition();
+    dragModalRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: currPos.x,
+      posY: currPos.y,
+    };
+  };
+
+  const handleHeaderPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragModalRef.current) return;
+    const { startX, startY, posX, posY } = dragModalRef.current;
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    const maxLeft = Math.max(window.innerWidth - 80, 0);
+    const maxTop = Math.max(window.innerHeight - 60, 0);
+
+    const newX = Math.min(Math.max(posX + deltaX, 0), maxLeft);
+    const newY = Math.min(Math.max(posY + deltaY, 0), maxTop);
+
+    setPosition({ x: newX, y: newY });
+  }, []);
+
+  const handleHeaderPointerEnd = useCallback((e: React.PointerEvent) => {
+    if (!dragModalRef.current) return;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    dragModalRef.current = null;
+    setIsDraggingModal(false);
+    if (position) {
+      try {
+        localStorage.setItem("cms_agent_modal_x", Math.round(position.x).toString());
+        localStorage.setItem("cms_agent_modal_y", Math.round(position.y).toString());
+      } catch {}
+    }
+  }, [position]);
+
+  // Resizing logic from edges & corner
+  const handleResizeStart = (e: React.PointerEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizing(true);
+    const currPos = getActivePosition();
+    resizeRef.current = {
+      direction,
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: size.width,
+      startHeight: size.height,
+      startLeft: currPos.x,
+      startTop: currPos.y,
+    };
+  };
+
+  const handleResizeMove = useCallback((e: React.PointerEvent) => {
+    if (!resizeRef.current) return;
+    const { direction, startX, startY, startWidth, startHeight, startLeft, startTop } = resizeRef.current;
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    let newLeft = startLeft;
+    let newTop = startTop;
+
+    const maxW = window.innerWidth - 32;
+    const maxH = window.innerHeight - 32;
+
+    // West edge resize (pull left/right)
+    if (direction.includes('w')) {
+      const candidateWidth = startWidth - deltaX;
+      if (candidateWidth >= 320 && candidateWidth <= maxW) {
+        newWidth = candidateWidth;
+        newLeft = startLeft + deltaX;
+      }
+    }
+    // East edge resize (pull right)
+    if (direction.includes('e')) {
+      newWidth = Math.min(Math.max(startWidth + deltaX, 320), maxW);
+    }
+    // North edge resize (pull top)
+    if (direction.includes('n')) {
+      const candidateHeight = startHeight - deltaY;
+      if (candidateHeight >= 380 && candidateHeight <= maxH) {
+        newHeight = candidateHeight;
+        newTop = startTop + deltaY;
+      }
+    }
+    // South edge resize (pull bottom)
+    if (direction.includes('s')) {
+      newHeight = Math.min(Math.max(startHeight + deltaY, 380), maxH);
+    }
+
+    setSize({ width: newWidth, height: newHeight });
+    setPosition({ x: newLeft, y: newTop });
+  }, []);
+
+  const handleResizeEnd = useCallback((e: React.PointerEvent) => {
+    if (!resizeRef.current) return;
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+    resizeRef.current = null;
+    setIsResizing(false);
+    try {
+      localStorage.setItem("cms_agent_modal_w", size.width.toString());
+      localStorage.setItem("cms_agent_modal_h", size.height.toString());
+      if (position) {
+        localStorage.setItem("cms_agent_modal_x", Math.round(position.x).toString());
+        localStorage.setItem("cms_agent_modal_y", Math.round(position.y).toString());
+      }
+    } catch {}
+  }, [size, position]);
+
   const sessionRef=useRef<WebsiteOperatorSession|null>(null);
   const recognitionRef=useRef<any>(null);const uploadRef=useRef<HTMLInputElement>(null);const endRef=useRef<HTMLDivElement>(null);
   const spokenRef=useRef(spoken);spokenRef.current=spoken;
@@ -72,17 +265,112 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   function reset(){stop();const session=new WebsiteOperatorSession(setExperience);sessionRef.current=session;setExperience(newExperience());setMessages([welcome]);setFiles([]);setInput('');setError('');}
   function exportReport(){const data=sessionRef.current?.report();const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='cms-agent-quality-report.json';a.click();URL.revokeObjectURL(url);}
   if(!isOpen)return null;
-  return <section data-cms-agent-ui aria-label="CMS AI workspace" className={`fixed z-50 flex flex-col bg-white border border-slate-300 shadow-2xl rounded-2xl overflow-hidden ${expanded?'inset-4 sm:inset-8 max-w-6xl mx-auto':'right-4 bottom-4 w-[94vw] sm:w-[500px] h-[85vh] max-h-[820px]'}`}>
-    <header className="bg-slate-950 text-white p-3 flex items-center justify-between gap-2">
-      <div><h2 className="font-bold text-sm">CMS AI Agent</h2><p className="text-[10px] text-slate-300">{currentUser.stationName} · {experience.phase}</p></div>
-      <div className="flex gap-2">
+
+  const currentPos = getActivePosition();
+
+  return <section
+    data-cms-agent-ui
+    aria-label="CMS AI workspace"
+    style={
+      expanded
+        ? undefined
+        : {
+            position: 'fixed',
+            left: `${currentPos.x}px`,
+            top: `${currentPos.y}px`,
+            width: `${size.width}px`,
+            height: `${size.height}px`,
+            maxWidth: 'calc(100vw - 32px)',
+            maxHeight: 'calc(100vh - 32px)',
+          }
+    }
+    className={`fixed z-50 flex flex-col bg-white border border-slate-300 shadow-2xl rounded-2xl select-none ${
+      isResizing || isDraggingModal ? 'transition-none select-none pointer-events-auto' : 'transition-[width,height] duration-75'
+    } ${
+      expanded
+        ? 'inset-4 sm:inset-8 max-w-6xl mx-auto'
+        : ''
+    }`}
+  >
+    {/* Resizing handles (edges & corners) - enabled when not expanded, transparent with NO blue highlight */}
+    {!expanded && (
+      <>
+        {/* Top edge */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 'n')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -top-1 left-2 right-2 h-2 cursor-ns-resize z-50 bg-transparent"
+        />
+        {/* Left edge */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 'w')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -left-1 top-2 bottom-2 w-2 cursor-ew-resize z-50 bg-transparent"
+        />
+        {/* Right edge */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 'e')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -right-1 top-2 bottom-2 w-2 cursor-ew-resize z-50 bg-transparent"
+        />
+        {/* Bottom edge */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 's')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -bottom-1 left-2 right-2 h-2 cursor-ns-resize z-50 bg-transparent"
+        />
+        {/* Top-Left Corner handle - completely transparent */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 'nw')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -top-2 -left-2 w-6 h-6 cursor-nwse-resize z-50 bg-transparent"
+        />
+        {/* Bottom-Right Corner handle - completely transparent */}
+        <div
+          onPointerDown={e => handleResizeStart(e, 'se')}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+          onPointerCancel={handleResizeEnd}
+          className="absolute -bottom-2 -right-2 w-6 h-6 cursor-nwse-resize z-50 bg-transparent"
+        />
+      </>
+    )}
+
+    {/* Header with mouse move/drag handle */}
+    <header
+      onPointerDown={handleHeaderPointerDown}
+      onPointerMove={handleHeaderPointerMove}
+      onPointerUp={handleHeaderPointerEnd}
+      onPointerCancel={handleHeaderPointerEnd}
+      className={`bg-slate-950 text-white p-3 flex items-center justify-between gap-2 rounded-t-2xl select-none ${
+        expanded ? 'cursor-default' : 'cursor-move active:cursor-grabbing'
+      }`}
+    >
+      <div className="flex items-center gap-2 select-none pointer-events-none">
+        <div>
+          <h2 className="font-bold text-sm flex items-center gap-1.5">
+            CMS AI Agent
+          </h2>
+          <p className="text-[10px] text-slate-300">{currentUser.stationName} · {experience.phase}</p>
+        </div>
+      </div>
+      <div className="flex gap-2 items-center pointer-events-auto">
         <button type="button" aria-label={spoken?'Disable spoken replies':'Enable spoken replies'} aria-pressed={spoken} onClick={()=>{setSpoken(!spoken);window.speechSynthesis?.cancel();}}><Volume2 size={17}/></button>
-        <button type="button" aria-label="New task" disabled={loading} onClick={reset}><RotateCcw size={17}/></button>
         <button type="button" aria-label={expanded?'Minimize workspace':'Expand workspace'} onClick={()=>setExpanded(!expanded)}>{expanded?<Minimize2 size={17}/>:<Maximize2 size={17}/>}</button>
         <button type="button" aria-label="Close agent" onClick={onClose}><X size={18}/></button>
       </div>
     </header>
-    <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50">
+    <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 select-text">
       {experience.objective && <details className="bg-white border rounded-lg p-2 text-xs" open={loading}>
         <summary className="font-semibold">Current task · {experience.phase}</summary><p className="mt-2 whitespace-pre-wrap">{experience.objective}</p>
         <ol className="list-decimal pl-5 mt-2">{experience.steps.map((step,i)=><li key={i}>{step}</li>)}</ol>
@@ -101,9 +389,13 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
       {error&&<p role="alert" className="text-xs text-red-700">{error}</p>}
       <div ref={endRef}/>
     </div>
-    <footer className="p-3 border-t space-y-2">
-      <div className="flex justify-between text-[10px] text-slate-600"><span>{experience.metrics.verifiedSteps} verified steps · {experience.metrics.failures} errors</span><button onClick={exportReport}>Export quality report</button></div>
-      <div className="flex gap-2 text-xs"><button disabled={loading} onClick={()=>send('undo')}>Undo last field</button><button disabled={loading} onClick={()=>send('retry')}>Retry / resume</button><select aria-label="Voice language" value={lang} onChange={e=>setLang(e.target.value)}><option value="hi-IN">Hindi / Hinglish</option><option value="en-IN">English</option></select></div>
+    <footer className="p-3 border-t space-y-2 rounded-b-2xl bg-white select-text">
+      <div className="flex justify-end text-xs">
+        <select aria-label="Voice language" value={lang} onChange={e=>setLang(e.target.value)} className="bg-slate-100 border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-600 focus:outline-none">
+          <option value="hi-IN">Hindi / Hinglish</option>
+          <option value="en-IN">English</option>
+        </select>
+      </div>
       <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();void send();}}>
         <input ref={uploadRef} type="file" accept=".txt,.csv,.md,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.webm,.ogg" className="hidden" onChange={upload}/>
         <button type="button" disabled={loading} aria-label="Attach document or audio" onClick={()=>uploadRef.current?.click()}><Paperclip size={18}/></button>
@@ -111,7 +403,6 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
         <input aria-label="Agent command" placeholder="Kaam batayein; voice transcript yahan edit kar sakte hain…" value={input} onChange={e=>setInput(e.target.value)} className="flex-1 min-w-0 border rounded-lg p-2 text-xs"/>
         {loading?<button type="button" aria-label="Stop task" onClick={stop}><Square size={18}/></button>:<button type="submit" aria-label="Send command" disabled={!input.trim()}><Send size={18}/></button>}
       </form>
-      <p className="text-[10px] text-slate-500">AI planning uses relevant page context and attached text. Sensitive ID fields are excluded. Files remain in this task until New task.</p>
     </footer>
   </section>;
 }
