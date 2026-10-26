@@ -1046,6 +1046,10 @@ export const firService = {
     };
   },
 
+  getFirs(): FIRItem[] {
+    return this.getAllFirs();
+  },
+
   getAllFirs(): FIRItem[] {
     if (firsStore.length === 0) {
       firsStore = loadFirsFromStorage();

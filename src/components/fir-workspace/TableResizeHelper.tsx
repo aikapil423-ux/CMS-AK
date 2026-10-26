@@ -136,35 +136,11 @@ export function TableRowResizer({
   );
 }
 
-export function TableResizeToolbar({
-  hasCustomSizes,
-  onReset,
-  label = "कॉलम व पंक्ति का आकार (चौड़ाई / लंबाई) बॉर्डर खींचकर बदल सकते हैं",
-}: {
-  hasCustomSizes: boolean;
-  onReset: () => void;
+export function TableResizeToolbar(_props?: {
+  hasCustomSizes?: boolean;
+  onReset?: () => void;
   label?: string;
+  hidden?: boolean;
 }) {
-  return (
-    <div className="no-print flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded mb-1.5 transition-colors">
-      <div className="flex items-center gap-1.5">
-        <span className="flex items-center text-blue-600 font-semibold gap-1">
-          <MoveHorizontal className="w-3.5 h-3.5" />
-          <MoveVertical className="w-3.5 h-3.5" />
-        </span>
-        <span className="text-slate-600">{label}</span>
-      </div>
-      {hasCustomSizes && (
-        <button
-          type="button"
-          onClick={onReset}
-          className="inline-flex items-center gap-1 text-[10px] text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 px-2 py-0.5 rounded shadow-xs font-medium cursor-pointer transition-colors"
-          title="आकार रीसेट करें (Reset custom width/height)"
-        >
-          <RotateCcw className="w-3 h-3" />
-          <span>आकार रीसेट (Reset)</span>
-        </button>
-      )}
-    </div>
-  );
+  return null;
 }
