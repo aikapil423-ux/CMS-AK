@@ -144,8 +144,9 @@ export function Sidebar() {
 
   // FIR NAVIGATION ITEMS (Complete Parity with Complaints module)
   const firNavItems: NavItem[] = [
-    { name: "FIR Register", href: "/fir", icon: Scale, badge: "CCTNS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "FIR Part B", href: "/fir/part-b", icon: FileCheck2, badge: "Disposal", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "FIR Register", href: "/fir", icon: Scale, badge: "Part A", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "FIR Part B", href: "/fir/part-b", icon: FileCheck2, badge: "Part B", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+    { name: "Complete cases", href: "/fir/complete-cases", icon: CheckCircle2, badge: "Complete", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { name: "Investigation Workspace", href: "/fir-workspace", icon: UserCheck },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];

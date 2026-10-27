@@ -57,17 +57,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-100">
       <div className="w-full max-w-md">
-        {/* Header Insignia */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 mb-3 shadow-xs">
-            <Shield className="w-7 h-7 text-slate-300" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
-              Government of Haryana
-            </span>
-            <h1 className="text-xl font-bold text-white tracking-tight">Haryana Police</h1>
-            <p className="text-xs text-slate-400">Case Management & Roznamcha System</p>
+        {/* Header Insignia with Official CMS Haryana Police Logo */}
+        <div className="text-center mb-5 flex flex-col items-center">
+          <div className="bg-white/95 rounded-2xl p-3 shadow-lg border border-slate-200/40 inline-flex items-center justify-center max-w-[320px] w-full">
+            <img
+              src="/cms-haryana-logo.png"
+              alt="CMS Case Management System - Haryana Police"
+              className="h-20 sm:h-22 w-auto object-contain drop-shadow-xs"
+            />
           </div>
         </div>
 

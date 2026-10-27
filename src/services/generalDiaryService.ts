@@ -1497,7 +1497,7 @@ export const GeneralDiaryService = {
    * are saved into an FIR Profile.
    */
   async createFirActionSuggestion(options: {
-    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE" | "ACT_SECTION_MODIFIED" | "FINAL_REPORT";
+    actionType: "ARREST_MEMO" | "CRIME_DETAILS" | "PROPERTY_SEIZURE" | "ACT_SECTION_MODIFIED" | "FINAL_REPORT" | "NOTICE_ISSUED";
     firId: string;
     firNumber: string;
     policeStation?: string;

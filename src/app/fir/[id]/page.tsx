@@ -1,4 +1,5 @@
 "use client";
+import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -46,9 +47,11 @@ import {
   BookOpen,
   ArrowRightLeft,
   Globe2,
+  RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
+import { getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ComplaintService } from "@/services/complaintService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -75,7 +78,8 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
 import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
 import { CrimeDetailModal } from "@/components/fir/CrimeDetailModal";
-import { FinalReportModal } from "@/components/fir/FinalReportModal";
+import { finalReportClient, type FinalReportHistoryEvent } from "@/services/finalReportClient";
+import { CctnsFinalReportModal } from "@/components/fir/CctnsFinalReportModal";
 import { ModifyActsModal } from "@/components/fir/ModifyActsModal";
 
 type ActiveTab =
@@ -167,7 +171,7 @@ export default function FIRProfilePage() {
 
   const [fir, setFir] = useState<FIRItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "reports" ? "reports" : "overview");
 
   // Statutory Receipt Modal
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -221,6 +225,7 @@ export default function FIRProfilePage() {
   const [generateReportDropdownOpen, setGenerateReportDropdownOpen] = useState(false);
   const generateReportDropdownRef = useRef<HTMLDivElement | null>(null);
   const [uploadReportModalOpen, setUploadReportModalOpen] = useState(false);
+  const [reviewPreviewLoaded, setReviewPreviewLoaded] = useState(false);
   const [reportPreviewItem, setReportPreviewItem] = useState<ComplaintReportItem | null>(null);
   const [reportDraftModalOpen, setReportDraftModalOpen] = useState(false);
   const [activeDraftReport, setActiveDraftReport] = useState<ComplaintReportItem | null>(null);
@@ -237,6 +242,18 @@ export default function FIRProfilePage() {
   // Final Form (Chargesheet/Closure) Modal
   const [isFinalFormModalOpen, setIsFinalFormModalOpen] = useState(false);
   const [isFinalReportModalOpen, setIsFinalReportModalOpen] = useState(false);
+  const [backendReports, setBackendReports] = useState<ComplaintReportItem[]>([]);
+  const [reportHistory, setReportHistory] = useState<FinalReportHistoryEvent[]>([]);
+  const [reportBackendError, setReportBackendError] = useState("");
+  const [reportRefresh, setReportRefresh] = useState(0);
+  const [editingFinalReport, setEditingFinalReport] = useState<ComplaintReportItem | undefined>();
+  const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
+  const [reopenReasonText, setReopenReasonText] = useState("");
+  const [reopenCourt, setReopenCourt] = useState("Chief Judicial Magistrate (CJM), Panipat");
+  const [reopenOrderNo, setReopenOrderNo] = useState("");
+  const [reopenOrderDt, setReopenOrderDt] = useState(new Date().toISOString().split("T")[0]);
+  const [reopenConfirmedDetail, setReopenConfirmedDetail] = useState(false);
+  const [isSubmittingReopenDetail, setIsSubmittingReopenDetail] = useState(false);
   const [finalFormType, setFinalFormType] = useState<"CHARGESHEET" | "CLOSURE" | "UNTRACED">("CHARGESHEET");
   const [courtName, setCourtName] = useState("Court of CJM, Gurugram");
   const [finalFormSummary, setFinalFormSummary] = useState("");
@@ -248,6 +265,42 @@ export default function FIRProfilePage() {
     currentUser.role === "SP_DISTRICT" ||
     currentUser.role === "SUPER_ADMIN";
   const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1") && !isMhc;
+
+  const handleDetailReopenSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fir) return;
+    if (!reopenReasonText.trim()) {
+      alert("⚠️ वैधानिक आवश्यकता: केस पुनः खोलने का स्पष्ट कारण (Reason for Reopening) दर्ज करना अनिवार्य है।");
+      return;
+    }
+    if (!reopenConfirmedDetail) {
+      alert("⚠️ कृपया घोषणा की पुष्टि करें (Please confirm the reopening declaration).");
+      return;
+    }
+    setIsSubmittingReopenDetail(true);
+    try {
+      const updated = firService.reopenCompletedCase({
+        firId: fir.id,
+        reopenedBy: currentUser?.name || "Competent Authority",
+        reopenedByRank: currentUser?.role || "Authorized Officer",
+        reason: reopenReasonText.trim(),
+        orderNumber: reopenOrderNo.trim() || undefined,
+        orderDate: reopenOrderDt || undefined,
+        courtName: reopenCourt.trim() || undefined,
+      });
+      if (updated) {
+        setIsReopenModalOpen(false);
+        setFir(updated);
+        alert(`✅ केस ${updated.firNumber} सफलतापूर्वक 'FIR Part B → Re-open' कार्यक्षेत्र में स्थानांतरित कर दिया गया है।`);
+        router.push("/fir/part-b?tab=REOPEN");
+      }
+    } catch (err: any) {
+      alert(`⚠️ त्रुटि: ${err.message || "केस पुनः खोलने में समस्या आई"}`);
+    } finally {
+      setIsSubmittingReopenDetail(false);
+    }
+  };
+
   const isIo = currentUser.role === "ENQUIRY_OFFICER" || (!isSho && !isMhc && !isSuperior);
 
   const isCrimeDetailsFilled = Boolean(
@@ -314,6 +367,15 @@ export default function FIRProfilePage() {
     });
     return unsub;
   }, [firId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReportBackendError("");
+    finalReportClient.list(firId).then(result => {
+      if (!cancelled) { setBackendReports(result.reports); setReportHistory(result.history); }
+    }).catch(error => { if (!cancelled) setReportBackendError(error.message); });
+    return () => { cancelled = true; };
+  }, [firId, reportRefresh]);
 
   // Support direct URL query param ?openCrimeDetails=true
   useEffect(() => {
@@ -790,7 +852,7 @@ export default function FIRProfilePage() {
 
   const displayReports = useMemo<ComplaintReportItem[]>(() => {
     if (!fir) return [];
-    const list = (fir.reports || []).map((r) => {
+    const list = [...backendReports, ...(fir.reports || []).filter(r => !backendReports.some(saved => saved.id === r.id))].map((r) => {
       // Ensure any chargesheet/final form report has authentic statutory HTML matching preview
       const isChargesheetOrFinal =
         r.reportType === "CHARGESHEET" ||
@@ -847,7 +909,7 @@ export default function FIRProfilePage() {
       });
     }
     return list;
-  }, [fir, currentUser]);
+  }, [fir, currentUser, backendReports]);
 
   const handleGenerateDocumentTemplate = (templateKey: string) => {
     if (!fir) return;
@@ -1066,6 +1128,11 @@ export default function FIRProfilePage() {
   };
 
   const handleEditReport = (report: ComplaintReportItem) => {
+    if (report.finalReportData) {
+      setEditingFinalReport(report);
+      setIsFinalReportModalOpen(true);
+      return;
+    }
     setActiveDraftReport(report);
     setReportDraftTitle(report.title);
     setReportDraftType(report.reportType || "CHARGESHEET");
@@ -1219,26 +1286,34 @@ export default function FIRProfilePage() {
     handleEditReport(newReport);
   };
 
-  const handleSendReportToSupervisory = (report: ComplaintReportItem) => {
+  const handleSendReportToSupervisory = async (report: ComplaintReportItem) => {
     if (!fir) return;
-    const updatedReports = (fir.reports || []).map((r) =>
-      r.id === report.id ? { ...r, sentToSho: true, status: "Finalized" as const } : r
-    );
-    firService.updateFir(fir.id, { reports: updatedReports });
-    firService.addAuditRecord(
-      fir.id,
-      "REPORT_FORWARDED",
-      `Submitted report "${report.title}" to Supervisory Officer / SP for review`,
-      currentUser.name
-    );
-    fetchFir();
-  };
-
-  const handleDeleteReport = (reportId: string) => {
-    if (!fir) return;
-    if (confirm("Are you sure you want to delete this report from the docket?")) {
-      firService.deleteReport(fir.id, reportId);
+    try {
+      if (report.finalReportData) {
+        const saved = await finalReportClient.sendToSho(report, fir.id, currentUser.id);
+        setBackendReports(rows => rows.map(r => r.id === saved.id ? saved : r));
+        setReportRefresh(n => n + 1);
+        return;
+      }
+      const latest = firService.getFirById(fir.id);
+      const stored = latest?.reports?.find(r => r.id === report.id);
+      if (!latest || !stored) throw new Error("Report not found. Reload the profile.");
+      if (stored.sentToSho) return;
+      const now = new Date().toISOString();
+      const reports = (latest.reports || []).map(r => r.id === report.id ? {
+        ...r, sentToSho: true, isSentToSho: true, sentToShoAt: now,
+        sentToShoBy: currentUser.id, updatedAt: now, status: "Finalized" as const,
+      } : r);
+      firService.updateFir(fir.id, {
+        reports,
+        auditTrail: [{ id: `aud-${Date.now()}`, timestamp: now, action: "REPORT_FORWARDED",
+          officerName: currentUser.name, role: currentUser.role,
+          details: `Submitted report "${stored.title}" to SHO for review`,
+        }, ...(latest.auditTrail || [])],
+      });
       fetchFir();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not send report to SHO. Please retry.");
     }
   };
 
@@ -1337,6 +1412,23 @@ export default function FIRProfilePage() {
               >
                 {fir.mainStatus || fir.status.replace(/_/g, " ")}
               </span>
+              {(() => {
+                const effectiveState = fir.trackingState || getAuthoritativeTrackingState(fir);
+                const badgeMap: Record<string, { label: string; cls: string }> = {
+                  PART_A_FRESH: { label: "Part A - Fresh", cls: "bg-sky-50 text-sky-800 border-sky-300" },
+                  PART_B_PARTIAL: { label: "Part B - Partial", cls: "bg-blue-50 text-blue-800 border-blue-300" },
+                  PART_B_UNDER_CHECKING: { label: "Part B - Under checking", cls: "bg-amber-50 text-amber-800 border-amber-300" },
+                  PART_B_REOPEN: { label: "Part B - Re-open", cls: "bg-purple-50 text-purple-800 border-purple-300" },
+                  COMPLETED: { label: "Complete cases", cls: "bg-emerald-50 text-emerald-800 border-emerald-300" }
+                };
+                const config = badgeMap[effectiveState] || { label: effectiveState, cls: "bg-slate-100 text-slate-800 border-slate-200" };
+                return (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${config.cls}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                    {config.label}
+                  </span>
+                );
+              })()}
               <span className="text-xs font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600">
                 {fir.cctnsFirNumber || "CCTNS LOCAL"}
               </span>
@@ -1498,6 +1590,26 @@ export default function FIRProfilePage() {
             <Scale className="w-3.5 h-3.5 text-red-700" />
             <span>Modify Acts</span>
           </Button>
+
+          {/* Re-open Button strictly for COMPLETED tracking state cases */}
+          {(fir.trackingState === "COMPLETED" || getAuthoritativeTrackingState(fir) === "COMPLETED") && (
+            <Button
+              size="sm"
+              onClick={() => {
+                setReopenReasonText("");
+                setReopenCourt("Chief Judicial Magistrate (CJM), Panipat");
+                setReopenOrderNo("");
+                setReopenOrderDt(new Date().toISOString().split("T")[0]);
+                setReopenConfirmedDetail(false);
+                setIsReopenModalOpen(true);
+              }}
+              className="bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs gap-1.5 cursor-pointer shadow-xs"
+              title="Reopen completed case (Section 193(9) BNSS)"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Re-open Case</span>
+            </Button>
+          )}
 
           {/* Assign / Reassign IO */}
           {isSho && (
@@ -2442,7 +2554,7 @@ export default function FIRProfilePage() {
               {/* Final Report Button */}
               <Button
                 size="sm"
-                onClick={() => router.push(`/fir-workspace/drafts?firId=${encodeURIComponent(fir.id)}&type=CHARGESHEET`)}
+                onClick={() => { setEditingFinalReport(undefined); setIsFinalReportModalOpen(true); }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
               >
                 <Scale className="w-3.5 h-3.5" />
@@ -2451,6 +2563,8 @@ export default function FIRProfilePage() {
             </div>
           </div>
 
+          {reportBackendError && <div role="alert" className="p-3 border border-red-200 bg-red-50 text-red-800 text-sm">{reportBackendError} <button className="underline" onClick={() => setReportRefresh(n => n + 1)}>Retry backend reports</button></div>}
+          {reportHistory.length > 0 && <details className="border rounded-lg p-3 bg-slate-50 text-xs"><summary className="cursor-pointer font-bold">Final report history — {reportHistory.length} recorded steps</summary><ol className="space-y-2 mt-3">{reportHistory.map(event => <li key={event.id}>{event.createdAt} · {event.action} · v{event.version} · {event.actorId}</li>)}</ol></details>}
           {/* Reports List */}
           {displayReports && displayReports.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -2478,7 +2592,7 @@ export default function FIRProfilePage() {
                             {report.sentToSho ? (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-mono flex items-center gap-1">
                                 <Send className="w-3 h-3 text-blue-600" />
-                                <span>Sent to SP / Supervisory</span>
+                                <span>Sent to SHO</span>
                               </span>
                             ) : isDraftStatus ? (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono">
@@ -2513,6 +2627,7 @@ export default function FIRProfilePage() {
                         </span>
                       </div>
 
+                      {report.finalReportData && <div className="text-xs bg-blue-50 rounded p-2 space-y-1"><p><strong>{report.reportType === "CHARGESHEET" ? `Challan: ${report.finalReportData.chargeSheetType}` : `Final Report: ${report.reportType} — ${report.finalReportData.finalReportReason}`}</strong></p><p>Investigation: {report.finalReportData.investigationStatus}</p><p>Review: {report.finalReportWorkflow?.state?.replaceAll("_", " ")}</p>{report.finalReportWorkflow?.rejectionReason && <p className="text-red-700">Returned to {report.finalReportWorkflow.assignedIoName || "assigned IO"}: {report.finalReportWorkflow.rejectionReason}</p>}<p>Accused: {report.finalReportData.accused.map(a => `${a.name} (${a.action})`).join(", ") || "No accused recorded"}</p><p>✓ Final Submit saved · {report.sentToSho ? "✓ Sent to SHO" : "Pending: Send to SHO"} · {report.finalReportWorkflow?.chiNumber ? `✓ CHI ${report.finalReportWorkflow.chiNumber} — ${report.finalReportWorkflow.state}` : "Pending: CHI submission in FIR Part B"}</p></div>}
                       {report.conclusionSummary && (
                         <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
                           <span className="font-bold text-slate-900">Findings: </span>
@@ -2536,7 +2651,7 @@ export default function FIRProfilePage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setReportPreviewItem(report)}
+                          onClick={() => { setReviewPreviewLoaded(false); setReportPreviewItem(report); }}
                           className="text-[11px] h-7 px-2.5 gap-1 border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer"
                           title="View report details"
                         >
@@ -2586,7 +2701,7 @@ export default function FIRProfilePage() {
                         </Button>
 
                         {/* 5. Create New Version */}
-                        {!report.isUploaded && (
+                        {!report.isUploaded && !report.finalReportData && (
                           <Button
                             type="button"
                             variant="outline"
@@ -2617,30 +2732,10 @@ export default function FIRProfilePage() {
                         {report.sentToSho && (
                           <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
                             <Check className="w-3 h-3 text-blue-600" />
-                            <span>Sent to SP</span>
+                            <span>Sent to SHO</span>
                           </span>
                         )}
 
-                        {/* 7. Delete - ONLY visible to the officer who created this report */}
-                        {(() => {
-                          const canDelete =
-                            !report.createdBy ||
-                            report.createdBy === currentUser.id ||
-                            report.createdBy === currentUser.name ||
-                            report.officerName === currentUser.name;
-                          return canDelete ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteReport(report.id)}
-                              className="text-slate-400 hover:text-red-600 h-7 w-7 p-0 cursor-pointer"
-                              title="Delete report (Creator only)"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          ) : null;
-                        })()}
                       </div>
                     </CardContent>
                   </Card>
@@ -2734,13 +2829,111 @@ export default function FIRProfilePage() {
         />
       )}
 
+      {/* Re-open Completed Case Modal */}
+      {isReopenModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="bg-purple-900 text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-purple-300" />
+                <h3 className="text-sm font-bold">Re-open Completed FIR ({fir.firNumber})</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsReopenModalOpen(false)}
+                className="text-purple-300 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleDetailReopenSubmit} className="p-4 space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-800">केस पुनः खोलने का ठोस आधार व कारण *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={reopenReasonText}
+                  onChange={(e) => setReopenReasonText(e.target.value)}
+                  placeholder="अग्रिम विवेचना / नए साक्ष्य मिलने पर अथवा न्यायालय के निर्देशानुसार..."
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-bold text-slate-700">संबद्ध न्यायालय</label>
+                  <input
+                    type="text"
+                    value={reopenCourt}
+                    onChange={(e) => setReopenCourt(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">आदेश / संदर्भ सं.</label>
+                  <input
+                    type="text"
+                    value={reopenOrderNo}
+                    onChange={(e) => setReopenOrderNo(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="font-bold text-slate-700">आदेश दिनांक</label>
+                <input
+                  type="date"
+                  value={reopenOrderDt}
+                  onChange={(e) => setReopenOrderDt(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+              <div className="pt-2 border-t border-slate-200">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={reopenConfirmedDetail}
+                    onChange={(e) => setReopenConfirmedDetail(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-slate-700">
+                    मैं प्रमाणित करता हूँ कि सक्षम न्यायालय अथवा पुलिस अधीक्षक/वरिष्ठ अधिकारी के निर्देशानुसार इस केस में वैधानिक अग्रिम विवेचना (Further Investigation) हेतु पुनः खोलने की अनुमति प्रदान की गई है।
+                  </span>
+                </label>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsReopenModalOpen(false)}
+                  disabled={isSubmittingReopenDetail}
+                >
+                  रद्द करें
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isSubmittingReopenDetail || !reopenConfirmedDetail}
+                  className="bg-purple-700 hover:bg-purple-800 text-white font-bold"
+                >
+                  {isSubmittingReopenDetail ? "पुनः खुल रहा है..." : "पुष्टि करें (Re-open)"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Statutory Final Report (IIF-V u/s 193 BNSS) Modal */}
       {isFinalReportModalOpen && fir && (
-        <FinalReportModal
+        <CctnsFinalReportModal
           fir={fir}
-          isOpen={isFinalReportModalOpen}
-          onClose={() => setIsFinalReportModalOpen(false)}
-          onSaved={(savedReport) => {
+          existing={editingFinalReport}
+          onClose={() => { setIsFinalReportModalOpen(false); setEditingFinalReport(undefined); }}
+          onSaved={(report) => {
+            setBackendReports(rows => [report, ...rows.filter(r => r.id !== report.id)]);
+            setReportRefresh(n => n + 1);
+            setActiveTab("reports");
             const updated = firService.getFirById(fir.id);
             if (updated) setFir(updated);
             fetchFir();
@@ -3351,12 +3544,14 @@ export default function FIRProfilePage() {
                 </div>
               </div>
 
+              {reportPreviewItem.finalReportData && currentUser.role === "SHO" && currentUser.stationName === fir.policeStation && ['SENT_TO_SHO', 'SHO_VIEWED', 'REJECTED', 'UNDER_CHECKING'].includes(reportPreviewItem.finalReportWorkflow?.state || '') && <FinalReportShoReview key={`${reportPreviewItem.id}-${reportPreviewItem.versionNumber}`} report={reportPreviewItem} userId={currentUser.id} loaded={reviewPreviewLoaded} onUpdated={saved => { setReportPreviewItem(saved); setBackendReports(rows => rows.map(row => row.id === saved.id ? saved : row)); setReportRefresh(n => n + 1); }} />}
               {previewHtml ? (
                 /* Authentic Statutory A4 Proforma (Identical to Step 2 Statutory Preview) */
                 <div className="flex-1 w-full bg-slate-100 overflow-hidden flex flex-col">
                   <iframe
                     title={reportPreviewItem.title}
                     srcDoc={previewHtml}
+                    onLoad={() => setReviewPreviewLoaded(true)}
                     className="w-full h-full border-0 bg-white"
                   />
                 </div>

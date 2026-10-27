@@ -126,3 +126,43 @@ export function isUserAssignedIo(
 
   return false;
 }
+
+
+import type { FIRTrackingState, ChallanMode, ChallanType } from '@/types';
+
+/**
+ * Resolves the authoritative tracking state of an FIR.
+ * If trackingState is already set explicitly, returns it.
+ * Otherwise, maps existing historical status cleanly:
+ * - Direct closure/cancelled/untraced -> COMPLETED
+ * - Chargesheet filed without ongoing reopen/partial -> COMPLETED
+ * - Default -> PART_A_FRESH
+ */
+export function getAuthoritativeTrackingState(fir: Pick<FIRItem, 'trackingState' | 'status' | 'finalFormType' | 'reopenHistory' | 'challanRecords'>): FIRTrackingState {
+  if (fir.trackingState) {
+    return fir.trackingState;
+  }
+
+  const status = (fir.status || '').toUpperCase();
+  const formType = (fir.finalFormType || '').toUpperCase();
+
+  // If closed / cancelled / untraced -> COMPLETED
+  if (
+    status === 'CLOSURE_REPORT_FILED' ||
+    status === 'UNTRACED' ||
+    status === 'CANCELLED' ||
+    status === 'QUASHED_BY_COURT' ||
+    formType === 'CLOSURE' ||
+    formType === 'UNTRACED' ||
+    formType === 'CANCELLED'
+  ) {
+    return 'COMPLETED';
+  }
+
+  // If chargesheet filed in legacy data -> COMPLETED
+  if (status === 'CHARGESHEET_FILED' || formType === 'CHARGESHEET') {
+    return 'COMPLETED';
+  }
+
+  return 'PART_A_FRESH';
+}

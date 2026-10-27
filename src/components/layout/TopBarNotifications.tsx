@@ -27,6 +27,8 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<OfficerNotification[]>([]);
+  const [finalReports, setFinalReports] = useState<Array<{ id: string; firId: string; title: string; message: string; unread: boolean }>>([]);
+  const [finalReportsError, setFinalReportsError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
@@ -46,6 +48,23 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
       console.warn("Failed to load notifications:", e);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadFinalReports = async () => {
+      try {
+        const response = await fetch(`/api/fir/final-reports?notificationsFor=${encodeURIComponent(currentUser.id)}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error('Notifications unavailable');
+        const result = await response.json();
+        if (!cancelled) { setFinalReports(result.notifications); setFinalReportsError(false); }
+      } catch { if (!cancelled) setFinalReportsError(true); }
+    };
+    setFinalReports([]);
+    loadFinalReports();
+    const timer = window.setInterval(loadFinalReports, 15000);
+    window.addEventListener('officer_notifications_updated', loadFinalReports);
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('officer_notifications_updated', loadFinalReports); };
+  }, [currentUser.id]);
 
   useEffect(() => {
     loadNotifications();
@@ -80,7 +99,7 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
     };
   }, [isOpen]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length + finalReports.filter(n => n.unread).length;
 
   const handleNotificationClick = (notif: OfficerNotification) => {
     ComplaintService.markNotificationAsRead(notif.id);
@@ -153,7 +172,9 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
 
           {/* List */}
           <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
-            {notifications.length === 0 ? (
+            {finalReportsError && <p role="alert" className="p-3 text-xs text-red-700">Final report notifications unavailable. Retrying automatically.</p>}
+            {finalReports.map(notif => <button key={notif.id} className="block w-full text-left p-3 bg-blue-50 hover:bg-blue-100" onClick={() => { setIsOpen(false); window.location.assign(`/fir/${encodeURIComponent(notif.firId)}?tab=reports`); }}><span className="block text-xs font-bold">{notif.title}</span><span className="block text-xs mt-1">{notif.message}</span><span className="block text-xs underline mt-1">Open FIR report</span></button>)}
+            {notifications.length === 0 && finalReports.length === 0 ? (
               <div className="p-8 text-center text-slate-400 space-y-2">
                 <Bell className="w-8 h-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-semibold text-slate-600">{t("No Notifications Yet")}</p>

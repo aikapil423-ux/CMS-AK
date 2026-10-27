@@ -225,6 +225,20 @@ export function MobileHeader() {
                   >
                     {t("FIR Register")}
                   </Link>
+                  <Link
+                    href="/fir/part-b"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("FIR Part B")}
+                  </Link>
+                  <Link
+                    href="/fir/complete-cases"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Complete cases")}
+                  </Link>
                   {canRegisterFir && (
                     <Link
                       href="/fir/register"

@@ -521,6 +521,21 @@ export interface ComplaintAuditRecord {
 }
 
 export interface ComplaintReportItem {
+  finalReportData?: import('@/lib/finalReport').FinalReportData;
+  finalReportWorkflow?: {
+    state: 'SAVED' | 'SENT_TO_SHO' | 'SHO_VIEWED' | 'REJECTED' | 'UNDER_CHECKING' | 'COMPLETED' | 'PARTIAL';
+    viewedBy?: string;
+    viewedAt?: string;
+    reviewedBy?: string;
+    reviewedAt?: string;
+    rejectionReason?: string;
+    assignedIoId?: string;
+    assignedIoPno?: string;
+    assignedIoName?: string;
+    chiNumber?: string;
+    chiSubmittedAt?: string;
+    chiSubmittedBy?: string;
+  };
   id: string;
   complaintId: string;
   versionNumber?: number;
@@ -1450,6 +1465,66 @@ export interface FIRActionTakenData {
   freeCopyGiven?: boolean;
 }
 
+
+// ==========================================
+// FIR TRACKING WORKFLOW SPECIFICATION (Part A / Part B / Complete)
+// ==========================================
+
+export type FIRTrackingState =
+  | 'PART_A_FRESH'
+  | 'PART_B_PARTIAL'
+  | 'PART_B_UNDER_CHECKING'
+  | 'PART_B_REOPEN'
+  | 'COMPLETED';
+
+export type ChallanMode = 'COMPLETE' | 'PARTIAL';
+export type ChallanType = 'INITIAL' | 'SUPPLEMENTARY';
+
+export interface FIRChallanRecord {
+  id: string;
+  challanNumber: string;
+  challanType: ChallanType;
+  challanMode: ChallanMode;
+  issuedAt: string;
+  issuedBy: string;
+  issuedByRank?: string;
+  courtName: string;
+  briefFacts?: string;
+  submittedToCourt?: boolean;
+  courtSubmittedAt?: string;
+  courtSubmittedBy?: string;
+  courtReceiptNo?: string;
+  reportId?: string;
+}
+
+export interface FIRReopenEvent {
+  id: string;
+  reopenedAt: string;
+  reopenedBy: string;
+  reopenedByRank?: string;
+  reason: string;
+  orderNumber?: string;
+  orderDate?: string;
+  courtName?: string;
+  orderDocumentUrl?: string;
+  assignedIoId?: string;
+  assignedIoName?: string;
+  assignedIoRank?: string;
+  assignedDirections?: string;
+  priorCompletionReason?: string;
+}
+
+export interface FIRCompletionEvent {
+  id: string;
+  completedAt: string;
+  completedBy: string;
+  completionType: 'CHARGESHEET' | 'CLOSURE' | 'UNTRACED' | 'CANCELLED';
+  courtName?: string;
+  referenceNumber?: string;
+  summary?: string;
+  reason?: string;
+}
+
 export interface FIRItem {
   id: string;
   firNumber: string;
@@ -1707,6 +1782,14 @@ export interface FIRItem {
   isCrossFir?: boolean;
   linkedFirsList?: LinkedFIREntry[];
 
+  // Authoritative Tracking Workflow State
+  trackingState?: FIRTrackingState;
+  challanRecords?: FIRChallanRecord[];
+  pendingChallanId?: string;
+  reopenHistory?: FIRReopenEvent[];
+  completionHistory?: FIRCompletionEvent[];
+  previouslyReopened?: boolean;
+  completionReason?: string;
   auditTrail?: FIRAuditRecord[];
   createdAt: string;
   updatedAt: string;

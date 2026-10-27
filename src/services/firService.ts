@@ -15,10 +15,16 @@ import {
   LegalAnalysisReport,
   FIRTransferRecord,
   LinkedFIREntry,
+  FIRTrackingState,
+  ChallanMode,
+  ChallanType,
+  FIRChallanRecord,
+  FIRReopenEvent,
+  FIRCompletionEvent,
 } from "@/types";
 import { ComplaintService } from "./complaintService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
-import { nextFirNumber, firPendingDays } from '@/lib/firIntegrity';
+import { nextFirNumber, firPendingDays, getAuthoritativeTrackingState } from '@/lib/firIntegrity';
 
 const FIRS_STORAGE_KEY = "haryana_police_cms_firs_v2";
 
@@ -1118,6 +1124,7 @@ export const firService = {
       sourceComplaintNumber: input.sourceComplaintNumber,
       cctnsFirNumber: input.cctnsFirNumber || `HR050${firYear.toString().slice(-2)}${firNumber.split("/")[1] || "0001"}`,
       cctnsSyncStatus: input.cctnsSyncStatus || "PENDING_SYNC",
+      trackingState: input.trackingState || "PART_A_FRESH",
       category: input.category || "OTHER_GENERAL",
       categoryDisplay: input.categoryDisplay || "General Cognizable Crime",
       priority: input.priority || "URGENT",
@@ -1352,6 +1359,278 @@ export const firService = {
     });
   },
 
+
+  /**
+   * Issues an initial or supplementary challan for an active case (PART_A_FRESH, PART_B_PARTIAL, or PART_B_REOPEN).
+   * Moves state to PART_B_UNDER_CHECKING.
+   */
+  issueChallan(params: {
+    firId: string;
+    challanMode: ChallanMode;
+    courtName: string;
+    issuedBy: string;
+    issuedByRank?: string;
+    briefFacts?: string;
+    reportId?: string;
+  }): FIRItem | undefined {
+    const fir = this.getFirById(params.firId);
+    if (!fir) return undefined;
+
+    // Concurrency / Idempotency check: if pending challan with same reportId or issued in last 2 seconds
+    if (fir.pendingChallanId) {
+      const existingPending = fir.challanRecords?.find((c) => c.id === fir.pendingChallanId && !c.submittedToCourt);
+      if (existingPending && Date.now() - Number(existingPending.id.replace("ch-", "")) < 2000) {
+        return fir;
+      }
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    // Initial vs Supplementary:
+    // Reopening a case previously closed without a challan must NOT fabricate an earlier challan.
+    // If it has at least one previous court-submitted challan, this is SUPPLEMENTARY; otherwise INITIAL.
+    const hasPreviousSubmittedChallan = Boolean(
+      fir.challanRecords && fir.challanRecords.some((c) => c.submittedToCourt)
+    );
+    const challanType: ChallanType = hasPreviousSubmittedChallan ? "SUPPLEMENTARY" : "INITIAL";
+
+    const challanNum = `${challanType === "INITIAL" ? "CS" : "SUPP-CS"}/${fir.firYear}/${Date.now().toString().slice(-4)}`;
+
+    const challanRec: FIRChallanRecord = {
+      id: "ch-" + Date.now(),
+      challanNumber: challanNum,
+      challanType,
+      challanMode: params.challanMode,
+      issuedAt: dateStr + " " + timeStr,
+      issuedBy: params.issuedBy,
+      issuedByRank: params.issuedByRank,
+      courtName: params.courtName,
+      briefFacts: params.briefFacts,
+      reportId: params.reportId,
+      submittedToCourt: false,
+    };
+
+    const timelineItem: FIRTimelineEvent = {
+      id: "tl-" + Date.now(),
+      date: dateStr + " " + timeStr,
+      title: `${challanType} Challan Issued (${params.challanMode} Mode)`,
+      description: `Challan No. ${challanNum} issued for submission before ${params.courtName}. Status moved to Under checking.`,
+      actor: params.issuedBy,
+      stage: "FINAL_REPORT",
+    };
+
+    const auditItem: FIRAuditRecord = {
+      id: "aud-" + Date.now(),
+      timestamp: dateStr + " " + timeStr,
+      action: "CHALLAN_ISSUED",
+      officerName: params.issuedBy,
+      role: params.issuedByRank || "IO",
+      details: `Issued ${challanType} challan ${challanNum} in ${params.challanMode} mode. Moved to Part B -> Under checking.`,
+    };
+
+    return this.updateFir(params.firId, {
+      trackingState: "PART_B_UNDER_CHECKING",
+      pendingChallanId: challanRec.id,
+      finalFormNumber: challanNum,
+      finalFormDate: dateStr,
+      courtName: params.courtName,
+      challanRecords: [challanRec, ...(fir.challanRecords || [])],
+      timeline: [timelineItem, ...(fir.timeline || [])],
+      auditTrail: [auditItem, ...(fir.auditTrail || [])],
+    });
+  },
+
+  /**
+   * Records court submission for an issued challan (Under checking -> Complete cases OR Partial).
+   * - Complete mode + court submission -> COMPLETED
+   * - Partial mode + court submission -> PART_B_PARTIAL
+   */
+  recordCourtSubmission(params: {
+    firId: string;
+    challanId?: string;
+    submittedBy: string;
+    courtReceiptNo?: string;
+    remarks?: string;
+  }): FIRItem | undefined {
+    const fir = this.getFirById(params.firId);
+    if (!fir) return undefined;
+
+    const currentTracking = getAuthoritativeTrackingState(fir);
+    if (currentTracking !== "PART_B_UNDER_CHECKING") {
+      console.warn("Cannot record court submission for FIR not in PART_B_UNDER_CHECKING:", fir.firNumber);
+      return fir;
+    }
+
+    const targetChallanId = params.challanId || fir.pendingChallanId;
+    const records = [...(fir.challanRecords || [])];
+    const chIdx = targetChallanId ? records.findIndex((c) => c.id === targetChallanId) : 0;
+    const challan = records[chIdx];
+
+    if (!challan) {
+      console.warn("No pending challan record found to submit for FIR:", fir.firNumber);
+      return fir;
+    }
+
+    // Idempotency: if already marked submitted, return
+    if (challan.submittedToCourt) {
+      return fir;
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    challan.submittedToCourt = true;
+    challan.courtSubmittedAt = dateStr + " " + timeStr;
+    challan.courtSubmittedBy = params.submittedBy;
+    challan.courtReceiptNo = params.courtReceiptNo;
+
+    // Rule 4:
+    // - Complete mode + court submission -> Complete cases (COMPLETED)
+    // - Partial mode + court submission -> Part B -> Partial (PART_B_PARTIAL)
+    const nextState: FIRTrackingState = challan.challanMode === "COMPLETE" ? "COMPLETED" : "PART_B_PARTIAL";
+
+    const completionHistory = [...(fir.completionHistory || [])];
+    if (nextState === "COMPLETED") {
+      completionHistory.unshift({
+        id: "comp-" + Date.now(),
+        completedAt: dateStr + " " + timeStr,
+        completedBy: params.submittedBy,
+        completionType: "CHARGESHEET",
+        courtName: challan.courtName,
+        referenceNumber: challan.challanNumber,
+        summary: `Challan ${challan.challanNumber} submitted to ${challan.courtName} (Receipt: ${params.courtReceiptNo || "N/A"})`,
+      });
+    }
+
+    const timelineItem: FIRTimelineEvent = {
+      id: "tl-" + Date.now(),
+      date: dateStr + " " + timeStr,
+      title: `Court Submission Recorded (${challan.challanMode} Mode)`,
+      description: `Challan ${challan.challanNumber} submitted to ${challan.courtName}. Case moved to ${nextState === "COMPLETED" ? "Complete cases" : "Part B -> Partial"}.`,
+      actor: params.submittedBy,
+      stage: "FINAL_REPORT",
+    };
+
+    const auditItem: FIRAuditRecord = {
+      id: "aud-" + Date.now(),
+      timestamp: dateStr + " " + timeStr,
+      action: "COURT_SUBMISSION_RECORDED",
+      officerName: params.submittedBy,
+      role: "MHC",
+      details: `Recorded court submission of ${challan.challanNumber} (${challan.challanMode}). Tracking state -> ${nextState}.`,
+    };
+
+    return this.updateFir(params.firId, {
+      trackingState: nextState,
+      pendingChallanId: undefined, // Clear pending
+      status: nextState === "COMPLETED" ? "CHARGESHEET_FILED" : "UNDER_INVESTIGATION",
+      challanRecords: records,
+      completionHistory,
+      timeline: [timelineItem, ...(fir.timeline || [])],
+      auditTrail: [auditItem, ...(fir.auditTrail || [])],
+    });
+  },
+
+  /**
+   * Reopens a completed case (COMPLETED -> PART_B_REOPEN).
+   * Strict Rule:
+   * - Reopening is permitted only from COMPLETED.
+   * - Must NOT duplicate FIR or create new case.
+   * - Retains previous completion history immutably.
+   * - Moves same case to PART_B_REOPEN.
+   */
+  reopenCompletedCase(params: {
+    firId: string;
+    reason: string;
+    courtName?: string;
+    orderNumber?: string;
+    orderDate?: string;
+    orderDocumentUrl?: string;
+    assignedIoId?: string;
+    assignedIoName?: string;
+    assignedIoRank?: string;
+    assignedDirections?: string;
+    reopenedBy: string;
+    reopenedByRank?: string;
+  }): FIRItem | undefined {
+    const fir = this.getFirById(params.firId);
+    if (!fir) return undefined;
+
+    const currentTracking = getAuthoritativeTrackingState(fir);
+    if (currentTracking !== "COMPLETED") {
+      throw new Error(`Cannot reopen FIR ${fir.firNumber}: current state is ${currentTracking}. Reopening is permitted only from COMPLETED.`);
+    }
+
+    if (!params.reason || !params.reason.trim()) {
+      throw new Error("A valid reason is required to reopen a completed case.");
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0];
+    const timeStr = now.toTimeString().slice(0, 5);
+
+    const latestCompletion = fir.completionHistory?.[0];
+    const priorReason = latestCompletion
+      ? `${latestCompletion.completionType} on ${latestCompletion.completedAt} (${latestCompletion.summary || ""})`
+      : `${fir.finalFormType || fir.status}`;
+
+    const reopenEvt: FIRReopenEvent = {
+      id: "reopen-" + Date.now(),
+      reopenedAt: dateStr + " " + timeStr,
+      reopenedBy: params.reopenedBy,
+      reopenedByRank: params.reopenedByRank,
+      reason: params.reason.trim(),
+      orderNumber: params.orderNumber,
+      orderDate: params.orderDate,
+      courtName: params.courtName,
+      orderDocumentUrl: params.orderDocumentUrl,
+      assignedIoId: params.assignedIoId,
+      assignedIoName: params.assignedIoName,
+      assignedIoRank: params.assignedIoRank,
+      assignedDirections: params.assignedDirections,
+      priorCompletionReason: priorReason,
+    };
+
+    const timelineItem: FIRTimelineEvent = {
+      id: "tl-" + Date.now(),
+      date: dateStr + " " + timeStr,
+      title: "Case Reopened (Court Order / Further Investigation)",
+      description: `Case reopened by ${params.reopenedBy}. Reason: ${params.reason}. Order: ${params.orderNumber || "Direct"} dated ${params.orderDate || dateStr}. Assigned to ${params.assignedIoName || "IO"}.`,
+      actor: params.reopenedBy,
+      stage: "ASSIGNED",
+    };
+
+    const auditItem: FIRAuditRecord = {
+      id: "aud-" + Date.now(),
+      timestamp: dateStr + " " + timeStr,
+      action: "CASE_REOPENED",
+      officerName: params.reopenedBy,
+      role: params.reopenedByRank || "SHO",
+      details: `Reopened completed case. Reason: ${params.reason}. Tracking state moved from COMPLETED -> PART_B_REOPEN.`,
+    };
+
+    return this.updateFir(params.firId, {
+      trackingState: "PART_B_REOPEN",
+      previouslyReopened: true,
+      pendingChallanId: undefined,
+      status: "UNDER_INVESTIGATION",
+      assignedIoId: params.assignedIoId || fir.assignedIoId,
+      assignedIoName: params.assignedIoName || fir.assignedIoName,
+      assignedIoRank: params.assignedIoRank || fir.assignedIoRank,
+      assignedDirections: params.assignedDirections || fir.assignedDirections,
+      courtName: params.courtName || fir.courtName,
+      courtOrderNumber: params.orderNumber || fir.courtOrderNumber,
+      courtOrderDate: params.orderDate || fir.courtOrderDate,
+      courtOrderDocumentUrl: params.orderDocumentUrl || fir.courtOrderDocumentUrl,
+      reopenHistory: [reopenEvt, ...(fir.reopenHistory || [])],
+      timeline: [timelineItem, ...(fir.timeline || [])],
+      auditTrail: [auditItem, ...(fir.auditTrail || [])],
+    });
+  },
+
   assignIoWithCourtOrder(params: {
     firId: string;
     ioId: string;
@@ -1558,12 +1837,27 @@ export const firService = {
       stage: "FINAL_REPORT",
     };
 
+    // Authorized direct closure/UT/CAN or final chargesheet transitions directly to COMPLETED
+    const completionEvt: FIRCompletionEvent = {
+      id: `comp-${Date.now()}`,
+      completedAt: new Date().toISOString(),
+      completedBy: submittedBy,
+      completionType: formType,
+      courtName,
+      referenceNumber: formNum,
+      summary,
+      reason: summary,
+    };
+
     return this.updateFir(firId, {
       finalFormType: formType,
       finalFormNumber: formNum,
       finalFormDate: dateStr,
       courtName,
       status,
+      trackingState: "COMPLETED",
+      completionReason: summary,
+      completionHistory: [...(fir.completionHistory || []), completionEvt],
       timeline: [timelineItem, ...(fir.timeline || [])],
     });
   },

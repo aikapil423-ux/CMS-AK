@@ -410,3 +410,64 @@ model AuditLog {
   @@index([userId])
   @@index([timestamp])
 }
+
+// Structured IIF-V records; saving a report does not mark it filed in court.
+model FirFinalReport {
+  id              String   @id
+  firId           String
+  firNumber       String
+  policeStation   String
+  district        String
+  reportNumber    String
+  reportType      String
+  reportCategory  String
+  finalReportReason String
+  investigationStatus String
+  chargeSheetType String
+  version         Int      @default(1)
+  state           String   @default("SAVED")
+  formDataJson    String
+  firSnapshotJson String
+  reportJson      String
+  createdBy       String
+  updatedBy       String
+  sentToShoAt     DateTime?
+  sentToShoBy     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  accused         FirFinalReportAccused[]
+  events          FirFinalReportEvent[]
+
+  @@index([firId])
+  @@index([reportType, chargeSheetType])
+  @@index([policeStation, state])
+}
+
+model FirFinalReportAccused {
+  id          String @id @default(cuid())
+  reportId    String
+  report      FirFinalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  accusedId   String
+  name        String
+  action      String
+  status      String
+  detailsJson String
+
+  @@index([accusedId, action])
+  @@index([reportId])
+}
+
+model FirFinalReportEvent {
+  id           String @id @default(cuid())
+  reportId     String
+  report       FirFinalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  firId        String
+  action       String
+  version      Int
+  actorId      String
+  snapshotJson String
+  createdAt    DateTime @default(now())
+
+  @@index([firId, createdAt])
+  @@index([reportId, version])
+}

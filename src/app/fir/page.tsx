@@ -361,7 +361,11 @@ function FIRRegisterPageContent() {
       const data = firService.getAllFirs();
       setFirs(data);
 
-      const relevantData = data.filter((f) => isFirVisibleToUser(currentUser, f));
+      // Section 1 & 2 Specification: FIR Register is Part A.
+      // Displays exclusively cases whose authoritative trackingState is PART_A_FRESH.
+      // Cases moved to Part B (Partial, Under checking, Reopen) or Complete cases are excluded from Part A.
+      const partAFirs = data.filter((f) => (f.trackingState || "PART_A_FRESH") === "PART_A_FRESH");
+      const relevantData = partAFirs.filter((f) => isFirVisibleToUser(currentUser, f));
 
       const underInvestigation = relevantData.filter((f) => f.status === "UNDER_INVESTIGATION").length;
       const chargesheetFiled = relevantData.filter((f) => f.status === "CHARGESHEET_FILED").length;
@@ -409,6 +413,12 @@ function FIRRegisterPageContent() {
     return firs.filter((fir) => {
       // Status Check
       if (!selectedStatuses.includes(fir.status)) {
+        return false;
+      }
+
+      // Active tracking state: FIR Register / Part A displays only PART_A_FRESH
+      const trackState = fir.trackingState || "PART_A_FRESH";
+      if (trackState !== "PART_A_FRESH") {
         return false;
       }
 
@@ -903,10 +913,10 @@ function FIRRegisterPageContent() {
               setIsTransferModalOpen(true);
             }}
             className="bg-[#0b192c] hover:bg-slate-800 text-white font-bold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-2 transition-all cursor-pointer border border-slate-700"
-            title="Transfer FIR to another State / UT under BNSS (Inter-State Only)"
+            title="Transfer FIR to another Police Station / District / State under BNSS"
           >
             <ArrowRightLeft className="w-3.5 h-3.5 text-amber-400" />
-            <span>Transfer FIR (Inter-State)</span>
+            <span>Transfer FIR</span>
           </Button>
 
           <Button

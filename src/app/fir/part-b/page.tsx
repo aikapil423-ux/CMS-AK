@@ -1,8 +1,9 @@
 "use client";
+import { FinalReportCheckingBoard } from "@/components/fir/FinalReportCheckingBoard";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileCheck2,
   FileText,
@@ -29,15 +30,18 @@ import {
   Check,
   Gavel,
   Paperclip,
+  RotateCcw,
+  Plus,
 } from "lucide-react";
 import { firService } from "@/services/firService";
-import { FIRItem, OfficerNotification } from "@/types";
+import { FIRItem, ChallanMode, ChallanType } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { isFirVisibleToUser } from "@/lib/firIntegrity";
 
-type PartBTab = "CHARGESHEET" | "SUPPLEMENTARY" | "CLOSURE" | "UNTRACED";
+// 3 Authoritative Tabs as per Specification
+export type PartBTab = "PARTIAL" | "UNDER_CHECKING" | "REOPEN";
 
 interface TabConfig {
   key: PartBTab;
@@ -46,830 +50,848 @@ interface TabConfig {
   badge: string;
   badgeColor: string;
   desc: string;
-  statutoryForm: string;
+  actionName: string;
 }
 
 const TAB_CONFIGS: Record<PartBTab, TabConfig> = {
-  CHARGESHEET: {
-    key: "CHARGESHEET",
-    title: "Chargesheet / Challan",
-    hindiTitle: "दोषारोप पत्र / चालान (IIF-V)",
-    badge: "Final Report u/s 193 BNSS",
-    badgeColor: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    desc: "वे FIR जिनकी Final Report / Chargesheet तैयार करके SHO को अग्रेषित की जा चुकी है अथवा न्यायालय में प्रेषित की गई है।",
-    statutoryForm: "Form No. 24.5(2) • Sec 193 BNSS",
-  },
-  SUPPLEMENTARY: {
-    key: "SUPPLEMENTARY",
-    title: "Supplementary Challan",
-    hindiTitle: "सप्लीमेंट्री चालान (Sec 193(9) BNSS)",
-    badge: "Further Investigation",
+  PARTIAL: {
+    key: "PARTIAL",
+    title: "Partial",
+    hindiTitle: "आंशिक चालान (Partial Challan)",
+    badge: "Pending Final Challan",
     badgeColor: "bg-blue-50 text-blue-800 border-blue-200",
-    desc: "अग्रिम विवेचना (Further Investigation) के उपरांत तैयार अतिरिक्त साक्ष्य व पूरक चालान।",
-    statutoryForm: "Form No. 24.5(2A) • Sec 193(9) BNSS",
+    desc: "वे FIR जिनका आंशिक चालान (Partial Challan) न्यायालय में प्रस्तुत हो चुका है और अग्रिम विवेचना (Further Investigation u/s 193(9) BNSS) जारी है।",
+    actionName: "Prepare Supplementary Challan",
   },
-  CLOSURE: {
-    key: "CLOSURE",
-    title: "Closure Report",
-    hindiTitle: "खारिजी रिपोर्ट (Closure / Mistake / False)",
-    badge: "Closure / False / Mistake of Fact",
+  UNDER_CHECKING: {
+    key: "UNDER_CHECKING",
+    title: "Under checking",
+    hindiTitle: "जांच / समीक्षाधीन (Challan Issued)",
+    badge: "Awaiting Court Submission",
     badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
-    desc: "वे FIR जिनकी Closure Report (Mistake of Fact, Civil Dispute या असत्य / False पाई गई) तैयार की गई है।",
-    statutoryForm: "Form No. 24.5(3) • Sec 193 & 190 BNSS",
+    desc: "वे FIR जिनका चालान (Initial अथवा Supplementary) तैयार / निर्गत हो चुका है और न्यायालय में प्रस्तुति हेतु प्रक्रियाधीन है।",
+    actionName: "Record Court Submission",
   },
-  UNTRACED: {
-    key: "UNTRACED",
-    title: "Untraced",
-    hindiTitle: "अदम सुराग रिपोर्ट (Untraced / Adam Surag)",
-    badge: "Culprit Not Found",
-    badgeColor: "bg-slate-100 text-slate-800 border-slate-300",
-    desc: "सघन अनुसंधान के बाद भी अज्ञात मुल्जिमों का सुराग न मिलने पर तैयार की गई अदम सुराग रिपोर्ट।",
-    statutoryForm: "Form No. 24.5(4) • Sec 193 BNSS",
+  REOPEN: {
+    key: "REOPEN",
+    title: "Re-open",
+    hindiTitle: "पुनः खुली फाइलें (Reopened Cases)",
+    badge: "Further Investigation Active",
+    badgeColor: "bg-purple-50 text-purple-800 border-purple-200",
+    desc: "न्यायालय के आदेश / सक्षम प्राधिकारी के निर्देशानुसार पुनः खुली फाइलें। चालान निर्गत होते ही यह केस 'Under checking' में चला जाएगा।",
+    actionName: "Prepare Challan",
   },
 };
 
 function FIRPartBContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { t } = useLanguage();
   const { currentUser } = useAuth();
 
   const tabParam = searchParams.get("tab")?.toUpperCase();
   const initialTab: PartBTab =
-    tabParam === "SUPPLEMENTARY"
-      ? "SUPPLEMENTARY"
-      : tabParam === "CLOSURE"
-      ? "CLOSURE"
-      : tabParam === "UNTRACED"
-      ? "UNTRACED"
-      : "CHARGESHEET";
+    tabParam === "UNDER_CHECKING" || tabParam === "UNDER-CHECKING" || tabParam === "CHECKING"
+      ? "UNDER_CHECKING"
+      : tabParam === "REOPEN" || tabParam === "RE-OPEN"
+      ? "REOPEN"
+      : "PARTIAL";
 
   const [activeTab, setActiveTab] = useState<PartBTab>(initialTab);
   const [firs, setFirs] = useState<FIRItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStation, setSelectedStation] = useState<string>("ALL");
 
-  // Court Order Assignment Modal state
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [selectedFirIdForOrder, setSelectedFirIdForOrder] = useState("");
-  const [courtName, setCourtName] = useState("Hon'ble Court of CJM, Panipat");
-  const [orderNumber, setOrderNumber] = useState("");
-  const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
-  const [selectedIoId, setSelectedIoId] = useState("");
-  const [uploadedOrderFileName, setUploadedOrderFileName] = useState("");
-  const [uploadedOrderFileData, setUploadedOrderFileData] = useState("");
-  const [orderDirections, setOrderDirections] = useState("");
-  const [modalSuccessMsg, setModalSuccessMsg] = useState("");
-  const [modalErrorMsg, setModalErrorMsg] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Court Submission Modal State (For Under checking tab)
+  const [submittingFir, setSubmittingFir] = useState<FIRItem | null>(null);
+  const [courtReceiptNo, setCourtReceiptNo] = useState("");
+  const [submissionRemarks, setSubmissionRemarks] = useState("");
+  const [isSubmittingCourt, setIsSubmittingCourt] = useState(false);
 
-  // Load FIRs
-  useEffect(() => {
+  // Prepare Challan Modal State (Quick issuance from Partial / Re-open tab)
+  const [challanModalFir, setChallanModalFir] = useState<FIRItem | null>(null);
+  const [challanMode, setChallanMode] = useState<ChallanMode>("COMPLETE");
+  const [challanCourtName, setChallanCourtName] = useState("Court of CJM, Panipat");
+  const [challanBriefFacts, setChallanBriefFacts] = useState("");
+  const [isIssuingChallan, setIsIssuingChallan] = useState(false);
+
+  const fetchFirs = () => {
+    setLoading(true);
     try {
-      const all = firService.getAllFirs();
-      setFirs(all);
+      const data = firService.getAllFirs();
+      setFirs(data);
+    } catch (e) {
+      console.error("Failed to load FIRs for Part B:", e);
     } finally {
       setLoading(false);
     }
+  };
 
+  useEffect(() => {
+    fetchFirs();
     const unsub = firService.subscribe(() => {
-      setFirs(firService.getAllFirs());
+      fetchFirs();
     });
     return unsub;
   }, []);
 
-  // Filter FIRs for each tab
-  // 1. Chargesheet/Challan: finalFormType === 'CHARGESHEET' or status === 'CHARGESHEET_FILED' or sent to SHO with final report
-  const chargesheetFirs = useMemo(() => {
-    return firs.filter((fir) => {
-      const isCs =
-        fir.finalFormType === "CHARGESHEET" ||
-        fir.status === "CHARGESHEET_FILED" ||
-        fir.mainStatus === "Chargesheet Filed" ||
-        fir.timeline?.some(
-          (tl) =>
-            tl.stage === "FINAL_REPORT" ||
-            tl.title?.toLowerCase().includes("chargesheet") ||
-            tl.title?.toLowerCase().includes("final report")
-        ) ||
-        fir.reports?.some((r) => r.reportType === "CHARGESHEET");
-      return isCs;
-    });
-  }, [firs]);
+  // Update URL param without full reload
+  const handleTabChange = (newTab: PartBTab) => {
+    setActiveTab(newTab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", newTab.toLowerCase());
+    window.history.pushState({}, "", url.toString());
+  };
 
-  // 2. Supplementary Challan: tagged supplementary or timeline/report with supplementary
-  const supplementaryFirs = useMemo(() => {
-    return firs.filter((fir) => {
-      const isSupp =
-        fir.timeline?.some(
-          (tl) =>
-            tl.title?.toLowerCase().includes("supplementary") ||
-            tl.description?.toLowerCase().includes("supplementary") ||
-            tl.title?.toLowerCase().includes("पूरक")
-        ) ||
-        fir.reports?.some(
-          (r) =>
-            r.title?.toLowerCase().includes("supplementary") ||
-            r.reportType?.toLowerCase().includes("supplementary")
-        );
-      return isSupp;
-    });
-  }, [firs]);
+  // Role & Jurisdiction Visibility
+  const visibleFirs = useMemo(() => {
+    return firs.filter((fir) => isFirVisibleToUser(currentUser, fir));
+  }, [firs, currentUser]);
 
-  // 3. Closure Report: closure / mistake of fact / false
-  const closureFirs = useMemo(() => {
-    return firs.filter((fir) => {
-      const isCl =
-        fir.finalFormType === "CLOSURE" ||
-        fir.finalFormType === "CANCELLED" ||
-        fir.status === "CLOSURE_REPORT_FILED" ||
-        fir.status === "CANCELLED" ||
-        fir.mainStatus === "Closure Filed" ||
-        fir.mainStatus === "Cancelled" ||
-        fir.timeline?.some(
-          (tl) =>
-            tl.title?.toLowerCase().includes("closure") ||
-            tl.title?.toLowerCase().includes("mistake") ||
-            tl.title?.toLowerCase().includes("false") ||
-            tl.title?.toLowerCase().includes("cancel") ||
-            tl.title?.toLowerCase().includes("खारिजी")
-        ) ||
-        fir.reports?.some(
-          (r) =>
-            r.reportType === "CLOSURE_REPORT" ||
-            r.title?.toLowerCase().includes("closure") ||
-            r.title?.toLowerCase().includes("cancellation")
-        );
-      return isCl;
-    });
-  }, [firs]);
+  // Tab Scoped Counts (Exclusive Partitioning across Part B)
+  const counts = useMemo(() => {
+    const partial = visibleFirs.filter((f) => f.trackingState === "PART_B_PARTIAL").length;
+    const underChecking = visibleFirs.filter((f) => f.trackingState === "PART_B_UNDER_CHECKING").length;
+    const reopen = visibleFirs.filter((f) => f.trackingState === "PART_B_REOPEN").length;
+    return { partial, underChecking, reopen };
+  }, [visibleFirs]);
 
-  // 4. Untraced: Adam Surag / untraced
-  const untracedFirs = useMemo(() => {
-    return firs.filter((fir) => {
-      const isUn =
-        fir.finalFormType === "UNTRACED" ||
-        fir.status === "UNTRACED" ||
-        fir.mainStatus === "Untraced" ||
-        fir.timeline?.some(
-          (tl) =>
-            tl.title?.toLowerCase().includes("untraced") ||
-            tl.title?.toLowerCase().includes("adam surag") ||
-            tl.title?.toLowerCase().includes("अदम सुराग")
-        ) ||
-        fir.reports?.some((r) => r.title?.toLowerCase().includes("untraced"));
-      return isUn;
-    });
-  }, [firs]);
-
-  // Active list based on tab
+  // Tab Specific Filtered Items
   const currentTabFirs = useMemo(() => {
-    switch (activeTab) {
-      case "CHARGESHEET":
-        return chargesheetFirs;
-      case "SUPPLEMENTARY":
-        return supplementaryFirs;
-      case "CLOSURE":
-        return closureFirs;
-      case "UNTRACED":
-        return untracedFirs;
-      default:
-        return [];
+    const targetTrackingState =
+      activeTab === "PARTIAL"
+        ? "PART_B_PARTIAL"
+        : activeTab === "UNDER_CHECKING"
+        ? "PART_B_UNDER_CHECKING"
+        : "PART_B_REOPEN";
+
+    return visibleFirs.filter((fir) => {
+      // 1. Authoritative Tracking State match
+      if (fir.trackingState !== targetTrackingState) {
+        return false;
+      }
+
+      // 2. Station Filter
+      if (selectedStation !== "ALL" && fir.policeStation !== selectedStation) {
+        return false;
+      }
+
+      // 3. Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesNo = fir.firNumber.toLowerCase().includes(q);
+        const matchesComplainant = fir.complainantName.toLowerCase().includes(q);
+        const matchesIo = (fir.assignedIoName || "").toLowerCase().includes(q);
+        const matchesActs = fir.actsAndSections.toLowerCase().includes(q);
+        const matchesAccused = fir.accusedList?.some((a) => a.name.toLowerCase().includes(q)) ?? false;
+        const matchesChallanNo = fir.challanRecords?.some((c) => c.challanNumber.toLowerCase().includes(q)) ?? false;
+        return matchesNo || matchesComplainant || matchesIo || matchesActs || matchesAccused || matchesChallanNo;
+      }
+
+      return true;
+    });
+  }, [visibleFirs, activeTab, selectedStation, searchQuery]);
+
+  // Police Station list for filter
+  const policeStations = useMemo(() => {
+    const set = new Set<string>();
+    visibleFirs.forEach((f) => {
+      if (f.policeStation) set.add(f.policeStation);
+    });
+    return Array.from(set);
+  }, [visibleFirs]);
+
+  // Handle Recording Court Submission (From Under Checking)
+  const handleConfirmCourtSubmission = async () => {
+    if (!submittingFir) return;
+    setIsSubmittingCourt(true);
+    try {
+      firService.recordCourtSubmission({
+        firId: submittingFir.id,
+        submittedBy: `${currentUser.name} (${currentUser.role})`,
+        courtReceiptNo: courtReceiptNo.trim() || undefined,
+        remarks: submissionRemarks.trim() || undefined,
+      });
+
+      setSubmittingFir(null);
+      setCourtReceiptNo("");
+      setSubmissionRemarks("");
+      fetchFirs();
+    } catch (e: any) {
+      alert("Error recording court submission: " + (e?.message || e));
+    } finally {
+      setIsSubmittingCourt(false);
     }
-  }, [activeTab, chargesheetFirs, supplementaryFirs, closureFirs, untracedFirs]);
+  };
 
-  // Search filter
-  const filteredFirs = useMemo(() => {
-    if (!searchQuery.trim()) return currentTabFirs;
-    const q = searchQuery.toLowerCase().trim();
-    return currentTabFirs.filter(
-      (fir) =>
-        fir.firNumber?.toLowerCase().includes(q) ||
-        fir.complainantName?.toLowerCase().includes(q) ||
-        fir.actsAndSections?.toLowerCase().includes(q) ||
-        fir.assignedIoName?.toLowerCase().includes(q) ||
-        fir.policeStation?.toLowerCase().includes(q) ||
-        fir.courtName?.toLowerCase().includes(q) ||
-        fir.courtOrderNumber?.toLowerCase().includes(q) ||
-        fir.finalFormNumber?.toLowerCase().includes(q)
-    );
-  }, [currentTabFirs, searchQuery]);
+  // Handle Issuing Challan (From Re-open or Partial)
+  const handleConfirmIssueChallan = async () => {
+    if (!challanModalFir) return;
+    setIsIssuingChallan(true);
+    try {
+      firService.issueChallan({
+        firId: challanModalFir.id,
+        challanMode,
+        courtName: challanCourtName.trim() || (challanModalFir.courtName || "Court of CJM, Panipat"),
+        issuedBy: `${currentUser.name} (${currentUser.role})`,
+        issuedByRank: currentUser.rankDisplay || "IO",
+        briefFacts: challanBriefFacts.trim() || undefined,
+      });
 
-  const counts: Record<PartBTab, number> = {
-    CHARGESHEET: chargesheetFirs.length,
-    SUPPLEMENTARY: supplementaryFirs.length,
-    CLOSURE: closureFirs.length,
-    UNTRACED: untracedFirs.length,
+      setChallanModalFir(null);
+      setChallanBriefFacts("");
+      fetchFirs();
+      // Move to Under Checking tab where the issued challan now resides
+      handleTabChange("UNDER_CHECKING");
+    } catch (e: any) {
+      alert("Error issuing challan: " + (e?.message || e));
+    } finally {
+      setIsIssuingChallan(false);
+    }
   };
 
   const currentConfig = TAB_CONFIGS[activeTab];
 
-  // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadedOrderFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setUploadedOrderFileData(typeof reader.result === "string" ? reader.result : "");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Open Court Order Assignment Modal
-  const handleOpenOrderModal = (preSelectedFirId?: string) => {
-    setSelectedFirIdForOrder(preSelectedFirId || currentTabFirs[0]?.id || firs[0]?.id || "");
-    setCourtName("Hon'ble Court of CJM, Panipat");
-    setOrderNumber(`ORD/${new Date().getFullYear()}/${Date.now().toString().slice(-4)}`);
-    setOrderDate(new Date().toISOString().split("T")[0]);
-    setSelectedIoId(MOCK_ENQUIRY_OFFICERS[2]?.id || MOCK_ENQUIRY_OFFICERS[0]?.id || "");
-    setUploadedOrderFileName("");
-    setUploadedOrderFileData("");
-    setOrderDirections("");
-    setModalSuccessMsg("");
-    setModalErrorMsg("");
-    setIsOrderModalOpen(true);
-  };
-
-  // Submit Court Order Assignment
-  const handleSubmitCourtOrder = () => {
-    if (!selectedFirIdForOrder) {
-      setModalErrorMsg("कृपया एक FIR चुनें (Please select an FIR)");
-      return;
-    }
-    if (!orderNumber.trim()) {
-      setModalErrorMsg("कृपया कोर्ट ऑर्डर नंबर दर्ज करें (Please enter Court Order Number)");
-      return;
-    }
-    if (!selectedIoId) {
-      setModalErrorMsg("कृपया जांच अधिकारी (IO) चुनें (Please assign an IO)");
-      return;
-    }
-
-    const targetFir = firs.find((f) => f.id === selectedFirIdForOrder);
-    if (!targetFir) {
-      setModalErrorMsg("चयनित FIR नहीं मिली (Selected FIR not found)");
-      return;
-    }
-
-    const assignedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === selectedIoId);
-    if (!assignedOfficer) {
-      setModalErrorMsg("चयनित जांच अधिकारी नहीं मिला (Assigned IO not found)");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setModalErrorMsg("");
-
-    try {
-      // 1. Update FIR via firService
-      firService.assignIoWithCourtOrder({
-        firId: targetFir.id,
-        ioId: assignedOfficer.id,
-        ioName: assignedOfficer.name,
-        rank: assignedOfficer.rank,
-        courtName: courtName.trim() || "Hon'ble Court",
-        courtOrderNumber: orderNumber.trim(),
-        courtOrderDate: orderDate,
-        courtOrderDocumentName: uploadedOrderFileName,
-        courtOrderDocumentUrl: uploadedOrderFileData,
-        directions: orderDirections.trim(),
-        assignedBy: currentUser?.name || "Inspector Rajesh Kumar (SHO)",
-      });
-
-      // 2. Dispatch Officer Notification to the assigned IO
-      const notification: OfficerNotification = {
-        id: `notif-${Date.now()}`,
-        recipientPno: assignedOfficer.pno || assignedOfficer.beltNumber || "PNO-DEFAULT",
-        recipientName: assignedOfficer.name,
-        complaintId: targetFir.id,
-        complaintNumber: targetFir.firNumber,
-        title: `Court Order Assignment: FIR ${targetFir.firNumber}`,
-        message: `FIR No. ${targetFir.firNumber} has been assigned to you as per Court Order No. ${orderNumber} (${courtName}) dated ${orderDate}.`,
-        directions: orderDirections || "Conduct further investigation / compliance as per court order.",
-        priority: "URGENT",
-        createdAt: new Date().toISOString(),
-        read: false,
-      };
-
-      if (typeof window !== "undefined" && window.localStorage) {
-        try {
-          const stored = window.localStorage.getItem("haryana_police_cms_notifications_v1");
-          const list: OfficerNotification[] = stored ? JSON.parse(stored) : [];
-          list.unshift(notification);
-          window.localStorage.setItem("haryana_police_cms_notifications_v1", JSON.stringify(list));
-          window.dispatchEvent(new CustomEvent("officer_notifications_updated", { detail: notification }));
-          window.dispatchEvent(new CustomEvent("firs_updated"));
-        } catch (storageErr) {
-          console.warn("Could not write notification to storage:", storageErr);
-        }
-      }
-
-      setModalSuccessMsg(`FIR ${targetFir.firNumber} सफलतापूर्वक ${assignedOfficer.name} को असाइन कर दी गई है और नोटिफिकेशन भेज दिया गया है।`);
-
-      setTimeout(() => {
-        setIsOrderModalOpen(false);
-        setModalSuccessMsg("");
-      }, 1800);
-    } catch (err) {
-      console.error("Court order assignment failed:", err);
-      setModalErrorMsg("ऑर्डर दर्ज करने में त्रुटि आई। कृपया पुनः प्रयास करें।");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-16">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-wider uppercase text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
-                Part B • Case Disposal
-              </span>
-              <span className="text-slate-400 text-xs">/</span>
-              <span className="text-xs text-slate-500 font-medium">Sec 193 BNSS</span>
+    <div className="space-y-6 pb-16 max-w-[1600px] mx-auto px-3 sm:px-6">
+      <FinalReportCheckingBoard station={currentUser.stationName} district={["SP", "SP_DISTRICT", "DSP_SUBDIV"].includes(currentUser.role) ? currentUser.district : undefined} userId={currentUser.id} />
+      {/* Page Header */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#0b192c] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                <FileCheck2 className="w-4 h-4 text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900">FIR Part B</h1>
+                <p className="text-xs text-slate-500 font-medium">
+                  {t("Authoritative Tracking: Partial • Under checking • Re-open")}
+                </p>
+              </div>
             </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
-              <FileCheck2 className="w-5 h-5 text-slate-800" />
-              <span>FIR Part B</span>
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              अंतिम रिपोर्ट (Final Report) निस्तारण, सप्लीमेंट्री चालान, खारिजी एवं अदम सुराग रजिस्टर
-            </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Court Order Assign Button */}
-            <button
-              type="button"
-              onClick={() => handleOpenOrderModal()}
-              className="text-xs font-bold px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <Gavel className="w-3.5 h-3.5 text-indigo-200" />
-              <span>Reopen FIR</span>
-            </button>
-
+          <div className="flex items-center gap-2">
             <Link
-              href="/fir"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1.5"
+              href="/fir/complete-cases"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-colors"
             >
-              <Scale className="w-3.5 h-3.5 text-slate-500" />
-              <span>FIR Register</span>
-            </Link>
-
-            <Link
-              href={`/fir-workspace/drafts?type=${activeTab === "SUPPLEMENTARY" ? "CHARGESHEET" : activeTab}`}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center gap-1.5 shadow-2xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>New {currentConfig.title} Draft</span>
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>View Complete cases &rarr;</span>
             </Link>
           </div>
         </div>
 
-        {/* Minimalist 4 Tabs */}
-        <div className="flex items-center gap-1 sm:gap-2 mt-4 pt-3 border-t border-slate-100 overflow-x-auto no-scrollbar">
-          {(Object.keys(TAB_CONFIGS) as PartBTab[]).map((key) => {
-            const conf = TAB_CONFIGS[key];
-            const isActive = activeTab === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  setActiveTab(key);
-                  setSearchQuery("");
-                }}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  isActive
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 bg-white border border-slate-200/80"
-                }`}
-              >
-                <span>{conf.title}</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-100 text-slate-700 border border-slate-200"
-                  }`}
-                >
-                  {counts[key]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        {/* 3 Tabs: Partial | Under checking | Re-open */}
+        <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => handleTabChange("PARTIAL")}
+            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
+              activeTab === "PARTIAL"
+                ? "border-blue-600 text-blue-800 bg-blue-50/70"
+                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <span>{TAB_CONFIGS.PARTIAL.title}</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                activeTab === "PARTIAL"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {counts.partial}
+            </span>
+          </button>
 
-      {/* Main Body */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 space-y-4">
-        {/* Tab Context Banner - Minimalist */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => handleTabChange("UNDER_CHECKING")}
+            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
+              activeTab === "UNDER_CHECKING"
+                ? "border-amber-600 text-amber-900 bg-amber-50/70"
+                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <span>{TAB_CONFIGS.UNDER_CHECKING.title}</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                activeTab === "UNDER_CHECKING"
+                  ? "bg-amber-600 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {counts.underChecking}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("REOPEN")}
+            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
+              activeTab === "REOPEN"
+                ? "border-purple-600 text-purple-900 bg-purple-50/70"
+                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <span>{TAB_CONFIGS.REOPEN.title}</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                activeTab === "REOPEN"
+                  ? "bg-purple-600 text-white"
+                  : "bg-slate-200 text-slate-700"
+              }`}
+            >
+              {counts.reopen}
+            </span>
+          </button>
+        </div>
+
+        {/* Tab Guidance Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
           <div className="space-y-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-slate-900">{currentConfig.title}</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-xs text-slate-600 font-medium">{currentConfig.hindiTitle}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-mono border ${currentConfig.badgeColor}`}>
-                {currentConfig.statutoryForm}
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <span>{currentConfig.hindiTitle}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${currentConfig.badgeColor}`}>
+                {currentConfig.badge}
               </span>
             </div>
-            <p className="text-[11px] text-slate-500">{currentConfig.desc}</p>
+            <p className="text-slate-600 text-[11px]">{currentConfig.desc}</p>
           </div>
+        </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-72 shrink-0">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between pt-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="FIR No., Complainant, IO, Court..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all placeholder:text-slate-400"
+              placeholder="FIR No, Accused, Complainant, Challan No..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-800"
             />
           </div>
-        </div>
 
-        {/* Content Table / Minimal Card View */}
-        <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-2xs">
-          {loading ? (
-            <div className="p-12 text-center text-xs text-slate-400">Loading records...</div>
-          ) : filteredFirs.length === 0 ? (
-            <div className="py-16 px-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400 mb-3">
-                <FileCheck2 className="w-5 h-5" />
-              </div>
-              <h3 className="text-xs font-bold text-slate-800">
-                {searchQuery ? "No matching records found" : `No FIRs in ${currentConfig.title}`}
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-1 max-w-sm mx-auto">
-                {searchQuery
-                  ? "Try searching with a different FIR number or name."
-                  : `Currently there are no FIRs categorized under ${currentConfig.title}. You can submit a Final Report from FIR Workspace or upload Court Order to re-assign.`}
-              </p>
-              {!searchQuery && (
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenOrderModal()}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer"
-                  >
-                    Reopen FIR
-                  </button>
-                  <Link
-                    href={`/fir-workspace/drafts?type=${activeTab === "SUPPLEMENTARY" ? "CHARGESHEET" : activeTab}`}
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white transition-colors"
-                  >
-                    Draft {currentConfig.title}
-                  </Link>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                    <th className="py-2.5 px-3">FIR No. &amp; Date</th>
-                    <th className="py-2.5 px-3">Complainant / Accused</th>
-                    <th className="py-2.5 px-3">Acts &amp; Sections</th>
-                    <th className="py-2.5 px-3">Investigating Officer</th>
-                    <th className="py-2.5 px-3">Final Report / Court Order</th>
-                    <th className="py-2.5 px-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredFirs.map((fir) => {
-                    const accusedNames =
-                      fir.accusedList?.map((a) => a.name).join(", ") || "Unknown";
-                    const reportNo =
-                      fir.finalFormNumber ||
-                      fir.reports?.find(
-                        (r) =>
-                          r.reportType === "CHARGESHEET" ||
-                          r.reportType === "CLOSURE_REPORT"
-                      )?.dispatchNo ||
-                      "Pending No.";
-                    const court =
-                      fir.courtName ||
-                      fir.assignedDirections?.split("before")?.[1]?.trim() ||
-                      "Hon'ble Court of CJM";
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedStation}
+              onChange={(e) => setSelectedStation(e.target.value)}
+              aria-label="Filter by Police Station"
+              className="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none"
+            >
+              <option value="ALL">All Police Stations</option>
+              {policeStations.map((ps) => (
+                <option key={ps} value={ps}>
+                  {ps}
+                </option>
+              ))}
+            </select>
 
-                    return (
-                      <tr
-                        key={fir.id}
-                        className="hover:bg-slate-50/80 transition-colors group"
-                      >
-                        {/* 1. FIR No & Date */}
-                        <td className="py-3 px-3 align-top">
-                          <Link
-                            href={`/fir/${fir.id}`}
-                            className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-1"
-                          >
-                            <span>{fir.firNumber}</span>
-                          </Link>
-                          <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                            {formatDate(fir.firDate)} {fir.firTime || ""}
-                          </div>
-                          {fir.cctnsFirNumber && (
-                            <span className="text-[9px] text-slate-500 font-mono bg-slate-100 px-1 rounded">
-                              {fir.cctnsFirNumber}
-                            </span>
-                          )}
-                        </td>
-
-                        {/* 2. Complainant / Accused */}
-                        <td className="py-3 px-3 align-top max-w-[200px]">
-                          <div className="font-medium text-slate-800 truncate" title={fir.complainantName}>
-                            {fir.complainantName}
-                          </div>
-                          <div
-                            className="text-[11px] text-slate-500 truncate mt-0.5"
-                            title={`Accused: ${accusedNames}`}
-                          >
-                            <span className="text-[10px] font-semibold text-slate-400">Accused: </span>
-                            {accusedNames}
-                          </div>
-                        </td>
-
-                        {/* 3. Acts & Sections */}
-                        <td className="py-3 px-3 align-top max-w-[200px]">
-                          <div
-                            className="text-slate-800 font-mono text-[11px] truncate"
-                            title={fir.actsAndSections}
-                          >
-                            {fir.actsAndSections}
-                          </div>
-                          <div className="text-[10px] text-slate-400 truncate mt-0.5">
-                            {fir.policeStation}
-                          </div>
-                        </td>
-
-                        {/* 4. IO */}
-                        <td className="py-3 px-3 align-top whitespace-nowrap">
-                          <div className="font-medium text-slate-800 flex items-center gap-1">
-                            <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                            <span>{fir.assignedIoName || "Not Assigned"}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {fir.assignedIoRank || fir.assignedIoBeltNumber || ""}
-                          </div>
-                          {fir.courtOrderNumber && (
-                            <div className="text-[9px] text-indigo-600 font-bold mt-0.5">
-                              Assigned via Court Order
-                            </div>
-                          )}
-                        </td>
-
-                        {/* 5. Report / Court Order Details */}
-                        <td className="py-3 px-3 align-top">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[11px] font-semibold text-slate-800">
-                              {reportNo}
-                            </span>
-                            <span
-                              className={`text-[9px] px-1.5 py-0.2 rounded font-bold border ${currentConfig.badgeColor}`}
-                            >
-                              {activeTab === "CHARGESHEET"
-                                ? "Sent to SHO / Court"
-                                : activeTab === "SUPPLEMENTARY"
-                                ? "Supplementary"
-                                : activeTab === "CLOSURE"
-                                ? "Closure Submitted"
-                                : "Untraced Filed"}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[220px]" title={court}>
-                            {court}
-                          </div>
-                          {fir.courtOrderNumber && (
-                            <div className="text-[10px] text-indigo-700 font-mono mt-0.5 flex items-center gap-1">
-                              <Gavel className="w-3 h-3 text-indigo-600" />
-                              <span>Order: {fir.courtOrderNumber}</span>
-                              {fir.courtOrderDate && <span>({formatDate(fir.courtOrderDate)})</span>}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* 6. Action */}
-                        <td className="py-3 px-3 align-top text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenOrderModal(fir.id)}
-                              title="Reopen FIR"
-                              className="px-2 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                            >
-                              <Gavel className="w-3 h-3" />
-                              <span>Assign</span>
-                            </button>
-                            <Link
-                              href={`/fir/${fir.id}`}
-                              className="px-2 py-1 text-[11px] font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-md transition-colors"
-                            >
-                              View
-                            </Link>
-                            <Link
-                              href={`/fir-workspace/drafts?firId=${fir.id}&type=${
-                                activeTab === "SUPPLEMENTARY" ? "CHARGESHEET" : activeTab
-                              }`}
-                              className="px-2 py-1 text-[11px] font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors flex items-center gap-1"
-                            >
-                              <span>Report</span>
-                              <ChevronRight className="w-3 h-3" />
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={fetchFirs}
+              className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+              title="Refresh list"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* REOPEN FIR MODAL */}
-      {isOrderModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+      {/* Case List Content */}
+      {loading ? (
+        <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
+          <RefreshCw className="w-6 h-6 animate-spin text-slate-400 mx-auto mb-2" />
+          <p className="text-xs text-slate-500 font-medium">Loading Part B records...</p>
+        </div>
+      ) : currentTabFirs.length === 0 ? (
+        <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 space-y-2">
+          <FileCheck2 className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-800">No cases in {currentConfig.title}</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            {activeTab === "PARTIAL" && "There are currently no cases with a pending partial supplementary investigation."}
+            {activeTab === "UNDER_CHECKING" && "No issued challans are currently waiting for court submission."}
+            {activeTab === "REOPEN" && "No completed cases have been reopened. Re-open action is available on the Complete cases page."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">FIR Number</th>
+                  <th className="py-3 px-4">Station</th>
+                  <th className="py-3 px-4">Complainant / Accused</th>
+                  <th className="py-3 px-4">Acts &amp; Sections</th>
+                  <th className="py-3 px-4">Challan / Order Details</th>
+                  <th className="py-3 px-4">Assigned IO</th>
+                  <th className="py-3 px-4 text-right">Contextual Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {currentTabFirs.map((fir) => {
+                  const latestChallan = fir.challanRecords?.[0];
+                  const latestReopen = fir.reopenHistory?.[0];
+
+                  return (
+                    <tr key={fir.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                        <Link href={`/fir/${fir.id}`} className="hover:text-blue-600 hover:underline">
+                          {fir.firNumber}
+                        </Link>
+                        <span className="block text-[10px] text-slate-400 font-sans font-normal">
+                          {formatDate(fir.firDate)}
+                        </span>
+                        {fir.previouslyReopened && (
+                          <span className="inline-block mt-0.5 text-[9px] font-mono px-1 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                            Previously Reopened
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-600 font-medium">
+                        {fir.policeStation}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900 truncate max-w-[180px]">
+                          {fir.complainantName}
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
+                          Accused: {fir.accusedList?.map((a) => a.name).join(", ") || "Unknown"}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 text-slate-600 max-w-[200px]">
+                        <span className="line-clamp-2">{fir.actsAndSections}</span>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        {activeTab === "UNDER_CHECKING" && latestChallan && (
+                          <div>
+                            <span className="font-mono font-bold text-slate-900">
+                              {latestChallan.challanNumber}
+                            </span>
+                            <span className={`ml-1.5 text-[10px] px-1.5 py-0.2 rounded font-bold border ${
+                              latestChallan.challanMode === "COMPLETE"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : "bg-blue-50 text-blue-800 border-blue-300"
+                            }`}>
+                              {latestChallan.challanMode} Mode
+                            </span>
+                            <span className="block text-[10px] text-slate-500">
+                              Issued: {latestChallan.issuedAt} ({latestChallan.challanType})
+                            </span>
+                          </div>
+                        )}
+
+                        {activeTab === "PARTIAL" && latestChallan && (
+                          <div>
+                            <span className="font-mono text-xs font-semibold text-slate-800">
+                              {latestChallan.challanNumber}
+                            </span>
+                            <span className="ml-1 text-[10px] px-1 rounded bg-blue-100 text-blue-900 font-bold border border-blue-200">
+                              Partial Submitted
+                            </span>
+                            <span className="block text-[10px] text-slate-500">
+                              Court: {latestChallan.courtName} ({latestChallan.courtSubmittedAt || "Submitted"})
+                            </span>
+                          </div>
+                        )}
+
+                        {activeTab === "REOPEN" && (
+                          <div>
+                            <span className="text-[11px] font-semibold text-purple-900 block truncate max-w-[180px]">
+                              {latestReopen?.reason || "Court Order for Further Investigation"}
+                            </span>
+                            <span className="text-[10px] text-slate-500 block">
+                              Order: {latestReopen?.orderNumber || "Direct Order"} ({latestReopen?.orderDate || latestReopen?.reopenedAt || "Recent"})
+                            </span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="font-medium text-slate-900 block truncate max-w-[140px]">
+                          {fir.assignedIoName || "Not Assigned"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block font-mono">
+                          {fir.assignedIoRank || "IO"}
+                        </span>
+                      </td>
+
+                      <td className="py-3 px-4 text-right">
+                        {activeTab === "UNDER_CHECKING" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSubmittingFir(fir);
+                              setCourtReceiptNo("");
+                              setSubmissionRemarks("");
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs cursor-pointer transition-colors"
+                          >
+                            <Gavel className="w-3.5 h-3.5" />
+                            <span>Record Court Submission</span>
+                          </button>
+                        )}
+
+                        {activeTab === "PARTIAL" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChallanModalFir(fir);
+                              setChallanMode("COMPLETE");
+                              setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                              setChallanBriefFacts("");
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Prepare Supplementary Challan</span>
+                          </button>
+                        )}
+
+                        {activeTab === "REOPEN" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChallanModalFir(fir);
+                              setChallanMode("COMPLETE");
+                              setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                              setChallanBriefFacts("");
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white shadow-xs cursor-pointer transition-colors"
+                          >
+                            <Scale className="w-3.5 h-3.5" />
+                            <span>Prepare Challan</span>
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card-Based View */}
+          <div className="lg:hidden space-y-3">
+            {currentTabFirs.map((fir) => {
+              const latestChallan = fir.challanRecords?.[0];
+              const latestReopen = fir.reopenHistory?.[0];
+
+              return (
+                <div key={fir.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Link href={`/fir/${fir.id}`} className="font-mono font-bold text-sm text-slate-900 hover:underline">
+                        {fir.firNumber}
+                      </Link>
+                      <span className="text-[10px] text-slate-400 block">{formatDate(fir.firDate)}</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                      {fir.policeStation}
+                    </span>
+                  </div>
+
+                  <div className="text-xs space-y-1 text-slate-700">
+                    <div><strong>Complainant:</strong> {fir.complainantName}</div>
+                    <div className="truncate"><strong>Offence:</strong> {fir.actsAndSections}</div>
+                    <div><strong>IO:</strong> {fir.assignedIoName || "—"}</div>
+
+                    {activeTab === "UNDER_CHECKING" && latestChallan && (
+                      <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-950 mt-2">
+                        <strong>Issued Challan:</strong> {latestChallan.challanNumber} ({latestChallan.challanMode} Mode)
+                        <span className="block text-slate-600 text-[10px]">Issued at: {latestChallan.issuedAt}</span>
+                      </div>
+                    )}
+
+                    {activeTab === "PARTIAL" && latestChallan && (
+                      <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-950 mt-2">
+                        <strong>Partial Submitted:</strong> {latestChallan.challanNumber}
+                        <span className="block text-slate-600 text-[10px]">Court: {latestChallan.courtName}</span>
+                      </div>
+                    )}
+
+                    {activeTab === "REOPEN" && latestReopen && (
+                      <div className="p-2 bg-purple-50 border border-purple-200 rounded-lg text-[11px] text-purple-950 mt-2">
+                        <strong>Reopened Reason:</strong> {latestReopen.reason}
+                        <span className="block text-slate-600 text-[10px]">Order: {latestReopen.orderNumber || "Direct"}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex justify-end">
+                    {activeTab === "UNDER_CHECKING" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmittingFir(fir);
+                          setCourtReceiptNo("");
+                          setSubmissionRemarks("");
+                        }}
+                        className="w-full py-2 rounded-lg text-xs font-bold bg-amber-600 text-white flex items-center justify-center gap-1.5"
+                      >
+                        <Gavel className="w-3.5 h-3.5" />
+                        <span>Record Court Submission</span>
+                      </button>
+                    )}
+
+                    {activeTab === "PARTIAL" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChallanModalFir(fir);
+                          setChallanMode("COMPLETE");
+                          setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                          setChallanBriefFacts("");
+                        }}
+                        className="w-full py-2 rounded-lg text-xs font-bold bg-blue-600 text-white flex items-center justify-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Prepare Supplementary Challan</span>
+                      </button>
+                    )}
+
+                    {activeTab === "REOPEN" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChallanModalFir(fir);
+                          setChallanMode("COMPLETE");
+                          setChallanCourtName(fir.courtName || "Court of CJM, Panipat");
+                          setChallanBriefFacts("");
+                        }}
+                        className="w-full py-2 rounded-lg text-xs font-bold bg-purple-700 text-white flex items-center justify-center gap-1.5"
+                      >
+                        <Scale className="w-3.5 h-3.5" />
+                        <span>Prepare Challan</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: RECORD COURT SUBMISSION (Under Checking) */}
+      {submittingFir && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <Gavel className="w-4 h-4 text-amber-400" />
-                <h3 className="font-bold text-sm tracking-tight">Reopen FIR (Court Order &amp; IO Assignment)</h3>
+                <Gavel className="w-5 h-5 text-amber-600" />
+                <h3 className="font-bold text-sm text-slate-900">Record Court Submission</h3>
               </div>
               <button
                 type="button"
-                onClick={() => setIsOrderModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1 rounded-md"
+                onClick={() => setSubmittingFir(null)}
+                className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-              {/* Alert Messages */}
-              {modalErrorMsg && (
-                <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 flex items-center gap-2 text-xs">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{modalErrorMsg}</span>
-                </div>
-              )}
-              {modalSuccessMsg && (
-                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-2 text-xs font-semibold">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>{modalSuccessMsg}</span>
-                </div>
-              )}
-
-              {/* 1. FIR Selection Dropdown (Only FIRs on Part B / active page) */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-800 block">
-                  Select FIR (FIR Part B Dropdown) <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={selectedFirIdForOrder}
-                  onChange={(e) => setSelectedFirIdForOrder(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
-                >
-                  <option value="">-- Choose FIR --</option>
-                  {(currentTabFirs.length > 0 ? currentTabFirs : firs).map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.firNumber} — {f.complainantName} ({f.actsAndSections}) [{f.mainStatus || f.status}]
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 2. Court Name, Order Number & Date in wider responsive grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-800 block">Court Name</label>
-                  <input
-                    type="text"
-                    value={courtName}
-                    onChange={(e) => setCourtName(e.target.value)}
-                    placeholder="Court of CJM / Sessions Judge"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-800 block">
-                    Order Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={orderNumber}
-                    onChange={(e) => setOrderNumber(e.target.value)}
-                    placeholder="e.g. ORD/2026/049"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-800 block">Court Order Date</label>
-                  <input
-                    type="date"
-                    value={orderDate}
-                    onChange={(e) => setOrderDate(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* 3. Upload Court Order Document & Assign IO Side by Side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Upload Court Order Document Column */}
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-800 block">Court Order Document (Upload Copy)</label>
-                  <div className="border border-dashed border-slate-300 hover:border-slate-400 rounded-lg p-3 text-center bg-slate-50/50 transition-colors h-[86px] flex items-center justify-center">
-                    <input
-                      type="file"
-                      id="court-order-file-input"
-                      className="hidden"
-                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                      onChange={handleFileUpload}
-                    />
-                    <label
-                      htmlFor="court-order-file-input"
-                      className="cursor-pointer flex flex-col items-center justify-center gap-1 w-full"
-                    >
-                      <Upload className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-semibold text-slate-700 truncate max-w-[280px]">
-                        {uploadedOrderFileName ? uploadedOrderFileName : "Click to browse & upload Court Order"}
-                      </span>
-                      <span className="text-[10px] text-slate-400">PDF, JPG, PNG or DOCX (Max 10MB)</span>
-                    </label>
+            <div className="space-y-3 text-xs text-slate-700">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <div><strong>FIR Number:</strong> <span className="font-mono font-bold text-slate-900">{submittingFir.firNumber}</span></div>
+                <div><strong>Court:</strong> {submittingFir.courtName || "Court of CJM, Panipat"}</div>
+                {submittingFir.challanRecords?.[0] && (
+                  <div>
+                    <strong>Challan Number:</strong> {submittingFir.challanRecords[0].challanNumber} (
+                    <span className="font-bold text-blue-700">{submittingFir.challanRecords[0].challanMode} Mode</span>)
                   </div>
-                </div>
-
-                {/* Assign to IO Dropdown */}
-                <div className="space-y-1">
-                  <label className="font-bold text-slate-800 block">
-                    Assign to IO (जांच अधिकारी) <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={selectedIoId}
-                    onChange={(e) => setSelectedIoId(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  >
-                    <option value="">-- Choose Investigating Officer --</option>
-                    {MOCK_ENQUIRY_OFFICERS.map((eo) => (
-                      <option key={eo.id} value={eo.id}>
-                        {eo.name} ({eo.rank}) — PNO: {eo.pno} [{eo.activeCases} Active Cases]
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    सबमिट करते ही FIR IO के FIR Register में दिखने लगेगी और नोटिफिकेशन भेजा जाएगा।
-                  </p>
-                </div>
+                )}
               </div>
 
-              {/* 6. Supervisory Directions */}
-              <div className="space-y-1">
-                <label className="font-bold text-slate-800 block">Supervisory Directions / Remarks (Optional)</label>
-                <textarea
-                  value={orderDirections}
-                  onChange={(e) => setOrderDirections(e.target.value)}
-                  rows={2}
-                  placeholder="e.g. Conduct further enquiry as per directions in court order and submit status report within 15 days."
-                  className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Court Diary / Receipt Number (वकालत / कोर्ट पावती नंबर)
+                </label>
+                <input
+                  type="text"
+                  value={courtReceiptNo}
+                  onChange={(e) => setCourtReceiptNo(e.target.value)}
+                  placeholder="e.g. CRT/PNP/2026/894"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
                 />
               </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Submission Notes / Remarks
+                </label>
+                <textarea
+                  value={submissionRemarks}
+                  onChange={(e) => setSubmissionRemarks(e.target.value)}
+                  rows={2}
+                  placeholder="e.g. Challan presented before Chief Judicial Magistrate. Formal receipt obtained."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
+                />
+              </div>
+
+              {submittingFir.challanRecords?.[0]?.challanMode === "COMPLETE" ? (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900">
+                  ℹ️ <strong>Rule 4:</strong> This challan was issued in <strong>Complete Mode</strong>. Recording court submission will move this case to <strong>Complete cases</strong>.
+                </div>
+              ) : (
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-900">
+                  ℹ️ <strong>Rule 4:</strong> This challan was issued in <strong>Partial Mode</strong>. Recording court submission will move this case to <strong>Part B &rarr; Partial</strong> for further investigation.
+                </div>
+              )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
-                onClick={() => setIsOrderModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer"
+                onClick={() => setSubmittingFir(null)}
+                className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
-                onClick={handleSubmitCourtOrder}
-                disabled={isSubmitting}
-                className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                disabled={isSubmittingCourt}
+                onClick={handleConfirmCourtSubmission}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs cursor-pointer flex items-center gap-1.5"
               >
-                {isSubmitting ? (
-                  <span>Submitting...</span>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Reopen FIR &amp; Assign IO</span>
-                  </>
-                )}
+                {isSubmittingCourt ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>Confirm Court Submission</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: PREPARE / ISSUE CHALLAN (Partial -> Under Checking, Re-open -> Under Checking) */}
+      {challanModalFir && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Scale className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-sm text-slate-900">
+                  {activeTab === "PARTIAL" ? "Issue Supplementary Challan" : "Issue Challan for Reopened Case"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChallanModalFir(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-700">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <div><strong>FIR Number:</strong> <span className="font-mono font-bold text-slate-900">{challanModalFir.firNumber}</span></div>
+                <div><strong>Offence:</strong> {challanModalFir.actsAndSections}</div>
+                <div><strong>Current IO:</strong> {challanModalFir.assignedIoName || currentUser.name}</div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Challan Mode (चालान का प्रकार) <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label
+                    className={`p-2.5 rounded-lg border flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+                      challanMode === "COMPLETE"
+                        ? "border-emerald-500 bg-emerald-50/70 text-emerald-950 font-bold"
+                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="challanMode"
+                      value="COMPLETE"
+                      checked={challanMode === "COMPLETE"}
+                      onChange={() => setChallanMode("COMPLETE")}
+                      className="sr-only"
+                    />
+                    <span>Complete Mode</span>
+                    <span className="text-[10px] font-normal text-slate-500 text-center">पूर्ण चालान (Final Disposal)</span>
+                  </label>
+
+                  <label
+                    className={`p-2.5 rounded-lg border flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+                      challanMode === "PARTIAL"
+                        ? "border-blue-500 bg-blue-50/70 text-blue-950 font-bold"
+                        : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="challanMode"
+                      value="PARTIAL"
+                      checked={challanMode === "PARTIAL"}
+                      onChange={() => setChallanMode("PARTIAL")}
+                      className="sr-only"
+                    />
+                    <span>Partial Mode</span>
+                    <span className="text-[10px] font-normal text-slate-500 text-center">आंशिक चालान (Investigation Continues)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Court of Submission
+                </label>
+                <input
+                  type="text"
+                  value={challanCourtName}
+                  onChange={(e) => setChallanCourtName(e.target.value)}
+                  placeholder="Court of CJM, Panipat"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">
+                  Brief Facts / Investigation Summary
+                </label>
+                <textarea
+                  value={challanBriefFacts}
+                  onChange={(e) => setChallanBriefFacts(e.target.value)}
+                  rows={2}
+                  placeholder="Investigation completed against named accused persons. Forwarded for court scrutiny."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
+                />
+              </div>
+
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-950">
+                ℹ️ <strong>Rule 3 &amp; 6:</strong> Issuing this challan will move this case to <strong>Part B &rarr; Under checking</strong>. Selecting Complete mode does not complete the case immediately; completion happens upon court submission.
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setChallanModalFir(null)}
+                className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isIssuingChallan}
+                onClick={handleConfirmIssueChallan}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                {isIssuingChallan ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                <span>Issue Challan &rarr; Under checking</span>
               </button>
             </div>
           </div>
@@ -881,7 +903,13 @@ function FIRPartBContent() {
 
 export default function FIRPartBPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading FIR Part B...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-xs text-slate-500">
+          Loading FIR Part B...
+        </div>
+      }
+    >
       <FIRPartBContent />
     </Suspense>
   );
