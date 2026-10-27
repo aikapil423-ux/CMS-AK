@@ -33,7 +33,7 @@ console.log('--- STARTING CMS FIR TRACKING WORKFLOW ACCEPTANCE SUITE ---');
 
 // In Node environment, test the authoritative transition logic and integrity guards
 function runTestSuite() {
-  const { firService } = require('../dist_test/bundle.cjs');
+  const { service: firService } = require('./helpers/fir-service.cjs').session({});
 
   console.log('\n[TEST 1] Fresh FIR -> FIR Register / Part A (PART_A_FRESH)');
   const freshFir = firService.registerFir({
