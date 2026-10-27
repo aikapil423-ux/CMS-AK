@@ -93,7 +93,7 @@ export function LinkDuplicateFIRModal({
   // Target FIRs filtered list (excluding primary FIR)
   const availableTargets = useMemo(() => {
     const q = targetSearch.trim().toLowerCase();
-    const list = firs.filter((f) => f.id !== primaryFir?.id && f.firNumber !== primaryFir?.firNumber);
+    const list = firs.filter((f) => f.id !== primaryFir?.id);
     if (!q) return list;
     return list.filter((f) => {
       return (
@@ -164,7 +164,7 @@ export function LinkDuplicateFIRModal({
   };
 
   // Submit Delink
-  const handleDelinkSubmit = (targetFirNumber: string) => {
+  const handleDelinkSubmit = (targetFirNumber: string, targetFirId: string) => {
     if (!manageFir) return;
 
     setSubmitting(true);
@@ -172,6 +172,7 @@ export function LinkDuplicateFIRModal({
       const res = firService.delinkFirs({
         primaryFirId: manageFir.id,
         targetFirNumber,
+        targetFirId,
         reason: "Delinked on officer directive",
         officerName,
       });
@@ -481,11 +482,11 @@ export function LinkDuplicateFIRModal({
                         <div className="text-[11px] text-slate-600 mt-0.5">{item.reason}</div>
                       </div>
 
-                      {delinkConfirmNumber === item.firNumber ? (
+                      {delinkConfirmNumber === item.firId ? (
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => handleDelinkSubmit(item.firNumber)}
+                            onClick={() => handleDelinkSubmit(item.firNumber, item.firId)}
                             disabled={submitting}
                             className="px-2.5 py-1 bg-red-600 text-white rounded text-[11px] font-bold hover:bg-red-700 cursor-pointer"
                           >
@@ -502,7 +503,7 @@ export function LinkDuplicateFIRModal({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setDelinkConfirmNumber(item.firNumber)}
+                          onClick={() => setDelinkConfirmNumber(item.firId)}
                           className="px-2.5 py-1 text-red-600 hover:bg-red-50 border border-red-200 rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                         >
                           <Unlink className="w-3 h-3" />

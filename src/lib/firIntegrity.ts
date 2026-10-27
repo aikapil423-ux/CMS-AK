@@ -35,8 +35,8 @@ export function firPendingDays(fir:Pick<FIRItem,'firDate'|'status'|'finalFormDat
 }
 
 export function isFirVisibleToUser(
-  user?: { id?: string; pno?: string; name?: string; role?: string; stationName?: string } | null,
-  fir?: Pick<FIRItem, 'assignedIoId' | 'assignedIoName' | 'policeStation'> | null
+  user?: { id?: string; pno?: string; name?: string; role?: string; stationName?: string; district?: string } | null,
+  fir?: Pick<FIRItem, 'assignedIoId' | 'assignedIoName' | 'policeStation'> & Partial<Pick<FIRItem, 'district'>> | null
 ): boolean {
   if (!user || !fir) return false;
 
@@ -48,8 +48,10 @@ export function isFirVisibleToUser(
     role === "SUPER_ADMIN";
 
   // Superior district officers (SP, ASP, DSP, Super Admin) see all FIRs across all stations in the district
+  if (role === 'SUPER_ADMIN') return true;
+  const norm = (value?: string) => (value || '').trim().toLowerCase();
   if (isSuperior) {
-    return true;
+    return Boolean(norm(user.district) && norm(fir.district) && norm(user.district) === norm(fir.district));
   }
 
   // Station-level personnel: SHO, MHC, Duty Officer
@@ -66,11 +68,11 @@ export function isFirVisibleToUser(
       const norm = (s: string) => s.trim().toLowerCase();
       return norm(user.stationName) === norm(fir.policeStation);
     }
-    return true;
+    return false;
   }
 
   // Investigating Officer (IO / EO): only see FIRs assigned to them in their station
-  return isUserAssignedIo(user, fir);
+  return Boolean(norm(user.stationName) && norm(fir.policeStation) && norm(user.stationName) === norm(fir.policeStation) && isUserAssignedIo(user, fir));
 }
 
 export function isUserAssignedIo(
@@ -108,7 +110,7 @@ export function isUserAssignedIo(
   }
 
   // 3. Name normalization comparison (strips titles/ranks: Sub-Inspector, SI, ASI, HC, Inspector, etc.)
-  if (fir.assignedIoName && user.name) {
+  if (!fir.assignedIoId && fir.assignedIoName && user.name) {
     const normalize = (s: string) =>
       s
         .toLowerCase()
@@ -119,7 +121,7 @@ export function isUserAssignedIo(
     const firIo = normalize(fir.assignedIoName);
     const uName = normalize(user.name);
 
-    if (firIo && uName && (firIo === uName || firIo.includes(uName) || uName.includes(firIo))) {
+    if (firIo && uName && firIo === uName) {
       return true;
     }
   }

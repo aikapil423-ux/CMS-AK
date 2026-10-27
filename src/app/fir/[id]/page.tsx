@@ -51,7 +51,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { firService } from "@/services/firService";
-import { getAuthoritativeTrackingState } from "@/lib/firIntegrity";
+import { isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ComplaintService } from "@/services/complaintService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -321,7 +321,7 @@ export default function FIRProfilePage() {
     setLoading(true);
     try {
       const item = firService.getFirById(firId);
-      if (item) {
+      if (item && isFirVisibleToUser(currentUser, item)) {
         // Rehydrate dedicated crimeDetailsData if missing on the item
         if (!item.crimeDetailsData && typeof window !== "undefined" && window.localStorage) {
           try {
@@ -352,6 +352,8 @@ export default function FIRProfilePage() {
         setFir(item);
         setSelectedIoId(item.assignedIoId || "");
         setAssignmentDirections(item.assignedDirections || "");
+      } else {
+        setFir(null);
       }
     } catch (e) {
       console.error("Error loading FIR:", e);
@@ -366,16 +368,19 @@ export default function FIRProfilePage() {
       fetchFir();
     });
     return unsub;
-  }, [firId]);
+  }, [firId, currentUser]);
 
   useEffect(() => {
     let cancelled = false;
     setReportBackendError("");
+    const accessible = firService.getFirById(firId);
+    setBackendReports([]); setReportHistory([]);
+    if (!accessible || !isFirVisibleToUser(currentUser, accessible)) return;
     finalReportClient.list(firId).then(result => {
       if (!cancelled) { setBackendReports(result.reports); setReportHistory(result.history); }
     }).catch(error => { if (!cancelled) setReportBackendError(error.message); });
     return () => { cancelled = true; };
-  }, [firId, reportRefresh]);
+  }, [firId, reportRefresh, currentUser]);
 
   // Support direct URL query param ?openCrimeDetails=true
   useEffect(() => {
@@ -1362,7 +1367,7 @@ export default function FIRProfilePage() {
     );
   }
 
-  if (!fir) {
+  if (!fir || !isFirVisibleToUser(currentUser, fir)) {
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
         <Scale className="w-12 h-12 text-slate-300 mx-auto" />

@@ -906,6 +906,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
 ];
 
 let firsStore: FIRItem[] = [];
+let storageSnapshot: string | null = null;
 const firListeners: (() => void)[] = [];
 
 function notifyListeners() {
@@ -948,6 +949,7 @@ function loadFirsFromStorage(): FIRItem[] {
   if (typeof window !== "undefined" && window.localStorage) {
     try {
       const raw = window.localStorage.getItem(FIRS_STORAGE_KEY);
+      storageSnapshot = raw;
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -964,7 +966,7 @@ function loadFirsFromStorage(): FIRItem[] {
   } else {
     // Ensure all seed FIRs (including Panipat audit records) exist in list
     INITIAL_MOCK_FIRS.forEach((seedFir) => {
-      if (!list.some((existing) => existing.id === seedFir.id || existing.firNumber === seedFir.firNumber)) {
+      if (!list.some((existing) => existing.id === seedFir.id)) {
         list.push(seedFir);
       }
     });
@@ -1018,9 +1020,15 @@ function loadFirsFromStorage(): FIRItem[] {
 
 function saveFirsToStorage(items: FIRItem[]) {
   if (typeof window !== "undefined" && window.localStorage) {
+    if (window.localStorage.getItem(FIRS_STORAGE_KEY) !== storageSnapshot) {
+      firsStore = loadFirsFromStorage();
+      notifyListeners();
+      throw new Error('FIR data changed in another tab. Review the refreshed record and retry.');
+    }
     try {
       const sanitized = items.map(sanitizeFirForStorage);
       window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(sanitized));
+      storageSnapshot = window.localStorage.getItem(FIRS_STORAGE_KEY);
     } catch (e) {
       console.warn("Storage quota exceeded in firService, attempting fallback strip:", e);
       try {
@@ -1030,6 +1038,7 @@ function saveFirsToStorage(items: FIRItem[]) {
           caseDiaries: f.caseDiaries?.map((c) => ({ ...c, dataUrl: undefined })),
         }));
         window.localStorage.setItem(FIRS_STORAGE_KEY, JSON.stringify(stripped));
+        storageSnapshot = window.localStorage.getItem(FIRS_STORAGE_KEY);
       } catch (err2) {
         throw new Error('FIR save failed: browser storage is full or unavailable. Free storage and retry; changes have not been saved.');
       }
@@ -1039,6 +1048,12 @@ function saveFirsToStorage(items: FIRItem[]) {
 
 if (typeof window !== "undefined") {
   firsStore = loadFirsFromStorage();
+  window.addEventListener('storage', (event) => {
+    if (event.key === FIRS_STORAGE_KEY || event.key === null) {
+      firsStore = loadFirsFromStorage();
+      notifyListeners();
+    }
+  });
 } else {
   firsStore = [...INITIAL_MOCK_FIRS];
 }
@@ -1069,7 +1084,11 @@ export const firService = {
 
   getFirById(id: string): FIRItem | undefined {
     const list = this.getAllFirs();
-    return list.find((f) => f.id === id || f.firNumber === id);
+    const exact = list.find((f) => f.id === id);
+    if (exact) return exact;
+    const matches = list.filter((f) => f.firNumber === id);
+    if (matches.length > 1) throw new Error('Ambiguous FIR number. Select the FIR by its unique ID.');
+    return matches[0];
   },
 
   getFirBySourceComplaintId(complaintId: string): FIRItem | undefined {
@@ -1271,7 +1290,8 @@ export const firService = {
   },
 
   updateFir(firId: string, updates: Partial<FIRItem>): FIRItem | undefined {
-    const idx = firsStore.findIndex((f) => f.id === firId || f.firNumber === firId);
+    const resolved = this.getFirById(firId);
+    const idx = firsStore.findIndex((f) => f.id === resolved?.id);
     if (idx === -1) return undefined;
 
     const current = firsStore[idx];
@@ -2123,7 +2143,7 @@ export const firService = {
     const primary = this.getFirById(payload.primaryFirId);
     if (!primary) throw new Error("Primary FIR not found");
 
-    const validTargetIds = payload.targetFirIds.filter((id) => id !== primary.id);
+    const validTargetIds = Array.from(new Set(payload.targetFirIds)).filter((id) => id !== primary.id);
     if (validTargetIds.length === 0) throw new Error("Please select at least one valid target FIR to link");
 
     const now = new Date();
@@ -2165,7 +2185,7 @@ export const firService = {
         linkedBy: payload.officerName,
       };
 
-      const targetExisting = (target.linkedFirsList || []).filter((l) => l.firNumber !== primary.firNumber);
+      const targetExisting = (target.linkedFirsList || []).filter((l) => l.firId !== primary.id);
       const tTimeline: FIRTimelineEvent = {
         id: `tl-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         date: `${dateStr} ${timeStr}`,
@@ -2188,7 +2208,8 @@ export const firService = {
     }
 
     const targetNumbers = updatedTargets.map((t) => t.firNumber);
-    const primaryExisting = (primary.linkedFirsList || []).filter((l) => !targetNumbers.includes(l.firNumber));
+    const targetIds = updatedTargets.map((t) => t.id);
+    const primaryExisting = (primary.linkedFirsList || []).filter((l) => !targetIds.includes(l.firId));
 
     const pTimeline: FIRTimelineEvent = {
       id: `tl-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -2230,6 +2251,7 @@ export const firService = {
   delinkFirs(payload: {
     primaryFirId: string;
     targetFirNumber: string;
+    targetFirId?: string;
     reason: string;
     officerName: string;
   }): { primary: FIRItem; target?: FIRItem } {
@@ -2237,13 +2259,16 @@ export const firService = {
     if (!primary) throw new Error("Primary FIR not found");
 
     const targetFirNumber = payload.targetFirNumber;
-    const target = firsStore.find((f) => f.firNumber === targetFirNumber);
+    const links = (primary.linkedFirsList || []).filter(l => payload.targetFirId ? l.firId === payload.targetFirId : l.firNumber === targetFirNumber);
+    if (links.length !== 1) throw new Error('Select one linked FIR by its unique ID.');
+    const targetId = links[0].firId;
+    const target = this.getFirById(targetId);
 
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
     const timeStr = now.toTimeString().slice(0, 5);
 
-    const pUpdatedList = (primary.linkedFirsList || []).filter((l) => l.firNumber !== targetFirNumber);
+    const pUpdatedList = (primary.linkedFirsList || []).filter((l) => l.firId !== targetId);
     const hasOtherDuplicatesP = pUpdatedList.some((l) => l.linkType === "DUPLICATE");
     const hasOtherCrossP = pUpdatedList.some((l) => l.linkType === "CROSS");
 
@@ -2265,7 +2290,7 @@ export const firService = {
 
     let updatedTarget: FIRItem | undefined = undefined;
     if (target) {
-      const tUpdatedList = (target.linkedFirsList || []).filter((l) => l.firNumber !== primary.firNumber);
+      const tUpdatedList = (target.linkedFirsList || []).filter((l) => l.firId !== primary.id);
       const hasOtherDuplicatesT = tUpdatedList.some((l) => l.linkType === "DUPLICATE");
       const hasOtherCrossT = tUpdatedList.some((l) => l.linkType === "CROSS");
 

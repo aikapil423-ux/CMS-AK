@@ -20,8 +20,8 @@ const { isUserAssignedIo, isFirVisibleToUser, nextFirNumber, firPendingDays } = 
 
 test('SHO sees only FIRs from their assigned police station', () => {
   const shoPanipat = { id: 'usr_sho_1', name: 'Inspector Rajesh Kumar', role: 'SHO', stationName: 'PS City Panipat' };
-  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat' };
-  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat' };
+  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat', district: 'Panipat' };
+  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat', district: 'Panipat' };
   const modelTownFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Model Town Panipat' };
 
   assert.equal(isFirVisibleToUser(shoPanipat, cityFir), true);
@@ -30,9 +30,9 @@ test('SHO sees only FIRs from their assigned police station', () => {
 });
 
 test('Superior district officer (SP) sees FIRs from all police stations', () => {
-  const spPanipat = { id: 'usr_sp_1', name: 'Sh. Mayank Mishra, IPS', role: 'SP_DISTRICT', stationName: 'District Police Office Panipat' };
-  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat' };
-  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat' };
+  const spPanipat = { id: 'usr_sp_1', name: 'Sh. Mayank Mishra, IPS', role: 'SP_DISTRICT', district: 'Panipat', stationName: 'District Police Office Panipat' };
+  const cityFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS City Panipat', district: 'Panipat' };
+  const chandniBaghFir = { firNumber: 'FIR/0001/2026', policeStation: 'PS Chandni Bagh Panipat', district: 'Panipat' };
 
   assert.equal(isFirVisibleToUser(spPanipat, cityFir), true);
   assert.equal(isFirVisibleToUser(spPanipat, chandniBaghFir), true);
@@ -44,10 +44,10 @@ test('SI Vikram matches FIR assigned via MOCK_ENQUIRY_OFFICERS id (eo_1)', () =>
   assert.equal(isUserAssignedIo(vikramUser, fir), true);
 });
 
-test('SI Vikram matches FIR with normalized name even if id differs (eo-004 vs usr_eo_1)', () => {
+test('conflicting officer ID cannot be overridden by matching name)', () => {
   const vikramUser = { id: 'usr_eo_1', name: 'Sub-Inspector Vikram Singh', pno: 'HR-07182930', role: 'ENQUIRY_OFFICER' };
   const fir = { assignedIoId: 'eo-004', assignedIoName: 'ASI Vikram Singh' };
-  assert.equal(isUserAssignedIo(vikramUser, fir), true);
+  assert.equal(isUserAssignedIo(vikramUser, fir), false);
 });
 
 test('SI Vikram does NOT match FIR assigned to another officer (ASI Ramesh Chander)', () => {
@@ -84,4 +84,17 @@ test('nextFirNumber correctly scopes per police station and resets on new year',
 
   // New year (1st Jan 12:00 AM onwards -> 2027): MUST reset to 0001/2027
   assert.equal(nextFirNumber(firs, 2027, 'PS City Panipat'), 'FIR/0001/2027');
+});
+
+test('visibility fails closed for missing stations and other districts', () => {
+  assert.equal(isFirVisibleToUser({role:'SHO'}, {policeStation:'PS A'}), false);
+  assert.equal(isFirVisibleToUser({role:'SHO',stationName:'PS A'}, {}), false);
+  assert.equal(isFirVisibleToUser({role:'SP_DISTRICT',district:'Panipat'}, {district:'Karnal'}), false);
+  assert.equal(isFirVisibleToUser({role:'SP_DISTRICT'}, {district:'Panipat'}), false);
+  assert.equal(isFirVisibleToUser({role:'SUPER_ADMIN'}, {}), true);
+});
+test('partial names never grant IO access and station boundary applies', () => {
+  assert.equal(isUserAssignedIo({name:'Ram'}, {assignedIoName:'SI Ram Kumar'}), false);
+  assert.equal(isUserAssignedIo({name:'Ram Kumar'}, {assignedIoName:'SI Ram Kumar'}), true);
+  assert.equal(isFirVisibleToUser({id:'io1',stationName:'PS A'}, {assignedIoId:'io1',policeStation:'PS B'}), false);
 });
