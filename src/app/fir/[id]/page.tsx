@@ -163,6 +163,8 @@ const FIR_REPORT_OPTIONS = [
   },
 ];
 
+import { BailDetailsModal } from '@/components/fir/BailDetailsModal';
+
 export default function FIRProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -175,6 +177,7 @@ export default function FIRProfilePage() {
 
   // Statutory Receipt Modal
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isBailOpen, setIsBailOpen] = useState(false);
 
   // Modify Acts Modal
   const [isModifyActsModalOpen, setIsModifyActsModalOpen] = useState(false);
@@ -1616,6 +1619,8 @@ export default function FIRProfilePage() {
             </Button>
           )}
 
+          <Button size="sm" variant="outline" onClick={() => setIsBailOpen(true)} className="border-blue-300 text-blue-900 font-bold text-xs gap-1.5"><Scale className="w-3.5 h-3.5" />Bail Details</Button>
+
           {/* Assign / Reassign IO */}
           {isSho && (
             <Button
@@ -2960,6 +2965,8 @@ export default function FIRProfilePage() {
           currentUserName={currentUser.name}
         />
       )}
+
+      {isBailOpen && <BailDetailsModal fir={fir} user={currentUser} onClose={() => setIsBailOpen(false)} />}
 
       {/* Assign IO Modal */}
       {isAssignModalOpen && (

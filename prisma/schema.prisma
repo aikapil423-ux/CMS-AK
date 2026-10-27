@@ -398,3 +398,19 @@ model FirFinalReportEvent {
   @@index([firId, createdAt])
   @@index([reportId, version])
 }
+
+model FirBailDetail {
+  id String @id
+  firId String
+  accusedId String
+  policeStation String
+  district String
+  version Int @default(1)
+  firSnapshotJson String
+  dataJson String
+  createdBy String
+  updatedBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([firId, accusedId])
+}
