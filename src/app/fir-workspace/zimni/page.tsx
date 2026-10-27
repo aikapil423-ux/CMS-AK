@@ -1144,27 +1144,11 @@ function ZimniWorkspaceContent() {
             <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
               <button
                 type="button"
-                onClick={handleDownload}
-                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                title="Download Clean A4 HTML"
-              >
-                <Download className="w-3.5 h-3.5 text-slate-600" />
-              </button>
-              <button
-                type="button"
                 onClick={handleCopy}
                 className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
                 title={copied ? "Copied" : "Copy Plain Text"}
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                title="Save Draft in Browser"
-              >
-                <Save className="w-3.5 h-3.5 text-slate-600" />
               </button>
             </div>
 

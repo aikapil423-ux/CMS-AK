@@ -51,7 +51,7 @@ export default function FIRWorkspacePage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-        {/* 1. Statutory Notice Generator */}
+        {/* 1. Notice Generator */}
         <Link href="/fir-workspace/templates" className="block group">
           <Card className="border-slate-200 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-purple-50/20 h-full">
             <CardContent className="p-3.5 flex flex-col justify-between h-full">
@@ -61,7 +61,7 @@ export default function FIRWorkspacePage() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-purple-800 transition-colors">
-                    Statutory Notice Generator
+                    Notice Generator
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
                     Accused notice (Sec 35(3) BNSS), CDR requisition, NATGRID intelligence & Witness summons (Sec 179 BNSS).

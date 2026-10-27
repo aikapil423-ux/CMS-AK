@@ -133,7 +133,7 @@ const DEFAULT_SAMPLE_HI: PropertySeizureFormData = {
   policeStation: "साईबर क्राईम",
   year: "2025",
   firNumber: "60",
-  firDate: "04.06.25",
+  firDate: "04-06-2025",
   actsAndSections: "318(4), 61(2) BNS",
 
   propertyTypeArms: false,
@@ -144,7 +144,7 @@ const DEFAULT_SAMPLE_HI: PropertySeizureFormData = {
   propertyTypeOther: true,
   propertyTypeOtherText: "चुराई हुई / गैरकानूनी कब्जा / संलिप्त निक्षीपयत (वारदात की राशि)",
 
-  seizureDate: "11.06.25",
+  seizureDate: "11-06-2025",
   seizureTime: "8:50",
   seizurePlace: "BPC कालोनी रोहतक",
 
@@ -211,7 +211,7 @@ const DEFAULT_SAMPLE_HI: PropertySeizureFormData = {
 
   accusedSignText: "पवन",
   accusedSignPlace: "रोहतक",
-  accusedSignDate: "11.06.25",
+  accusedSignDate: "11-06-2025",
 
   ioName: "कृष्ण कुमार",
   ioRank: "ASI",
@@ -226,7 +226,7 @@ const DEFAULT_SAMPLE_EN: PropertySeizureFormData = {
   policeStation: "CYBER CRIME",
   year: "2025",
   firNumber: "60",
-  firDate: "04.06.2025",
+  firDate: "04-06-2025",
   actsAndSections: "Section 318(4), 61(2) BNS",
 
   propertyTypeArms: false,
@@ -237,7 +237,7 @@ const DEFAULT_SAMPLE_EN: PropertySeizureFormData = {
   propertyTypeOther: true,
   propertyTypeOtherText: "Stolen / Unlawful Possession / Crime Proceeds",
 
-  seizureDate: "11.06.2025",
+  seizureDate: "11-06-2025",
   seizureTime: "08:50 AM",
   seizurePlace: "BPC Colony, Rohtak",
 
@@ -304,7 +304,7 @@ const DEFAULT_SAMPLE_EN: PropertySeizureFormData = {
 
   accusedSignText: "Pawan",
   accusedSignPlace: "Rohtak",
-  accusedSignDate: "11.06.2025",
+  accusedSignDate: "11-06-2025",
 
   ioName: "Krishan Kumar",
   ioRank: "ASI",
@@ -312,6 +312,125 @@ const DEFAULT_SAMPLE_EN: PropertySeizureFormData = {
   ioPoliceStation: "Cyber Crime Police Station, Panipat",
   ioSignText: "Krishan Kumar",
 };
+
+function toDDMMYYYY(val: any): string {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  const dotMatch = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if (dotMatch) {
+    const dd = dotMatch[1].padStart(2, "0");
+    const mm = dotMatch[2].padStart(2, "0");
+    let yyyy = dotMatch[3];
+    if (yyyy.length === 2) yyyy = "20" + yyyy;
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if (slashMatch) {
+    const dd = slashMatch[1].padStart(2, "0");
+    const mm = slashMatch[2].padStart(2, "0");
+    let yyyy = slashMatch[3];
+    if (yyyy.length === 2) yyyy = "20" + yyyy;
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  const ymdMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) return `${ymdMatch[3]}-${ymdMatch[2]}-${ymdMatch[1]}`;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = String(d.getFullYear()).padStart(4, "0");
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return s;
+}
+
+function AutoDateField({
+  value,
+  onChange,
+  className = "",
+  placeholder = "DD-MM-YYYY",
+  style = {},
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawDigits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    let formatted = "";
+    if (rawDigits.length > 0) {
+      formatted = rawDigits.slice(0, 2);
+    }
+    if (rawDigits.length > 2) {
+      formatted += "-" + rawDigits.slice(2, 4);
+    }
+    if (rawDigits.length > 4) {
+      formatted += "-" + rawDigits.slice(4, 8);
+    }
+    onChange(formatted);
+  };
+
+  const charLen = Math.max((value || "").length + 2, 12);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={value}
+      onChange={handleChange}
+      placeholder={placeholder}
+      maxLength={10}
+      className={className}
+      style={{ ...(className.includes("w-full") ? {} : { width: `${charLen}ch` }), ...style }}
+      {...props}
+    />
+  );
+}
+
+function AutoGrowingTextarea({
+  value,
+  onChange,
+  className = "",
+  placeholder = "...",
+  rows = 1,
+  minWidth,
+  style = {},
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  minWidth?: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const resize = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.max(textareaRef.current.scrollHeight, rows * 20)}px`;
+    }
+  };
+
+  useEffect(() => {
+    resize();
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows={rows}
+      value={value}
+      onChange={(e) => {
+        onChange(e);
+        resize();
+      }}
+      className={`resize-none overflow-hidden transition-all duration-75 outline-none align-baseline ${className}`}
+      placeholder={placeholder}
+      style={{ minHeight: `${rows * 20}px`, minWidth: minWidth || "auto", ...style }}
+      {...props}
+    />
+  );
+}
 
 function PropertySeizurePageContent() {
   const searchParams = useSearchParams();
@@ -367,7 +486,7 @@ function PropertySeizurePageContent() {
         policeStation: activeFir.policeStation || prev.policeStation,
         year: activeFir.firDate ? activeFir.firDate.split("-")[0] || prev.year : prev.year,
         firNumber: activeFir.firNumber || prev.firNumber,
-        firDate: activeFir.firDate || prev.firDate,
+        firDate: toDDMMYYYY(activeFir.firDate) || prev.firDate,
         actsAndSections: activeFir.actsAndSections || prev.actsAndSections,
 
         personName: firstAccused?.name || prev.personName,
@@ -930,9 +1049,7 @@ function PropertySeizurePageContent() {
           <div className="space-y-6">
             {/* Top Header & Page Corner Number */}
             <div className="relative border-b-2 border-slate-900 pb-3 text-center">
-              <span className="absolute right-0 top-0 text-sm font-mono font-bold text-slate-600 border border-slate-400 rounded px-1.5 py-0.5">
-                {formData.pageNumber || "89"}
-              </span>
+
               <h1 className="text-xl sm:text-2xl font-black tracking-wide text-slate-950 underline uppercase">
                 {templateLang === "hi"
                   ? "सम्पत्ति तलाशी एवं जब्ती फॉर्म"
@@ -947,70 +1064,74 @@ function PropertySeizurePageContent() {
 
             {/* 1. केस एवं थाना विवरण (Case & Police Station Details) */}
             <div className="space-y-2 text-xs sm:text-sm">
-              <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2">
-                <span className="font-bold text-slate-900">1.</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "जिला:" : "District:"}</span>
-                  <input
-                    type="text"
+              <div className="flex items-start flex-wrap gap-x-4 gap-y-2">
+                <span className="font-bold text-slate-900 pt-0.5">1.</span>
+                <div className="flex items-start gap-1.5">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "जिला:" : "District:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="100px"
                     value={formData.district}
                     onChange={(e) => handleFieldChange("district", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-28 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "थाना:" : "Police Station:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1.5 grow max-w-sm">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "थाना:" : "Police Station:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="140px"
                     value={formData.policeStation}
                     onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-36 bg-transparent"
+                    className="w-full border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "वर्ष:" : "Year:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1.5">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "वर्ष:" : "Year:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="60px"
                     value={formData.year}
                     onChange={(e) => handleFieldChange("year", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-16 text-center bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 text-center bg-transparent"
                   />
                 </div>
               </div>
 
-              <div className="flex items-baseline flex-wrap gap-x-4 gap-y-2 pl-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold">
+              <div className="flex items-start flex-wrap gap-x-4 gap-y-2 pl-4">
+                <div className="flex items-start gap-1.5">
+                  <span className="font-bold shrink-0 pt-0.5">
                     {templateLang === "hi" ? "FIR / रोजनामचा रपट संख्या:" : "FIR / GD Entry No.:"}
                   </span>
-                  <input
-                    type="text"
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="130px"
                     value={formData.firNumber}
                     onChange={(e) => handleFieldChange("firNumber", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none w-28 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 bg-transparent"
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "दिनांक:" : "Dated:"}</span>
-                  <input
-                    type="text"
+                  <span className="font-bold shrink-0">{templateLang === "hi" ? "दिनांक:" : "Dated:"}</span>
+                  <AutoDateField
                     value={formData.firDate}
-                    onChange={(e) => handleFieldChange("firDate", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-28 bg-transparent"
+                    onChange={(val) => handleFieldChange("firDate", val)}
+                    placeholder="DD-MM-YYYY"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
                   />
                 </div>
               </div>
             </div>
 
             {/* 2. अधिनियम व धाराएं (Acts & Sections) */}
-            <div className="flex items-baseline gap-2 text-xs sm:text-sm">
-              <span className="font-bold text-slate-900">2.</span>
-              <span className="font-bold shrink-0">{templateLang === "hi" ? "अधिनियम व धाराएं:" : "Acts & Sections:"}</span>
-              <input
-                type="text"
+            <div className="flex items-start gap-2 text-xs sm:text-sm">
+              <span className="font-bold text-slate-900 pt-0.5">2.</span>
+              <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "अधिनियम व धाराएं:" : "Acts & Sections:"}</span>
+              <AutoGrowingTextarea
+                rows={1}
                 value={formData.actsAndSections}
                 onChange={(e) => handleFieldChange("actsAndSections", e.target.value)}
-                className="w-full border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none bg-transparent"
+                className="w-full border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none bg-transparent leading-relaxed"
                 placeholder={templateLang === "hi" ? "धाराएं दर्ज करें" : "Enter sections of law"}
               />
             </div>
@@ -1077,10 +1198,10 @@ function PropertySeizurePageContent() {
                   <span>{templateLang === "hi" ? "अन्य (संलिप्त/चुराई हुई)" : "Other (Stolen/Involved)"}</span>
                 </label>
               </div>
-              <div className="flex items-center gap-2 pl-4">
-                <span className="font-bold text-xs">{templateLang === "hi" ? "अन्य विवरण:" : "Other Details:"}</span>
-                <input
-                  type="text"
+              <div className="flex items-start gap-2 pl-4">
+                <span className="font-bold text-xs shrink-0 pt-0.5">{templateLang === "hi" ? "अन्य विवरण:" : "Other Details:"}</span>
+                <AutoGrowingTextarea
+                  rows={1}
                   value={formData.propertyTypeOtherText}
                   onChange={(e) => handleFieldChange("propertyTypeOtherText", e.target.value)}
                   className="w-full border-b border-dotted border-slate-400 text-xs px-1 py-0.5 outline-none bg-transparent"
@@ -1096,27 +1217,28 @@ function PropertySeizurePageContent() {
                   {templateLang === "hi" ? "सम्पत्ति जब्त / बरामदगी विवरण:" : "Seizure Particulars:"}
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "दिनांक:" : "Date:"}</span>
-                  <input
-                    type="text"
+                  <span className="font-bold shrink-0">{templateLang === "hi" ? "दिनांक:" : "Date:"}</span>
+                  <AutoDateField
                     value={formData.seizureDate}
-                    onChange={(e) => handleFieldChange("seizureDate", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-24 bg-transparent"
+                    onChange={(val) => handleFieldChange("seizureDate", val)}
+                    placeholder="DD-MM-YYYY"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold">{templateLang === "hi" ? "समय:" : "Time:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1.5">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "समय:" : "Time:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="90px"
                     value={formData.seizureTime}
                     onChange={(e) => handleFieldChange("seizureTime", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-20 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1.5 grow">
-                  <span className="font-bold">{templateLang === "hi" ? "स्थान:" : "Place:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1.5 grow">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "स्थान:" : "Place:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
                     value={formData.seizurePlace}
                     onChange={(e) => handleFieldChange("seizurePlace", e.target.value)}
                     className="w-full border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
@@ -1134,60 +1256,65 @@ function PropertySeizurePageContent() {
                     ? "व्यक्ति जिससे सम्पत्ति जब्त / बरामद की गई है:"
                     : "Person from whom property seized:"}
                 </span>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold">{templateLang === "hi" ? "नाम:" : "Name:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "नाम:" : "Name:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="130px"
                     value={formData.personName}
                     onChange={(e) => handleFieldChange("personName", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none w-32 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold">
+                <div className="flex items-start gap-1">
+                  <span className="font-bold shrink-0 pt-0.5">
                     {templateLang === "hi" ? "पिता/पति/संरक्षक:" : "Father/Husband:"}
                   </span>
-                  <input
-                    type="text"
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="130px"
                     value={formData.fatherName}
                     onChange={(e) => handleFieldChange("fatherName", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-32 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
               </div>
 
-              <div className="flex items-baseline flex-wrap gap-x-3 gap-y-1.5 pl-4">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold">{templateLang === "hi" ? "लिंग:" : "Gender:"}</span>
-                  <input
-                    type="text"
+              <div className="flex items-start flex-wrap gap-x-3 gap-y-1.5 pl-4">
+                <div className="flex items-start gap-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "लिंग:" : "Gender:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="65px"
                     value={formData.gender}
                     onChange={(e) => handleFieldChange("gender", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-16 text-center bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 text-center bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold">{templateLang === "hi" ? "आयु:" : "Age:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "आयु:" : "Age:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="60px"
                     value={formData.age}
                     onChange={(e) => handleFieldChange("age", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-14 text-center bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 text-center bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold">{templateLang === "hi" ? "पेशा:" : "Occupation:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "पेशा:" : "Occupation:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="100px"
                     value={formData.occupation}
                     onChange={(e) => handleFieldChange("occupation", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-24 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
-                <div className="flex items-center gap-1 grow">
-                  <span className="font-bold">{templateLang === "hi" ? "पता:" : "Address:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-1 grow">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "पता:" : "Address:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
                     value={formData.address}
                     onChange={(e) => handleFieldChange("address", e.target.value)}
                     className="w-full border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
@@ -1270,8 +1397,8 @@ function PropertySeizurePageContent() {
                     <tr key={w.id}>
                       <td className="border border-slate-700 p-2 text-center font-bold">{idx + 1}</td>
                       <td className="border border-slate-700 p-1.5">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={w.name}
                           onChange={(e) => handleUpdateWitness(w.id, "name", e.target.value)}
                           className="w-full bg-transparent outline-none font-bold"
@@ -1279,8 +1406,8 @@ function PropertySeizurePageContent() {
                         />
                       </td>
                       <td className="border border-slate-700 p-1.5">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={w.addressAndPhone}
                           onChange={(e) => handleUpdateWitness(w.id, "addressAndPhone", e.target.value)}
                           className="w-full bg-transparent outline-none"
@@ -1344,10 +1471,10 @@ function PropertySeizurePageContent() {
                   </label>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pl-4">
-                <span className="font-bold text-xs">{templateLang === "hi" ? "विवरण:--" : "Details:--"}</span>
-                <input
-                  type="text"
+              <div className="flex items-start gap-2 pl-4">
+                <span className="font-bold text-xs shrink-0 pt-0.5">{templateLang === "hi" ? "विवरण:--" : "Details:--"}</span>
+                <AutoGrowingTextarea
+                  rows={1}
                   value={formData.identificationDetails}
                   onChange={(e) => handleFieldChange("identificationDetails", e.target.value)}
                   className="w-full border-b border-dotted border-slate-400 text-xs px-1 py-0.5 outline-none bg-transparent"
@@ -1356,15 +1483,15 @@ function PropertySeizurePageContent() {
             </div>
 
             {/* 8. सम्पत्ति का अनुमानित मूल्य (Estimated Value) */}
-            <div className="flex items-baseline gap-2 text-xs sm:text-sm">
-              <span className="font-bold text-slate-900">8.</span>
-              <span className="font-bold shrink-0">
+            <div className="flex items-start gap-2 text-xs sm:text-sm">
+              <span className="font-bold text-slate-900 pt-0.5">8.</span>
+              <span className="font-bold shrink-0 pt-0.5">
                 {templateLang === "hi"
                   ? "सम्पत्ति का अनुमानित मूल्य (गुम / बरामदगी) (जब्त / थथगद):"
                   : "Estimated value of seized property (in Rs.):"}
               </span>
-              <input
-                type="text"
+              <AutoGrowingTextarea
+                rows={1}
                 value={formData.estimatedValue}
                 onChange={(e) => handleFieldChange("estimatedValue", e.target.value)}
                 className="w-full border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none bg-transparent"
@@ -1394,10 +1521,10 @@ function PropertySeizurePageContent() {
 
               <div className="space-y-1 pl-4">
                 {(formData.propertySummaryLines || []).map((line, idx) => (
-                  <div key={line.id} className="flex items-center gap-2">
-                    <span className="font-bold w-6">{idx === 0 ? "i." : idx === 1 ? "ii." : `${idx + 1}.`}</span>
-                    <input
-                      type="text"
+                  <div key={line.id} className="flex items-start gap-2">
+                    <span className="font-bold w-6 shrink-0 pt-0.5">{idx === 0 ? "i." : idx === 1 ? "ii." : `${idx + 1}.`}</span>
+                    <AutoGrowingTextarea
+                      rows={1}
                       value={line.text}
                       onChange={(e) => handleUpdateSummaryLine(line.id, e.target.value)}
                       className="w-full border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
@@ -1405,7 +1532,7 @@ function PropertySeizurePageContent() {
                     <button
                       type="button"
                       onClick={() => handleDeleteSummaryLine(line.id)}
-                      className="no-print text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0"
+                      className="no-print text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0 pt-1"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1437,10 +1564,10 @@ function PropertySeizurePageContent() {
 
               <div className="space-y-1 pl-4">
                 {(formData.seizureGrounds || []).map((gr, idx) => (
-                  <div key={gr.id} className="flex items-center gap-2">
-                    <span className="font-bold w-6">{idx === 0 ? "i)" : idx === 1 ? "ii)" : `${idx + 1})`}</span>
-                    <input
-                      type="text"
+                  <div key={gr.id} className="flex items-start gap-2">
+                    <span className="font-bold w-6 shrink-0 pt-0.5">{idx === 0 ? "i)" : idx === 1 ? "ii)" : `${idx + 1})`}</span>
+                    <AutoGrowingTextarea
+                      rows={1}
                       value={gr.text}
                       onChange={(e) => handleUpdateGround(gr.id, e.target.value)}
                       className="w-full border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
@@ -1448,7 +1575,7 @@ function PropertySeizurePageContent() {
                     <button
                       type="button"
                       onClick={() => handleDeleteGround(gr.id)}
-                      className="no-print text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0"
+                      className="no-print text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0 pt-1"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1460,12 +1587,12 @@ function PropertySeizurePageContent() {
             {/* 11. पैकिंग, सील एवं प्रति देने का विवरण & Official Stamp */}
             <div className="space-y-3 pt-2 text-xs sm:text-sm">
               <div className="flex items-baseline gap-2">
-                <span className="font-bold text-slate-900">11.</span>
-                <textarea
+                <span className="font-bold text-slate-900 pt-0.5">11.</span>
+                <AutoGrowingTextarea
                   rows={2}
                   value={formData.deliveryClauseText}
                   onChange={(e) => handleFieldChange("deliveryClauseText", e.target.value)}
-                  className="w-full font-medium border-b border-dotted border-slate-500 outline-none resize-y bg-transparent"
+                  className="w-full font-medium border-b border-dotted border-slate-500 outline-none bg-transparent"
                   style={{ textAlign: "justify" }}
                 />
               </div>
@@ -1473,26 +1600,26 @@ function PropertySeizurePageContent() {
               {/* Rubber Stamp and Receipt Line */}
               <div className="flex items-center justify-between gap-6 pl-4 pt-2">
                 <div className="space-y-2 grow">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold shrink-0 pt-0.5">
                       {templateLang === "hi" ? "सील का नमूना / मोहर विवरण:" : "Specimen Seal Details:"}
                     </span>
-                    <input
-                      type="text"
+                    <AutoGrowingTextarea
+                      rows={1}
                       value={formData.sealSampleDescription}
                       onChange={(e) => handleFieldChange("sealSampleDescription", e.target.value)}
-                      className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none w-48 bg-transparent"
+                      className="grow border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none bg-transparent"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold shrink-0 pt-0.5">
                       {templateLang === "hi" ? "पावती प्राप्तकर्ता का नाम:" : "Copy Received By:"}
                     </span>
-                    <input
-                      type="text"
+                    <AutoGrowingTextarea
+                      rows={1}
                       value={formData.copyHandedToPerson}
                       onChange={(e) => handleFieldChange("copyHandedToPerson", e.target.value)}
-                      className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-64 bg-transparent"
+                      className="grow border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
                     />
                   </div>
                 </div>
@@ -1606,17 +1733,17 @@ function PropertySeizurePageContent() {
                     <tr key={art.id}>
                       <td className="border border-slate-700 p-2 text-center font-bold">{idx + 1}.</td>
                       <td className="border border-slate-700 p-2">
-                        <textarea
+                        <AutoGrowingTextarea
                           rows={2}
                           value={art.description}
                           onChange={(e) => handleUpdateArticle(art.id, "description", e.target.value)}
-                          className="w-full bg-transparent outline-none font-medium resize-y"
+                          className="w-full bg-transparent outline-none font-medium"
                           placeholder={templateLang === "hi" ? "सम्पत्ति का विवरण दर्ज करें..." : "Enter property description..."}
                         />
                       </td>
                       <td className="border border-slate-700 p-2">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={art.sealDetails}
                           onChange={(e) => handleUpdateArticle(art.id, "sealDetails", e.target.value)}
                           className="w-full bg-transparent outline-none font-bold text-slate-800"
@@ -1723,23 +1850,24 @@ function PropertySeizurePageContent() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs pt-1">
-                  <span className="font-bold">{templateLang === "hi" ? "स्थान:" : "Place:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start gap-2 text-xs pt-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "स्थान:" : "Place:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="120px"
                     value={formData.accusedSignPlace}
                     onChange={(e) => handleFieldChange("accusedSignPlace", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-36 bg-transparent"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent"
                   />
                 </div>
 
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-bold">{templateLang === "hi" ? "दिनांक:" : "Date:"}</span>
-                  <input
-                    type="text"
+                  <span className="font-bold shrink-0">{templateLang === "hi" ? "दिनांक:" : "Date:"}</span>
+                  <AutoDateField
                     value={formData.accusedSignDate}
-                    onChange={(e) => handleFieldChange("accusedSignDate", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-36 bg-transparent"
+                    onChange={(val) => handleFieldChange("accusedSignDate", val)}
+                    placeholder="DD-MM-YYYY"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none bg-transparent"
                   />
                 </div>
               </div>
@@ -1769,11 +1897,12 @@ function PropertySeizurePageContent() {
                       </button>
                     </div>
                   ) : (
-                    <input
-                      type="text"
+                    <AutoGrowingTextarea
+                      rows={1}
+                      minWidth="140px"
                       value={formData.ioSignText}
                       onChange={(e) => handleFieldChange("ioSignText", e.target.value)}
-                      className="font-serif italic text-lg sm:text-xl font-black border-b border-dotted border-slate-600 outline-none w-48 bg-transparent text-slate-900 sm:text-right"
+                      className="font-serif italic text-lg sm:text-xl font-black border-b border-dotted border-slate-600 bg-transparent text-slate-900 sm:text-right"
                       placeholder={templateLang === "hi" ? "हस्ताक्षर IO" : "IO Signature"}
                     />
                   )}
@@ -1787,40 +1916,44 @@ function PropertySeizurePageContent() {
                   </button>
                 </div>
 
-                <div className="flex items-center sm:justify-end gap-2 text-xs pt-1">
-                  <span className="font-bold">{templateLang === "hi" ? "नाम:" : "Name:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start sm:justify-end gap-2 text-xs pt-1">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "नाम:" : "Name:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="140px"
                     value={formData.ioName}
                     onChange={(e) => handleFieldChange("ioName", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 outline-none w-44 bg-transparent sm:text-right"
+                    className="border-b border-dotted border-slate-500 font-bold px-1 py-0.5 bg-transparent sm:text-right"
                   />
                 </div>
 
-                <div className="flex items-center sm:justify-end gap-2 text-xs">
-                  <span className="font-bold">{templateLang === "hi" ? "पद:" : "Rank:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start sm:justify-end gap-2 text-xs">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "पद:" : "Rank:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="80px"
                     value={formData.ioRank}
                     onChange={(e) => handleFieldChange("ioRank", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-20 bg-transparent sm:text-right"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent sm:text-right"
                   />
-                  <span className="font-bold">{templateLang === "hi" ? "न.:" : "No.:"}</span>
-                  <input
-                    type="text"
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "न.:" : "No.:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="80px"
                     value={formData.ioBeltNo}
                     onChange={(e) => handleFieldChange("ioBeltNo", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-24 bg-transparent sm:text-right"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent sm:text-right"
                   />
                 </div>
 
-                <div className="flex items-center sm:justify-end gap-2 text-xs">
-                  <span className="font-bold">{templateLang === "hi" ? "थाना:" : "Police Station:"}</span>
-                  <input
-                    type="text"
+                <div className="flex items-start sm:justify-end gap-2 text-xs">
+                  <span className="font-bold shrink-0 pt-0.5">{templateLang === "hi" ? "थाना:" : "Police Station:"}</span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    minWidth="140px"
                     value={formData.ioPoliceStation}
                     onChange={(e) => handleFieldChange("ioPoliceStation", e.target.value)}
-                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 outline-none w-48 bg-transparent sm:text-right"
+                    className="border-b border-dotted border-slate-500 font-semibold px-1 py-0.5 bg-transparent sm:text-right"
                   />
                 </div>
               </div>

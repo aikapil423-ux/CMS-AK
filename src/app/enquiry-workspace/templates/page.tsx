@@ -2417,7 +2417,7 @@ function NoticeTemplatesContent() {
                       className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-900 border-slate-300 font-bold gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>+ नई पंक्ति जोड़ें (Add Row)</span>
+                      <span>नई पंक्ति जोड़ें (Add Row)</span>
                     </Button>
                   </div>
                 </div>

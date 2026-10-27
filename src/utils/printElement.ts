@@ -26,7 +26,13 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
     if (orig instanceof HTMLTextAreaElement) {
       // Replace textarea with auto-wrapping pre-wrap text element in print clone so EVERY typed character and line-break renders completely in Print Preview
       const printBlock = document.createElement("div");
-      printBlock.className = dest.className;
+      printBlock.className = (dest.className || "")
+        .replace(/\bbg-[^\s]+/g, "bg-transparent")
+        .replace(/\bborder-[^\s]+/g, "border-transparent")
+        .replace(/\bborder\b/g, "")
+        .replace(/\brounded[^\s]*/g, "")
+        .replace(/\bshadow[^\s]*/g, "")
+        .trim();
       printBlock.textContent = orig.value || "";
       printBlock.style.cssText = dest.style.cssText;
       printBlock.style.whiteSpace = "pre-wrap";
@@ -47,9 +53,30 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
           dest.removeAttribute("checked");
           (dest as HTMLInputElement).checked = false;
         }
+      } else if (orig.type === "button" || orig.type === "submit" || orig.type === "reset") {
+        // buttons
       } else {
-        dest.setAttribute("value", orig.value);
-        (dest as HTMLInputElement).value = orig.value;
+        const printBlock = document.createElement("div");
+        printBlock.className = (dest.className || "")
+        .replace(/\bbg-[^\s]+/g, "bg-transparent")
+        .replace(/\bborder-[^\s]+/g, "border-transparent")
+        .replace(/\bborder\b/g, "")
+        .replace(/\brounded[^\s]*/g, "")
+        .replace(/\bshadow[^\s]*/g, "")
+        .trim();
+        printBlock.textContent = orig.value || "";
+        printBlock.style.cssText = dest.style.cssText;
+        printBlock.style.whiteSpace = "pre-wrap";
+        printBlock.style.wordBreak = "break-word";
+        printBlock.style.overflow = "visible";
+        printBlock.style.height = "auto";
+        printBlock.style.minHeight = "auto";
+        printBlock.style.display = "block";
+        printBlock.style.border = "none";
+        printBlock.style.outline = "none";
+        printBlock.style.background = "transparent";
+        printBlock.style.boxShadow = "none";
+        dest.parentNode?.replaceChild(printBlock, dest);
       }
     } else if (orig instanceof HTMLSelectElement) {
       dest.setAttribute("value", orig.value);
@@ -247,13 +274,44 @@ export function printA4Element(
           box-shadow: none !important;
         }
         /* Form inputs and textareas in print */
-        textarea, input {
+        textarea, input, select {
+          border: none !important;
           border-color: transparent !important;
           background: transparent !important;
           box-shadow: none !important;
           color: #000000 !important;
           resize: none !important;
           outline: none !important;
+        }
+        /* Remove any inner input box borders inside printable canvas */
+        #zimni-printable-canvas input,
+        #zimni-printable-canvas textarea,
+        #zimni-printable-canvas div,
+        #fir-printable-notice input,
+        #fir-printable-notice textarea {
+          box-shadow: none !important;
+          border: none !important;
+          background: transparent !important;
+        }
+        /* Strip input box borders in print */
+        #fir-printable-notice div.bg-slate-50,
+        #fir-printable-notice div.border-slate-200,
+        #fir-printable-notice div.border {
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+        }
+        /* Fix Table width and cell wrap so nothing overflows */
+        table {
+          width: 100% !important;
+          max-width: 100% !important;
+          table-layout: fixed !important;
+          border-collapse: collapse !important;
+        }
+        th, td {
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+          white-space: normal !important;
         }
         input::placeholder, textarea::placeholder {
           color: transparent !important;

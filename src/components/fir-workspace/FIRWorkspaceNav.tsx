@@ -29,7 +29,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
     <div className="no-print bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3 mb-4">
       {/* FIR Investigation Workspace Tabs */}
       <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-        {/* 1. Statutory Notice Generator */}
+        {/* 1. Notice Generator */}
         <Link
           href={`/fir-workspace/templates${querySuffix}`}
           className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
@@ -39,7 +39,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           }`}
         >
           <FileCheck2 className={`w-3 h-3 ${isTemplates ? "text-purple-700" : "text-purple-600"}`} />
-          <span>Statutory Notice Generator</span>
+          <span>Notice Generator</span>
         </Link>
 
         {/* 2. Case Diaries / Zimni */}

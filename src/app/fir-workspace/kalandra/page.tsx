@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
+import { printA4Element } from "@/utils/printElement";
 import {
   Gavel,
   FileText,
@@ -509,35 +510,8 @@ function KalandraWorkspaceContent() {
 
   const handlePrintDoc = () => {
     if (!viewingPackage) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    let contentHtml = "";
-    if (viewingPackage.activeDoc === "main") contentHtml = viewingPackage.pkg.mainKalandraHtml;
-    else if (viewingPackage.activeDoc === "forwarding") contentHtml = viewingPackage.pkg.forwardingLetterHtml;
-    else if (viewingPackage.activeDoc === "police") contentHtml = viewingPackage.pkg.policeReportHtml;
-    else if (viewingPackage.activeDoc === "witness") contentHtml = viewingPackage.pkg.witnessListHtml;
-    else if (viewingPackage.activeDoc === "annexure") contentHtml = viewingPackage.pkg.annexureListHtml;
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${viewingPackage.record.kalandraNumber} - Print</title>
-          <style>
-            @page { size: A4; margin: 15mm; }
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-          </style>
-        </head>
-        <body>
-          ${contentHtml}
-          <script>
-            window.onload = function() { window.print(); }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const title = `KALANDRA_PACKAGE_${viewingPackage.record.kalandraNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+    printA4Element("kalandra-complete-dossier-print", title);
   };
 
   // Filter templates
@@ -605,11 +579,7 @@ function KalandraWorkspaceContent() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {isHi
-                  ? "निवारक कार्यवाही (107/151, 107/150, 145), BNS न्यूसेंस (217, 248) एवं न्यायालय प्रेषण दस्तावेज"
-                  : "Preventive proceedings (107/151, 107/150, 145), BNS infractions & judicial forwarding packages"}
-              </p>
+
             </div>
           </div>
 
@@ -837,10 +807,7 @@ function KalandraWorkspaceContent() {
                       <h3 className="font-bold text-slate-900 text-xs sm:text-sm leading-snug">
                         {isHi ? t.titleHi : t.titleEn}
                       </h3>
-                      <div className="text-[11px] font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                        <Gavel className="w-3 h-3 text-emerald-600 shrink-0" />
-                        <span>{t.section}</span>
-                      </div>
+
                     </div>
 
                     {/* Description */}
@@ -848,18 +815,9 @@ function KalandraWorkspaceContent() {
                       {t.proceduralContext}
                     </p>
 
-                    {/* Default Court */}
-                    <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span className="truncate">{isHi ? t.defaultCourtHi : t.defaultCourtEn}</span>
-                    </div>
 
-                    {/* Legal Notice Warning if applicable */}
-                    {isNeedsVerify && (t.legalNoticeHi || t.legalNoticeEn) && (
-                      <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-lg text-[10px] text-amber-900 leading-tight">
-                        {isHi ? t.legalNoticeHi : t.legalNoticeEn}
-                      </div>
-                    )}
+
+
                   </div>
 
                   <div className="pt-3 mt-2 grid grid-cols-2 gap-2">
@@ -901,16 +859,7 @@ function KalandraWorkspaceContent() {
                 </span>
               </div>
 
-              {selectedTemplate && selectedTemplate.legalStatus === "NEEDS_LEGAL_MAPPING_VERIFICATION" && (
-                <div className="flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-0.5 rounded-md text-[11px] font-medium">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span>
-                    {isHi
-                      ? "विधि सत्यापन प्रतीक्षित प्रारूप — न्यायालय प्रस्तुत करने पूर्व धाराओं का स्थानीय सत्यापन अवश्य करें।"
-                      : "Pending Statutory Verification — Confirm local penal mapping before filing."}
-                  </span>
-                </div>
-              )}
+
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
@@ -1764,96 +1713,39 @@ function KalandraWorkspaceContent() {
               </div>
             </div>
 
-            {/* Document Switcher Tabs */}
-            <div className="bg-slate-100 p-1.5 flex items-center gap-1 overflow-x-auto border-b border-slate-200 text-xs shrink-0 touch-pan-x scrollbar-none">
-              <button
-                type="button"
-                onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "main" })}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
-                  viewingPackage.activeDoc === "main" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                1. {isHi ? "मुख्य कलंदरा प्रपत्र" : "Main Kalandra"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "forwarding" })}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
-                  viewingPackage.activeDoc === "forwarding" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                2. {isHi ? "SHO प्रेषण पत्र" : "Forwarding Letter"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "police" })}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
-                  viewingPackage.activeDoc === "police" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                3. {isHi ? "मौका निरीक्षण आख्या" : "Police Report"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "witness" })}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
-                  viewingPackage.activeDoc === "witness" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                4. {isHi ? "गवाहान सूची" : "Witness List"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewingPackage({ ...viewingPackage, activeDoc: "annexure" })}
-                className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap cursor-pointer text-xs ${
-                  viewingPackage.activeDoc === "annexure" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                5. {isHi ? "संलग्नक सूची" : "Annexure List"}
-              </button>
-            </div>
-
-            {/* Document Render Area with Smooth Vertical Slide */}
+            {/* Complete Unified Kalandra Document Package without Separate Tabs */}
             <div
               ref={docScrollRef}
-              className="flex-1 p-3 sm:p-6 overflow-y-auto overscroll-contain touch-pan-y bg-slate-50/80 [scrollbar-gutter:stable] scroll-smooth relative"
+              className="flex-1 p-3 sm:p-6 overflow-y-auto overscroll-contain touch-pan-y bg-slate-100/90 [scrollbar-gutter:stable] scroll-smooth"
             >
-              {/* Quick Slide Floating Controls */}
-              <div className="sticky top-2 float-right z-20 flex flex-col gap-1.5 opacity-80 hover:opacity-100 transition-opacity">
-                <button
-                  type="button"
-                  onClick={() => handleScrollDoc("up")}
-                  title={isHi ? "ऊपर स्लाइड करें" : "Slide Up"}
-                  className="w-8 h-8 rounded-full bg-white/95 border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  <ChevronUp className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleScrollDoc("down")}
-                  title={isHi ? "नीचे स्लाइड करें" : "Slide Down"}
-                  className="w-8 h-8 rounded-full bg-white/95 border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-xs border border-slate-200 p-4 sm:p-6 min-h-[450px]">
-                {viewingPackage.activeDoc === "main" && (
+              <div
+                id="kalandra-complete-dossier-print"
+                className="max-w-4xl mx-auto space-y-6"
+              >
+                {/* 1. Main Kalandra */}
+                <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8">
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.mainKalandraHtml }} />
-                )}
-                {viewingPackage.activeDoc === "forwarding" && (
+                </div>
+
+                {/* 2. Forwarding Letter */}
+                <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8 break-before-page">
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.forwardingLetterHtml }} />
-                )}
-                {viewingPackage.activeDoc === "police" && (
+                </div>
+
+                {/* 3. Police Report */}
+                <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8 break-before-page">
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.policeReportHtml }} />
-                )}
-                {viewingPackage.activeDoc === "witness" && (
+                </div>
+
+                {/* 4. Witness List */}
+                <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8 break-before-page">
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.witnessListHtml }} />
-                )}
-                {viewingPackage.activeDoc === "annexure" && (
+                </div>
+
+                {/* 5. Annexure List */}
+                <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8 break-before-page">
                   <div dangerouslySetInnerHTML={{ __html: viewingPackage.pkg.annexureListHtml }} />
-                )}
+                </div>
               </div>
             </div>
 

@@ -513,6 +513,24 @@ function EditableHeading({
 // Helper: Auto-expanding text input that grows width with characters typed (never clips or hides text)
 
 // Helper: Auto date mask input where user only types digits and it formats to DD-MM-YYYY
+function toDDMMYYYY(val: any): string {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  const slashMatch = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (slashMatch) return `${slashMatch[1]}-${slashMatch[2]}-${slashMatch[3]}`;
+  const ymdMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) return `${ymdMatch[3]}-${ymdMatch[2]}-${ymdMatch[1]}`;
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = String(d.getFullYear()).padStart(4, "0");
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return s;
+}
+
 function AutoDateField({
   value,
   onChange,
@@ -540,7 +558,7 @@ function AutoDateField({
     onChange(formatted);
   };
 
-  const charLen = Math.max((value || "").length, 10);
+  const charLen = Math.max((value || "").length + 2, 12);
 
   return (
     <input
@@ -868,21 +886,25 @@ function FIRTemplatesContent() {
       .replace(/[।.]/g, "")
       .trim();
 
-    // Clean police station so it doesn't duplicate "Police Station" or "थाना" when heading is already present
+    // Format Police Station as 'PS <Name>' or Police Post as 'PP <Name>'
     const rawPs = activeFir.policeStation || baseSample.policeStation || "";
-    const cleanPs = rawPs
-      .replace(/^(Police\s*Station|PS|थाना)\s*/i, "")
-      .replace(/\s*(Police\s*Station|PS|थाना)$/i, "")
+    const isPolicePost = /police\s*post|\bpp\b|चौकी/i.test(rawPs);
+    const cleanedStationName = rawPs
+      .replace(/^(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)\s*/i, "")
+      .replace(/\s*(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)$/i, "")
       .trim();
+    const formattedStation = templateLang === "hi"
+      ? (isPolicePost ? `चौकी ${cleanedStationName}` : `थाना ${cleanedStationName}`)
+      : (isPolicePost ? `PP ${cleanedStationName}` : `PS ${cleanedStationName}`);
 
     setFormData({
       ...baseSample,
       appearancePlace: activeFir.policeStation || "",
-      policeStation: cleanPs || activeFir.policeStation || baseSample.policeStation,
+      policeStation: formattedStation || activeFir.policeStation || baseSample.policeStation,
       district: cleanDistrict || rawDistrict,
       complaintNo: activeFir.firNumber || baseSample.complaintNo,
       complainantName: activeFir.complainantName || baseSample.complainantName,
-      incidentDate: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || activeFir.firDate || baseSample.incidentDate,
+      incidentDate: toDDMMYYYY((activeFir as any)?.incidentDate || activeFir.incidentDateFrom || activeFir.firDate || baseSample.incidentDate),
       sectionsOfLaw: activeFir.actsAndSections || baseSample.sectionsOfLaw,
       allegationsBrief: activeFir.briefFacts || (activeFir as any).incidentDetails || baseSample.allegationsBrief,
       noticeeName: targetNoticeeName,
@@ -909,7 +931,7 @@ function FIRTemplatesContent() {
         {
           id: "cdr_1",
           phone: primaryAccused?.phone || "",
-          periodFrom: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || "",
+          periodFrom: toDDMMYYYY((activeFir as any)?.incidentDate || activeFir.incidentDateFrom || ""),
           periodTo: formatDate(new Date()),
           reason: templateLang === "hi"
             ? `अभियोग सं. ${activeFir.firNumber} में अभियुक्त सत्यापन हेतु`
@@ -1370,7 +1392,7 @@ function FIRTemplatesContent() {
           </div>
           <div>
             <h1 className="text-xl font-black text-[#0b192c] tracking-tight">
-              Statutory Notice Generator (FIR Investigation)
+              Notice Generator
             </h1>
           </div>
         </div>
@@ -1633,7 +1655,12 @@ function FIRTemplatesContent() {
               <div className="flex flex-wrap items-baseline justify-between gap-4 font-bold text-base text-slate-950 pt-2">
                 <div className="flex items-center gap-1.5">
                   <EditableHeading
-                    value={formData.headingStation ?? (templateLang === "hi" ? "थाना" : "Police Station")}
+                    value={
+                      formData.headingStation ??
+                      (/police\s*post|\bpp\b|चौकी/i.test(formData.policeStation || "")
+                        ? (templateLang === "hi" ? "चौकी" : "PP")
+                        : (templateLang === "hi" ? "थाना" : "PS"))
+                    }
                     onChange={(val) => handleFieldChange("headingStation", val)}
                     className="whitespace-nowrap font-bold"
                   />
@@ -1641,8 +1668,8 @@ function FIRTemplatesContent() {
                     value={
                       formData.policeStation
                         ? formData.policeStation
-                            .replace(/^(Police\s*Station|PS|थाना)\s*/i, "")
-                            .replace(/\s*(Police\s*Station|PS|थाना)$/i, "")
+                            .replace(/^(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)\s*/i, "")
+                            .replace(/\s*(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)$/i, "")
                         : ""
                     }
                     onChange={(e) => handleFieldChange("policeStation", e.target.value)}
@@ -2033,7 +2060,7 @@ function FIRTemplatesContent() {
                 <div className="flex-1 text-center min-w-[280px]">
                   <AutoGrowingTextarea
                     rows={1}
-                    value={formData.docTitle ?? (templateLang === "hi" ? "प्रारुप बाबत काल डिटेल" : "PROFORMA FOR CALL DETAIL RECORDS")}
+                    value={formData.docTitle ?? (templateLang === "hi" ? "प्रारुप बाबत काल डिटेल" : "PROFORMA FOR CALL DETAIL RECORDS (CDR & IMEI)")}
                     onChange={(e) => handleFieldChange("docTitle", e.target.value)}
                     className="w-full font-black text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none text-base sm:text-lg text-center"
                     placeholder={templateLang === "hi" ? "प्रारुप बाबत काल डिटेल" : "PROFORMA FOR CALL DETAIL RECORDS"}
@@ -2071,61 +2098,82 @@ function FIRTemplatesContent() {
                   </div>
                   <div className="flex items-center justify-end gap-1 text-sm font-semibold text-slate-800">
                     <span>{templateLang === "hi" ? "दिनांक-" : "Date-"}</span>
-                    <input
-                      type="text"
+                    <AutoDateField
                       value={formData.issueDate || ""}
-                      onChange={(e) => handleFieldChange("issueDate", e.target.value)}
-                      placeholder=".........."
-                      className="w-28 text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-1 outline-none text-right"
+                      onChange={(val) => handleFieldChange("issueDate", val)}
+                      placeholder="DD-MM-YYYY"
+                      className="min-w-[12ch] text-slate-900 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-1 outline-none text-right font-semibold"
                     />
                   </div>
                 </div>
               </div>
 
               {/* 2. Case Details Row */}
-              <div className="flex flex-wrap items-center justify-between gap-3 py-2 border-y border-slate-300 text-sm font-bold text-slate-900">
-                <div className="flex items-center gap-1.5 flex-auto">
-                  <span className="whitespace-nowrap shrink-0">
+              <div className="grid grid-cols-12 items-start gap-2.5 py-2.5 border-y border-slate-300 text-sm font-bold text-slate-900 w-full">
+                {/* 1. FIR / Case No. (3 cols) */}
+                <div className="col-span-12 sm:col-span-3 flex items-start gap-1.5 min-w-0">
+                  <span className="whitespace-nowrap shrink-0 text-xs sm:text-sm pt-0.5">
                     {templateLang === "hi" ? "अभियोग संख्या" : "FIR / Case No."}
                   </span>
-                  <AutoGrowingInput
+                  <AutoGrowingTextarea
+                    rows={1}
                     value={formData.complaintNo || ""}
                     onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
                     placeholder="128/2026"
-                    minChars={12}
-                    className="font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5"
+                    className="w-full font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs sm:text-sm leading-tight resize-none"
                   />
                 </div>
-                <div className="flex items-center gap-1.5 flex-auto">
-                  <span className="whitespace-nowrap shrink-0">
+
+                {/* 2. Date (2 cols) */}
+                <div className="col-span-12 sm:col-span-2 flex items-start gap-1.5 min-w-0">
+                  <span className="whitespace-nowrap shrink-0 text-xs sm:text-sm pt-0.5">
                     {templateLang === "hi" ? "दिनांक" : "Date"}
                   </span>
                   <AutoDateField
                     value={formData.incidentDate || ""}
                     onChange={(val) => handleFieldChange("incidentDate", val)}
                     placeholder="DD-MM-YYYY"
-                    className="font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5"
+                    className="w-full font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs sm:text-sm text-center"
                   />
                 </div>
-                <div className="flex items-center gap-1.5 flex-auto">
-                  <span className="whitespace-nowrap shrink-0">
+
+                {/* 3. Section(s) (4.5 cols) */}
+                <div className="col-span-12 sm:col-span-4 flex items-start gap-1.5 min-w-0">
+                  <span className="whitespace-nowrap shrink-0 text-xs sm:text-sm pt-0.5">
                     {templateLang === "hi" ? "धारा" : "Section(s)"}
                   </span>
-                  <AutoGrowingInput
+                  <AutoGrowingTextarea
+                    rows={1}
                     value={formData.sectionsOfLaw || ""}
                     onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
                     placeholder="318(4), 316(2) BNS"
-                    minChars={16}
-                    className="font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5"
+                    className="w-full font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs sm:text-sm leading-tight resize-none"
                   />
                 </div>
-                <div className="flex items-center gap-1.5 flex-auto justify-end">
-                  <AutoGrowingInput
-                    value={formData.policeStation || (templateLang === "hi" ? "थाना शहर पानीपत" : "PS City Panipat")}
-                    onChange={(e) => handleFieldChange("policeStation", e.target.value)}
-                    placeholder={templateLang === "hi" ? "थाना शहर पानीपत" : "PS City Panipat"}
-                    minChars={16}
-                    className="font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-right"
+
+                {/* 4. Police Station (2.5 cols -> 3 cols) */}
+                <div className="col-span-12 sm:col-span-3 flex items-start gap-1.5 min-w-0">
+                  <span className="whitespace-nowrap shrink-0 text-xs sm:text-sm pt-0.5">
+                    {templateLang === "hi"
+                      ? (/police\s*post|\bpp\b|चौकी/i.test(formData.policeStation || "") ? "चौकी" : "थाना")
+                      : (/police\s*post|\bpp\b|चौकी/i.test(formData.policeStation || "") ? "PP" : "PS")}
+                  </span>
+                  <AutoGrowingTextarea
+                    rows={1}
+                    value={
+                      (formData.policeStation || (templateLang === "hi" ? "शहर पानीपत" : "City Panipat"))
+                        .replace(/^(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)\s*/i, "")
+                        .replace(/\s*(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)$/i, "")
+                        .trim()
+                    }
+                    onChange={(e) => {
+                      const typed = e.target.value;
+                      const isPp = /police\s*post|\bpp\b|चौकी/i.test(formData.policeStation || "");
+                      const prefix = templateLang === "hi" ? (isPp ? "चौकी " : "थाना ") : (isPp ? "PS " : "PS ");
+                      handleFieldChange("policeStation", prefix + typed.replace(/^(Police\s*Station|Police\s*Post|PS|PP|थाना|चौकी)\s*/i, "").trim());
+                    }}
+                    placeholder={templateLang === "hi" ? "शहर पानीपत" : "Model Town Panipat"}
+                    className="w-full font-bold text-slate-900 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-xs sm:text-sm leading-tight resize-none"
                   />
                 </div>
               </div>
@@ -2202,7 +2250,7 @@ function FIRTemplatesContent() {
                       className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-900 border-slate-300 font-bold gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>{templateLang === "hi" ? "+ नई पंक्ति जोड़ें (Add Row)" : "+ Add Target Row"}</span>
+                      <span>{templateLang === "hi" ? "नई पंक्ति जोड़ें (Add Row)" : "Add Target Row"}</span>
                     </Button>
                   </div>
                 </div>
@@ -2212,7 +2260,7 @@ function FIRTemplatesContent() {
                     hasCustomSizes={cdrTableResize.hasCustomSizes}
                     onReset={cdrTableResize.resetSizes}
                   />
-                  <table className="w-full border-collapse text-xs text-slate-900 font-sans">
+                  <table className="w-full table-fixed border-collapse text-xs text-slate-900 font-sans">
                     <thead>
                       <tr className="bg-slate-50 border-b-2 border-slate-900">
                         <th
@@ -2221,7 +2269,7 @@ function FIRTemplatesContent() {
                             width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
                             minWidth: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
                           }}
-                          className="relative w-12 p-2 font-black border-r-2 border-slate-900 text-center align-middle"
+                          className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle" style={{ width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : "7%" }}
                         >
                           {templateLang === "hi" ? "क्र.स." : "Sr. No."}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(0, e)} />
@@ -2230,7 +2278,7 @@ function FIRTemplatesContent() {
                           rowSpan={2}
                           style={{
                             width: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : undefined,
-                            minWidth: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : "200px",
+                            width: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : "33%",
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
@@ -2249,7 +2297,7 @@ function FIRTemplatesContent() {
                           rowSpan={2}
                           style={{
                             width: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : undefined,
-                            minWidth: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : "240px",
+                            width: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : "36%",
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
@@ -2268,7 +2316,7 @@ function FIRTemplatesContent() {
                             width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
                             minWidth: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
                           }}
-                          className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
+                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center" style={{ width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : "12%" }}
                         >
                           {templateLang === "hi" ? "कब से" : "From"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(2, e)} />
@@ -2278,7 +2326,7 @@ function FIRTemplatesContent() {
                             width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
                             minWidth: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
                           }}
-                          className="relative w-28 p-1.5 font-black border-r-2 border-slate-900 text-center"
+                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center" style={{ width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : "12%" }}
                         >
                           {templateLang === "hi" ? "कब तक" : "To"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(3, e)} />
@@ -2496,14 +2544,14 @@ function FIRTemplatesContent() {
             <div className="space-y-4 text-slate-950 font-serif">
               {/* Centered Heading: NATGRID PERFORMA */}
               <div className="text-center pt-2 pb-2">
-                <input
-                  type="text"
+                <AutoGrowingTextarea
+                  rows={1}
                   value={
                     formData.docTitle ??
                     (templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA")
                   }
                   onChange={(e) => handleFieldChange("docTitle", e.target.value)}
-                  className="font-bold text-slate-950 underline underline-offset-4 text-base sm:text-lg text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wide"
+                  className="w-full font-bold text-slate-950 underline underline-offset-4 text-base sm:text-lg text-center bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent hover:border-slate-300 focus:border-purple-500 rounded px-2 py-0.5 outline-none tracking-wide resize-none"
                   placeholder={templateLang === "hi" ? "राष्ट्रीय आसूचना ग्रिड (NATGRID) प्रपत्र" : "NATGRID PERFORMA"}
                 />
               </div>
@@ -2539,12 +2587,12 @@ function FIRTemplatesContent() {
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(0, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={formData.shoName || ""}
                           onChange={(e) => handleFieldChange("shoName", e.target.value)}
                           placeholder={templateLang === "hi" ? "निरीक्षक, प्रबंधक अफसर (SHO)" : "Inspector, SHO"}
-                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                         />
                       </td>
                     </tr>
@@ -2561,12 +2609,12 @@ function FIRTemplatesContent() {
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(1, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={formData.shoPhone || ""}
                           onChange={(e) => handleFieldChange("shoPhone", e.target.value)}
                           placeholder={templateLang === "hi" ? "प्रबंधक अफसर मोबाईल नं." : "SHO Mobile Number"}
-                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                         />
                       </td>
                     </tr>
@@ -2583,12 +2631,12 @@ function FIRTemplatesContent() {
                         <TableRowResizer onResize={(e) => natgridTableResize.startRowResize(2, e)} />
                       </td>
                       <td colSpan={3} className="p-2 align-top">
-                        <input
-                          type="text"
+                        <AutoGrowingTextarea
+                          rows={1}
                           value={formData.shoEmail || ""}
                           onChange={(e) => handleFieldChange("shoEmail", e.target.value)}
                           placeholder={templateLang === "hi" ? "शासकीय ईमेल आईडी" : "Official Govt Email ID"}
-                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                          className="w-full font-medium text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                         />
                       </td>
                     </tr>
@@ -2606,12 +2654,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap">
                             {templateLang === "hi" ? "मुकद्दमा सं." : "FIR No."}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.complaintNo || ""}
                             onChange={(e) => handleFieldChange("complaintNo", e.target.value)}
                             placeholder="184/2026"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
@@ -2620,12 +2668,11 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap">
                             {templateLang === "hi" ? "दिनांक :-" : "Date :-"}
                           </span>
-                          <input
-                            type="text"
-                            value={formData.incidentDate || formData.issueDate || ""}
-                            onChange={(e) => handleFieldChange("incidentDate", e.target.value)}
-                            placeholder="24-09-2026"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
+                          <AutoDateField
+                            value={toDDMMYYYY(formData.incidentDate || formData.issueDate || "")}
+                            onChange={(val) => handleFieldChange("incidentDate", val)}
+                            placeholder="DD-MM-YYYY"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none text-center"
                           />
                         </div>
                       </td>
@@ -2634,12 +2681,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap">
                             {templateLang === "hi" ? "थाना" : "P.S."}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.policeStation || ""}
                             onChange={(e) => handleFieldChange("policeStation", e.target.value)}
                             placeholder={templateLang === "hi" ? "थाना शहर सिरसा" : "City Sirsa"}
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
@@ -2648,12 +2695,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap">
                             {templateLang === "hi" ? "जिला" : "District"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.district || ""}
                             onChange={(e) => handleFieldChange("district", e.target.value)}
                             placeholder={templateLang === "hi" ? "सिरसा" : "Sirsa"}
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
@@ -2672,12 +2719,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap">
                             {templateLang === "hi" ? "अपराध अंतर्गत धाराएं" : "Offence U/s"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.sectionsOfLaw || ""}
                             onChange={(e) => handleFieldChange("sectionsOfLaw", e.target.value)}
                             placeholder="Section 318(4), 316(2), 336(3), 61(2) BNS, 2023 & Sec 66D IT Act"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
@@ -2697,8 +2744,8 @@ function FIRTemplatesContent() {
                             ? "अभियोग का संक्षिप्त विवरण :- “ ”"
                             : "Brief summary of case :- “”"}
                         </div>
-                        <textarea
-                          rows={3}
+                        <AutoGrowingTextarea
+                          rows={2}
                           value={formData.allegationsBrief || ""}
                           onChange={(e) => handleFieldChange("allegationsBrief", e.target.value)}
                           placeholder={
@@ -2706,7 +2753,7 @@ function FIRTemplatesContent() {
                               ? "संगठित वित्तीय धोखाधड़ी और अंतर-राज्यीय साइबर गिरोह द्वारा पीड़ितों से ठगी करने बाबत..."
                               : "Organized financial fraud and inter-state syndicate cheating victims..."
                           }
-                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
+                          className="w-full font-sans text-xs sm:text-[13px] text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-none"
                         />
                       </td>
                     </tr>
@@ -2726,28 +2773,28 @@ function FIRTemplatesContent() {
                               ? "अनुसंधान अधिकारी का नाम/रैंक व मोबाईल नं. :-"
                               : "Name/Rank of I.O. with Mobile No :-"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.officerName || ""}
                             onChange={(e) => handleFieldChange("officerName", e.target.value)}
                             placeholder={templateLang === "hi" ? "सुरेन्द्र पाल" : "Surender Pal"}
-                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-36"
+                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none min-w-[120px] max-w-full leading-tight"
                           />
                           <span className="font-normal">/</span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.officerRank || ""}
                             onChange={(e) => handleFieldChange("officerRank", e.target.value)}
                             placeholder={templateLang === "hi" ? "सब-इंस्पेक्टर" : "Sub-Inspector"}
-                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-32"
+                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none min-w-[110px] max-w-full leading-tight"
                           />
                           <span className="font-normal">, Mob:</span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.officerPhone || ""}
                             onChange={(e) => handleFieldChange("officerPhone", e.target.value)}
                             placeholder="9812034567"
-                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none w-32"
+                            className="font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none min-w-[110px] max-w-full leading-tight"
                           />
                         </div>
                       </td>
@@ -2859,8 +2906,8 @@ function FIRTemplatesContent() {
                               ? "जिस विभाग से सूचना अपेक्षित है उसका नाम:-"
                               : "Name of Department from which Information is required:-"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.natgridDepartment || ""}
                             onChange={(e) => handleFieldChange("natgridDepartment", e.target.value)}
                             placeholder={
@@ -2868,7 +2915,7 @@ function FIRTemplatesContent() {
                                 ? "एफआईयू-इंड, आप्रवासन ब्यूरो, टेलीकॉम सेवा प्रदाता, आयकर पैन डेटाबेस"
                                 : "FIU-IND, Bureau of Immigration (BOI), Telecom Providers, Income Tax PAN Database"
                             }
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
@@ -2888,7 +2935,7 @@ function FIRTemplatesContent() {
                             ? "किस प्रकार की सूचना अपेक्षित है?"
                             : "What type of information is required?"}
                         </div>
-                        <textarea
+                        <AutoGrowingTextarea
                           rows={2}
                           value={formData.natgridInfoRequired || ""}
                           onChange={(e) => handleFieldChange("natgridInfoRequired", e.target.value)}
@@ -2897,7 +2944,7 @@ function FIRTemplatesContent() {
                               ? "पैन/आधार से जुड़े सभी बैंक खाते, घरेलू/अंतरराष्ट्रीय यात्रा इतिहास, सक्रिय पंजीकृत मोबाइल नंबर..."
                               : "All bank accounts linked to PAN/Aadhaar, domestic/international travel history, active registered mobile connections..."
                           }
-                          className="w-full font-sans text-xs text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-y"
+                          className="w-full font-sans text-xs sm:text-[13px] text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded p-1.5 outline-none leading-relaxed resize-none"
                         />
                       </td>
                     </tr>
@@ -2920,12 +2967,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "नाम –" : "Name –"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.noticeeName || ""}
                             onChange={(e) => handleFieldChange("noticeeName", e.target.value)}
                             placeholder={templateLang === "hi" ? "विकास शर्मा" : "Vikas Sharma"}
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -2933,12 +2980,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "पिता का नाम –" : "Father Name –"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.noticeeFather || ""}
                             onChange={(e) => handleFieldChange("noticeeFather", e.target.value)}
                             placeholder={templateLang === "hi" ? "रमेश चंद शर्मा" : "Ramesh Chand Sharma"}
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -2946,8 +2993,8 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "पता –" : "Address –"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.noticeeAddress || ""}
                             onChange={(e) => handleFieldChange("noticeeAddress", e.target.value)}
                             placeholder={
@@ -2955,7 +3002,7 @@ function FIRTemplatesContent() {
                                 ? "मकान नं. 412, सेक्टर 7, अर्बन एस्टेट, सिरसा, हरियाणा"
                                 : "House No. 412, Sector 7, Urban Estate, Sirsa, Haryana"
                             }
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -2963,14 +3010,13 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "जन्म तिथि –" : "Date of Birth –"}
                           </span>
-                          <input
-                            type="text"
-                            value={formData.noticeeDob || ""}
-                            onChange={(e) => {
-                              handleFieldChange("noticeeDob", e.target.value);
-                              handleFieldChange("appearanceDate", e.target.value);
+                          <AutoDateField
+                            value={toDDMMYYYY(formData.noticeeDob || "")}
+                            onChange={(val) => {
+                              handleFieldChange("noticeeDob", val);
+                              handleFieldChange("appearanceDate", val);
                             }}
-                            placeholder="Date of birth"
+                            placeholder="DD-MM-YYYY"
                             className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
                           />
                         </div>
@@ -2979,12 +3025,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "मोबाईल नं. –" : "Mobile No. –"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.noticeePhone || ""}
                             onChange={(e) => handleFieldChange("noticeePhone", e.target.value)}
                             placeholder="Verified phone number"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -2992,12 +3038,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "आधार नं. –" : "Aadhar No. –"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.accusedAadhaar || ""}
                             onChange={(e) => handleFieldChange("accusedAadhaar", e.target.value)}
                             placeholder="Verified identity number"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -3005,12 +3051,12 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "पैन नं. -" : "PAN -"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.accusedPan || ""}
                             onChange={(e) => handleFieldChange("accusedPan", e.target.value)}
                             placeholder="Verified PAN"
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
 
@@ -3018,8 +3064,8 @@ function FIRTemplatesContent() {
                           <span className="whitespace-nowrap w-44">
                             {templateLang === "hi" ? "अन्य कोई जानकारी-" : "Any other information-"}
                           </span>
-                          <input
-                            type="text"
+                          <AutoGrowingTextarea
+                            rows={1}
                             value={formData.natgridOtherInfo || ""}
                             onChange={(e) => {
                               handleFieldChange("natgridOtherInfo", e.target.value);
@@ -3030,7 +3076,7 @@ function FIRTemplatesContent() {
                                 ? "पासपोर्ट सं. Z4920194, वाहन सं. HR-24-AK-5521"
                                 : "Passport No. Z4920194, Vehicle No. HR-24-AK-5521"
                             }
-                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none"
+                            className="w-full font-normal text-slate-950 bg-transparent hover:bg-slate-100 focus:bg-white border border-transparent focus:border-purple-500 rounded px-1.5 py-0.5 outline-none resize-none leading-tight"
                           />
                         </div>
                       </td>
