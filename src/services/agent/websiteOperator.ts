@@ -17,9 +17,10 @@ export interface WebsiteSnapshot {
   title: string;
   controls: WebsiteControl[];
   errors: string[];
+  caseFacts?: {firNumber:string;complainant:string;accused:string[]};
 }
 export type OperatorAction = { type: "fill"; id: string; value: string } | { type: "click"; id: string } | { type: "navigate"; path: string };
-export interface OperatorPlan { message: string; actions: OperatorAction[]; question?: string; continue?:boolean; choices?:{label:string;actions:OperatorAction[]}[] }
+export interface OperatorPlan { message: string; actions: OperatorAction[]; question?: string; continue?:boolean; localOnly?:boolean; nextCommand?:string; choices?:{label:string;actions:OperatorAction[];resume?:string}[] }
 export interface OperatorRoute { path: string; title: string }
 export function missingRequired(control:WebsiteControl):boolean {
   return control.kind==='field' && !!control.required && !control.disabled &&
@@ -85,6 +86,30 @@ export function matchControls(controls: WebsiteControl[], query: string): Websit
 
 export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: OperatorRoute[]): OperatorPlan {
   const q = normalizeCommand(text);
+  const reference=q.match(/\bfir\s*(?:(?:number|no\.?)\s*)?[/ -]?(\d+)(?:[/ -](\d{4}))?\b/);
+  if(reference && /\b(open|profile|document|panel)\b/.test(q) && !/\b(save|delete|send|fill|set|register)\b/.test(q)) {
+    const number=Number(reference[1]),year=reference[2];
+    const matchesNumber=(label:string)=>{const match=normalizeCommand(label).match(/\bfir\s*[/ -](\d+)\s*[/ -](\d{4})\b/);return !!match && Number(match[1])===number && (!year || match[2]===year);};
+    const current=snapshot.caseFacts && matchesNumber(snapshot.caseFacts.firNumber);
+    if(current) {
+      if(/\bdocument\b/.test(q)) {
+        const tabs=snapshot.controls.filter(c=>!c.disabled && c.kind!=='field' && /^document(?:\s|$)/.test(normalizeCommand(c.label)));
+        if(tabs.length===1)return {message:'Documents panel खोल रहा हूँ।',actions:[{type:'click',id:tabs[0].id}],localOnly:true};
+        return {message:'इस FIR का Documents tab अभी उपलब्ध नहीं है।',actions:[],localOnly:true};
+      }
+      const overview=snapshot.controls.find(c=>!c.disabled && c.kind!=='field' && /^overview\b/.test(normalizeCommand(c.label)));
+      return {message:`${snapshot.caseFacts!.firNumber} की profile खुली है।`,actions:overview?[{type:'click',id:overview.id}]:[],localOnly:true};
+    }
+    const records=[...new Map(snapshot.controls.filter(c=>!c.disabled && c.kind==='link' && c.href && /^\/fir\/[^/?]+$/.test(c.href) && matchesNumber(c.label)).map(c=>[c.href!,c])).values()];
+    if(records.length===1)return {message:`${records[0].label} खोल रहा हूँ।`,actions:[{type:'navigate',path:records[0].href!}],continue:true,localOnly:true};
+    if(records.length>1)return {message:'',question:'इस number की कई FIR हैं। सही year/station वाला record चुनें।',actions:[],localOnly:true,choices:records.map((c,index)=>({label:`${c.label}${c.section?' — '+c.section:''} — option ${index+1}`,actions:[{type:'navigate',path:c.href!}],resume:text}))};
+    if(snapshot.path!=='/fir' && routes.some(r=>r.path==='/fir'))return {message:'FIR register में record देख रहा हूँ।',actions:[{type:'navigate',path:'/fir'}],continue:true,localOnly:true};
+    return {message:`FIR ${number}${year?'/'+year:''} visible records में नहीं मिली। Search/filter या year/station check करें।`,actions:[],localOnly:true};
+  }
+  if (snapshot.caseFacts && /\b(fir|complainant|accused)\b|शिकायतकर्ता|आरोपी|अभियुक्त/i.test(text) && /\b(number|naam|name|batao|which|who)\b|नंबर|नाम|बताओ/i.test(text) && !/\b(save|fill|set|delete|send|register|kholo)\b|भर|खोल|मिटा/i.test(text.replace(/do not (?:navigate,?\s*)?(?:click,?\s*(?:or\s*)?)?(?:fill)?\s*anything/gi,''))) {
+    const facts=snapshot.caseFacts;
+    return {message:`FIR: ${facts.firNumber}\nComplainant: ${facts.complainant || 'उपलब्ध नहीं'}\nAccused: ${facts.accused.join(', ') || 'कोई accused दर्ज नहीं'}`,actions:[]};
+  }
   const fields = snapshot.controls.filter(c => c.kind === "field" && !c.disabled);
   if (/^(help|madad|मदद|kya kar|क्या कर)/.test(q) || /missing|required|क्या बाकी|kya baki|क्या जानकारी|kya jankari/.test(q)) {
     const missing = fields.filter(missingRequired);
@@ -123,7 +148,7 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
   const target = q.replace(/\b(open|click|press|button|tab|karo|kar do|please|dabao|select)\b|दबाओ|दबाएं|चुनो/g," ").trim();
   const found = matchControls(snapshot.controls.filter(c=>c.kind!=="field" && !c.disabled), target);
   if (found.length === 1) return {message:found[0].label,actions:[{type:"click",id:found[0].id}]};
-  if (found.length > 1) return {message:"",actions:[],question:'कौन सा action?',choices:found.slice(0,8).map(c=>({label:`${c.section}: ${c.label}`,actions:[{type:'click',id:c.id}]}))};
+  if (found.length > 1) return {message:"",actions:[],question:'कौन सा action?',choices:found.slice(0,8).map((c,index)=>({label:`${c.section ? c.section+': ' : ''}${c.label} — option ${index+1}`,actions:[{type:'click',id:c.id}]}))};
   const field = matchControls(fields, target);
   if (field.length === 1) return {message:"",actions:[],question:`${field[0].label} में क्या भरना है?`};
   return {message:"", actions:[], question:"कौन सा page, field या button? उसका नाम बताएं। जैसे ‘mobile = 9812345678’, ‘FIR register खोलो’, या ‘Documents tab खोलो’।"};
@@ -170,6 +195,10 @@ export class LiveWebsiteBridge {
     });
     const snapshot:WebsiteSnapshot = {path:location.pathname+location.search,title:document.querySelector('main h1')?.textContent || document.title,controls,
       errors:Array.from(document.querySelectorAll<HTMLElement>('[role="alert"],[aria-invalid="true"]')).filter(el=>this.visible(el)).map(el=>el.textContent?.trim() || el.getAttribute('aria-label') || "Invalid field").filter(Boolean).slice(0,15)};
+    const caseElement=document.querySelector<HTMLElement>('[data-agent-case]');
+    if(caseElement && this.visible(caseElement)) {
+      try {const facts=JSON.parse(caseElement.dataset.agentCase || '{}');if(typeof facts.firNumber==='string' && typeof facts.complainant==='string' && Array.isArray(facts.accused) && facts.accused.every((name:unknown)=>typeof name==='string'))snapshot.caseFacts=facts;} catch { /* Invalid context is unknown. */ }
+    }
     return operatorAdapters(snapshot.path).reduce((s,a)=>a.enrich?.(s)||s,snapshot);
   }
   requiresApproval(control: WebsiteControl): boolean {

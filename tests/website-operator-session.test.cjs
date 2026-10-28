@@ -12,6 +12,15 @@ function fixture(options={}){
  return {s:new WebsiteOperatorSession(),location,performed,controls,navigate:p=>location.pathname=p};
 }
 test('multi-page queue executes only after reaching next page',async()=>{const f=fixture();const r=await f.s.run('second page kholo then search Alpha',f.navigate);assert.equal(f.location.pathname,'/two');assert.equal(f.performed[0].value,'alpha');assert.match(r,/verified/)});
+
+test('FIR documents workflow reaches exact case and tab without provider',async()=>{
+ let providerCalls=0;const f=fixture({plan:{message:'unexpected',actions:[]},onPlan:()=>providerCalls++});f.location.pathname='/fir';
+ const link={id:'case3',label:'FIR/0003/2026',href:'/fir/demo3',kind:'link',type:'a',disabled:false,section:''};
+ f.s.bridge.snapshot=()=>f.location.pathname==='/fir'?{path:'/fir',title:'Register',controls:[link],errors:[]}:{path:'/fir/demo3',title:'FIR',controls:[{id:'docs',label:'Documents (0)',kind:'button',type:'button',disabled:false,section:''}],caseFacts:{firNumber:'FIR/0003/2026',complainant:'Demo',accused:[]},errors:[]};
+ f.s.bridge.requiresApproval=()=>false;
+ const answer=await f.s.run('FIR 3 ke document panel ko kholo',f.navigate);
+ assert.equal(f.location.pathname,'/fir/demo3');assert.equal(f.performed[0].id,'docs');assert.equal(providerCalls,0);assert.match(answer,/verified docs/);
+});
 test('confirmation resumes next action without auto-approving it',async()=>{const f=fixture();await f.s.run('Save then Next',f.navigate);assert.equal(f.performed.length,0);const r=await f.s.run('yes',f.navigate);assert.equal(f.performed.length,1);assert.match(r,/Next/);await f.s.run('yes',f.navigate);assert.equal(f.performed.length,2);});
 test('changed form invalidates approval and remaining workflow',async()=>{const f=fixture();await f.s.run('Save then Next',f.navigate);f.controls[0].value='changed';await f.s.run('yes',f.navigate);assert.equal(f.performed.length,0);});
 test('cancel clears queued actions',async()=>{const f=fixture();await f.s.run('Save then Next',f.navigate);await f.s.run('cancel',f.navigate);await f.s.run('yes',f.navigate);assert.equal(f.performed.length,0);});

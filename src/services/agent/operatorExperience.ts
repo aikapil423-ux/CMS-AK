@@ -13,14 +13,18 @@ export function sensitiveLabel(label:string):boolean {
   return /aadha[ar]*|आधार|\bpan\b|passport|password|otp|bank|account number|credit card|biometric/i.test(label);
 }
 export function redactSensitiveText(text:string):string {
-  return text.replace(/\b\d{4}[ -]?\d{4}[ -]?\d{4}\b/g,'[REDACTED ID]').replace(/\b[A-Z]{5}\d{4}[A-Z]\b/g,'[REDACTED ID]');
+  return text
+    .replace(/((?:password|passwd|pwd|otp|pin|पासवर्ड|ओटीपी|पिन)\s*(?:(?:is|hai|है)\s*)?[:=\-]?\s*)[^\s,;]+/gi,'$1[REDACTED SECRET]')
+    .replace(/((?:bank\s*account(?:\s*(?:number|no\.?))?|account\s*(?:number|no\.?)|खाता\s*(?:संख्या|नंबर))\s*[:=\-]?\s*)\d[\d -]{5,}\d/gi,'$1[REDACTED ACCOUNT]')
+    .replace(/\b(?:\d[ -]?){13,19}\b/g,'[REDACTED ACCOUNT]')
+    .replace(/\b\d{4}[ -]?\d{4}[ -]?\d{4}\b/g,'[REDACTED ID]').replace(/\b[A-Z]{5}\d{4}[A-Z]\b/gi,'[REDACTED ID]');
 }
 /** Send control structure, not unrelated populated fields or every case in a dropdown. */
 export function privatePlanningSnapshot(snapshot:WebsiteSnapshot,request:string):WebsiteSnapshot {
   const words=request.toLowerCase().split(/\s+/).filter(w=>w.length>3);
-  return {...snapshot,errors:[],controls:snapshot.controls.filter(c=>!sensitiveLabel(c.label)).map(c=>{
+  return {...snapshot,caseFacts:undefined,title:redactSensitiveText(snapshot.title),errors:[],controls:snapshot.controls.filter(c=>!sensitiveLabel(c.label)).map(c=>{
     const related=words.some(w=>(c.label+' '+c.section).toLowerCase().includes(w));
-    return {...c,value:related?redactSensitiveText(c.value || ''):undefined,
+    return {...c,label:redactSensitiveText(c.label),section:redactSensitiveText(c.section),value:related?redactSensitiveText(c.value || ''):undefined,
       options:/case|fir|complaint|person|recipient|अभियोग|व्यक्ति/i.test(c.label)?c.options?.filter(o=>o.value===c.value || words.some(w=>o.label.toLowerCase().includes(w))).slice(0,8):c.options};
   })};
 }

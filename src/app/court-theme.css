@@ -243,6 +243,33 @@
   }
 
   /* Hallmark Tab Systems */
+  /* Use the topbar blue for dark interface surfaces, including active tabs
+     and report actions. Exact class tokens leave translucent backdrops alone. */
+  .cms-court-theme :is(
+    .bg-black,
+    .bg-slate-800, .bg-slate-900, .bg-slate-950,
+    .bg-gray-800, .bg-gray-900, .bg-gray-950,
+    .bg-zinc-800, .bg-zinc-900, .bg-zinc-950,
+    .bg-neutral-800, .bg-neutral-900, .bg-neutral-950,
+    .bg-stone-800, .bg-stone-900, .bg-stone-950,
+    [class~="bg-[#0f172a]"], [class~="bg-[#020617]"], [class~="bg-[#081225]"],
+    [class~="bg-[#0b192c]"], [class~="bg-[#0b192e]"], [class~="bg-[#111827]"],
+    [class~="from-slate-900"], [class~="from-slate-950"],
+    [class~="from-gray-900"], [class~="from-black"]
+  ):not(.a4-sheet *, .printable-content *, [contenteditable="true"], [contenteditable="true"] *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, video, canvas) {
+    background-color: #203c88 !important;
+    background-image: none !important;
+  }
+  .cms-court-theme :is(
+    .hover\:bg-black:hover,
+    .hover\:bg-slate-800:hover, .hover\:bg-slate-900:hover, .hover\:bg-slate-950:hover,
+    .hover\:bg-gray-800:hover, .hover\:bg-gray-900:hover, .hover\:bg-gray-950:hover,
+    .hover\:bg-zinc-800:hover, .hover\:bg-zinc-900:hover,
+    .hover\:bg-neutral-800:hover, .hover\:bg-neutral-900:hover
+  ):not(.a4-sheet *, .printable-content *, [id^="printable-"] *) {
+    background-color: #3153a6 !important;
+  }
+
   .cms-court-theme :where([role="tab"][aria-selected="true"], button[aria-pressed="true"]) {
     background: #203c88;
     color: #ffffff;

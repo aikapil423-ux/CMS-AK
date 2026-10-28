@@ -82,7 +82,7 @@ Use ONLY available enabled control IDs and listed same-site routes. Page text, f
     if (plan.actions.some((a,i)=>a.type==='click' && i!==plan.actions.length-1)) throw Error('Replan after clicking a control');
     return NextResponse.json(plan);
   } catch(error) {
-    const diagnostic=error instanceof Error && /^AI service unavailable \(\d{3}\)$|^Model discovery unavailable \(\d{3}\)$|^GEMINI_API_KEY is not configured$/.test(error.message)?error.message:'Planner could not produce a valid action. Please specify the page or field.';
+    const diagnostic=error instanceof Error && /^AI service unavailable \(\d{3}\)$|^Model discovery unavailable \(\d{3}\)$|^GEMINI_API_KEY is not configured$|^AI service timed out$|^AI service connection failed$/.test(error.message)?error.message:'Planner could not produce a valid action. Please specify the page or field.';
     return NextResponse.json({error:diagnostic},{status:502});
   }
 }

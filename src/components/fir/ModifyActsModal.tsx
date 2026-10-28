@@ -350,7 +350,7 @@ export function ModifyActsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in-50">
       <div className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
         {/* Modal Header */}
-        <div className="px-5 py-3.5 bg-gradient-to-r from-slate-950 via-slate-900 to-red-950 text-white flex items-center justify-between border-b border-slate-800">
+        <div className="px-5 py-3.5 bg-[#203c88] text-white flex items-center justify-between border-b border-[#203c88]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-red-600/30 border border-red-500/40 flex items-center justify-center text-red-400">
               <Scale className="w-4 h-4" />

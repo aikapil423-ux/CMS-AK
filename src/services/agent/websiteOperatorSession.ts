@@ -88,7 +88,7 @@ export class WebsiteOperatorSession {
     if(this.review && yes){const r=this.review;this.review=undefined;this.experience.review=[];if(r.path!==snapshot.path||r.fingerprint!==JSON.stringify(snapshot.controls)){this.stepFailed=true;return 'Review के बाद form बदला; command दोबारा दें।';}suppliedPlan=r.plan;text=r.text;reviewed=true;}
     else if(this.review){this.review=undefined;this.experience.review=[];}
     const choice=text.match(/^choose\s+(\d+)$/i);
-    if(this.choices && choice){const c=this.choices;this.choices=undefined;this.experience.choices=[];const selected=c.items[Number(choice[1])-1];if(!selected||c.path!==snapshot.path||c.fingerprint!==JSON.stringify(snapshot.controls)){this.stepFailed=true;return 'Choices बदल गए; command दोबारा दें।';}suppliedPlan={message:selected.label,actions:selected.actions};}
+    if(this.choices && choice){const c=this.choices;this.choices=undefined;this.experience.choices=[];const selected=c.items[Number(choice[1])-1];if(!selected||c.path!==snapshot.path||c.fingerprint!==JSON.stringify(snapshot.controls)){this.stepFailed=true;return 'Choices बदल गए; command दोबारा दें।';}suppliedPlan={message:selected.label,actions:selected.actions,continue:!!selected.resume,nextCommand:selected.resume,localOnly:!!selected.resume};}
     if(!suppliedPlan && this.lastField?.path===snapshot.path){const correction=text.match(/^(?:nahi|नहीं|no)[,，]?\s+(.+?)\s+(?:nahi|नहीं|not)[,，]?\s+(.+)$/i);const pronoun=text.match(/^(?:isko|ise|इसको|इसे)\s*(?:=|mein|में|to)\s*(.+)$/i);if(correction||pronoun){suppliedPlan={message:'Correction',actions:[{type:'fill',id:this.lastField.id,value:(correction?.[2]||pronoun?.[1])!.trim()}]};}}
     if (/^(cancel|stop|ruko|रुको|रद्द|नहीं|nahi|no)$/.test(q)) {this.remaining=[];this.continueObjective=undefined;this.approval=undefined;this.pendingField=undefined;this.stepFailed=true;return 'Pending action cancel कर दी। पहले से saved records unchanged हैं।';}
     if (/^(yes|haan|हाँ|approve|confirm|kar do|kardo|कर दो|ठीक है)$/.test(q) && this.approval) {
@@ -113,7 +113,7 @@ export class WebsiteOperatorSession {
     } else {
       this.pendingField=undefined;
       plan=planLocally(text,snapshot,[...new Map([...this.routes,...visibleRoutes].map(r=>[r.path,r])).values()]);
-      if(!plan.choices?.length && (this.forceModel || plan.question || this.attachments.length>0 || /[?]|\b(can you|could you|please help|mujhe|bana do|prepare)\b/i.test(text)) && modelAvailable) {
+      if(!plan.localOnly && !plan.choices?.length && (this.forceModel || plan.question || this.attachments.length>0) && modelAvailable) {
         try {
           this.publish('planning','AI planning');
           const res=await fetch('/api/cms-agent/operator',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.any([AbortSignal.timeout(110000),this.controller!.signal]),body:JSON.stringify({text:redactSensitiveText(text),snapshot:privatePlanningSnapshot(snapshot,text),history:this.history.slice(-10).map(h=>({...h,text:redactSensitiveText(h.text)})),attachments:this.attachments.map(a=>({...a,text:redactSensitiveText(a.text)}))})});
@@ -122,6 +122,8 @@ export class WebsiteOperatorSession {
             const code=String(detail.error||'').match(/\((\d{3})\)/)?.[1];
             if(code==='503'||code==='502'||code==='504')return 'AI provider अभी temporarily unavailable है (HTTP '+code+')। Command execute नहीं हुई। थोड़ी देर बाद retry कहें; page खोलने के लिए उसका exact नाम भी बोल सकते हैं।';
             if(code==='429')return 'AI provider की quota/rate limit पूरी हो गई है (HTTP 429)। Command execute नहीं हुई। Quota उपलब्ध होने पर retry करें।';
+            if(detail.error==='AI service timed out') return 'AI service ने समय पर जवाब नहीं दिया। Command execute नहीं हुई। Retry करें; basic page commands अभी भी उपलब्ध हैं।';
+            if(detail.error==='AI service connection failed') return 'AI service से connection नहीं हुआ। Command execute नहीं हुई। Network/configuration check करें या retry करें।';
             return 'AI planner response उपलब्ध नहीं है। Command execute नहीं हुई। Page/field का exact नाम दें या retry करें।';}
         } catch {if(generation!==this.generation)return 'Task रोक दिया।';this.stepFailed=true;this.retryText=text;this.experience.metrics.failures++;this.record('planning','failed');return 'AI planner response नहीं मिला; command execute नहीं की।';}
       }
@@ -145,7 +147,7 @@ export class WebsiteOperatorSession {
     const signature=JSON.stringify([snapshot.path,plan.actions]);
     if(plan.actions.length && this.seenPlans.has(signature)) {this.stepFailed=true;this.continueObjective=undefined;return 'Same action repeat हो रही थी, इसलिए workflow रोक दिया। अगला step स्पष्ट बताएं।';}
     if(plan.actions.length) this.seenPlans.add(signature);
-    if(plan.continue && plan.actions.length) this.continueObjective=text;
+    if(plan.continue && plan.actions.length) this.continueObjective=plan.nextCommand || text;
     for(const action of plan.actions) {
       if(generation!==this.generation) return "Session बदल गया; command रोक दी।";
       if(action.type==='navigate') {

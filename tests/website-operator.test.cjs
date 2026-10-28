@@ -6,6 +6,36 @@ const vm=require('node:vm');
 const exportsObject={};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/services/agent/websiteOperator.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:exportsObject,require:()=>({operatorAdapters:()=>[]})});
 const {planLocally}=exportsObject;
+
+const firLink=(id,number,year=2026)=>({id,label:`FIR/${String(number).padStart(4,'0')}/${year}`,kind:'link',type:'a',href:`/fir/${id}`,disabled:false,section:''});
+test('short FIR references resolve exact record and continue to requested panel',()=>{
+ const page={path:'/fir',title:'Register',controls:[firLink('three',3),firLink('thirty',30)],errors:[]};
+ for(const query of ['FIR 3 ke document panel ko kholo','FIR number 3 ki profile kholo','एफआईआर ३ के दस्तावेज खोलो','open FIR/0003/2026 documents']) {
+  const result=planLocally(query,page,[]);assert.equal(result.actions[0].path,'/fir/three');assert.equal(result.continue,true);assert.equal(result.localOnly,true);
+ }
+});
+test('FIR year ambiguity asks; explicit year resolves; missing record never chooses first',()=>{
+ const page={path:'/fir',title:'Register',controls:[firLink('old',3,2025),firLink('new',3,2026)],errors:[]};
+ assert.equal(planLocally('FIR 3 profile kholo',page,[]).choices.length,2);
+ assert.equal(planLocally('FIR/3/2026 profile kholo',page,[]).actions[0].path,'/fir/new');
+ const missing=planLocally('FIR 99 profile kholo',page,[]);assert.equal(missing.actions.length,0);assert.equal(missing.localOnly,true);
+});
+test('current FIR document request opens only its tab',()=>{
+ const page={path:'/fir/three',title:'FIR',errors:[],caseFacts:{firNumber:'FIR/0003/2026',complainant:'Demo',accused:[]},controls:[{id:'docs',label:'Documents (0)',kind:'button',type:'button',disabled:false,section:''}]};
+ const result=planLocally('FIR 3 ke document panel ko kholo',page,[]);assert.equal(result.actions[0].id,'docs');assert.equal(result.continue,undefined);
+ assert.equal(planLocally('FIR number 3 ki profile kholo',page,[]).actions.length,0);
+});
+
+test('current FIR questions answer locally without actions or provider',()=>{
+ const page={path:'/fir/demo',title:'FIR',controls:[],errors:[],caseFacts:{firNumber:'FIR/0003/2026',complainant:'Amit Demo',accused:['Vikram Demo']}};
+ for(const query of ['Which FIR number is currently open? Answer only. Do not navigate, click, or fill anything.','Is demo FIR ka number, complainant aur accused ka naam batao. Sirf jawab do, koi field, record ya page change mat karna.']) {
+  const result=planLocally(query,page,[]);assert.equal(result.actions.length,0);assert.equal(result.question,undefined);assert.match(result.message,/FIR\/0003\/2026/);assert.match(result.message,/Vikram Demo/);
+ }
+});
+test('duplicate actions have distinguishable context labels',()=>{
+ const page={path:'/',title:'Test',errors:[],controls:['Reports toolbar','Investigation In Progress'].map((section,index)=>({id:String(index),label:'Final Report',kind:'button',type:'button',disabled:false,section}))};
+ const result=planLocally('Final Report',page,[]);assert.equal(result.choices.length,2);assert.notEqual(result.choices[0].label,result.choices[1].label);assert.match(result.choices[0].label,/Reports toolbar/);
+});
 const field=(id,label)=>({id,label,kind:'field',type:'text',disabled:false,section:'',required:true,value:''});
 const snapshot={path:'/new',title:'New',controls:[field('name','Name'),field('mobile','Mobile')],errors:[]};
 test('Hindi speech complaint navigation works without model',()=>{const p=planLocally('रजिस्टर कंप्लेंट पेज खोलो',snapshot,[{path:'/complaints/new',title:'Register Complaint'}]);assert.equal(p.actions[0]?.path,'/complaints/new');});

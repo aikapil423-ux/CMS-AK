@@ -1389,7 +1389,7 @@ export default function FIRProfilePage() {
   }
 
   return (
-    <div className="space-y-6 pb-16 animate-in fade-in-50">
+    <div className="space-y-6 pb-16 animate-in fade-in-50" data-agent-case={JSON.stringify({firNumber:fir.firNumber,complainant:fir.complainantName,accused:(fir.accusedList || []).map(person=>person.name)})}>
       {/* Top Breadcrumb & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
@@ -1833,6 +1833,7 @@ export default function FIRProfilePage() {
           return (
             <button
               key={tab.key}
+              data-agent-operation="read"
               onClick={() => setActiveTab(tab.key as ActiveTab)}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer ${
                 isActive
@@ -2558,6 +2559,7 @@ export default function FIRProfilePage() {
 
               {/* Final Report Button */}
               <Button
+                data-agent-section="Reports toolbar"
                 size="sm"
                 onClick={() => { setEditingFinalReport(undefined); setIsFinalReportModalOpen(true); }}
                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
@@ -2768,6 +2770,7 @@ export default function FIRProfilePage() {
                 <Button
                   size="sm"
                   onClick={() => setIsFinalReportModalOpen(true)}
+                  data-agent-section="Investigation In Progress"
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Scale className="w-3.5 h-3.5" />
