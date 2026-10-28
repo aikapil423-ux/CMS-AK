@@ -2939,9 +2939,7 @@ function ArrestDocsContent() {
             <h1 className="text-xl font-black text-[#0b192c] tracking-tight">
               Arrest Docs and IIF-III (गिरफ्तारी प्रपत्र स्टूडियो)
             </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              100% Fully In-Place Editable • Add/Delete Any Point, Row, Witness or Custom Paragraph
-            </p>
+
           </div>
         </div>
 

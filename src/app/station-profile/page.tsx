@@ -436,9 +436,7 @@ export default function StationProfilePage() {
               <h3 className="text-base sm:text-lg font-bold">
                 Manage Station Personnel, Postings & Roster
               </h3>
-              <p className="text-xs text-slate-300 max-w-xl">
-                Maintain and update postings for Station House Officer (SHO), Enquiry/Investigating Officers (EO/IO), ERV Dial 112 pilots, Beat Riders, Moharrir Head Constable (MHC), and General Sentry staff.
-              </p>
+
             </div>
             <button
               type="button"

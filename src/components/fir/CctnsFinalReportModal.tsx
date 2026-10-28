@@ -18,19 +18,36 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const uploadFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!files.length) return;
+    setUploading(true); setErrors([]);
+    try {
+      const existingFiles = data.uploadedFiles || [];
+      const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+      if (existingFiles.length + files.length > 5) throw new Error('Maximum 5 files allowed.');
+      if (files.some(file => !allowed.includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024)) throw new Error('Upload PDF, Word, JPG or PNG files up to 5 MB each.');
+      if ([...existingFiles, ...files].reduce((sum, file) => sum + file.size, 0) > 10 * 1024 * 1024) throw new Error('Maximum total upload size is 10 MB.');
+      const uploaded = await Promise.all(files.map(async file => ({ id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, dataUrl: await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error('File could not be read. Please retry.')); reader.readAsDataURL(file); }) })));
+      setData(current => ({ ...current, uploadedFiles: [...(current.uploadedFiles || []), ...uploaded], enclosures: [...current.enclosures, ...uploaded.map(file => ({ selected: true, fileName: file.name, module: 'Uploaded File', registrationNo: '', date: new Date().toLocaleDateString('en-CA'), documentId: file.id }))] }));
+    } catch (error) { setErrors([error instanceof Error ? error.message : 'Upload failed.']); }
+    finally { setUploading(false); }
+  };
   const savingRef = useRef(false);
   const reportId = useRef(existing?.id || `final-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const previewRef = useRef<HTMLDivElement>(null);
   const change = <K extends keyof FinalReportData>(key: K, value: FinalReportData[K]) => setData(d => ({
     ...d, [key]: value,
-    ...(key === 'formType' ? (value === 'CHARGESHEET' ? { finalReportReason: '', finalReportReasonDetails: '' } : { chargeSheetType: '' }) : {}),
+    ...(key === 'formType' ? (value === 'CHARGESHEET' ? { finalReportReason: '', finalReportReasonDetails: '', investigationStatus: '' } : { chargeSheetType: '', ...(value === 'CLOSURE' ? { investigationStatus: 'Completed' } : {}) }) : {}),
     ...(key === 'prosecutorApproved' && value !== 'Yes' ? { approvalDate: '' } : {}),
     ...(key === 'noticeServed' && value !== 'Yes' ? { noticeDate: '' } : {}),
   }));
   const field = (key: keyof FinalReportData, label: string, options?: string[], type = 'text', required = false) => (
     <label className="block space-y-1 text-xs font-semibold text-slate-700" key={key}>
       <span>{label}{required ? ' *' : ''}</span>
-      {options ? <select className={inputClass} value={String(data[key])} onChange={e => change(key, e.target.value as never)}><option value="">Select</option>{options.map(o => <option key={o}>{o}</option>)}</select>
+      {options ? <select className={inputClass} value={key === 'formType' && data.formType && data.formType !== 'CHARGESHEET' ? 'CLOSURE' : String(data[key])} onChange={e => change(key, e.target.value as never)}><option value="">Select</option>{options.map(o => <option key={o} value={o}>{key === 'formType' ? (o === 'CHARGESHEET' ? 'Chargesheet/Challan' : 'Final Report') : o}</option>)}</select>
         : type === 'textarea' ? <textarea className={inputClass} rows={4} value={String(data[key])} onChange={e => change(key, e.target.value as never)} />
         : <input className={inputClass} type={type} min={type === 'number' ? 0 : undefined} value={String(data[key])} onChange={e => change(key, e.target.value as never)} />}
     </label>
@@ -42,7 +59,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
       return <label key={f.key} className="text-xs space-y-1 font-semibold"><span>{f.label}</span>{f.type === 'checkbox' ? <input className="ml-3" type="checkbox" checked={Boolean(value)} onChange={e => update(e.target.checked)} /> : f.options ? <select className={inputClass} value={String(value || '')} onChange={e => update(e.target.value)}><option value="">Select</option>{f.options.map(o => <option key={o}>{o}</option>)}</select> : <input className={inputClass} type={f.type || 'text'} value={String(value || '')} onChange={e => update(e.target.value)} />}</label>;
     })}</div><button type="button" className="mt-3 text-xs text-red-700 underline" onClick={() => change(key, data[key].filter((_, i) => i !== index) as FinalReportData[K])}>Remove row {index + 1}</button></fieldset>)}</div>
   );
-  const showPreview = () => { const next = validateFinalReport(data); setErrors(next); if (!next.length) setPreview(true); };
+  const showPreview = () => { if (uploading) return; const next = validateFinalReport(data); setErrors(next); if (!next.length) setPreview(true); };
   const save = async () => {
     if (savingRef.current) return;
     savingRef.current = true; setSaving(true); setErrors([]);
@@ -56,8 +73,18 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
   };
   return <div className="fixed inset-0 z-[100] bg-slate-950/60 p-3 sm:p-6 flex justify-center" role="dialog" aria-modal="true" aria-labelledby="final-report-title">
     <section className="bg-white rounded-xl w-full max-w-6xl flex flex-col shadow-2xl overflow-hidden">
-      <header className="p-4 border-b flex justify-between gap-3"><div><h2 id="final-report-title" className="text-lg font-bold">{existing ? 'Edit Final Report' : 'Final Report'} — IIF-V</h2><p className="text-xs text-slate-600">FIR {fir.firNumber} · {fir.policeStation} · {fir.district}</p></div><button className={buttonClass} disabled={saving} onClick={onClose} aria-label="Close final report">Close</button></header>
+      <header className="p-4 border-b flex justify-between gap-3"><div><h2 id="final-report-title" className="text-lg font-bold">{existing ? 'Edit Final Report' : 'Final Report'} — IIF-V</h2><p className="text-xs text-white">FIR {fir.firNumber} · {fir.policeStation} · {fir.district}</p></div><button className={buttonClass} disabled={saving} onClick={onClose} aria-label="Close final report">Close</button></header>
       <div className="overflow-auto flex-1 p-4 space-y-4">
+        <fieldset className="border border-slate-300 p-3 space-y-2">
+          <legend className="px-1 text-sm font-semibold">Upload Files</legend>
+          {!preview && <><input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" aria-label="Upload final report supporting files" disabled={uploading || saving} onChange={uploadFiles} /><p className="text-xs text-slate-600">PDF, Word, JPG, PNG · 5 MB per file · 10 MB total · Maximum 5 files</p></>}
+          {uploading && <p role="status" className="text-sm">Uploading…</p>}
+          {(data.uploadedFiles || []).map(file => <div key={file.id} className="flex flex-wrap items-center gap-3 text-sm">
+            <a className="text-blue-700 underline" href={file.dataUrl} download={file.name}>{file.name}</a>
+            <span>{(file.size / 1024).toFixed(0)} KB</span>
+            {!preview && <button type="button" className="text-red-700 underline" disabled={uploading || saving} onClick={() => setData(current => ({ ...current, uploadedFiles: current.uploadedFiles?.filter(item => item.id !== file.id), enclosures: current.enclosures.filter(item => item.documentId !== file.id) }))}>Remove</button>}
+          </div>)}
+        </fieldset>
         {errors.length > 0 && <div role="alert" className="bg-red-50 text-red-800 border border-red-200 rounded-lg p-3"><ul className="list-disc pl-5 text-sm">{errors.map(e => <li key={e}>{e}</li>)}</ul></div>}
         {preview ? <StatutoryFinalReportPreview data={toStatutoryFinalReport(fir, data)} previewRef={previewRef} /> : <>
           <div className="bg-slate-50 border rounded-lg p-3 text-sm grid sm:grid-cols-2 gap-2"><p><strong>FIR Date:</strong> {fir.firDate}</p><p><strong>Complainant:</strong> {fir.complainantName}</p><p><strong>Relation:</strong> {fir.complainantRelationType || '—'} / {fir.complainantRelativeName || fir.complainantFatherSpouse || '—'}</p><p><strong>Acts & Sections:</strong> {fir.actsAndSections}</p></div>
@@ -66,10 +93,10 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
             {tab === 0 && <>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {field('reportNo', 'Final report / Chargesheet number', undefined, 'text', true)}{field('reportDate', 'Report date', undefined, 'date', true)}
-                {field('formType', 'Type of Final Form', ['CHARGESHEET', 'CLOSURE', 'UNTRACED', 'CANCELLED'], 'text', true)}
+                {field('formType', 'Type of Final Form', ['CHARGESHEET', 'CLOSURE'], 'text', true)}
                 {data.formType === 'CHARGESHEET' && field('chargeSheetType', 'Chargesheet / Challan type', ['Complete', 'Partial'], 'text', true)}
-                {data.formType !== 'CHARGESHEET' && field('finalReportReason', 'Final Report — reason / category', ['Untraced', 'False complaint', 'Mistake of fact', 'Mistake of law', 'Civil nature', 'Insufficient evidence', 'Death of accused', 'Other'], 'text', true)}
-                {data.formType !== 'CHARGESHEET' && field('finalReportReasonDetails', 'Final Report — reason details', undefined, 'textarea', true)}
+                {data.formType && data.formType !== 'CHARGESHEET' && field('finalReportReason', 'Final Report — reason / category', ['Untraced', 'FR Unoccured/Cancellation', 'Accused Dead Offence Abated', 'Transfer to other PS', 'Absconding', 'Withdrawal By Government'], 'text', true)}
+                {data.formType && data.formType !== 'CHARGESHEET' && field('finalReportReasonDetails', 'Final Report — reason details', undefined, 'textarea', true)}
                 {field('judicialCustody', 'Any accused in judicial custody?', ['Yes', 'No'], 'text', true)}
                 {field('pendingAccused', 'No. of accused pending arrest / role verification', undefined, 'number', true)}
                 {field('pendingDocuments', 'Type of documents pending', ['FSL Report Pending', 'Other Documents', 'NIL'], 'text', true)}

@@ -575,9 +575,7 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
                       <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wider">
                         Lost Property Item(s) Table
                       </h3>
-                      <p className="text-[11px] text-slate-500">
-                        Add items reported missing (Electronics, Currency, Documents, Jewellery, etc.)
-                      </p>
+
                     </div>
 
                     <div className="flex items-center gap-2">

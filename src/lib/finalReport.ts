@@ -2,6 +2,7 @@ import type { ComplaintReportItem, FIRItem } from '@/types';
 import { generateIIFVChargesheetHtml } from '@/utils/iifvChargesheetGenerator';
 
 export interface FinalReportData {
+  uploadedFiles?: Array<{ id: string; name: string; type: string; size: number; dataUrl: string }>;
   schemaVersion: 1;
   reportNo: string;
   reportDate: string;
@@ -34,7 +35,7 @@ export interface FinalReportData {
 export function initialFinalReport(fir: FIRItem): FinalReportData {
   return {
     schemaVersion: 1, reportNo: '', reportDate: new Date().toLocaleDateString('en-CA'),
-    formType: 'CHARGESHEET', chargeSheetType: '', finalReportReason: '', finalReportReasonDetails: '', judicialCustody: '', pendingAccused: '', pendingDocuments: '',
+    formType: '', chargeSheetType: '', finalReportReason: '', finalReportReasonDetails: '', judicialCustody: '', pendingAccused: '', pendingDocuments: '',
     limitationPeriod: '', investigationStatus: '', dispatchDate: '', courtType: '', judgeName: '', caseType: fir.caseType || '',
     labAnalysis: '', briefFacts: fir.briefFacts || fir.incidentDetails || '', prosecutorApproved: '', approvalDate: '', noticeServed: '', noticeDate: '', enclosureNotes: '',
     accused: (fir.accusedList || []).map((a, i) => ({ accusedId: a.id || `${fir.id}-accused-${i + 1}`, name: a.name || '', relation: a.fatherName ? 'Father' : '', relativeName: a.fatherName || a.relativeName || '', action: '', status: a.custodyStatus || '' })),

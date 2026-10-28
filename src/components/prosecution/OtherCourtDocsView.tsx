@@ -155,9 +155,7 @@ export function OtherCourtDocsView() {
             <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
             Court Applications & Warrants (अन्य अदालती प्रार्थना पत्र)
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Production Warrants, Non-Bailable Warrants, Sec. 84/85 BNSS Proclamation, and Police Custody Remands.
-          </p>
+
         </div>
 
         <button

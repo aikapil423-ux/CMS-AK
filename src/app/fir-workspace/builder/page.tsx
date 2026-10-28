@@ -1112,9 +1112,7 @@ function FIRTemplateBuilderContent() {
                     वर्ड फीचर्स व कस्टम टेम्पलेट्स
                   </Badge>
                 </h1>
-                <p className="text-xs text-slate-500">
-                  अनुसंधान अधिकारी हेतु MS Word जैसे फॉर्मेटिंग टूल्स, 180 BNSS बयान, जब्ती फर्द व कस्टम टेम्पलेट लाइब्रेरी।
-                </p>
+
               </div>
             </div>
           </div>

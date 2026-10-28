@@ -2033,9 +2033,7 @@ export default function FIRProfilePage() {
               <h3 className="text-sm font-bold text-slate-900">
                 Statutory Case Diaries (Zimni under Section 175 BNSS)
               </h3>
-              <p className="text-xs text-slate-500">
-                Day-to-day chronological record of investigation, witness examinations, and spot visits.
-              </p>
+
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -2171,9 +2169,7 @@ export default function FIRProfilePage() {
                 <FileText className="w-5 h-5 text-blue-600" />
                 <span>Case Files, Memos &amp; Evidentiary Documents</span>
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Seizure memos, site plans, Section 180 BNSS witness statements, and medico-legal reports.
-              </p>
+
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -2469,9 +2465,7 @@ export default function FIRProfilePage() {
                 <FileCheck2 className="w-5 h-5 text-emerald-600" />
                 <span>Police Reports &amp; Final Form Docket (Section 193 BNSS)</span>
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Statutory chargesheet drafts, closure petitions, untraced reports, and periodic supervisory evaluations.
-              </p>
+
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -2825,9 +2819,7 @@ export default function FIRProfilePage() {
         <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl space-y-2">
           <Lock className="w-8 h-8 text-slate-400 mx-auto" />
           <h4 className="text-sm font-bold text-slate-800">Restricted Supervisory Dossier</h4>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Classified intelligence notes, CDR call detail analyses, suspect movement logs, and confidential source inputs.
-          </p>
+
         </div>
       )}
 
@@ -3815,9 +3807,7 @@ export default function FIRProfilePage() {
                   <h3 className="font-bold text-slate-900 text-sm sm:text-base">
                     {activeDraftReport ? "Edit Statutory Report" : "Draft Statutory Police Report"}
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Section 193 BNSS statutory disposal draft preloaded with case particulars.
-                  </p>
+
                 </div>
               </div>
               <button

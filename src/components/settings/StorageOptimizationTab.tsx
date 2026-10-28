@@ -426,9 +426,7 @@ export default function StorageOptimizationTab() {
               <Layers className="w-4 h-4 text-indigo-600" />
               <span>Lossless Storage Optimization by Evidence Category</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Breakdown of original evidentiary footprint vs. verified lossless compressed storage.
-            </p>
+
           </div>
           <span className="text-xs font-mono text-slate-500">
             Total Files Monitored: <strong className="text-slate-800">{records.length}</strong>

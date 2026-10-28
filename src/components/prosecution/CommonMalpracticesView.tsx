@@ -66,9 +66,7 @@ export function CommonMalpracticesView() {
             <h3 className="text-sm font-bold text-slate-900 leading-tight">
               Investigation Flaws & Scrutiny Malpractices Audit
             </h3>
-            <p className="text-xs text-slate-500">
-              Standard statutory checks required to prevent acquittal on procedural defects
-            </p>
+
           </div>
         </div>
 

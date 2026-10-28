@@ -37,9 +37,7 @@ export default function FIRWorkspacePage() {
             <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
               Investigation Officer (IO) Workspace
             </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Statutory investigation toolset under Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023
-            </p>
+
           </div>
         </div>
 
@@ -63,9 +61,7 @@ export default function FIRWorkspacePage() {
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-purple-800 transition-colors">
                     Notice Generator
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Accused notice (Sec 35(3) BNSS), CDR requisition, NATGRID intelligence & Witness summons (Sec 179 BNSS).
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-purple-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -88,9 +84,7 @@ export default function FIRWorkspacePage() {
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-amber-800 transition-colors">
                     Case Diaries (Zimni)
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Record chronological investigation diaries under Section 175 BNSS with spot inspections.
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-amber-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -113,9 +107,7 @@ export default function FIRWorkspacePage() {
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-rose-800 transition-colors">
                     Arrest Docs and IIF-III
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Arrest memo, Fard Jamatalashi, Grounds of arrest, Pehchan Patr, Fard Baramadgi, Remand & Medical letters.
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-rose-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -140,9 +132,7 @@ export default function FIRWorkspacePage() {
                       Property Seizure Form IIF-IV
                     </h3>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    तलाशी / जब्ती फार्म ज़ेर धारा 51/102/165 CrPC (धारा 50/106/185 BNSS), गवाह सूची, सीलबंद माल व प्राप्ति पावती।
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-teal-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -165,9 +155,7 @@ export default function FIRWorkspacePage() {
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-red-800 transition-colors">
                     ChargeSheet/Final report and IIF-V
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Statutory Police Report (Chargesheet / Challan / Closure - Sec 193 BNSS / IIF-V) for Court submission.
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-red-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -192,9 +180,7 @@ export default function FIRWorkspacePage() {
                       Kalandra (कलंदरा)
                     </h3>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Bilingual preparation of Kalandras (107/151, 107/150, 217/248 BNS, 145, 72 IPC, 7/16) & dossiers.
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-emerald-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
@@ -217,9 +203,7 @@ export default function FIRWorkspacePage() {
                   <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-blue-800 transition-colors">
                     Template Builder
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-3">
-                    Word-like editor for custom FIR templates, 180 BNSS statements, recovery memos & My Templates tab.
-                  </p>
+
                 </div>
               </div>
               <div className="flex items-center justify-end text-[11px] font-bold text-blue-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">

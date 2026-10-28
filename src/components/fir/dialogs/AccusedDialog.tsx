@@ -426,9 +426,7 @@ export const AccusedDialog: React.FC<AccusedDialogProps> = ({
               <h2 className="text-sm font-bold tracking-tight">
                 {initialAccused ? "Edit Accused Details" : "Add Accused / Suspect (अभियुक्त का विवरण)"}
               </h2>
-              <p className="text-[11px] text-slate-300">
-                Register known or unknown suspects, physical attributes, police involvement, and IDs
-              </p>
+
             </div>
           </div>
           <button

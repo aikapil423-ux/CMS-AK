@@ -356,9 +356,7 @@ export function LinkDelinkComplaintsModal({
                   Case Association
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
-                Associate or separate cross-complaints, same-accused cases, or related matters
-              </p>
+
             </div>
           </div>
           <button

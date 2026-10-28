@@ -1,23 +1,73 @@
-/* Shared court-register appearance. Screen-only so document exports retain
-   their own page layout, typography and colours. */
+/* =========================================================================
+   HALLMARK DESIGN SYSTEM (SWISS INSTITUTIONAL GRID SPEC)
+   Haryana Police Case Management System (CMS) - Global Polish
+   ========================================================================= */
+
 @media screen {
+  /* Readable interface text across registers, badges, dialogs and actions.
+     Document editors and printable sheets retain their own typography. */
+  .cms-court-theme :where(main, [role="dialog"], .cms-report-actions)
+    :where(.text-xs, [class~="text-[9px]"], [class~="text-[10px]"], [class~="text-[11px]"], [class~="text-[12px]"]):not(.a4-sheet *, .printable-content *, [contenteditable="true"], [contenteditable="true"] *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .cms-court-theme :where(main, [role="dialog"], .cms-report-actions)
+    :where(.text-sm, [class~="text-[13px]"]):not(.a4-sheet *, .printable-content *, [contenteditable="true"], [contenteditable="true"] *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .cms-report-actions button {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 34px;
+  }
+  /* Increase contrast of secondary text throughout the interface. */
+  .cms-court-theme :where(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500, .text-zinc-400, .text-zinc-500):not(thead *, .cms-topbar *, header.lg\:hidden *, .cms-module-selected *, .cms-persona-badge, .a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    color: #334155;
+  }
+
+  :root {
+    /* Hallmark Grid Token Declarations */
+    --color-paper: #ffffff;
+    --color-paper-2: #f7f9fc;
+    --color-paper-3: #eef1ff;
+    --color-ink: #1e293b;
+    --color-ink-2: #26334a;
+    --color-muted: #536584;
+    --color-rule: #b7c1d4;
+    --color-rule-subtle: #cbd3e3;
+    
+    /* Hallmark Ultramarine & Institutional Accent */
+    --color-accent: #203c88;
+    --color-accent-hover: #172e70;
+    --color-accent-subtle: #eef1ff;
+    --color-mark-red: #dc2626;
+    --color-mark-gold: #f59e0b;
+    
+    /* Radius & Transitions: Hallmark strict 0-radius structural rules */
+    --radius-card: 0px;
+    --radius-pill: 0px;
+    --rule-hair: 1px;
+    --shadow-card: none;
+  }
+
   .cms-court-theme {
-    --background: #ffffff;
-    --foreground: #26334a;
-    --surface: #ffffff;
-    --surface-subtle: #eef1ff;
-    --border: #b7c1d4;
-    --accent-primary: #203c88;
-    --accent-muted: #536584;
-    --accent-subtle: #eef1ff;
+    --background: var(--color-paper);
+    --foreground: var(--color-ink-2);
+    --surface: var(--color-paper);
+    --surface-subtle: var(--color-paper-3);
+    --border: var(--color-rule);
+    --accent-primary: var(--color-accent);
+    --accent-muted: var(--color-muted);
+    --accent-subtle: var(--color-accent-subtle);
     --accent-border: #a8b5d1;
     background: var(--background);
     color: var(--foreground);
     letter-spacing: normal;
   }
 
-  /* Existing modules share utility classes as well as the Card components. */
-  .cms-court-theme :where(main, [role="dialog"], form, .cms-card) {
+  /* Global Container & Card Normalization (Zero-Radius Swiss Grid) */
+  .cms-court-theme :where(main, [role="dialog"], form, .cms-card, .rounded-xl, .rounded-2xl, .rounded-lg, .rounded-3xl) {
     --color-slate-900: #203c88;
     --color-slate-800: #26334a;
     --color-slate-50: #f7f9fc;
@@ -25,16 +75,20 @@
     --color-slate-200: #cbd3e3;
     --color-blue-600: #1847e8;
     --color-indigo-600: #203c88;
-    --radius-lg: 0;
-    --radius-xl: 0;
-    --radius-2xl: 0;
-    --radius-3xl: 0;
+    border-radius: 0px !important;
   }
 
   .cms-main > :first-child { max-width: none; }
-  .cms-main :where(h1) { color: #203c88; letter-spacing: normal; }
+  .cms-main :where(h1) { color: #203c88; letter-spacing: -0.015em; font-weight: 700; }
+  .cms-main .cms-complete-cases-title { color: #ffffff; }
   .cms-main :where(h1) { font-size: clamp(1.3rem, 2vw, 1.8rem); }
 
+  /* Hallmark Topbar: Precision Navy Block */
+  .cms-topbar {
+    background-color: #203c88 !important;
+    border-bottom: 1px solid #172e70 !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
   .cms-topbar :where(span, svg, button) { color: inherit; }
   .cms-topbar > div > div:first-child { color: white; }
   .cms-topbar :where(button:hover) { background-color: #3153a6; }
@@ -42,9 +96,10 @@
     background: #eef1ff;
     color: #203c88;
   }
-  /* Dropdown panels keep readable dark text on their white surface. */
-  .cms-topbar :where(.absolute) { color: #26334a; }
+  /* Dropdown panels keep readable dark text on their white surface */
+  .cms-topbar :where(.absolute) { color: #26334a; border-radius: 0 !important; border: 1px solid #b7c1d4; }
   .cms-court-theme .cms-shell header .cms-persona-badge { color: #ffffff; }
+  .cms-court-theme .cms-shell header .cms-language-badge { color: #ffffff; }
   .cms-topbar :where(.absolute button:hover) { background: #eef1ff; }
   .cms-court-theme .cms-module-menu-header,
   .cms-court-theme .cms-module-menu-header :where(h4, button, svg) {
@@ -71,17 +126,19 @@
     border-bottom-color: #203c88;
   }
   .cms-shell header.lg\:hidden :where(h2, span, svg, button) { color: inherit; }
-  .cms-shell header.lg\:hidden :where(.absolute) { color: #26334a; }
+  .cms-shell header.lg\:hidden :where(.absolute) { color: #26334a; border-radius: 0 !important; }
   .cms-court-theme :where(.cms-topbar, .cms-shell header.lg\:hidden) button:not(.absolute *) {
     background-color: #3153a6;
     color: white;
     border-color: #6d85bd;
+    border-radius: 0 !important;
   }
   .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]),
   .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]) button {
     background-color: #dc2626;
     border-color: #dc2626;
     color: #ffffff;
+    border-radius: 0 !important;
   }
   .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]):hover,
   .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]) button:hover {
@@ -90,9 +147,10 @@
     color: #ffffff;
   }
 
+  /* Hallmark Sidebar Architecture */
   .cms-shell > aside {
     background: #f7f9fc;
-    border-right: 1px solid #a8b5d1;
+    border-right: 1px solid #b7c1d4;
   }
   .cms-shell > aside > div:first-child {
     background: #203c88;
@@ -100,11 +158,11 @@
     color: white;
   }
   .cms-shell > aside > div:first-child :where(h1, span, button, svg) { color: white; }
-  .cms-shell > aside :where(a) { border-radius: 0; }
+  .cms-shell > aside :where(a) { border-radius: 0 !important; }
   .cms-shell > aside :where(a.bg-slate-100) {
     background: #203c88;
     color: #ffffff;
-    box-shadow: inset 3px 0 #203c88;
+    box-shadow: inset 4px 0 #fbbf24;
   }
   .cms-shell > aside :where(a.bg-slate-100) :where(span, svg) {
     color: #ffffff;
@@ -114,9 +172,11 @@
     border-color: rgb(255 255 255 / 30%);
   }
 
+  /* Hallmark Tabular System: Precision High-Contrast Court Tables */
   .cms-court-theme :where(table):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
     border-collapse: collapse;
     border: 1px solid #536584;
+    width: 100%;
   }
   .cms-court-theme :where(thead, thead tr, thead th):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
     background: #203c88;
@@ -126,8 +186,6 @@
     letter-spacing: normal;
     font-weight: 700;
   }
-  /* Header controls have their own text utilities; keep their labels and
-     icons white too, including hover and the active sort indicator. */
   .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
     color: #ffffff;
   }
@@ -135,24 +193,29 @@
     background-color: rgb(255 255 255 / 18%);
   }
   .cms-court-theme :where(th, td):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
   .cms-court-theme :where(tbody tr):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
     border-bottom: 1px solid #cbd3e3;
   }
+  .cms-court-theme :where(tbody tr:hover):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    background-color: #f7f9fc;
+  }
 
+  /* Hallmark Input & Form Controls */
   .cms-court-theme :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea) {
     border: 1px solid #536584;
-    border-radius: 0;
+    border-radius: 0px !important;
     background-color: white;
     color: #26334a;
-    min-height: 42px;
+    min-height: 40px;
     font-size: 14px;
     box-shadow: none;
   }
   .cms-court-theme :where(input, select, textarea):focus-visible {
-    outline: 2px solid #1847e8;
-    outline-offset: 2px;
+    outline: 2px solid #203c88;
+    outline-offset: 1px;
+    border-color: #203c88;
   }
   .cms-court-theme :where(input, select, textarea):disabled {
     background-color: #f1f4f9;
@@ -160,47 +223,64 @@
     cursor: not-allowed;
   }
   .cms-court-theme :where(input, textarea)::placeholder { color: #8b9dbb; }
-  .cms-court-theme :where(input[type="radio"], input[type="checkbox"]) { accent-color: #1847e8; }
+  .cms-court-theme :where(input[type="radio"], input[type="checkbox"]) { accent-color: #203c88; }
+  
   .cms-court-theme :where(label.block):not(.a4-sheet *, [id^="printable-"] *) {
     background: #eef1ff;
     color: #26334a;
-    padding: 9px 12px;
-    font-weight: 500;
+    padding: 8px 12px;
+    font-weight: 600;
     text-transform: none;
     letter-spacing: normal;
-    font-size: 14px;
+    font-size: 13px;
+    border: 1px solid #b7c1d4;
+    border-bottom: 0;
   }
+
+  /* Hallmark Tab Systems */
   .cms-court-theme :where([role="tab"][aria-selected="true"], button[aria-pressed="true"]) {
     background: #203c88;
     color: #ffffff;
-    border-color: #26334a;
-    border-radius: 0;
+    border-color: #203c88;
+    border-radius: 0 !important;
   }
-  .cms-card-header :where(h2, h3) { color: white; }
-  .cms-court-theme :where([role="dialog"] > div) { border-radius: 0; }
+
+  /* Dialogs & Modal Structural Finish */
+  .cms-court-theme :where([role="dialog"] > div) {
+    border-radius: 0 !important;
+    border: 1px solid #203c88;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+  }
   .cms-court-theme :where([role="dialog"] header) {
     background: #203c88;
     color: white;
-    border-radius: 0;
-    min-height: 64px;
+    border-radius: 0 !important;
+    min-height: 56px;
   }
   .cms-court-theme :where([role="dialog"] header h2) { color: white; }
   .cms-court-theme :where([role="dialog"] footer) {
     background: #f7f9fc;
-    border-top: 1px solid #536584;
-    padding: 18px;
+    border-top: 1px solid #cbd3e3;
+    padding: 14px 18px;
+    border-radius: 0 !important;
   }
 
-  /* Bail form is the reference screen supplied for this theme. */
+  /* Bail Modal Specific Institutional Refinement */
   .cms-bail-dialog > div { max-width: 1680px; max-height: 96dvh; }
-  .cms-bail-dialog nav button { min-height: 48px; border-radius: 0; }
-  .cms-bail-dialog footer button { min-height: 48px; border-radius: 0; }
+  .cms-bail-dialog nav button { min-height: 44px; border-radius: 0 !important; }
+  .cms-bail-dialog footer button { min-height: 44px; border-radius: 0 !important; }
   .cms-bail-dialog .cms-bail-field { border: 0; gap: 6px; }
   .cms-bail-dialog .cms-bail-field > :first-child {
     background: #eef1ff;
-    padding: 14px 12px;
-    font-size: 15px;
-    font-weight: 400;
+    padding: 12px 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* Hallmark Module Navigation Cards (Home Portal Grid) */
+  .cms-court-theme .group:hover .border-slate-200\/80,
+  .cms-court-theme .group:hover .border-slate-400\/80 {
+    border-color: #203c88 !important;
   }
 
   @media (max-width: 640px) {

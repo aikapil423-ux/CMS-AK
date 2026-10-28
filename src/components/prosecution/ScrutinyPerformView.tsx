@@ -127,45 +127,9 @@ export function ScrutinyPerformView() {
     return matchSearch && matchStatus;
   });
 
-  const passedCount = records.filter((r) => r.decision === "PASSED").length;
-  const objectionCount = records.filter((r) => r.decision === "OBJECTION_RETURNED").length;
-  const pendingCount = records.filter((r) => r.decision === "PENDING_FSL").length;
 
   return (
     <div className="space-y-4">
-      {/* Metric Counters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Passed For Court</span>
-            <span className="text-xl font-black text-emerald-700">{passedCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Returned with Objections</span>
-            <span className="text-xl font-black text-rose-700">{objectionCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Pending FSL / Sanction</span>
-            <span className="text-xl font-black text-blue-700">{pendingCount}</span>
-          </div>
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Clock className="w-4 h-4" />
-          </div>
-        </div>
-      </div>
-
       {/* Control Action Bar */}
       <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-[260px] max-w-md">

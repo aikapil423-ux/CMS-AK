@@ -487,9 +487,7 @@ export default function TADAPage() {
                   Haryana Civil Services Rules
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Bilingual Tour Programme, Journey Details Claim &amp; Main Bill Page (Rule 77)
-              </p>
+
             </div>
           </div>
         </div>
@@ -1134,9 +1132,7 @@ export default function TADAPage() {
                 <h2 className="text-base sm:text-lg font-black text-slate-900">
                   FORM 2 — TRAVELLING ALLOWANCE CLAIM: JOURNEY DETAILS (यात्रा विवरण दावा)
                 </h2>
-                <p className="text-xs text-slate-500">
-                  रेल/सड़क किराया, दैनिक भत्ता (DA), वास्तविक व्यय, कुल दावा व अग्रिम कटौती
-                </p>
+
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -1830,9 +1826,7 @@ export default function TADAPage() {
                 <h2 className="text-base sm:text-lg font-black text-slate-900">
                   FORM 3 — TRAVELLING ALLOWANCE BILL / CLAIM: MAIN PAGE (Rule 77)
                 </h2>
-                <p className="text-xs text-slate-500">
-                  लेखा कोड विवरण (Accounting Codes), प्रमाणन, बजट समायोजन, ट्रेजरी एवं AG कार्यालय उपयोग
-                </p>
+
               </div>
 
               <Button
@@ -2636,9 +2630,7 @@ export default function TADAPage() {
                   <ReceiptText className="w-5 h-5 text-amber-600" />
                   My TA DA Claims History (मेरी दावा प्रविष्टियाँ)
                 </h2>
-                <p className="text-xs text-slate-500">
-                  माहवार स्वतः जनरेटेड एवं मैन्युअल रूप से तैयार किए गए TA/DA दावों की सूची व पूर्वावलोकन
-                </p>
+
               </div>
 
               <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">

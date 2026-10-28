@@ -292,9 +292,7 @@ function SettingsPageContent() {
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">
                 Management &amp; System Settings
               </h1>
-              <p className="text-xs text-slate-500">
-                Configure dropdowns, station preferences, and organization masters for Haryana Police CMS
-              </p>
+
             </div>
           </div>
         </div>

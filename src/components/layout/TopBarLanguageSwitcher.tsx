@@ -39,7 +39,7 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
       >
         <Languages className="w-4 h-4" />
         <span
-          className={`absolute -bottom-1 -right-1 text-[8px] font-black px-1 leading-none rounded shadow-2xs border ${
+          className={`cms-language-badge absolute -bottom-1 -right-1 text-[8px] font-black px-1 leading-none rounded shadow-2xs border ${
             isHindi
               ? "bg-amber-600 text-white border-amber-700"
               : "bg-blue-600 text-white border-blue-700"
@@ -69,7 +69,7 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
         } ${isHindi ? "text-amber-800" : "text-blue-800"}`}
       />
       <span
-        className={`absolute -top-1 -right-1 text-[9px] font-black px-1 py-0.2 rounded-full border shadow-2xs tracking-tighter ${
+        className={`cms-language-badge absolute -top-1 -right-1 text-[9px] font-black px-1 py-0.2 rounded-full border shadow-2xs tracking-tighter ${
           isHindi
             ? "bg-amber-600 text-white border-amber-700"
             : "bg-blue-600 text-white border-blue-700"

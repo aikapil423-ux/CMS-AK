@@ -1240,7 +1240,7 @@ function NewGDEntryContent() {
   const todayISO = useMemo(() => formatGDDateKey(new Date()), []);
 
   return (
-    <div className="p-3 sm:p-6 space-y-5">
+    <div className="space-y-3">
       {/* Top Navigation */}
       <div className="flex items-center justify-between">
         <Link
@@ -1255,13 +1255,13 @@ function NewGDEntryContent() {
       {/* Main Friendly Form Card */}
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
         {/* Banner */}
-        <div className="bg-[#0b192c] text-white p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold">
-              <BookOpen className="w-5 h-5 text-blue-300" />
+        <div className="bg-[#203c88] text-white px-4 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 text-white flex items-center justify-center font-bold">
+              <BookOpen className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-white">Add New GD Entry</h2>
+              <h2 className="text-base font-bold text-white">Add New GD Entry</h2>
             </div>
           </div>
         </div>

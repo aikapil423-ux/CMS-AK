@@ -897,9 +897,7 @@ function FIRRegisterPageContent() {
               <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
                 FIR Register (First Information Report)
               </h1>
-              <p className="text-xs text-slate-500 font-medium">
-                Statutory First Information Register under Section 173 Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023
-              </p>
+
             </div>
           </div>
         </div>

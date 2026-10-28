@@ -2,6 +2,7 @@ import { z } from 'zod';
 const text = z.string().max(100000);
 const choice = z.enum(['Yes', 'No']);
 export const finalReportSchema = z.object({
+  uploadedFiles: z.array(z.object({ id: text.min(1), name: z.string().min(1).max(500), type: z.string().max(200), size: z.number().int().positive().max(5 * 1024 * 1024), dataUrl: z.string().max(7 * 1024 * 1024).regex(/^data:(application\/(pdf|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|msword)|image\/(jpeg|png));base64,[A-Za-z0-9+/=]+$/) })).max(5).refine(files => files.reduce((sum, file) => sum + file.size, 0) <= 10 * 1024 * 1024, 'Maximum total upload size is 10 MB.').optional(),
   schemaVersion: z.literal(1), reportNo: text.min(1), reportDate: text.min(1),
   formType: z.enum(['CHARGESHEET', 'CLOSURE', 'UNTRACED', 'CANCELLED']), chargeSheetType: z.enum(['', 'Complete', 'Partial']),
   finalReportReason: text, finalReportReasonDetails: text,

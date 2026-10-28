@@ -134,9 +134,7 @@ export function StatusReportView() {
             <Scale className="w-5 h-5 text-indigo-600" />
             Court Status Reports (अदालती स्थिति रिपोर्ट)
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Official police progress reports submitted before Hon&apos;ble High Court, Sessions Court, and Magistrate.
-          </p>
+
         </div>
 
         <button

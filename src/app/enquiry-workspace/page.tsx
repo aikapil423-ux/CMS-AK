@@ -31,11 +31,7 @@ export default function EnquiryWorkspacePage() {
           <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
             {isHindi ? "जांच अधिकारी (EO) कार्यक्षेत्र" : "Enquiry Officer (EO) Workspace"}
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            {isHindi
-              ? "प्रारंभिक जांच रिपोर्ट, असंज्ञेय रपट (NCR), वैधानिक सूचना-पत्र व प्रारूप संपादक का प्रबंधन।"
-              : "Haryana Police structured enquiry proformas, statutory notices, non-cognizable reports and document templates."}
-          </p>
+
         </div>
 
         {/* Language Switcher Toggle */}

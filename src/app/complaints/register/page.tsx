@@ -2979,9 +2979,7 @@ export default function RegisterComplaintPage() {
             </div>
             <div>
               <h1 className="text-xl font-black text-[#0b192c]">Register Citizen Complaint</h1>
-              <p className="text-xs text-slate-500">
-                Single Unified Police Station Intake Form (PPR Rule 22.48 / Section 173 BNSS)
-              </p>
+
             </div>
           {/* Station auto-computed complaint number preview badge */}
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -4158,9 +4156,7 @@ export default function RegisterComplaintPage() {
                     <FileText className="w-4 h-4 text-blue-600" />
                     <span>3. Incident &amp; Complaint Details</span>
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Occurrence spot, date/time, classification of crime, brief subject, summary and comprehensive allegations
-                  </p>
+
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-white px-2.5 py-1 rounded-full border border-indigo-200 self-start sm:self-auto shadow-2xs">
                   BNSS Sec 173(3) Particulars
@@ -4835,9 +4831,7 @@ export default function RegisterComplaintPage() {
                 <h3 className="text-sm font-bold text-slate-900 mb-1">
                   Drag and drop evidence files here, or <span className="text-blue-600 underline">browse files</span>
                 </h3>
-                <p className="text-xs text-slate-500 max-w-md mb-3">
-                  Upload relevant proof including scanned petitions, CCTV clips, bank screenshots, audio recordings, or call transcripts
-                </p>
+
 
                 {/* Formats and Size Limit Badges */}
                 <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-xl text-[10px]">

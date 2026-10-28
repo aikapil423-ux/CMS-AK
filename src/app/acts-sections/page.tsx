@@ -561,9 +561,7 @@ function ActsAndSectionsContent() {
               {actsList.length} Acts
             </span>
           </div>
-          <p className="text-xs text-slate-500">
-            Indian Penal &amp; Procedural Codes (BNS, BNSS, BSA, Arms Act, Benami Act) with verbatim statutory provisions
-          </p>
+
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -1414,9 +1412,7 @@ function ActsAndSectionsContent() {
                             100% UNMODIFIED WORD-FOR-WORD
                           </span>
                         </div>
-                        <p className="text-[11px] text-amber-900/90 leading-tight mt-0.5">
-                          Exact statutory phrasing enacted by Parliament of India. Certified verbatim reference for Case Diaries (Zimni), FIR Registration, and Court Proceedings.
-                        </p>
+
                       </div>
                     </div>
 

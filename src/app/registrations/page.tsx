@@ -681,9 +681,7 @@ function RegistrationsContent() {
               Total {entries.length} in Portal
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Police Station Statutory Registers (UIDB/UD, Missing Person, Missing Cattle, Lost Property)
-          </p>
+
         </div>
       </div>
 

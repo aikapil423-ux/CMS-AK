@@ -267,9 +267,7 @@ function FIRPartBContent() {
               </div>
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-slate-900">FIR Part B</h1>
-                <p className="text-xs text-slate-500 font-medium">
-                  {t("Authoritative Tracking: Partial • Under checking • Re-open")}
-                </p>
+
               </div>
             </div>
           </div>

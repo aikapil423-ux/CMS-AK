@@ -65,14 +65,7 @@ export function ModuleSwitcherTabs({ className, variant = "header" }: ModuleSwit
             />
           </div>
 
-          <p
-            className={cn(
-              "text-xs mt-3 leading-relaxed",
-              activeModule === "ROZNAMCHA" ? "text-slate-300" : "text-slate-600"
-            )}
-          >
-            24-Hour continuous legal record of police station occurrences, shift turnovers, officer departures/arrivals, and patrol movements.
-          </p>
+
 
           <div className="mt-4 pt-3 border-t border-slate-200/20 flex items-center justify-between text-xs">
             <span
@@ -145,14 +138,7 @@ export function ModuleSwitcherTabs({ className, variant = "header" }: ModuleSwit
             />
           </div>
 
-          <p
-            className={cn(
-              "text-xs mt-3 leading-relaxed",
-              activeModule === "COMPLAINTS" ? "text-slate-300" : "text-slate-600"
-            )}
-          >
-            Walk-in & CM Window complaints intake, EO assignment, enquiry workspace, witness statements, approval pipeline, and disposal.
-          </p>
+
 
           <div className="mt-4 pt-3 border-t border-slate-200/20 flex items-center justify-between text-xs">
             <span
@@ -225,14 +211,7 @@ export function ModuleSwitcherTabs({ className, variant = "header" }: ModuleSwit
             />
           </div>
 
-          <p
-            className={cn(
-              "text-xs mt-3 leading-relaxed",
-              activeModule === "FIR" ? "text-slate-300" : "text-slate-600"
-            )}
-          >
-            Statutory Cognizable Offence FIR registration, IO assignment, case diaries (Zimni), evidence handling, chargesheet &amp; final form disposal.
-          </p>
+
 
           <div className="mt-4 pt-3 border-t border-slate-200/20 flex items-center justify-between text-xs">
             <span

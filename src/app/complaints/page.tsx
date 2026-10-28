@@ -55,6 +55,7 @@ import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { ActionsDropdown } from "@/components/ui/actions-dropdown";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
 import { ShoApproveCategoryModal, SHOCategoryOption } from "@/components/complaints/ShoApproveCategoryModal";
@@ -1197,17 +1198,10 @@ function ComplaintListContent() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
-              BNSS Section 173(3) • Police Register
-            </span>
-          </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Complaints Management Register
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Station intake, preliminary verification, and enquiry monitoring
-          </p>
+
         </div>
 
         {/* Top Right Actions: Transfer Complaint & Link & Delink */}
@@ -1263,19 +1257,7 @@ function ComplaintListContent() {
             </span>
           </div>
         </div>
-      ) : (
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs text-slate-700">
-          <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-slate-500 shrink-0" />
-            <span>
-              <strong>Station Supervisory Registry ({currentUser.name}, {currentUser.roleDisplay}):</strong> Displaying all station complaints across all enquiry officers and assignment queues.
-            </span>
-          </div>
-          <span className="font-mono text-xs font-bold bg-white text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-md">
-            {complaints.length} Total Complaints
-          </span>
-        </div>
-      )}
+      ) : null}
 
       {/* Quick Assign Success Toast */}
       {assignToast && (
@@ -1915,18 +1897,7 @@ function ComplaintListContent() {
                       {visibleColumns.action && (
                         <td className="py-2.5 px-4 text-right align-middle">
                           <div className="flex flex-col items-end gap-1.5 min-w-[130px]">
-                            <Link href={`/complaints/${c.id}`} className="w-full">
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                className="w-full text-xs font-semibold gap-1 justify-center"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> View Profile
-                              </Button>
-                            </Link>
-
-                            {/* Direct FIR for SHO account: Show "Register FIR" button */}
-                            {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
+{isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
                               <Link href={`/fir/register?complaintId=${c.id}`} className="w-full">
                                 <Button
                                   size="sm"
@@ -1937,9 +1908,34 @@ function ComplaintListContent() {
                                 </Button>
                               </Link>
                             )}
-
-                            {/* If FIR registered, show link to FIR Register */}
-                            {(c.isFirRegistered || c.firNumber) && (
+{isSho && !isMhc && (
+                              c.isFirApprovedBySho ||
+                              c.workflowState === "FIR_REGISTRATION_PENDING" ||
+                              c.finalCategory === "FIR Recommend" ||
+                              c.status === "FIR Recommend"
+                            ) && !c.isFirRegistered && !c.directSendToFir && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleOpenFirRegisterModal(c)}
+                                className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                <span>Register FIR</span>
+                              </Button>
+                            )}
+<ActionsDropdown label="Complaint actions">
+<Link href={`/complaints/${c.id}`} className="w-full">
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                className="w-full text-xs font-semibold gap-1 justify-center"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View Profile
+                              </Button>
+                            </Link>
+{/* Direct FIR for SHO account: Show "Register FIR" button */}
+{/* If FIR registered, show link to FIR Register */}
+{(c.isFirRegistered || c.firNumber) && (
                               <Link href="/fir" className="w-full">
                                 <Button
                                   size="sm"
@@ -1951,9 +1947,8 @@ function ComplaintListContent() {
                                 </Button>
                               </Link>
                             )}
-
-                            {/* EO: If Report prepared with Complete or FIR Recommend and not yet sent - strictly only assigned EO */}
-                            {isUserAssignedEo(currentUser, c) && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
+{/* EO: If Report prepared with Complete or FIR Recommend and not yet sent - strictly only assigned EO */}
+{isUserAssignedEo(currentUser, c) && (c.eoOutcome === "Complete" || c.eoOutcome === "FIR Recommend" || c.isRecommendedForFir) && !c.isSentToSho && c.status !== "COMPLETE" && c.workflowState !== "CORRECTION_REQUIRED" && (
                               <Button
                                 size="sm"
                                 onClick={() => setEoSendToShoModalComplaint(c)}
@@ -1963,9 +1958,8 @@ function ComplaintListContent() {
                                 <span>Send to SHO</span>
                               </Button>
                             )}
-
-                            {/* EO: Display Rejection Reason & Correct Button if rejected by SHO */}
-                            {isEo && (c.workflowState === "CORRECTION_REQUIRED" || c.shoDecision === "REJECT" || c.status === "CORRECTION_REQUIRED") && (
+{/* EO: Display Rejection Reason & Correct Button if rejected by SHO */}
+{isEo && (c.workflowState === "CORRECTION_REQUIRED" || c.shoDecision === "REJECT" || c.status === "CORRECTION_REQUIRED") && (
                               <div className="w-full text-left bg-amber-50 border border-amber-300 rounded p-1.5 text-[11px] text-amber-900 space-y-1">
                                 <div className="font-bold flex items-center gap-1 text-amber-800">
                                   <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
@@ -1985,9 +1979,8 @@ function ComplaintListContent() {
                                 </Link>
                               </div>
                             )}
-
-                            {/* SHO: Action on Completed EO Report -> View Report first, then Approve / Reject */}
-                            {isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
+{/* SHO: Action on Completed EO Report -> View Report first, then Approve / Reject */}
+{isSho && !isMhc && !c.isFirRegistered && !c.directSendToFir && c.status !== "FIR_REGISTER" && (
                               c.isSentToSho ||
                               c.status === "COMPLETE" ||
                               c.workflowState === "COMPLETE" ||
@@ -2033,26 +2026,9 @@ function ComplaintListContent() {
                                 </div>
                               )
                             )}
-
-                            {/* SHO: Regular FIR Registration when recommended & approved */}
-                            {isSho && !isMhc && (
-                              c.isFirApprovedBySho ||
-                              c.workflowState === "FIR_REGISTRATION_PENDING" ||
-                              c.finalCategory === "FIR Recommend" ||
-                              c.status === "FIR Recommend"
-                            ) && !c.isFirRegistered && !c.directSendToFir && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleOpenFirRegisterModal(c)}
-                                className="w-full text-xs font-bold gap-1 justify-center bg-red-600 hover:bg-red-700 text-white cursor-pointer shadow-2xs animate-pulse"
-                              >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>Register FIR</span>
-                              </Button>
-                            )}
-
-                            {/* Receipt Button */}
-                            {c.assignedEoName && (
+{/* SHO: Regular FIR Registration when recommended & approved */}
+{/* Receipt Button */}
+{c.assignedEoName && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -2067,7 +2043,8 @@ function ComplaintListContent() {
                                 <span>Receipt</span>
                               </Button>
                             )}
-                          </div>
+</ActionsDropdown>
+</div>
                         </td>
                       )}
                     </tr>

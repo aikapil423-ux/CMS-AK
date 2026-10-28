@@ -174,9 +174,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold tracking-tight">General Diary (GD / SD / DD) Lookup</h2>
-              <p className="text-[11px] text-slate-300">
-                Search Roznamcha Daily Diary records to link reference details to this FIR
-              </p>
+
             </div>
           </div>
           <button

@@ -1033,9 +1033,7 @@ function TemplateDraftBuilderContent() {
                 </span>
               )}
             </h1>
-            <p className="text-[11px] text-slate-500">
-              Create, format, and save custom word-style documents with live CMS dynamic placeholders
-            </p>
+
           </div>
         </div>
 

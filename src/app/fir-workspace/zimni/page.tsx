@@ -1057,7 +1057,7 @@ function ZimniWorkspaceContent() {
                     Form 25.54(1)
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">Sec 175 BNSS • Punjab Police Rules</p>
+
               </div>
             </div>
 

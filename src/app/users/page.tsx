@@ -19,9 +19,7 @@ export default function UsersDirectoryPage() {
         <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
           Police Personnel & Role Directory
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500">
-          Staff postings, roles, permissions, and active roster for {currentUser?.stationName || "Haryana Police"}
-        </p>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

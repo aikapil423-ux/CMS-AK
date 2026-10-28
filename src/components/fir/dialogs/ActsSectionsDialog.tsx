@@ -170,9 +170,7 @@ export const ActsSectionsDialog: React.FC<ActsSectionsDialogProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold tracking-tight">Add Acts and Sections</h2>
-              <p className="text-[11px] text-slate-300">
-                Select applicable statutory bare acts, choose section/sub-section numbers, and add to FIR
-              </p>
+
             </div>
           </div>
           <button

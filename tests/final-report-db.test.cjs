@@ -28,13 +28,13 @@ function load(file) {
 const {finalReportDbService: service}=load('src/services/finalReportDbService.ts');
 const {initialFinalReport,finalReportHtml}=load('src/lib/finalReport.ts');
 const fir={id:'qa-fir',firNumber:'QA/1',firYear:2026,firDate:'2026-10-27',district:'QA',policeStation:'PS City Panipat',assignedIoId:'usr_eo_1',complainantName:'Test Informant',actsAndSections:'Test Act',accusedList:[{id:'qa-acc-1',name:'Test Accused'}],incidentDetails:'Test facts'};
-function input(id='qa-report') {const data={...initialFinalReport(fir),reportNo:id,chargeSheetType:'Complete',judicialCustody:'No',pendingAccused:'0',pendingDocuments:'NIL',investigationStatus:'Completed',courtType:'Test Court',judgeName:'Test Judge',caseType:'ADULT',prosecutorApproved:'No',noticeServed:'No'};data.accused[0].action='ChargeSheeted';return {id,expectedVersion:0,author:{id:'qa-officer',name:'Tester'},fir,data,previewHtml:finalReportHtml(fir,data)};}
+function input(id='qa-report') {const data={...initialFinalReport(fir),reportNo:id,formType:'CHARGESHEET',chargeSheetType:'Complete',judicialCustody:'No',pendingAccused:'0',pendingDocuments:'NIL',investigationStatus:'Completed',courtType:'Test Court',judgeName:'Test Judge',caseType:'ADULT',prosecutorApproved:'No',noticeServed:'No'};data.accused[0].action='ChargeSheeted';return {id,expectedVersion:0,author:{id:'qa-officer',name:'Tester'},fir,data,previewHtml:finalReportHtml(fir,data)};}
 test('backend persists classification, accused and exact preview; retry does not duplicate',async()=>{
-  const body=input();const saved=await service.save(body);const retry=await service.save(body);
+  const body=input();body.data.uploadedFiles=[{id:'test-upload',name:'support.pdf',type:'application/pdf',size:5,dataUrl:'data:application/pdf;base64,JVBERi0='}];const saved=await service.save(body);const retry=await service.save(body);
   assert.equal(saved.id,retry.id);assert.equal(await prisma.firFinalReport.count(),1);
   const stored=await prisma.firFinalReport.findUnique({where:{id:body.id},include:{accused:true,events:true}});
   assert.equal(stored.reportCategory,'CHALLAN');assert.equal(stored.chargeSheetType,'Complete');assert.equal(stored.accused[0].accusedId,'qa-acc-1');assert.equal(stored.accused[0].action,'ChargeSheeted');assert.equal(stored.events.length,1);
-  const loaded=(await service.list(fir.id))[0];assert.equal(loaded.contentHtml,body.previewHtml);assert.equal(loaded.finalReportData.reportNo,body.data.reportNo);
+  const loaded=(await service.list(fir.id))[0];assert.equal(loaded.contentHtml,body.previewHtml);assert.equal(loaded.finalReportData.reportNo,body.data.reportNo);assert.equal(JSON.stringify(loaded.finalReportData.uploadedFiles),JSON.stringify(body.data.uploadedFiles));
 });
 test('CHI requires SHO view and approval; completed goes to Completed Cases, edit resets workflow and preserves history',async()=>{
   await assert.rejects(service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1'));

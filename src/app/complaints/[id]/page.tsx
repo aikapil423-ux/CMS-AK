@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
+import { ActionsDropdown } from "@/components/ui/actions-dropdown";
 import {
   ArrowLeft,
   Shield,
@@ -3108,9 +3109,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                   <UploadCloud className="w-5 h-5 text-blue-600" />
                   <span>Official Documents &amp; Evidence Repository</span>
                 </h3>
-                <p className="text-xs text-slate-500">
-                  All citizen complaints, uploaded evidence, autofill documents, MLR copies, and official files sealed in case docket.
-                </p>
+
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {canGenerateDocument && (
@@ -3427,9 +3426,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 <h3 className="font-bold text-slate-900 text-sm sm:text-base">
                   Linked, Cross & Repeated Complaints Intelligence
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Cross-verify mutual disputes, repeated complainant history, and clubbed inquiries.
-                </p>
+
               </div>
               <Button
                 variant="primary"
@@ -3755,8 +3752,23 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                               {/* Actions */}
                               <td className="py-3 px-3.5 align-top text-right">
                                 <div className="flex flex-wrap items-center justify-end gap-1">
-                                  {/* View / SHO Decision */}
-                                  {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
+{isAssignedEo && !report.sentToSho && (
+                                    <Button
+                                      type="button"
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={() => handleOpenEoSendToShoModal(report)}
+                                      disabled={sendingReportToSho}
+                                      className="text-[11px] h-6 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                                      title="Send this Enquiry Report to SHO for Review & Approval"
+                                    >
+                                      <Send className="w-3 h-3" />
+                                      <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
+                                    </Button>
+                                  )}
+<ActionsDropdown>
+{/* View / SHO Decision */}
+{isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
                                     !isReportViewed && !complaint?.isReportViewedBySho ? (
                                       <Button
                                         type="button"
@@ -3820,9 +3832,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                       <span>View</span>
                                     </Button>
                                   )}
-
-                                  {/* Edit */}
-                                  {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
+{/* Edit */}
+{!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
                                     <Button
                                       type="button"
                                       variant="outline"
@@ -3838,25 +3849,9 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                       <span>Edit</span>
                                     </Button>
                                   )}
-
-                                  {/* Send to SHO button */}
-                                  {isAssignedEo && !report.sentToSho && (
-                                    <Button
-                                      type="button"
-                                      variant="primary"
-                                      size="sm"
-                                      onClick={() => handleOpenEoSendToShoModal(report)}
-                                      disabled={sendingReportToSho}
-                                      className="text-[11px] h-6 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                                      title="Send this Enquiry Report to SHO for Review & Approval"
-                                    >
-                                      <Send className="w-3 h-3" />
-                                      <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
-                                    </Button>
-                                  )}
-
-                                  {/* Delete Report */}
-                                  {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
+{/* Send to SHO button */}
+{/* Delete Report */}
+{complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
                                     <Button
                                       type="button"
                                       variant="outline"
@@ -3866,9 +3861,11 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                       title="Delete report"
                                     >
                                       <Trash2 className="w-3 h-3" />
+<span>Delete</span>
                                     </Button>
                                   )}
-                                </div>
+</ActionsDropdown>
+</div>
                               </td>
                             </tr>
                           );
@@ -3978,8 +3975,29 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
 
                           {/* Action buttons: View, Edit, Download, Print, Create New Version */}
                           <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
-                            {/* 1. View / Preview and SHO Decision Buttons */}
-                            {isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
+{isAssignedEo && !report.sentToSho && (
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleOpenEoSendToShoModal(report)}
+                                disabled={sendingReportToSho}
+                                className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
+                                title="Send this Enquiry Report to SHO for Review & Approval"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
+                              </Button>
+                            )}
+{report.sentToSho && (
+                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
+                                <Check className="w-3 h-3 text-blue-600" />
+                                <span>Sent to SHO</span>
+                              </span>
+                            )}
+<ActionsDropdown>
+{/* 1. View / Preview and SHO Decision Buttons */}
+{isSho && !isMhc && isReportReviewPending && (report.sentToSho || report.isSentToSho || report.reportType === "enquiry_report" || report.officerRank !== "SHO") ? (
                               !isReportViewed && !complaint?.isReportViewedBySho ? (
                                 <Button
                                   type="button"
@@ -4046,9 +4064,8 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 <span>View</span>
                               </Button>
                             )}
-
-                            {/* 2. Edit (Re-opens in Draft Editor) */}
-                            {!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
+{/* 2. Edit (Re-opens in Draft Editor) */}
+{!report.isUploaded && complaint && canEditDocument(currentUser, report, complaint).allowed && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -4064,31 +4081,9 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 <span>Edit</span>
                               </Button>
                             )}
-
-                            {/* Send to SHO button per report: strictly only if this specific report has not been sent to SHO */}
-                            {isAssignedEo && !report.sentToSho && (
-                              <Button
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleOpenEoSendToShoModal(report)}
-                                disabled={sendingReportToSho}
-                                className="text-[11px] h-7 px-2.5 gap-1 bg-red-600 hover:bg-red-700 text-white font-bold cursor-pointer shadow-xs"
-                                title="Send this Enquiry Report to SHO for Review & Approval"
-                              >
-                                <Send className="w-3 h-3" />
-                                <span>{sendingReportToSho && selectedReportForSho?.id === report.id ? "Sending..." : "Send to SHO"}</span>
-                              </Button>
-                            )}
-                            {report.sentToSho && (
-                              <span className="text-[10px] font-bold px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1 font-mono">
-                                <Check className="w-3 h-3 text-blue-600" />
-                                <span>Sent to SHO</span>
-                              </span>
-                            )}
-
-                            {/* Delete Report */}
-                            {complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
+{/* Send to SHO button per report: strictly only if this specific report has not been sent to SHO */}
+{/* Delete Report */}
+{complaint && canDeleteDocument(currentUser, report, complaint).allowed && (
                               <Button
                                 type="button"
                                 variant="outline"
@@ -4098,9 +4093,11 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                                 title="Delete report"
                               >
                                 <Trash2 className="w-3 h-3" />
+<span>Delete</span>
                               </Button>
                             )}
-                          </div>
+</ActionsDropdown>
+</div>
                         </CardContent>
                       </Card>
                     );

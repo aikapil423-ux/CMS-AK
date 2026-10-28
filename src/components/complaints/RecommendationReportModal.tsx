@@ -427,9 +427,7 @@ Dated: ${reportDateStr}
                     {complaint.complaintNumber}
                   </span>
                 </h2>
-                <p className="text-xs text-slate-300">
-                  Haryana Police Automated Legal Report Drafting System (BNSS / BNS Compliant)
-                </p>
+
               </div>
             </div>
 

@@ -595,9 +595,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
               <CardTitle className="text-sm font-bold text-slate-800 tracking-tight">
                 {editingId ? "Edit Victim Record" : "Victim Information Form (पीड़ित का विवरण)"}
               </CardTitle>
-              <p className="text-[11px] text-slate-500">
-                Direct entry form — fill details and add to the Victims list below without popup dialogs.
-              </p>
+
             </div>
           </div>
           <div className="flex items-center gap-2">

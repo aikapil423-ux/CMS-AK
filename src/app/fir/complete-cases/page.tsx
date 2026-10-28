@@ -209,26 +209,22 @@ function CompleteCasesContent() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-4 py-3 rounded-2xl border border-slate-700">
         <div>
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h1 className="cms-complete-cases-title text-xl sm:text-2xl font-black tracking-tight text-white">
               Complete cases (अंतिम रूप से निस्तारित वाद)
             </h1>
           </div>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-            अंतिम रूप से निस्तारित अथवा न्यायालय में पूर्ण चालान प्रस्तुत होने के पश्चात बंद की गई प्राथमिकी (COMPLETED)।
-            आवश्यकता पड़ने पर सक्षम प्राधिकारी द्वारा नियमानुसार केस को पुनः (Re-open) किया जा सकता है।
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <div className="bg-white/10 backdrop-blur-xs border border-white/15 px-4 py-2 rounded-xl text-center">
-            <span className="text-[10px] uppercase font-bold text-slate-300 block">कुल निस्तारित वाद</span>
-            <span className="text-2xl font-black text-emerald-400 font-mono">{completedFirs.length}</span>
+          <div className="bg-white/10 border border-white/15 px-3 py-1.5 rounded-xl flex items-center gap-2.5">
+            <span className="text-xs font-bold text-white">कुल निस्तारित वाद</span>
+            <span className="text-lg leading-none font-bold text-emerald-400 font-mono">{completedFirs.length}</span>
           </div>
         </div>
       </div>

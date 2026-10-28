@@ -342,9 +342,7 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
               <h2 className="text-sm font-bold tracking-tight">
                 {initialItem ? "Edit Occurrence Details" : "Add New Occurrence (घटना का विवरण)"}
               </h2>
-              <p className="text-[11px] text-slate-300">
-                Specify incident date/time window, police station receipt time, location coordinates, and beat
-              </p>
+
             </div>
           </div>
           <button

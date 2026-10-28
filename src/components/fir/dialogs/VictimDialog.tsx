@@ -374,9 +374,7 @@ export const VictimDialog: React.FC<VictimDialogProps> = ({
               <h2 className="text-sm font-bold tracking-tight">
                 {initialVictim ? "Edit Victim Information" : "Add Victim Information (पीड़ित का विवरण)"}
               </h2>
-              <p className="text-[11px] text-slate-300">
-                Capture personal traits, structured address, age verification, and official statements
-              </p>
+
             </div>
           </div>
           <button

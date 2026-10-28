@@ -451,39 +451,20 @@ export function ComplaintLegalAssistant({
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & LEGAL HELP ACTION HERO BANNER                             */}
       {/* ========================================================================= */}
-      <div className="rounded-xl bg-white p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <div className="rounded-xl bg-white px-4 py-3 border border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200">
-                <Scale className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Statutory AI Engine • BNS / BNSS / BSA</span>
-              </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono font-medium border border-slate-200/60">
-                {complaint.complaintNumber}
-              </span>
-            </div>
-            <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">
+            <h2 className="text-base font-bold tracking-tight text-slate-900">
               {isHindi ? "लीगल असिस्टेंट" : "Statutory Legal Help"}
             </h2>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-              {isHindi ? (
-                <>
-                  शिकायत के <strong>घटना विवरण</strong> व <strong>संलग्न साक्ष्यों</strong> का स्वतः विश्लेषण कर भारतीय न्याय संहिता व अन्य अधिनियमों की प्रासंगिक धाराएं व मूल बेयर एक्ट पृष्ठ संख्या प्रस्तुत करता है।
-                </>
-              ) : (
-                <>
-                  Statutory legal engine that analyzes complaint facts and attached evidence documents to determine relevant provisions of BNS, BNSS, and BSA with exact Bare Act page numbers.
-                </>
-              )}
-            </p>
+
           </div>
 
-          <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:justify-end">
             <button
               onClick={handleRunLegalHelp}
               disabled={isAnalyzing}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-white shadow-2xs transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold text-xs text-white shadow-2xs transition-all cursor-pointer ${
                 isAnalyzing
                   ? "bg-slate-700 cursor-wait"
                   : report
@@ -520,7 +501,7 @@ export function ComplaintLegalAssistant({
 
         {/* ANALYZING PROGRESS BANNER */}
         {isAnalyzing && (
-          <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+          <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
               <span className="flex items-center gap-2">
                 <RefreshCw className="w-3 h-3 animate-spin text-indigo-600" />

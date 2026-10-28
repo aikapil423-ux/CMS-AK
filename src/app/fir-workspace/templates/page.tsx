@@ -2266,10 +2266,10 @@ function FIRTemplatesContent() {
                         <th
                           rowSpan={2}
                           style={{
-                            width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
+                            width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : "7%",
                             minWidth: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : undefined,
                           }}
-                          className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle" style={{ width: cdrTableResize.colWidths[0] ? `${cdrTableResize.colWidths[0]}px` : "7%" }}
+                          className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
                         >
                           {templateLang === "hi" ? "क्र.स." : "Sr. No."}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(0, e)} />
@@ -2277,7 +2277,7 @@ function FIRTemplatesContent() {
                         <th
                           rowSpan={2}
                           style={{
-                            width: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : undefined,
                             width: cdrTableResize.colWidths[1] ? `${cdrTableResize.colWidths[1]}px` : "33%",
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
@@ -2296,7 +2296,7 @@ function FIRTemplatesContent() {
                         <th
                           rowSpan={2}
                           style={{
-                            width: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : undefined,
+                            minWidth: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : undefined,
                             width: cdrTableResize.colWidths[4] ? `${cdrTableResize.colWidths[4]}px` : "36%",
                           }}
                           className="relative p-2 font-black border-r-2 border-slate-900 text-center align-middle"
@@ -2313,20 +2313,20 @@ function FIRTemplatesContent() {
                       <tr className="bg-slate-50 border-b-2 border-slate-900">
                         <th
                           style={{
-                            width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
+                            width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : "12%",
                             minWidth: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : undefined,
                           }}
-                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center" style={{ width: cdrTableResize.colWidths[2] ? `${cdrTableResize.colWidths[2]}px` : "12%" }}
+                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center"
                         >
                           {templateLang === "hi" ? "कब से" : "From"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(2, e)} />
                         </th>
                         <th
                           style={{
-                            width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
+                            width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : "12%",
                             minWidth: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : undefined,
                           }}
-                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center" style={{ width: cdrTableResize.colWidths[3] ? `${cdrTableResize.colWidths[3]}px` : "12%" }}
+                          className="relative p-1.5 font-black border-r-2 border-slate-900 text-center"
                         >
                           {templateLang === "hi" ? "कब तक" : "To"}
                           <TableColResizer onResize={(e) => cdrTableResize.startColResize(3, e)} />

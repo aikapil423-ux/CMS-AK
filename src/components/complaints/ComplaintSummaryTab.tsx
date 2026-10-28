@@ -189,9 +189,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
               <span>Investigation Summary</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-3xl">
-              शिकायत के <strong>Overview</strong>, संलग्न <strong>Documents</strong> तथा केस डायरी <strong>History</strong> का संपूर्ण विश्लेषण — अब तक हुए कार्य और शेष आवश्यक कदमों का पारदर्शी विवरण।
-            </p>
+
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-center shrink-0 flex-wrap">
@@ -374,75 +372,6 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
       {/* Generated Summary View */}
       {summary && !isProcessing && (
         <div className="space-y-6">
-          {/* Update notice if new changes were detected */}
-          {summary.lastUpdateNotes && (
-            <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold">Summary Updated (v{summary.version}.0): </span>
-                <span>{summary.lastUpdateNotes}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Metrics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Current Stage</span>
-                  <Layers className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <div className="text-base font-black text-slate-900">{summary.currentStage}</div>
-                <div className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>{summary.completedActions.length} Actions Completed</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Evidence Strength</span>
-                  <Scale className="w-3.5 h-3.5 text-indigo-600" />
-                </div>
-                <div className="text-base font-black text-slate-900">{summary.evidenceStrength}</div>
-                <div className="text-[11px] text-slate-600">
-                  {summary.scannedDocumentsHighlights.length} Document(s) Scanned
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Pending Actions</span>
-                  <ListTodo className="w-3.5 h-3.5 text-amber-600" />
-                </div>
-                <div className="text-base font-black text-amber-700">{summary.pendingActions.length} Pending Tasks</div>
-                <div className="text-[11px] text-slate-500">
-                  {summary.pendingActions.filter(p => p.status === "CRITICAL").length} Critical Deadlines
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Suggested Outcome</span>
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                </div>
-                <div className="text-base font-black text-slate-900 truncate">
-                  {summary.suggestedOutcome.replace(/_/g, " ")}
-                </div>
-                <div className="text-[11px] text-slate-500 truncate" title={summary.suggestedOutcomeReason}>
-                  {summary.suggestedOutcomeReason}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Urgent Deadlines / BNSS Statutory Alerts */}
           {summary.urgentDeadlines.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">

@@ -333,9 +333,7 @@ export function TransferComplaintModal({
                   BNSS / Police Jurisdiction
                 </span>
               </div>
-              <p className="text-xs text-slate-300">
-                Transfer complaint to another police station, district, or state by jurisdiction
-              </p>
+
             </div>
           </div>
           <button
