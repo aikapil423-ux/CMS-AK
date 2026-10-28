@@ -10,10 +10,10 @@ import { getA4DocumentHtml } from '@/utils/printElement';
 const tabs = ['Final Report Information', 'Other Information', 'Property Information', 'List of Enclosure'];
 const inputClass = 'w-full border border-slate-300 rounded-md p-2 text-sm bg-white text-slate-900';
 const buttonClass = 'rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50';
-type Props = { fir: FIRItem; currentUser: { id: string; name: string }; existing?: ComplaintReportItem; onClose: () => void; onSaved: (report: ComplaintReportItem) => void };
+type Props = { fir: FIRItem; currentUser: { id: string; name: string }; existing?: ComplaintReportItem; onClose: () => void; onSaved: (report: ComplaintReportItem) => void | Promise<void>; initialFormType?: string };
 
-export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onSaved }: Props) {
-  const [data, setData] = useState<FinalReportData>(() => structuredClone(existing?.finalReportData || initialFinalReport(fir)));
+export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onSaved, initialFormType }: Props) {
+  const [data, setData] = useState<FinalReportData>(() => structuredClone(existing?.finalReportData || {...initialFinalReport(fir),...(initialFormType ? {formType:initialFormType} : {})}));
   const [tab, setTab] = useState(0);
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -50,7 +50,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
       if (!previewRef.current) throw new Error('Open the preview before saving.');
       const html = getA4DocumentHtml(previewRef.current, `Final Report ${data.reportNo}`);
       const report = await finalReportClient.save(reportId.current, fir, data, html, currentUser, existing?.versionNumber || 0);
-      onSaved(report); onClose();
+      await onSaved(report); onClose();
     } catch (error) { setErrors([error instanceof Error ? error.message : 'Save failed. Please retry.']); }
     finally { savingRef.current = false; setSaving(false); }
   };

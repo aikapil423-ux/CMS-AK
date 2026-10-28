@@ -4,7 +4,8 @@ import { useUnsavedDocument } from "@/hooks/useUnsavedDocument";
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { registerOperatorAdapter, type OperatorReceipt } from "@/services/agent/operatorAdapters";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   FileText,
   FileCheck2,

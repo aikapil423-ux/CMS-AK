@@ -177,6 +177,7 @@ export interface GDSearchFilter {
   status?: GDStatus | "ALL" | "SUGGESTED,DRAFT";
   isLocked?: boolean;
   keyword?: string;
+  policeStation?: string;
   page?: number;
   pageSize?: number;
 }

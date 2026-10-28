@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./court-theme.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ModuleProvider } from "@/context/ModuleContext";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -16,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#081225",
+  themeColor: "#203c88",
 };
 
 export default function RootLayout({
@@ -30,7 +31,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased font-sans selection:bg-[#1e3e62] selection:text-white">
+      <body className="cms-court-theme min-h-screen bg-white text-slate-800 antialiased font-sans selection:bg-[#203c88] selection:text-white">
         <AuthProvider>
           <ModuleProvider>
             <LanguageProvider>

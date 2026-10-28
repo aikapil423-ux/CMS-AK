@@ -1,3 +1,4 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -6,7 +7,9 @@ import { UniversalEvidenceRecord } from "@/types/evidence";
 
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
-export async function GET() {
+export async function GET(req: Request) {
+ const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
+  if(apiUser.role !== "SUPER_ADMIN") return Response.json({error:"Storage administration requires Super Admin."},{status:403});
   try {
     const stats = losslessCompressionService.getStorageOptimizationStats();
 
@@ -51,6 +54,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
+  if(apiUser.role !== "SUPER_ADMIN") return Response.json({error:"Storage administration requires Super Admin."},{status:403});
   try {
     const body = await req.json().catch(() => ({}));
     const { recordId, batch, force } = body;

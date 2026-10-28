@@ -190,6 +190,90 @@ export const MOCK_MP_GD_SEARCH_RESULTS: GDSearchResultItem[] = [
   },
 ];
 
+export function createMissingPersonDraft(recordData:Partial<MissingPersonRecord>={}):MissingPersonRecord {
+ const nowIso=new Date().toISOString(),currentYear=recordData.registrationYear || String(new Date().getFullYear()),regNumber=recordData.registrationNumber || "";
+ return {
+        id: recordData.id || `mp_rec_${Date.now()}`,
+        registrationNumber: regNumber,
+        registrationYear: currentYear,
+        createdAt: recordData.createdAt || nowIso,
+        updatedAt: nowIso,
+        status: recordData.status || "OPEN",
+        registrationDateTime: recordData.registrationDateTime || "",
+        gdNumber: recordData.gdNumber || "",
+        gdDateTime: recordData.gdDateTime || "",
+        briefOfIncident: recordData.briefOfIncident || "",
+        dateTimeSinceMissing: recordData.dateTimeSinceMissing || "",
+        dateSinceMissing: recordData.dateSinceMissing || "",
+        timeSinceMissing: recordData.timeSinceMissing || "",
+        firNumber: recordData.firNumber || "",
+        firYear: recordData.firYear || "",
+        placeOfMissing: recordData.placeOfMissing || "",
+        actsSections: recordData.actsSections || [],
+        complainantUid: recordData.complainantUid || "",
+        complainantFirstName: recordData.complainantFirstName || "",
+        complainantMiddleName: recordData.complainantMiddleName || "",
+        complainantLastName: recordData.complainantLastName || "",
+        complainantRelationType: recordData.complainantRelationType || "",
+        complainantRelativeName: recordData.complainantRelativeName || "",
+        complainantMobile: recordData.complainantMobile || "",
+        complainantLandline: recordData.complainantLandline || "",
+        complainantEmail: recordData.complainantEmail || "",
+        complainantGender: recordData.complainantGender || "",
+        complainantPresentAddress: recordData.complainantPresentAddress || {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""},
+        complainantSameAsPresent: recordData.complainantSameAsPresent ?? true,
+        complainantPermanentAddress: recordData.complainantPermanentAddress || {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""},
+        complainantNationality: recordData.complainantNationality || "",
+        complainantIdList: recordData.complainantIdList || [
+          { id: "id_1", idType: "Ration Card", idNumber: "RC-HR-PKL-99201" },
+        ],
+        uid: recordData.uid || "",
+        firstName: recordData.firstName || "",
+        middleName: recordData.middleName || "",
+        lastName: recordData.lastName || "",
+        alias: recordData.alias || "",
+        relationType: recordData.relationType || "",
+        relativeName: recordData.relativeName || "",
+        photoUrl: recordData.photoUrl || SAMPLE_MISSING_PERSON_PHOTO,
+        gender: recordData.gender || "",
+        majorMinor: recordData.majorMinor || "",
+        mobileNo: recordData.mobileNo || "",
+        landlineNo: recordData.landlineNo || "",
+        emailId: recordData.emailId || "",
+        dob: recordData.dob || "",
+        yearOfBirth: recordData.yearOfBirth || "",
+        ageYears: recordData.ageYears || "",
+        ageMonths: recordData.ageMonths || "",
+        ageRangeFrom: recordData.ageRangeFrom || "",
+        ageRangeTo: recordData.ageRangeTo || "",
+        sameAsComplainantAddress: recordData.sameAsComplainantAddress ?? true,
+        presentAddress: recordData.presentAddress || {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""},
+        sameAsPresentAddress: recordData.sameAsPresentAddress ?? true,
+        permanentAddress: recordData.permanentAddress || {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""},
+        nationality: recordData.nationality || "",
+        occupation: recordData.occupation || "",
+        idList: recordData.idList || [],
+        heightFeet: recordData.heightFeet || "",
+        heightInches: recordData.heightInches || "",
+        complexion: recordData.complexion || "",
+        build: recordData.build || "",
+        faceType: recordData.faceType || "",
+        hairColor: recordData.hairColor || "",
+        eyeColor: recordData.eyeColor || "",
+        languagesKnown: recordData.languagesKnown || "",
+        identifyingMarks: recordData.identifyingMarks || "",
+        clothingDetails: recordData.clothingDetails || "",
+        habitsEccentricities: recordData.habitsEccentricities || "",
+        nameOfEo: recordData.nameOfEo || "",
+        eoRank: recordData.eoRank || "",
+        eoNumber: recordData.eoNumber || "",
+        policeStation: recordData.policeStation || "",
+        district: recordData.district || "",
+        expectedDateToComplete: recordData.expectedDateToComplete || "",
+        remarks: recordData.remarks || "",
+      } as MissingPersonRecord;
+}
+
 class MissingPersonService {
   private inMemoryRecords: MissingPersonRecord[] = [];
 
@@ -203,7 +287,7 @@ class MissingPersonService {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             this.inMemoryRecords = parsed;
             return;
           }
@@ -221,7 +305,7 @@ class MissingPersonService {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.inMemoryRecords));
       } catch (e) {
-        console.warn("Failed to save Missing Person records to localStorage", e);
+        throw new Error("Missing person record could not be saved. Check browser storage and retry.");
       }
     }
   }
@@ -250,26 +334,27 @@ class MissingPersonService {
         r.registrationNumber?.toLowerCase().trim() === target
     );
     if (idx >= 0) {
+      const before=structuredClone(this.inMemoryRecords);
       this.inMemoryRecords[idx] = {
         ...this.inMemoryRecords[idx],
         status,
         updatedAt: new Date().toISOString(),
       };
-      this.persist();
+      try {this.persist();} catch(error) {this.inMemoryRecords=before;throw error;}
       return true;
     }
     return false;
   }
 
   public generateNextRegistrationNumber(yearInput?: string): string {
-    const year = yearInput || "2019";
+    const year = yearInput || String(new Date().getFullYear());
     const matchingYearRecords = this.inMemoryRecords.filter(
       (r) =>
         r.registrationYear === year ||
         r.registrationNumber.endsWith(`/${year}`)
     );
 
-    let maxSeq = 1;
+    let maxSeq = 0;
     for (const rec of matchingYearRecords) {
       const parts = rec.registrationNumber.split("/");
       if (parts.length > 0) {
@@ -286,8 +371,9 @@ class MissingPersonService {
   }
 
   public saveRecord(recordData: Partial<MissingPersonRecord>): MissingPersonRecord {
+    const before = structuredClone(this.inMemoryRecords);
     const nowIso = new Date().toISOString();
-    const currentYear = recordData.registrationYear || "2019";
+    const currentYear = recordData.registrationYear || String(new Date().getFullYear());
 
     let regNumber = recordData.registrationNumber;
     if (!regNumber || regNumber.trim() === "") {
@@ -309,139 +395,12 @@ class MissingPersonService {
       } as MissingPersonRecord;
       this.inMemoryRecords[existingIndex] = savedRecord;
     } else {
-      savedRecord = {
-        id: recordData.id || `mp_rec_${Date.now()}`,
-        registrationNumber: regNumber,
-        registrationYear: currentYear,
-        createdAt: recordData.createdAt || nowIso,
-        updatedAt: nowIso,
-        status: recordData.status || "OPEN",
-        registrationDateTime: recordData.registrationDateTime || "19/04/2019 15:19",
-        gdNumber: recordData.gdNumber || "002",
-        gdDateTime: recordData.gdDateTime || "19/04/2019, 10:45",
-        briefOfIncident: recordData.briefOfIncident || "Missing Person",
-        dateTimeSinceMissing: recordData.dateTimeSinceMissing || "19/04/2019 11:00",
-        dateSinceMissing: recordData.dateSinceMissing || "2019-04-19",
-        timeSinceMissing: recordData.timeSinceMissing || "11:00",
-        firNumber: recordData.firNumber || "0042",
-        firYear: recordData.firYear || "2019",
-        placeOfMissing: recordData.placeOfMissing || "Panchkula bus stand",
-        actsSections: recordData.actsSections || [
-          { id: "act_1", act: "Police Act 1861", section: "Section 34" },
-        ],
-        complainantUid: recordData.complainantUid || "4829-1092-3849",
-        complainantFirstName: recordData.complainantFirstName || "RAVI",
-        complainantMiddleName: recordData.complainantMiddleName || "",
-        complainantLastName: recordData.complainantLastName || "Kumar",
-        complainantRelationType: recordData.complainantRelationType || "Father",
-        complainantRelativeName: recordData.complainantRelativeName || "Shyam",
-        complainantMobile: recordData.complainantMobile || "+91 9812033441",
-        complainantLandline: recordData.complainantLandline || "",
-        complainantEmail: recordData.complainantEmail || "",
-        complainantGender: recordData.complainantGender || "Male",
-        complainantPresentAddress: recordData.complainantPresentAddress || {
-          houseNo: "Plot 12",
-          streetName: "Bus Stand Road",
-          colony: "Sector 5",
-          villageTownCity: "pkl",
-          tehsil: "Panchkula",
-          country: "INDIA",
-          state: "HARYANA",
-          district: "PANCHKULA",
-          policeStation: "PANCHKULA SECTOR-5",
-          pincode: "134109",
-        },
-        complainantSameAsPresent: recordData.complainantSameAsPresent ?? true,
-        complainantPermanentAddress: recordData.complainantPermanentAddress || {
-          houseNo: "Plot 12",
-          streetName: "Bus Stand Road",
-          colony: "Sector 5",
-          villageTownCity: "pkl",
-          tehsil: "Panchkula",
-          country: "INDIA",
-          state: "HARYANA",
-          district: "PANCHKULA",
-          policeStation: "PANCHKULA SECTOR-5",
-          pincode: "134109",
-        },
-        complainantNationality: recordData.complainantNationality || "INDIA",
-        complainantIdList: recordData.complainantIdList || [
-          { id: "id_1", idType: "Ration Card", idNumber: "RC-HR-PKL-99201" },
-        ],
-        uid: recordData.uid || "7719-2810-4412",
-        firstName: recordData.firstName || "Monu",
-        middleName: recordData.middleName || "",
-        lastName: recordData.lastName || "Kumar",
-        alias: recordData.alias || "Chhotu",
-        relationType: recordData.relationType || "Father",
-        relativeName: recordData.relativeName || "Shyam",
-        photoUrl: recordData.photoUrl || SAMPLE_MISSING_PERSON_PHOTO,
-        gender: recordData.gender || "Male",
-        majorMinor: recordData.majorMinor || "Major",
-        mobileNo: recordData.mobileNo || "+91 9416088219",
-        landlineNo: recordData.landlineNo || "",
-        emailId: recordData.emailId || "",
-        dob: recordData.dob || "1990-12-02",
-        yearOfBirth: recordData.yearOfBirth || "1990",
-        ageYears: recordData.ageYears || "28",
-        ageMonths: recordData.ageMonths || "4",
-        ageRangeFrom: recordData.ageRangeFrom || "",
-        ageRangeTo: recordData.ageRangeTo || "",
-        sameAsComplainantAddress: recordData.sameAsComplainantAddress ?? true,
-        presentAddress: recordData.presentAddress || {
-          houseNo: "Plot 12",
-          streetName: "Bus Stand Road",
-          colony: "Sector 5",
-          villageTownCity: "pkl",
-          tehsil: "Panchkula",
-          country: "INDIA",
-          state: "HARYANA",
-          district: "PANCHKULA",
-          policeStation: "PANCHKULA SECTOR-5",
-          pincode: "134109",
-        },
-        sameAsPresentAddress: recordData.sameAsPresentAddress ?? true,
-        permanentAddress: recordData.permanentAddress || {
-          houseNo: "Plot 12",
-          streetName: "Bus Stand Road",
-          colony: "Sector 5",
-          villageTownCity: "pkl",
-          tehsil: "Panchkula",
-          country: "INDIA",
-          state: "HARYANA",
-          district: "PANCHKULA",
-          policeStation: "PANCHKULA SECTOR-5",
-          pincode: "134109",
-        },
-        nationality: recordData.nationality || "INDIA",
-        occupation: recordData.occupation || "Student / Shop Helper",
-        idList: recordData.idList || [
-          { id: "id_mp_1", idType: "Aadhar Card", idNumber: "7719 2810 4412" },
-        ],
-        heightFeet: recordData.heightFeet || "5",
-        heightInches: recordData.heightInches || "7",
-        complexion: recordData.complexion || "Wheatish",
-        build: recordData.build || "Medium",
-        faceType: recordData.faceType || "Round",
-        hairColor: recordData.hairColor || "Black",
-        eyeColor: recordData.eyeColor || "Dark Brown",
-        languagesKnown: recordData.languagesKnown || "Hindi, Punjabi",
-        identifyingMarks: recordData.identifyingMarks || "Mole on right cheek, small burn scar on left forearm",
-        clothingDetails: recordData.clothingDetails || "Blue checked shirt, dark jeans, white sneakers",
-        habitsEccentricities: recordData.habitsEccentricities || "Polite demeanor, no mental disability reported",
-        nameOfEo: recordData.nameOfEo || "ASI Sandeep Singh - 49102",
-        eoRank: recordData.eoRank || "Assistant Sub Inspector",
-        eoNumber: recordData.eoNumber || "49102",
-        policeStation: recordData.policeStation || "PANCHKULA SECTOR-5",
-        district: recordData.district || "PANCHKULA",
-        expectedDateToComplete: recordData.expectedDateToComplete || "2019-04-26",
-        remarks: recordData.remarks || "WT message flashed to all police stations in Haryana and Chandigarh.",
-      } as MissingPersonRecord;
+      savedRecord = createMissingPersonDraft({...recordData,registrationNumber:regNumber,registrationYear:currentYear});
 
       this.inMemoryRecords.unshift(savedRecord);
     }
 
-    this.persist();
+    try {this.persist();} catch(error) {this.inMemoryRecords=before;throw error;}
     return savedRecord;
   }
 }

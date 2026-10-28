@@ -13,6 +13,7 @@ export interface DatePickerDDMMYYYYProps {
   placeholder?: string;
   min?: string;
   max?: string;
+  allowFutureDates?: boolean;
   disabled?: boolean;
   required?: boolean;
   className?: string;
@@ -48,6 +49,14 @@ function ddmmyyyyToIso(dmy: string): string {
   return "";
 }
 
+function getTodayIso(): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+  } catch {
+    return new Date().toISOString().split("T")[0];
+  }
+}
+
 export function DatePickerDDMMYYYY({
   value = "",
   onChange,
@@ -57,6 +66,7 @@ export function DatePickerDDMMYYYY({
   placeholder = "DD/MM/YYYY",
   min,
   max,
+  allowFutureDates = false,
   disabled = false,
   required = false,
   className = "",
@@ -89,8 +99,14 @@ export function DatePickerDDMMYYYY({
     }
   };
 
+  const todayIso = React.useMemo(() => getTodayIso(), []);
   const isoMin = min ? (min.includes("/") ? ddmmyyyyToIso(min) : min) : undefined;
-  const isoMax = max ? (max.includes("/") ? ddmmyyyyToIso(max) : max) : undefined;
+  const userIsoMax = max ? (max.includes("/") ? ddmmyyyyToIso(max) : max) : undefined;
+  const isoMax = allowFutureDates
+    ? userIsoMax
+    : userIsoMax && userIsoMax < todayIso
+    ? userIsoMax
+    : todayIso;
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/[^0-9/]/g, "");

@@ -487,7 +487,7 @@ function saveToStorage(data: Record<string, DropdownItem[]>): void {
     // Trigger custom event so all open views immediately update
     window.dispatchEvent(new CustomEvent("cms-dropdowns-updated", { detail: data }));
   } catch (e) {
-    console.error("Failed to save dropdowns to localStorage:", e);
+    throw new Error("Dropdown changes could not be saved. Check browser storage and retry.");
   }
 }
 

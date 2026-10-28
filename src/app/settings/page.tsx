@@ -178,6 +178,7 @@ function SettingsPageContent() {
 
   // Save New Item
   const handleSaveNew = (e: React.FormEvent) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change system settings.");return;}
     e.preventDefault();
     setFormError(null);
 
@@ -209,6 +210,7 @@ function SettingsPageContent() {
 
   // Save Edit Item
   const handleSaveEdit = (e: React.FormEvent) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change system settings.");return;}
     e.preventDefault();
     if (!activeItem) return;
     setFormError(null);
@@ -238,6 +240,7 @@ function SettingsPageContent() {
 
   // Confirm Delete
   const handleConfirmDelete = () => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change system settings.");return;}
     if (!activeItem) return;
     try {
       DropdownManagerService.deleteItem(selectedCategoryKey, activeItem.id);
@@ -253,6 +256,7 @@ function SettingsPageContent() {
 
   // Toggle Active/Inactive
   const handleToggleStatus = (item: DropdownItem) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change system settings.");return;}
     DropdownManagerService.toggleItemStatus(selectedCategoryKey, item.id);
     loadCategoryItems();
     showToast(`Option "${item.label}" is now ${!item.isActive ? "Active" : "Inactive"}.`);
@@ -260,6 +264,7 @@ function SettingsPageContent() {
 
   // Reset Category
   const handleConfirmReset = () => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change system settings.");return;}
     DropdownManagerService.resetCategoryToDefault(selectedCategoryKey);
     setResetConfirmOpen(false);
     loadCategoryItems();
@@ -864,6 +869,7 @@ function SettingsPageContent() {
                 size="sm"
                 onClick={() => {
                   if (confirm("Are you sure you want to restore ALL dropdown categories to factory system defaults?")) {
+                    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may reset system settings.");return;}
                     DropdownManagerService.resetAllToDefault();
                     loadCategoryItems();
                     showToast("All dropdown masters restored to default.");

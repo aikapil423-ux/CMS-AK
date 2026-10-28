@@ -1,12 +1,15 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderDbService } from "@/services/builderDbService";
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || undefined;
     const caseId = searchParams.get("caseId") || undefined;
-    const createdBy = searchParams.get("createdBy") || undefined;
+    const createdBy = apiUser.id;
     const templateId = searchParams.get("templateId") || undefined;
     const status = searchParams.get("status") || undefined;
     const sortBy = (searchParams.get("sortBy") as any) || "updatedAt";
@@ -33,6 +36,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
 
@@ -59,9 +64,9 @@ export async function POST(req: NextRequest) {
       caseId: body.caseId,
       complaintNumber: body.complaintNumber,
       templateId: body.templateId,
-      createdBy: body.createdBy || "officer_1",
-      createdByName: body.createdByName,
-      createdByRank: body.createdByRank,
+      createdBy: apiUser.id,
+      createdByName: apiUser.name,
+      createdByRank: apiUser.rankDisplay || apiUser.rank,
       status: body.status || "DRAFT",
     });
 

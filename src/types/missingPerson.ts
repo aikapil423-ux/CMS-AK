@@ -64,7 +64,7 @@ export interface MissingPersonRecord {
   relativeName: string; // e.g. "Shyam"
   photoUrl?: string;
   gender: "Select" | "Unknown" | "Male" | "Female" | "Transgender";
-  majorMinor: "Major" | "Minor";
+  majorMinor: "" | "Major" | "Minor";
   mobileNo: string;
   landlineNo: string;
   emailId: string;

@@ -3,7 +3,8 @@ import { FinalReportCheckingBoard } from "@/components/fir/FinalReportCheckingBo
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   FileCheck2,
   FileText,
@@ -33,7 +34,7 @@ import {
   RotateCcw,
   Plus,
 } from "lucide-react";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, ChallanMode, ChallanType } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
@@ -207,7 +208,7 @@ function FIRPartBContent() {
     if (!submittingFir) return;
     setIsSubmittingCourt(true);
     try {
-      firService.recordCourtSubmission({
+      await firService.recordCourtSubmission({
         firId: submittingFir.id,
         submittedBy: `${currentUser.name} (${currentUser.role})`,
         courtReceiptNo: courtReceiptNo.trim() || undefined,
@@ -230,7 +231,7 @@ function FIRPartBContent() {
     if (!challanModalFir) return;
     setIsIssuingChallan(true);
     try {
-      firService.issueChallan({
+      await firService.issueChallan({
         firId: challanModalFir.id,
         challanMode,
         courtName: challanCourtName.trim() || (challanModalFir.courtName || "Court of CJM, Panipat"),

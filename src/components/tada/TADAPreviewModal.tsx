@@ -335,8 +335,8 @@ export function TADAPreviewModal({
                         <td className="border border-black p-1 text-right font-mono">{row.roadMileageKm || "—"}</td>
                         <td className="border border-black p-1 text-right font-mono">₹{row.roadMileageAmount || 0}</td>
                         <td className="border border-black p-1 text-center font-bold">{row.dailyAllowanceDays || 1}</td>
-                        <td className="border border-black p-1 text-right font-mono">₹{row.dailyAllowanceRate || 500}</td>
-                        <td className="border border-black p-1 text-right font-mono font-bold">₹{row.dailyAllowanceAmount || 500}</td>
+                        <td className="border border-black p-1 text-right font-mono">₹{row.dailyAllowanceRate ?? 0}</td>
+                        <td className="border border-black p-1 text-right font-mono font-bold">₹{row.dailyAllowanceAmount ?? 0}</td>
                         <td className="border border-black p-1 text-right font-mono font-black bg-slate-50">
                           ₹{row.totalAmount?.toFixed(2) || "0.00"}
                         </td>

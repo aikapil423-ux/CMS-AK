@@ -1,3 +1,5 @@
+import {evidenceOwner} from "@/lib/evidenceOwnership";
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -19,6 +21,8 @@ function readStore(): UniversalEvidenceRecord[] {
 }
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -30,7 +34,7 @@ export async function GET(req: NextRequest) {
     }
 
     const store = readStore();
-    const record = store.find((r) => r.id === id || r.fileId === id || r.rawDocument?.sha256Hash === sha256);
+    const record = store.find((r) => (apiUser.role === "SUPER_ADMIN" || evidenceOwner(r) === apiUser.id) && ((!!id && (r.id === id || r.fileId === id)) || (!!sha256 && r.rawDocument?.sha256Hash === sha256)));
 
     if (!record) {
       return NextResponse.json({ error: "Evidence record not found in system." }, { status: 404 });
@@ -72,7 +76,7 @@ export async function GET(req: NextRequest) {
           "X-Evidence-Type": "AUTHORITATIVE_ORIGINAL",
           "X-Evidence-SHA256": originalHash,
           "X-Evidence-Case": encodeURIComponent(record.caseNumber || record.caseId || "N/A"),
-          "Cache-Control": "private, max-age=86400",
+          "Cache-Control": "private, no-store",
         },
       });
     }
@@ -89,20 +93,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (!compBuf) {
-      // Re-generate on the fly if needed
-      let origBuf: Buffer | null = null;
-      if (record.rawDocument.dataUrl && record.rawDocument.dataUrl.includes(",")) {
-        origBuf = Buffer.from(record.rawDocument.dataUrl.split(",")[1], "base64");
-      }
-      if (origBuf) {
-        compBuf = zlib.brotliCompressSync(origBuf, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 11 } });
-      }
+      return NextResponse.json({error:"Verified compressed copy is unavailable. Download the original or rerun compression."},{status:404});
     }
-
-    if (!compBuf) {
-      return NextResponse.json({ error: "Lossless compressed copy not found." }, { status: 404 });
-    }
-
     // Determine download filename and content type
     let downloadFileName = `${path.parse(origFileName).name}.lossless${compExt}`;
     let compMime = mimeType;
@@ -120,7 +112,7 @@ export async function GET(req: NextRequest) {
         "X-Evidence-Original-SHA256": originalHash,
         "X-Evidence-Compressed-SHA256": record.compression.compressedSha256 || "",
         "X-Space-Saved-Percent": `${record.compression.savedPercentage}%`,
-        "Cache-Control": "private, max-age=86400",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (err: any) {

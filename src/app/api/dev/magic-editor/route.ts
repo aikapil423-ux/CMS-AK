@@ -1,3 +1,4 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -11,6 +12,8 @@ function ensureFile() {
 }
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     ensureFile();
     const data = fs.readFileSync(LAYOUT_RULES_FILE, "utf-8");
@@ -21,6 +24,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     ensureFile();
     const body = await req.json();
@@ -63,6 +68,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     ensureFile();
     const { searchParams } = new URL(req.url);

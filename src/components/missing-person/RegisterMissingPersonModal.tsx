@@ -73,57 +73,55 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
 
   // Tab 1: General Details
   const [registrationDateTime, setRegistrationDateTime] = useState(
-    initialRecord?.registrationDateTime || "19/04/2019 15:19"
+    initialRecord?.registrationDateTime || ""
   );
-  const [gdNumber, setGdNumber] = useState(initialRecord?.gdNumber || "002");
+  const [gdNumber, setGdNumber] = useState(initialRecord?.gdNumber || "");
   const [gdDateTime, setGdDateTime] = useState(
-    initialRecord?.gdDateTime || "19/04/2019, 10:45"
+    initialRecord?.gdDateTime || ""
   );
   const [briefOfIncident, setBriefOfIncident] = useState(
-    initialRecord?.briefOfIncident || "Missing Person"
+    initialRecord?.briefOfIncident || ""
   );
   const [dateSinceMissing, setDateSinceMissing] = useState(
-    initialRecord?.dateSinceMissing || "2019-04-19"
+    initialRecord?.dateSinceMissing || ""
   );
   const [timeSinceMissing, setTimeSinceMissing] = useState(
-    initialRecord?.timeSinceMissing || "11:00"
+    initialRecord?.timeSinceMissing || ""
   );
-  const [firNumber, setFirNumber] = useState(initialRecord?.firNumber || "0042");
-  const [firYear, setFirYear] = useState(initialRecord?.firYear || "2019");
+  const [firNumber, setFirNumber] = useState(initialRecord?.firNumber || "");
+  const [firYear, setFirYear] = useState(initialRecord?.firYear || "");
   const [placeOfMissing, setPlaceOfMissing] = useState(
-    initialRecord?.placeOfMissing || "Panchkula bus stand"
+    initialRecord?.placeOfMissing || ""
   );
 
   // Acts and Sections
-  const [selectedAct, setSelectedAct] = useState<string>("Police Act 1861");
-  const [selectedSection, setSelectedSection] = useState<string>("Section 34");
+  const [selectedAct, setSelectedAct] = useState<string>("");
+  const [selectedSection, setSelectedSection] = useState<string>("");
   const [actsSections, setActsSections] = useState<ActSectionEntry[]>(
-    initialRecord?.actsSections || [
-      { id: "act_1", act: "Police Act 1861", section: "Section 34" },
-    ]
+    initialRecord?.actsSections || []
   );
 
   // Tab 2: Complainant Information - Personal
   const [complainantUid, setComplainantUid] = useState(
-    initialRecord?.complainantUid || "4829-1092-3849"
+    initialRecord?.complainantUid || ""
   );
   const [complainantFirstName, setComplainantFirstName] = useState(
-    initialRecord?.complainantFirstName || "RAVI"
+    initialRecord?.complainantFirstName || ""
   );
   const [complainantMiddleName, setComplainantMiddleName] = useState(
     initialRecord?.complainantMiddleName || ""
   );
   const [complainantLastName, setComplainantLastName] = useState(
-    initialRecord?.complainantLastName || "Kumar"
+    initialRecord?.complainantLastName || ""
   );
   const [complainantRelationType, setComplainantRelationType] = useState<any>(
-    initialRecord?.complainantRelationType || "Father"
+    initialRecord?.complainantRelationType || ""
   );
   const [complainantRelativeName, setComplainantRelativeName] = useState(
-    initialRecord?.complainantRelativeName || "Shyam"
+    initialRecord?.complainantRelativeName || ""
   );
   const [complainantMobile, setComplainantMobile] = useState(
-    initialRecord?.complainantMobile || "+91 9812033441"
+    initialRecord?.complainantMobile || ""
   );
   const [complainantLandline, setComplainantLandline] = useState(
     initialRecord?.complainantLandline || ""
@@ -132,22 +130,11 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
     initialRecord?.complainantEmail || ""
   );
   const [complainantGender, setComplainantGender] = useState<any>(
-    initialRecord?.complainantGender || "Male"
+    initialRecord?.complainantGender || ""
   );
 
   // Complainant Address
-  const defaultAddress: AddressInfo = {
-    houseNo: "Plot 12",
-    streetName: "Bus Stand Road",
-    colony: "Sector 5",
-    villageTownCity: "pkl",
-    tehsil: "Panchkula",
-    country: "INDIA",
-    state: "HARYANA",
-    district: "PANCHKULA",
-    policeStation: "PANCHKULA SECTOR-5",
-    pincode: "134109",
-  };
+  const defaultAddress: AddressInfo = {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""};
 
   const [complainantPresentAddress, setComplainantPresentAddress] = useState<AddressInfo>(
     initialRecord?.complainantPresentAddress || defaultAddress
@@ -161,37 +148,35 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
 
   // Complainant Other Information
   const [complainantNationality, setComplainantNationality] = useState(
-    initialRecord?.complainantNationality || "INDIA"
+    initialRecord?.complainantNationality || ""
   );
   const [complainantIdTypeInput, setComplainantIdTypeInput] = useState<string>("Ration Card");
-  const [complainantIdNoInput, setComplainantIdNoInput] = useState<string>("RC-HR-PKL-99201");
+  const [complainantIdNoInput, setComplainantIdNoInput] = useState<string>("");
   const [complainantIdList, setComplainantIdList] = useState<IdentificationDoc[]>(
-    initialRecord?.complainantIdList || [
-      { id: "cid_1", idType: "Ration Card", idNumber: "RC-HR-PKL-99201" },
-    ]
+    initialRecord?.complainantIdList || []
   );
 
   // Tab 3: Missing Person Details - Personal
-  const [uid, setUid] = useState(initialRecord?.uid || "7719-2810-4412");
-  const [firstName, setFirstName] = useState(initialRecord?.firstName || "Monu");
+  const [uid, setUid] = useState(initialRecord?.uid || "");
+  const [firstName, setFirstName] = useState(initialRecord?.firstName || "");
   const [middleName, setMiddleName] = useState(initialRecord?.middleName || "");
-  const [lastName, setLastName] = useState(initialRecord?.lastName || "Kumar");
-  const [alias, setAlias] = useState(initialRecord?.alias || "Chhotu");
+  const [lastName, setLastName] = useState(initialRecord?.lastName || "");
+  const [alias, setAlias] = useState(initialRecord?.alias || "");
   const [relationType, setRelationType] = useState<any>(
-    initialRecord?.relationType || "Father"
+    initialRecord?.relationType || ""
   );
   const [relativeName, setRelativeName] = useState(
-    initialRecord?.relativeName || "Shyam"
+    initialRecord?.relativeName || ""
   );
   const [photoUrl, setPhotoUrl] = useState<string>(
-    initialRecord?.photoUrl || SAMPLE_MISSING_PERSON_PHOTO
+    initialRecord?.photoUrl || ""
   );
-  const [gender, setGender] = useState<any>(initialRecord?.gender || "Male");
-  const [majorMinor, setMajorMinor] = useState<"Major" | "Minor">(
-    initialRecord?.majorMinor || "Major"
+  const [gender, setGender] = useState<any>(initialRecord?.gender || "");
+  const [majorMinor, setMajorMinor] = useState<"" | "Major" | "Minor">(
+    initialRecord?.majorMinor || ""
   );
   const [mobileNo, setMobileNo] = useState(
-    initialRecord?.mobileNo || "+91 9416088219"
+    initialRecord?.mobileNo || ""
   );
   const [landlineNo, setLandlineNo] = useState(
     initialRecord?.landlineNo || ""
@@ -199,12 +184,12 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
   const [emailId, setEmailId] = useState(initialRecord?.emailId || "");
 
   // Missing Person Age Panel
-  const [dob, setDob] = useState(initialRecord?.dob || "1990-12-02");
+  const [dob, setDob] = useState(initialRecord?.dob || "");
   const [yearOfBirth, setYearOfBirth] = useState(
-    initialRecord?.yearOfBirth || "1990"
+    initialRecord?.yearOfBirth || ""
   );
-  const [ageYears, setAgeYears] = useState(initialRecord?.ageYears || "28");
-  const [ageMonths, setAgeMonths] = useState(initialRecord?.ageMonths || "4");
+  const [ageYears, setAgeYears] = useState(initialRecord?.ageYears || "");
+  const [ageMonths, setAgeMonths] = useState(initialRecord?.ageMonths || "");
   const [ageRangeFrom, setAgeRangeFrom] = useState(
     initialRecord?.ageRangeFrom || ""
   );
@@ -228,77 +213,71 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
 
   // Missing Person Other Info
   const [nationality, setNationality] = useState(
-    initialRecord?.nationality || "INDIA"
+    initialRecord?.nationality || ""
   );
   const [occupation, setOccupation] = useState(
-    initialRecord?.occupation || "Student / Shop Helper"
+    initialRecord?.occupation || ""
   );
   const [mpIdTypeInput, setMpIdTypeInput] = useState<string>("Aadhar Card");
-  const [mpIdNoInput, setMpIdNoInput] = useState<string>("7719 2810 4412");
+  const [mpIdNoInput, setMpIdNoInput] = useState<string>("");
   const [mpIdList, setMpIdList] = useState<IdentificationDoc[]>(
-    initialRecord?.idList || [
-      { id: "mpid_1", idType: "Aadhar Card", idNumber: "7719 2810 4412" },
-    ]
+    initialRecord?.idList || []
   );
 
   // Tab 4: Physical Description
   const [heightFeet, setHeightFeet] = useState(
-    initialRecord?.heightFeet || "5"
+    initialRecord?.heightFeet || ""
   );
   const [heightInches, setHeightInches] = useState(
-    initialRecord?.heightInches || "7"
+    initialRecord?.heightInches || ""
   );
   const [complexion, setComplexion] = useState(
-    initialRecord?.complexion || "Wheatish"
+    initialRecord?.complexion || ""
   );
-  const [build, setBuild] = useState(initialRecord?.build || "Medium");
+  const [build, setBuild] = useState(initialRecord?.build || "");
   const [faceType, setFaceType] = useState(
-    initialRecord?.faceType || "Round"
+    initialRecord?.faceType || ""
   );
   const [hairColor, setHairColor] = useState(
-    initialRecord?.hairColor || "Black"
+    initialRecord?.hairColor || ""
   );
   const [eyeColor, setEyeColor] = useState(
-    initialRecord?.eyeColor || "Dark Brown"
+    initialRecord?.eyeColor || ""
   );
   const [languagesKnown, setLanguagesKnown] = useState(
-    initialRecord?.languagesKnown || "Hindi, Punjabi"
+    initialRecord?.languagesKnown || ""
   );
   const [identifyingMarks, setIdentifyingMarks] = useState(
-    initialRecord?.identifyingMarks ||
-      "Mole on right cheek, small burn scar on left forearm"
+    initialRecord?.identifyingMarks || ""
   );
   const [clothingDetails, setClothingDetails] = useState(
-    initialRecord?.clothingDetails ||
-      "Blue checked shirt, dark jeans, white sneakers"
+    initialRecord?.clothingDetails || ""
   );
   const [habitsEccentricities, setHabitsEccentricities] = useState(
-    initialRecord?.habitsEccentricities ||
-      "Polite demeanor, no mental disability reported"
+    initialRecord?.habitsEccentricities || ""
   );
 
   // Tab 5: IO/EO Details
   const [nameOfEo, setNameOfEo] = useState(
-    initialRecord?.nameOfEo || "ASI Sandeep Singh - 49102"
+    initialRecord?.nameOfEo || ""
   );
   const [eoRank, setEoRank] = useState(
-    initialRecord?.eoRank || "Assistant Sub Inspector"
+    initialRecord?.eoRank || ""
   );
   const [eoNumber, setEoNumber] = useState(
-    initialRecord?.eoNumber || "49102"
+    initialRecord?.eoNumber || ""
   );
   const [policeStation, setPoliceStation] = useState(
-    initialRecord?.policeStation || "PANCHKULA SECTOR-5"
+    initialRecord?.policeStation || ""
   );
   const [district, setDistrict] = useState(
-    initialRecord?.district || "PANCHKULA"
+    initialRecord?.district || ""
   );
   const [expectedDateToComplete, setExpectedDateToComplete] = useState(
-    initialRecord?.expectedDateToComplete || "2019-04-26"
+    initialRecord?.expectedDateToComplete || ""
   );
   const [remarks, setRemarks] = useState(
-    initialRecord?.remarks ||
-      "WT message flashed to all police stations in Haryana and Chandigarh. Missing person poster dispatched to public bus stands."
+    initialRecord?.remarks || ""
   );
 
   // Name autocomplete
@@ -438,7 +417,7 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
   const currentRecord: Partial<MissingPersonRecord> = {
     id: initialRecord?.id || `mp_${Date.now()}`,
     registrationNumber: initialRecord?.registrationNumber || "",
-    registrationYear: initialRecord?.registrationYear || "2019",
+    registrationYear: initialRecord?.registrationYear || String(new Date().getFullYear()),
     createdAt: initialRecord?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     status: initialRecord?.status || "OPEN",
@@ -699,7 +678,7 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
                         className="w-full px-3 py-1.5 border border-slate-200 rounded-md font-mono text-xs bg-slate-100 font-bold"
                       />
                       <span className="text-[10px] text-slate-500 mt-0.5 block">
-                        पहले से भरा 19/04/2019 15:19
+                        पंजीकरण का वास्तविक समय दर्ज करें
                       </span>
                     </div>
 
@@ -755,6 +734,7 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
                         <input
                           type="date"
                           required
+                          max={new Date().toISOString().split("T")[0]}
                           value={dateSinceMissing}
                           onChange={(e) => setDateSinceMissing(e.target.value)}
                           className="px-2.5 py-1.5 border border-slate-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600 font-mono"
@@ -1038,7 +1018,7 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
                           </div>
                         )}
                         <span className="text-[10px] text-slate-500 mt-0.5 block">
-                          RAVI भरा गया
+                          नाम दर्ज करें
                         </span>
                       </div>
 
@@ -1897,6 +1877,7 @@ export const RegisterMissingPersonModal: React.FC<RegisterMissingPersonModalProp
                           </label>
                           <input
                             type="date"
+                            max={new Date().toISOString().split("T")[0]}
                             value={dob}
                             onChange={(e) => {
                               setDob(e.target.value);

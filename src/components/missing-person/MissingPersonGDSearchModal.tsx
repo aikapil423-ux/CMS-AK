@@ -150,6 +150,7 @@ export const MissingPersonGDSearchModal: React.FC<MissingPersonGDSearchModalProp
               </label>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md bg-white text-xs"
@@ -162,6 +163,7 @@ export const MissingPersonGDSearchModal: React.FC<MissingPersonGDSearchModalProp
               </label>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md bg-white text-xs"

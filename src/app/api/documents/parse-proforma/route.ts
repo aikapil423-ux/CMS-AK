@@ -1,9 +1,12 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { formatDate } from "@/lib/utils";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;

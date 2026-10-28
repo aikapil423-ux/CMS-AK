@@ -1,0 +1,213 @@
+/* Shared court-register appearance. Screen-only so document exports retain
+   their own page layout, typography and colours. */
+@media screen {
+  .cms-court-theme {
+    --background: #ffffff;
+    --foreground: #26334a;
+    --surface: #ffffff;
+    --surface-subtle: #eef1ff;
+    --border: #b7c1d4;
+    --accent-primary: #203c88;
+    --accent-muted: #536584;
+    --accent-subtle: #eef1ff;
+    --accent-border: #a8b5d1;
+    background: var(--background);
+    color: var(--foreground);
+    letter-spacing: normal;
+  }
+
+  /* Existing modules share utility classes as well as the Card components. */
+  .cms-court-theme :where(main, [role="dialog"], form, .cms-card) {
+    --color-slate-900: #203c88;
+    --color-slate-800: #26334a;
+    --color-slate-50: #f7f9fc;
+    --color-slate-100: #eef1ff;
+    --color-slate-200: #cbd3e3;
+    --color-blue-600: #1847e8;
+    --color-indigo-600: #203c88;
+    --radius-lg: 0;
+    --radius-xl: 0;
+    --radius-2xl: 0;
+    --radius-3xl: 0;
+  }
+
+  .cms-main > :first-child { max-width: none; }
+  .cms-main :where(h1) { color: #203c88; letter-spacing: normal; }
+  .cms-main :where(h1) { font-size: clamp(1.3rem, 2vw, 1.8rem); }
+
+  .cms-topbar :where(span, svg, button) { color: inherit; }
+  .cms-topbar > div > div:first-child { color: white; }
+  .cms-topbar :where(button:hover) { background-color: #3153a6; }
+  .cms-topbar :where(.bg-slate-100) {
+    background: #eef1ff;
+    color: #203c88;
+  }
+  /* Dropdown panels keep readable dark text on their white surface. */
+  .cms-topbar :where(.absolute) { color: #26334a; }
+  .cms-court-theme .cms-shell header .cms-persona-badge { color: #ffffff; }
+  .cms-topbar :where(.absolute button:hover) { background: #eef1ff; }
+  .cms-court-theme .cms-module-menu-header,
+  .cms-court-theme .cms-module-menu-header :where(h4, button, svg) {
+    color: #ffffff;
+  }
+  .cms-court-theme .cms-module-menu-header button:hover {
+    background: #3153a6;
+  }
+  .cms-court-theme button.cms-module-selected,
+  .cms-court-theme button.cms-module-selected:hover {
+    background: #203c88;
+    color: #ffffff;
+  }
+  .cms-court-theme .cms-module-selected :where(span, svg) {
+    color: #ffffff;
+  }
+  .cms-court-theme .cms-module-selected :where(.bg-white\/50, .bg-white\/60) {
+    background: rgb(255 255 255 / 15%);
+  }
+
+  .cms-shell header.lg\:hidden {
+    background: #203c88;
+    color: white;
+    border-bottom-color: #203c88;
+  }
+  .cms-shell header.lg\:hidden :where(h2, span, svg, button) { color: inherit; }
+  .cms-shell header.lg\:hidden :where(.absolute) { color: #26334a; }
+  .cms-court-theme :where(.cms-topbar, .cms-shell header.lg\:hidden) button:not(.absolute *) {
+    background-color: #3153a6;
+    color: white;
+    border-color: #6d85bd;
+  }
+  .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]),
+  .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]) button {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+  }
+  .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]):hover,
+  .cms-court-theme .cms-shell header :is(a[href="/fir/register"], a[href="/complaints/register"]) button:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+  }
+
+  .cms-shell > aside {
+    background: #f7f9fc;
+    border-right: 1px solid #a8b5d1;
+  }
+  .cms-shell > aside > div:first-child {
+    background: #203c88;
+    min-height: 64px;
+    color: white;
+  }
+  .cms-shell > aside > div:first-child :where(h1, span, button, svg) { color: white; }
+  .cms-shell > aside :where(a) { border-radius: 0; }
+  .cms-shell > aside :where(a.bg-slate-100) {
+    background: #203c88;
+    color: #ffffff;
+    box-shadow: inset 3px 0 #203c88;
+  }
+  .cms-shell > aside :where(a.bg-slate-100) :where(span, svg) {
+    color: #ffffff;
+  }
+  .cms-shell > aside :where(a.bg-slate-100) span[class*="bg-"] {
+    background: rgb(255 255 255 / 15%);
+    border-color: rgb(255 255 255 / 30%);
+  }
+
+  .cms-court-theme :where(table):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    border-collapse: collapse;
+    border: 1px solid #536584;
+  }
+  .cms-court-theme :where(thead, thead tr, thead th):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    background: #203c88;
+    color: white;
+    border-color: #203c88;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 700;
+  }
+  /* Header controls have their own text utilities; keep their labels and
+     icons white too, including hover and the active sort indicator. */
+  .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    color: #ffffff;
+  }
+  .cms-court-theme :where(thead button.bg-blue-50):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    background-color: rgb(255 255 255 / 18%);
+  }
+  .cms-court-theme :where(th, td):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    padding: 14px 16px;
+  }
+  .cms-court-theme :where(tbody tr):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+    border-bottom: 1px solid #cbd3e3;
+  }
+
+  .cms-court-theme :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea) {
+    border: 1px solid #536584;
+    border-radius: 0;
+    background-color: white;
+    color: #26334a;
+    min-height: 42px;
+    font-size: 14px;
+    box-shadow: none;
+  }
+  .cms-court-theme :where(input, select, textarea):focus-visible {
+    outline: 2px solid #1847e8;
+    outline-offset: 2px;
+  }
+  .cms-court-theme :where(input, select, textarea):disabled {
+    background-color: #f1f4f9;
+    color: #71809b;
+    cursor: not-allowed;
+  }
+  .cms-court-theme :where(input, textarea)::placeholder { color: #8b9dbb; }
+  .cms-court-theme :where(input[type="radio"], input[type="checkbox"]) { accent-color: #1847e8; }
+  .cms-court-theme :where(label.block):not(.a4-sheet *, [id^="printable-"] *) {
+    background: #eef1ff;
+    color: #26334a;
+    padding: 9px 12px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 14px;
+  }
+  .cms-court-theme :where([role="tab"][aria-selected="true"], button[aria-pressed="true"]) {
+    background: #203c88;
+    color: #ffffff;
+    border-color: #26334a;
+    border-radius: 0;
+  }
+  .cms-card-header :where(h2, h3) { color: white; }
+  .cms-court-theme :where([role="dialog"] > div) { border-radius: 0; }
+  .cms-court-theme :where([role="dialog"] header) {
+    background: #203c88;
+    color: white;
+    border-radius: 0;
+    min-height: 64px;
+  }
+  .cms-court-theme :where([role="dialog"] header h2) { color: white; }
+  .cms-court-theme :where([role="dialog"] footer) {
+    background: #f7f9fc;
+    border-top: 1px solid #536584;
+    padding: 18px;
+  }
+
+  /* Bail form is the reference screen supplied for this theme. */
+  .cms-bail-dialog > div { max-width: 1680px; max-height: 96dvh; }
+  .cms-bail-dialog nav button { min-height: 48px; border-radius: 0; }
+  .cms-bail-dialog footer button { min-height: 48px; border-radius: 0; }
+  .cms-bail-dialog .cms-bail-field { border: 0; gap: 6px; }
+  .cms-bail-dialog .cms-bail-field > :first-child {
+    background: #eef1ff;
+    padding: 14px 12px;
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  @media (max-width: 640px) {
+    .cms-court-theme :where(th, td):not(.a4-sheet *, [id^="printable-"] *) { padding: 10px; }
+    .cms-court-theme :where(input, select, textarea) { font-size: 16px; }
+    .cms-bail-dialog { padding: 4px; }
+    .cms-bail-dialog > div { max-height: 98dvh; }
+    .cms-court-theme :where([role="dialog"] footer) { padding: 12px; }
+  }
+}

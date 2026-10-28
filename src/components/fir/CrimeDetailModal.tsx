@@ -30,7 +30,7 @@ import {
   FileCheck2,
 } from "lucide-react";
 import { FIRItem } from "@/types";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -278,29 +278,13 @@ export function CrimeDetailModal({
     String(fir.totalPropertyEstimatedValue || 0)
   );
   const [propRecoveredValue, setPropRecoveredValue] = useState("0");
+  const [propStatus,setPropStatus]=useState("");
+  const [propRecoveredAt,setPropRecoveredAt]=useState("");
   const [propDesc, setPropDesc] = useState(fir.stolenPropertyDetails || "");
 
   const [propertyEntries, setPropertyEntries] = useState<any[]>(
-    savedCrimeData?.propertyOfInterest?.properties ||
-      (fir.stolenPropertyDetails
-        ? [
-            {
-              id: "prop-1",
-              category: "PROPERTY / OFFENCE MATERIAL",
-              description: fir.stolenPropertyDetails,
-              estimatedValue: Number(fir.totalPropertyEstimatedValue) || 0,
-              recoveredValue: 0,
-            },
-          ]
-        : fir.propertiesList?.length
-        ? fir.propertiesList.map((p, idx) => ({
-            id: p.id || `prop-${idx + 1}`,
-            category: p.propertyType || "PROPERTY",
-            description: p.description || (p as any).propertyName || "",
-            estimatedValue: Number(p.estimatedValue) || 0,
-            recoveredValue: Number((p as any).recoveredValue) || 0,
-          }))
-        : [])
+    fir.propertiesList?.length ? fir.propertiesList.map((p,idx)=>({id:p.id || `prop-${idx+1}`,category:p.propertyCategory || p.propertyType || '',description:p.description || '',estimatedValue:p.estimatedValue ?? '',recoveredValue:(p as any).recoveredValue ?? '',status:p.status || '',recoveredAt:p.recoveredAt || ''}))
+      : savedCrimeData?.propertyOfInterest?.properties || (fir.stolenPropertyDetails ? [{id:'prop-1',category:'',description:fir.stolenPropertyDetails,estimatedValue:fir.totalPropertyEstimatedValue ?? '',recoveredValue:'',status:'',recoveredAt:''}] : [])
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -379,7 +363,7 @@ export function CrimeDetailModal({
     printA4Element("cctns-iif2-official-sheet", `CRIME_DETAILS_FORM_IIF2_${fir.firNumber}`);
   };
 
-  const handleSaveToFirProfile = () => {
+  const handleSaveToFirProfile = async () => {
     setIsSubmitting(true);
     const el = document.getElementById("cctns-iif2-official-sheet");
     const htmlSnapshot = el ? `<!DOCTYPE html>
@@ -460,7 +444,7 @@ export function CrimeDetailModal({
       }
     }
 
-    const updated = firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
+    const updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName, htmlSnapshot);
 
     // Trigger Roznamcha GD auto-suggestion for Crime Details IIF-II
     try {
@@ -573,19 +557,21 @@ export function CrimeDetailModal({
   // Add Property handler
   const handleAddProperty = () => {
     if (!propDesc.trim()) return;
+    if (["RECOVERED","SEIZED"].includes(propStatus) && !propRecoveredAt) {alert("Enter the actual recovery/seizure date.");return;}
     const newEntry = {
       id: `prop-${Date.now()}`,
       category: propCategory,
       description: propDesc,
       estimatedValue: Number(propEstimatedValue) || 0,
       recoveredValue: Number(propRecoveredValue) || 0,
+      status:propStatus,recoveredAt:propRecoveredAt,
     };
     setPropertyEntries([...propertyEntries, newEntry]);
     setPropDesc("");
   };
 
   // Final Submit Handler
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     setIsSubmitting(true);
 
     const crimeDetailsPayload = {
@@ -632,7 +618,7 @@ export function CrimeDetailModal({
       submittedBy: currentUserName,
     };
 
-    const updated = firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName);
+    const updated = await firService.saveCrimeDetails(fir.id, crimeDetailsPayload, currentUserName);
     setIsSubmitting(false);
     setShowConfirmDialog(false);
 
@@ -1669,6 +1655,10 @@ export function CrimeDetailModal({
                       />
                     </div>
 
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-xs font-semibold">Property status<select className="mt-1 w-full rounded border p-2" value={propStatus} onChange={e=>setPropStatus(e.target.value)}><option value="">Not recorded</option><option value="STOLEN">Stolen / missing</option><option value="RECOVERED">Recovered</option><option value="SEIZED">Seized</option></select></label>
+                      <label className="text-xs font-semibold">Actual recovery / seizure date<input className="mt-1 w-full rounded border p-2" type="date" value={propRecoveredAt} onChange={e=>setPropRecoveredAt(e.target.value)} /></label>
+                    </div>
                     <div className="flex justify-end pt-1">
                       <Button
                         type="button"
@@ -1693,7 +1683,7 @@ export function CrimeDetailModal({
                       <th className="p-2.5">Category</th>
                       <th className="p-2.5">Description</th>
                       <th className="p-2.5">Estimated Value</th>
-                      <th className="p-2.5">Recovered Value</th>
+                      <th className="p-2.5">Recovered Value</th><th className="p-2.5">Status / recovery date</th>
                       <th className="p-2.5 text-right">Action</th>
                     </tr>
                   </thead>
@@ -1705,6 +1695,7 @@ export function CrimeDetailModal({
                         <td className="p-2.5">{p.description}</td>
                         <td className="p-2.5 font-mono font-bold text-red-700">₹{p.estimatedValue?.toLocaleString?.("en-IN") || p.estimatedValue}</td>
                         <td className="p-2.5 font-mono text-emerald-700">₹{p.recoveredValue?.toLocaleString?.("en-IN") || p.recoveredValue}</td>
+                        <td className="p-2.5">{p.status || "Not recorded"} {p.recoveredAt || ""}</td>
                         <td className="p-2.5 text-right">
                           <button
                             type="button"

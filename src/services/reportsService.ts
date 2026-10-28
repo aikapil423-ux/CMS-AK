@@ -1,3 +1,7 @@
+import type {FIRItem} from "@/types";
+import {recordedCalendarDate} from "@/lib/dataIntegrity";
+import { stationStaffService } from "./stationStaffService";
+import { isComplaintResolved } from "@/lib/complaintIntegrity";
 import { comparativeCrimeRows } from "@/lib/reportIntegrity";
 import {
   CrimeSitrepData,
@@ -56,6 +60,7 @@ function getAgeCategory(dateStr: string): UiCasePartA["ageCategory"] {
 function parseToIsoDate(d: any): string {
   if (!d) return "";
   if (typeof d === "string") {
+    const recorded=recordedCalendarDate(d);if(recorded)return recorded;
     const iso = d.match(/^(\d{4}-\d{2}-\d{2})/);
     if (iso) return iso[1];
     const slash = d.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
@@ -103,7 +108,7 @@ export const ReportsService = {
     const m = String(now.getMonth() + 1).padStart(2, "0");
     const d = String(now.getDate()).padStart(2, "0");
     const todayIso = `${y}-${m}-${d}`;
-    return maxDate && maxDate > todayIso ? maxDate : todayIso;
+    return todayIso;
   },
 
   // 1. DYNAMIC CRIME SITREP (Strict 24-hr audit of the back day of latest date)
@@ -131,8 +136,9 @@ export const ReportsService = {
     const reportDisplayDate = formatDisplayDateIn(latestDate);
     const auditDisplayDate = formatDisplayDateIn(targetAuditDate);
 
+    const scopedFirs = allFirs.filter(f => f.district?.trim().toLowerCase() === activeDistrict.toLowerCase() && (!filterStation || filterStation === "ALL" || f.policeStation?.trim().toLowerCase() === filterStation.trim().toLowerCase()));
     // Filter FIRs strictly registered within the 24-hour window of targetAuditDate (00:00:00 to 23:59:59)
-    let matchedFirs = allFirs.filter((f: any) => {
+    let matchedFirs = scopedFirs.filter((f: any) => {
       const fDate = parseToIsoDate(f.firDate) || parseToIsoDate(f.createdAt);
       const isTargetDay = fDate === targetAuditDate;
       const isDistrictMatch =
@@ -159,7 +165,7 @@ export const ReportsService = {
       const victimInfo = f.victimType
         ? `${f.victimType} R/o Local`
         : f.complainantName
-        ? `${f.complainantName} Age ${f.complainantAge || 30}`
+        ? `${f.complainantName}${f.complainantAge != null ? ` Age ${f.complainantAge}` : ""}`
         : "Victim";
 
       return {
@@ -193,16 +199,16 @@ export const ReportsService = {
 
     // 17 HEADS EXACTLY AS SPECIFIED IN THE POLICE SITREP AUDIT FORMAT:
     const specificHeads = [
-      { srNo: 1, name: "Murder", check: (f: any) => f.actsAndSections?.includes("302") || f.actsAndSections?.includes("103") },
-      { srNo: 2, name: "Kidnapping", check: (f: any) => f.actsAndSections?.includes("363") || f.actsAndSections?.includes("137") },
-      { srNo: 3, name: "Abetment of Suicide", check: (f: any) => f.actsAndSections?.includes("306") || f.actsAndSections?.includes("108") },
-      { srNo: 4, name: "Rape", check: (f: any) => f.actsAndSections?.includes("376") || f.actsAndSections?.includes("64") },
+      { srNo: 1, name: "Murder", check: (f: any) => new RegExp("(?:^|[^0-9])302(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])103(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 2, name: "Kidnapping", check: (f: any) => new RegExp("(?:^|[^0-9])363(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])137(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 3, name: "Abetment of Suicide", check: (f: any) => new RegExp("(?:^|[^0-9])306(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])108(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 4, name: "Rape", check: (f: any) => new RegExp("(?:^|[^0-9])376(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])64(?![0-9])", "i").test(f.actsAndSections || "") },
       { srNo: 5, name: "POCSO Act (Sec. 4/6)", check: (f: any) => f.actsAndSections?.toLowerCase().includes("pocso") },
-      { srNo: 6, name: "Obstruction in Govt. duty", check: (f: any) => f.actsAndSections?.includes("353") || f.actsAndSections?.includes("132") },
-      { srNo: 7, name: "Snatching", check: (f: any) => f.actsAndSections?.includes("379A") || f.actsAndSections?.includes("304") },
-      { srNo: 8, name: "Robbery", check: (f: any) => f.actsAndSections?.includes("392") || f.actsAndSections?.includes("309") },
-      { srNo: 9, name: "Dacoity", check: (f: any) => f.actsAndSections?.includes("395") || f.actsAndSections?.includes("310") },
-      { srNo: 10, name: "Economic Offences", check: (f: any) => f.actsAndSections?.includes("420") || f.actsAndSections?.includes("318") },
+      { srNo: 6, name: "Obstruction in Govt. duty", check: (f: any) => new RegExp("(?:^|[^0-9])353(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])132(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 7, name: "Snatching", check: (f: any) => new RegExp("(?:^|[^0-9])379A(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])304(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 8, name: "Robbery", check: (f: any) => new RegExp("(?:^|[^0-9])392(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])309(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 9, name: "Dacoity", check: (f: any) => new RegExp("(?:^|[^0-9])395(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])310(?![0-9])", "i").test(f.actsAndSections || "") },
+      { srNo: 10, name: "Economic Offences", check: (f: any) => new RegExp("(?:^|[^0-9])420(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])318(?![0-9])", "i").test(f.actsAndSections || "") },
       { srNo: 11, name: "SC/ST (POA) Act", check: (f: any) => f.actsAndSections?.toLowerCase().includes("sc/st") },
       { srNo: 12, name: "NDPS Act, 1985", check: (f: any) => f.actsAndSections?.toLowerCase().includes("ndps") },
       { srNo: 13, name: "HSGS Act, 2015", check: (f: any) => f.actsAndSections?.toLowerCase().includes("hsgs") },
@@ -232,7 +238,7 @@ export const ReportsService = {
 
     // 15: MV Theft
     const mvTheftCount = matchedFirs.filter(
-      (f: any) => (f.actsAndSections?.includes("379") || f.actsAndSections?.includes("303")) && (f.category?.toLowerCase().includes("vehicle") || f.categoryDisplay?.toLowerCase().includes("vehicle") || f.briefFacts?.toLowerCase().includes("motorcycle") || f.briefFacts?.toLowerCase().includes("car"))
+      (f: any) => (new RegExp("(?:^|[^0-9])379(?![0-9])", "i").test(f.actsAndSections || "") || new RegExp("(?:^|[^0-9])303(?![0-9])", "i").test(f.actsAndSections || "")) && (f.category?.toLowerCase().includes("vehicle") || f.categoryDisplay?.toLowerCase().includes("vehicle") || f.briefFacts?.toLowerCase().includes("motorcycle") || f.briefFacts?.toLowerCase().includes("car"))
     ).length;
     section1HeadCounts.push({
       srNo: 15,
@@ -257,13 +263,13 @@ export const ReportsService = {
 
     // Dynamic Arrests from actual FIR accused list
     const arrests: SitrepArrestEntry[] = [];
-    matchedFirs.forEach((f: any) => {
+    scopedFirs.forEach((f: any) => {
       if (f.accusedList && Array.isArray(f.accusedList)) {
         f.accusedList.forEach((acc: any) => {
-          if (acc.isArrested || acc.custodyStatus === "ARRESTED") {
+          if (parseToIsoDate(acc.arrestDate) === targetAuditDate) {
             arrests.push({
               srNo: arrests.length + 1,
-              gdNoArrestTime: `${f.gdNumber || "--"}\n${f.firTime || "--"}`,
+              gdNoArrestTime: `${acc.arrestGdNo || "--"}\n${acc.arrestTime || "--"}`,
               ps: f.policeStation || "--",
               firNoAndUs: `${f.firNumber} u/s ${f.actsAndSections || "BNS"}`,
               head: f.categoryDisplay || "Crime",
@@ -278,9 +284,10 @@ export const ReportsService = {
 
     // Dynamic Recoveries from actual FIR property or GD seizures
     const recoveries: SitrepRecoveryEntry[] = [];
-    matchedFirs.forEach((f: any) => {
+    scopedFirs.forEach((f: any) => {
       if (f.propertiesList && Array.isArray(f.propertiesList) && f.propertiesList.length > 0) {
         f.propertiesList.forEach((p: any) => {
+          if (!/^(RECOVERED|SEIZED|RETURNED|RESTORED|DISPOSED)$/i.test(p.status || "") || parseToIsoDate(p.recoveredAt) !== targetAuditDate) return;
           recoveries.push({
             srNo: recoveries.length + 1,
             gdNoRecoveryTime: `${f.gdNumber || "--"}\n--`,
@@ -304,7 +311,12 @@ export const ReportsService = {
     const cancellations: SitrepDisposalEntry[] = [];
     const untraced: SitrepDisposalEntry[] = [];
 
-    matchedFirs.forEach((f: any) => {
+    const disposals=scopedFirs.flatMap(f=>{
+      const events=(f.completionHistory || []).filter(event=>parseToIsoDate(event.completedAt)===targetAuditDate);
+      if(events.length)return events.map(event=>({...f,status:(event.completionType==='CHARGESHEET'?'CHARGESHEET_FILED':event.completionType==='CLOSURE'?'CLOSURE_REPORT_FILED':event.completionType) as FIRItem['status'],mainStatus:undefined,finalFormDate:event.completedAt}));
+      return parseToIsoDate(f.finalFormDate)===targetAuditDate?[f]:[];
+    });
+    disposals.forEach((f: any) => {
       if (f.status === "CHARGESHEET_FILED" || f.mainStatus === "Chargesheet Filed" || f.mainStatus === "Challan Submitted") {
         completeChallans.push({
           srNo: completeChallans.length + 1,
@@ -312,7 +324,7 @@ export const ReportsService = {
           firNo: `${f.firNumber} u/s ${f.actsAndSections || "--"}`,
           firDate: f.firDate || auditDisplayDate,
           head: f.categoryDisplay || "General",
-          accusedArrested: f.accusedList?.length || 0,
+          accusedArrested: f.accusedList?.filter((a:any)=>a.isArrested || a.custodyStatus === "ARRESTED").length || 0,
           type: "Fresh",
           ioDetails: `${f.actionTakenData?.investigationOfficerName || "--"}${f.actionTakenData?.investigationOfficerMobile ? ` (Mob: ${f.actionTakenData.investigationOfficerMobile})` : ""}`,
         });
@@ -323,7 +335,7 @@ export const ReportsService = {
           firNo: f.firNumber,
           firDate: f.firDate || auditDisplayDate,
           head: f.categoryDisplay || "General",
-          reason: f.delayReason || f.cancellationReason || "Mistake of Fact",
+          reason: f.cancellationReason || "Not recorded",
           ioDetails: `${f.actionTakenData?.investigationOfficerName || "--"}${f.actionTakenData?.investigationOfficerMobile ? ` (Mob: ${f.actionTakenData.investigationOfficerMobile})` : ""}`,
         });
       } else if (f.status === "UNTRACED" || f.mainStatus === "Untraced") {
@@ -340,6 +352,12 @@ export const ReportsService = {
       }
     });
 
+    scopedFirs.forEach(f=>{for(const challan of f.challanRecords || []){
+      if(challan.challanMode !== 'PARTIAL' || !challan.submittedToCourt || parseToIsoDate(challan.courtSubmittedAt)!==targetAuditDate)continue;
+      partialChallans.push({srNo:partialChallans.length+1,ps:f.policeStation,firNo:f.firNumber,firDate:f.firDate,head:f.categoryDisplay || '',type:challan.challanType==='SUPPLEMENTARY'?'Supplementary':'Fresh',reasonOfPartialChallan:challan.briefFacts || 'Not recorded',ioDetails:f.assignedIoName || '--'});
+    }});
+    const reopenedCases:SitrepReopenedCase[]=scopedFirs.flatMap(f=>(f.reopenHistory || []).filter(event=>parseToIsoDate(event.reopenedAt)===targetAuditDate).map(event=>({srNo:0,ps:f.policeStation,firNo:f.firNumber,firDate:f.firDate,head:f.categoryDisplay || '',dateOfLastIif5:'Not recorded',typeOfLastIif5:event.priorCompletionReason || 'Not recorded',dateOfReopening:event.reopenedAt,reasonOfReopening:event.reason,ioDetails:event.assignedIoName || f.assignedIoName || '--'}))).map((event,i)=>({...event,srNo:i+1}));
+
     // Dynamic Rukkas from General Diary strictly on targetAuditDate (24 hrs)
     const rukkas: SitrepRukkaEntry[] = [];
     allGd.forEach((gd) => {
@@ -349,6 +367,7 @@ export const ReportsService = {
       if (gDist && !gDist.toUpperCase().includes(activeDistrict) && !activeDistrict.includes(gDist.toUpperCase())) {
         return;
       }
+      if (filterStation && filterStation !== "ALL" && gd.policeStation !== filterStation) return;
       const subject = gd.subject || "";
       const narrative = gd.narrative || "";
       const typeCode = gd.typeCode || "";
@@ -399,12 +418,13 @@ export const ReportsService = {
       return {
         ps,
         registeredPreviousDay: count,
-        uploadedCitizenPortal: count,
-        notUploadedCitizenPortal: 0,
+        uploadedCitizenPortal: matchedFirs.filter(f=>f.policeStation===ps && f.cctnsSyncStatus === "SYNCED").length,
+        notUploadedCitizenPortal: matchedFirs.filter(f=>f.policeStation===ps && f.cctnsSyncStatus !== "SYNCED").length,
       };
     });
 
     return {
+      dataQualityWarnings:["Arrest, recovery and disposal tables use recorded event dates, including older FIRs. Undated events are excluded; empty sections do not certify NIL. Upload totals reflect saved sync status only."],
       id: `SITREP-${activeDistrict}-${latestDate}`,
       reportTitle: "CRIME SITREP",
       officeTitle: "Superintendent of Police",
@@ -425,7 +445,7 @@ export const ReportsService = {
       partialChallans,
       cancellations,
       untraced,
-      reopenedCases: [],
+      reopenedCases,
       rukkas,
       uploadSummaries,
     };
@@ -438,13 +458,11 @@ export const ReportsService = {
 
     const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
     const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
-    const stationUsers = DEMO_USERS.filter(
-      (u) => !u.stationName || u.stationName.toLowerCase().includes(activeStation.toLowerCase())
-    );
+    const stationUsers = stationStaffService.getStaffForStation(activeStation);
 
-    const shoUser = DEMO_USERS.find((u) => u.role === "SHO") || DEMO_USERS[0];
-    const mhcUser = DEMO_USERS.find((u) => u.role === "MHC_GD_INCHARGE") || DEMO_USERS[4] || DEMO_USERS[0];
-    const dspUser = DEMO_USERS.find((u) => u.role === "DSP_SUBDIV") || DEMO_USERS[5] || DEMO_USERS[0];
+    const shoUser = stationUsers.find(u=>u.category === "SHO");
+    const mhcUser = stationUsers.find(u=>u.category === "MHC");
+    const dspUser = undefined;
 
     // Calculate dates for current week
     const now = new Date();
@@ -453,11 +471,11 @@ export const ReportsService = {
 
     // Compute Staff Strength dynamically from station roster
     const staffStrength = {
-      insp: stationUsers.filter((u) => u.rank === "INSPECTOR").length,
-      siPsi: stationUsers.filter((u) => u.rank === "SUB_INSPECTOR").length,
-      asiLasi: stationUsers.filter((u) => u.rank === "ASSISTANT_SUB_INSPECTOR").length,
-      hcLhc: stationUsers.filter((u) => u.rank === "HEAD_CONSTABLE").length,
-      ehcCt: stationUsers.filter((u) => u.rank === "CONSTABLE").length,
+      insp: stationUsers.filter((u) => /inspector/i.test(u.rank) && !/sub|assistant/i.test(u.rank)).length,
+      siPsi: stationUsers.filter((u) => /sub.inspector/i.test(u.rank) && !/assistant/i.test(u.rank)).length,
+      asiLasi: stationUsers.filter((u) => /assistant/i.test(u.rank)).length,
+      hcLhc: stationUsers.filter((u) => /head constable/i.test(u.rank)).length,
+      ehcCt: stationUsers.filter((u) => /^constable$/i.test(u.rank)).length,
       spo: 0,
       hgh: 0,
       hkrn: 0,
@@ -498,7 +516,7 @@ export const ReportsService = {
 
     // Compute Status of Complaints 05-P from actual website complaints
     const pendingComplaints: PendingComplaint05P[] = allComplaints
-      .filter((c) => c.status !== "COMPLETE" && (c.status as string) !== "Complete")
+      .filter((c) => !isComplaintResolved(c) && (!filterStation || filterStation === "ALL" || c.policeStation === activeStation))
       .map((c: any, idx: number) => ({
         srNo: idx + 1,
         psDiaryNo: `${c.complaintNumber || `CMP-${idx + 1}`}`,
@@ -512,25 +530,26 @@ export const ReportsService = {
 
     // 12 Parts Overview dynamically calculated from real numbers
     const part1to12Overview = [
-      { part: "PART I", table: "156 (3) Cases / Zero FIR", remarks: "NIL" },
+      { part: "PART I", table: "156 (3) Cases / Zero FIR", remarks: "Not available — verified event data required" },
       {
         part: "PART II",
         table: "IIF-5 Filling details (Disposal this week)",
-        remarks: `${stationFirs.filter((f) => f.status === "CHARGESHEET_FILED").length} Challans, ${stationFirs.filter((f) => f.status === "UNTRACED").length} Untraced`,
+        remarks: `${stationFirs.filter((f) => f.status === "CHARGESHEET_FILED" && new Date(f.finalFormDate || "").getTime() >= weekAgo.getTime() && new Date(f.finalFormDate || "").getTime() <= now.getTime()).length} dated Challans, ${stationFirs.filter((f) => f.status === "UNTRACED" && new Date(f.finalFormDate || "").getTime() >= weekAgo.getTime() && new Date(f.finalFormDate || "").getTime() <= now.getTime()).length} dated Untraced`,
       },
-      { part: "PART III", table: "Final Reports (IIF-5) u/s 173 CrPC dispatched", remarks: "NIL" },
-      { part: "PART IV", table: "Submission of Final Reports in Court this week", remarks: "NIL" },
-      { part: "PART V", table: "Cases reopened for investigation this week", remarks: "NIL" },
-      { part: "PART VI", table: "Arrests made during this week", remarks: `${uiCasesPartA.reduce((acc, c) => acc + c.noOfAccusedArrested, 0)} Arrested` },
-      { part: "PART VII", table: "Recoveries made during this week", remarks: "NIL" },
+      { part: "PART III", table: "Final Reports (IIF-5) u/s 173 CrPC dispatched", remarks: "Not available — verified event data required" },
+      { part: "PART IV", table: "Submission of Final Reports in Court this week", remarks: "Not available — verified event data required" },
+      { part: "PART V", table: "Cases reopened for investigation this week", remarks: "Not available — verified event data required" },
+      { part: "PART VI", table: "Arrests made during this week", remarks: `${stationFirs.reduce((sum,f)=>sum+(f.accusedList || []).filter(a=>(a.isArrested || a.custodyStatus === "ARRESTED") && new Date(a.arrestDate || "").getTime() >= weekAgo.getTime() && new Date(a.arrestDate || "").getTime() <= now.getTime()).length,0)} dated arrests` },
+      { part: "PART VII", table: "Recoveries made during this week", remarks: "Not available — verified event data required" },
       { part: "PART VIII", table: "List of Under Investigation cases (Part A)", remarks: `${uiCasesPartA.length} Active Cases` },
-      { part: "PART IX", table: "List of UI cases (Part B) - IIF-5 filled once", remarks: "NIL" },
-      { part: "PART X", table: "PO / Bail Jumpers / Parole Jumpers", remarks: "NIL" },
-      { part: "PART XI", table: "Details of Gangs arrested this week", remarks: "NIL" },
-      { part: "PART XII", table: "Miscellaneous (Preventive Action / Missing)", remarks: "NIL" },
+      { part: "PART IX", table: "List of UI cases (Part B) - IIF-5 filled once", remarks: "Not available — verified event data required" },
+      { part: "PART X", table: "PO / Bail Jumpers / Parole Jumpers", remarks: "Not available — verified event data required" },
+      { part: "PART XI", table: "Details of Gangs arrested this week", remarks: "Not available — verified event data required" },
+      { part: "PART XII", table: "Miscellaneous (Preventive Action / Missing)", remarks: "Not available — verified event data required" },
     ];
 
     return {
+      dataQualityWarnings:["Event counts include only dated records. Not available means data has not been verified, not NIL. Staff strength uses the station roster."],
       policeStation: activeStation.toUpperCase(),
       district: activeDistrict.toUpperCase(),
       dateRange,
@@ -538,14 +557,14 @@ export const ReportsService = {
       shoPostedSince: "--",
       mhcName: mhcUser?.name || "--",
       mhcPostedSince: "--",
-      soName: dspUser?.name || "--",
+      soName: "Not recorded",
       soChargeSince: "--",
       staffStrength,
       vehicles: [],
-      firCurrentYear: stationFirs.length,
-      firPrevYearSameTime: 0,
-      firPrevYearTotal: 0,
-      firLastOneYearTotal: stationFirs.length,
+      firCurrentYear: stationFirs.filter(f=>f.firYear===now.getFullYear()).length,
+      firPrevYearSameTime: stationFirs.filter(f=>f.firYear===now.getFullYear()-1 && f.firDate.slice(5)<=now.toISOString().slice(5,10)).length,
+      firPrevYearTotal: stationFirs.filter(f=>f.firYear===now.getFullYear()-1).length,
+      firLastOneYearTotal: stationFirs.filter(f=>Date.parse(f.firDate)>=Date.now()-365*86400000).length,
       uiCasesPartACount: uiCasesPartA.length,
       uiCasesPartBCount: 0,
       preparedByName: mhcUser?.name || "--",
@@ -578,17 +597,19 @@ export const ReportsService = {
       const stFirs = allFirs.filter((f) => (f.policeStation || "PS City Panipat") === st);
       const uiCount = stFirs.filter((f) => f.status === "UNDER_INVESTIGATION" || !f.status).length;
 
+      const ages=stFirs.filter(f=>f.status === "UNDER_INVESTIGATION" || !f.status).map(f=>getDaysDiff(f.firDate));
+      const count=(min:number,max=Infinity)=>ages.filter(d=>d>min && d<=max).length;
       return {
         srNo: idx + 1,
         stationName: st,
         totalRegd: stFirs.length,
-        over2Year: 0,
-        over1Year: 0,
-        over6Month: 0,
-        totalOver6Month: 0,
-        pctOver6Month: 0.0,
-        over3Month: 0,
-        under3Month: uiCount,
+        over2Year: count(730),
+        over1Year: count(365,730),
+        over6Month: count(180,365),
+        totalOver6Month: count(180),
+        pctOver6Month: uiCount ? count(180)/uiCount*100 : 0,
+        over3Month: count(90,180),
+        under3Month: ages.filter(d=>d<=90).length,
         totalUi: uiCount,
         uiPct: stFirs.length > 0 ? Number(((uiCount / stFirs.length) * 100).toFixed(1)) : 0,
       };
@@ -611,17 +632,19 @@ export const ReportsService = {
     );
 
     return {
+      currentYear:new Date().getFullYear(),previousYear:new Date().getFullYear()-1,
+      dataQualityWarnings:["Extortion, criminal checking and NDPS tables have no verified source feed; no-data sections are not certified NIL. Cyber amounts are unavailable."],
       meetingDate: new Date().toLocaleDateString("en-IN"),
       meetingTime: "11:00 AM",
       meetingLocation: `Police Line, ${activeDistrict}`,
       district: activeDistrict.toUpperCase(),
       comparativeRows,
       extortionOverview: {
-        totalCalls: 0,
-        casesRegistered: 0,
-        accusedNamed: 0,
-        accusedArrested: 0,
-        accusedPending: 0,
+        totalCalls: null,
+        casesRegistered: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).length,
+        accusedNamed: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.length || 0),0),
+        accusedArrested: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.filter(a=>a.isArrested || a.custodyStatus === "ARRESTED").length || 0),0),
+        accusedPending: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.filter(a=>!a.isArrested && a.custodyStatus !== "ARRESTED").length || 0),0),
         gangs: [],
       },
       uiPartAByStation,
@@ -629,16 +652,16 @@ export const ReportsService = {
       activeCriminals: [],
       ndpsStats: [],
       cyberOverview: {
-        complaints2025: 0,
-        complaints2026: cyberComplaints.length,
-        defrauded2025: "₹ 0",
-        defrauded2026: "₹ 0",
-        holdPct2025: "0.0 %",
-        holdPct2026: "0.0 %",
-        firs2025: 0,
-        firs2026: allFirs.filter((f) => f.category?.toLowerCase().includes("cyber")).length,
-        recovered2025: "₹ 0",
-        recovered2026: "₹ 0",
+        complaints2025: cyberComplaints.filter(c=>new Date(c.createdAt).getFullYear()===new Date().getFullYear()-1).length,
+        complaints2026: cyberComplaints.filter(c=>new Date(c.createdAt).getFullYear()===new Date().getFullYear()).length,
+        defrauded2025: "Not available",
+        defrauded2026: "Not available",
+        holdPct2025: "Not available",
+        holdPct2026: "Not available",
+        firs2025: allFirs.filter(f=>/cyber/i.test(f.category) && f.firYear===new Date().getFullYear()-1).length,
+        firs2026: allFirs.filter((f) => f.category?.toLowerCase().includes("cyber") && f.firYear===new Date().getFullYear()).length,
+        recovered2025: "Not available",
+        recovered2026: "Not available",
       },
     };
   },

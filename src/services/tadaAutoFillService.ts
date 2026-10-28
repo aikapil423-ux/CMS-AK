@@ -1,3 +1,5 @@
+import { createBlankTADABill } from "./tadaService";
+import { indiaDate } from "@/lib/dataIntegrity";
 import { UserSession } from "@/types";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import {
@@ -171,7 +173,11 @@ export const tadaAutoFillService = {
     // 2. Filter records within target month
     const monthPrefix = `${monthInfo.year}-${monthInfo.monthNumber}`;
     const userEntries = (allRecords || []).filter((r) => {
-      const actDate = r.activityDateTime || r.officialCreationTimestamp || "";
+      const display = r.activityDateTime || "";
+      const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(display);
+      const actDate = match ? `${match[3]}-${match[2]}-${match[1]}` : indiaDate(r.officialCreationTimestamp || display);
+      if (!r.isLocked || r.policeStation !== user.stationName || r.district !== user.district) return false;
+      if (!r.relatedRecords?.destinationLocation) return false;
       const matchesMonth = actDate.includes(monthPrefix) ||
         (actDate >= monthInfo.startDate && actDate <= monthInfo.endDate + " 23:59");
       if (!matchesMonth) return false;
@@ -186,23 +192,25 @@ export const tadaAutoFillService = {
       const narrative = (r.narrative || "").toLowerCase();
       const team = (r.relatedRecords?.teamMembers || []).map((t) => t.toLowerCase());
 
-      const isOfficer = officerName.includes(userName) || (userPno && officerPno.includes(userPno)) || (userBelt && officerBelt.includes(userBelt));
-      const isAuthor = authorName.includes(userName) || (userPno && authorPno.includes(userPno));
-      const isInTeam = team.some((t) => t.includes(userName) || (userPno && t.includes(userPno)));
+      const isOfficer = !!userName && officerName === userName || (userPno && officerPno.includes(userPno)) || (userBelt && officerBelt.includes(userBelt));
+      const isAuthor = !!userName && authorName === userName || (userPno && authorPno.includes(userPno));
+      const isInTeam = team.some((t) => !!userName && t === userName || !!userPno && t === userPno);
       const isInText = subject.includes(userName) || narrative.includes(userName);
 
-      return isOfficer || isAuthor || isInTeam || isInText;
+      return isOfficer || isInTeam;
     });
 
     const journeys: TourProgrammeJourneyRow[] = [];
 
     // 3. Convert matching live GD records to Tour journeys
     userEntries.forEach((gd, idx) => {
-      const actDate = gd.activityDateTime?.slice(0, 10) || gd.officialCreationTimestamp?.slice(0, 10) || monthInfo.startDate;
+      const display = gd.activityDateTime || "";
+      const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(display);
+      const actDate = match ? `${match[3]}-${match[2]}-${match[1]}` : indiaDate(gd.officialCreationTimestamp || display);
       const actTime = gd.activityDateTime?.slice(11, 16) || "09:30 AM";
       const dest = gd.relatedRecords?.destinationLocation || gd.subject || "District Area Jurisdiction";
-      const dist = estimateDistanceKm(dest);
-      const vehicle = gd.relatedRecords?.vehicleNumber || "Govt Gypsy HR-07-G-1234";
+      const dist = "";
+      const vehicle = gd.relatedRecords?.vehicleNumber || "";
 
       journeys.push({
         id: `auto_tour_gd_${gd.id || idx}`,
@@ -212,79 +220,15 @@ export const tadaAutoFillService = {
         departureDate: actDate,
         departureTime: actTime,
         arrivalStation: dest,
-        arrivalDdNo: `GD-${actDate}-${String(idx + 15).padStart(3, "0")}`,
-        arrivalDate: actDate,
-        arrivalTime: "05:45 PM",
+        arrivalDdNo: "",
+        arrivalDate: "",
+        arrivalTime: "",
         purposeOfJourney: gd.relatedRecords?.purpose || gd.subject || "Official Police Investigation & Court Duty",
         modeOfVehicle: vehicle,
         distanceKm: dist,
-        noOfDays: "1",
+        noOfDays: "",
       });
     });
-
-    // 4. If fewer than 3 entries existed in historical sample for this officer in that month,
-    // generate authentic Haryana Police standard duties performed by this officer
-    // (e.g. Court productions, FSL Madhuban sample deposition, FIR spot inspection, VIP escort)
-    if (journeys.length < 3) {
-      const standardDuties = [
-        {
-          day: "04",
-          depTime: "09:30 AM",
-          arrTime: "04:45 PM",
-          dest: "Hon'ble District & Sessions Courts, Panipat",
-          purpose: "Production of Case Property & Remand Papers in FIR 45/2026",
-          vehicle: "Govt Gypsy HR-07-G-1234",
-          dist: "14",
-        },
-        {
-          day: "11",
-          depTime: "08:15 AM",
-          arrTime: "06:30 PM",
-          dest: "Forensic Science Laboratory (FSL), Madhuban, Karnal",
-          purpose: "Deposition of Viscera & Chemical Samples under Special Messenger",
-          vehicle: "Govt Bolero HR-07-G-5678",
-          dist: "46",
-        },
-        {
-          day: "18",
-          depTime: "10:00 AM",
-          arrTime: "05:15 PM",
-          dest: "Khasra 14//8, Agricultural Land, Village Mirzapur",
-          purpose: "Spot Inspection, Site Plan (Nazri Naksha) & Witness Examination",
-          vehicle: "Govt Gypsy HR-07-G-1234",
-          dist: "18",
-        },
-        {
-          day: "25",
-          depTime: "07:30 AM",
-          arrTime: "08:00 PM",
-          dest: "Police Headquarters (PHQ), Sector 6, Panchkula",
-          purpose: "State Cyber Crime & Special Investigation Coordination Meeting",
-          vehicle: "Govt Bolero HR-07-G-5678",
-          dist: "88",
-        },
-      ];
-
-      standardDuties.forEach((item, sIdx) => {
-        const dateStr = `${monthInfo.year}-${monthInfo.monthNumber}-${item.day}`;
-        journeys.push({
-          id: `auto_tour_std_${user.id}_${monthInfo.monthNumber}_${sIdx}`,
-          srNo: journeys.length + 1,
-          departureDdNo: `GD-${dateStr}-00${sIdx + 3}`,
-          postingAndDepStation: user.stationName || "PS City Panipat",
-          departureDate: dateStr,
-          departureTime: item.depTime,
-          arrivalStation: item.dest,
-          arrivalDdNo: `GD-${dateStr}-01${sIdx + 4}`,
-          arrivalDate: dateStr,
-          arrivalTime: item.arrTime,
-          purposeOfJourney: item.purpose,
-          modeOfVehicle: item.vehicle,
-          distanceKm: item.dist,
-          noOfDays: "1",
-        });
-      });
-    }
 
     return journeys;
   },
@@ -297,173 +241,18 @@ export const tadaAutoFillService = {
     monthInfo: MonthInfo,
     tourJourneys: TourProgrammeJourneyRow[]
   ): TADABillRecord {
-    const userRank = user.rankDisplay || user.rank || (user as any).role || "Sub-Inspector";
-    const rankLower = userRank.toLowerCase();
-    const basicPay = rankLower.includes("inspector") ? "65000" : rankLower.includes("si") ? "53100" : "44900";
-    const daRate = getDaRateForRank(userRank);
-    const nowIso = new Date().toISOString();
-
-    // 1. Convert to Form 2 Claim Journeys with computed allowances
-    const claimJourneys: TAClaimJourneyRow[] = tourJourneys.map((tj, idx) => {
-      const days = Number(tj.noOfDays) || 1;
-      const daAmount = days * daRate;
-      const km = Number(tj.distanceKm) || 0;
-      // If vehicle is private / public, road mileage applies. If Govt vehicle, mileage = 0.
-      const isGovtVehicle = tj.modeOfVehicle.toLowerCase().includes("govt");
-      const roadMileageAmount = isGovtVehicle ? 0 : Math.round(km * 9);
-      const total = daAmount + roadMileageAmount;
-
-      return {
-        id: `claim_row_${idx + 1}_${Date.now()}`,
-        srNo: idx + 1,
-        departureStation: tj.postingAndDepStation,
-        departureDate: tj.departureDate,
-        departureTime: tj.departureTime,
-        arrivalStation: tj.arrivalStation,
-        arrivalDate: tj.arrivalDate,
-        arrivalTime: tj.arrivalTime,
-        purposeOfJourney: tj.purposeOfJourney,
-        modeOfTravel: tj.modeOfVehicle,
-        accommodationClass: "Executive / Official",
-        railSteamerFareClass: "",
-        railSteamerFareAmount: 0,
-        roadMileageKm: String(km),
-        roadMileageAmount,
-        actualExpenses: 0,
-        dailyAllowanceDays: days,
-        dailyAllowanceRate: daRate,
-        dailyAllowanceAmount: daAmount,
-        totalAmount: total,
-        remarks: `Ref: Roznamcha Departure ${tj.departureDdNo} & Wapsi ${tj.arrivalDdNo}`,
-      };
-    });
-
-    const totalClaim = claimJourneys.reduce((sum, j) => sum + j.totalAmount, 0);
-    const wordsEn = amountToWordsEnglish(totalClaim);
-    const wordsHi = amountToWordsHindi(totalClaim);
-
-    const billRefId = `TADA-${monthInfo.year}-${monthInfo.monthNumber}-${user.pno ? user.pno.replace(/\D/g, "").slice(-4) : "001"}`;
-
-    // 2. Form 1: Tour Programme
-    const form1: TourProgrammeForm = {
-      department: "HARYANA POLICE DEPARTMENT",
-      district: user.district || "Panipat",
-      employeeName: user.name,
-      designation: userRank,
-      beltEmployeeNumber: (user as any).beltNo || `${user.pno || "IO"}/KKR`,
-      month: monthInfo.month,
-      year: monthInfo.year,
-      journeys: tourJourneys,
-      claimantName: user.name,
-      claimantDesignationBelt: `${userRank} (PNO: ${user.pno || "N/A"})`,
-      claimantSignatureImg: "",
-      forwardingRemarks: `Certified that the tours entered above for ${monthInfo.label} were performed strictly on bona fide police duties in public interest as per verified Roznamcha entries.`,
-      forwardingOfficerNameTitle: "Station House Officer (SHO), PS City Panipat",
-      forwardingOfficerSignatureImg: "",
-      approvalRemarks: `Approved for submission under Punjab Police Rules & Haryana Civil Services (TA) Rules.`,
-      approvingOfficerNameTitle: "Superintendent of Police (SP), Panipat",
-      approvingOfficerSignatureImg: "",
-    };
-
-    // 3. Form 2: TA Claim Journey Details
-    const form2: TAClaimJourneyDetailsForm = {
-      claimMonth: monthInfo.month,
-      claimYear: monthInfo.year,
-      employeeName: user.name,
-      designation: userRank,
-      basicPay: basicPay,
-      headquarters: user.stationName || "PS City Panipat, Panipat",
-      gradeOfGovtServant: "Group B (Executive Police)",
-      journeys: claimJourneys,
-      totalClaimAmount: totalClaim,
-      totalClaimAmountWordsEn: wordsEn,
-      totalClaimAmountWordsHi: wordsHi,
-      amountOfAdvanceTaken: 0,
-      treasuryVoucherNumber: "",
-      treasuryVoucherDate: "",
-      passedForPaymentAmount: totalClaim,
-      passedAmountWordsEn: wordsEn,
-      passedAmountWordsHi: wordsHi,
-      minusAdvanceDrawn: 0,
-      advanceRefNumber: "",
-      advanceRefDate: "",
-      netPayableAmount: totalClaim,
-      netPayableAmountWordsEn: wordsEn,
-      netPayableAmountWordsHi: wordsHi,
-      claimantSignatureImg: "",
-      ddoSignatureImg: "",
-      ddoNameTitle: "DSP (HQ) / DDO, Panipat",
-      printedInstructionsText:
-        "1. Copy of original tour programme approved by the competent authority should invariably be attached with the claim.\n2. In case of transfer at a distance more than 500 kms, the details of members of the family with age be given.\n3. All official journey departures and arrivals verified from Roznamcha General Diary under PPR 22.48.",
-    };
-
-    // 4. Form 3: Main Bill Page
-    const form3: TABillMainPageForm = {
-      billNumber: billRefId,
-      billDate: `${monthInfo.nextMonthYear}-${monthInfo.nextMonthNum}-01`, // 01st date of following month
-      establishmentOf: `${user.stationName || "PS City Panipat"}, Haryana Police`,
-      voucherNumber: "",
-      voucherDate: "",
-      accounting: {
-        treasuryCode: "KKR-01",
-        ddoCode: "5012-POLICE",
-        majorHead: "2055",
-        subMajorHead: "00",
-        minorHead: "001",
-        subHeadScheme: "01",
-        detailedHead: "Travelling Expenses",
-        objectCode: "04-TA",
-        demandGrantNumber: "Grant No. 12 - Police",
-        planNonPlan: "NP",
-        votedCharged: "V",
-        majorHeadStampImg: "",
-      },
-      certContentsVerified: true,
-      certTaRulesCompliance: true,
-      certRemarks: `Auto-verified from Roznamcha General Diary entries for the month of ${monthInfo.label}.`,
-      certifyingOfficerSignatureImg: "",
-      certifyingOfficerNameTitle: "SHO / Reader to SP, Panipat",
-      financialYearFrom: monthInfo.year,
-      financialYearTo: String(Number(monthInfo.year) + 1),
-      appropriationAmount: 250000,
-      expenditureIncludingBill: totalClaim,
-      balanceAvailable: 250000 - totalClaim,
-      passedForAmount: totalClaim,
-      passedAmountWordsEn: wordsEn,
-      passedAmountWordsHi: wordsHi,
-      controllingOfficerSignatureImg: "",
-      controllingOfficerNameTitle: "Superintendent of Police, Panipat",
-      ddoSignatureImg: "",
-      ddoNameTitle: "DSP (HQ) / DDO, Panipat",
-      treasuryPayAmount: totalClaim,
-      treasuryPayAmountWordsEn: wordsEn,
-      treasuryPayAmountWordsHi: wordsHi,
-      treasuryClerkSignatureImg: "",
-      treasuryAstSignatureImg: "",
-      treasuryOfficerSignatureImg: "",
-      agAdmittedAmount: totalClaim,
-      agObjectedAmount: 0,
-      agReasonsOfObjections: "",
-      agAccountsOfficerSignatureImg: "",
-    };
-
-    return {
-      id: billRefId,
-      userId: user.id,
-      userName: user.name,
-      userRole: user.role,
-      status: "DRAFT",
-      createdAt: nowIso,
-      updatedAt: nowIso,
-      autoGenerated: true,
-      source: "ROZNAMCHA_GD_AUTO",
-      claimPeriod: monthInfo.label,
-      totalJourneysCount: tourJourneys.length,
-      gdReferences: tourJourneys.map((j) => j.departureDdNo).filter(Boolean),
-      form1TourProgramme: form1,
-      form2JourneyDetails: form2,
-      form3MainPage: form3,
-    };
+    const bill = createBlankTADABill(user.id, user.name);
+    bill.id = `TADA-${monthInfo.year}-${monthInfo.monthNumber}-${user.id}`;
+    bill.autoGenerated = true;
+    bill.source = "ROZNAMCHA_GD_AUTO";
+    bill.claimPeriod = monthInfo.label;
+    bill.totalJourneysCount = tourJourneys.length;
+    bill.gdReferences = tourJourneys.map(j => j.departureDdNo).filter(Boolean);
+    bill.form1TourProgramme = {...bill.form1TourProgramme, district:user.district || "", employeeName:user.name, designation:user.rankDisplay || user.rank || "", beltEmployeeNumber:user.pno || "", month:monthInfo.month, year:monthInfo.year, journeys:tourJourneys};
+    bill.form2JourneyDetails = {...bill.form2JourneyDetails, employeeName:user.name, designation:user.rankDisplay || user.rank || "", headquarters:user.stationName || "", claimMonth:monthInfo.month, claimYear:monthInfo.year, journeys:tadaService.convertTourJourneysToClaim(tourJourneys)};
+    bill.form3MainPage.financialYearFrom = String(Number(monthInfo.year) - (Number(monthInfo.monthNumber) < 4 ? 1 : 0));
+    bill.form3MainPage.financialYearTo = String(Number(bill.form3MainPage.financialYearFrom) + 1);
+    return bill;
   },
 
   /**
@@ -507,6 +296,7 @@ export const tadaAutoFillService = {
 
     // Extract GD movements and build bill
     const journeys = await this.extractUserGDEntries(user, monthInfo);
+    if (!journeys.length) return {generated:false,bill:this.buildTADABill(user,monthInfo,[]),count:0,monthLabel:monthInfo.label,message:"No verified GD movements found. No bill was saved."};
     const newBill = this.buildTADABill(user, monthInfo, journeys);
 
     // Auto-save strictly to user's TA history
@@ -553,6 +343,7 @@ export const tadaAutoFillService = {
     }
 
     const journeys = await this.extractUserGDEntries(user, monthInfo);
+    if (!journeys.length) return {generated:false,bill:this.buildTADABill(user,monthInfo,[]),count:0,monthLabel:monthInfo.label,message:"No verified GD movements found. No bill was saved."};
     const newBill = this.buildTADABill(user, monthInfo, journeys);
     const saved = tadaService.save(newBill, user.id);
 

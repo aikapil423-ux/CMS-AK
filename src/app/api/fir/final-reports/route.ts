@@ -1,6 +1,11 @@
+import { readFirRecords } from "@/services/firRepository";
+import { prisma } from "@/lib/prisma";
+import { isFirVisibleToUser } from "@/lib/firIntegrity";
+import { apiAccess, scopeAllowed, forbidden } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { finalReportDbService, FinalReportConflict } from '@/services/finalReportDbService';
+import { synchronizeFinalReportFir } from '@/services/finalReportFirSync';
 
 export const runtime = 'nodejs';
 function failed(error: unknown) {
@@ -10,34 +15,63 @@ function failed(error: unknown) {
   return NextResponse.json({ error: 'Backend could not save/load the report. Check database configuration and retry.' }, { status: 503 });
 }
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   const notifyUser = req.nextUrl.searchParams.get('notificationsFor');
   if (notifyUser) {
+    if (notifyUser !== apiUser.id) return forbidden();
     try { return NextResponse.json({ notifications: await finalReportDbService.notifications(notifyUser) }, { headers: { 'Cache-Control': 'no-store' } }); }
     catch (error) { return failed(error); }
   }
   const firId = req.nextUrl.searchParams.get('firId');
   if (!firId) {
     const station = req.nextUrl.searchParams.get('station') || undefined;
-    const district = req.nextUrl.searchParams.get('district') || undefined;
+    const district = req.nextUrl.searchParams.get('district') || (apiUser.role !== 'SUPER_ADMIN' ? apiUser.district : undefined);
+    if (apiUser.role !== 'SUPER_ADMIN' && (!district || district.toLowerCase() !== apiUser.district.toLowerCase() || !['SP_DISTRICT','DSP_SUBDIV','ASP_HQ'].includes(apiUser.role) && station !== apiUser.stationName)) return forbidden();
     if (!station && !district) return NextResponse.json({ error: 'FIR ID or station required.' }, { status: 400 });
-    try { return NextResponse.json({ items: await finalReportDbService.stationReports(station, district) }, { headers: { 'Cache-Control': 'no-store' } }); }
+    try {
+      const visible = new Set((await readFirRecords()).filter(f => isFirVisibleToUser(apiUser,f)).map(f => f.id));
+      return NextResponse.json({ items: (await finalReportDbService.stationReports(station, district)).filter(item => visible.has(item.report.complaintId)) }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     catch (error) { return failed(error); }
   }
+  const scope = (await readFirRecords()).find(f => f.id === firId);
+  if (!scope || !isFirVisibleToUser(apiUser,scope)) return forbidden();
   try { return NextResponse.json({ reports: await finalReportDbService.list(firId), history: await finalReportDbService.history(firId) }, { headers: { 'Cache-Control': 'no-store' } }); }
   catch (error) { return failed(error); }
 }
 export async function POST(req: NextRequest) {
-  try { return NextResponse.json({ report: await finalReportDbService.save(await req.json()) }); }
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
+  try {
+    const body=await req.json();
+    const canonical=(await readFirRecords()).find(f=>f.id===body.fir?.id);
+    if (!canonical) return NextResponse.json({error:"Save or import this FIR before creating its final report."},{status:409});
+    if (!isFirVisibleToUser(apiUser,canonical)) return forbidden();
+    body.fir=canonical;
+    const existing=await prisma.firFinalReport.findUnique({where:{id:body.id}});
+    if (existing && (existing.createdBy !== apiUser.id || !scopeAllowed(apiUser,existing))) return forbidden();
+    body.author={id:apiUser.id,name:apiUser.name};
+    return NextResponse.json({ report: await finalReportDbService.save(body) });
+  }
   catch (error) { return failed(error); }
 }
 export async function PATCH(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = z.object({ action: z.enum(['SEND_TO_SHO', 'SUBMIT_CHI', 'VIEW_SHO', 'APPROVE_SHO', 'REJECT_SHO']).default('SEND_TO_SHO'), reason: z.string().trim().max(10000).optional(), chiNumber: z.string().trim().min(1).max(100).optional(), id: z.string().min(1), firId: z.string().min(1), expectedVersion: z.number().int().positive(), authorId: z.string().min(1) }).parse(await req.json());
-    if (body.action === 'VIEW_SHO' || body.action === 'APPROVE_SHO' || body.action === 'REJECT_SHO') return NextResponse.json({ report: await finalReportDbService.review(body.id, body.firId, body.expectedVersion, body.authorId, body.action, body.reason) });
+    body.authorId=apiUser.id;
+    const stored=await prisma.firFinalReport.findUnique({where:{id:body.id}});
+    const canonical=(await readFirRecords()).find(f=>f.id===body.firId);
+    if (!stored || stored.firId !== body.firId || !canonical || !isFirVisibleToUser(apiUser,canonical)) return forbidden();
+    if (['SEND_TO_SHO','SUBMIT_CHI'].includes(body.action) && stored.createdBy !== apiUser.id && apiUser.role !== 'SHO') return forbidden();
+    const synced = async (report: Awaited<ReturnType<typeof finalReportDbService.review>>) => { await synchronizeFinalReportFir(report,apiUser); return NextResponse.json({report}); };
+    if (body.action === 'VIEW_SHO'  || body.action === 'APPROVE_SHO' || body.action === 'REJECT_SHO') return synced(await finalReportDbService.review(body.id, body.firId, body.expectedVersion, body.authorId, body.action, body.reason));
     if (body.action === 'SUBMIT_CHI') {
       if (!body.chiNumber) return NextResponse.json({ error: 'CHI number is required.' }, { status: 400 });
-      return NextResponse.json({ report: await finalReportDbService.submitChi(body.id, body.firId, body.expectedVersion, body.authorId, body.chiNumber) });
+      return synced(await finalReportDbService.submitChi(body.id, body.firId, body.expectedVersion, body.authorId, body.chiNumber));
     }
-    return NextResponse.json({ report: await finalReportDbService.sendToSho(body.id, body.firId, body.expectedVersion, body.authorId) });
+    return synced(await finalReportDbService.sendToSho(body.id, body.firId, body.expectedVersion, body.authorId));
   } catch (error) { return failed(error); }
 }

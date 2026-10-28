@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   LayoutGrid,
   BookOpen,
@@ -172,7 +173,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
           }`}
         >
           {/* Header */}
-          <div className="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+          <div className="cms-module-menu-header px-3.5 py-2.5 bg-[#203c88] text-white flex items-center justify-between border-b border-[#203c88]">
             <div className="flex items-center gap-2">
               <LayoutGrid className="w-3.5 h-3.5 text-amber-400" />
               <h4 className="text-xs font-bold tracking-tight">
@@ -199,7 +200,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                   onClick={() => handleNavigate(mod.href, mod.id as PoliceModule)}
                   className={`w-full text-left px-2.5 py-2 rounded-lg transition-all cursor-pointer flex items-center justify-between gap-2.5 group ${
                     mod.isActive
-                      ? "bg-slate-900 text-white shadow-xs font-semibold"
+                      ? "cms-module-selected bg-[#203c88] text-white font-semibold"
                       : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 >
@@ -207,7 +208,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                     <div
                       className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                         mod.isActive
-                          ? "bg-white/20 text-white"
+                          ? "bg-white/15 text-white"
                           : mod.color === "amber"
                           ? "bg-amber-100 text-amber-800 group-hover:bg-amber-200"
                           : mod.color === "red"
@@ -229,8 +230,8 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                   </div>
 
                   {mod.isActive && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
-                      <Check className="w-3 h-3 text-emerald-400" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-white bg-white/15 px-1.5 py-0.5 rounded border border-white/30 shrink-0">
+                      <Check className="w-3 h-3" />
                       <span>{isHindi ? "सक्रिय" : "Active"}</span>
                     </span>
                   )}

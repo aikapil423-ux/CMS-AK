@@ -853,6 +853,12 @@ export const GeneralDiaryService = {
       list = list.filter((r) => r.isLocked === filter.isLocked);
     }
 
+    // Filter by Police Station
+    if (filter.policeStation) {
+      const ps = filter.policeStation.toLowerCase().trim();
+      list = list.filter((r) => (r.policeStation || "").toLowerCase().includes(ps));
+    }
+
     // Filter by Person / Accused
     if (filter.personName) {
       const q = filter.personName.toLowerCase().trim();
@@ -1020,107 +1026,7 @@ export const GeneralDiaryService = {
         attachments: entry.attachments,
       });
       return json.draft;
-    } catch {
-      // Backend unreachable — fall back to local draft store
-    }
-    memoryRecordsStore = loadRecordsFromStorage();
-    const typeDef = memoryTypesStore.find((t) => t.code === entry.typeCode) || memoryTypesStore[0];
-
-    const nowIso = new Date().toISOString();
-    const defaultAuthor: GDOfficerParticulars = {
-      name: "HC Devinder Kumar",
-      rank: "Head Constable (MHC)",
-      beltNumber: "889/KKR",
-      pno: "05192834",
-    };
-    const defaultOfficer: GDOfficerParticulars = {
-      name: "SI Malkeet",
-      rank: "Sub-Inspector",
-      beltNumber: "512/KKR",
-      pno: "08192841",
-    };
-
-    const actualAuthor = entry.actualAuthor || defaultAuthor;
-    const entryForOfficer = entry.entryForOfficer || defaultOfficer;
-    const activityDateTime = entry.activityDateTime || nowIso;
-    const policeStation = entry.policeStation || "PS City Panipat";
-    const district = entry.district || "Panipat";
-    const narrative = entry.narrative || "";
-
-    if (entry.id) {
-      const idx = memoryRecordsStore.findIndex((r) => r.id === entry.id);
-      if (idx !== -1) {
-        if (memoryRecordsStore[idx].isLocked) {
-          throw new Error("Security Error: Locked GD entry cannot be edited under PPR 22.48.");
-        }
-        memoryRecordsStore[idx] = {
-          ...memoryRecordsStore[idx],
-          typeCode: entry.typeCode,
-          typeDisplay: entry.typeDisplay || typeDef.nameEn,
-          typeDisplayHi: entry.typeDisplayHi || typeDef.nameHi,
-          subject: entry.subject,
-          narrative,
-          activityDateTime,
-          entryForOfficer,
-          actualAuthor,
-          relatedRecords: entry.relatedRecords,
-          auditTrail: [
-            ...memoryRecordsStore[idx].auditTrail,
-            {
-              action: "EDITED",
-              performedBy: actualAuthor.name,
-              performedByPno: actualAuthor.pno,
-              performedByRank: actualAuthor.rank,
-              timestamp: nowIso,
-              auditId: generateAuditId("EDIT"),
-              remarks: "Draft updated by officer",
-            },
-          ],
-        };
-        saveRecordsToStorage(memoryRecordsStore);
-        return memoryRecordsStore[idx];
-      }
-    }
-
-    const newDraft: GeneralDiaryRecord = {
-      id: `gd_draft_${Date.now()}`,
-      gdNumber: "GD-DRAFT",
-      sequencePerDay: 0,
-      policeStation,
-      district,
-      entryForOfficer,
-      actualAuthor,
-      typeCode: entry.typeCode,
-      category: entry.category || typeDef.category,
-      typeDisplay: entry.typeDisplay || typeDef.nameEn,
-      typeDisplayHi: entry.typeDisplayHi || typeDef.nameHi,
-      subject: entry.subject,
-      narrative,
-      caseType: entry.caseType || entry.relatedRecords?.caseType,
-      actsAndSections: entry.actsAndSections || entry.relatedRecords?.actsAndSections,
-      majorAct: entry.majorAct || entry.relatedRecords?.majorAct,
-      activityDateTime,
-      officialCreationTimestamp: nowIso,
-      status: "DRAFT",
-      source: "MANUAL_ENTRY",
-      isLocked: false,
-      relatedRecords: entry.relatedRecords,
-      auditTrail: [
-        {
-          action: "CREATED",
-          performedBy: actualAuthor.name,
-          performedByPno: actualAuthor.pno,
-          performedByRank: actualAuthor.rank,
-          timestamp: nowIso,
-          auditId: generateAuditId("DRAFT"),
-          remarks: "Saved as unofficial draft",
-        },
-      ],
-    };
-
-    memoryRecordsStore.unshift(newDraft);
-    saveRecordsToStorage(memoryRecordsStore);
-    return newDraft;
+    } catch(error) { throw error; }
   },
 
   // -------------------------------------------------------------
@@ -1133,18 +1039,7 @@ export const GeneralDiaryService = {
       memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== id);
       saveRecordsToStorage(memoryRecordsStore);
       return json.success;
-    } catch {
-      // fall back to local deletion
-    }
-    memoryRecordsStore = loadRecordsFromStorage();
-    const target = memoryRecordsStore.find((r) => r.id === id);
-    if (!target) return false;
-    if (target.isLocked) {
-      throw new Error("Violation Error: Locked GD entry cannot be deleted. All entries are permanent under law.");
-    }
-    memoryRecordsStore = memoryRecordsStore.filter((r) => r.id !== id);
-    saveRecordsToStorage(memoryRecordsStore);
-    return true;
+    } catch(error) { throw error; }
   },
 
   // -------------------------------------------------------------
@@ -1155,160 +1050,11 @@ export const GeneralDiaryService = {
     verifier: GDOfficerParticulars,
     verificationRemarks?: string
   ): Promise<GeneralDiaryRecord> {
-    // Backend-first: server assigns the atomic per-day GD number
-    if (typeof idOrData === "string") {
-      try {
-        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
-          action: "VERIFY_AND_LOCK",
-          id: idOrData,
-          verifier,
-          remarks: verificationRemarks,
-        });
-        memoryRecordsStore = loadRecordsFromStorage().filter((r) => r.id !== idOrData);
-        saveRecordsToStorage(memoryRecordsStore);
-        return json.record;
-      } catch {
-        // fall back to local lock flow
-      }
-    }
-    memoryRecordsStore = loadRecordsFromStorage();
-    const now = new Date();
-    const nowIso = now.toISOString();
-
-    let targetRecord: GeneralDiaryRecord | undefined;
-
-    if (typeof idOrData === "string") {
-      targetRecord = memoryRecordsStore.find((r) => r.id === idOrData);
-    } else if (idOrData.id) {
-      targetRecord = memoryRecordsStore.find((r) => r.id === idOrData.id);
-    }
-
-    if (targetRecord && targetRecord.isLocked) {
-      throw new Error("Security Violation: This General Diary record is already LOCKED and immutable.");
-    }
-
-    const activityDate = (targetRecord?.activityDateTime || (idOrData as any)?.activityDateTime || nowIso)
-      .split(" ")[0]
-      .split("T")[0];
-
-    // Atomically assign unique sequential GD Number
-    const { gdNumber, sequence } = this.getNextAtomicGDNumber(activityDate);
-    const auditId = generateAuditId("V-LOCK");
-
-    if (targetRecord) {
-      // Transition from DRAFT / SUGGESTED to LOCKED
-      targetRecord.gdNumber = gdNumber;
-      targetRecord.sequencePerDay = sequence;
-      targetRecord.status = "LOCKED";
-      targetRecord.isLocked = true;
-      targetRecord.verificationTimestamp = nowIso;
-      targetRecord.verificationAuditId = auditId;
-      targetRecord.verifiedBy = verifier;
-
-      // Allow any final reviewed updates from idOrData if passed as object
-      if (typeof idOrData === "object") {
-        if (idOrData.subject) targetRecord.subject = idOrData.subject;
-        if (idOrData.narrative) targetRecord.narrative = idOrData.narrative;
-        if (idOrData.entryForOfficer) targetRecord.entryForOfficer = idOrData.entryForOfficer;
-        if (idOrData.activityDateTime) targetRecord.activityDateTime = idOrData.activityDateTime;
-        if (idOrData.relatedRecords) targetRecord.relatedRecords = idOrData.relatedRecords;
-      }
-
-      targetRecord.auditTrail.push({
-        action: "VERIFIED",
-        performedBy: verifier.name,
-        performedByPno: verifier.pno,
-        performedByRank: verifier.rank,
-        timestamp: nowIso,
-        auditId: generateAuditId("VER"),
-        remarks: verificationRemarks || "Human verification completed",
-      });
-
-      targetRecord.auditTrail.push({
-        action: "LOCKED",
-        performedBy: verifier.name,
-        performedByPno: verifier.pno,
-        performedByRank: verifier.rank,
-        timestamp: nowIso,
-        auditId,
-        remarks: `Permanently locked as ${gdNumber} under PPR 22.48`,
-      });
-
-      // Back-dated local entry — renumber the whole day chronologically
-      resequenceLocalDay(gdRecordDateKey(targetRecord));
-
-      saveRecordsToStorage(memoryRecordsStore);
-      return targetRecord;
-    }
-
-    // Direct new entry straight to Verify & Lock
-    const payload = idOrData as any;
-    const typeDef = memoryTypesStore.find((t) => t.code === payload.typeCode) || memoryTypesStore[0];
-
-    const newLockedRecord: GeneralDiaryRecord = {
-      id: `gd_${Date.now()}`,
-      gdNumber,
-      sequencePerDay: sequence,
-      policeStation: payload.policeStation || "PS City Panipat",
-      district: payload.district || "Panipat",
-      entryForOfficer: payload.entryForOfficer || verifier,
-      actualAuthor: payload.actualAuthor || verifier,
-      typeCode: payload.typeCode,
-      category: typeDef.category,
-      typeDisplay: typeDef.nameEn,
-      typeDisplayHi: typeDef.nameHi,
-      subject: payload.subject,
-      narrative: payload.narrative,
-      caseType: payload.caseType || payload.relatedRecords?.caseType,
-      actsAndSections: payload.actsAndSections || payload.relatedRecords?.actsAndSections,
-      majorAct: payload.majorAct || payload.relatedRecords?.majorAct,
-      activityDateTime: payload.activityDateTime || `${activityDate} ${now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`,
-      officialCreationTimestamp: nowIso,
-      verificationTimestamp: nowIso,
-      status: "LOCKED",
-      source: payload.source || "MANUAL_ENTRY",
-      isLocked: true,
-      verificationAuditId: auditId,
-      verifiedBy: verifier,
-      relatedRecords: payload.relatedRecords || {},
-      attachments: payload.attachments || [],
-      auditTrail: [
-        {
-          action: "CREATED",
-          performedBy: (payload.actualAuthor || verifier).name,
-          performedByPno: (payload.actualAuthor || verifier).pno,
-          performedByRank: (payload.actualAuthor || verifier).rank,
-          timestamp: nowIso,
-          auditId: generateAuditId("NEW"),
-        },
-        {
-          action: "VERIFIED",
-          performedBy: verifier.name,
-          performedByPno: verifier.pno,
-          performedByRank: verifier.rank,
-          timestamp: nowIso,
-          auditId: generateAuditId("VER"),
-          remarks: verificationRemarks || "Officer confirmed factual authenticity",
-        },
-        {
-          action: "LOCKED",
-          performedBy: verifier.name,
-          performedByPno: verifier.pno,
-          performedByRank: verifier.rank,
-          timestamp: nowIso,
-          auditId,
-          remarks: `Permanently assigned ${gdNumber}`,
-        },
-      ],
-    };
-
-    memoryRecordsStore.unshift(newLockedRecord);
-    resequenceLocalDay(gdRecordDateKey(newLockedRecord));
-    saveRecordsToStorage(memoryRecordsStore);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("cms-gd-updated"));
-    }
-    return newLockedRecord;
+    const payload = typeof idOrData === "string"
+      ? {action:"VERIFY_AND_LOCK",id:idOrData,verifier,remarks:verificationRemarks}
+      : {...idOrData,action:"CREATE_LOCKED",actualAuthor:verifier};
+    const json=await gdApiPost<{record:GeneralDiaryRecord}>(payload);
+    return json.record;
   },
 
   // -------------------------------------------------------------
@@ -1800,12 +1546,13 @@ export const GeneralDiaryService = {
   // -------------------------------------------------------------
   // 10. Backward-Compatibility Methods for existing components
   // -------------------------------------------------------------
-  async getEntries(filter?: { date?: string; search?: string; entryType?: string }): Promise<GeneralDiaryRecord[]> {
+  async getEntries(filter?: { date?: string; search?: string; entryType?: string; policeStation?: string }): Promise<GeneralDiaryRecord[]> {
     const res = await this.getPaginatedEntries({
       startDate: filter?.date,
       endDate: filter?.date,
       keyword: filter?.search,
       typeCode: filter?.entryType,
+      policeStation: filter?.policeStation,
       pageSize: 500,
     });
     return res.records;
@@ -1843,94 +1590,12 @@ export const GeneralDiaryService = {
     station?: string,
     relatedComplaintNumber?: string
   ): Promise<GeneralDiaryRecord> {
-    if (typeof entryOrSubject === "object") {
-      const payload = entryOrSubject;
-      // Backend-first: server stamps the GD number by chronological position
-      try {
-        const json = await gdApiPost<{ record: GeneralDiaryRecord }>({
-          action: "CREATE_LOCKED",
-          typeCode: payload.typeCode,
-          category: payload.category,
-          typeDisplay: payload.typeDisplay,
-          typeDisplayHi: payload.typeDisplayHi,
-          subject: payload.subject,
-          narrative: payload.narrative,
-          entryForOfficer: payload.entryForOfficer,
-          actualAuthor: payload.actualAuthor,
-          policeStation: payload.policeStation,
-          district: payload.district,
-          source: payload.source,
-          caseType: payload.caseType,
-          actsAndSections: payload.actsAndSections,
-          actsAndSectionsList: payload.actsAndSectionsList,
-          majorAct: payload.majorAct,
-          relatedRecords: payload.relatedRecords,
-          attachments: payload.attachments,
-          activityDate: payload.activityDate,
-          activityTime: payload.activityTime,
-        });
-        return json.record;
-      } catch {
-        // Backend unreachable — fall back to the local register flow
-      }
-      const typeDef = memoryTypesStore.find((t) => t.code === payload.typeCode) || memoryTypesStore[0];
-      const author: GDOfficerParticulars = payload.actualAuthor || {
-        name: "HC Devinder Kumar",
-        rank: "Head Constable (MHC)",
-        pno: "HR-05192834",
-        beltNumber: "889/KKR",
-      };
-      return this.verifyAndLockEntry(
-        {
-          subject: payload.subject,
-          narrative: payload.narrative,
-          typeCode: payload.typeCode,
-          category: payload.category || typeDef.category,
-          typeDisplay: payload.typeDisplay || typeDef.nameEn,
-          typeDisplayHi: payload.typeDisplayHi || typeDef.nameHi,
-          caseType: payload.caseType,
-          actsAndSections: payload.actsAndSections,
-          majorAct: payload.majorAct,
-          activityDateTime:
-            payload.activityDate && payload.activityTime
-              ? formatGDActivityDateTime(
-                  new Date(`${payload.activityDate}T${payload.activityTime}:00`)
-                )
-              : payload.activityDateTime
-              ? (payload.activityDateTime.includes("T") ? formatGDActivityDateTime(new Date(payload.activityDateTime)) : payload.activityDateTime)
-              : formatGDActivityDateTime(new Date()),
-          entryForOfficer: payload.entryForOfficer || author,
-          actualAuthor: author,
-          policeStation: payload.policeStation || "PS City Panipat",
-          district: payload.district || "Panipat",
-          source: payload.source || "MANUAL_ENTRY",
-          relatedRecords: payload.relatedRecords || {},
-          attachments: payload.attachments || [],
-        },
-        author,
-        "Direct verified entry"
-      );
-    } else {
-      const author: GDOfficerParticulars = {
-        name: officerName || "Police Officer",
-        rank: "Police Officer",
-        pno: officerPno || "05192834",
-        beltNumber: officerPno ? `${officerPno.slice(-3)}/KKR` : "889/KKR",
-      };
-      return this.verifyAndLockEntry(
-        {
-          subject: entryOrSubject,
-          narrative: narrative || "",
-          typeCode: typeof entryType === "string" ? entryType : "OTHERS",
-          policeStation: station || "PS City Panipat",
-          relatedRecords: {
-            complaintNumber: relatedComplaintNumber,
-          },
-        },
-        author,
-        "Verified entry created"
-      );
-    }
+    const payload=typeof entryOrSubject === "object" ? entryOrSubject : {
+      subject:entryOrSubject,narrative:narrative || "",typeCode:typeof entryType === "string"?entryType:"OTHERS",
+      policeStation:station,relatedRecords:{complaintNumber:relatedComplaintNumber},
+    };
+    const json=await gdApiPost<{record:GeneralDiaryRecord}>({...payload,action:"CREATE_LOCKED"});
+    return json.record;
   },
 
   async getTodayCount(): Promise<number> {

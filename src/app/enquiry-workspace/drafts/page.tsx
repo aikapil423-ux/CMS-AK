@@ -41,7 +41,8 @@ import {
   Banknote,
   Handshake,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

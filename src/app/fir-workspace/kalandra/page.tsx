@@ -46,7 +46,7 @@ import {
   KalandraSupportingDoc
 } from "@/types/kalandra";
 import { kalandraService, INITIAL_KALANDRA_TEMPLATES } from "@/services/kalandraService";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1136,6 +1136,7 @@ function KalandraWorkspaceContent() {
                   </label>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={formData.incidentDate || ""}
                     onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
                     className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all cursor-pointer"

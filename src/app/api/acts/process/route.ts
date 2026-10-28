@@ -1,8 +1,11 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -184,47 +187,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
       }
     }
 
-    // Heuristic Smart Fallback if AI service is unreachable or no key provided
-    const fallbackTitle = documentTitle.trim() || baseName;
-    const cleanShort = fallbackTitle.split(",")[0].trim().slice(0, 30);
-    const mockPreamble = `${fallbackTitle.toUpperCase()}\n\nOfficial Gazette Notification / Statutory Document\nRecorded in Haryana Police Statutory Database.\n\nBE it enacted / notified as follows:—\n\nPreliminary provisions and regulatory rules applicable across jurisdiction.`;
-
-    const fallbackResult = {
-      title: fallbackTitle,
-      shortName: cleanShort,
-      actNumber: `Ref ${new Date().getFullYear()}/${Math.floor(Math.random() * 900 + 100)}`,
-      enactmentDate: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
-      effectiveDate: "In Force",
-      category: "SPECIAL_ACT",
-      categoryLabel: "Special & Local Law / Statutory Document",
-      totalSections: 1,
-      totalChapters: 1,
-      description: `Official statutory document registered as ${fallbackTitle}. Contains regulatory rules, legal provisions, and police enforcement directives.`,
-      preambleVerbatim: mockPreamble,
-      verbatimText: fallbackText || mockPreamble,
-      chapters: [
-        { chapterNumber: "Part I", title: "General Provisions", sectionsRange: "Sec 1" }
-      ],
-      keySections: [
-        {
-          sectionNumber: "1",
-          title: "General Scope and Application",
-          chapter: "Part I",
-          description: `Statutory provisions of ${fallbackTitle}.`,
-          verbatimText: `1. (1) This document encompasses the official statutory provisions, regulatory orders, and procedures of ${fallbackTitle}.\n(2) It shall apply to all matters within lawful jurisdiction.`,
-          punishment: "As prescribed by law",
-          cognizable: "Cognizable",
-          bailable: "Bailable",
-          triableBy: "Competent Court"
-        }
-      ]
-    };
-
-    return NextResponse.json({
-      success: true,
-      modelUsed: "heuristic-parser",
-      actData: fallbackResult,
-    });
+    return NextResponse.json({success:false,error:"Document analysis is unavailable. No legal provisions were extracted. Retry or enter verified source text manually."}, {status:503});
   } catch (error: any) {
     console.error("Error processing document:", error);
     return NextResponse.json(

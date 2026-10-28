@@ -97,6 +97,7 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
         id="printable-igp-presentation"
         className="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm text-slate-900 font-sans max-w-5xl mx-auto"
       >
+        {data.dataQualityWarnings?.map((warning,i)=><p key={i} className="my-2 border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{warning}</p>)}
         {/* SLIDE 1: Title & Meeting Header */}
         {(viewMode === "DOCUMENT" || currentSlide === 1) && (
           <div className="text-center border-b pb-8 mb-8 animate-in fade-in-50">
@@ -113,7 +114,7 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
               Meeting held on {data.meetingDate} at {data.meetingTime} at {data.meetingLocation}
             </p>
             <p className="text-xs font-mono text-slate-500 mt-1">
-              Comparative Crime Assessment (2025 vs 2026 Snapshot)
+              Comparative Crime Assessment ({data.previousYear ?? new Date().getFullYear()-1} vs {data.currentYear ?? new Date().getFullYear()} Snapshot)
             </p>
           </div>
         )}
@@ -125,19 +126,19 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
               <h2 className="text-sm font-black text-slate-900 uppercase">
                 1. Comparative Crime Data Analysis (2-Year Snapshot)
               </h2>
-              <span className="text-[11px] text-slate-500 font-mono">2025 / 2026 — available CMS records</span>
+              <span className="text-[11px] text-slate-500 font-mono">{data.previousYear ?? new Date().getFullYear()-1} / {data.currentYear ?? new Date().getFullYear()} — available CMS records</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border border-slate-300 text-left">
                 <thead className="bg-slate-100 font-bold border-b border-slate-300">
                   <tr>
                     <th className="p-2 border-r border-slate-300">Category / Head</th>
-                    <th className="p-2 border-r border-slate-300 text-center w-20">2025 Regd.</th>
-                    <th className="p-2 border-r border-slate-300 text-center w-20">2026 Regd.</th>
+                    <th className="p-2 border-r border-slate-300 text-center w-20">{data.previousYear ?? new Date().getFullYear()-1} Regd.</th>
+                    <th className="p-2 border-r border-slate-300 text-center w-20">{data.currentYear ?? new Date().getFullYear()} Regd.</th>
                     <th className="p-2 border-r border-slate-300 text-center w-20">Change</th>
                     <th className="p-2 border-r border-slate-300 text-center w-20">Change %</th>
-                    <th className="p-2 border-r border-slate-300 text-center w-24">2026 Chargesheet %</th>
-                    <th className="p-2 text-center w-24">2026 Cases with Arrest %</th>
+                    <th className="p-2 border-r border-slate-300 text-center w-24">{data.currentYear ?? new Date().getFullYear()} Chargesheet %</th>
+                    <th className="p-2 text-center w-24">{data.currentYear ?? new Date().getFullYear()} Cases with Arrest %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -177,7 +178,7 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
               <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] text-slate-500 uppercase font-semibold">Total Calls</span>
-                <p className="text-lg font-black text-slate-900 font-mono mt-0.5">{data.extortionOverview.totalCalls}</p>
+                <p className="text-lg font-black text-slate-900 font-mono mt-0.5">{data.extortionOverview.totalCalls ?? "Not available"}</p>
               </div>
               <div className="p-2.5 rounded-xl border border-slate-200 bg-slate-50">
                 <span className="text-[10px] text-slate-500 uppercase font-semibold">Cases Regd</span>
@@ -390,15 +391,15 @@ export function IgpPresentationView({ data }: IgpPresentationViewProps) {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
               <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
-                <span className="text-[10px] text-slate-500 uppercase">Complaints Received (2026)</span>
+                <span className="text-[10px] text-slate-500 uppercase">Complaints Received ({data.currentYear ?? new Date().getFullYear()})</span>
                 <p className="text-base font-black text-slate-900 font-mono mt-1">{data.cyberOverview.complaints2026}</p>
               </div>
               <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
-                <span className="text-[10px] text-slate-500 uppercase">Defrauded Amount (2026)</span>
+                <span className="text-[10px] text-slate-500 uppercase">Defrauded Amount ({data.currentYear ?? new Date().getFullYear()})</span>
                 <p className="text-sm font-bold text-red-900 font-mono mt-1">{data.cyberOverview.defrauded2026}</p>
               </div>
               <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
-                <span className="text-[10px] text-slate-500 uppercase">FIRs Registered (2026)</span>
+                <span className="text-[10px] text-slate-500 uppercase">FIRs Registered ({data.currentYear ?? new Date().getFullYear()})</span>
                 <p className="text-base font-black text-blue-900 font-mono mt-1">{data.cyberOverview.firs2026}</p>
               </div>
               <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50">

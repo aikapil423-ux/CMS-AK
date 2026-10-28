@@ -381,25 +381,25 @@ export function CrimeSitrepView({
   const handleAddFir = () => {
     const newEntry: SitrepFirEntry = {
       srNo: data.firEntries.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      head: "Snatching",
-      ipcSections: "BNS 304",
-      firNo: `${100 + data.firEntries.length}/2026`,
-      dated: `${data.reportDate} 10:00:00`,
-      us: "BNS 304",
-      complainant: "Citizen Name, Age 32 R/o Panipat",
-      complainantMobile: "9812000000",
-      victim: "Citizen Name",
-      accused: "Unknown person on motorcycle",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      head: "",
+      ipcSections: "",
+      firNo: "",
+      dated: "",
+      us: "",
+      complainant: "",
+      complainantMobile: "",
+      victim: "",
+      accused: "",
       suspectedPersons: false,
-      occurrenceFrom: `${data.reportDate} 08:30:00`,
-      occurrenceTo: `${data.reportDate} 08:35:00`,
-      totalPropertyAmount: "5000",
-      placeOfOccurrence: "Near Market Gate",
-      briefFacts: "Complainant stated unknown persons snatched mobile phone.",
-      reasonOfDelay: "Nil",
-      ioNameRank: "SI Rajesh Kumar",
-      ioMobile: "9812033441",
+      occurrenceFrom: "",
+      occurrenceTo: "",
+      totalPropertyAmount: "",
+      placeOfOccurrence: "",
+      briefFacts: "",
+      reasonOfDelay: "",
+      ioNameRank: "",
+      ioMobile: "",
     };
     setData((prev) => ({
       ...prev,
@@ -430,13 +430,13 @@ export function CrimeSitrepView({
   const handleAddArrest = () => {
     const newEntry: SitrepArrestEntry = {
       srNo: data.arrests.length + 1,
-      gdNoArrestTime: "GD-0042\n12:30",
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNoAndUs: "102/2026 u/s 304 BNS",
-      head: "Snatching",
-      firDate: data.reportDate,
-      accusedDetails: "Rakesh Kumar @ Kalia (24) S/o Ram Lal R/o Panipat",
-      ioDetails: "SI Ramesh Kumar, Sub Inspector (Mob: 9812000001)",
+      gdNoArrestTime: "",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNoAndUs: "",
+      head: "",
+      firDate: "",
+      accusedDetails: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -463,13 +463,13 @@ export function CrimeSitrepView({
   const handleAddRecovery = () => {
     const newEntry: SitrepRecoveryEntry = {
       srNo: data.recoveries.length + 1,
-      gdNoRecoveryTime: "GD-0048\n14:00",
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNoAndUs: "102/2026 u/s 304 BNS",
-      head: "Snatching",
-      firDate: data.reportDate,
-      recoveredItems: "Mobile Phone (Make: OnePlus) Qty: 1 Value: ₹ 22,000",
-      ioDetails: "SI Ramesh Kumar, Sub Inspector (Mob: 9812000001)",
+      gdNoRecoveryTime: "",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNoAndUs: "",
+      head: "",
+      firDate: "",
+      recoveredItems: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -496,15 +496,15 @@ export function CrimeSitrepView({
   const handleAddModification = () => {
     const newEntry: SitrepSectionModification = {
       srNo: data.modifications.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "88/2026",
-      firDate: data.reportDate,
-      originalSection: "Sec 303(2) BNS",
-      sectionAdded: "Sec 304 BNS",
-      sectionRemoved: "Nil",
-      head: "Snatching",
-      dateOfModification: data.reportDate,
-      ioDetails: "ASI Sandeep Singh",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      originalSection: "",
+      sectionAdded: "",
+      sectionRemoved: "",
+      head: "",
+      dateOfModification: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -531,13 +531,13 @@ export function CrimeSitrepView({
   const handleAddCompleteChallan = () => {
     const newEntry: SitrepDisposalEntry = {
       srNo: data.completeChallans.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "21/2026 u/s 304 BNS",
-      firDate: data.reportDate,
-      head: "Snatching",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      head: "",
       accusedArrested: 1,
       type: "Fresh",
-      ioDetails: "SI Ramesh Kumar",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -564,14 +564,14 @@ export function CrimeSitrepView({
   const handleAddPartialChallan = () => {
     const newEntry: SitrepDisposalEntry = {
       srNo: data.partialChallans.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "45/2026 u/s 309 BNS",
-      firDate: data.reportDate,
-      head: "Robbery",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      head: "",
       accusedArrested: 2,
       type: "Fresh",
-      ioDetails: "SI Rajesh Kumar",
-      reasonOfPartialChallan: "Co-accused absconding, FSL report pending",
+      ioDetails: "",
+      reasonOfPartialChallan: "",
     };
     setData((prev) => ({
       ...prev,
@@ -598,12 +598,12 @@ export function CrimeSitrepView({
   const handleAddCancellation = () => {
     const newEntry: SitrepDisposalEntry = {
       srNo: data.cancellations.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "12/2026",
-      firDate: data.reportDate,
-      head: "Economic Offences",
-      reason: "Mistake of Fact",
-      ioDetails: "Inspector Surender Singh",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      head: "",
+      reason: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -630,13 +630,13 @@ export function CrimeSitrepView({
   const handleAddUntraced = () => {
     const newEntry: SitrepDisposalEntry = {
       srNo: data.untraced.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "54/2026",
-      firDate: data.reportDate,
-      head: "MV Theft",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      head: "",
       byName: "No",
-      propertyStolenOrInvolved: "45000",
-      ioDetails: "ASI Sandeep Singh",
+      propertyStolenOrInvolved: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -663,15 +663,15 @@ export function CrimeSitrepView({
   const handleAddReopenedCase = () => {
     const newEntry: SitrepReopenedCase = {
       srNo: data.reopenedCases.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      firNo: "41/2025",
-      firDate: "10/11/2025",
-      head: "Robbery",
-      dateOfLastIif5: "15/01/2026",
-      typeOfLastIif5: "Chargesheet (Complete)-UC",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      firNo: "",
+      firDate: "",
+      head: "",
+      dateOfLastIif5: "",
+      typeOfLastIif5: "",
       dateOfReopening: data.reportDate,
-      reasonOfReopening: "Because of arrest in the same FIR",
-      ioDetails: "SI Rajesh Kumar",
+      reasonOfReopening: "",
+      ioDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -698,10 +698,10 @@ export function CrimeSitrepView({
   const handleAddRukka = () => {
     const newEntry: SitrepRukkaEntry = {
       srNo: data.rukkas.length + 1,
-      ps: selectedPs !== "ALL" ? selectedPs : "PS City Panipat",
-      patientDetails: "Amit Kumar, M, Age 28 S/o Mohan Lal R/o Panipat, Mob: 9812033441",
-      rukkaIdHospital: "RUKKA-2026-901, General Hospital Panipat",
-      briefDetails: "Assault case, admitted at 09:30 AM, brought by brother.",
+      ps: selectedPs !== "ALL" ? selectedPs : "",
+      patientDetails: "",
+      rukkaIdHospital: "",
+      briefDetails: "",
     };
     setData((prev) => ({
       ...prev,
@@ -727,7 +727,7 @@ export function CrimeSitrepView({
   // 8. Section XI: Upload Summaries
   const handleAddUploadSummary = () => {
     const newEntry: SitrepUploadSummary = {
-      ps: "PS Sector 29 Panipat",
+      ps: "",
       registeredPreviousDay: 1,
       uploadedCitizenPortal: 1,
       notUploadedCitizenPortal: 0,
@@ -2255,6 +2255,7 @@ export function CrimeSitrepView({
         id="printable-sitrep-document"
         className="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm text-slate-900 font-sans max-w-5xl mx-auto space-y-6"
       >
+{data.dataQualityWarnings?.map((warning,i)=><p key={i} className="my-2 border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{warning}</p>)}
         {/* 1. REPORT GENERAL INFORMATION / COVER HEADER */}
         <div className="text-center border-b pb-6 relative">
           <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center font-bold text-lg shadow-xs">

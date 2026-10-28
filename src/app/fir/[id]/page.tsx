@@ -2,7 +2,8 @@
 import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -50,7 +51,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ComplaintService } from "@/services/complaintService";
@@ -282,7 +283,7 @@ export default function FIRProfilePage() {
     }
     setIsSubmittingReopenDetail(true);
     try {
-      const updated = firService.reopenCompletedCase({
+      const updated = await firService.reopenCompletedCase({
         firId: fir.id,
         reopenedBy: currentUser?.name || "Competent Authority",
         reopenedByRank: currentUser?.role || "Authorized Officer",
@@ -528,7 +529,7 @@ export default function FIRProfilePage() {
     };
   }, []);
 
-  const handleConfirmAssign = () => {
+  const handleConfirmAssign = async () => {
     if (!isSho) {
       alert("Access Denied: Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
       return;
@@ -539,7 +540,7 @@ export default function FIRProfilePage() {
 
     setAssignmentSubmitting(true);
     try {
-      firService.assignIo(
+      await firService.assignIo(
         fir.id,
         selectedOfficer.id,
         selectedOfficer.name,
@@ -569,7 +570,7 @@ export default function FIRProfilePage() {
     }
   };
 
-  const handleUploadZimniSubmit = (e: React.FormEvent) => {
+  const handleUploadZimniSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !uploadZimniTitle.trim()) return;
 
@@ -592,8 +593,8 @@ export default function FIRProfilePage() {
         isUploaded: true,
       };
 
-      firService.addCaseDiary(fir.id, note);
-      firService.addAuditRecord(
+      await firService.addCaseDiary(fir.id, note);
+      await firService.addAuditRecord(
         fir.id,
         "CASE_DIARY_RECORDED",
         `Uploaded Zimni: ${uploadZimniTitle}`,
@@ -614,7 +615,7 @@ export default function FIRProfilePage() {
           fileSize: uploadZimniFileSize || "24.0 KB",
           dataUrl: uploadZimniFileDataUrl,
         };
-        firService.addDocument(fir.id, newDoc);
+        await firService.addDocument(fir.id, newDoc);
 
         universalEvidenceService
           .registerAndProcess({
@@ -711,7 +712,7 @@ export default function FIRProfilePage() {
     }
 
     try {
-      const updated = firService.deleteCaseDiary(fir.id, cdId, currentUser.name);
+      const updated = await firService.deleteCaseDiary(fir.id, cdId, currentUser.name);
       if (updated) {
         setFir(updated);
       }
@@ -725,7 +726,7 @@ export default function FIRProfilePage() {
     }
   };
 
-  const handleAddDocument = (e: React.FormEvent) => {
+  const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !docTitle.trim()) return;
 
@@ -741,7 +742,7 @@ export default function FIRProfilePage() {
       fileSize: docFileSize || "45.0 KB",
     };
 
-    firService.addDocument(fir.id, newDoc);
+    await firService.addDocument(fir.id, newDoc);
 
     // Auto-trigger Roznamcha GD suggestion if the added document is an Arrest Memo, Crime Detail, or Seizure Form
     const lowerDocTitle = docTitle.toLowerCase();
@@ -830,20 +831,20 @@ export default function FIRProfilePage() {
     fetchFir();
   };
 
-  const handleSubmitFinalForm = (e: React.FormEvent) => {
+  const handleSubmitFinalForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !finalFormSummary.trim()) return;
 
     setFinalFormSubmitting(true);
     try {
-      firService.submitFinalForm(
+      await firService.submitFinalForm(
         fir.id,
         finalFormType,
         courtName,
         currentUser.name || "IO",
         finalFormSummary
       );
-      firService.addAuditRecord(
+      await firService.addAuditRecord(
         fir.id,
         "FINAL_FORM_SUBMITTED",
         `Filed ${finalFormType} report for submission before ${courtName}`,
@@ -919,7 +920,7 @@ export default function FIRProfilePage() {
     return list;
   }, [fir, currentUser, backendReports]);
 
-  const handleGenerateDocumentTemplate = (templateKey: string) => {
+  const handleGenerateDocumentTemplate = async (templateKey: string) => {
     if (!fir) return;
     setGenerateDocDropdownOpen(false);
 
@@ -996,7 +997,7 @@ export default function FIRProfilePage() {
       dataUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`,
     };
 
-    firService.addDocument(fir.id, newDoc);
+    await firService.addDocument(fir.id, newDoc);
     fetchFir();
     setDocPreviewItem(newDoc);
   };
@@ -1045,10 +1046,10 @@ export default function FIRProfilePage() {
     }
   };
 
-  const handleDeleteDocument = (docId: string) => {
+  const handleDeleteDocument = async (docId: string) => {
     if (!fir) return;
     if (confirm("Are you sure you want to delete this document from the FIR docket?")) {
-      firService.deleteDocument(fir.id, docId);
+      await firService.deleteDocument(fir.id, docId);
       fetchFir();
     }
   };
@@ -1149,7 +1150,7 @@ export default function FIRProfilePage() {
     setReportDraftModalOpen(true);
   };
 
-  const handleSaveReportDraft = (e: React.FormEvent) => {
+  const handleSaveReportDraft = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !reportDraftTitle.trim()) return;
 
@@ -1168,7 +1169,7 @@ export default function FIRProfilePage() {
             }
           : r
       );
-      firService.updateFir(fir.id, { reports: updatedReports });
+      await firService.updateFir(fir.id, { reports: updatedReports });
     } else {
       const newReport: ComplaintReportItem = {
         id: `rep-${Date.now()}`,
@@ -1188,7 +1189,7 @@ export default function FIRProfilePage() {
         versionNumber: 1,
         createdAt: new Date().toISOString(),
       };
-      firService.addReport(fir.id, newReport);
+      await firService.addReport(fir.id, newReport);
     }
 
     setReportDraftModalOpen(false);
@@ -1275,7 +1276,7 @@ export default function FIRProfilePage() {
     printHtmlContent(html, report.title);
   };
 
-  const handleCreateNewVersion = (report: ComplaintReportItem) => {
+  const handleCreateNewVersion = async (report: ComplaintReportItem) => {
     if (!fir) return;
     const currentVer = report.versionNumber || 1;
     const newVer = currentVer + 1;
@@ -1289,7 +1290,7 @@ export default function FIRProfilePage() {
       updatedAt: new Date().toISOString(),
       sentToSho: false,
     };
-    firService.addReport(fir.id, newReport);
+    await firService.addReport(fir.id, newReport);
     fetchFir();
     handleEditReport(newReport);
   };
@@ -1312,7 +1313,7 @@ export default function FIRProfilePage() {
         ...r, sentToSho: true, isSentToSho: true, sentToShoAt: now,
         sentToShoBy: currentUser.id, updatedAt: now, status: "Finalized" as const,
       } : r);
-      firService.updateFir(fir.id, {
+      await firService.updateFir(fir.id, {
         reports,
         auditTrail: [{ id: `aud-${Date.now()}`, timestamp: now, action: "REPORT_FORWARDED",
           officerName: currentUser.name, role: currentUser.role,
@@ -1325,7 +1326,7 @@ export default function FIRProfilePage() {
     }
   };
 
-  const handleUploadReportSubmit = (e: React.FormEvent) => {
+  const handleUploadReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !uploadReportTitle.trim()) return;
 
@@ -1348,8 +1349,8 @@ export default function FIRProfilePage() {
       createdAt: new Date().toISOString(),
     };
 
-    firService.addReport(fir.id, newReport);
-    firService.addAuditRecord(
+    await firService.addReport(fir.id, newReport);
+    await firService.addAuditRecord(
       fir.id,
       "REPORT_UPLOADED",
       `Uploaded signed report: ${uploadReportTitle}`,
@@ -2434,11 +2435,11 @@ export default function FIRProfilePage() {
       {activeTab === "legal_assistant" && (
         <FIRLegalAssistant
           fir={fir}
-          onUpdateFir={(updated) => {
+          onUpdateFir={async (updated) => {
             setFir(updated);
             if (updated.legalAnalysis) {
               try {
-                firService.saveLegalAnalysis(updated.id, updated.legalAnalysis);
+                await firService.saveLegalAnalysis(updated.id, updated.legalAnalysis);
               } catch (e) {
                 console.error("Failed to persist FIR legal analysis", e);
               }
@@ -2452,9 +2453,9 @@ export default function FIRProfilePage() {
         <FIRSummaryTab
           fir={fir}
           currentUser={currentUser}
-          onUpdateFir={(updated) => {
+          onUpdateFir={async (updated) => {
             setFir(updated);
-            firService.updateFir(updated.id, updated);
+            await firService.updateFir(updated.id, updated);
           }}
         />
       )}
@@ -2892,6 +2893,7 @@ export default function FIRProfilePage() {
                 <label className="font-bold text-slate-700">आदेश दिनांक</label>
                 <input
                   type="date"
+                  max={new Date().toISOString().split("T")[0]}
                   value={reopenOrderDt}
                   onChange={(e) => setReopenOrderDt(e.target.value)}
                   className="w-full p-2 border border-slate-300 rounded-lg text-xs"
@@ -3085,6 +3087,7 @@ export default function FIRProfilePage() {
                   </label>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={uploadZimniDate}
                     onChange={(e) => setUploadZimniDate(e.target.value)}
                     className="w-full text-xs p-2.5 rounded-lg border border-slate-300 font-mono"

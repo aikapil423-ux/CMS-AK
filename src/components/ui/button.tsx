@@ -10,15 +10,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", isLoading = false, children, disabled, ...props }, ref) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-900 focus-visible:ring-offset-1 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.99] select-none";
+      "cms-button inline-flex items-center justify-center font-semibold rounded-none border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none active:scale-[0.99] select-none";
 
     const variantStyles = {
-      primary: "bg-slate-900 hover:bg-slate-800 text-white shadow-xs hover:shadow-sm",
-      secondary: "bg-slate-100 hover:bg-slate-200/80 text-slate-900 border border-slate-200/70",
+      primary: "bg-[#203c88] hover:bg-[#172e70] border-[#203c88] text-white",
+      secondary: "bg-[#eef1ff] hover:bg-[#e0e7ff] text-[#26334a] border-[#a8b5d1]",
       danger: "bg-rose-600 hover:bg-rose-700 text-white shadow-xs",
-      outline: "border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-800 shadow-2xs hover:border-slate-300",
-      ghost: "hover:bg-slate-100/70 text-slate-600 hover:text-slate-900",
-      gold: "bg-amber-600 hover:bg-amber-700 text-white shadow-xs",
+      outline: "border-[#26334a] bg-white hover:bg-[#eef1ff] text-[#26334a]",
+      ghost: "border-transparent hover:bg-[#eef1ff] text-[#203c88]",
+      gold: "bg-[#203c88] hover:bg-[#172e70] border-[#203c88] text-white",
     };
 
     const sizeStyles = {

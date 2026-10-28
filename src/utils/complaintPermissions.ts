@@ -1,3 +1,4 @@
+import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 import {
   UserSession,
   ComplaintItem,
@@ -5,6 +6,8 @@ import {
   ComplaintReportItem,
   SystemRole,
 } from "@/types";
+
+export const normalizeOfficerPno=(value?:string)=>(value||'').replace(/^HR[-\s]?/i,'').replace(/[^a-z0-9]/gi,'').toLowerCase();
 
 export interface PermissionResult {
   allowed: boolean;
@@ -40,7 +43,8 @@ export function isShoOrSuperior(role?: SystemRole | string): boolean {
 export function isComplaintAssignedToEo(complaint: ComplaintItem): boolean {
   return Boolean(
     (complaint.assignedEoId && complaint.assignedEoId.trim().length > 0) ||
-    (complaint.assignedEoName && complaint.assignedEoName.trim().length > 0)
+    (complaint.assignedEoName && complaint.assignedEoName.trim().length > 0) ||
+    (complaint.assignedEoPno && complaint.assignedEoPno.trim().length > 0)
   );
 }
 
@@ -51,26 +55,27 @@ export function isUserAssignedEo(user: AuthUserContext, complaint: ComplaintItem
   if (!isComplaintAssignedToEo(complaint)) return false;
 
   if (complaint.assignedEoId && (complaint.assignedEoId === user.id || complaint.assignedEoId === user.pno)) return true;
-  if (complaint.assignedEoPno && user.pno && complaint.assignedEoPno === user.pno) return true;
+  if (complaint.assignedEoPno && user.pno && normalizeOfficerPno(complaint.assignedEoPno) === normalizeOfficerPno(user.pno)) return true;
 
+  if(complaint.assignedEoId && user.id && complaint.assignedEoId === user.id.replace(/^usr_/,''))return true;
+  const roster=MOCK_ENQUIRY_OFFICERS.find(e=>e.id===complaint.assignedEoId);
+  if(roster?.pno && normalizeOfficerPno(user.pno)===normalizeOfficerPno(roster.pno))return true;
   // If complaint is assigned to SHO and current logged-in user is SHO
-  if (user.role === "SHO" && isAssignedOfficerSho(complaint)) return true;
+  if (user.role === "SHO" && complaint.assignedEoId === "eo_sho" && user.stationName === complaint.policeStation) return true;
 
-  if (complaint.assignedEoName && user.name) {
+  if (!complaint.assignedEoId && !complaint.assignedEoPno && complaint.assignedEoName && user.name) {
     const normalize = (s: string) =>
       s
         .toLowerCase()
-        .replace(/\b(sho|inspector|sub-inspector|si|asi|hc|constable|dsp|sp)\b/gi, "")
+        .replace(/\b(assistant sub[- ]inspector|sub[- ]inspector|head constable|sho|inspector|si|asi|hc|constable|dsp|sp)\b/gi, "")
         .replace(/[^a-z0-9]/g, "")
         .trim();
     const cName = normalize(complaint.assignedEoName);
     const uName = normalize(user.name);
-    if (cName && uName && (cName === uName || cName.includes(uName) || uName.includes(cName))) {
+    if (cName && uName && cName === uName) {
       return true;
     }
-    if (user.role === "ENQUIRY_OFFICER" && (cName.includes(uName) || uName.includes(cName))) {
-      return true;
-    }
+
   }
   return false;
 }
@@ -88,7 +93,13 @@ export function getCurrentComplaintOwnerId(complaint: ComplaintItem): string | n
  * Assigned EO, SHO, Superiors, MHC, and authorized viewers
  */
 export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
-  return { allowed: true };
+  const norm=(v?:string)=>(v||'').trim().toLowerCase();
+  if(!user?.id)return {allowed:false,reason:'Login required.'};
+  if(user.role==='SUPER_ADMIN')return {allowed:true};
+  if(isSuperiorToSho(user.role))return {allowed:Boolean(norm(user.district)&&norm(user.district)===norm(complaint.district)),reason:'Complaint is outside your district.'};
+  if(!norm(user.stationName)||norm(user.stationName)!==norm(complaint.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
+  if(['SHO','MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role||''))return {allowed:true};
+  return {allowed:isUserAssignedEo(user,complaint),reason:'Only the assigned enquiry officer can view this complaint.'};
 }
 
 /**
@@ -101,6 +112,7 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
  *   Authorized officer can proceed.
  */
 export function canCreateDocument(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
   if (isComplaintAssignedToEo(complaint)) {
     if (isUserAssignedEo(user, complaint)) {
       return { allowed: true };
@@ -112,7 +124,7 @@ export function canCreateDocument(user: AuthUserContext, complaint: ComplaintIte
   }
 
   // If complaint is unassigned, SHO or Super Admin or Duty Officer can upload intake documents
-  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER") {
+  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
     return { allowed: true };
   }
 
@@ -133,13 +145,13 @@ export function canEditDocument(
   complaint?: ComplaintItem
 ): PermissionResult {
   const creatorId = doc.createdByUserId;
-  if (creatorId && (creatorId === user.id || (user.pno && creatorId === user.pno))) {
+  if (creatorId && (creatorId === user.id || (user.pno && normalizeOfficerPno(creatorId) === normalizeOfficerPno(user.pno)))) {
     return { allowed: true };
   }
 
   // Fallback for legacy documents without createdByUserId
   const creatorName = doc.uploadedBy || doc.createdBy || doc.officerName || "";
-  if (!creatorId && creatorName && user.name && creatorName.toLowerCase().includes(user.name.toLowerCase())) {
+  if (!creatorId && creatorName && user.name && creatorName.trim().toLowerCase() === user.name.trim().toLowerCase()) {
     return { allowed: true };
   }
 
@@ -197,9 +209,9 @@ export function canDeleteDocument(
   const creatorId = doc.createdByUserId || doc.authorId || (doc as any)?.userId;
   if (creatorId) {
     const matchesId = Boolean(user.id && (creatorId === user.id || String(creatorId).toLowerCase() === String(user.id).toLowerCase()));
-    const normCreator = String(creatorId).replace(/[^0-9a-zA-Z]/g, "").toLowerCase();
-    const normPno = user.pno ? String(user.pno).replace(/[^0-9a-zA-Z]/g, "").toLowerCase() : "";
-    const matchesPno = Boolean(normPno && (normCreator === normPno || normCreator.includes(normPno) || normPno.includes(normCreator)));
+    const normCreator = normalizeOfficerPno(String(creatorId));
+    const normPno = user.pno ? normalizeOfficerPno(user.pno) : "";
+    const matchesPno = Boolean(normPno && normCreator === normPno);
     const matchesBelt = Boolean(user.beltNumber && creatorId === user.beltNumber);
 
     if (matchesId || matchesPno || matchesBelt) {
@@ -220,9 +232,9 @@ export function canDeleteDocument(
 
   if (creatorName) {
     if (
-      (currentUserName && (creatorName === currentUserName || creatorName.includes(currentUserName) || currentUserName.includes(creatorName))) ||
-      (currentUserPno && creatorName.includes(currentUserPno)) ||
-      (currentUserId && creatorName.includes(currentUserId))
+      (currentUserName && creatorName === currentUserName) ||
+      (currentUserPno && creatorName === currentUserPno) ||
+      (currentUserId && creatorName === currentUserId)
     ) {
       return { allowed: true };
     }
@@ -240,6 +252,7 @@ export function canDeleteDocument(
  * MHC cannot assign EO/IO. Only SHO (or Supervisory Officers) can assign or reassign.
  */
 export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
   const isMhc = user.role === "MHC_GD_INCHARGE" || user.role === "DUTY_OFFICER";
   if (isMhc || user.role === "ENQUIRY_OFFICER") {
     return {
@@ -283,6 +296,7 @@ export function isAssignedOfficerSho(complaint: ComplaintItem): boolean {
 }
 
 export function canAskProgressReport(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
   if (!isComplaintAssignedToEo(complaint)) {
     return {
       allowed: false,
@@ -329,6 +343,7 @@ export function canAskProgressReport(user: AuthUserContext, complaint: Complaint
  * Superior to SHO -> ALLOWED
  */
 export function canTransferJustification(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
   if (user.role === "ENQUIRY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
     return {
       allowed: false,
@@ -352,6 +367,7 @@ export function canTransferJustification(user: AuthUserContext, complaint: Compl
  * Only when unassigned or review stage can SHO create supervisory reports.
  */
 export function canCreateShoReport(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
+  const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
   if (!isShoOrSuperior(user.role)) {
     return {
       allowed: false,

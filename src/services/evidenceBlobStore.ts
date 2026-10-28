@@ -56,10 +56,7 @@ export const evidenceBlobStore = {
     if (!key || !dataUrl) return;
 
     // Cache in memory immediately
-    memoryBlobCache.set(key, dataUrl);
-    if (metadata?.fileName) {
-      memoryBlobCache.set(metadata.fileName.toLowerCase().trim(), dataUrl);
-    }
+
 
     try {
       const db = await getDb();
@@ -78,22 +75,16 @@ export const evidenceBlobStore = {
 
         store.put(record);
 
-        // Also store by fileName if provided
-        if (metadata?.fileName) {
-          store.put({
-            ...record,
-            key: metadata.fileName.toLowerCase().trim(),
-          });
-        }
-
-        tx.oncomplete = () => resolve();
+        tx.oncomplete = () => {memoryBlobCache.set(key,dataUrl);resolve();};
+        tx.onabort = () => reject(tx.error || new Error("Evidence save aborted."));
         tx.onerror = () => {
           console.warn("Failed to store blob in IndexedDB:", tx.error);
-          resolve(); // Resolve anyway so UI is not blocked
+          reject(tx.error || new Error("Evidence could not be saved."));
         };
       });
     } catch (err) {
-      console.warn("IndexedDB put error:", err);
+      memoryBlobCache.delete(key);
+      throw new Error("Evidence could not be saved. Check browser storage and retry.");
     }
   },
 

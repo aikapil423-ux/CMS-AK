@@ -1,4 +1,6 @@
 "use client";
+import {blankTemplateFacts,recordedCalendarDate} from "@/lib/dataIntegrity";
+
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -36,7 +38,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
@@ -1389,6 +1391,8 @@ const DEFAULT_SAMPLE_DATA_EN: Record<ArrestDocTemplateType, ArrestDocsFormData> 
 };
 
 // Default export alias for backward compatibility
+for(const map of [DEFAULT_SAMPLE_DATA_HI,DEFAULT_SAMPLE_DATA_EN])for(const key of Object.keys(map) as ArrestDocTemplateType[])map[key]=blankTemplateFacts(map[key]);
+
 const DEFAULT_SAMPLE_DATA = DEFAULT_SAMPLE_DATA_HI;
 
 function ArrestDocsContent() {
@@ -1437,9 +1441,7 @@ function ArrestDocsContent() {
   useEffect(() => {
     const list = firService.getAllFirs();
     setFirs(list);
-    if (!selectedFirId && list.length > 0) {
-      setSelectedFirId(list[0].id);
-    }
+
   }, []);
 
   const activeFir = firs.find((f) => f.id === selectedFirId || f.firNumber === selectedFirId);
@@ -1471,7 +1473,7 @@ function ArrestDocsContent() {
     const accusedList = activeFir.accusedList || [];
     const matchedAccused = selectedAccusedId
       ? accusedList.find((a, idx) => (a.id || `acc_${idx}`) === selectedAccusedId)
-      : accusedList[0];
+      : accusedList.length===1 ? accusedList[0] : undefined;
 
     const noticeeName = matchedAccused?.name || baseSample.noticeeName;
     const noticeeFather = matchedAccused?.relativeName || matchedAccused?.fatherName || baseSample.noticeeFather;
@@ -1482,7 +1484,7 @@ function ArrestDocsContent() {
       policeStation: activeFir.policeStation || baseSample.policeStation,
       district: activeFir.district || baseSample.district,
       complaintNo: activeFir.firNumber || baseSample.complaintNo,
-      issueDate: activeFir.firDate || formatDate(new Date()),
+      issueDate: "",
       incidentDate: (activeFir as any)?.incidentDate || activeFir.incidentDateFrom || baseSample.incidentDate,
       sectionsOfLaw: activeFir.actsAndSections || baseSample.sectionsOfLaw,
       complainantName: activeFir.complainantName || baseSample.complainantName,
@@ -1872,6 +1874,8 @@ function ArrestDocsContent() {
       alert("कृपया पहले एक सक्रिय FIR केस चुनें।");
       return;
     }
+    if (!formData.noticeeName?.trim()) {alert("Select or enter the correct accused before saving.");return;}
+    if (selectedTemplate === "arrest_memo" && (!formData.arrestDate || !formData.arrestTime)) {alert("Enter the verified arrest date and time before saving the arrest memo.");return;}
     if (!isCrimeDetailsFilled) {
       alert(
         templateLang === "hi"
@@ -2032,10 +2036,16 @@ function ArrestDocsContent() {
         fileSize: `${(htmlContent.length / 1024).toFixed(1)} KB`,
       };
 
-      firService.addDocument(activeFir.id, newDoc);
+      if(selectedTemplate === 'arrest_memo'){
+        const arrestDate=recordedCalendarDate(formData.arrestDate || '');
+        if(!arrestDate)throw new Error('Enter a valid arrest date.');
+        const matches=(activeFir.accusedList || []).filter((a,i)=>selectedAccusedId?(a.id || `acc_${i}`)===selectedAccusedId:a.name===formData.noticeeName);
+        if(matches.length!==1)throw new Error('Select one accused from this FIR before saving the arrest memo.');
+        await firService.updateFir(activeFir.id,{documents:[newDoc,...(activeFir.documents || [])],accusedList:(activeFir.accusedList || []).map(a=>a===matches[0]?{...a,isArrested:true,arrestDate,arrestTime:formData.arrestTime,arrestGdNo:formData.arrestGdNo}:a)});
+      }else await firService.addDocument(activeFir.id, newDoc);
 
       // 4. Audit Trail entry
-      firService.addAuditRecord(
+      await firService.addAuditRecord(
         activeFir.id,
         "ARREST_DOC_SAVED",
         `${docTitle} generated and saved to FIR Profile Documents by ${currentUser.name}`,

@@ -39,7 +39,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, MainFIRStatus, getMainFIRStatus } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
 import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
-import { isUserAssignedIo, isFirVisibleToUser } from "@/lib/firIntegrity";
+import { isUserAssignedIo, isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 
 type FIRSortField =
   | "firNumber"
@@ -364,7 +364,7 @@ function FIRRegisterPageContent() {
       // Section 1 & 2 Specification: FIR Register is Part A.
       // Displays exclusively cases whose authoritative trackingState is PART_A_FRESH.
       // Cases moved to Part B (Partial, Under checking, Reopen) or Complete cases are excluded from Part A.
-      const partAFirs = data.filter((f) => (f.trackingState || "PART_A_FRESH") === "PART_A_FRESH");
+      const partAFirs = data.filter((f) => (f.trackingState || getAuthoritativeTrackingState(f)) === "PART_A_FRESH");
       const relevantData = partAFirs.filter((f) => isFirVisibleToUser(currentUser, f));
 
       const underInvestigation = relevantData.filter((f) => f.status === "UNDER_INVESTIGATION").length;
@@ -417,7 +417,7 @@ function FIRRegisterPageContent() {
       }
 
       // Active tracking state: FIR Register / Part A displays only PART_A_FRESH
-      const trackState = fir.trackingState || "PART_A_FRESH";
+      const trackState = fir.trackingState || getAuthoritativeTrackingState(fir);
       if (trackState !== "PART_A_FRESH") {
         return false;
       }
@@ -856,7 +856,7 @@ function FIRRegisterPageContent() {
     setIsAssignModalOpen(true);
   };
 
-  const handleConfirmAssign = () => {
+  const handleConfirmAssign = async () => {
     if (!isSho) {
       alert("Access Denied: Investigating Officer must be assigned by SHO only (PPR Rule 22.48).");
       return;
@@ -867,7 +867,7 @@ function FIRRegisterPageContent() {
 
     setAssignmentSubmitting(true);
     try {
-      firService.assignIo(
+      await firService.assignIo(
         selectedFirForAssign.id,
         selectedOfficer.id,
         selectedOfficer.name,
@@ -971,6 +971,7 @@ function FIRRegisterPageContent() {
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
                 <input
                   type="date"
+                  max={new Date().toISOString().split("T")[0]}
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                   className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer py-0.5"
@@ -984,6 +985,7 @@ function FIRRegisterPageContent() {
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
                 <input
                   type="date"
+                  max={new Date().toISOString().split("T")[0]}
                   value={dateTo}
                   min={dateFrom || undefined}
                   onChange={(e) => setDateTo(e.target.value)}

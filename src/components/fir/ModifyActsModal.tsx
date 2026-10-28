@@ -18,7 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { FIRItem, FIRActSectionEntry, FIRTimelineEvent } from "@/types";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { getUnifiedActsCatalog, UnifiedActOption } from "@/lib/cctnsActsData";
 import { ActsService } from "@/services/actsService";
@@ -290,7 +290,7 @@ export function ModifyActsModal({
       };
 
       // 2. Update FIR in firService
-      const updatedFir = firService.updateFir(fir.id, {
+      const updatedFir = await firService.updateFir(fir.id, {
         actsAndSectionsList,
         actsAndSections: newActsStr,
         majorAct,
@@ -299,7 +299,7 @@ export function ModifyActsModal({
       });
 
       // 3. Add Audit Trail
-      firService.addAuditRecord(
+      await firService.addAuditRecord(
         fir.id,
         "ACTS_SECTIONS_MODIFIED",
         `Statutory acts and sections modified. Previous: [${previousActsStr}] | Updated: [${newActsStr}]. Reason: ${reason.trim()}`,

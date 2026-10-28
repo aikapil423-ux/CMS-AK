@@ -2187,8 +2187,9 @@ export default function RegisterComplaintPage() {
     if (!incidentPlace.trim()) {
       errors["incidentPlace"] = "Place of incident is required";
     }
-    if (isDateTimeKnown && !incidentDate.trim()) {
-      errors["incidentDate"] = "Date of incident is required";
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (isDateTimeKnown && (!incidentDate.trim() || incidentDate > todayStr)) {
+      errors["incidentDate"] = !incidentDate.trim() ? "Date of incident is required" : "Date of incident cannot be in the future";
     }
 
     // 4. Validate Complaint Details
@@ -4307,7 +4308,7 @@ export default function RegisterComplaintPage() {
                           }}
                           placeholder="DD/MM/YYYY"
                           size="sm"
-                          className={isAutofilled("incidentDate") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : ""}
+                          className={isAutofilled("incidentDate") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : (validationErrors.incidentDate ? "!border-red-500 !bg-red-50" : "")}
                         />
                       </div>
                       <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">

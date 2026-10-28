@@ -17,7 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { FIRItem, FIRTransferRecord } from "@/types";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 
@@ -250,7 +250,7 @@ export function TransferFIRModal({
 
     setSubmitting(true);
     try {
-      const updated = firService.transferMultipleFirsInterState({
+      const updated = await firService.transferMultipleFirsInterState({
         firIds: selectedFirIds,
         firDestinations: destMode === "DIFFERENT" ? perFirDest : undefined,
         targetState: commonState,
@@ -584,6 +584,7 @@ export function TransferFIRModal({
                   <span className="text-[10px] text-slate-500 block mb-0.5 font-semibold">Dispatch Date:</span>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={dispatchDate}
                     onChange={(e) => setDispatchDate(e.target.value)}
                     className="w-full p-1.5 bg-white border border-slate-300 rounded-md text-xs"

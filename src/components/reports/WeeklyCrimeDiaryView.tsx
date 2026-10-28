@@ -116,6 +116,7 @@ export function WeeklyCrimeDiaryView({ data }: WeeklyCrimeDiaryViewProps) {
         id="printable-weekly-diary"
         className="bg-white p-6 sm:p-10 rounded-2xl border border-slate-200 shadow-sm text-slate-900 font-sans max-w-5xl mx-auto space-y-6"
       >
+{data.dataQualityWarnings?.map((warning,i)=><p key={i} className="my-2 border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">{warning}</p>)}
         {/* Header Block */}
         <div className="border-b pb-4 text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

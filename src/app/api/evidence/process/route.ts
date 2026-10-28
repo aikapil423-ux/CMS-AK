@@ -1,3 +1,4 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -29,7 +30,7 @@ function writeEvidenceStore(records: UniversalEvidenceRecord[]): void {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(EVIDENCE_STORE_PATH, JSON.stringify(records, null, 2), "utf-8");
   } catch (err) {
-    console.error("Error writing evidence store in process:", err);
+    throw new Error("Evidence could not be saved. Please retry.");
   }
 }
 
@@ -38,6 +39,8 @@ function computeSha256(buffer: Buffer | string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -47,7 +50,7 @@ export async function POST(req: NextRequest) {
     const caseId = (formData.get("caseId") as string) || "";
     const caseNumber = (formData.get("caseNumber") as string) || "";
     const moduleType = ((formData.get("module") as string) || "COMPLAINTS") as EvidenceModuleType;
-    const uploadedBy = (formData.get("uploadedBy") as string) || "Intake Officer";
+    const uploadedBy = apiUser.name;
     const forceReprocess = formData.get("forceReprocess") === "true";
 
     if (!file && !fallbackText && !rawDataUrl) {
@@ -67,7 +70,8 @@ export async function POST(req: NextRequest) {
       fileBuffer = Buffer.from(arrayBuffer);
       sha256Hash = computeSha256(fileBuffer);
     } else if (rawDataUrl) {
-      sha256Hash = computeSha256(rawDataUrl);
+      fileBuffer = Buffer.from(rawDataUrl.split(",")[1] || "", "base64");
+      sha256Hash = computeSha256(fileBuffer);
     } else {
       sha256Hash = computeSha256(fallbackText);
     }
@@ -76,7 +80,7 @@ export async function POST(req: NextRequest) {
     const store = readEvidenceStore();
     const existing = store.find(
       (r) =>
-        (r.rawDocument?.sha256Hash === sha256Hash || r.fileId === fileId) &&
+        r.ownerId === apiUser.id && r.caseId === (caseId || undefined) && (r.rawDocument?.sha256Hash === sha256Hash || r.fileId === fileId) &&
         r.processingStatus === "COMPLETED"
     );
 
@@ -116,6 +120,7 @@ export async function POST(req: NextRequest) {
 
     const inProgressRecord: UniversalEvidenceRecord = {
       id: newRecordId,
+      ownerId: apiUser.id,
       fileId,
       caseId: caseId || undefined,
       caseNumber: caseNumber || undefined,

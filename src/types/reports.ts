@@ -110,6 +110,7 @@ export interface SitrepUploadSummary {
 }
 
 export interface CrimeSitrepData {
+  dataQualityWarnings?: string[];
   id?: string;
   reportTitle?: string;
   officeTitle?: string;
@@ -259,6 +260,7 @@ export interface Parcha12StatePending {
 }
 
 export interface WeeklyCrimeDiaryData {
+  dataQualityWarnings?: string[];
   policeStation: string;
   district: string;
   dateRange: string;
@@ -375,13 +377,16 @@ export interface NdpsRecoveryStat {
 }
 
 export interface IgpPresentationData {
+  currentYear?: number;
+  previousYear?: number;
+  dataQualityWarnings?: string[];
   meetingDate: string;
   meetingTime: string;
   meetingLocation: string;
   district: string;
   comparativeRows: ComparativeCrimeRow[];
   extortionOverview: {
-    totalCalls: number;
+    totalCalls: number | null;
     casesRegistered: number;
     accusedNamed: number;
     accusedArrested: number;

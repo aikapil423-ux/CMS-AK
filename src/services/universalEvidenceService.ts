@@ -14,12 +14,17 @@ const LOCAL_STORAGE_KEY = "cms_universal_processed_evidence_records_v1";
 
 let memoryCache: UniversalEvidenceRecord[] | null = null;
 let isInitialSyncDone = false;
+let cacheOwner='';
+function evidenceCacheKey(){const owner=typeof window !== 'undefined'?(localStorage.getItem('haryana_police_cms_user') || ''):'';if(owner!==cacheOwner){memoryCache=null;isInitialSyncDone=false;cacheOwner=owner;}return `${LOCAL_STORAGE_KEY}:${owner}`;}
+async function checkedEvidenceRequest(url:string,options:RequestInit){const res=await fetch(url,options);if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.error || `Evidence operation failed (${res.status}).`);}return res;}
+
 
 function loadLocalCache(): UniversalEvidenceRecord[] {
   if (typeof window === "undefined") return [];
+  const cacheKey=evidenceCacheKey();
   if (memoryCache !== null) return memoryCache;
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const raw = localStorage.getItem(cacheKey);
     if (raw) {
       memoryCache = JSON.parse(raw);
       return memoryCache || [];
@@ -42,13 +47,13 @@ function persistLocalCache(records: UniversalEvidenceRecord[]): void {
           ...r,
           rawDocument: {
             ...r.rawDocument,
-            dataUrl: r.rawDocument.dataUrl.slice(0, 10000) + "...", // truncate in localStorage, full remains on server
+            dataUrl: "", // truncate in localStorage, full remains on server
           },
         };
       }
       return r;
     });
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(safeForLocal));
+    localStorage.setItem(evidenceCacheKey(), JSON.stringify(safeForLocal));
     window.dispatchEvent(new CustomEvent("cms-evidence-updated"));
   } catch (err) {
     console.warn("LocalStorage quota alert in universalEvidenceService:", err);
@@ -73,16 +78,7 @@ export const universalEvidenceService = {
           const current = loadLocalCache();
           const serverRecords: UniversalEvidenceRecord[] = data.records;
 
-          // Merge server records with local cache
-          const merged = [...current];
-          for (const sRec of serverRecords) {
-            const idx = merged.findIndex((m) => m.id === sRec.id || m.fileId === sRec.fileId);
-            if (idx !== -1) {
-              merged[idx] = sRec;
-            } else {
-              merged.push(sRec);
-            }
-          }
+          const merged=caseId || caseNumber ? [...current.filter(r=>r.caseId!==caseId && (!caseNumber || r.caseNumber!==caseNumber)),...serverRecords] : serverRecords;
           persistLocalCache(merged);
           isInitialSyncDone = true;
           return merged;
@@ -137,8 +133,7 @@ export const universalEvidenceService = {
       records.find(
         (r) =>
           r.fileId.toLowerCase().trim() === fileId.toLowerCase().trim() ||
-          r.id.toLowerCase().trim() === fileId.toLowerCase().trim() ||
-          r.fileId.toLowerCase().trim().includes(cleanId)
+          r.id.toLowerCase().trim() === fileId.toLowerCase().trim()
       ) || null
     );
   },
@@ -150,8 +145,7 @@ export const universalEvidenceService = {
     if (!fileName) return null;
     const cleanName = fileName.toLowerCase().trim();
     const records = this.getAll();
-    return (
-      records.find((r) => {
+    const matches = records.filter((r) => {
         const matchesName =
           (r.rawDocument?.fileName || "").toLowerCase().trim() === cleanName ||
           (r.structuredData?.classifiedDocumentName || "").toLowerCase().trim() === cleanName;
@@ -162,8 +156,8 @@ export const universalEvidenceService = {
           (r.caseId && r.caseId.toLowerCase().trim() === target) ||
           (r.caseNumber && r.caseNumber.toLowerCase().trim() === target)
         );
-      }) || null
-    );
+      });
+    return matches.length===1?matches[0]:null;
   },
 
   /**
@@ -270,7 +264,7 @@ export const universalEvidenceService = {
    */
   async bindToCase(recordIdOrFileId: string, caseId: string, caseNumber?: string): Promise<boolean> {
     try {
-      const records = loadLocalCache();
+      const records = structuredClone(loadLocalCache());
       const target = records.find((r) => r.id === recordIdOrFileId || r.fileId === recordIdOrFileId);
       if (!target) return false;
 
@@ -278,10 +272,8 @@ export const universalEvidenceService = {
       if (caseNumber) target.caseNumber = caseNumber;
       target.updatedAt = new Date().toISOString();
 
-      persistLocalCache(records);
-
       // Persist to server backend
-      await fetch("/api/evidence/store", {
+      await checkedEvidenceRequest("/api/evidence/store", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -297,6 +289,7 @@ export const universalEvidenceService = {
         }),
       });
 
+      persistLocalCache(records);
       return true;
     } catch (err) {
       console.warn("Could not bind evidence to case on server:", err);
@@ -314,7 +307,7 @@ export const universalEvidenceService = {
     officerRole: string;
     verificationNotes?: string;
   }): Promise<UniversalEvidenceRecord> {
-    const records = loadLocalCache();
+    const records = structuredClone(loadLocalCache());
     const idx = records.findIndex((r) => r.id === params.recordId || r.fileId === params.recordId);
     if (idx === -1) throw new Error("Evidence record not found");
 
@@ -345,10 +338,8 @@ export const universalEvidenceService = {
     };
 
     records[idx] = updatedRecord;
-    persistLocalCache(records);
-
     // Save to server database
-    await fetch("/api/evidence/store", {
+    await checkedEvidenceRequest("/api/evidence/store", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -362,6 +353,7 @@ export const universalEvidenceService = {
       }),
     });
 
+    persistLocalCache(records);
     return updatedRecord;
   },
 
@@ -393,11 +385,10 @@ export const universalEvidenceService = {
       const updated = records.filter(
         (r) => r.id !== fileIdOrRecordId && r.fileId !== fileIdOrRecordId
       );
-      persistLocalCache(updated);
-
-      await fetch(`/api/evidence/store?fileId=${encodeURIComponent(fileIdOrRecordId)}`, {
+      await checkedEvidenceRequest(`/api/evidence/store?fileId=${encodeURIComponent(fileIdOrRecordId)}`, {
         method: "DELETE",
       });
+      persistLocalCache(updated);
       return true;
     } catch (err) {
       console.warn("Could not delete evidence from server:", err);

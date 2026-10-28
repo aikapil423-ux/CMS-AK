@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   BookOpen,
   ArrowLeft,
@@ -987,8 +988,8 @@ function NewGDEntryContent() {
         activityTime: activityTime24,
         entryForOfficer: officerData,
         actualAuthor: authorData,
-        policeStation: "PS City Thanesar",
-        district: "Kurukshetra",
+        policeStation: currentUser.stationName || "PS City Panipat",
+        district: currentUser.district || "Panipat",
         source: "MANUAL_ENTRY",
         caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
         actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,
@@ -1049,7 +1050,7 @@ function NewGDEntryContent() {
         activityDate,
         activityTime: activityTime24,
         entryForOfficer: currentOfficer,
-        policeStation: "PS City Thanesar",
+        policeStation: currentUser.stationName || "PS City Panipat",
         relatedRecords: {
           caseType: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? caseType : undefined,
           actsAndSections: selectedType === "CRIMINAL_CASE" || selectedTypeLabel.toLowerCase().includes("criminal case") ? actsAndSections : undefined,

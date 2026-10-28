@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -656,11 +657,12 @@ export default function ComplaintProfilePage() {
   const loadComplaint = async () => {
     if (!complaintId) return;
     setLoading(true);
+    setComplaint(null);
     try {
       const data = await ComplaintService.getComplaintById(complaintId);
-      if (data) {
+      if (data && canViewComplaint(currentUser,data).allowed) {
         setComplaint(data);
-      }
+      } else {setComplaint(null);}
     } catch (err) {
       console.error(err);
     } finally {
@@ -670,7 +672,7 @@ export default function ComplaintProfilePage() {
 
   useEffect(() => {
     loadComplaint();
-  }, [complaintId]);
+  }, [complaintId,currentUser]);
 
   useEffect(() => {
     if (complaint?.isReportViewedBySho) {
@@ -2279,7 +2281,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
     );
   }
 
-  if (!complaint) {
+  if (!complaint || !canViewComplaint(currentUser,complaint).allowed) {
     return (
       <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />

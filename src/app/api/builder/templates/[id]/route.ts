@@ -1,12 +1,18 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderDbService } from "@/services/builderDbService";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getTemplateById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (req.method !== "GET" && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     const template = await BuilderDbService.getTemplateById(id);
     if (!template) {
       return NextResponse.json(
@@ -27,8 +33,13 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getTemplateById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (req.method !== "GET" && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     const body = await req.json();
 
     const updated = await BuilderDbService.updateTemplate(id, {
@@ -50,11 +61,16 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getTemplateById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (req.method !== "GET" && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     await BuilderDbService.deleteTemplate(id);
     return NextResponse.json({ success: true, message: "Template deleted successfully" });
   } catch (error: any) {

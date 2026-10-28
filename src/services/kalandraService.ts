@@ -1,3 +1,4 @@
+import { escapeDocumentValue } from "@/lib/dataIntegrity";
 import {
   KalandraLegalStatus,
   KalandraWorkflowStatus,
@@ -382,7 +383,7 @@ class KalandraService {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
-      console.warn("KalandraService: Failed to save to localStorage", e);
+      throw new Error("Kalandra could not be saved. Check browser storage and retry.");
     }
   }
 
@@ -454,7 +455,7 @@ class KalandraService {
   public generateKalandraNumber(): string {
     const year = new Date().getFullYear();
     const records = this.getAllRecords();
-    const count = records.length + 1;
+    const count = records.reduce((max, r) => {const m = /^KAL\/(\d{4})\/(\d+)$/.exec(r.kalandraNumber); return m && Number(m[1]) === year ? Math.max(max, Number(m[2])) : max;}, 0) + 1;
     return `KAL/${year}/${String(count).padStart(3, "0")}`;
   }
 
@@ -469,10 +470,10 @@ class KalandraService {
         caseType: "FROM_FIR",
         relatedFirId: fir.id,
         relatedFirNumber: fir.firNumber,
-        policeStation: fir.policeStation || "PS City Panipat",
-        district: fir.district || "Gurugram",
-        incidentDate: fir.incidentDateFrom || new Date().toISOString().split("T")[0],
-        incidentTime: fir.incidentTimeFrom || "10:00",
+        policeStation: fir.policeStation || "",
+        district: fir.district || "",
+        incidentDate: fir.incidentDateFrom || "",
+        incidentTime: fir.incidentTimeFrom || "",
         incidentPlace: fir.incidentPlace || "",
         respondentName: firstAccused?.name || "",
         respondentFather: firstAccused?.fatherName || firstAccused?.relativeName || "",
@@ -483,11 +484,11 @@ class KalandraService {
         secondPartyName: fir.complainantName || "",
         secondPartyFather: fir.complainantFatherSpouse || "",
         secondPartyAddress: fir.complainantAddress || "",
-        reportingOfficer: fir.assignedIoName || "SI Balwan Singh",
-        officerRank: fir.assignedIoRank || "Sub Inspector",
+        reportingOfficer: fir.assignedIoName || "",
+        officerRank: fir.assignedIoRank || "",
         officerBelt: fir.assignedIoBeltNumber || "1482/GGM",
-        factsAndCircumstances: `FIR No. ${fir.firNumber} u/s ${fir.actsAndSections || "Relevant Sections"} बाबत घटना स्थल ${fir.incidentPlace || ""}। आरोपी द्वारा शांति भंग एवं संज्ञेय अपराध कारित करने की आशंका।`,
-        proposedAction: "विपक्षी को शांति व्यवस्था बनाए रखने हेतु मुचलका व जमानतदार से पाबंद फरमाया जावे।"
+        factsAndCircumstances: fir.incidentDetails || "",
+        proposedAction: ""
       };
     }
 
@@ -500,10 +501,10 @@ class KalandraService {
         caseType: "FROM_COMPLAINT",
         relatedComplaintId: comp.id,
         relatedComplaintNumber: comp.complaintNumber,
-        policeStation: comp.policeStation || "PS City Panipat",
-        district: comp.district || "Gurugram",
-        incidentDate: comp.incidentDate || new Date().toISOString().split("T")[0],
-        incidentTime: comp.incidentTime || "12:00",
+        policeStation: comp.policeStation || "",
+        district: comp.district || "",
+        incidentDate: comp.incidentDate || "",
+        incidentTime: comp.incidentTime || "",
         incidentPlace: comp.incidentPlace || "",
         respondentName: comp.accusedList?.[0]?.name || "",
         respondentFather: comp.accusedList?.[0]?.fatherName || comp.accusedList?.[0]?.relativeName || "",
@@ -511,10 +512,10 @@ class KalandraService {
         secondPartyName: comp.complainantName || "",
         secondPartyFather: comp.complainantFatherSpouse || comp.complainantRelativeName || "",
         secondPartyAddress: comp.complainantAddress || "",
-        reportingOfficer: comp.assignedEoName || "ASI Rakesh Kumar",
+        reportingOfficer: comp.assignedEoName || "",
         officerRank: "Assistant Sub Inspector",
-        factsAndCircumstances: `शिकायत संख्या ${comp.complaintNumber} के अवलोकन से पाया गया कि विपक्षी द्वारा शांति व्यवस्था में बाधा डाली जा रही है: ${comp.incidentDetails || comp.complaintSubject || ""}`,
-        proposedAction: "विपक्षी के विरुद्ध निवारक कलंदरा प्रस्तुत कर पाबंद फरमाया जावे।"
+        factsAndCircumstances: comp.incidentDetails || comp.complaintDescription || "",
+        proposedAction: ""
       };
     }
 
@@ -528,13 +529,13 @@ class KalandraService {
       return {
         caseType: "FROM_GD",
         relatedGdNumber: gd.gdNumber,
-        policeStation: gd.policeStation || "PS City Panipat",
-        district: gd.district || "Gurugram",
+        policeStation: gd.policeStation || "",
+        district: gd.district || "",
         incidentDate: gdDateStr,
         incidentTime: "12:00",
         incidentPlace: gd.subject || "",
-        reportingOfficer: gd.entryForOfficer?.name || "SI Balwan Singh",
-        officerRank: gd.entryForOfficer?.rank || "Sub Inspector",
+        reportingOfficer: gd.entryForOfficer?.name || "",
+        officerRank: gd.entryForOfficer?.rank || "",
         factsAndCircumstances: `रोजनामचा रपट संख्या ${gd.gdNumber} दिनांक ${gdDateStr} के अनुसार: ${gd.narrative || gd.subject || ""}`
       };
     }
@@ -545,10 +546,10 @@ class KalandraService {
   public populateNarrative(templateNarrative: string, record: Partial<KalandraRecord>): string {
     let result = templateNarrative;
     const mapping: Record<string, string> = {
-      "{{district}}": record.district || "Gurugram",
-      "{{policeStation}}": record.policeStation || "PS City Panipat",
-      "{{incidentDate}}": record.incidentDate || new Date().toISOString().split("T")[0],
-      "{{incidentTime}}": record.incidentTime || "10:00 AM",
+      "{{district}}": record.district || "",
+      "{{policeStation}}": record.policeStation || "",
+      "{{incidentDate}}": record.incidentDate || "",
+      "{{incidentTime}}": record.incidentTime || "",
       "{{incidentPlace}}": record.incidentPlace || "[घटना स्थल / Place of Incident]",
       "{{respondentName}}": record.respondentName || "[विपक्षी / Respondent]",
       "{{respondentFather}}": record.respondentFather || "[पिता/पति का नाम]",
@@ -562,12 +563,13 @@ class KalandraService {
     };
 
     for (const [key, val] of Object.entries(mapping)) {
-      result = result.replaceAll(key, val);
+      result = result.replaceAll(key, () => val);
     }
     return result;
   }
 
   public generateKalandraPackage(record: KalandraRecord, lang: "hi" | "en" = "hi"): KalandraDocumentPackage {
+    record=escapeDocumentValue(record);
     const isHi = lang === "hi";
 
     // 1. Main Kalandra HTML

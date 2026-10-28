@@ -26,6 +26,8 @@ export const finalReportDbService = {
       const report = JSON.parse(stored.reportJson) as ComplaintReportItem;
       const workflow = report.finalReportWorkflow!;
       if (action === 'VIEW_SHO' && stored.state === 'SHO_VIEWED' && workflow.viewedBy === authorId) return report;
+      if (action === 'APPROVE_SHO' && stored.state === 'UNDER_CHECKING' && workflow.reviewedBy === authorId) return report;
+      if (action === 'REJECT_SHO' && stored.state === 'REJECTED' && workflow.reviewedBy === authorId && workflow.rejectionReason === reason?.trim()) return report;
       if (!['SENT_TO_SHO', 'SHO_VIEWED'].includes(stored.state)) throw new FinalReportConflict('This report is not pending SHO review.');
       if (action !== 'VIEW_SHO' && (stored.state !== 'SHO_VIEWED' || workflow.viewedBy !== authorId)) throw new FinalReportConflict('View this report revision before approving or rejecting.');
       if (action === 'REJECT_SHO' && !reason?.trim()) throw new FinalReportConflict('Enter a rejection reason for the assigned IO.');

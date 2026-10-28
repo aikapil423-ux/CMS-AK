@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { Shield, Lock, User, Building2, AlertCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,49 +9,22 @@ import { DEMO_USERS, MOCK_POLICE_STATIONS } from "@/lib/mockData";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, switchUser } = useAuth();
+  const { login } = useAuth();
   const [pno, setPno] = useState("HR-04291882");
   const [pin, setPin] = useState("123456");
   const [station, setStation] = useState(MOCK_POLICE_STATIONS[0]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (
-        params.get("autologin") === "true" ||
-        params.get("auto") === "1" ||
-        params.get("login") === "true" ||
-        params.has("autologin")
-      ) {
-        const userId = params.get("user") || "usr_sho_1";
-        switchUser(userId);
-        router.push("/");
-      }
-    }
-  }, [router, switchUser]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-
-    setTimeout(() => {
-      if (pno.trim().length < 4) {
-        setError("Please enter a valid Permanent Police Number (PNO).");
-        setIsLoading(false);
-        return;
-      }
-
-      login(pno, pin);
-      router.push("/");
-    }, 400);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(null); setIsLoading(true);
+    const ok = await login(pno, pin, station);
+    setIsLoading(false);
+    if(ok)router.push('/');else setError('Invalid PNO or PIN. Please verify your credentials.');
   };
-
-  const handleQuickDemoLogin = (userId: string) => {
-    switchUser(userId);
-    router.push("/");
+  const handleQuickDemoLogin = async (userId:string) => {
+    const user=DEMO_USERS.find(u=>u.id===userId);if(!user)return;
+    if(await login(user.pno,'123456', station))router.push('/');else setError('Demo sign-in is unavailable. Use configured credentials.');
   };
 
   return (
@@ -73,7 +46,7 @@ export default function LoginPage() {
           <div className="border-b border-slate-100 pb-3 mb-4">
             <h2 className="text-base font-bold text-slate-900">Police Personnel Login</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Demo access only — credentials are not verified. Do not use for production case data.
+              Local demo PIN: 123456. Production access requires configured credentials.
             </p>
           </div>
 
@@ -107,7 +80,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Permanent Police Number (PNO) / Belt No
+                Permanent Police Number (PNO)
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />

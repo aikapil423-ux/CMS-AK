@@ -1,3 +1,5 @@
+import {evidenceOwner} from "@/lib/evidenceOwnership";
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -34,6 +36,8 @@ function writeEvidenceStore(records: UniversalEvidenceRecord[]): void {
 }
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const caseId = searchParams.get("caseId");
@@ -45,7 +49,7 @@ export async function GET(req: NextRequest) {
 
     const fileName = searchParams.get("fileName");
 
-    const store = readEvidenceStore();
+    const store = readEvidenceStore().filter(r=>apiUser.role === "SUPER_ADMIN" || evidenceOwner(r) === apiUser.id);
 
     if (recordId) {
       const record = store.find((r) => r.id === recordId);
@@ -59,12 +63,14 @@ export async function GET(req: NextRequest) {
 
     if (fileName) {
       const cleanName = fileName.toLowerCase().trim();
-      const record = store.find(
+      const matches = store.filter(
         (r) =>
           (r.rawDocument?.fileName || "").toLowerCase().trim() === cleanName ||
           ((r.rawDocument as any)?.originalFileName || "").toLowerCase().trim() === cleanName ||
           (r.structuredData?.classifiedDocumentName || "").toLowerCase().trim() === cleanName
       );
+      if(matches.length>1)return Response.json({error:"Several files share this name. Select the evidence by its unique ID."},{status:409});
+      const record = matches.length === 1 ? matches[0] : null;
       if (record) {
         return NextResponse.json({ success: true, record });
       }
@@ -99,6 +105,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
     const store = readEvidenceStore();
@@ -116,11 +124,12 @@ export async function POST(req: NextRequest) {
           (r) => r.id === inc.id || (inc.fileId && r.fileId === inc.fileId)
         );
 
+        if (existingIdx !== -1 && evidenceOwner(updatedStore[existingIdx]) !== apiUser.id) return Response.json({error:"Evidence belongs to another officer"},{status:403});
+        inc.ownerId=apiUser.id;
         if (existingIdx !== -1) {
-          // Preserve original raw document if incoming doesn't have it
-          if (!inc.rawDocument?.dataUrl && updatedStore[existingIdx].rawDocument?.dataUrl) {
-            inc.rawDocument.dataUrl = updatedStore[existingIdx].rawDocument.dataUrl;
-          }
+          // Metadata synchronization must never replace the original uploaded bytes.
+          inc.rawDocument = updatedStore[existingIdx].rawDocument;
+          inc.fileId = updatedStore[existingIdx].fileId;
           updatedStore[existingIdx] = {
             ...updatedStore[existingIdx],
             ...inc,
@@ -149,6 +158,8 @@ export async function POST(req: NextRequest) {
         (r) => r.id === inc.id || (inc.fileId && r.fileId === inc.fileId)
       );
 
+      if (existingIdx !== -1 && evidenceOwner(updatedStore[existingIdx]) !== apiUser.id) return Response.json({error:"Evidence belongs to another officer"},{status:403});
+      inc.ownerId=apiUser.id;
       if (existingIdx !== -1) {
         if (!inc.rawDocument?.dataUrl && updatedStore[existingIdx].rawDocument?.dataUrl) {
           inc.rawDocument.dataUrl = updatedStore[existingIdx].rawDocument.dataUrl;
@@ -176,6 +187,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
     const { id, fileId, updates, auditEntry } = body;
@@ -185,18 +198,21 @@ export async function PUT(req: NextRequest) {
     }
 
     const store = readEvidenceStore();
-    const idx = store.findIndex((r) => r.id === id || r.fileId === fileId);
+    const idx = store.findIndex((r) => (!!id && r.id === id) || (!!fileId && r.fileId === fileId));
 
     if (idx === -1) {
       return NextResponse.json({ success: false, error: "Evidence record not found" }, { status: 404 });
     }
 
     const current = store[idx];
+    if (evidenceOwner(current) !== apiUser.id) return Response.json({error:"Evidence belongs to another officer"},{status:403});
+    if(current.caseId && updates?.caseId && updates.caseId !== current.caseId)return Response.json({error:"Evidence is already bound to another case."},{status:409});
     const updated: UniversalEvidenceRecord = {
       ...current,
       ...updates,
+      id:current.id,fileId:current.fileId,caseId:current.caseId || updates?.caseId,ownerId:apiUser.id,rawDocument:current.rawDocument,
       updatedAt: new Date().toISOString(),
-      auditTrail: auditEntry ? [...(current.auditTrail || []), auditEntry] : current.auditTrail,
+      auditTrail: auditEntry ? [...(current.auditTrail || []), {...auditEntry,performedBy:apiUser.name,performedByRole:apiUser.role,timestamp:new Date().toISOString()}] : current.auditTrail,
     };
 
     store[idx] = updated;
@@ -209,6 +225,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -223,11 +241,11 @@ export async function DELETE(req: NextRequest) {
     const initialCount = store.length;
 
     if (id) {
-      store = store.filter((r) => r.id !== id);
+      store = store.filter((r) => r.id !== id || evidenceOwner(r) !== apiUser.id);
     } else if (fileId) {
-      store = store.filter((r) => r.fileId !== fileId && r.id !== fileId);
+      store = store.filter((r) => evidenceOwner(r) !== apiUser.id || r.fileId !== fileId && r.id !== fileId);
     } else if (caseId) {
-      store = store.filter((r) => r.caseId !== caseId);
+      store = store.filter((r) => r.caseId !== caseId || evidenceOwner(r) !== apiUser.id);
     }
 
     writeEvidenceStore(store);

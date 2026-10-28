@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Shield,
   ShieldAlert,
@@ -47,7 +48,7 @@ import {
   Database,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { ActsService } from "@/services/actsService";
@@ -2293,6 +2294,21 @@ function RegisterFIRForm() {
         );
         if (invalidOcc) {
           tabErrors.occurrence = "In Occurrence panel: Date/Time (From & To), Information Receipt Date/Time, Village/Town/City, Direction, and non-negative Distance from PS are mandatory.";
+        } else {
+          const todayStr = getNowLocal().date;
+          const invertedDateOcc = occurrencesList.find(
+            (occ) => occ.dateFrom && occ.dateTo && occ.dateFrom > occ.dateTo
+          );
+          if (invertedDateOcc) {
+            tabErrors.occurrence = "Occurrence Date (From) cannot be after Date (To).";
+          } else {
+            const futureOcc = occurrencesList.find(
+              (occ) => (occ.dateFrom && occ.dateFrom > todayStr) || (occ.dateTo && occ.dateTo > todayStr) || (occ.infoReceivedDate && occ.infoReceivedDate > todayStr)
+            );
+            if (futureOcc) {
+              tabErrors.occurrence = "Occurrence dates and Information receipt date cannot be in the future.";
+            }
+          }
         }
       }
     }
@@ -2430,11 +2446,12 @@ function RegisterFIRForm() {
     });
   };
 
-  const executeRegistration = () => {
+  const executeRegistration = async () => {
     setSubmitting(true);
     try {
       const liveItem = buildCurrentFirItem();
-      const created = firService.registerFir(liveItem);
+      let created = await firService.registerFir(liveItem);
+      created = await firService.synchronizeSourceComplaint(created.id);
 
       firService.clearFirDraft(draftKey);
       if (draftKey === "general") firService.clearFirDraft("default");

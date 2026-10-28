@@ -1,8 +1,11 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { CmsCapabilityRegistry } from "@/services/agent/cmsCapabilityRegistry";
 import { CmsAgentService } from "@/services/agent/cmsAgentService";
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
     const action = body.action || "PROCESS_MESSAGE";

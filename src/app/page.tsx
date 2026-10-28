@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   BookOpen,
   FileText,
@@ -21,9 +21,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useModule } from "@/context/ModuleContext";
 import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { RegistrationService } from "@/services/registrationService";
-import { isUserAssignedIo } from "@/lib/firIntegrity";
+import { isUserAssignedIo, isFirVisibleToUser } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
 
 export default function PostLoginPortalPage() {
@@ -39,24 +39,32 @@ export default function PostLoginPortalPage() {
   useEffect(() => {
     async function loadStats() {
       try {
+        const isSuperior = ["SUPER_ADMIN", "SP_DISTRICT", "DSP_SUBDIV"].includes(currentUser.role);
+        const isIoRole = currentUser.role === "ENQUIRY_OFFICER";
         const [complaints, gdEntries] = await Promise.all([
-          ComplaintService.getComplaints(),
-          GeneralDiaryService.getEntries({date:new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date())}),
+          ComplaintService.getComplaints({assignedEo:isIoRole ? (currentUser.pno || currentUser.name) : undefined,viewerRole:currentUser.role,viewerStation:currentUser.stationName}),
+          GeneralDiaryService.getEntries({date:new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date()), policeStation: isSuperior ? undefined : currentUser.stationName}),
         ]);
-        setComplaintCount(complaints.filter(c=>! /^(COMPLETE|DISPOSED|FIR_REGISTER|TRANSFERRED)/.test(String(c.status).toUpperCase().replace(/ /g,"_"))).length);
+        const activeComplaints = complaints.filter(c => {
+          if (!isSuperior && currentUser.stationName && c.policeStation && c.policeStation.trim().toLowerCase() !== currentUser.stationName.trim().toLowerCase()) {
+            return false;
+          }
+          return ! /^(COMPLETE|DISPOSED|FIR_REGISTER|TRANSFERRED)/.test(String(c.status).toUpperCase().replace(/ /g,"_"));
+        });
+        setComplaintCount(activeComplaints.length);
         setGdCount(gdEntries.length);
         const firs = firService.getAllFirs();
         const isIo = currentUser.role === "ENQUIRY_OFFICER";
-        const visibleFirs = isIo ? firs.filter((f) => isUserAssignedIo(currentUser, f)) : firs;
+        const visibleFirs = firs.filter(f=>isFirVisibleToUser(currentUser,f));
         setFirCount(visibleFirs.length);
         const regs = RegistrationService.getEntries();
-        setRegCount(regs.length);
+        setRegCount(regs.filter(r=>currentUser.role === "SUPER_ADMIN" || r.district?.toLowerCase() === currentUser.district.toLowerCase() && (["SP_DISTRICT","DSP_SUBDIV"].includes(currentUser.role) || r.stationName?.toLowerCase()===currentUser.stationName.toLowerCase())).length);
       } catch (e) {
         // Fallback
       }
     }
     loadStats();
-  }, []);
+  }, [currentUser]);
 
   const handleSelectRoznamcha = () => {
     switchToModule("ROZNAMCHA");

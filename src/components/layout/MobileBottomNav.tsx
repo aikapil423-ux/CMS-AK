@@ -20,6 +20,7 @@ import {
   FileCheck2,
   ReceiptText,
   Sparkles,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -53,11 +54,11 @@ export function MobileBottomNav() {
   // 1. Navigation items strictly for FIR Module
   const firItems: MobileNavItem[] = [
     { name: "FIR Register", href: "/fir", icon: Scale },
-    { name: "Workspace", href: "/fir-workspace", icon: UserCheck },
+    { name: "Part B", href: "/fir/part-b", icon: FileCheck2 },
     ...(canRegisterFir
       ? [{ name: "Register", href: "/fir/register", icon: PlusCircle, isPrimaryAction: true }]
       : []),
-    { name: "Bare Acts", href: "/acts-sections", icon: BookOpen },
+    { name: "Complete", href: "/fir/complete-cases", icon: CheckCircle2 },
     { name: "Modules", href: "/", icon: LayoutGrid },
   ];
 

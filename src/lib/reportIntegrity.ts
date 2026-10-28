@@ -1,17 +1,17 @@
 import type { FIRItem } from '@/types';
 import type { ComparativeCrimeRow } from '@/types/reports';
 
-export function comparativeCrimeRows(firs:FIRItem[]):ComparativeCrimeRow[] {
+export function comparativeCrimeRows(firs:FIRItem[], year=new Date().getFullYear()):ComparativeCrimeRow[] {
   const groups:[ComparativeCrimeRow['category'],string,(f:FIRItem)=>boolean][]=[
     ['Crime Against Person','Bodily Offences (Murder/Hurt)',f=>/PERSON|ASSAULT|MURDER|HURT/.test(f.category)],
     ['Crime Against Women','Women Safety & Domestic Offences',f=>/WOMEN|DOMESTIC|DOWRY/.test(f.category)],
     ['Crime Against Property','Theft, Burglary & Robbery',f=>/PROPERTY|THEFT|BURGLARY|ROBBERY|SNATCHING/.test(f.category)],
-    ['Local and Special Laws','Arms, Excise & Special Acts',f=>/ARMS|EXCISE|NDPS/.test(f.category)],
+    ['Local and Special Laws','Arms, Excise & Special Acts',f=>/ARMS|EXCISE|NDPS|NARCOTICS/.test(f.category)],
   ];
   const percentage=(list:FIRItem[],predicate:(f:FIRItem)=>boolean)=>list.length?Math.round(list.filter(predicate).length/list.length*1000)/10:0;
   return groups.map(([category,head,match])=>{
-    const previous=firs.filter(f=>f.firYear===2025&&match(f));
-    const current=firs.filter(f=>f.firYear===2026&&match(f));
+    const previous=firs.filter(f=>f.firYear===year-1&&match(f));
+    const current=firs.filter(f=>f.firYear===year&&match(f));
     const chargesheet=(f:FIRItem)=>/CHARGESHEET/.test(f.status);
     const arrested=(f:FIRItem)=>!!f.accusedList?.some(a=>a.isArrested);
     const priorWorkout=percentage(previous,chargesheet),workout=percentage(current,chargesheet);

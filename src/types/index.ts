@@ -23,6 +23,7 @@ export type PoliceRank =
   | 'DGP';
 
 export interface UserSession {
+  beltNumber?: string;
   id: string;
   pno: string;
   name: string;
@@ -217,6 +218,7 @@ export interface ComplainantPerson {
 }
 
 export interface AccusedPerson {
+  arrestDate?: string;
   id?: string;
   name: string;
   alias?: string;
@@ -248,6 +250,8 @@ export interface ComplaintEvidenceAttachment {
 }
 
 export interface ComplaintItem {
+  persistenceVersion?: number;
+  resolvedAt?: string;
   id: string;
   complaintNumber: string;
   source: ComplaintSource;
@@ -1394,6 +1398,7 @@ export interface FIRUidbEntry {
 }
 
 export interface FIRPropertyItem {
+  recoveredAt?: string;
   id: string;
   srNo?: number;
   propertyCategory: string;
@@ -1526,6 +1531,8 @@ export interface FIRCompletionEvent {
 }
 
 export interface FIRItem {
+  finalReportAppliedKey?: string;
+  persistenceVersion?: number;
   id: string;
   firNumber: string;
   firYear: number;
@@ -1537,6 +1544,7 @@ export interface FIRItem {
 
   // Source & Linkage
   sourceComplaintId?: string;
+  sourceComplaintSyncStatus?: "PENDING" | "SYNCED" | "ERROR";
   sourceComplaintNumber?: string;
   cctnsFirNumber?: string;
   cctnsSyncStatus?: 'LOCAL_ONLY' | 'PENDING_SYNC' | 'SYNCED' | 'SYNC_ERROR';

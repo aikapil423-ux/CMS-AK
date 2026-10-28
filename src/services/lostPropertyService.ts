@@ -1,3 +1,4 @@
+import { escapeDocumentValue } from "@/lib/dataIntegrity";
 import { LostPropertyRecord, GDSearchResultItem } from "@/types/lostProperty";
 
 const STORAGE_KEY = "haryana_police_cms_lost_property_records_v1";
@@ -119,7 +120,7 @@ export const lostPropertyService = {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed)) {
             inMemoryRecords = parsed;
             return parsed;
           }
@@ -144,15 +145,15 @@ export const lostPropertyService = {
     return this.getAll().find((r) => r.registrationNumber === regNo);
   },
 
-  getNextRegistrationNumber(yearStr: string = "2026"): string {
+  getNextRegistrationNumber(yearStr: string = String(new Date().getFullYear())): string {
     const list = this.getAll();
     const sameYear = list.filter((r) => r.registrationYear === yearStr || r.registrationNumber.endsWith(`/${yearStr}`));
-    const nextSeq = sameYear.length + 1;
+    const nextSeq = sameYear.reduce((max, r) => Math.max(max, Number(/^(\d+)\//.exec(r.registrationNumber)?.[1] || 0)), 0) + 1;
     return `${String(nextSeq).padStart(4, "0")}/${yearStr}`;
   },
 
   save(record: LostPropertyRecord): LostPropertyRecord {
-    const list = this.getAll();
+    const list = structuredClone(this.getAll());
     const updated = {
       ...record,
       updatedAt: new Date().toISOString(),
@@ -165,15 +166,15 @@ export const lostPropertyService = {
       list.unshift(updated);
     }
 
-    inMemoryRecords = [...list];
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
         window.dispatchEvent(new CustomEvent("cms_lost_property_changed", { detail: updated }));
       } catch (err) {
-        console.error("Failed to save lost property record:", err);
+        throw new Error("Lost property record could not be saved. Check browser storage and retry.");
       }
     }
+    inMemoryRecords = [...list];
     return updated;
   },
 
@@ -182,7 +183,7 @@ export const lostPropertyService = {
   },
 
   updateStatus(idOrRegNum: string, status: "OPEN" | "TRACED" | "CLOSED"): boolean {
-    const list = this.getAll();
+    const list = structuredClone(this.getAll());
     const target = idOrRegNum?.toLowerCase().trim();
     const idx = list.findIndex(
       (r) =>
@@ -196,14 +197,15 @@ export const lostPropertyService = {
         updatedAt: new Date().toISOString(),
       };
       list[idx] = updated;
-      inMemoryRecords = [...list];
+
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+          inMemoryRecords = [...list];
           window.dispatchEvent(new CustomEvent("cms_lost_property_changed", { detail: updated }));
           return true;
         } catch (err) {
-          console.error("Failed to update lost property status:", err);
+          throw new Error("Lost property status could not be saved.");
         }
       }
       return true;
@@ -245,11 +247,16 @@ export const lostPropertyService = {
       if (query.entryForOfficer && !gd.entryForOfficer.toLowerCase().includes(query.entryForOfficer.toLowerCase())) {
         return false;
       }
+      if (query.gdType && gd.gdType.toLowerCase() !== query.gdType.toLowerCase()) return false;
+      const [day, month, year] = gd.dateTime.slice(0,10).split('/');
+      const date = `${year}-${month}-${day}`;
+      if (query.dateFrom && date < query.dateFrom || query.dateTo && date > query.dateTo) return false;
       return true;
     });
   },
 
   generatePrintableHtml(record: LostPropertyRecord): string {
+    record=escapeDocumentValue(record);
     const totalVal = record.properties.reduce((sum, p) => sum + (Number(p.estimatedValue) || 0), 0);
     return `<!DOCTYPE html>
 <html lang="en">
@@ -390,7 +397,7 @@ export const lostPropertyService = {
   </table>
 
   <div style="font-size: 8.5pt; color: #475569; margin-top: 15px; border: 1px dashed #94a3b8; padding: 6px;">
-    <strong>Statutory Notice:</strong> This document is an electronically generated statutory registration of Lost Property under the regulations of Haryana Police & CCTNS. For lost mobile handsets, IMEI details are simultaneously marked for tracking / blocking under the Central Equipment Identity Register (CEIR).
+    <strong>Statutory Notice:</strong> This document is an electronically generated statutory registration of Lost Property under the regulations of Haryana Police & CCTNS. CEIR tracking / blocking must be submitted and confirmed separately by the authorized officer.
   </div>
 
   <div class="footer-sign">

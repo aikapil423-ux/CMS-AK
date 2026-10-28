@@ -1,10 +1,12 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
 const LOG_FILE = path.join(process.cwd(), ".eraser_requests.json");
 
-export async function GET() {
+export async function GET(req: Request) {
+ const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
     if (!fs.existsSync(LOG_FILE)) {
       return NextResponse.json({ requests: [] });
@@ -17,6 +19,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
     let current: any[] = [];
@@ -49,7 +53,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request) {
+ const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
     if (fs.existsSync(LOG_FILE)) {
       fs.unlinkSync(LOG_FILE);

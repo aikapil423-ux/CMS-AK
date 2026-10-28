@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Scale,
   Sparkles,
@@ -37,7 +37,7 @@ import {
   LegalSuggestionItem,
 } from "@/types";
 import { LegalAssistantService } from "@/services/legalAssistantService";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
@@ -123,7 +123,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
     setIsAnalyzing(false);
 
     // Persist to FIR storage
-    firService.saveLegalAnalysis(fir.id, generatedReport);
+    await firService.saveLegalAnalysis(fir.id, generatedReport);
 
     // Update parent if callback provided
     if (onUpdateFir) {

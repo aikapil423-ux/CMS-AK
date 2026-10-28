@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   FileCheck2,
   FileText,
@@ -26,12 +26,12 @@ import {
   Gavel,
   History,
 } from "lucide-react";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, FIRCompletionEvent } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { isFirVisibleToUser } from "@/lib/firIntegrity";
+import { isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 
 function CompleteCasesContent() {
@@ -76,7 +76,8 @@ function CompleteCasesContent() {
   const completedFirs = useMemo(() => {
     return firs.filter((fir) => {
       // 1. Authoritative tracking state must be COMPLETED
-      if (fir.trackingState !== "COMPLETED") return false;
+      const tracking = fir.trackingState || getAuthoritativeTrackingState(fir);
+      if (tracking !== "COMPLETED") return false;
 
       // 2. Permission / visibility check
       if (currentUser && !isFirVisibleToUser(currentUser, fir)) {
@@ -179,7 +180,7 @@ function CompleteCasesContent() {
     try {
       const selectedIo = MOCK_ENQUIRY_OFFICERS.find((io) => io.id === reopenAssignedIoId);
 
-      const updated = firService.reopenCompletedCase({
+      const updated = await firService.reopenCompletedCase({
         firId: selectedFirForReopen.id,
         reopenedBy: currentUser?.name || "Competent Authority",
         reopenedByRank: currentUser?.role || "Authorized Officer",
@@ -504,6 +505,7 @@ function CompleteCasesContent() {
                   <label className="font-bold text-slate-700">आदेश दिनांक (Order Date)</label>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={reopenOrderDate}
                     onChange={(e) => setReopenOrderDate(e.target.value)}
                     className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"

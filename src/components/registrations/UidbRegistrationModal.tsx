@@ -2277,6 +2277,7 @@ export function UidbRegistrationModal({
                       <label className="block text-[10px] text-slate-600 mb-1">Date of Birth</label>
                       <input
                         type="date"
+                        max={new Date().toISOString().split("T")[0]}
                         value={formData.dateOfBirth || ""}
                         onChange={(e) => handleDobChange(e.target.value)}
                         className="w-full px-2 py-1.5 border border-slate-300 rounded bg-white text-xs font-mono"
@@ -2711,11 +2712,11 @@ export function UidbRegistrationModal({
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-600 mb-0.5">Date Range From</label>
-                    <input type="date" defaultValue="2019-04-20" className="w-full px-2 py-1 border rounded bg-white" />
+                    <input type="date" max={new Date().toISOString().split("T")[0]} defaultValue="2019-04-20" className="w-full px-2 py-1 border rounded bg-white" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-600 mb-0.5">Date Range To</label>
-                    <input type="date" defaultValue="2019-04-25" className="w-full px-2 py-1 border rounded bg-white" />
+                    <input type="date" max={new Date().toISOString().split("T")[0]} defaultValue="2019-04-25" className="w-full px-2 py-1 border rounded bg-white" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-600 mb-0.5">Entry for (Officer)</label>

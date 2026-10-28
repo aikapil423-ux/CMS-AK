@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Search,
   Filter,
@@ -725,6 +726,7 @@ function ComplaintListContent() {
 
   const fetchComplaints = async () => {
     setLoading(true);
+    try {
     const [data, counts] = await Promise.all([
       ComplaintService.getComplaints({
         search: searchQuery,
@@ -741,7 +743,8 @@ function ComplaintListContent() {
     ]);
     setComplaints(data);
     setStatusCounts(counts);
-    setLoading(false);
+    } catch(error) {setAssignToast(error instanceof Error?error.message:"Complaints could not be loaded.");}
+    finally {setLoading(false);}
   };
 
   useEffect(() => {
@@ -749,9 +752,12 @@ function ComplaintListContent() {
     const handleUpdate = () => {
       fetchComplaints();
     };
+    const handleFailure=(event:Event)=>setAssignToast(String((event as CustomEvent).detail));
+    window.addEventListener("complaints_save_error",handleFailure);
     window.addEventListener("complaints_updated", handleUpdate);
     return () => {
       window.removeEventListener("complaints_updated", handleUpdate);
+      window.removeEventListener("complaints_save_error",handleFailure);
     };
   }, [searchQuery, selectedStatuses, priorityFilter, categoryFilter, dateFrom, dateTo, currentUser]);
 
@@ -1489,6 +1495,7 @@ function ComplaintListContent() {
               <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
@@ -1498,6 +1505,7 @@ function ComplaintListContent() {
               <span className="text-[11px] font-semibold text-slate-500 shrink-0">To:</span>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"

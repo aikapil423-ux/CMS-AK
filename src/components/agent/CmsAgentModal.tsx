@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { X, Mic, Send, Paperclip, Loader2, Maximize2, Minimize2, Volume2, Square, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { WebsiteOperatorSession } from '@/services/agent/websiteOperatorSession';

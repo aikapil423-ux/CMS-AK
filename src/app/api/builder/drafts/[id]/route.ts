@@ -1,12 +1,18 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderDbService } from "@/services/builderDbService";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getDraftById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (true && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     const draft = await BuilderDbService.getDraftById(id);
     if (!draft) {
       return NextResponse.json(
@@ -27,8 +33,13 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getDraftById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (true && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     const body = await req.json();
 
     const updated = await BuilderDbService.updateDraft(id, {
@@ -52,11 +63,16 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { id } = await params;
+    const ownerRecord=await BuilderDbService.getDraftById(id);
+    if (!ownerRecord) return NextResponse.json({error:"Record not found"},{status:404});
+    if (true && ownerRecord.createdBy !== apiUser.id) return NextResponse.json({error:"Only the creator may access or change this record."},{status:403});
     await BuilderDbService.deleteDraft(id);
     return NextResponse.json({ success: true, message: "Draft deleted successfully" });
   } catch (error: any) {

@@ -4,7 +4,8 @@ import { useUnsavedDocument } from "@/hooks/useUnsavedDocument";
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { registerOperatorAdapter, type OperatorReceipt } from "@/services/agent/operatorAdapters";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   FileText,
   FileCheck2,
@@ -65,7 +66,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem } from "@/types";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import {

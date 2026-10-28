@@ -143,6 +143,7 @@ export interface EvidenceAuditEntry {
 }
 
 export interface UniversalEvidenceRecord {
+  ownerId?: string;
   id: string; // Unique evidence record ID (e.g. "ev_rec_...")
   fileId: string; // ID of the underlying file or attachment (e.g. "ev_...", "doc_...")
   caseId?: string; // ID of complaint, FIR, or GD

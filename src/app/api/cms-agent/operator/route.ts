@@ -1,3 +1,4 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -36,6 +37,8 @@ async function routes() {
 }
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   if(req.nextUrl.searchParams.has("health")) {
     try {return NextResponse.json({available:true,model:await operatorModel()});}
     catch(e) {return NextResponse.json({available:false,error:e instanceof Error?e.message:"Model unavailable"},{status:503});}
@@ -55,6 +58,8 @@ const requestSchema = z.object({attachments:z.array(z.object({name:z.string().ma
 });
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   // This endpoint only proposes UI operations. It never executes or saves records.
   if (req.headers.get('origin') && req.headers.get('origin') !== req.nextUrl.origin) return NextResponse.json({error:'Origin rejected'},{status:403});
   if (Number(req.headers.get('content-length') || 0)>250000) return NextResponse.json({error:'Request too large'},{status:413});

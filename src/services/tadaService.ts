@@ -199,20 +199,7 @@ export const tadaService = {
     const cleanPno = (pno || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
     const cleanName = (name || "").trim().toLowerCase();
 
-    return all.filter((b) => {
-      const bUserId = (b.userId || "").trim().toLowerCase();
-      const bName = (b.userName || b.form1TourProgramme?.employeeName || "").trim().toLowerCase();
-      const bBelt = (b.form1TourProgramme?.beltEmployeeNumber || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-
-      // 1. Direct ID match
-      if (cleanId && bUserId === cleanId) return true;
-      // 2. Belt / PNO match
-      if (cleanPno && cleanPno.length >= 4 && (bUserId.includes(cleanPno) || bBelt.includes(cleanPno))) return true;
-      // 3. Officer Name match
-      if (cleanName && cleanName.length >= 4 && (bName.includes(cleanName) || cleanName.includes(bName))) return true;
-
-      return false;
-    });
+    return all.filter(b => b.userId === userId || (!b.userId && !!cleanPno && (b.form1TourProgramme?.beltEmployeeNumber || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase() === cleanPno));
   },
 
   getById(id: string): TADABillRecord | null {
@@ -221,7 +208,9 @@ export const tadaService = {
   },
 
   save(bill: TADABillRecord, userId: string): TADABillRecord {
-    const all = this.getAll();
+    const all = structuredClone(this.getAll());
+    const existing = all.find(b => b.id === bill.id);
+    if (!userId || existing && existing.userId !== userId) throw new Error("This bill belongs to another officer.");
     const updated: TADABillRecord = {
       ...bill,
       userId,
@@ -234,26 +223,27 @@ export const tadaService = {
       all.unshift(updated);
     }
 
-    inMemoryTADABills = [...all];
 
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(all));
         window.dispatchEvent(new CustomEvent("cms_tada_bills_changed", { detail: updated }));
       } catch (err) {
-        console.error("Failed to save TA/DA bill:", err);
+        throw new Error("TA/DA bill could not be saved. Check browser storage and retry.");
       }
     }
+    inMemoryTADABills = [...all];
     return updated;
   },
 
   delete(id: string, userId: string): boolean {
     const all = this.getAll();
-    const filtered = all.filter((b) => !(b.id === id));
-    inMemoryTADABills = [...filtered];
+    if (!userId || all.find(b => b.id === id)?.userId !== userId) return false;
+    const filtered = all.filter((b) => b.id !== id);
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem(TADA_STORAGE_KEY, JSON.stringify(filtered));
+        inMemoryTADABills = [...filtered];
         window.dispatchEvent(new CustomEvent("cms_tada_bills_changed"));
         return true;
       } catch {

@@ -1,3 +1,4 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { ComplaintItem, InvestigationSummaryReport } from "@/types";
 import { ComplaintSummaryService } from "@/services/complaintSummaryService";
@@ -5,6 +6,8 @@ import { ComplaintSummaryService } from "@/services/complaintSummaryService";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
     const { complaint, existingSummary, generatedByName } = body as {

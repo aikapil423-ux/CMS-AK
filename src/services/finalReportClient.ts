@@ -1,5 +1,6 @@
 import type { ComplaintReportItem, FIRItem } from '@/types';
 import type { FinalReportData } from '@/lib/finalReport';
+import { firPersistence } from './persistentFirService';
 export interface FinalReportHistoryEvent { id: string; reportId: string; action: string; version: number; actorId: string; createdAt: string; snapshotJson: string }
 async function request(body?: unknown, method = 'POST', firId?: string) {
   const response = await fetch(`/api/fir/final-reports${firId ? `?firId=${encodeURIComponent(firId)}` : ''}`, {
@@ -7,6 +8,7 @@ async function request(body?: unknown, method = 'POST', firId?: string) {
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || 'Backend report operation failed.');
+  if (method === 'PATCH') await firPersistence.refresh();
   if (method !== 'GET' && typeof window !== 'undefined') window.dispatchEvent(new Event('officer_notifications_updated'));
   return result;
 }

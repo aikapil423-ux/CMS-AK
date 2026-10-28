@@ -1,3 +1,7 @@
+import {computeDaysPending,stabilizeComplaint} from '@/lib/complaintIntegrity';
+import {getStationComplaintCode,nextComplaintNumber} from '@/lib/complaintNumber';
+export {computeDaysPending} from '@/lib/complaintIntegrity';
+export {getStationComplaintCode,nextComplaintNumber} from '@/lib/complaintNumber';
 import {
   ComplaintItem,
   ComplaintStatus,
@@ -40,8 +44,9 @@ import {
   isUserAssignedEo,
   isShoOrSuperior,
   AuthUserContext,
+  canViewComplaint,
 } from "@/utils/complaintPermissions";
-import { MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { DEMO_USERS, MOCK_COMPLAINTS, MOCK_HISTORICAL_FIRS, MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
 import { ComplaintRegistrationInput } from "@/lib/validations/complaint";
 import { GeneralDiaryService } from "./generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
@@ -116,13 +121,8 @@ function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
 }
 
 function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
-  const isMhcInvalid = !item.mhcName || item.mhcName.includes("Rajesh") || item.mhcName.includes("Inspector");
   return {
     ...item,
-    mhcName: isMhcInvalid ? "HC Devinder Kumar" : item.mhcName,
-    mhcRank: isMhcInvalid ? "Head Constable (MHC)" : (item.mhcRank || "Head Constable (MHC)"),
-    mhcBeltNumber: isMhcInvalid || item.mhcBeltNumber === "882/KKR" ? "889/KKR" : (item.mhcBeltNumber || "889/KKR"),
-    mhcPhone: isMhcInvalid ? "9813098765" : (item.mhcPhone || "9813098765"),
     attachments: item.attachments?.map((att) => {
       if (!att.dataUrl) {
         const cached = globalDataUrlCache.get(`att_${att.id}`) || globalDataUrlCache.get(`${item.id}_${att.name}`);
@@ -144,105 +144,48 @@ function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
   };
 }
 
-export function computeDaysPending(complaint: {
-  createdAt?: string;
-  daysPending?: number;
-  status?: string;
-  updatedAt?: string;
-}): number {
-  if (!complaint.createdAt) return complaint.daysPending || 0;
-  const createdTime = new Date(complaint.createdAt).getTime();
-  if (isNaN(createdTime)) return complaint.daysPending || 0;
-
-  const statusStr = (complaint.status || "").toString().toUpperCase();
-  const isResolved =
-    statusStr.includes("COMPLETE") ||
-    statusStr.includes("FIR_REGISTER") ||
-    statusStr.includes("DISPOSED");
-
-  const endTime = isResolved && complaint.updatedAt ? new Date(complaint.updatedAt).getTime() : Date.now();
-  const diffMs = (isNaN(endTime) ? Date.now() : endTime) - createdTime;
-  if (diffMs <= 0) return 0;
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-}
-
 let complaintsStore: ComplaintItem[] = [];
 let officerNotificationsStore: OfficerNotification[] = [];
 
-function loadComplaintsFromStorage(): ComplaintItem[] {
-  let loaded: ComplaintItem[] = [];
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      const stored = window.localStorage.getItem(COMPLAINTS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          loaded = parsed.map((item) => {
-            const restored = restoreDataUrlsForComplaint(item);
-            restored.daysPending = computeDaysPending(restored);
-            return restored;
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("Could not load complaints from localStorage", e);
-    }
-  }
-
-  if (loaded.length === 0) {
-    return MOCK_COMPLAINTS.map((c) => ({
-      ...c,
-      daysPending: computeDaysPending(c),
-    }));
-  }
-
-  // Preserve any in-memory complaints created during this session that might not be in storage
-  if (Array.isArray(complaintsStore) && complaintsStore.length > 0) {
-    const loadedIds = new Set(loaded.map((c) => c.id));
-    const memoryOnly = complaintsStore.filter((c) => !loadedIds.has(c.id));
-    return [...memoryOnly, ...loaded].map((c) => ({
-      ...c,
-      daysPending: computeDaysPending(c),
-    }));
-  }
-
-  return loaded;
+let mutationDepth=0;
+let hydrated=false;
+let hydration:Promise<void>|undefined;
+let serverSnapshot=new Map<string,ComplaintItem>();
+function currentComplaintUser():AuthUserContext|undefined {
+ if(typeof window==='undefined')return undefined;
+ return DEMO_USERS.find(u=>u.id===window.localStorage.getItem('haryana_police_cms_user'));
 }
-
-function saveComplaintsToStorage(items: ComplaintItem[]) {
-  complaintsStore = items;
-  if (typeof window !== "undefined" && window.localStorage) {
-    try {
-      const sanitized = items.map(sanitizeComplaintForStorage);
-      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(sanitized));
-    } catch (e) {
-      console.warn("Storage quota exceeded, attempting fallback strip", e);
-      try {
-        // Fallback 1: completely strip all dataUrls, fileUrls, and contentHtml
-        const stripped = items.map((c) => ({
-          ...c,
-          attachments: c.attachments?.map((a) => ({ ...a, dataUrl: undefined })),
-          documents: c.documents?.map((d) => ({ ...d, dataUrl: undefined, fileUrl: undefined, contentHtml: undefined })),
-          reports: c.reports?.map((r) => ({ ...r, dataUrl: undefined, fileUrl: undefined, contentHtml: undefined })),
-        }));
-        window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(stripped));
-      } catch (err2) {
-        console.warn("Storage quota still exceeded, trimming to recent 30 complaints", err2);
-        try {
-          const trimmed = items.slice(0, 30).map((c) => ({
-            ...c,
-            attachments: c.attachments?.map((a) => ({ ...a, dataUrl: undefined })),
-            documents: c.documents?.map((d) => ({ ...d, dataUrl: undefined, fileUrl: undefined })),
-          }));
-          window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(trimmed));
-        } catch (err3) {
-          console.error("Critical: LocalStorage full", err3);
-        }
-      }
-    }
-  }
+function loadComplaintsFromStorage():ComplaintItem[]{
+ if(typeof window==='undefined')return complaintsStore.length?complaintsStore:MOCK_COMPLAINTS.map(c=>stabilizeComplaint(c));
+ return complaintsStore;
 }
-
+function cacheComplaints(items:ComplaintItem[]){
+ if(typeof window==='undefined')return;
+ try{window.localStorage.setItem(COMPLAINTS_STORAGE_KEY,JSON.stringify(items.map(sanitizeComplaintForStorage)));}
+ catch{window.dispatchEvent(new CustomEvent('complaints_cache_warning',{detail:'Backend saved successfully. Browser cache is full; records will be reloaded from backend.'}));}
+}
+function saveComplaintsToStorage(items:ComplaintItem[]){
+ complaintsStore=items.map(c=>stabilizeComplaint(c,serverSnapshot.get(c.id)));
+ // The backend is authoritative. Never trim records to fit browser storage.
+}
+async function hydrateComplaints(){
+ if(typeof window==='undefined'||mutationDepth)return;
+ if(hydration)return hydration;
+ hydration=(async()=>{const response=await fetch('/api/complaints',{cache:'no-store'});const body=await response.json();if(!response.ok)throw new Error(body.error||'Complaints could not be loaded. Sign in and retry.');
+ complaintsStore=body.complaints.map((c:ComplaintItem)=>restoreDataUrlsForComplaint(stabilizeComplaint(c)));
+ serverSnapshot=new Map(complaintsStore.map(c=>[c.id,structuredClone(c)]));hydrated=true;cacheComplaints(complaintsStore);
+ })();try{await hydration;}finally{hydration=undefined;}
+}
+function comparable(c:ComplaintItem){const value:Partial<ComplaintItem>={...c};delete value.daysPending;return JSON.stringify(value);}
+async function persistComplaints(operation:string){
+ if(typeof window==='undefined')return;
+ const changes=complaintsStore.filter(c=>!serverSnapshot.has(c.id)||comparable(c)!==comparable(serverSnapshot.get(c.id)!)).map(c=>({complaint:c,expectedVersion:serverSnapshot.get(c.id)?.persistenceVersion||0}));
+ if(!changes.length)return;
+ const response=await fetch('/api/complaints',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({operation,changes})});
+ const body=await response.json();if(!response.ok)throw new Error(body.error||'Complaint could not be saved. Please retry.');
+ for(const saved of body.complaints as ComplaintItem[]){const index=complaintsStore.findIndex(c=>c.id===saved.id);if(index>=0)complaintsStore[index]=saved;serverSnapshot.set(saved.id,structuredClone(saved));}
+ cacheComplaints(complaintsStore);
+}
 function loadNotificationsFromStorage(): OfficerNotification[] {
   if (typeof window !== "undefined" && window.localStorage) {
     try {
@@ -267,19 +210,8 @@ function saveNotificationsToStorage(items: OfficerNotification[]) {
   }
 }
 
-function syncComplaintsToServer(items: ComplaintItem[]) {
-  if (typeof window !== "undefined") {
-    try {
-      const sanitized = items.map(sanitizeComplaintForStorage);
-      fetch("/api/complaints", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ complaints: sanitized }),
-      }).catch(() => {});
-    } catch (e) {
-      // ignore background sync errors
-    }
-  }
+function syncComplaintsToServer(_items:ComplaintItem[]){
+ // Public async mutations await one version-checked backend commit below.
 }
 
 // Initialize stores
@@ -287,59 +219,11 @@ complaintsStore = loadComplaintsFromStorage();
 officerNotificationsStore = loadNotificationsFromStorage();
 
 
-export function getStationComplaintCode(stationName?: string): string {
-  const norm = (stationName || "").toLowerCase().trim();
-  if (norm.includes("chandni bagh")) return "CBG";
-  if (norm.includes("model town")) return "MTN";
-  if (norm.includes("cyber")) return "CYB";
-  if (norm.includes("women")) return "WMN";
-  if (norm.includes("thanesar")) return "THN";
-  if (norm.includes("rewari")) return "REW";
-  if (norm.includes("sector 29")) return "S29";
-  if (norm.includes("sector 14")) return "S14";
-  if (norm.includes("city")) return "CTY";
-  const clean = (stationName || "PS").replace(/^ps\s+/i, "").replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase();
-  return clean || "STN";
-}
-
-export function nextComplaintNumber(
-  complaints: Pick<ComplaintItem, "complaintNumber" | "policeStation">[],
-  year: number,
-  stationName?: string
-): string {
-  const targetStation = (stationName || "").toLowerCase().trim();
-  const stationCode = getStationComplaintCode(stationName);
-
-  // Filter complaints belonging to this station
-  const stationComplaints = complaints.filter((c) => {
-    if (!targetStation) return true;
-    return (c.policeStation || "").toLowerCase().trim() === targetStation;
-  });
-
-  // Find max sequential number for this station and year
-  let maxSeq = 0;
-  for (const c of stationComplaints) {
-    if (!c.complaintNumber) continue;
-    const match = c.complaintNumber.match(/(\d{3,5})$/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (!isNaN(num) && num > maxSeq) {
-        maxSeq = num;
-      }
-    }
-  }
-
-  // If no previous record found for this station, default start from 0001
-  const nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
-  const seqPadded = String(nextSeq).padStart(4, "0");
-  return "HAR-PNP-" + year + "-CMP-" + stationCode + "-" + seqPadded;
-}
-
 export const ComplaintService = {
-  generateNextComplaintNumber(stationName?: string, year?: number): string {
+  generateNextComplaintNumber(stationName?: string, year?: number, district?:string): string {
     const y = year || new Date().getFullYear();
     const list = loadComplaintsFromStorage();
-    return nextComplaintNumber(list, y, stationName);
+    return nextComplaintNumber(list, y, stationName, district || currentComplaintUser()?.district);
   },
 
   async getComplaints(filter?: {
@@ -357,11 +241,15 @@ export const ComplaintService = {
     dateFrom?: string;
     dateTo?: string;
   }): Promise<ComplaintItem[]> {
+    if(!mutationDepth)await hydrateComplaints();
     complaintsStore = loadComplaintsFromStorage();
     let list = complaintsStore.map((c) => ({
       ...c,
       daysPending: computeDaysPending(c),
     }));
+
+    const viewer=currentComplaintUser();
+    if(typeof window!=='undefined')list=list.filter(c=>viewer&&canViewComplaint(viewer,c).allowed);
 
     // 0. Station-level isolation:
     // SHO, MHC, Duty Officer, and IO/EO see ONLY complaints of their police station.
@@ -398,35 +286,8 @@ export const ComplaintService = {
         filter?.viewerRole !== "SUPER_ADMIN");
 
     if (isEo && filter?.assignedEo) {
-      const eo = (filter.assignedEo || "").toLowerCase().trim();
-      const eoTokens = eo
-        .split(" ")
-        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
-
       list = list.filter((c) => {
-        // EO cannot see complaints when NO EO is assigned
-        const hasEo = Boolean(c.assignedEoId || c.assignedEoName || c.assignedEoPno);
-        if (!hasEo) return false;
-
-        const eoId = (c.assignedEoId || "").toLowerCase();
-        const eoPno = (c.assignedEoPno || "").toLowerCase();
-        const eoName = (c.assignedEoName || "").toLowerCase();
-
-        let matches = eoId === eo || eoPno === eo;
-        if (
-          !matches &&
-          eoId.replace("usr_", "").replace("eo_", "") &&
-          eo.replace("usr_", "").replace("eo_", "")
-        ) {
-          matches = eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "");
-        }
-        if (!matches && eoName && (eoName.includes(eo) || eo.includes(eoName))) {
-          matches = true;
-        }
-        if (!matches && eoTokens.length > 0 && eoTokens.some((t) => eoName.includes(t))) {
-          matches = true;
-        }
-        if (!matches) return false;
+        if(!isUserAssignedEo(viewer||{id:filter.assignedEo,pno:filter.assignedEo,name:filter.assignedEo},c))return false;
 
         // Active queue rule:
         // When EO sends a complaint to SHO, it leaves EO's active work queue.
@@ -599,6 +460,7 @@ export const ComplaintService = {
 
   async getComplaintById(id: string): Promise<ComplaintItem | undefined> {
     if (!id) return undefined;
+    if(!mutationDepth)await hydrateComplaints();
     const cleanId = decodeURIComponent(id).trim().toLowerCase();
 
     // 1. Search in-memory complaintsStore directly first
@@ -608,6 +470,7 @@ export const ComplaintService = {
         c.complaintNumber.toLowerCase() === cleanId
     );
     if (found) {
+      if(typeof window!=='undefined'){const viewer=currentComplaintUser();if(!viewer||!canViewComplaint(viewer,found).allowed)return undefined;}
       found.daysPending = computeDaysPending(found);
       return found;
     }
@@ -620,6 +483,7 @@ export const ComplaintService = {
         c.complaintNumber.toLowerCase() === cleanId
     );
     if (found) {
+      if(typeof window!=='undefined'){const viewer=currentComplaintUser();if(!viewer||!canViewComplaint(viewer,found).allowed)return undefined;}
       found.daysPending = computeDaysPending(found);
     }
     return found;
@@ -637,6 +501,7 @@ export const ComplaintService = {
         c.complaintNumber.toLowerCase() === cleanId
     );
     if (found) {
+      if(typeof window!=='undefined'){const viewer=currentComplaintUser();if(!viewer||!canViewComplaint(viewer,found).allowed)return undefined;}
       found.daysPending = computeDaysPending(found);
       return found;
     }
@@ -647,6 +512,7 @@ export const ComplaintService = {
         c.complaintNumber.toLowerCase() === cleanId
     );
     if (found) {
+      if(typeof window!=='undefined'){const viewer=currentComplaintUser();if(!viewer||!canViewComplaint(viewer,found).allowed)return undefined;}
       found.daysPending = computeDaysPending(found);
     }
     return found;
@@ -673,8 +539,10 @@ export const ComplaintService = {
     firRegistered: number;
     correctionRequired: number;
   }> {
+    if(!mutationDepth)await hydrateComplaints();
     complaintsStore = loadComplaintsFromStorage();
-    let baseList = [...complaintsStore];
+    const viewer=currentComplaintUser();
+    let baseList = complaintsStore.filter(c=>typeof window==='undefined'||(viewer&&canViewComplaint(viewer,c).allowed));
 
     const isSuperior =
       viewerRole === "DSP_SUBDIV" ||
@@ -697,30 +565,8 @@ export const ComplaintService = {
     }
 
     if (assignedEoFilter) {
-      const eo = assignedEoFilter.toLowerCase().trim();
-      const eoTokens = eo
-        .split(" ")
-        .filter((p) => p.length > 2 && !["sub-inspector", "inspector", "asi", "si", "officer"].includes(p));
       baseList = baseList.filter((c) => {
-        // EO cannot see complaints without an assigned EO
-        const hasEo = Boolean(c.assignedEoId || c.assignedEoName || c.assignedEoPno);
-        if (!hasEo) return false;
-
-        const eoId = (c.assignedEoId || "").toLowerCase();
-        const eoPno = (c.assignedEoPno || "").toLowerCase();
-        const eoName = (c.assignedEoName || "").toLowerCase();
-
-        let matches = eoId === eo || eoPno === eo;
-        if (
-          !matches &&
-          eoId.replace("usr_", "").replace("eo_", "") &&
-          eo.replace("usr_", "").replace("eo_", "")
-        ) {
-          matches = eoId.replace("usr_", "").replace("eo_", "") === eo.replace("usr_", "").replace("eo_", "");
-        }
-        if (!matches && eoName && (eoName.includes(eo) || eo.includes(eoName))) return true;
-        if (!matches && eoTokens.length > 0 && eoTokens.some((token) => eoName.includes(token))) return true;
-        if (!matches) return false;
+        if(!isUserAssignedEo(viewer||{id:assignedEoFilter,pno:assignedEoFilter,name:assignedEoFilter},c))return false;
 
         // Active queue rule: when sent to SHO, it leaves EO active queue unless re-enquiry or correction required
         if (
@@ -791,10 +637,10 @@ export const ComplaintService = {
     const isDirectFir = Boolean(input.directSendToFir || input.directSendToFirChoice === "YES");
     const initialStatus: ComplaintStatus = isDirectFir ? "FIR_REGISTER" : "REGISTERED";
     const initialWorkflow: WorkflowState = isDirectFir ? "FIR_REGISTER" : "NOT_ASSIGNED";
-    const generatedComplaintNumber = this.generateNextComplaintNumber(station);
+    const generatedComplaintNumber = this.generateNextComplaintNumber(station,undefined,district);
 
     const newComplaint: ComplaintItem = {
-      id: `cmp_${Date.now()}`,
+      id: `cmp_${crypto.randomUUID()}`,
       complaintNumber: generatedComplaintNumber,
       source: input.source,
       category: input.category,
@@ -931,6 +777,8 @@ export const ComplaintService = {
     if (index === -1) throw new Error("Complaint not found");
 
     const currentComplaint = complaintsStore[index];
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user) {
       const perm = canReassignEO(user, currentComplaint);
       if (!perm.allowed) {
@@ -1404,6 +1252,8 @@ export const ComplaintService = {
     const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
     if (index === -1) throw new Error("Complaint not found");
 
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user) {
       const perm = canCreateDocument(user, complaintsStore[index]);
       if (!perm.allowed) {
@@ -1541,7 +1391,7 @@ export const ComplaintService = {
       transferredAt: new Date().toISOString(),
       transferredBy: officerName,
       transferReason: reason,
-      policeStation: `${complaintsStore[index].policeStation} ➔ Transferred to ${destinationStation}`,
+      policeStation: complaintsStore[index].policeStation,
       updatedAt: new Date().toISOString(),
     };
 
@@ -1967,6 +1817,8 @@ export const ComplaintService = {
     if (index === -1) throw new Error("Complaint not found");
 
     const complaint = complaintsStore[index];
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user) {
       const perm = canAskProgressReport(user, complaint);
       if (!perm.allowed) {
@@ -2191,6 +2043,8 @@ export const ComplaintService = {
     const cleanDocId = docId.replace(/^doc_att_/, "").replace(/^doc_/, "");
     const doc = (complaintsStore[index].documents || []).find((d) => d.id === docId || d.id === cleanDocId);
 
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user && doc) {
       const perm = canDeleteDocument(user, doc, complaintsStore[index]);
       if (!perm.allowed) {
@@ -2448,6 +2302,8 @@ export const ComplaintService = {
     const nowIso = new Date().toISOString();
     const existingIndex = report.id ? existingReports.findIndex((r) => r.id === report.id) : -1;
 
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user) {
       if (existingIndex !== -1 && !options?.isNewVersion) {
         const prev = existingReports[existingIndex];
@@ -3719,10 +3575,10 @@ ${reportBody}
 
     // Synchronize to FIR Module Store
     try {
-      const { firService } = await import("./firService");
+      const { persistentFirService: firService } = await import("./persistentFirService");
       const existing = firService.getFirBySourceComplaintId(complaint.id);
       if (!existing) {
-        firService.registerFir({
+        await firService.registerFir({
           sourceComplaintId: complaint.id,
           sourceComplaintNumber: complaint.complaintNumber,
           firNumber,
@@ -3751,7 +3607,7 @@ ${reportBody}
         });
       }
     } catch (firSyncErr) {
-      console.warn("Could not sync to FIR store:", firSyncErr);
+      throw new Error("FIR could not be saved on the server. The complaint was not finalized; retry after reloading FIR records.");
     }
 
     saveComplaintsToStorage(complaintsStore);
@@ -3908,6 +3764,8 @@ ${reportBody}
     if (index === -1) throw new Error("Complaint not found");
 
     const report = (complaintsStore[index].reports || []).find((r) => r.id === reportId);
+    user=user||currentComplaintUser();
+    if(!user)throw new Error('Officer identity is required.');
     if (user && report) {
       if (report.sentToSho && isShoOrSuperior(user.role)) {
         throw new Error("Access Denied: SHO cannot delete enquiry reports submitted by the Enquiry Officer.");
@@ -3980,3 +3838,45 @@ ${reportBody}
     return complaintsStore[index];
   },
 };
+
+// Serialize browser mutations, commit only changed records, and expose persistence failures.
+let mutationQueue:Promise<unknown>=Promise.resolve();
+const mutations=['createComplaint','assignEnquiryOfficer','addEnquiryNote','addEvidence','addDocument','transferComplaint','transferComplaintFull','linkComplaint','linkComplaintsFull','delinkComplaintsFull','issueNcrReference','linkFir','requestProgressReport','submitTransferJustification','deleteEnquiryNote','deleteEvidence','deleteDocument','addConfidentialDossier','deleteConfidentialDossier','addComplaintReport','submitEoReportWithOutcome','sendReportToSho','shoApprove','shoReEnquiry','shoReject','registerFir','createFirCriminalCaseGdEntry','deleteComplaintReport','saveLegalAnalysis','saveInvestigationSummary'] as const;
+for(const key of mutations){
+ const original=ComplaintService[key];
+ if(typeof original!=='function')continue;
+ const wrapped=function(this:typeof ComplaintService,...args:unknown[]){
+  const actorId=currentComplaintUser()?.id;
+  const run=async()=>{
+   if(typeof window!=='undefined'&&actorId!==currentComplaintUser()?.id)throw new Error('Officer changed before saving. Retry with the current officer.');
+   if(hydration)await hydration;
+   if(typeof window!=='undefined'&&!hydrated)await hydrateComplaints();
+   const before=structuredClone(complaintsStore),notifications=structuredClone(officerNotificationsStore);
+   mutationDepth++;
+   try{
+    const result=await (original as (...a:unknown[])=>Promise<unknown>).apply(ComplaintService,args);
+    await persistComplaints(key);
+    if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('complaints_updated'));
+    if(result&&typeof result==='object'){
+     const value=result as {id?:string;complaint?:ComplaintItem};
+     if(value.complaint)value.complaint=complaintsStore.find(c=>c.id===value.complaint!.id)||value.complaint;
+     if(value.id)return complaintsStore.find(c=>c.id===value.id)||result;
+    }
+    return result;
+   }catch(error){complaintsStore=before;officerNotificationsStore=notifications;saveNotificationsToStorage(notifications);if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent('complaints_updated'));throw error;}
+   finally{mutationDepth--;}
+  };
+  const pending=mutationQueue.then(run,run);mutationQueue=pending.catch(()=>{});return pending;
+ };
+ // Preserve each public method's existing typed signature.
+ (ComplaintService as unknown as Record<string,unknown>)[key]=wrapped;
+}
+if(typeof window!=='undefined'){
+ window.addEventListener('cms_user_switched',()=>{hydrated=false;complaintsStore=[];serverSnapshot.clear();});
+}
+
+let standaloneScheduled=false;
+function scheduleStandalonePersist(){
+ if(standaloneScheduled)return;standaloneScheduled=true;
+ queueMicrotask(()=>{standaloneScheduled=false;const run=async()=>{try{await persistComplaints('updateAudit');}catch(e){complaintsStore=Array.from(serverSnapshot.values()).map(c=>structuredClone(c));window.dispatchEvent(new CustomEvent('complaints_save_error',{detail:e instanceof Error?e.message:'Complaint could not be saved.'}));}window.dispatchEvent(new CustomEvent('complaints_updated'));};const pending=mutationQueue.then(run,run);mutationQueue=pending.catch(()=>{});});
+}

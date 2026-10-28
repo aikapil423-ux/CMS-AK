@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   ClipboardList,
   Search,
@@ -46,7 +47,7 @@ import { lostPropertyService } from "@/services/lostPropertyService";
 import { LostPropertyRecord } from "@/types/lostProperty";
 import { RegisterMissingPersonModal } from "@/components/missing-person/RegisterMissingPersonModal";
 import { MissingPersonPreviewModal } from "@/components/missing-person/MissingPersonPreviewModal";
-import { missingPersonService } from "@/services/missingPersonService";
+import { missingPersonService, createMissingPersonDraft } from "@/services/missingPersonService";
 import { MissingPersonRecord } from "@/types/missingPerson";
 
 const STATUS_OPTIONS_BY_TYPE: Record<RegistrationType, RegistrationStatus[]> = {
@@ -137,22 +138,9 @@ function RegistrationsContent() {
     setEntries(sortEntriesNewestFirst(localData));
     try {
       const idbList = await hydrateFromIndexedDB();
-      if (idbList && idbList.length > 0) {
-        const map = new Map<string, RegistrationEntry>();
-        for (const item of idbList) {
-          if (item.id) map.set(item.id, item);
-        }
-        for (const item of localData) {
-          const existing = map.get(item.id);
-          if (existing && existing.photoUrl && existing.photoUrl.length > (item.photoUrl?.length || 0)) {
-            map.set(item.id, { ...item, photoUrl: existing.photoUrl, photos: existing.photos || item.photos });
-          } else {
-            map.set(item.id, { ...existing, ...item });
-          }
-        }
-        const merged = sortEntriesNewestFirst(Array.from(map.values()));
-        setEntries(merged);
-        RegistrationService.setAllEntries(merged);
+      if (idbList && !localStorage.getItem("cms_registrations_data")) {
+        RegistrationService.setAllEntries(idbList);
+        setEntries(sortEntriesNewestFirst(idbList));
       }
     } catch (err) {
       console.warn("Hydration from IndexedDB failed, using memory/localStorage entries", err);
@@ -165,8 +153,8 @@ function RegistrationsContent() {
 
   // Filter entries for active tab + search query + status
   const currentTabEntries = useMemo(() => {
-    return entries.filter((e) => e.type === activeTab);
-  }, [entries, activeTab]);
+    return entries.filter((e) => e.type === activeTab && (currentUser.role === "SUPER_ADMIN" || e.district?.toLowerCase() === currentUser.district.toLowerCase() && (["SP_DISTRICT","DSP_SUBDIV"].includes(currentUser.role) || e.stationName?.toLowerCase() === currentUser.stationName.toLowerCase())));
+  }, [entries, activeTab, currentUser]);
 
   const filteredEntries = useMemo(() => {
     return currentTabEntries.filter((item) => {
@@ -276,33 +264,33 @@ function RegistrationsContent() {
     const parts = entry.ownerName
       ? entry.ownerName.trim().split(" ")
       : ["raju", "Singh"];
-    const firstName = parts[0] || "raju";
-    const lastName = parts.slice(1).join(" ") || "Singh";
+    const firstName = parts[0] || "";
+    const lastName = parts.slice(1).join(" ") || "";
 
     return {
       id: entry.id,
-      registrationNumber: entry.regNumber || "0002/2019",
+      registrationNumber: entry.regNumber || "",
       registrationYear: entry.regNumber?.includes("/")
         ? entry.regNumber.split("/")[1]
         : "2019",
       createdAt: entry.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       status: "UNDER_ENQUIRY",
-      gdNumber: "003",
-      gdDateTime: `${entry.date || "22/04/2019"}, ${entry.time || "11:33"}`,
-      dateOfPropertyMissing: entry.date || "2019-04-22",
-      timeOfPropertyMissing: entry.time || "11:30",
-      district: entry.district || "PANCHKULA",
+      gdNumber: "",
+      gdDateTime: `${entry.date || ""}, ${entry.time || ""}`,
+      dateOfPropertyMissing: entry.date || "",
+      timeOfPropertyMissing: entry.time || "",
+      district: entry.district || "",
       year: "2019",
-      placeFromWhereMissing: entry.lostLocation || "Bus stand PKL",
-      policeStation: entry.stationName || "PANCHKULA SECTOR-5",
+      placeFromWhereMissing: entry.lostLocation || "",
+      policeStation: entry.stationName || "",
       properties: [
         {
           id: `prop_${entry.id}`,
           category: "ELECTRICAL AND ELECTRONIC GOODS",
-          subType: entry.propertyType || "MOBILE PHONE",
+          subType: entry.propertyType || "",
           estimatedValue: parseInt(
-            entry.approxValue?.replace(/[^\d]/g, "") || "12000",
+            entry.approxValue?.replace(/[^\d]/g, "") || "",
             10
           ),
           idType: "IMEI NO.",
@@ -315,62 +303,60 @@ function RegistrationsContent() {
               ]
             : ["864920048192031"],
           quantity: 1,
-          makeManufacturer: entry.brandOrMake || "Samsung",
+          makeManufacturer: entry.brandOrMake || "",
           remarks:
-            entry.remarks ||
-            "Samsung Galaxy Smartphone Black colour with Jio SIM inserted.",
+            entry.remarks || "",
         },
       ],
-      uid: "8910-2391-4491",
+      uid: "",
       firstName,
       middleName: "",
       lastName,
-      gender: (entry.gender as any) || "Male",
+      gender: (entry.gender as any) || "",
       occupation: "Private Service",
       relationType: "Father",
-      relativeName: entry.fatherOrHusbandName || "Shyam Singh",
+      relativeName: entry.fatherOrHusbandName || "",
       mobileNumbers: entry.ownerPhone
         ? [entry.ownerPhone]
         : ["+91 9812033441"],
-      dob: "1994-08-15",
-      yearOfBirth: "1994",
+      dob: "",
+      yearOfBirth: "",
       ageYears: "24",
-      ageMonths: "8",
+      ageMonths: "",
       ageRangeFrom: "",
       ageRangeTo: "",
       presentAddress: {
-        houseNo: "Flat 402, Tower B",
-        streetName: "Old Ropar Road",
-        colony: "Sector 14",
-        villageTownCity: "PKL",
-        tehsil: "Panchkula",
+        houseNo: "",
+        streetName: "",
+        colony: "",
+        villageTownCity: "",
+        tehsil: "",
         country: "INDIA",
         state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134112",
+        district: entry.district || "",
+        policeStation: entry.stationName || "",
+        pincode: "",
       },
       sameAsPresent: true,
       permanentAddress: {
-        houseNo: "Flat 402, Tower B",
-        streetName: "Old Ropar Road",
-        colony: "Sector 14",
-        villageTownCity: "PKL",
-        tehsil: "Panchkula",
+        houseNo: "",
+        streetName: "",
+        colony: "",
+        villageTownCity: "",
+        tehsil: "",
         country: "INDIA",
         state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134112",
+        district: entry.district || "",
+        policeStation: entry.stationName || "",
+        pincode: "",
       },
-      nameOfEo: entry.officerName || "Lalit Kumar (I (Inspector))-53175",
-      eoRank: entry.officerRank || "I (Inspector)",
-      eoNumber: "53175",
+      nameOfEo: entry.officerName || "",
+      eoRank: entry.officerRank || "",
+      eoNumber: "",
       remarks:
-        entry.remarks ||
-        "Enquiry entrusted to Inspector Lalit Kumar. CDR/Tower dump verification & CEIR portal blocking initiated.",
-      expectedDateToComplete: "2019-04-24",
-      registeredBy: entry.officerName || "Inspector Lalit Kumar",
+        entry.remarks || "",
+      expectedDateToComplete: "",
+      registeredBy: entry.officerName || "",
     };
   };
 
@@ -383,148 +369,8 @@ function RegistrationsContent() {
       missingPersonService.getRecordById(entry.id);
     if (existing) return existing;
 
-    const parts = entry.personName
-      ? entry.personName.trim().split(" ")
-      : ["Monu", "Kumar"];
-    const firstName = parts[0] || "Monu";
-    const lastName = parts.slice(1).join(" ") || "Kumar";
-
-    return {
-      id: entry.id,
-      registrationNumber: entry.regNumber || "0002/2019",
-      registrationYear: entry.regNumber?.includes("/")
-        ? entry.regNumber.split("/")[1]
-        : "2019",
-      createdAt: entry.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: (entry.status as any) || "OPEN",
-      registrationDateTime: `${entry.date || "19/04/2019"} ${entry.time || "15:19"}`,
-      gdNumber: "002",
-      gdDateTime: `${entry.date || "19/04/2019"}, ${entry.time || "10:45"}`,
-      briefOfIncident: entry.remarks || "Missing Person",
-      dateTimeSinceMissing: `${entry.date || "19/04/2019"} 11:00`,
-      dateSinceMissing: entry.date || "2019-04-19",
-      timeSinceMissing: "11:00",
-      firNumber: "0042",
-      firYear: "2019",
-      placeOfMissing: entry.missingFrom || "Panchkula bus stand",
-      actsSections: [
-        { id: "act_1", act: "Police Act 1861", section: "Section 34" },
-      ],
-      complainantUid: "4829-1092-3849",
-      complainantFirstName: entry.contactPerson?.split(" ")[0] || "RAVI",
-      complainantMiddleName: "",
-      complainantLastName:
-        entry.contactPerson?.split(" ").slice(1).join(" ") || "Kumar",
-      complainantRelationType: "Father",
-      complainantRelativeName: entry.fatherOrHusbandName || "Shyam",
-      complainantMobile: entry.contactNumber || "+91 9812033441",
-      complainantLandline: "",
-      complainantEmail: "",
-      complainantGender: "Male",
-      complainantPresentAddress: {
-        houseNo: "Plot 12",
-        streetName: "Bus Stand Road",
-        colony: "Sector 5",
-        villageTownCity: "pkl",
-        tehsil: "Panchkula",
-        country: "INDIA",
-        state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134109",
-      },
-      complainantSameAsPresent: true,
-      complainantPermanentAddress: {
-        houseNo: "Plot 12",
-        streetName: "Bus Stand Road",
-        colony: "Sector 5",
-        villageTownCity: "pkl",
-        tehsil: "Panchkula",
-        country: "INDIA",
-        state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134109",
-      },
-      complainantNationality: "INDIA",
-      complainantIdList: [
-        { id: "cid_1", idType: "Ration Card", idNumber: "RC-HR-PKL-99201" },
-      ],
-      uid: "7719-2810-4412",
-      firstName,
-      middleName: "",
-      lastName,
-      alias: "Chhotu",
-      relationType: "Father",
-      relativeName: entry.fatherOrHusbandName || "Shyam",
-      photoUrl: entry.photoUrl,
-      gender: (entry.gender as any) || "Male",
-      majorMinor: "Major",
-      mobileNo: entry.contactNumber || "+91 9416088219",
-      landlineNo: "",
-      emailId: "",
-      dob: "1990-12-02",
-      yearOfBirth: "1990",
-      ageYears: entry.approxAge?.replace(/\D/g, "") || "28",
-      ageMonths: "4",
-      ageRangeFrom: "",
-      ageRangeTo: "",
-      sameAsComplainantAddress: true,
-      presentAddress: {
-        houseNo: "Plot 12",
-        streetName: "Bus Stand Road",
-        colony: "Sector 5",
-        villageTownCity: "pkl",
-        tehsil: "Panchkula",
-        country: "INDIA",
-        state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134109",
-      },
-      sameAsPresentAddress: true,
-      permanentAddress: {
-        houseNo: "Plot 12",
-        streetName: "Bus Stand Road",
-        colony: "Sector 5",
-        villageTownCity: "pkl",
-        tehsil: "Panchkula",
-        country: "INDIA",
-        state: "HARYANA",
-        district: entry.district || "PANCHKULA",
-        policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-        pincode: "134109",
-      },
-      nationality: "INDIA",
-      occupation: "Student / Shop Helper",
-      idList: [
-        { id: "mpid_1", idType: "Aadhar Card", idNumber: "7719 2810 4412" },
-      ],
-      heightFeet: "5",
-      heightInches: "7",
-      complexion: "Wheatish",
-      build: "Medium",
-      faceType: "Round",
-      hairColor: "Black",
-      eyeColor: "Dark Brown",
-      languagesKnown: "Hindi, Punjabi",
-      identifyingMarks:
-        entry.identifyingMarks ||
-        "Mole on right cheek, small burn scar on left forearm",
-      clothingDetails:
-        entry.clothingDetails || "Blue checked shirt, dark jeans, white sneakers",
-      habitsEccentricities: "Polite demeanor, no mental disability reported",
-      nameOfEo: entry.officerName || "ASI Sandeep Singh - 49102",
-      eoRank: entry.officerRank || "Assistant Sub Inspector",
-      eoNumber: "49102",
-      policeStation: entry.stationName || "PANCHKULA SECTOR-5",
-      district: entry.district || "PANCHKULA",
-      expectedDateToComplete: "2019-04-26",
-      remarks:
-        entry.remarks ||
-        "WT message flashed to all police stations in Haryana and Chandigarh.",
-    };
+    const parts=(entry.personName || "").trim().split(/\s+/);
+    return createMissingPersonDraft({id:entry.id,registrationNumber:entry.regNumber,registrationYear:entry.date?.slice(0,4) || "",createdAt:entry.createdAt,status:entry.status as MissingPersonRecord['status'],firstName:parts[0] || "",lastName:parts.slice(1).join(" "),relativeName:entry.fatherOrHusbandName || "",complainantFirstName:entry.contactPerson || "",complainantMobile:entry.contactNumber || "",placeOfMissing:entry.missingFrom || "",gender:entry.gender as MissingPersonRecord['gender'],photoUrl:entry.photoUrl,identifyingMarks:entry.identifyingMarks || "",clothingDetails:entry.clothingDetails || "",nameOfEo:entry.officerName || "",eoRank:entry.officerRank || "",policeStation:entry.stationName || "",district:entry.district || "",remarks:entry.remarks || ""});
   };
 
   // Helper to map UidbFormData to RegistrationEntry
@@ -677,7 +523,7 @@ function RegistrationsContent() {
       date: today,
       time: nowTime,
       stationName: currentUser.stationName || "Thanesar City",
-      district: "Kurukshetra",
+      district: currentUser.district || "",
       status: "OPEN",
       officerName: currentUser.name || "Station Officer",
       officerRank: currentUser.rank || "Sub Inspector",
@@ -1568,6 +1414,7 @@ function RegistrationsContent() {
                     <input
                       type="date"
                       required
+                      max={new Date().toISOString().split("T")[0]}
                       value={formData.date || ""}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs"

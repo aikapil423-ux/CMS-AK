@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Printer,
   Copy,
@@ -37,7 +38,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, FIRCaseDiaryItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
@@ -712,7 +713,7 @@ function ZimniWorkspaceContent() {
       };
 
       // 5. Save directly into FIR record
-      const updatedFir = firService.addCaseDiary(activeFir.id, caseDiaryItem);
+      const updatedFir = await firService.addCaseDiary(activeFir.id, caseDiaryItem);
       if (updatedFir) {
         setFirs((prev) => prev.map((f) => (f.id === updatedFir.id ? updatedFir : f)));
       }

@@ -26,6 +26,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import {useAuth} from "@/context/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +50,7 @@ const DATA_TYPE_BADGES: Record<
 };
 
 export default function TableManagerTab() {
+  const {currentUser}=useAuth();
   const tableConfigs = useMemo(() => TableManagerService.getTableConfigs(), []);
   const [selectedTableId, setSelectedTableId] = useState<TableIdentifier>("fir");
   const [columns, setColumns] = useState<ManagedColumn[]>([]);
@@ -138,6 +140,7 @@ export default function TableManagerTab() {
 
   // Submit Add
   const handleSaveAdd = (e: React.FormEvent) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change table settings.");return;}
     e.preventDefault();
     setFormError(null);
 
@@ -196,6 +199,7 @@ export default function TableManagerTab() {
 
   // Submit Edit
   const handleSaveEdit = (e: React.FormEvent) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change table settings.");return;}
     e.preventDefault();
     if (!activeColumn) return;
     setFormError(null);
@@ -246,6 +250,7 @@ export default function TableManagerTab() {
 
   // Confirm Delete
   const handleConfirmDelete = () => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change table settings.");return;}
     if (!activeColumn) return;
     const res = TableManagerService.deleteCustomColumn(selectedTableId, activeColumn.id);
     if (!res.success) {
@@ -260,6 +265,7 @@ export default function TableManagerTab() {
 
   // Toggle Active State
   const handleToggleActive = (col: ManagedColumn) => {
+    if(currentUser.role !== "SUPER_ADMIN"){alert("Only Super Admin may change table settings.");return;}
     if (col.isDefault) return;
     TableManagerService.toggleCustomColumnActive(selectedTableId, col.id);
     loadColumns();

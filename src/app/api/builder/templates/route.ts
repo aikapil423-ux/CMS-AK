@@ -1,7 +1,10 @@
+import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { BuilderDbService } from "@/services/builderDbService";
 
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search") || undefined;
@@ -29,6 +32,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = await req.json();
 
@@ -52,9 +57,9 @@ export async function POST(req: NextRequest) {
       content: body.content,
       documentStructure: body.documentStructure,
       customFields: body.customFields,
-      createdBy: body.createdBy || "officer_1",
-      createdByName: body.createdByName,
-      createdByRank: body.createdByRank,
+      createdBy: apiUser.id,
+      createdByName: apiUser.name,
+      createdByRank: apiUser.rankDisplay || apiUser.rank,
     });
 
     return NextResponse.json({ success: true, template });

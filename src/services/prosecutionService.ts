@@ -289,7 +289,7 @@ export const ProsecutionService = {
       const updated = [record, ...existing.filter((r) => r.id !== record.id)];
       localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to save scrutiny record", e);
+      throw new Error("Could not save scrutiny record. Check browser storage and retry.");
       throw new Error('Scrutiny record could not be saved. Check browser storage and retry.');
     }
   },
@@ -301,7 +301,7 @@ export const ProsecutionService = {
       const updated = existing.filter((r) => r.id !== id);
       localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to delete scrutiny record", e);
+      throw new Error("Could not delete scrutiny record. Check browser storage and retry.");
     }
   },
 
@@ -360,7 +360,7 @@ export const ProsecutionService = {
       const updated = [reply, ...existing.filter((r) => r.id !== reply.id)];
       localStorage.setItem(STORAGE_KEYS.BAIL_REPLIES, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to save bail reply", e);
+      throw new Error("Could not save bail reply. Check browser storage and retry.");
     }
   },
 
@@ -371,7 +371,7 @@ export const ProsecutionService = {
       const updated = existing.filter((r) => r.id !== id);
       localStorage.setItem(STORAGE_KEYS.BAIL_REPLIES, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to delete bail reply", e);
+      throw new Error("Could not delete bail reply. Check browser storage and retry.");
     }
   },
 
@@ -395,7 +395,7 @@ export const ProsecutionService = {
       const updated = [report, ...existing.filter((r) => r.id !== report.id)];
       localStorage.setItem(STORAGE_KEYS.STATUS_REPORTS, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to save status report", e);
+      throw new Error("Could not save status report. Check browser storage and retry.");
     }
   },
 
@@ -406,7 +406,7 @@ export const ProsecutionService = {
       const updated = existing.filter((r) => r.id !== id);
       localStorage.setItem(STORAGE_KEYS.STATUS_REPORTS, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to delete status report", e);
+      throw new Error("Could not delete status report. Check browser storage and retry.");
     }
   },
 
@@ -430,7 +430,7 @@ export const ProsecutionService = {
       const updated = [app, ...existing.filter((r) => r.id !== app.id)];
       localStorage.setItem(STORAGE_KEYS.MISC_COURT, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to save misc court application", e);
+      throw new Error("Could not save misc court application. Check browser storage and retry.");
     }
   },
 
@@ -441,7 +441,7 @@ export const ProsecutionService = {
       const updated = existing.filter((r) => r.id !== id);
       localStorage.setItem(STORAGE_KEYS.MISC_COURT, JSON.stringify(updated));
     } catch (e) {
-      console.error("Failed to delete misc court application", e);
+      throw new Error("Could not delete misc court application. Check browser storage and retry.");
     }
   },
 

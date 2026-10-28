@@ -13,7 +13,7 @@ import {
   Network,
 } from "lucide-react";
 import { FIRItem } from "@/types";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 
@@ -140,7 +140,7 @@ export function LinkDuplicateFIRModal({
 
     setSubmitting(true);
     try {
-      const res = firService.linkMultipleFirs({
+      const res = await firService.linkMultipleFirs({
         primaryFirId: primaryFir.id,
         targetFirIds,
         linkType,
@@ -164,12 +164,12 @@ export function LinkDuplicateFIRModal({
   };
 
   // Submit Delink
-  const handleDelinkSubmit = (targetFirNumber: string, targetFirId: string) => {
+  const handleDelinkSubmit = async (targetFirNumber: string, targetFirId: string) => {
     if (!manageFir) return;
 
     setSubmitting(true);
     try {
-      const res = firService.delinkFirs({
+      const res = await firService.delinkFirs({
         primaryFirId: manageFir.id,
         targetFirNumber,
         targetFirId,

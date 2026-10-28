@@ -113,7 +113,7 @@ export default function TADAPage() {
           });
           setAutoSyncBanner(res.message);
         }
-      });
+      }).catch(error=>setAutoSyncBanner(error instanceof Error?error.message:"TA/DA sync failed. Please retry."));
     }
 
     const handleBillsChanged = () => {
@@ -421,6 +421,7 @@ export default function TADAPage() {
       userId: currentUser?.id || userId,
       userName: bill.form1TourProgramme.employeeName || userName,
     };
+    try {
     const saved = tadaService.save(toSave, currentUser?.id || userId);
     setBill(saved);
     setSavedBills((prev) => {
@@ -430,6 +431,7 @@ export default function TADAPage() {
     loadUserBills();
     setSaveSuccessMsg(`सफलतापूर्वक सुरक्षित (Saved)! ID: ${saved.id}`);
     setTimeout(() => setSaveSuccessMsg(""), 4000);
+    } catch(error) {alert(error instanceof Error?error.message:"TA/DA save failed.");}
   };
 
   // Start new blank bill
@@ -444,7 +446,7 @@ export default function TADAPage() {
   // Delete bill from history
   const handleDeleteBill = (id: string) => {
     if (confirm("क्या आप इस बिल रिकॉर्ड को हटाना चाहते हैं?")) {
-      tadaService.delete(id, userId);
+      if (!tadaService.delete(id, userId)) {alert("Bill could not be deleted. Check ownership and browser storage.");return;}
       loadUserBills();
       if (bill.id === id) {
         setBill(createBlankTADABill(userId, userName));
@@ -849,6 +851,7 @@ export default function TADAPage() {
                         <td className="p-1 border-r border-slate-200">
                           <input
                             type="date"
+                            max={new Date().toISOString().split("T")[0]}
                             value={row.departureDate}
                             onChange={(e) => updateTourJourneyRow(row.id, { departureDate: e.target.value })}
                             className="w-full px-1.5 py-1 bg-white border border-slate-200 rounded text-xs"
@@ -883,6 +886,7 @@ export default function TADAPage() {
                         <td className="p-1 border-r border-slate-200">
                           <input
                             type="date"
+                            max={new Date().toISOString().split("T")[0]}
                             value={row.arrivalDate}
                             onChange={(e) => updateTourJourneyRow(row.id, { arrivalDate: e.target.value })}
                             className="w-full px-1.5 py-1 bg-white border border-slate-200 rounded text-xs"
@@ -1360,6 +1364,7 @@ export default function TADAPage() {
                         <td className="p-1 border-r border-slate-200">
                           <input
                             type="date"
+                            max={new Date().toISOString().split("T")[0]}
                             value={row.departureDate}
                             onChange={(e) => updateClaimJourneyRow(row.id, { departureDate: e.target.value })}
                             className="w-full px-1 py-0.5 border border-slate-200 rounded text-xs"
@@ -1386,6 +1391,7 @@ export default function TADAPage() {
                         <td className="p-1 border-r border-slate-200">
                           <input
                             type="date"
+                            max={new Date().toISOString().split("T")[0]}
                             value={row.arrivalDate}
                             onChange={(e) => updateClaimJourneyRow(row.id, { arrivalDate: e.target.value })}
                             className="w-full px-1 py-0.5 border border-slate-200 rounded text-xs"
@@ -1659,6 +1665,7 @@ export default function TADAPage() {
                       </label>
                       <input
                         type="date"
+                        max={new Date().toISOString().split("T")[0]}
                         value={bill.form2JourneyDetails.treasuryVoucherDate}
                         onChange={(e) =>
                           setBill((prev) => ({
@@ -1700,6 +1707,7 @@ export default function TADAPage() {
                       </label>
                       <input
                         type="date"
+                        max={new Date().toISOString().split("T")[0]}
                         value={bill.form2JourneyDetails.advanceRefDate}
                         onChange={(e) =>
                           setBill((prev) => ({
@@ -1864,6 +1872,7 @@ export default function TADAPage() {
                   <label className="font-semibold text-slate-600 block mb-1">2. Bill Date / बिल दिनांक</label>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={bill.form3MainPage.billDate}
                     onChange={(e) =>
                       setBill((prev) => ({
@@ -1913,6 +1922,7 @@ export default function TADAPage() {
                   <label className="font-semibold text-slate-600 block mb-1">5. Voucher Date / दिनांक</label>
                   <input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={bill.form3MainPage.voucherDate}
                     onChange={(e) =>
                       setBill((prev) => ({

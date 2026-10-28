@@ -1,3 +1,4 @@
+import { apiAccess, scopeAllowed, forbidden, officerDetails } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, GDRecord } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -703,6 +704,8 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
 // GET — search / serverNow / byId
 // ------------------------------------------------------------------
 export async function GET(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action") || "SEARCH";
@@ -711,8 +714,7 @@ export async function GET(req: NextRequest) {
     if (action === "SERVER_NOW") {
       const now = new Date();
       const gdDate = startOfDay(now);
-      const count = await prisma.gDRecord.count({ where: { isLocked: true, gdDate } });
-      const sequence = count + 1;
+      const {sequence,gdNumber}=await getNextLockedSequence(gdDate);
       return NextResponse.json({
         success: true,
         data: {
@@ -721,7 +723,7 @@ export async function GET(req: NextRequest) {
           serverTime12: formatGDTimeDisplay12(now),
           serverDateISO: formatGDDateKey(now),
           nextSequence: sequence,
-          nextGdNumber: `GD-${formatGDDateKey(now)}-${String(sequence).padStart(3, "0")}`,
+          nextGdNumber: gdNumber,
         },
       });
     }
@@ -735,10 +737,11 @@ export async function GET(req: NextRequest) {
       }
       if (!row && id) {
         const sugg = getSmartVerifiedSuggestions().find((s) => s.id === id);
-        if (sugg) {
+        if (sugg && scopeAllowed(apiUser,sugg)) {
           return NextResponse.json({ success: true, record: sugg });
         }
       }
+      if (row && !scopeAllowed(apiUser,row)) return forbidden();
       return NextResponse.json({ success: true, record: row ? mapRowToRecord(row) : null });
     }
 
@@ -766,16 +769,16 @@ export async function GET(req: NextRequest) {
     // (e.g. the Register count) never change with the active tab.
     const rows = await prisma.gDRecord.findMany({
       orderBy: [{ entryDateTime: "desc" }, { sequencePerDay: "desc" }],
-      take: 5000,
+
     });
 
-    let list = rows.map(mapRowToRecord);
+    let list = rows.filter(row=>scopeAllowed(apiUser,row)).map(mapRowToRecord);
 
     // Merge verified smart suggestions from live system state
     const verifiedSuggestions = getSmartVerifiedSuggestions();
     const existingIds = new Set(list.map((r) => r.id));
     for (const sugg of verifiedSuggestions) {
-      if (!existingIds.has(sugg.id)) {
+      if (scopeAllowed(apiUser,sugg) && !existingIds.has(sugg.id)) {
         list.push(sugg);
       }
     }
@@ -907,11 +910,23 @@ export async function GET(req: NextRequest) {
 // POST — create locked entry / drafts / verify / suggestions
 // ------------------------------------------------------------------
 export async function POST(req: NextRequest) {
+  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+
   try {
     const body = (await req.json()) as Record<string, unknown>;
+    if (!['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
+    if (body.id) {
+      const existing=await prisma.gDRecord.findUnique({where:{id:String(body.id)}});
+      if (!existing || !scopeAllowed(apiUser,existing)) return forbidden();
+    }
+    body.actualAuthor=officerDetails(apiUser);
+    body.verifier=officerDetails(apiUser);
+    body.policeStation=apiUser.stationName;
+    body.district=apiUser.district;
     const action = String(body.action || "CREATE_LOCKED");
 
     if (action === "PRUNE_EXPIRED") {
+      if (apiUser.role !== "SUPER_ADMIN") return forbidden();
       const pruned = await pruneExpiredSuggestionsAndDrafts();
       return NextResponse.json({ success: true, pruned });
     }

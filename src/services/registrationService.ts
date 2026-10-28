@@ -355,43 +355,14 @@ function prepareForLocalStorage(items: RegistrationEntry[]): any[] {
 
 function safeSaveToLocalStorage(data: RegistrationEntry[]): void {
   if (typeof window === "undefined") return;
-
-  // 1. Persist entire full-resolution dataset to IndexedDB (virtually unlimited quota)
-  persistToIndexedDB(data);
-
-  // 2. Tier 1: Try saving optimized compact version
-  try {
-    const compact = prepareForLocalStorage(data);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
-    return;
-  } catch (err) {
-    console.warn("Storage quota exceeded (compact), attempting Tier 2 text fallback...", err);
-  }
-
-  // 3. Tier 2: Text-only guaranteed fallback — never lose any statutory record on refresh!
-  try {
-    const textOnly = data.map((item) => ({
-      ...item,
-      photoUrl:
-        item.gender === "Female" ? SAMPLE_FEMALE_PHOTO : SAMPLE_MALE_PHOTO,
-      photos: [],
-      fullUidbData: item.fullUidbData
-        ? {
-            ...item.fullUidbData,
-            photos: [],
-            photoUrl: undefined,
-          }
-        : undefined,
-    }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(textOnly));
-  } catch (finalErr) {
-    console.error("Critical: Cannot write to localStorage. Keeping in-memory cache active.", finalErr);
-  }
+  try {localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+  catch {throw new Error("Registration could not be saved. Browser storage is full or unavailable; no photos were discarded.");}
+  void persistToIndexedDB(data);
 }
 
 export const RegistrationService = {
   getEntries: (): RegistrationEntry[] => {
-    if (memoryStore && memoryStore.length > 0) {
+    if (memoryStore) {
       return sortEntriesNewestFirst(memoryStore);
     }
     if (typeof window === "undefined") return sortEntriesNewestFirst(INITIAL_RECORDS);
@@ -403,7 +374,7 @@ export const RegistrationService = {
         return [...memoryStore];
       }
       const parsed = JSON.parse(data);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
+      if (!Array.isArray(parsed)) {
         memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
         safeSaveToLocalStorage(memoryStore);
         return [...memoryStore];
@@ -423,8 +394,8 @@ export const RegistrationService = {
 
   setAllEntries: (entries: RegistrationEntry[]): void => {
     const sorted = sortEntriesNewestFirst(entries);
-    memoryStore = sorted;
     safeSaveToLocalStorage(sorted);
+    memoryStore = sorted;
   },
 
   addEntry: (
@@ -436,36 +407,44 @@ export const RegistrationService = {
       id: entry.id || `reg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       createdAt: entry.createdAt || new Date().toISOString(),
     };
+    if (newEntry.regNumber && all.some(item => item.id !== newEntry.id && item.regNumber === newEntry.regNumber && item.type === newEntry.type && item.stationName === newEntry.stationName && item.district === newEntry.district)) {
+      throw new Error('This register number already exists for this registration type and station.');
+    }
     const updated = sortEntriesNewestFirst([
       newEntry,
       ...all.filter(
         (item) =>
-          item.id !== newEntry.id &&
-          (!newEntry.regNumber || item.regNumber !== newEntry.regNumber)
+          item.id !== newEntry.id
       ),
     ]);
-    memoryStore = updated;
     safeSaveToLocalStorage(updated);
+    memoryStore = updated;
     return newEntry;
   },
 
   updateEntry: (id: string, updates: Partial<RegistrationEntry>): RegistrationEntry | null => {
-    const all = RegistrationService.getEntries();
-    const idx = all.findIndex((item) => item.id === id || (item.regNumber && item.regNumber === id));
+    const all = structuredClone(RegistrationService.getEntries());
+    let idx = all.findIndex((item) => item.id === id);
+    if (idx === -1) {
+      const matching = all.filter(item => item.regNumber === id);
+      if (matching.length > 1) throw new Error('Registration number is ambiguous. Select the record by its ID.');
+      idx = all.findIndex(item => item.regNumber === id);
+    }
     if (idx === -1) return null;
     const updatedEntry = { ...all[idx], ...updates };
+    if (all.some(item => item.id !== updatedEntry.id && item.regNumber === updatedEntry.regNumber && item.type === updatedEntry.type && item.stationName === updatedEntry.stationName && item.district === updatedEntry.district)) throw new Error('This register number already exists.');
     all[idx] = updatedEntry;
     const sorted = sortEntriesNewestFirst(all);
-    memoryStore = sorted;
     safeSaveToLocalStorage(sorted);
+    memoryStore = sorted;
     return updatedEntry;
   },
 
   deleteEntry: (id: string): boolean => {
     const all = RegistrationService.getEntries();
     const filtered = all.filter((item) => item.id !== id);
-    memoryStore = [...filtered];
     safeSaveToLocalStorage(filtered);
+    memoryStore = [...filtered];
     return true;
   },
 
@@ -479,7 +458,7 @@ export const RegistrationService = {
     const prefix = prefixMap[type];
     const year = new Date().getFullYear();
     const all = RegistrationService.getEntriesByType(type);
-    let maxNum = all.length;
+    let maxNum = 0;
     for (const item of all) {
       if (!item.regNumber) continue;
       const match = item.regNumber.match(new RegExp(`^${prefix}-${year}/(\\d+)`));

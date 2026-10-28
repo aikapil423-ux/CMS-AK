@@ -893,6 +893,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
     assignedIoName: "SI Amit Hooda",
     assignedIoRank: "Sub Inspector",
     daysPending: 0,
+    trackingState: "COMPLETED",
     finalFormType: "CHARGESHEET",
     finalFormNumber: "CS/2026/0012",
     finalFormDate: "2026-03-25",
@@ -905,6 +906,7 @@ const INITIAL_MOCK_FIRS: FIRItem[] = [
   },
 ];
 
+let serverManaged=false;
 let firsStore: FIRItem[] = [];
 let storageSnapshot: string | null = null;
 const firListeners: (() => void)[] = [];
@@ -961,6 +963,7 @@ function loadFirsFromStorage(): FIRItem[] {
     }
   }
 
+  if (serverManaged) return list;
   if (list.length === 0) {
     list = [...INITIAL_MOCK_FIRS];
   } else {
@@ -1002,6 +1005,7 @@ function loadFirsFromStorage(): FIRItem[] {
 
             return {
               ...fir,
+              trackingState: fir.trackingState || getAuthoritativeTrackingState(fir),
               crimeDetailsFilled: true,
               crimeDetailsData: fir.crimeDetailsData || parsedCrime,
               crimeDetailsFilledAt: fir.crimeDetailsFilledAt || parsedCrime.submittedAt || new Date().toISOString(),
@@ -1019,6 +1023,7 @@ function loadFirsFromStorage(): FIRItem[] {
 }
 
 function saveFirsToStorage(items: FIRItem[]) {
+  if(serverManaged){try{window.localStorage.setItem(FIRS_STORAGE_KEY,JSON.stringify(items));storageSnapshot=window.localStorage.getItem(FIRS_STORAGE_KEY);}catch{/* Server is authoritative; keep full data in memory if browser quota is exhausted. */}return;}
   if (typeof window !== "undefined" && window.localStorage) {
     if (window.localStorage.getItem(FIRS_STORAGE_KEY) !== storageSnapshot) {
       firsStore = loadFirsFromStorage();
@@ -1049,6 +1054,7 @@ function saveFirsToStorage(items: FIRItem[]) {
 if (typeof window !== "undefined") {
   firsStore = loadFirsFromStorage();
   window.addEventListener('storage', (event) => {
+    if(serverManaged)return;
     if (event.key === FIRS_STORAGE_KEY || event.key === null) {
       firsStore = loadFirsFromStorage();
       notifyListeners();
@@ -1059,6 +1065,11 @@ if (typeof window !== "undefined") {
 }
 
 export const firService = {
+  getLocalMigrationRecords():FIRItem[]{
+    let local:FIRItem[]=[];try{const backup=window.localStorage.getItem(FIRS_STORAGE_KEY+':legacy-backup');const raw=backup || (!serverManaged?window.localStorage.getItem(FIRS_STORAGE_KEY):null);if(raw){local=JSON.parse(raw);if(!backup)window.localStorage.setItem(FIRS_STORAGE_KEY+':legacy-backup',raw);}}catch{/* Backup is best effort; migration never deletes the server's records. */}
+    return local.filter(record=>!record.persistenceVersion && !INITIAL_MOCK_FIRS.some(seed=>seed.id===record.id));
+  },
+  replaceServerRecords(records:FIRItem[]){serverManaged=true;firsStore=structuredClone(records);saveFirsToStorage(firsStore);notifyListeners();},
   subscribe(listener: () => void): () => void {
     firListeners.push(listener);
     return () => {
@@ -1072,11 +1083,12 @@ export const firService = {
   },
 
   getAllFirs(): FIRItem[] {
-    if (firsStore.length === 0) {
+    if (!serverManaged && firsStore.length === 0) {
       firsStore = loadFirsFromStorage();
     }
     return [...firsStore].map((fir) => ({
       ...fir,
+      trackingState: fir.trackingState || getAuthoritativeTrackingState(fir),
       mainStatus: getMainFIRStatus(fir),
       daysPending: firPendingDays(fir),
     }));
@@ -1112,6 +1124,8 @@ export const firService = {
   },
 
   registerFir(input: Partial<FIRItem>): FIRItem {
+    const retry=this.getAllFirs().find(f=>input.id && f.id===input.id || input.sourceComplaintId && f.sourceComplaintId===input.sourceComplaintId);
+    if (retry) return retry;
     let { firNumber, firYear } = input.firNumber
       ? { firNumber: input.firNumber, firYear: input.firYear || new Date().getFullYear() }
       : this.generateNextFirNumber(input.policeStation, input.firDate);
@@ -1131,7 +1145,7 @@ export const firService = {
     const timeStr = now.toTimeString().slice(0, 5);
 
     const newFir: FIRItem = {
-      id: input.id || `fir-${Date.now()}`,
+      id: input.id || `fir-${Date.now()}-${Math.random().toString(36).slice(2,10)}`,
       firNumber,
       firYear,
       firDate: input.firDate || dateStr,
@@ -1140,16 +1154,17 @@ export const firService = {
       district: input.district || "Panipat",
       state: input.state || "Haryana",
       sourceComplaintId: input.sourceComplaintId,
+      sourceComplaintSyncStatus: input.sourceComplaintId ? "PENDING" : undefined,
       sourceComplaintNumber: input.sourceComplaintNumber,
-      cctnsFirNumber: input.cctnsFirNumber || `HR050${firYear.toString().slice(-2)}${firNumber.split("/")[1] || "0001"}`,
+      cctnsFirNumber: input.cctnsFirNumber || "",
       cctnsSyncStatus: input.cctnsSyncStatus || "PENDING_SYNC",
       trackingState: input.trackingState || "PART_A_FRESH",
       category: input.category || "OTHER_GENERAL",
       categoryDisplay: input.categoryDisplay || "General Cognizable Crime",
       priority: input.priority || "URGENT",
       status: input.assignedIoId ? "UNDER_INVESTIGATION" : "UNDER_INVESTIGATION",
-      actsAndSections: input.actsAndSections || "Section 303(2) BNS",
-      majorAct: input.majorAct || "Bharatiya Nyaya Sanhita, 2023",
+      actsAndSections: input.actsAndSections || "",
+      majorAct: input.majorAct || "",
       bnsSections: input.bnsSections || [],
       specialActs: input.specialActs,
       actsAndSectionsList: input.actsAndSectionsList || [],
@@ -1162,7 +1177,7 @@ export const firService = {
       incidentTimeTo: input.incidentTimeTo,
       incidentDay: input.incidentDay,
       incidentTimePeriod: input.incidentTimePeriod,
-      incidentPlace: input.incidentPlace || "Police Station Jurisdiction",
+      incidentPlace: input.incidentPlace || "",
       incidentLandmark: input.incidentLandmark,
       distanceFromPs: input.distanceFromPs,
       beatNumber: input.beatNumber,
@@ -1226,7 +1241,7 @@ export const firService = {
       uidbEntries: input.uidbEntries || [],
       inquestReportNo: input.inquestReportNo,
       courtDispatchDateTime: input.courtDispatchDateTime,
-      registeredBy: input.registeredBy || "Inspector Rajesh Kumar (SHO)",
+      registeredBy: input.registeredBy || "",
       assignedIoId: input.assignedIoId,
       assignedIoName: input.assignedIoName,
       assignedIoRank: input.assignedIoRank,
@@ -1270,23 +1285,22 @@ export const firService = {
     saveFirsToStorage(nextStore);
     firsStore = nextStore;
 
-    if (newFir.sourceComplaintId) {
-      try {
-        ComplaintService.registerFir(
-          newFir.sourceComplaintId,
-          newFir.firNumber,
-          newFir.actsAndSections,
-          newFir.registeredBy,
-          "SHO",
-          newFir.firDate
-        ).catch(() => {});
-      } catch (err) {
-        console.warn("Could not sync with source complaint:", err);
-      }
-    }
 
     notifyListeners();
     return newFir;
+  },
+
+  async synchronizeSourceComplaint(firId: string): Promise<FIRItem> {
+    const fir=this.getFirById(firId);
+    if (!fir) throw new Error("FIR not found.");
+    if (!fir.sourceComplaintId) return fir;
+    try {
+      await ComplaintService.registerFir(fir.sourceComplaintId,fir.firNumber,fir.actsAndSections,fir.registeredBy,"SHO",fir.firDate);
+      return this.updateFir(fir.id,{sourceComplaintSyncStatus:"SYNCED"})!;
+    } catch(error) {
+      this.updateFir(fir.id,{sourceComplaintSyncStatus:"ERROR"});
+      throw new Error("FIR has been saved, but the source complaint could not be updated. Retry the same registration to synchronize it; do not create another FIR.");
+    }
   },
 
   updateFir(firId: string, updates: Partial<FIRItem>): FIRItem | undefined {
@@ -1371,6 +1385,7 @@ export const firService = {
     );
 
     return this.updateFir(firId, {
+      ...(Array.isArray(crimeDetailsData?.propertyOfInterest?.properties)?{propertiesList:crimeDetailsData.propertyOfInterest.properties.map((p:any)=>({...(fir.propertiesList?.find(old=>old.id===p.id) || {}),id:p.id,propertyCategory:p.category || '',propertyType:p.propertyType || p.category || '',description:p.description || '',estimatedValue:p.estimatedValue,status:p.status || undefined,recoveredAt:p.recoveredAt || undefined}))}:{}),
       crimeDetailsFilled: true,
       crimeDetailsData,
       crimeDetailsFilledAt: new Date().toISOString(),
@@ -1812,7 +1827,7 @@ export const firService = {
     const fir = this.getFirById(firId);
     if (!fir) return undefined;
 
-    const reports = [report, ...(fir.reports || [])];
+    const reports = [report, ...(fir.reports || []).filter(r=>r.id!==report.id)];
     return this.updateFir(firId, { reports });
   },
 

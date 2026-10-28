@@ -116,7 +116,7 @@ export default function StationProfilePage() {
   }, []);
 
   const loadStaff = () => {
-    const list = stationStaffService.getStaffMembers();
+    const list = stationStaffService.getStaffForStation(currentUser.stationName);
     setStaffList(list);
   };
 
@@ -181,26 +181,28 @@ export default function StationProfilePage() {
       return;
     }
 
+    try {
     if (editingStaff) {
       stationStaffService.saveStaffMember({
         ...formData,
         id: editingStaff.id,
-      });
+      },currentUser);
       showNotification(`Staff member "${formData.name}" updated successfully.`);
     } else {
-      stationStaffService.saveStaffMember(formData);
+      stationStaffService.saveStaffMember(formData,currentUser);
       showNotification(`Staff member "${formData.name}" added successfully.`);
     }
 
     setIsModalOpen(false);
     setEditingStaff(null);
     loadStaff();
+    } catch(error){alert(error instanceof Error?error.message:"Staff save failed.");}
   };
 
   // Delete staff handler
   const handleDeleteStaff = () => {
     if (!deleteConfirmStaff) return;
-    stationStaffService.deleteStaffMember(deleteConfirmStaff.id);
+    try {stationStaffService.deleteStaffMember(deleteConfirmStaff.id,currentUser);} catch(error){alert(error instanceof Error?error.message:"Delete failed.");return;}
     showNotification(`Staff member "${deleteConfirmStaff.name}" has been removed.`);
     setDeleteConfirmStaff(null);
     loadStaff();
@@ -209,7 +211,7 @@ export default function StationProfilePage() {
   // Reset to default
   const handleResetDefaults = () => {
     if (window.confirm("Are you sure you want to reset staff data to standard station roster?")) {
-      stationStaffService.resetToDefault();
+      try {stationStaffService.resetToDefault(currentUser);} catch(error){alert(error instanceof Error?error.message:"Reset failed.");return;}
       loadStaff();
       showNotification("Staff roster restored to official default.");
     }

@@ -28,7 +28,7 @@ import {
   InvestigationSummaryActionItem,
 } from "@/types";
 import { FirSummaryService } from "@/services/firSummaryService";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils";
@@ -99,7 +99,7 @@ export function FIRSummaryTab({
       };
 
       onUpdateFir(updatedFir);
-      firService.updateFir(fir.id, { investigationSummary: generated });
+      await firService.updateFir(fir.id, { investigationSummary: generated });
     } catch (err) {
       console.error("Failed to generate or persist FIR summary:", err);
     } finally {

@@ -1,3 +1,4 @@
+import type { UserSession } from "@/types";
 import { StationStaffMember, StaffRoleCategory } from "@/types/stationStaff";
 
 const STORAGE_KEY = "haryana_police_cms_station_staff_v2";
@@ -232,7 +233,10 @@ export const DEFAULT_STATION_STAFF: StationStaffMember[] = [
   },
 ];
 
+function stationKey(value:string){return value.toLowerCase().replace(/^(police station|ps)\s*/,'').trim();}
+function canManage(actor?:UserSession,station?:string){return !!actor && (actor.role === 'SUPER_ADMIN' || ['SHO','SP_DISTRICT','DSP_SUBDIV'].includes(actor.role) && !!station && stationKey(actor.stationName)===stationKey(station));}
 export const stationStaffService = {
+  getStaffForStation(station:string):StationStaffMember[]{return this.getStaffMembers().filter(s=>stationKey(s.stationName)===stationKey(station));},
   getStaffMembers: (): StationStaffMember[] => {
     if (typeof window === "undefined") {
       return DEFAULT_STATION_STAFF;
@@ -255,8 +259,11 @@ export const stationStaffService = {
     return list.filter((item) => item.category === category);
   },
 
-  saveStaffMember: (member: Omit<StationStaffMember, "id"> & { id?: string }): StationStaffMember => {
+  saveStaffMember: (member: Omit<StationStaffMember, "id"> & { id?: string }, actor?:UserSession): StationStaffMember => {
+    if(!canManage(actor,member.stationName))throw new Error("Only an authorized station supervisor may edit the roster.");
     const all = stationStaffService.getStaffMembers();
+    if(member.id && !canManage(actor,all.find(s=>s.id===member.id)?.stationName))throw new Error("Staff member belongs to another station.");
+    if(all.some(s=>s.id!==member.id && s.pno.trim().toLowerCase()===member.pno.trim().toLowerCase()))throw new Error("This PNO already exists in the roster.");
     if (member.id) {
       // Edit existing
       const updated = all.map((item) => (item.id === member.id ? ({ ...member, id: member.id } as StationStaffMember) : item));
@@ -278,8 +285,9 @@ export const stationStaffService = {
     }
   },
 
-  deleteStaffMember: (id: string): boolean => {
+  deleteStaffMember: (id: string,actor?:UserSession): boolean => {
     const all = stationStaffService.getStaffMembers();
+    if(!canManage(actor,all.find(s=>s.id===id)?.stationName))throw new Error("Only an authorized station supervisor may remove this staff member.");
     const updated = all.filter((item) => item.id !== id);
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -287,7 +295,8 @@ export const stationStaffService = {
     return true;
   },
 
-  resetToDefault: (): StationStaffMember[] => {
+  resetToDefault: (actor?:UserSession): StationStaffMember[] => {
+    if(!actor || actor.role !== "SUPER_ADMIN")throw new Error("Only Super Admin may reset the station roster.");
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATION_STAFF));
     }

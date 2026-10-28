@@ -30,7 +30,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
-import { firService } from "@/services/firService";
+import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, NoticeFormData, FIRDocumentItem, FIRTimelineEvent, FIRAuditRecord } from "@/types";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
@@ -1182,7 +1182,7 @@ function FIRTemplatesContent() {
         fileSize: `${(htmlContent.length / 1024).toFixed(1)} KB`,
       };
 
-      firService.addDocument(activeFir.id, newDoc);
+      await firService.addDocument(activeFir.id, newDoc);
 
       // 4. Update FIR Investigation Timeline
       const timelineEvent: FIRTimelineEvent = {
@@ -1198,12 +1198,12 @@ function FIRTemplatesContent() {
       };
 
       const refreshedFir = firService.getFirById(activeFir.id) || activeFir;
-      firService.updateFir(activeFir.id, {
+      await firService.updateFir(activeFir.id, {
         timeline: [timelineEvent, ...(refreshedFir.timeline || [])],
       });
 
       // 5. Update FIR Audit Trail
-      firService.addAuditRecord(
+      await firService.addAuditRecord(
         activeFir.id,
         "STATUTORY_NOTICE_SAVED",
         `${docTitle} generated and saved to FIR Related Documents by ${currentUser?.name || "IO"} (${currentUser?.rank || "SI"})`,

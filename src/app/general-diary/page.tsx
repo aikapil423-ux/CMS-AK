@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   BookOpen,
   Search,
@@ -263,6 +264,7 @@ function GeneralDiaryContent() {
       startDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
       endDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
       officerQuery: officerQuery.trim() || undefined,
+      policeStation: (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'SP_DISTRICT' || currentUser?.role === 'DSP_SUBDIV') ? undefined : (currentUser?.stationName || undefined),
     };
 
     if (activeTab === "REGISTER") {
@@ -284,7 +286,7 @@ function GeneralDiaryContent() {
 
   useEffect(() => {
     fetchEntries();
-  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab]);
+  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab, currentUser?.stationName]);
 
   useEffect(() => {
     const handleGdUpdated = () => {
@@ -292,7 +294,7 @@ function GeneralDiaryContent() {
     };
     window.addEventListener("cms-gd-updated", handleGdUpdated);
     return () => window.removeEventListener("cms-gd-updated", handleGdUpdated);
-  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab]);
+  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab, currentUser?.stationName]);
 
   // Brief description dialog modal state (opens popup dialog on click)
   const [briefModalRecord, setBriefModalRecord] = useState<GeneralDiaryRecord | null>(null);
@@ -342,7 +344,7 @@ function GeneralDiaryContent() {
         {
           name: currentUser.name || "HC Devinder Kumar",
           rank: currentUser.rankDisplay || "Head Constable (MHC)",
-          beltNumber: "889/KKR",
+          beltNumber: (currentUser as any).beltNumber || `${currentUser.pno ? currentUser.pno.slice(-3) : '889'}/${currentUser.district ? currentUser.district.slice(0,3).toUpperCase() : 'PNP'}`,
           pno: currentUser.pno || "05192834",
         },
         "Added to General Diary from draft/suggestion"

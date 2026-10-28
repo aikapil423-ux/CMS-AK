@@ -122,6 +122,7 @@ export function GDSearchModal({ isOpen, onClose, onSelectGD }: GDSearchModalProp
               <label className="block text-[11px] font-bold text-slate-700 mb-1">Date Range From</label>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-xs"
@@ -132,6 +133,7 @@ export function GDSearchModal({ isOpen, onClose, onSelectGD }: GDSearchModalProp
               <label className="block text-[11px] font-bold text-slate-700 mb-1">Date Range To</label>
               <input
                 type="date"
+                max={new Date().toISOString().split("T")[0]}
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-xs"

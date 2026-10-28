@@ -57,58 +57,46 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
 
   // Form Fields - Tab 1: Property Details
-  const [gdNumber, setGdNumber] = useState(initialRecord?.gdNumber || "003");
+  const [gdNumber, setGdNumber] = useState(initialRecord?.gdNumber || "");
   const [gdDateTime, setGdDateTime] = useState(
-    initialRecord?.gdDateTime || "22/04/2019, 11:33"
+    initialRecord?.gdDateTime || ""
   );
   const [dateOfPropertyMissing, setDateOfPropertyMissing] = useState(
-    initialRecord?.dateOfPropertyMissing || "2019-04-22"
+    initialRecord?.dateOfPropertyMissing || ""
   );
   const [timeOfPropertyMissing, setTimeOfPropertyMissing] = useState(
-    initialRecord?.timeOfPropertyMissing || "11:30"
+    initialRecord?.timeOfPropertyMissing || ""
   );
   const [district, setDistrict] = useState(
-    initialRecord?.district || "PANCHKULA"
+    initialRecord?.district || ""
   );
-  const [year, setYear] = useState(initialRecord?.year || "2019");
+  const [year, setYear] = useState(initialRecord?.year || String(new Date().getFullYear()));
   const [placeFromWhereMissing, setPlaceFromWhereMissing] = useState(
-    initialRecord?.placeFromWhereMissing || "Bus stand PKL"
+    initialRecord?.placeFromWhereMissing || ""
   );
   const [policeStation, setPoliceStation] = useState(
-    initialRecord?.policeStation || "PANCHKULA SECTOR-5"
+    initialRecord?.policeStation || ""
   );
 
   // Property Items Table
   const [properties, setProperties] = useState<LostPropertyItem[]>(
-    initialRecord?.properties || [
-      {
-        id: "item_initial_1",
-        category: "ELECTRICAL AND ELECTRONIC GOODS",
-        subType: "MOBILE PHONE",
-        estimatedValue: 12000,
-        idType: "IMEI NO.",
-        identificationNumbers: ["864920048192031"],
-        quantity: 1,
-        makeManufacturer: "Samsung",
-        remarks: "Samsung Galaxy Smartphone Black colour with Jio SIM inserted.",
-      },
-    ]
+    initialRecord?.properties || []
   );
 
   // Form Fields - Tab 2: Complainant Details (Personal Information)
-  const [uid, setUid] = useState(initialRecord?.uid || "8910-2391-4491");
-  const [firstName, setFirstName] = useState(initialRecord?.firstName || "raju");
+  const [uid, setUid] = useState(initialRecord?.uid || "");
+  const [firstName, setFirstName] = useState(initialRecord?.firstName || "");
   const [middleName, setMiddleName] = useState(initialRecord?.middleName || "");
-  const [lastName, setLastName] = useState(initialRecord?.lastName || "Singh");
-  const [gender, setGender] = useState<any>(initialRecord?.gender || "Male");
+  const [lastName, setLastName] = useState(initialRecord?.lastName || "");
+  const [gender, setGender] = useState<any>(initialRecord?.gender || "");
   const [occupation, setOccupation] = useState(
-    initialRecord?.occupation || "Private Service"
+    initialRecord?.occupation || ""
   );
   const [relationType, setRelationType] = useState<any>(
-    initialRecord?.relationType || "Father"
+    initialRecord?.relationType || ""
   );
   const [relativeName, setRelativeName] = useState(
-    initialRecord?.relativeName || "Shyam Singh"
+    initialRecord?.relativeName || ""
   );
 
   // Mobile list
@@ -119,30 +107,19 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
   );
 
   // Age Panel
-  const [dob, setDob] = useState(initialRecord?.dob || "1994-08-15");
+  const [dob, setDob] = useState(initialRecord?.dob || "");
   const [yearOfBirth, setYearOfBirth] = useState(
-    initialRecord?.yearOfBirth || "1994"
+    initialRecord?.yearOfBirth || ""
   );
-  const [ageYears, setAgeYears] = useState(initialRecord?.ageYears || "24");
-  const [ageMonths, setAgeMonths] = useState(initialRecord?.ageMonths || "8");
+  const [ageYears, setAgeYears] = useState(initialRecord?.ageYears || "");
+  const [ageMonths, setAgeMonths] = useState(initialRecord?.ageMonths || "");
   const [ageRangeFrom, setAgeRangeFrom] = useState(
     initialRecord?.ageRangeFrom || ""
   );
   const [ageRangeTo, setAgeRangeTo] = useState(initialRecord?.ageRangeTo || "");
 
   // Address: Present & Permanent
-  const defaultPresentAddress: AddressInfo = {
-    houseNo: "Flat 402, Tower B",
-    streetName: "Old Ropar Road",
-    colony: "Sector 14",
-    villageTownCity: "PKL",
-    tehsil: "Panchkula",
-    country: "INDIA",
-    state: "HARYANA",
-    district: "PANCHKULA",
-    policeStation: "PANCHKULA SECTOR-5",
-    pincode: "134112",
-  };
+  const defaultPresentAddress: AddressInfo = {houseNo:"",streetName:"",colony:"",villageTownCity:"",tehsil:"",country:"",state:"",district:"",policeStation:"",pincode:""};
 
   const [presentAddress, setPresentAddress] = useState<AddressInfo>(
     initialRecord?.presentAddress || defaultPresentAddress
@@ -156,18 +133,17 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
 
   // Tab 3: Details of Enquiry Officer
   const [nameOfEo, setNameOfEo] = useState(
-    initialRecord?.nameOfEo || "Lalit Kumar (I (Inspector))-53175"
+    initialRecord?.nameOfEo || ""
   );
   const [eoRank, setEoRank] = useState(
-    initialRecord?.eoRank || "I (Inspector)"
+    initialRecord?.eoRank || ""
   );
-  const [eoNumber, setEoNumber] = useState(initialRecord?.eoNumber || "53175");
+  const [eoNumber, setEoNumber] = useState(initialRecord?.eoNumber || "");
   const [remarks, setRemarks] = useState(
-    initialRecord?.remarks ||
-      "Enquiry entrusted to Inspector Lalit Kumar. CDR/Tower dump verification & CEIR portal blocking initiated."
+    initialRecord?.remarks || ""
   );
   const [expectedDateToComplete, setExpectedDateToComplete] = useState(
-    initialRecord?.expectedDateToComplete || "2019-04-24"
+    initialRecord?.expectedDateToComplete || ""
   );
 
   // Autocomplete state for Name
@@ -255,7 +231,7 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
     registrationYear: year,
     createdAt: initialRecord?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    status: initialRecord?.status || "UNDER_ENQUIRY",
+    status: initialRecord?.status || "OPEN",
     gdNumber,
     gdDateTime,
     dateOfPropertyMissing,
@@ -507,6 +483,7 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
                         <input
                           type="date"
                           required
+                          max={new Date().toISOString().split("T")[0]}
                           value={dateOfPropertyMissing}
                           onChange={(e) => setDateOfPropertyMissing(e.target.value)}
                           className="px-2 py-1.5 border border-slate-300 rounded-md text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
@@ -979,6 +956,7 @@ export const RegisterLostPropertyModal: React.FC<RegisterLostPropertyModalProps>
                       </label>
                       <input
                         type="date"
+                        max={new Date().toISOString().split("T")[0]}
                         value={dob}
                         onChange={(e) => {
                           setDob(e.target.value);

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -25,6 +26,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
+import { FirPersistenceStatus } from "@/components/fir/FirPersistenceStatus";
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -33,6 +35,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
 
   const router = useRouter();
+  const [complaintSaveError,setComplaintSaveError]=useState('');
+  React.useEffect(()=>{const failure=(e:Event)=>setComplaintSaveError(String((e as CustomEvent).detail));window.addEventListener('complaints_save_error',failure);window.addEventListener('complaints_cache_warning',failure);return()=>{window.removeEventListener('complaints_save_error',failure);window.removeEventListener('complaints_cache_warning',failure);};},[]);
+
 
   // If unauthenticated and not on /login, redirect to /login
   React.useEffect(() => {
@@ -42,7 +47,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [isAuthenticated, pathname, router]);
 
   // If on login page or unauthenticated, render without shell
-  if (!isAuthenticated || pathname === "/login") {
+  if (!isAuthenticated && pathname !== "/login") return null;
+  if (pathname === "/login") {
     return <>{children}</>;
   }
 
@@ -57,17 +63,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const canRegisterFir = isMhc || isSho || isSuperior;
 
   return (
-    <div className="min-h-screen bg-[#fafafb] flex flex-col lg:flex-row antialiased text-slate-800">
+    <div className="cms-shell min-h-screen bg-white flex flex-col lg:flex-row antialiased text-slate-800">
+      {complaintSaveError&&<div role="alert" className="fixed top-3 left-3 right-3 z-[150] bg-amber-50 text-amber-950 border border-amber-400 rounded-lg p-3 text-sm shadow-lg">{complaintSaveError}<button className="ml-4 underline" onClick={()=>setComplaintSaveError('')}>Dismiss</button></div>}
       {/* Desktop Collapsible Hover Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-20 lg:pb-8">
+        <FirPersistenceStatus />
         {/* Mobile Header */}
         <MobileHeader />
 
         {/* Desktop Top Header Bar - Minimalist, clean backdrop-blur */}
-        <header className="hidden lg:flex items-center justify-between h-13 px-6 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 sticky top-0 z-45">
+        <header className="cms-topbar hidden lg:flex items-center justify-between min-h-16 px-6 bg-[#203c88] text-white border-b border-[#203c88] sticky top-0 z-45">
           {/* Left: Station & Active Module Indicator */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700">
@@ -122,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-4 sm:p-6 max-w-6xl w-full mx-auto">{children}</main>
+        <main className="cms-main flex-1 p-3 sm:p-6 w-full mx-auto min-w-0">{children}</main>
 
         {/* Mobile Bottom Navigation */}
         <MobileBottomNav />

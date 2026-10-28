@@ -120,7 +120,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
         aria-expanded={isOpen}
       >
         <UserCog className={isMobile ? "w-3.5 h-3.5 text-slate-700" : "w-4 h-4 text-slate-700 group-hover:text-slate-900"} />
-        <span className="absolute -bottom-1 -right-1 text-[8px] font-bold px-1 leading-none rounded bg-[#0b192c] text-white border border-white font-mono shadow-2xs">
+        <span className="cms-persona-badge absolute -bottom-1 -right-1 text-[8px] font-bold px-1 leading-none rounded bg-[#0b192c] text-white border border-white font-mono shadow-2xs">
           {activeRoleInfo.badge}
         </span>
       </button>

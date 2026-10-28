@@ -367,7 +367,7 @@ export const TableManagerService = {
         })
       );
     } catch (e) {
-      console.error(`Failed to save custom columns for table ${tableId}:`, e);
+      throw new Error("Table columns could not be saved. Check browser storage and retry.");
     }
   },
 

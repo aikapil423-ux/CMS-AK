@@ -20,7 +20,7 @@ export default function UsersDirectoryPage() {
           Police Personnel & Role Directory
         </h1>
         <p className="text-xs sm:text-sm text-slate-500">
-          Staff postings, roles, permissions, and active roster for PS City Panipat
+          Staff postings, roles, permissions, and active roster for {currentUser?.stationName || "Haryana Police"}
         </p>
       </div>
 
