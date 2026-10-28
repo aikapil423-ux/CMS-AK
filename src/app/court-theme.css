@@ -4,6 +4,11 @@
    ========================================================================= */
 
 @media screen {
+  .cms-court-theme .cms-autofilled {
+    background-color: #f0fdf4 !important;
+    border-color: #16a34a !important;
+    box-shadow: 0 0 0 2px rgb(34 197 94 / 20%), 0 0 9px rgb(34 197 94 / 18%) !important;
+  }
   /* Readable interface text across registers, badges, dialogs and actions.
      Document editors and printable sheets retain their own typography. */
   .cms-court-theme :where(main, [role="dialog"], .cms-report-actions)

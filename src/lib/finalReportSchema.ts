@@ -1,16 +1,19 @@
 import { z } from 'zod';
+import { accusedChargesheetSchema } from '@/lib/accusedChargesheet';
 const text = z.string().max(100000);
 const choice = z.enum(['Yes', 'No']);
 export const finalReportSchema = z.object({
+  autoFilled: z.record(z.string().max(300), z.string().max(300)).optional(),
   uploadedFiles: z.array(z.object({ id: text.min(1), name: z.string().min(1).max(500), type: z.string().max(200), size: z.number().int().positive().max(5 * 1024 * 1024), dataUrl: z.string().max(7 * 1024 * 1024).regex(/^data:(application\/(pdf|vnd\.openxmlformats-officedocument\.wordprocessingml\.document|msword)|image\/(jpeg|png));base64,[A-Za-z0-9+/=]+$/) })).max(5).refine(files => files.reduce((sum, file) => sum + file.size, 0) <= 10 * 1024 * 1024, 'Maximum total upload size is 10 MB.').optional(),
   schemaVersion: z.literal(1), reportNo: text.min(1), reportDate: text.min(1),
   formType: z.enum(['CHARGESHEET', 'CLOSURE', 'UNTRACED', 'CANCELLED']), chargeSheetType: z.enum(['', 'Complete', 'Partial']),
   finalReportReason: text, finalReportReasonDetails: text,
-  judicialCustody: choice, pendingAccused: z.string().regex(/^\d+$/), pendingDocuments: z.enum(['FSL Report Pending', 'Other Documents', 'NIL']),
+  judicialCustody: z.enum(['', 'Yes', 'No']), pendingAccused: z.string().regex(/^\d*$/), pendingDocuments: z.enum(['', 'FSL Report Pending', 'Other Documents', 'NIL']),
   limitationPeriod: text, investigationStatus: z.enum(['Completed', 'Pending / Further Investigation']), dispatchDate: text,
   courtType: text.min(1), judgeName: text.min(1), caseType: text.min(1), labAnalysis: text, briefFacts: text.min(1),
   prosecutorApproved: choice, approvalDate: text, noticeServed: choice, noticeDate: text, enclosureNotes: text,
-  accused: z.array(z.object({ accusedId: text.min(1), name: text.min(1), relation: text, relativeName: text, action: z.enum(['ChargeSheeted', 'Not ChargeSheeted']), status: text })).max(500),
+  enclosureCount: z.string().regex(/^\d*$/).max(10).optional(),
+  accused: z.array(z.object({ accusedId: text.min(1), name: text.min(1), relation: text, relativeName: text, action: z.enum(['', 'ChargeSheeted', 'Not ChargeSheeted']), status: text, chargesheetDetails: accusedChargesheetSchema.optional(), draftRevision: z.number().int().nonnegative().optional() })).max(500),
   witnesses: z.array(z.object({ selected: z.boolean(), name: text, relation: text, relativeName: text, dob: text, occupation: text, evidence: text, address: text, statement: text })).max(1000),
   properties: z.array(z.object({ type: text, description: text, value: text, recoveredFrom: text, disposal: text })).max(1000),
   enclosures: z.array(z.object({ selected: z.boolean(), fileName: text, module: text, registrationNo: text, date: text, documentId: text.optional() })).max(1000),

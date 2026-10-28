@@ -5,8 +5,10 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const generator = {};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/utils/iifvChargesheetGenerator.ts', 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, {exports: generator, Date});
+const arrestEligibility = {};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/firReportAccused.ts', 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, {exports: arrestEligibility});
 const exports_ = {};
-vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/finalReport.ts', 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, {exports: exports_, require: () => generator, Date, structuredClone, crypto: require('node:crypto').webcrypto});
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/lib/finalReport.ts', 'utf8'), {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}}).outputText, {exports: exports_, require: name => name === '@/lib/firReportAccused' ? arrestEligibility : generator, Date, structuredClone, crypto: require('node:crypto').webcrypto});
 const { initialFinalReport, validateFinalReport, finalReportHtml, buildFinalReport } = exports_;
 const fir = { id: 'test-fir', firNumber: 'TEST/01', firDate: '2026-10-27', district: 'Test District', policeStation: 'Test PS', complainantName: 'Test Informant', actsAndSections: 'Test Act', incidentDetails: 'Test facts', accusedList: [], propertiesList: [], documents: [] };
 function complete() { return {...initialFinalReport(fir), reportNo: 'TEST/FINAL/1', formType: 'CHARGESHEET', chargeSheetType: 'Complete', judicialCustody: 'No', pendingAccused: '0', pendingDocuments: 'NIL', investigationStatus: 'Completed', courtType: 'Judicial Magistrate 1st Class', judgeName: 'Test Judge', caseType: 'ADULT', prosecutorApproved: 'No', noticeServed: 'No'}; }
@@ -25,3 +27,9 @@ test('the original IIF-V preview markup is preserved exactly', () => {
 
 
 test('new final report requires an explicit type selection', () => { const data=initialFinalReport(fir); assert.equal(data.formType, ''); assert.ok(validateFinalReport(data).includes('Type of final form is required.')); });
+
+test('final reports allow hidden custody and pending fields to be empty; chargesheets require them', () => { const d={...complete(),formType:'CLOSURE',chargeSheetType:'',finalReportReason:'Untraced',finalReportReasonDetails:'Test reason',judicialCustody:'',pendingAccused:'',pendingDocuments:''}; assert.equal(validateFinalReport(d).length,0); d.formType='CHARGESHEET';d.chargeSheetType='Complete';assert.equal(validateFinalReport(d).length,3); });
+
+test('reason details are required only for FR Unoccured/Cancellation', () => {const d={...complete(),formType:'CLOSURE',finalReportReason:'Untraced',finalReportReasonDetails:''};assert.equal(validateFinalReport(d).length,0);d.finalReportReason='FR Unoccured/Cancellation';assert.ok(validateFinalReport(d).includes('Final report reason details are required.'));d.finalReportReasonDetails='Test cancellation reason';assert.equal(validateFinalReport(d).length,0);});
+
+test('manual enclosure count survives save and appears in preview', () => {const d={...complete(),enclosureCount:'7'};assert.equal(validateFinalReport(d).length,0);const r=buildFinalReport(fir,d,{id:'test',name:'Tester'});assert.equal(r.finalReportData.enclosureCount,'7');assert.equal(exports_.toStatutoryFinalReport(fir,d).noOfEnclosures,'7');d.enclosureCount='-1';assert.ok(validateFinalReport(d).includes('No. of enclosures must be a non-negative whole number.'));});

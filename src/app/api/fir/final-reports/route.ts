@@ -2,6 +2,7 @@ import { readFirRecords } from "@/services/firRepository";
 import { prisma } from "@/lib/prisma";
 import { isFirVisibleToUser } from "@/lib/firIntegrity";
 import { apiAccess, scopeAllowed, forbidden } from "@/lib/apiSecurity";
+import { firReportAccusedSources } from '@/services/firReportAccusedSources';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { finalReportDbService, FinalReportConflict } from '@/services/finalReportDbService';
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
     const canonical=(await readFirRecords()).find(f=>f.id===body.fir?.id);
     if (!canonical) return NextResponse.json({error:"Save or import this FIR before creating its final report."},{status:409});
     if (!isFirVisibleToUser(apiUser,canonical)) return forbidden();
+    const accusedIds = new Set((await firReportAccusedSources(canonical, apiUser)).map(person => person.accusedId));
+    if (!Array.isArray(body.data?.accused) || body.data.accused.some((accused: { accusedId: string }) => !accusedIds.has(accused.accusedId))) return NextResponse.json({ error: 'An accused is not linked to this FIR or its processed evidence. Reload the form.' }, { status: 400 });
     body.fir=canonical;
     const existing=await prisma.firFinalReport.findUnique({where:{id:body.id}});
     if (existing && (existing.createdBy !== apiUser.id || !scopeAllowed(apiUser,existing))) return forbidden();

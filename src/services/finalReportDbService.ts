@@ -122,7 +122,11 @@ export const finalReportDbService = {
       const report = JSON.parse(stored.reportJson) as ComplaintReportItem;
       if (report.finalReportWorkflow?.chiNumber === chiNumber && ['COMPLETED', 'PARTIAL'].includes(stored.state)) return report;
       if (stored.state !== 'UNDER_CHECKING') throw new FinalReportConflict('CHI can only be submitted after SHO approval places the report Under Checking.');
-      const state = report.finalReportData?.investigationStatus === 'Completed' ? 'COMPLETED' : 'PARTIAL';
+      const data = report.finalReportData;
+      if (data?.formType === 'CHARGESHEET' && !['Complete', 'Partial'].includes(data.chargeSheetType)) throw new FinalReportConflict('Select Complete or Partial in the IIF-V chargesheet before submitting CHI.');
+      const state = data?.formType === 'CHARGESHEET'
+        ? (data.chargeSheetType === 'Complete' ? 'COMPLETED' : 'PARTIAL')
+        : (data?.investigationStatus === 'Completed' ? 'COMPLETED' : 'PARTIAL');
       const now = new Date().toISOString();
       const updated: ComplaintReportItem = { ...report, updatedAt: now, finalReportWorkflow: { ...report.finalReportWorkflow, state, chiNumber, chiSubmittedAt: now, chiSubmittedBy: authorId } };
       const result = await tx.firFinalReport.updateMany({ where: { id, version: expectedVersion, state: 'UNDER_CHECKING' }, data: { state, updatedBy: authorId, reportJson: JSON.stringify(updated) } });

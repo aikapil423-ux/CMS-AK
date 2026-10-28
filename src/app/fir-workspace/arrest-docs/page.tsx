@@ -2041,6 +2041,9 @@ function ArrestDocsContent() {
         if(!arrestDate)throw new Error('Enter a valid arrest date.');
         const matches=(activeFir.accusedList || []).filter((a,i)=>selectedAccusedId?(a.id || `acc_${i}`)===selectedAccusedId:a.name===formData.noticeeName);
         if(matches.length!==1)throw new Error('Select one accused from this FIR before saving the arrest memo.');
+        newDoc.documentType = 'IIF_III';
+        newDoc.arrestAccusedId = matches[0].id || `${activeFir.id}-accused-${activeFir.accusedList.indexOf(matches[0]) + 1}`;
+        newDoc.arrestFormData = structuredClone(formData);
         await firService.updateFir(activeFir.id,{documents:[newDoc,...(activeFir.documents || [])],accusedList:(activeFir.accusedList || []).map(a=>a===matches[0]?{...a,isArrested:true,arrestDate,arrestTime:formData.arrestTime,arrestGdNo:formData.arrestGdNo}:a)});
       }else await firService.addDocument(activeFir.id, newDoc);
 

@@ -9,7 +9,19 @@
     "status": "UNDER_INVESTIGATION",
     "complainantName": "Amit Demo (Demo)",
     "createdAt": "2026-10-27T18:30:00+05:30",
-    "accusedList": [],
+    "accusedList": [
+      {
+        "id": "acc-demo-iifv-001",
+        "name": "Vikram Demo (Fictional)",
+        "fatherName": "Ramesh Demo (Fictional)",
+        "age": 30,
+        "address": "Demo House 12, Demo Colony, Panipat, Haryana (fictional test address)",
+        "custodyStatus": "SUSPECT",
+        "isArrested": false,
+        "isIdentified": true,
+        "isSuspect": true
+      }
+    ],
     "documents": [],
     "caseDiaries": [],
     "reports": [],
@@ -29,6 +41,14 @@
         "details": "User-requested demo correction: FIR/0001/2026 to FIR/0003/2026 to match chronological registration dates.",
         "officerName": "Demo data maintenance",
         "role": "SUPER_ADMIN"
+      },
+      {
+        "id": "demo-accused-iifv-1793175211769",
+        "action": "DEMO_ACCUSED_ADDED",
+        "timestamp": "2026-10-28T08:13:31.769Z",
+        "details": "User-requested fictional accused for testing IIF-V Action Chargesheet dialog.",
+        "officerName": "Demo setup",
+        "role": "SHO"
       }
     ],
     "firTime": "18:30",
@@ -63,7 +83,7 @@
     "remarks": "DEMO: fictional record; not an actual FIR.",
     "cctnsSyncStatus": "LOCAL_ONLY",
     "updatedAt": "2026-10-28T06:00:09.213Z",
-    "persistenceVersion": 2
+    "persistenceVersion": 3
   },
   {
     "id": "fir-demo-2026-mobile",

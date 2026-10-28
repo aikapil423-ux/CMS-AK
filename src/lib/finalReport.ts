@@ -1,7 +1,10 @@
 import type { ComplaintReportItem, FIRItem } from '@/types';
 import { generateIIFVChargesheetHtml } from '@/utils/iifvChargesheetGenerator';
+import type { AccusedChargesheetDetails } from '@/lib/accusedChargesheet';
+import { firReportAccused, firReportWitnesses } from '@/lib/firReportAccused';
 
 export interface FinalReportData {
+  autoFilled?: Record<string, string>;
   uploadedFiles?: Array<{ id: string; name: string; type: string; size: number; dataUrl: string }>;
   schemaVersion: 1;
   reportNo: string;
@@ -26,35 +29,52 @@ export interface FinalReportData {
   noticeServed: string;
   noticeDate: string;
   enclosureNotes: string;
-  accused: Array<{ accusedId: string; name: string; relation: string; relativeName: string; action: string; status: string }>;
+  enclosureCount?: string;
+  accused: Array<{ accusedId: string; name: string; relation: string; relativeName: string; action: string; status: string; chargesheetDetails?: AccusedChargesheetDetails; draftRevision?: number }>;
   witnesses: Array<{ selected: boolean; name: string; relation: string; relativeName: string; dob: string; occupation: string; evidence: string; address: string; statement: string }>;
   properties: Array<{ type: string; description: string; value: string; recoveredFrom: string; disposal: string }>;
   enclosures: Array<{ selected: boolean; fileName: string; module: string; registrationNo: string; date: string; documentId?: string }>;
 }
 
 export function initialFinalReport(fir: FIRItem): FinalReportData {
-  return {
+  const data: FinalReportData = {
     schemaVersion: 1, reportNo: '', reportDate: new Date().toLocaleDateString('en-CA'),
     formType: '', chargeSheetType: '', finalReportReason: '', finalReportReasonDetails: '', judicialCustody: '', pendingAccused: '', pendingDocuments: '',
-    limitationPeriod: '', investigationStatus: '', dispatchDate: '', courtType: '', judgeName: '', caseType: fir.caseType || '',
+    limitationPeriod: '', investigationStatus: '', dispatchDate: '', courtType: '', judgeName: '', caseType: '',
     labAnalysis: '', briefFacts: fir.briefFacts || fir.incidentDetails || '', prosecutorApproved: '', approvalDate: '', noticeServed: '', noticeDate: '', enclosureNotes: '',
-    accused: (fir.accusedList || []).map((a, i) => ({ accusedId: a.id || `${fir.id}-accused-${i + 1}`, name: a.name || '', relation: a.fatherName ? 'Father' : '', relativeName: a.fatherName || a.relativeName || '', action: '', status: a.custodyStatus || '' })),
-    witnesses: [],
+    accused: firReportAccused(fir).map(({ source: _source, ...person }) => person),
+    witnesses: firReportWitnesses(fir).map(({ source: _source, ...person }) => person),
     properties: (fir.propertiesList || []).map(p => ({ type: p.propertyType, description: p.description, value: p.estimatedValue == null ? '' : String(p.estimatedValue), recoveredFrom: '', disposal: p.status || '' })),
     enclosures: (fir.documents || []).map(d => ({ selected: false, documentId: d.id, fileName: d.fileName || d.title, module: d.category, registrationNo: '', date: d.uploadedAt?.slice(0, 10) || '' })),
   };
+  const autoFilled: Record<string, string> = {};
+  if (data.briefFacts) autoFilled.briefFacts = 'FIR';
+  for (const key of ['accused', 'witnesses', 'properties', 'enclosures'] as const) {
+    data[key].forEach((row, index) => {
+      for (const [field, value] of Object.entries(row)) if (typeof value === 'string' && value && !['action', 'accusedId', 'documentId'].includes(field)) autoFilled[`${key}.${index}.${field}`] = 'FIR';
+    });
+  }
+  data.autoFilled = autoFilled;
+  return data;
 }
 
 export function validateFinalReport(data: FinalReportData): string[] {
   const errors: string[] = [];
   const required = { reportNo: 'Report number', reportDate: 'Report date', formType: 'Type of final form', judicialCustody: 'Judicial custody', pendingAccused: 'Pending accused count', pendingDocuments: 'Pending documents', investigationStatus: 'Investigation status', courtType: 'Court type', judgeName: 'Name of judge', caseType: 'Case type', briefFacts: 'Brief facts', prosecutorApproved: 'Public prosecutor approval', noticeServed: 'Refer notice served' } as const;
-  for (const [key, label] of Object.entries(required)) if (!data[key as keyof typeof required].trim()) errors.push(`${label} is required.`);
+  for (const [key, label] of Object.entries(required)) {
+    if (data.formType !== 'CHARGESHEET' && ['judicialCustody', 'pendingAccused', 'pendingDocuments'].includes(key)) continue;
+    if (!data[key as keyof typeof required].trim()) errors.push(`${label} is required.`);
+  }
   if (data.pendingAccused && !/^\d+$/.test(data.pendingAccused)) errors.push('Pending accused count must be a whole number.');
+  if (data.enclosureCount && !/^\d+$/.test(data.enclosureCount)) errors.push('No. of enclosures must be a non-negative whole number.');
   if (data.formType === 'CHARGESHEET' && !data.chargeSheetType) errors.push('Chargesheet / challan type is required.');
-  if (data.formType !== 'CHARGESHEET' && (!data.finalReportReason.trim() || !data.finalReportReasonDetails.trim())) errors.push('Final report reason and details are required.');
+  if (data.formType && data.formType !== 'CHARGESHEET') {
+    if (!data.finalReportReason.trim()) errors.push('Final report reason is required.');
+    if (data.finalReportReason === 'FR Unoccured/Cancellation' && !data.finalReportReasonDetails.trim()) errors.push('Final report reason details are required.');
+  }
   if (data.prosecutorApproved === 'Yes' && !data.approvalDate) errors.push('Date of approval is required.');
   if (data.noticeServed === 'Yes' && !data.noticeDate) errors.push('Date of sending notice is required.');
-  if (data.accused.some(a => !a.name.trim() || !a.action)) errors.push('Select an action for each named accused.');
+  if (data.formType === 'CHARGESHEET' && data.accused.some(a => !a.name.trim() || !a.action)) errors.push('Select an action for each named accused.');
   if (data.witnesses.some(w => w.selected && (!w.name.trim() || !w.evidence.trim()))) errors.push('Selected witnesses need a name and type of evidence.');
   if (data.enclosures.some(e => e.selected && !e.fileName.trim())) errors.push('Selected enclosures need a file name.');
   return errors;
@@ -70,21 +90,24 @@ export function toStatutoryFinalReport(fir: FIRItem, data: FinalReportData) {
     ifFirUnoccurred: '—', ifChargeSheet: data.formType === 'CHARGESHEET' ? data.chargeSheetType : '—', ioName: fir.assignedIoName || '—', ioRank: fir.assignedIoRank || '—', ioNo: '—',
     complainantName: fir.complainantName, complainantFather: fir.complainantRelativeName || fir.complainantFatherSpouse || '—',
     propertyRows: data.properties.map((p, i) => ({ sNo: i + 1, propertyDescription: `${p.type}: ${p.description}`, estimatedValue: p.value, psPropertyRegisterNo: '', fromWhomWhereRecovered: p.recoveredFrom, disposal: p.disposal })),
-    accusedPersonList: data.accused.filter(a => a.action === 'ChargeSheeted').map((a, i) => ({
-      sNo: i + 1, name: a.name, whetherVerified: '', husbandFatherName: a.relativeName,
-      dateOrYearOfBirth: '', sex: '', nationality: '', passportNo: '', passportDateOfIssue: '', passportPlaceOfIssue: '', religion: '', scStObc: '', occupation: '',
-      addresses: [{sNo: 1, addressType: '', address: fir.accusedList.find(x => x.name === a.name)?.address || '', whetherVerified: ''}],
-      regularCriminalNo: '', dateOfArrest: '', dateOfReleaseOnBail: '', dateForwardedToCourt: '', underActsSections: actRows,
-      bailerName: '', bailerFatherHusbandName: '', bailerOccupation: '', bailerAddresses: [] as Array<{sNo:number;addressType:string;address:string}>,
-      identificationDob: '', identificationUid: '', otherIdProofs: [] as Array<{sNo:number;idType:string;idNumber:string}>,
-      previousConvictions: [] as Array<{sNo:number;firNo:string;state:string;district:string;policeStation:string;descriptionOfCase:string;convictionAcquittal:string}>, statusOfAccused: a.status,
-    })),
+    accusedPersonList: data.accused.filter(a => a.action === 'ChargeSheeted').map((a, i) => {
+      const details = a.chargesheetDetails, person = details?.personal.information, bailer = details?.bailer.information;
+      const addressText = (value?: Record<string, string>) => value ? Object.values(value).filter(Boolean).join(', ') : '';
+      return {
+      sNo: i + 1, name: a.name, whetherVerified: details?.general.verified || '', husbandFatherName: person?.relativeName || a.relativeName,
+      dateOrYearOfBirth: person?.dob || person?.birthYear || person?.ageYears || '', sex: person?.gender || '', nationality: person?.nationality || '', passportNo: details?.personal.identifications.find(id => id.type.toLowerCase() === 'passport')?.number || '', passportDateOfIssue: person?.passportIssueDate || '', passportPlaceOfIssue: person?.passportIssuePlace || '', religion: person?.religion || '', scStObc: person?.category || '', occupation: person?.occupation || '',
+      addresses: details ? ['presentAddress', 'permanentAddress'].map((kind, index) => ({ sNo: index + 1, addressType: kind === 'presentAddress' ? 'Present' : 'Permanent', address: addressText(details.personal[kind as 'presentAddress' | 'permanentAddress']), whetherVerified: details.general.verified })) : [{sNo: 1, addressType: '', address: fir.accusedList.find(x => x.id === a.accusedId || x.name === a.name)?.address || '', whetherVerified: ''}],
+      regularCriminalNo: details?.general.regularCrimeNo || '', dateOfArrest: details?.general.arrestDate || '', dateOfReleaseOnBail: details?.general.bailDate || '', dateForwardedToCourt: details?.general.courtForwardedDate || '', underActsSections: details ? details.acts.filter(act => act.selected).map((act, index) => ({ sNo: index + 1, act: act.act, sections: act.sections })) : actRows,
+      bailerName: bailer ? [bailer.firstName, bailer.middleName, bailer.lastName].filter(Boolean).join(' ') : '', bailerFatherHusbandName: bailer?.relativeName || '', bailerOccupation: bailer?.occupation || '', bailerAddresses: details ? [{ sNo: 1, addressType: 'Present', address: addressText(details.bailer.presentAddress) }] : [],
+      identificationDob: person?.dob || '', identificationUid: person?.uid || '', otherIdProofs: details?.personal.identifications.map((id, index) => ({ sNo: index + 1, idType: id.type, idNumber: id.number })) || [],
+      previousConvictions: details?.convictions.map((record, index) => ({ sNo: index + 1, firNo: record.firNo, state: record.state, district: record.district, policeStation: record.policeStation, descriptionOfCase: record.description, convictionAcquittal: record.outcome })) || [], statusOfAccused: details?.general.status || a.status,
+    }; }),
     accusedNotChargeSheeted: data.accused.filter(a => a.action === 'Not ChargeSheeted').map(a => `${a.name} (${a.relation}: ${a.relativeName}) — ${a.status}`).join('\n') || '—',
     witnessesList: data.witnesses.filter(w => w.selected).map((w,i) => `${i+1}. ${w.name} (${w.relation}: ${w.relativeName}) | DOB: ${w.dob} | ${w.occupation} | Evidence: ${w.evidence} | ${w.address} | ${w.statement}`).join('\n') || '—',
     falseFirAction: data.formType !== 'CHARGESHEET' && data.finalReportReason === 'False complaint' ? data.finalReportReasonDetails : '—', labAnalysis: data.labAnalysis || '—',
     briefFacts: `${data.briefFacts}\n\nInvestigation status: ${data.investigationStatus}\nJudicial custody: ${data.judicialCustody}\nAccused pending arrest / role verification: ${data.pendingAccused}\nPending documents: ${data.pendingDocuments}\nLimitation period: ${data.limitationPeriod || '—'}\nCase type: ${data.caseType}\nApproved by Public Prosecutor: ${data.prosecutorApproved}${data.prosecutorApproved === 'Yes' ? `; Date: ${data.approvalDate}` : ''}`,
     referNoticeServed: data.noticeServed, referNoticeDate: data.noticeServed === 'Yes' ? data.noticeDate : '', referNoticeAck: '', despatchedOn: data.dispatchDate,
-    noOfEnclosures: String(data.enclosures.filter(e => e.selected).length),
+    noOfEnclosures: data.enclosureCount || String(data.enclosures.filter(e => e.selected).length),
     listOfEnclosures: [data.enclosureNotes, ...data.enclosures.filter(e => e.selected).map((e,i) => `${i+1}. ${e.fileName} | ${e.module} | Reg No: ${e.registrationNo} | Date: ${e.date}`)].filter(Boolean).join('\n') || '—',
     shoName: '', shoRank: '', shoNo: '',
   };

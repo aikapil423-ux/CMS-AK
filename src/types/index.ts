@@ -1298,6 +1298,9 @@ export interface FIRCaseDiaryItem {
 }
 
 export interface FIRDocumentItem {
+  documentType?: 'IIF_III';
+  arrestAccusedId?: string;
+  arrestFormData?: Record<string, unknown>;
   id: string;
   firId?: string;
   title: string;
@@ -1531,6 +1534,11 @@ export interface FIRCompletionEvent {
 }
 
 export interface FIRItem {
+  accusedChargesheetDrafts?: Record<string, {
+    accusedId: string; name: string; relation: string; relativeName: string; status: string;
+    chargesheetDetails: import('@/lib/accusedChargesheet').AccusedChargesheetDetails;
+    revision: number; updatedAt: string; savedBy: string;
+  }>;
   finalReportAppliedKey?: string;
   persistenceVersion?: number;
   id: string;
