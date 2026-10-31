@@ -11,4 +11,14 @@ export function validLogin(pno:string,pin:string){const user=DEMO_USERS.find(u=>
  const allowDemo = process.env.CMS_ALLOW_DEMO_LOGIN === 'true' || process.env.NEXT_PUBLIC_ALLOW_DEMO === 'true' || !process.env.CMS_LOGIN_CREDENTIALS;
  return (process.env.NODE_ENV !== 'production' || allowDemo) && pin === '123456' ? user : null;
 }
-export function sameOrigin(req:Request){const origin=req.headers.get('origin');return !origin||origin===new URL(req.url).origin;}
+export function sameOrigin(req:Request){
+ const origin=req.headers.get('origin');
+ if(!origin)return true;
+ try{
+  const origHost=new URL(origin).host;
+  const reqHost=req.headers.get('x-forwarded-host')||req.headers.get('host')||new URL(req.url).host;
+  if(origHost===reqHost)return true;
+  if(origin===new URL(req.url).origin)return true;
+ }catch{}
+ return false;
+}
