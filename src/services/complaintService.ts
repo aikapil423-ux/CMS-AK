@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/utils';
 import {computeDaysPending,stabilizeComplaint} from '@/lib/complaintIntegrity';
 import {getStationComplaintCode,nextComplaintNumber} from '@/lib/complaintNumber';
 export {computeDaysPending} from '@/lib/complaintIntegrity';
@@ -417,19 +418,59 @@ export const ComplaintService = {
 
     if (filter?.search) {
       const q = filter.search.toLowerCase().trim();
-      list = list.filter(
-        (c) =>
+      const qDigits = q.replace(/\D/g, "");
+      list = list.filter((c) => {
+        // Text field matches
+        const matchesBasic =
           c.complaintNumber.toLowerCase().includes(q) ||
           c.complainantName.toLowerCase().includes(q) ||
-          c.complainantMobile.includes(q) ||
           c.incidentPlace.toLowerCase().includes(q) ||
           (c.complaintSubject && c.complaintSubject.toLowerCase().includes(q)) ||
           (c.complaintDescription && c.complaintDescription.toLowerCase().includes(q)) ||
           (c.policeStation && c.policeStation.toLowerCase().includes(q)) ||
           (c.assignedEoName && c.assignedEoName.toLowerCase().includes(q)) ||
           (c.firNumber && c.firNumber.toLowerCase().includes(q)) ||
-          c.accusedList.some((a) => a.name.toLowerCase().includes(q) || (a.address && a.address.toLowerCase().includes(q)))
-      );
+          (c.fivePNumber && c.fivePNumber.toLowerCase().includes(q)) ||
+          c.accusedList.some(
+            (a) =>
+              (a.name && a.name.toLowerCase().includes(q)) ||
+              (a.address && a.address.toLowerCase().includes(q))
+          );
+        if (matchesBasic) return true;
+
+        // Mobile number matches (complainant or accused, supports raw digits matching)
+        const mob = (c.complainantMobile || "").replace(/\D/g, "");
+        if (mob.includes(q) || (qDigits.length > 0 && mob.includes(qDigits))) return true;
+        const accusedMobMatch = c.accusedList.some((a) => {
+          const aPhone = (a.phone || "").replace(/\D/g, "");
+          return aPhone.includes(q) || (qDigits.length > 0 && aPhone.includes(qDigits));
+        });
+        if (accusedMobMatch) return true;
+
+        // Status matches (display status e.g. Pending, Complete, Not Assigned, FIR Register, FIR Recommend)
+        const displayStatus = getMainComplaintStatus(c).toLowerCase();
+        if (
+          displayStatus.includes(q) ||
+          ((q === "closed" || q === "closure" || q === "disposed") && displayStatus === "complete") ||
+          ((q === "unassigned" || q === "no eo") && displayStatus === "not assigned") ||
+          ((q === "re-enquiry" || q === "rejected") && displayStatus === "correction required") ||
+          (q === "enquiry" && displayStatus === "pending")
+        ) {
+          return true;
+        }
+
+        // Date matches (formatted DD/MM/YYYY, ISO string, or digits)
+        const dmy = formatDate(c.createdAt || c.incidentDate);
+        if (dmy.toLowerCase().includes(q)) return true;
+        if (c.createdAt && c.createdAt.toLowerCase().includes(q)) return true;
+        if (c.incidentDate && c.incidentDate.toLowerCase().includes(q)) return true;
+        if (qDigits.length >= 2) {
+          const dmyDigits = dmy.replace(/\D/g, "");
+          if (dmyDigits.includes(qDigits)) return true;
+        }
+
+        return false;
+      });
     }
     if (filter?.dateFrom) {
       const fromTime = new Date(`${filter.dateFrom}T00:00:00`).getTime();

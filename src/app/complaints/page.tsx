@@ -809,7 +809,13 @@ function ComplaintListContent() {
             (c.priority?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "createdAt") {
-          return c.createdAt.includes(q) || formatDate(c.createdAt).includes(q);
+          const formatted = formatDate(c.createdAt);
+          const rawDigitsTerm = q.replace(/\D/g, "");
+          const rawDigitsDate = formatted.replace(/\D/g, "");
+          const dmyMatch = formatted.toLowerCase().includes(q);
+          const rawMatch = c.createdAt.toLowerCase().includes(q);
+          const digitsMatch = rawDigitsTerm.length > 0 && rawDigitsDate.includes(rawDigitsTerm);
+          return dmyMatch || rawMatch || digitsMatch;
         } else if (col === "complainantName") {
           return (
             c.complainantName.toLowerCase().includes(q) ||
@@ -821,9 +827,36 @@ function ComplaintListContent() {
             (c.incidentPlace?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "status") {
-          return c.status.toLowerCase().includes(q);
+          const mainStatus = getMainComplaintStatus(c, currentUser?.role);
+          const statusText = String(mainStatus || "").toLowerCase();
+
+          // 1. Direct match on the visible column status text
+          if (statusText.includes(q)) {
+            return true;
+          }
+
+          // 2. Exact status-specific aliases (bounded strictly to avoid overlap)
+          if ((q === "closed" || q === "closure" || q === "disposed") && statusText === "complete") {
+            return true;
+          }
+          if ((q === "unassigned" || q === "no eo") && statusText === "not assigned") {
+            return true;
+          }
+          if ((q === "re-enquiry" || q === "rejected") && statusText === "correction required") {
+            return true;
+          }
+          if (q === "enquiry" && statusText === "pending") {
+            return true;
+          }
+
+          return false;
         } else if (col === "assignedEoName") {
-          return c.assignedEoName?.toLowerCase().includes(q) ?? false;
+          const isDirectFir = Boolean(c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER");
+          const eoMatch = c.assignedEoName?.toLowerCase().includes(q) ?? false;
+          const eoPnoMatch = c.assignedEoPno?.toLowerCase().includes(q) ?? false;
+          const eoBeltMatch = c.assignedEoBeltNumber?.toLowerCase().includes(q) ?? false;
+          const directMatch = isDirectFir && (q.includes("fir") || q.includes("direct") || q.includes("no eo"));
+          return eoMatch || eoPnoMatch || eoBeltMatch || directMatch;
         } else if (col === "daysPending") {
           return String(c.daysPending || 0).includes(q);
         }
@@ -952,44 +985,63 @@ function ComplaintListContent() {
         {isSearching ? (
           <div
             onClick={(e) => e.stopPropagation()}
+            data-filter-control="true"
             className="pt-1 animate-in fade-in-50"
           >
             <div className="relative">
               <input
                 type="text"
                 autoFocus
+                inputMode={colKey === "dateTime" ? "numeric" : undefined}
                 value={filterValue}
-                onChange={(e) =>
-                  setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
-                }
+                onChange={(e) => {
+                  let val = e.target.value;
+                  if (colKey === "dateTime") {
+                    const digits = val.replace(/\D/g, "").slice(0, 8);
+                    if (digits.length <= 2) {
+                      val = digits;
+                    } else if (digits.length <= 4) {
+                      val = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                    } else {
+                      val = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                    }
+                  }
+                  setColumnSearch((prev) => ({ ...prev, [field]: val }));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape" || e.key === "Enter") {
                     setActiveSearchCol(null);
                   }
                 }}
-                placeholder={`Search ${label}...`}
-                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
+                placeholder={colKey === "dateTime" ? "DD/MM/YYYY" : `Search ${label}...`}
+                maxLength={colKey === "dateTime" ? 10 : undefined}
+                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-7 !text-slate-900 shadow-2xs"
               />
               {filterValue && (
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setColumnSearch((prev) => {
                       const next = { ...prev };
                       delete next[field];
                       return next;
-                    })
-                  }
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    });
+                  }}
+                  title="Clear column search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 !text-slate-500 hover:!text-red-600 hover:bg-slate-100 rounded transition-colors flex items-center justify-center cursor-pointer"
                 >
-                  &times;
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
         ) : filterValue ? (
-          <div className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono border border-blue-200">
-            <span className="truncate max-w-[90px]">&ldquo;{filterValue}&rdquo;</span>
+          <div
+            data-filter-control="true"
+            className="flex items-center gap-1.5 text-[11px] font-medium !text-slate-900 bg-white px-2 py-0.5 rounded shadow-xs border border-slate-300"
+          >
+            <span className="truncate max-w-[90px] font-mono !text-slate-900">&ldquo;{filterValue}&rdquo;</span>
             <button
               type="button"
               onClick={(e) => {
@@ -1000,9 +1052,10 @@ function ComplaintListContent() {
                   return next;
                 });
               }}
-              className="text-slate-400 hover:text-red-600 ml-auto"
+              title="Clear filter"
+              className="p-0.5 !text-slate-500 hover:!text-red-600 hover:bg-slate-100 rounded transition-colors ml-auto flex items-center justify-center cursor-pointer"
             >
-              &times;
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : null}
@@ -1480,8 +1533,18 @@ function ComplaintListContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search complaint no, complainant, phone, accused, station..."
-                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none placeholder:text-slate-400"
+                className="w-full h-8.5 pl-8 pr-8 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none placeholder:text-slate-400"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  title="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-red-600 hover:bg-slate-200/80 rounded-full transition-colors cursor-pointer flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Category Filter */}
@@ -1590,9 +1653,24 @@ function ComplaintListContent() {
           </div>
 
           {/* Active Status & Date Badges / Filter Summary */}
-          {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo) && (
+          {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo || searchQuery || Object.values(columnSearch).some(Boolean)) && (
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filters:</span>
+              {/* Search Badge */}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-800 rounded-md text-[11px] font-medium">
+                  <Search className="w-3 h-3 text-slate-600" />
+                  <span className="font-mono">&ldquo;{searchQuery}&rdquo;</span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="p-0.5 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              )}
               {/* Date Filter Badge */}
               {(dateFrom || dateTo) && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
@@ -1610,10 +1688,10 @@ function ComplaintListContent() {
                       setDateFrom("");
                       setDateTo("");
                     }}
-                    className="hover:text-amber-950 font-bold ml-0.5 cursor-pointer"
+                    className="p-0.5 text-amber-700 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
                     title="Remove date filter"
                   >
-                    ×
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
               )}
@@ -1628,10 +1706,44 @@ function ComplaintListContent() {
                     <button
                       type="button"
                       onClick={() => handleToggleStatus(k)}
-                      className="hover:text-blue-950 font-bold ml-0.5 cursor-pointer"
+                      className="p-0.5 text-blue-700 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
                       title="Remove status filter"
                     >
-                      ×
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                );
+              })}
+              {/* Column Specific Search Badges */}
+              {Object.entries(columnSearch).map(([col, term]) => {
+                if (!term) return null;
+                let colLabel = col;
+                for (const [k, v] of Object.entries(COMPLAINT_COL_TO_SORT_FIELD)) {
+                  if (v === col) {
+                    colLabel = COMPLAINT_COL_LABELS[k] || k;
+                    break;
+                  }
+                }
+                return (
+                  <span
+                    key={col}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-md text-[11px] font-medium"
+                  >
+                    <span className="font-semibold text-blue-700">{colLabel}:</span>
+                    <span className="font-mono">&ldquo;{term}&rdquo;</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setColumnSearch((prev) => {
+                          const next = { ...prev };
+                          delete next[col];
+                          return next;
+                        })
+                      }
+                      className="p-0.5 text-blue-600 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
+                      title={`Remove ${colLabel} filter`}
+                    >
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 );
@@ -1642,6 +1754,8 @@ function ComplaintListContent() {
                   setSelectedStatuses([...ALL_STATUS_KEYS]);
                   setDateFrom("");
                   setDateTo("");
+                  setSearchQuery("");
+                  setColumnSearch({});
                 }}
                 className="text-[11px] text-blue-700 hover:text-blue-900 underline font-semibold ml-1 cursor-pointer"
               >

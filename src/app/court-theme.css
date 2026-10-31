@@ -191,8 +191,13 @@
     letter-spacing: normal;
     font-weight: 700;
   }
-  .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, [data-filter-control] *, [data-filter-control]) {
     color: #ffffff;
+  }
+  .cms-court-theme [data-filter-control] button,
+  .cms-court-theme [data-filter-control] span,
+  .cms-court-theme [data-filter-control] svg {
+    color: inherit;
   }
   .cms-court-theme :where(thead button.bg-blue-50):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
     background-color: rgb(255 255 255 / 18%);
