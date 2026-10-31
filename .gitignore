@@ -60,3 +60,7 @@ prisma/storage/
 
 prisma/iif-vi/
 prisma/iif-vii/
+
+# Temporary Office and scratch files
+~$*
+*.tmp

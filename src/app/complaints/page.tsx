@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { isMhcOrMmRole } from "@/lib/officerRoles";
 import { useLanguage } from "@/context/LanguageContext";
@@ -868,7 +868,13 @@ function ComplaintListContent() {
             (c.priority?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "createdAt") {
-          return c.createdAt.includes(q) || formatDate(c.createdAt).includes(q);
+          const formatted = formatDate(c.createdAt);
+          const rawDigitsTerm = q.replace(/\D/g, "");
+          const rawDigitsDate = formatted.replace(/\D/g, "");
+          const dmyMatch = formatted.toLowerCase().includes(q);
+          const rawMatch = c.createdAt.toLowerCase().includes(q);
+          const digitsMatch = rawDigitsTerm.length > 0 && rawDigitsDate.includes(rawDigitsTerm);
+          return dmyMatch || rawMatch || digitsMatch;
         } else if (col === "complainantName") {
           return (
             c.complainantName.toLowerCase().includes(q) ||
@@ -880,9 +886,36 @@ function ComplaintListContent() {
             (c.incidentPlace?.toLowerCase().includes(q) ?? false)
           );
         } else if (col === "status") {
-          return c.status.toLowerCase().includes(q);
+          const mainStatus = getMainComplaintStatus(c, currentUser?.role);
+          const statusText = String(mainStatus || "").toLowerCase();
+
+          // 1. Direct match on the visible column status text
+          if (statusText.includes(q)) {
+            return true;
+          }
+
+          // 2. Exact status-specific aliases (bounded strictly to avoid overlap)
+          if ((q === "closed" || q === "closure" || q === "disposed") && statusText === "complete") {
+            return true;
+          }
+          if ((q === "unassigned" || q === "no eo") && statusText === "not assigned") {
+            return true;
+          }
+          if ((q === "re-enquiry" || q === "rejected") && statusText === "correction required") {
+            return true;
+          }
+          if (q === "enquiry" && statusText === "pending") {
+            return true;
+          }
+
+          return false;
         } else if (col === "assignedEoName") {
-          return c.assignedEoName?.toLowerCase().includes(q) ?? false;
+          const isDirectFir = Boolean(c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER");
+          const eoMatch = c.assignedEoName?.toLowerCase().includes(q) ?? false;
+          const eoPnoMatch = c.assignedEoPno?.toLowerCase().includes(q) ?? false;
+          const eoBeltMatch = c.assignedEoBeltNumber?.toLowerCase().includes(q) ?? false;
+          const directMatch = isDirectFir && (q.includes("fir") || q.includes("direct") || q.includes("no eo"));
+          return eoMatch || eoPnoMatch || eoBeltMatch || directMatch;
         } else if (col === "daysPending") {
           return String(c.daysPending || 0).includes(q);
         }
@@ -932,7 +965,7 @@ function ComplaintListContent() {
       if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-  }, [complaints, columnSearch, sortField, sortOrder, dateFrom, dateTo]);
+  }, [complaints, columnSearch, sortField, sortOrder, dateFrom, dateTo, currentUser?.role]);
 
   const pageKey=JSON.stringify([searchQuery,selectedStatuses,priorityFilter,categoryFilter,dateFrom,dateTo,columnSearch,sortField,sortOrder]);
   const pageCount=Math.max(1,Math.ceil(sortedComplaints.length/20));
@@ -1035,44 +1068,63 @@ function ComplaintListContent() {
         {isSearching ? (
           <div
             onClick={(e) => e.stopPropagation()}
+            data-filter-control="true"
             className="pt-1 animate-in fade-in-50"
           >
             <div className="relative">
               <input
                 type="text"
                 autoFocus
+                inputMode={colKey === "dateTime" ? "numeric" : undefined}
                 value={filterValue}
-                onChange={(e) =>
-                  setColumnSearch((prev) => ({ ...prev, [field]: e.target.value }))
-                }
+                onChange={(e) => {
+                  let val = e.target.value;
+                  if (colKey === "dateTime") {
+                    const digits = val.replace(/\D/g, "").slice(0, 8);
+                    if (digits.length <= 2) {
+                      val = digits;
+                    } else if (digits.length <= 4) {
+                      val = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                    } else {
+                      val = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                    }
+                  }
+                  setColumnSearch((prev) => ({ ...prev, [field]: val }));
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Escape" || e.key === "Enter") {
                     setActiveSearchCol(null);
                   }
                 }}
-                placeholder={`Search ${label}...`}
-                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs"
+                placeholder={colKey === "dateTime" ? "DD/MM/YYYY" : `Search ${label}...`}
+                maxLength={colKey === "dateTime" ? 10 : undefined}
+                className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-7 !text-slate-900 shadow-2xs"
               />
               {filterValue && (
                 <button
                   type="button"
-                  onClick={() =>
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setColumnSearch((prev) => {
                       const next = { ...prev };
                       delete next[field];
                       return next;
-                    })
-                  }
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                    });
+                  }}
+                  title="Clear column search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 !text-slate-500 hover:!text-red-600 hover:bg-slate-100 rounded transition-colors flex items-center justify-center cursor-pointer"
                 >
-                  &times;
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
         ) : filterValue ? (
-          <div className="flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono border border-blue-200">
-            <span className="truncate max-w-[90px]">&ldquo;{filterValue}&rdquo;</span>
+          <div
+            data-filter-control="true"
+            className="flex items-center gap-1.5 text-[11px] font-medium !text-slate-900 bg-white px-2 py-0.5 rounded shadow-xs border border-slate-300"
+          >
+            <span className="truncate max-w-[90px] font-mono !text-slate-900">&ldquo;{filterValue}&rdquo;</span>
             <button
               type="button"
               onClick={(e) => {
@@ -1083,9 +1135,10 @@ function ComplaintListContent() {
                   return next;
                 });
               }}
-              className="text-slate-400 hover:text-red-600 ml-auto"
+              title="Clear filter"
+              className="p-0.5 !text-slate-500 hover:!text-red-600 hover:bg-slate-100 rounded transition-colors ml-auto flex items-center justify-center cursor-pointer"
             >
-              &times;
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : null}
@@ -1098,7 +1151,7 @@ function ComplaintListContent() {
       case "srNo":
         return (
           <td key="srNo" className="py-3 px-2 text-center font-mono text-xs text-slate-500 w-14 max-w-[56px] font-semibold">
-            {typeof index === 'number' ? index + 1 : '—'}
+            {typeof index === 'number' ? index + 1 : 'ÔÇö'}
           </td>
         );
 
@@ -1232,7 +1285,7 @@ function ComplaintListContent() {
                       className="text-xs font-bold text-white bg-[#0b192c] hover:bg-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                     >
                       <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Assign EO ▾</span>
+                      <span>Assign EO Ôû¥</span>
                     </button>
                     {assignDropdownComplaintId === c.id && (
                       <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 animate-in fade-in-50 text-left">
@@ -1295,7 +1348,7 @@ function ComplaintListContent() {
         return (
           <td key={colKey} className="py-3 px-4 text-xs text-slate-700">
             <span className="font-mono text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-              {customDef?.defaultValue || "—"}
+              {customDef?.defaultValue || "ÔÇö"}
             </span>
           </td>
         );
@@ -1323,7 +1376,7 @@ function ComplaintListContent() {
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
-            <span>{t("उन्नत फ़िल्टर", "Advanced filters")}{(dateFrom || dateTo || categoryFilter !== 'ALL' || (!isAllSelected && selectedStatuses.length > 0) || searchQuery) ? ' •' : ''}</span>
+            <span>{t("ÓñëÓñ¿ÓÑìÓñ¿Óññ Óñ½Óñ╝Óñ┐Óñ▓ÓÑìÓñƒÓñ░", "Advanced filters")}{(dateFrom || dateTo || categoryFilter !== 'ALL' || (!isAllSelected && selectedStatuses.length > 0) || searchQuery) ? ' ÔÇó' : ''}</span>
             <ChevronDown
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
                 advancedFilters ? "rotate-180" : ""
@@ -1434,10 +1487,10 @@ function ComplaintListContent() {
             <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <p className="font-bold text-sm text-amber-950">
-                Complaint #{unassignedComplaintNo} Registered — Awaiting EO Assignment
+                Complaint #{unassignedComplaintNo} Registered ÔÇö Awaiting EO Assignment
               </p>
               <p className="text-amber-800 leading-relaxed">
-                {t("यह शिकायत केंद्रीय रजिस्टर से सीधे थाना प्रभारी को मिली है। जाँच अधिकारी नियुक्त करें। नियुक्ति के बाद शिकायत की रसीद बन जाएगी।", "The central register sent this complaint directly to the SHO. Assign an enquiry officer to generate the complaint receipt.")}
+                {t("Óñ»Óñ╣ ÓñÂÓñ┐ÓñòÓñ¥Óñ»Óññ ÓñòÓÑçÓñéÓñªÓÑìÓñ░ÓÑÇÓñ» Óñ░Óñ£Óñ┐Óñ©ÓÑìÓñƒÓñ░ Óñ©ÓÑç Óñ©ÓÑÇÓñºÓÑç ÓñÑÓñ¥Óñ¿Óñ¥ Óñ¬ÓÑìÓñ░Óñ¡Óñ¥Óñ░ÓÑÇ ÓñòÓÑï Óñ«Óñ┐Óñ▓ÓÑÇ Óñ╣ÓÑêÓÑñ Óñ£Óñ¥ÓñüÓñÜ ÓñàÓñºÓñ┐ÓñòÓñ¥Óñ░ÓÑÇ Óñ¿Óñ┐Óñ»ÓÑüÓñòÓÑìÓññ ÓñòÓñ░ÓÑçÓñéÓÑñ Óñ¿Óñ┐Óñ»ÓÑüÓñòÓÑìÓññÓñ┐ ÓñòÓÑç Óñ¼Óñ¥Óñª ÓñÂÓñ┐ÓñòÓñ¥Óñ»Óññ ÓñòÓÑÇ Óñ░Óñ©ÓÑÇÓñª Óñ¼Óñ¿ Óñ£Óñ¥ÓñÅÓñùÓÑÇÓÑñ", "The central register sent this complaint directly to the SHO. Assign an enquiry officer to generate the complaint receipt.")}
               </p>
             </div>
           </div>
@@ -1749,7 +1802,7 @@ function ComplaintListContent() {
                             type="button"
                             onClick={resetColumnOrder}
                             className="text-[10px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                            title={t("कॉलम का क्रम रीसेट करें", "Reset column order")}
+                            title={t("ÓñòÓÑëÓñ▓Óñ« ÓñòÓñ¥ ÓñòÓÑìÓñ░Óñ« Óñ░ÓÑÇÓñ©ÓÑçÓñƒ ÓñòÓñ░ÓÑçÓñé", "Reset column order")}
                           >
                             Reset Order
                           </button>
@@ -1877,13 +1930,13 @@ function ComplaintListContent() {
                       </div>
                       <div className="pt-2 mt-2 border-t border-slate-100 space-y-1">
                         <div className="text-[10px] text-slate-500">
-                          💡 <em>{t("कॉलम का क्रम बदलने के लिए उसका शीर्षक खींचें।", "Drag column headers to reorder them.")}</em>
+                          ­ƒÆí <em>{t("ÓñòÓÑëÓñ▓Óñ« ÓñòÓñ¥ ÓñòÓÑìÓñ░Óñ« Óñ¼ÓñªÓñ▓Óñ¿ÓÑç ÓñòÓÑç Óñ▓Óñ┐ÓñÅ ÓñëÓñ©ÓñòÓñ¥ ÓñÂÓÑÇÓñ░ÓÑìÓñÀÓñò ÓñûÓÑÇÓñéÓñÜÓÑçÓñéÓÑñ", "Drag column headers to reorder them.")}</em>
                         </div>
                         <Link
                           href="/settings?tab=table-manager"
                           className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
                         >
-                          <span>{t("+ कॉलम जोड़ें या प्रबंधित करें", "+ Add/Manage Columns")}</span>
+                          <span>{t("+ ÓñòÓÑëÓñ▓Óñ« Óñ£ÓÑïÓñíÓñ╝ÓÑçÓñé Óñ»Óñ¥ Óñ¬ÓÑìÓñ░Óñ¼ÓñéÓñºÓñ┐Óññ ÓñòÓñ░ÓÑçÓñé", "+ Add/Manage Columns")}</span>
                           <span>&rarr;</span>
                         </Link>
                       </div>
@@ -1893,9 +1946,24 @@ function ComplaintListContent() {
             </div>
 
             {/* Active Status & Date Badges / Filter Summary */}
-            {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo) && (
+            {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo || searchQuery || Object.values(columnSearch).some(Boolean)) && (
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filters:</span>
+                {/* Search Badge */}
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-800 rounded-md text-[11px] font-medium">
+                    <Search className="w-3 h-3 text-slate-600" />
+                    <span className="font-mono">&ldquo;{searchQuery}&rdquo;</span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="p-0.5 text-slate-500 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
+                      title="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                )}
                 {/* Date Filter Badge */}
                 {(dateFrom || dateTo) && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
@@ -1913,10 +1981,10 @@ function ComplaintListContent() {
                         setDateFrom("");
                         setDateTo("");
                       }}
-                      className="hover:text-amber-950 font-bold ml-0.5 cursor-pointer"
+                      className="p-0.5 text-amber-700 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
                       title="Remove date filter"
                     >
-                      ×
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </span>
                 )}
@@ -1931,10 +1999,44 @@ function ComplaintListContent() {
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(k)}
-                        className="hover:text-blue-950 font-bold ml-0.5 cursor-pointer"
+                        className="p-0.5 text-blue-700 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
                         title="Remove status filter"
                       >
-                        ×
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  );
+                })}
+                {/* Column Specific Search Badges */}
+                {Object.entries(columnSearch).map(([col, term]) => {
+                  if (!term) return null;
+                  let colLabel = col;
+                  for (const [k, v] of Object.entries(COMPLAINT_COL_TO_SORT_FIELD)) {
+                    if (v === col) {
+                      colLabel = COMPLAINT_COL_LABELS[k] || k;
+                      break;
+                    }
+                  }
+                  return (
+                    <span
+                      key={col}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-md text-[11px] font-medium"
+                    >
+                      <span className="font-semibold text-blue-700">{colLabel}:</span>
+                      <span className="font-mono">&ldquo;{term}&rdquo;</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setColumnSearch((prev) => {
+                            const next = { ...prev };
+                            delete next[col];
+                            return next;
+                          })
+                        }
+                        className="p-0.5 text-blue-600 hover:text-red-600 rounded transition-colors cursor-pointer flex items-center justify-center"
+                        title={`Remove ${colLabel} filter`}
+                      >
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </span>
                   );
@@ -1945,6 +2047,8 @@ function ComplaintListContent() {
                     setSelectedStatuses([...ALL_STATUS_KEYS]);
                     setDateFrom("");
                     setDateTo("");
+                    setSearchQuery("");
+                    setColumnSearch({});
                   }}
                   className="text-[11px] text-blue-700 hover:text-blue-900 underline font-semibold ml-1 cursor-pointer"
                 >
@@ -1956,7 +2060,19 @@ function ComplaintListContent() {
         </Card>
       )}
 
-
+      {/* Results Count & Wide-Table Hint */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 px-1">
+        <div className="flex items-center gap-3">
+          <span>
+            Showing <strong className="text-slate-800">{sortedComplaints.length}</strong>{" "}
+            {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="text-[11px] text-slate-500">
+            Use horizontal scroll <span className="font-mono">↔</span> for wide columns
+          </span>
+        </div>
+      </div>
 
       {/* Main Content: Table on Desktop, Cards on Mobile */}
       {loading ? (
@@ -2249,7 +2365,7 @@ function ComplaintListContent() {
           </div>
 
           {sortedComplaints.length > 0 && (
-            <div className="cms-pagination"><span>Showing {(page-1)*20+1}–{Math.min(page*20,sortedComplaints.length)} of {sortedComplaints.length} complaints</span><div className="flex gap-2 items-center"><button disabled={page===1} onClick={()=>setRegisterPage({key:pageKey,page:page-1})}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page===pageCount} onClick={()=>setRegisterPage({key:pageKey,page:page+1})}>Next</button></div></div>
+            <div className="cms-pagination"><span>Showing {(page-1)*20+1}ÔÇô{Math.min(page*20,sortedComplaints.length)} of {sortedComplaints.length} complaints</span><div className="flex gap-2 items-center"><button disabled={page===1} onClick={()=>setRegisterPage({key:pageKey,page:page-1})}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page===pageCount} onClick={()=>setRegisterPage({key:pageKey,page:page+1})}>Next</button></div></div>
           )}
           {/* Mobile Card-Based View */}
           <div className="md:hidden space-y-3">
@@ -2278,7 +2394,7 @@ function ComplaintListContent() {
                       <Calendar className="w-3 h-3 text-blue-600" />
                       {formatDate(c.createdAt)}
                     </span>
-                    <span>•</span>
+                    <span>ÔÇó</span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-400" />
                       {new Date(c.createdAt).toLocaleTimeString("en-IN", {
@@ -2301,7 +2417,7 @@ function ComplaintListContent() {
                         <Phone className="w-3 h-3 text-slate-400" />
                         {c.complainantMobile}
                       </span>
-                      <span>•</span>
+                      <span>ÔÇó</span>
                       <span>{c.categoryDisplay}</span>
                     </div>
                   </div>
@@ -2353,7 +2469,7 @@ function ComplaintListContent() {
                               onClick={() => setAssignDropdownComplaintId((prev) => prev === c.id ? null : c.id)}
                               className="w-full text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800"
                             >
-                              <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign EO ▾
+                              <UserCheck className="w-3.5 h-3.5 text-amber-300" /> Assign EO Ôû¥
                             </Button>
                             {assignDropdownComplaintId === c.id && (
                               <div className="absolute left-0 bottom-full mb-1 z-50 w-full bg-white border border-slate-200 rounded-xl shadow-xl py-1 text-left animate-in fade-in-50">
@@ -2519,7 +2635,7 @@ function ComplaintListContent() {
                   <PriorityBadge priority={selectedComplaint.priority} />
                 </div>
                 <h3 className="text-base font-bold text-white">
-                  Complaint Case File • {selectedComplaint.policeStation}
+                  Complaint Case File ÔÇó {selectedComplaint.policeStation}
                 </h3>
               </div>
               <button
@@ -2626,7 +2742,7 @@ function ComplaintListContent() {
                   <div>
                     <span className="text-slate-500">Gender / Age:</span>{" "}
                     <span className="font-medium text-slate-800">
-                      {selectedComplaint.complainantGender} • {selectedComplaint.complainantAge ? `${selectedComplaint.complainantAge} Yrs` : "Age not specified"}
+                      {selectedComplaint.complainantGender} ÔÇó {selectedComplaint.complainantAge ? `${selectedComplaint.complainantAge} Yrs` : "Age not specified"}
                     </span>
                   </div>
                   <div className="sm:col-span-2">
@@ -2770,7 +2886,7 @@ function ComplaintListContent() {
                       className="text-xs font-bold gap-1 bg-[#0b192c] text-white hover:bg-slate-800 cursor-pointer"
                     >
                       <UserCheck className="w-3.5 h-3.5 text-amber-300" />
-                      <span>{selectedComplaint.assignedEoName ? "Reassign EO ▾" : "Assign Enquiry Officer ▾"}</span>
+                      <span>{selectedComplaint.assignedEoName ? "Reassign EO Ôû¥" : "Assign Enquiry Officer Ôû¥"}</span>
                     </Button>
                     {assignDropdownComplaintId === selectedComplaint.id && (
                       <div className="absolute right-0 bottom-full mb-1.5 z-50 w-72 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-2xl py-1 text-left animate-in fade-in-50">
@@ -2804,7 +2920,7 @@ function ComplaintListContent() {
                                   </div>
                                   <div className="flex items-center gap-2 text-[10px] text-slate-500 font-normal">
                                     <span>PNO: {eo.pno}</span>
-                                    <span>•</span>
+                                    <span>ÔÇó</span>
                                     <span className="truncate">{eo.rosterDuty || eo.shift}</span>
                                   </div>
                                 </div>
