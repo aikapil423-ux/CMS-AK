@@ -871,6 +871,13 @@ function ComplaintListContent() {
   }, [complaints, columnSearch, sortField, sortOrder, dateFrom, dateTo]);
 
   const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
+    if (colKey === "srNo") {
+      return (
+        <span className="inline-flex items-center justify-center font-bold text-white text-center whitespace-nowrap text-xs">
+          Sr No.
+        </span>
+      );
+    }
     const field = (COMPLAINT_COL_TO_SORT_FIELD[colKey] || colKey) as any;
     const label = getColLabel(colKey);
     const isSearching = activeSearchCol === field;
@@ -998,7 +1005,7 @@ function ComplaintListContent() {
     switch (colKey) {
       case "srNo":
         return (
-          <td key="srNo" className="py-3 px-3 text-center font-mono text-xs text-slate-500 w-12 shrink-0 font-medium">
+          <td key="srNo" className="py-3 px-2 text-center font-mono text-xs text-slate-500 w-14 max-w-[56px] font-semibold">
             {typeof index === 'number' ? index + 1 : '—'}
           </td>
         );
@@ -1888,12 +1895,16 @@ function ComplaintListContent() {
                             setDraggedCol(null);
                             setDragOverCol(null);
                           }}
-                          className={`py-3 px-4 transition-all select-none cursor-grab active:cursor-grabbing ${
-                            col === "dateTime" ? "whitespace-nowrap" : ""
-                          } ${
-                            isDragging ? "opacity-30 bg-slate-200" : ""
-                          } ${
-                            isOver ? "border-l-4 border-l-blue-600 bg-blue-50/80 shadow-inner" : ""
+                          className={`transition-all select-none ${
+                            col === "srNo"
+                              ? "py-3 px-2 w-14 max-w-[56px] text-center"
+                              : `py-3 px-4 cursor-grab active:cursor-grabbing ${
+                                  col === "dateTime" ? "whitespace-nowrap" : ""
+                                } ${
+                                  isDragging ? "opacity-30 bg-slate-200" : ""
+                                } ${
+                                  isOver ? "border-l-4 border-l-blue-600 bg-blue-50/80 shadow-inner" : ""
+                                }`
                           }`}
                         >
                           {renderComplaintColumnHeader(col)}
