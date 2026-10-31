@@ -24,7 +24,17 @@ export default function LoginPage() {
   };
   const handleQuickDemoLogin = async (userId:string) => {
     const user=DEMO_USERS.find(u=>u.id===userId);if(!user)return;
-    if(await login(user.pno,'123456', station))router.push('/');else setError('Demo sign-in is unavailable. Use configured credentials.');
+    setPno(user.pno);
+    setPin('123456');
+    setError(null);
+    setIsLoading(true);
+    const ok = await login(user.pno,'123456', station);
+    setIsLoading(false);
+    if(ok) {
+      router.push('/');
+    } else {
+      setError('Unable to sign in as ' + user.name + '. Please verify network or credentials.');
+    }
   };
 
   return (
