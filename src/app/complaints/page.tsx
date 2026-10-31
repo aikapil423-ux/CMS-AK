@@ -701,10 +701,19 @@ function ComplaintListContent() {
 
   const handleToggleStatus = (key: string) => {
     setSelectedStatuses((prev) => {
+      // If currently all statuses are selected (default state),
+      // clicking an individual status isolates it immediately as the single selected filter
+      if (prev.length === ALL_STATUS_KEYS.length) {
+        return [key];
+      }
+      // If user has already chosen custom selection, toggle this status on/off
       if (prev.includes(key)) {
-        return prev.filter((k) => k !== key);
+        const next = prev.filter((k) => k !== key);
+        // If everything becomes unchecked, revert back to all selected
+        return next.length === 0 ? [...ALL_STATUS_KEYS] : next;
       } else {
-        return [...prev, key];
+        const next = [...prev, key];
+        return next;
       }
     });
   };
