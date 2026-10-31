@@ -193,6 +193,7 @@ function ComplaintListContent() {
   }, []);
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    srNo: true,
     complaintId: true,
     dateTime: true,
     complainant: true,
@@ -206,6 +207,7 @@ function ComplaintListContent() {
   // Column Reordering (Grab & Drag)
   type ComplaintColKey = string;
   const DEFAULT_COMPLAINT_COLUMN_ORDER: ComplaintColKey[] = [
+    "srNo",
     "complaintId",
     "dateTime",
     "complainant",
@@ -226,6 +228,7 @@ function ComplaintListContent() {
   };
 
   const COMPLAINT_COL_LABELS: Record<string, string> = {
+    srNo: "Sr No.",
     complaintId: "Complaint ID",
     dateTime: "Date & Time",
     complainant: "Complainant",
@@ -323,6 +326,7 @@ function ComplaintListContent() {
 
   const resetColumns = () => {
     const base: Record<string, boolean> = {
+      srNo: true,
       complaintId: true,
       dateTime: true,
       complainant: true,
@@ -990,8 +994,15 @@ function ComplaintListContent() {
     );
   };
 
-  const renderComplaintCell = (colKey: ComplaintColKey, c: ComplaintItem) => {
+  const renderComplaintCell = (colKey: ComplaintColKey, c: ComplaintItem, index?: number) => {
     switch (colKey) {
+      case "srNo":
+        return (
+          <td key="srNo" className="py-3 px-3 text-center font-mono text-xs text-slate-500 w-12 shrink-0 font-medium">
+            {typeof index === 'number' ? index + 1 : '—'}
+          </td>
+        );
+
       case "complaintId":
         return (
           <td key="complaintId" className="py-3 px-4 font-mono">
@@ -1679,6 +1690,15 @@ function ComplaintListContent() {
                   <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
                     <input
                       type="checkbox"
+                      checked={visibleColumns.srNo}
+                      onChange={() => toggleColumn("srNo")}
+                      className="w-3.5 h-3.5 rounded text-blue-600"
+                    />
+                    <span>Sr No.</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                    <input
+                      type="checkbox"
                       checked={visibleColumns.complaintId}
                       onChange={() => toggleColumn("complaintId")}
                       className="w-3.5 h-3.5 rounded text-blue-600"
@@ -1887,11 +1907,11 @@ function ComplaintListContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {sortedComplaints.map((c) => (
+                  {sortedComplaints.map((c, idx) => (
                     <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
                       {columnOrder.map((col) => {
                         if (!visibleColumns[col]) return null;
-                        return renderComplaintCell(col, c);
+                        return renderComplaintCell(col, c, idx);
                       })}
 
                       {visibleColumns.action && (
