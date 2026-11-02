@@ -83,7 +83,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="font-semibold text-xs text-slate-900 tracking-tight">
                 {currentUser.stationName}
               </span>
-              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200/60 font-medium">
+              <span
+                className="text-[10px] bg-[#eef1ff] !text-[#203c88] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-medium"
+                style={{ color: "#203c88", backgroundColor: "#eef1ff" }}
+              >
                 {currentUser.district}
               </span>
             </div>

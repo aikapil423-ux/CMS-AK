@@ -47,7 +47,10 @@ export function MobileHeader() {
                 <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
                   {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : isProsecution ? t("Prosecution") : "HP CMS"}
                 </span>
-                <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded border border-slate-200/60 font-mono">
+                <span
+                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] px-1.5 py-0.2 rounded border border-[#6d85bd]/60 font-mono font-bold"
+                  style={{ color: "#203c88", backgroundColor: "#eef1ff" }}
+                >
                   {currentUser.rank.slice(0, 3)}
                 </span>
               </div>

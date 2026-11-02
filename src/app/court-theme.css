@@ -97,9 +97,10 @@
   .cms-topbar :where(span, svg, button) { color: inherit; }
   .cms-topbar > div > div:first-child { color: white; }
   .cms-topbar :where(button:hover) { background-color: #3153a6; }
-  .cms-topbar :where(.bg-slate-100) {
-    background: #eef1ff;
-    color: #203c88;
+  .cms-topbar :where(.bg-slate-100),
+  .cms-shell header.lg\:hidden :where(.bg-slate-100) {
+    background: #eef1ff !important;
+    color: #203c88 !important;
   }
   /* Dropdown panels keep readable dark text on their white surface */
   .cms-topbar :where(.absolute) { color: #26334a; border-radius: 0 !important; border: 1px solid #b7c1d4; }
