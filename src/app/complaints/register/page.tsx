@@ -8,6 +8,7 @@ import {
   User,
   MapPin,
   FileText,
+  FileSpreadsheet,
   AlertCircle,
   CheckCircle2,
   Upload,
@@ -460,6 +461,7 @@ export default function RegisterComplaintPage() {
     category: string;
     dataUrl?: string;
     size?: number | string;
+    textContent?: string;
   } | null>(null);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
 
@@ -482,6 +484,116 @@ export default function RegisterComplaintPage() {
     window.addEventListener("cms-dropdowns-updated", handleUpdate);
     return () => window.removeEventListener("cms-dropdowns-updated", handleUpdate);
   }, []);
+
+// Helper to extract plain text from DOCX base64 dataUrl
+async function extractDocxTextFromDataUrl(dataUrl: string): Promise<string> {
+  try {
+    const base64Index = dataUrl.indexOf(";base64,");
+    if (base64Index === -1) return "";
+    const b64 = dataUrl.slice(base64Index + 8);
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const view = new DataView(bytes.buffer);
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+      if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) return "";
+    let offset = view.getUint32(eocd + 16, true);
+    const count = view.getUint16(eocd + 10, true);
+    for (let i = 0; i < count; i++) {
+      if (view.getUint32(offset, true) !== 0x02014b50) return "";
+      const length = view.getUint16(offset + 28, true), extra = view.getUint16(offset + 30, true), comment = view.getUint16(offset + 32, true);
+      const name = new TextDecoder().decode(bytes.subarray(offset + 46, offset + 46 + length));
+      if (name === "word/document.xml") {
+        const size = view.getUint32(offset + 24, true), compressed = view.getUint32(offset + 20, true), method = view.getUint16(offset + 10, true), local = view.getUint32(offset + 42, true);
+        if (size > 4 * 1024 * 1024 || (view.getUint16(offset + 8, true) & 1)) return "";
+        const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
+        if (start + compressed > bytes.length) return "";
+        const data = bytes.slice(start, start + compressed);
+        let xml = "";
+        if (method === 0) xml = new TextDecoder().decode(data);
+        else if (method === 8) {
+          const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+          const reader = stream.getReader();
+          const chunks: Uint8Array[] = [];
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          xml = await new Blob(chunks as BlobPart[]).text();
+        }
+        const doc = new DOMParser().parseFromString(xml, "application/xml");
+        return Array.from(doc.getElementsByTagNameNS("*", "p"))
+          .map((p) => Array.from(p.getElementsByTagNameNS("*", "t")).map((t) => t.textContent).join(""))
+          .filter(Boolean)
+          .join("\n");
+      }
+      offset += 46 + length + extra + comment;
+    }
+  } catch (err) {
+    console.warn("Docx parsing error:", err);
+  }
+  return "";
+}
+
+  // Handle previewing any attachment (fetching missing dataUrl from IndexedDB if needed)
+  const handlePreviewAttachment = async (file: ComplaintEvidenceAttachment) => {
+    let dataUrl = file.dataUrl;
+    if (!dataUrl) {
+      try {
+        dataUrl = (await evidenceBlobStore.get(file.id)) ||
+                  (await evidenceBlobStore.get(file.name)) ||
+                  ((file as any).originalName ? await evidenceBlobStore.get((file as any).originalName) : null) ||
+                  undefined;
+      } catch (err) {
+        console.warn("Evidence retrieval error:", err);
+      }
+    }
+
+    if (!dataUrl && autofillSuccessNotice?.dataUrl && (autofillSuccessNotice.fileName === file.name || file.name === (file as any).originalName)) {
+      dataUrl = autofillSuccessNotice.dataUrl;
+    }
+
+    if (dataUrl && !file.dataUrl) {
+      setAttachments((prev) =>
+        prev.map((a) => (a.id === file.id ? { ...a, dataUrl } : a))
+      );
+    }
+
+    let textContent: string | undefined = undefined;
+    const lower = file.name.toLowerCase();
+
+    if (dataUrl) {
+      if (lower.endsWith(".docx")) {
+        textContent = await extractDocxTextFromDataUrl(dataUrl);
+      } else if (lower.endsWith(".csv") || lower.endsWith(".txt") || lower.endsWith(".json") || lower.endsWith(".md") || dataUrl.startsWith("data:text/")) {
+        try {
+          const idx = dataUrl.indexOf(";base64,");
+          if (idx !== -1) {
+            textContent = decodeURIComponent(escape(atob(dataUrl.slice(idx + 8))));
+          } else {
+            textContent = dataUrl;
+          }
+        } catch {
+          try {
+            const idx = dataUrl.indexOf(";base64,");
+            if (idx !== -1) textContent = atob(dataUrl.slice(idx + 8));
+          } catch {}
+        }
+      }
+    }
+
+    setPreviewModalFile({
+      name: file.name,
+      category: file.category,
+      dataUrl,
+      size: file.size,
+      textContent,
+    });
+  };
 
   // Convert base64 dataUrl into Blob Object URL for reliable native PDF rendering
   useEffect(() => {
@@ -624,7 +736,20 @@ export default function RegisterComplaintPage() {
     if (draft.incidentApproxPeriod !== undefined) setIncidentApproxPeriod(draft.incidentApproxPeriod);
     if (draft.incidentCategory !== undefined) setIncidentCategory(draft.incidentCategory);
     if (draft.incidentDetails !== undefined) setIncidentDetails(draft.incidentDetails);
-    if (Array.isArray(draft.attachments)) setAttachments(draft.attachments);
+    if (Array.isArray(draft.attachments)) {
+      setAttachments(draft.attachments);
+      // Asynchronously restore dataUrls from IndexedDB if not in localStorage draft
+      draft.attachments.forEach(async (att: any) => {
+        if (!att.dataUrl) {
+          const storedUrl = (await evidenceBlobStore.get(att.id)) || (await evidenceBlobStore.get(att.name));
+          if (storedUrl) {
+            setAttachments((prev) =>
+              prev.map((item) => (item.id === att.id ? { ...item, dataUrl: storedUrl } : item))
+            );
+          }
+        }
+      });
+    }
     if (draft.intakeMode !== undefined) setIntakeMode(draft.intakeMode);
     if (draft.complaintSubject !== undefined) setComplaintSubject(draft.complaintSubject);
     if (draft.complaintDescription !== undefined) setComplaintDescription(draft.complaintDescription);
@@ -1227,6 +1352,10 @@ export default function RegisterComplaintPage() {
           uploadedAt: new Date().toISOString(),
           description: "",
         });
+
+        // Persist into IndexedDB immediately so preview is always available
+        evidenceBlobStore.put(attId, dataUrlStr, { fileName: file.name, fileSize: file.size, mimeType: file.type });
+        evidenceBlobStore.put(file.name, dataUrlStr, { fileName: file.name, fileSize: file.size, mimeType: file.type });
 
         universalEvidenceService
           .registerAndProcess({
@@ -3308,7 +3437,17 @@ export default function RegisterComplaintPage() {
                         </label>
                       </div>
                       <select
-                        value={comp.relationType}
+                        value={
+                          comp.relationType === "SO"
+                            ? "S/O"
+                            : comp.relationType === "DO"
+                            ? "D/O"
+                            : comp.relationType === "WO"
+                            ? "W/O"
+                            : comp.relationType === "CO"
+                            ? "C/O"
+                            : comp.relationType || "S/O"
+                        }
                         onChange={(e) => {
                           handleComplainantChange(idx, "relationType", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantRelationType");
@@ -3320,17 +3459,35 @@ export default function RegisterComplaintPage() {
                         }`}
                       >
                         {dynamicRelations.length > 0 ? (
-                          dynamicRelations.map((r) => (
-                            <option key={r.code} value={r.code}>
-                              {r.label}
-                            </option>
-                          ))
+                          dynamicRelations
+                            .filter(
+                              (r) =>
+                                !["FATHER", "MOTHER", "HUSBAND", "WIFE", "GUARDIAN"].includes(r.code.toUpperCase()) &&
+                                !["FATHER", "MOTHER", "HUSBAND", "WIFE", "GUARDIAN"].includes(r.label.toUpperCase())
+                            )
+                            .map((r) => {
+                              const optVal =
+                                r.code === "SO"
+                                  ? "S/O"
+                                  : r.code === "DO"
+                                  ? "D/O"
+                                  : r.code === "WO"
+                                  ? "W/O"
+                                  : r.code === "CO"
+                                  ? "C/O"
+                                  : r.code;
+                              return (
+                                <option key={r.code} value={optVal}>
+                                  {r.label}
+                                </option>
+                              );
+                            })
                         ) : (
                           <>
-                            <option value="S/O">S/o</option>
-                            <option value="D/O">D/o</option>
-                            <option value="W/O">W/o</option>
-                            <option value="C/O">C/o</option>
+                            <option value="S/O">S/o (Son of)</option>
+                            <option value="D/O">D/o (Daughter of)</option>
+                            <option value="W/O">W/o (Wife of)</option>
+                            <option value="C/O">C/o (Care of)</option>
                           </>
                         )}
                       </select>
@@ -4883,18 +5040,21 @@ export default function RegisterComplaintPage() {
                     {attachments.map((file) => (
                       <div
                         key={file.id}
-                        className="p-3 sm:p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-slate-300 transition-colors"
+                        onClick={() => handlePreviewAttachment(file)}
+                        className="p-3 sm:p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-2 hover:border-blue-400 hover:bg-blue-50/20 transition-all cursor-pointer group"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div
-                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs ${
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform ${
                                 file.category === "video"
                                   ? "bg-purple-100 text-purple-700"
                                   : file.category === "audio"
                                   ? "bg-amber-100 text-amber-700"
                                   : file.category === "image"
                                   ? "bg-emerald-100 text-emerald-700"
+                                  : file.name.toLowerCase().match(/\.(xlsx|xls|csv)$/)
+                                  ? "bg-emerald-100 text-emerald-800"
                                   : file.category === "document"
                                   ? "bg-blue-100 text-blue-700"
                                   : "bg-slate-100 text-slate-700"
@@ -4903,12 +5063,15 @@ export default function RegisterComplaintPage() {
                               {file.category === "video" && <Video className="w-4 h-4" />}
                               {file.category === "audio" && <Music className="w-4 h-4" />}
                               {file.category === "image" && <ImageIcon className="w-4 h-4" />}
-                              {file.category === "document" && <FileText className="w-4 h-4" />}
+                              {file.name.toLowerCase().match(/\.(xlsx|xls|csv)$/) && <FileSpreadsheet className="w-4 h-4" />}
+                              {!file.name.toLowerCase().match(/\.(xlsx|xls|csv)$/) && file.category === "document" && <FileText className="w-4 h-4" />}
                               {file.category === "other" && <File className="w-4 h-4" />}
                             </div>
 
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{file.name}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate">
+                                {file.name}
+                              </p>
                               <div className="flex items-center gap-2 text-[11px] text-slate-500">
                                 <span className="uppercase font-bold text-slate-700">{file.category}</span>
                                 <span>•</span>
@@ -4922,22 +5085,23 @@ export default function RegisterComplaintPage() {
                                     Within 20 MB Limit
                                   </span>
                                 )}
+                                <span className="text-[10px] text-blue-600 opacity-0 group-hover:opacity-100 font-medium transition-opacity">
+                                  Click to preview
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {file.dataUrl && (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewModalFile(file)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
-                                title="Instant preview without downloading"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Preview</span>
-                              </button>
-                            )}
+                          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewAttachment(file)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+                              title="Click to preview file"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Preview</span>
+                            </button>
                             {file.dataUrl && (
                               <a
                                 href={file.dataUrl}
@@ -5746,32 +5910,127 @@ export default function RegisterComplaintPage() {
                     />
                   </div>
                 </div>
-              ) : previewModalFile.dataUrl.startsWith("data:text/") ? (
-                /* 6. Text Document Preview */
-                <div className="w-full h-[74vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+              ) : previewModalFile.name.toLowerCase().endsWith(".csv") || (previewModalFile.textContent && previewModalFile.name.toLowerCase().endsWith(".csv")) ? (
+                /* 6. CSV Spreadsheet Table Preview */
+                <div className="w-full h-[76vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
                   <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 truncate">Text Document Content</span>
-                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">
-                      Plain Text
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-slate-800 truncate">CSV Spreadsheet Table View • {previewModalFile.name}</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      CSV Data
                     </span>
                   </div>
-                  <div className="p-4 overflow-y-auto flex-1 font-mono text-xs whitespace-pre-wrap text-slate-800 bg-white">
+                  <div className="overflow-auto flex-1 p-3 bg-white">
                     {(() => {
-                      try {
-                        const base64Index = previewModalFile.dataUrl.indexOf(";base64,");
-                        if (base64Index !== -1) {
-                          const base64 = previewModalFile.dataUrl.slice(base64Index + 8);
-                          return decodeURIComponent(escape(atob(base64)));
-                        }
-                        return previewModalFile.dataUrl;
-                      } catch {
-                        return "Unable to decode text stream directly.";
-                      }
+                      const text = previewModalFile.textContent || "";
+                      const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+                      if (lines.length === 0) return <div className="p-8 text-center text-slate-400">Empty CSV file</div>;
+                      const rows = lines.map((line) => line.split(",").map((c) => c.replace(/^["']|["']$/g, "").trim()));
+                      const headerRow = rows[0] || [];
+                      const dataRows = rows.slice(1);
+                      return (
+                        <table className="min-w-full border-collapse border border-slate-300 text-xs">
+                          <thead>
+                            <tr className="bg-slate-100 font-bold text-slate-800">
+                              <th className="border border-slate-300 px-2 py-1.5 w-10 text-center">#</th>
+                              {headerRow.map((h, i) => (
+                                <th key={i} className="border border-slate-300 px-3 py-1.5 text-left">{h || `Col ${i + 1}`}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dataRows.map((r, rIdx) => (
+                              <tr key={rIdx} className="hover:bg-blue-50/50">
+                                <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-400">{rIdx + 1}</td>
+                                {headerRow.map((_, cIdx) => (
+                                  <td key={cIdx} className="border border-slate-300 px-3 py-1 font-mono text-slate-700">{r[cIdx] || ""}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      );
                     })()}
                   </div>
                 </div>
+              ) : previewModalFile.textContent ? (
+                /* 7. Extracted Word (.docx) / Text (.txt) Document Reader */
+                <div className="w-full h-[76vh] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden flex flex-col">
+                  <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      <span className="font-bold text-slate-800 truncate">Document Text Content • {previewModalFile.name}</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 border border-blue-200">
+                      {previewModalFile.name.toLowerCase().endsWith(".docx") ? "Word Document" : "Plain Text"}
+                    </span>
+                  </div>
+                  <div className="p-6 overflow-y-auto flex-1 font-sans text-sm leading-relaxed text-slate-800 bg-white space-y-3">
+                    {previewModalFile.textContent.split("\n").map((para, pIdx) =>
+                      para.trim() ? (
+                        <p key={pIdx} className="text-slate-800 text-justify">
+                          {para}
+                        </p>
+                      ) : (
+                        <div key={pIdx} className="h-2" />
+                      )
+                    )}
+                  </div>
+                </div>
+              ) : previewModalFile.name.toLowerCase().match(/\.(xlsx|xls)$/) ? (
+                /* 8. Microsoft Excel (.xlsx, .xls) Spreadsheet Preview Card */
+                <div className="w-full max-w-lg p-6 sm:p-8 bg-white rounded-2xl shadow-md border border-slate-200 text-center space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+                    <FileSpreadsheet className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-base text-slate-900">{previewModalFile.name}</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      Microsoft Excel Spreadsheet uploaded and attached to the complaint evidence dossier.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-xl text-left text-xs space-y-1.5 border border-slate-200">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">File Type:</span>
+                      <span className="font-bold uppercase text-emerald-700">Excel Spreadsheet (.xlsx / .xls)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">File Size:</span>
+                      <span className="font-mono text-slate-800">{previewModalFile.size ? formatFileSize(typeof previewModalFile.size === "number" ? previewModalFile.size : parseInt(String(previewModalFile.size), 10) || 0) : "Evidence File"}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">Evidence Status:</span>
+                      <span className="font-bold text-emerald-700">Sealed in Station Docket</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2.5 pt-2">
+                    {previewModalFile.dataUrl && (
+                      <a
+                        href={previewModalFile.dataUrl}
+                        download={previewModalFile.name}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download Spreadsheet</span>
+                      </a>
+                    )}
+                    {previewModalFile.dataUrl && (
+                      <a
+                        href={previewModalFile.dataUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>Open in Browser</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               ) : (
-                /* 7. Office / Word / Excel / Generic Document Preview Dossier Card */
+                /* 9. Word (.doc) / Generic Document Preview Card */
                 <div className="w-full max-w-lg p-6 sm:p-8 bg-white rounded-2xl shadow-md border border-slate-200 text-center space-y-4">
                   <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto shadow-xs">
                     <FileText className="w-8 h-8" />
@@ -5795,23 +6054,27 @@ export default function RegisterComplaintPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-2.5 pt-2">
-                    <a
-                      href={previewModalFile.dataUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>Open in Browser</span>
-                    </a>
-                    <a
-                      href={previewModalFile.dataUrl}
-                      download={previewModalFile.name}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Download File</span>
-                    </a>
+                    {previewModalFile.dataUrl && (
+                      <a
+                        href={previewModalFile.dataUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Open in Browser</span>
+                      </a>
+                    )}
+                    {previewModalFile.dataUrl && (
+                      <a
+                        href={previewModalFile.dataUrl}
+                        download={previewModalFile.name}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download File</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               )}

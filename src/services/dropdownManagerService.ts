@@ -349,15 +349,10 @@ export const DROPDOWN_CATEGORIES: DropdownCategory[] = [
     description: "Parental/Spousal relations for complainant and accused records.",
     usageLocation: "Complainant Details, Accused Details, Victims",
     defaultItems: [
-      { code: "SO", label: "S/o (Son of)", description: "Son of", isActive: true },
-      { code: "DO", label: "D/o (Daughter of)", description: "Daughter of", isActive: true },
-      { code: "WO", label: "W/o (Wife of)", description: "Wife of", isActive: true },
-      { code: "CO", label: "C/o (Care of)", description: "Care of / Ward of", isActive: true },
-      { code: "FATHER", label: "Father", description: "Father", isActive: true },
-      { code: "MOTHER", label: "Mother", description: "Mother", isActive: true },
-      { code: "HUSBAND", label: "Husband", description: "Husband", isActive: true },
-      { code: "WIFE", label: "Wife", description: "Wife", isActive: true },
-      { code: "GUARDIAN", label: "Guardian", description: "Legal Guardian", isActive: true },
+      { code: "S/O", label: "S/o (Son of)", description: "Son of", isActive: true },
+      { code: "D/O", label: "D/o (Daughter of)", description: "Daughter of", isActive: true },
+      { code: "W/O", label: "W/o (Wife of)", description: "Wife of", isActive: true },
+      { code: "C/O", label: "C/o (Care of)", description: "Care of / Ward of", isActive: true },
     ],
   },
   {
@@ -410,7 +405,7 @@ export const DROPDOWN_CATEGORIES: DropdownCategory[] = [
   },
 ];
 
-const STORAGE_KEY = "haryana_police_cms_dropdowns_v4";
+const STORAGE_KEY = "haryana_police_cms_dropdowns_v5";
 
 function loadFromStorage(): Record<string, DropdownItem[]> {
   if (typeof window === "undefined") {
@@ -444,6 +439,17 @@ function loadFromStorage(): Record<string, DropdownItem[]> {
     }
 
     let changed = false;
+    const unwantedRelations = new Set(["FATHER", "MOTHER", "HUSBAND", "WIFE", "GUARDIAN"]);
+    if (Array.isArray(parsed["relation_types"])) {
+      const filtered = parsed["relation_types"].filter(
+        (i) => !unwantedRelations.has(i.code?.toUpperCase()) && !unwantedRelations.has(i.label?.toUpperCase())
+      );
+      if (filtered.length !== parsed["relation_types"].length) {
+        parsed["relation_types"] = filtered;
+        changed = true;
+      }
+    }
+
     for (const cat of DROPDOWN_CATEGORIES) {
       if (!parsed[cat.key] || !Array.isArray(parsed[cat.key]) || parsed[cat.key].length === 0) {
         parsed[cat.key] = cat.defaultItems.map((item, idx) => ({

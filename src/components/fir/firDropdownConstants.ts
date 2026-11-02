@@ -50,11 +50,10 @@ export const MARITAL_STATUS_OPTIONS = [
 ];
 
 export const RELATION_TYPE_OPTIONS = [
-  "Father",
-  "Mother",
-  "Guardian",
-  "Husband",
-  "Wife",
+  "S/o (Son of)",
+  "D/o (Daughter of)",
+  "W/o (Wife of)",
+  "C/o (Care of)",
 ];
 
 export const CASTE_CATEGORY_OPTIONS = [

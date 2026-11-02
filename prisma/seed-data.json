@@ -15,7 +15,7 @@
       "auditLogs": 0,
       "builderTemplates": 0,
       "builderDrafts": 0,
-      "gdRecords": 8
+      "gdRecords": 9
     }
   },
   "data": {
@@ -143,6 +143,34 @@
         "verificationTimestamp": "2026-10-23T09:21:15.335Z",
         "createdAt": "2026-10-23T09:21:15.354Z",
         "updatedAt": "2026-10-23T09:21:15.354Z"
+      },
+      {
+        "id": "cmvyvoj450000bumoze8tla0t",
+        "gdNumber": "GD-2026-11-02-001",
+        "sequencePerDay": 1,
+        "gdDate": "2026-11-01T18:30:00.000Z",
+        "entryDateTime": "2026-11-02T06:28:45.072Z",
+        "policeStation": "PS City Panipat",
+        "district": "Panipat",
+        "typeCode": "COMPLAINT_RECEIPT",
+        "category": "ROUTINE_ADMINISTRATION",
+        "typeDisplay": "COMPLAINT_RECEIPT",
+        "typeDisplayHi": "COMPLAINT_RECEIPT",
+        "subject": "Enquiry Officer Marked: HAR-PNP-2026-CMP-CTY-0006 -> SHO - Inspector Rajesh Kumar (SHO)",
+        "narrative": "At 11:58 hours, Citizen Complaint HAR-PNP-2026-CMP-CTY-0006 (OTHER GENERAL) was officially assigned to Enquiry Officer SHO - Inspector Rajesh Kumar, SHO, PNO HR-04291882 (Roster: Station House Officer & Supervisory Enquiry). Supervisory Directions: \"Conduct preliminary spot verification & inspect the scene within 48 hours. Record statements of immediate witnesses and local residents.\". Resolution timeline targeted for 14 days (2026-11-16). Assigned by Sh. Bhupender Singh, IPS. Notification dispatched to EO desk.",
+        "entryForOfficerJson": "{\"name\":\"SI Malkeet\",\"rank\":\"Sub-Inspector\",\"beltNumber\":\"512/KKR\",\"pno\":\"08192841\"}",
+        "actualAuthorJson": "{\"name\":\"Sh. Bhupender Singh, IPS\",\"rank\":\"Superintendent of Police (SP)\",\"beltNumber\":\"IPS-01892012\",\"pno\":\"IPS-01892012\",\"role\":\"SP_DISTRICT\"}",
+        "status": "LOCKED",
+        "source": "MANUAL_ENTRY",
+        "isLocked": true,
+        "isDraft": false,
+        "relatedRecordsJson": "{\"complaintNumber\":\"HAR-PNP-2026-CMP-CTY-0006\"}",
+        "auditTrailJson": "[{\"action\":\"CREATED\",\"performedBy\":\"Sh. Bhupender Singh, IPS\",\"performedByPno\":\"IPS-01892012\",\"performedByRank\":\"Superintendent of Police (SP)\",\"timestamp\":\"2026-11-02T06:28:45.072Z\",\"auditId\":\"NEW-2026-T5GTAJ8Q\",\"remarks\":\"Entry recorded via Smart GD form\"},{\"action\":\"VERIFIED\",\"performedBy\":\"Sh. Bhupender Singh, IPS\",\"performedByPno\":\"IPS-01892012\",\"performedByRank\":\"Superintendent of Police (SP)\",\"timestamp\":\"2026-11-02T06:28:45.072Z\",\"auditId\":\"VER-2026-6Y6ECUXT\",\"remarks\":\"Officer confirmed factual authenticity\"},{\"action\":\"LOCKED\",\"performedBy\":\"Sh. Bhupender Singh, IPS\",\"performedByPno\":\"IPS-01892012\",\"performedByRank\":\"Superintendent of Police (SP)\",\"timestamp\":\"2026-11-02T06:28:45.072Z\",\"auditId\":\"V-LOCK-2026-PFM6LYDQ\",\"remarks\":\"Permanently locked as GD-2026-11-02-001 under PPR 22.48\"}]",
+        "verificationAuditId": "V-LOCK-2026-PFM6LYDQ",
+        "verifiedByJson": "{\"name\":\"Sh. Bhupender Singh, IPS\",\"rank\":\"Superintendent of Police (SP)\",\"beltNumber\":\"IPS-01892012\",\"pno\":\"IPS-01892012\",\"role\":\"SP_DISTRICT\"}",
+        "verificationTimestamp": "2026-11-02T06:28:45.072Z",
+        "createdAt": "2026-11-02T06:28:45.125Z",
+        "updatedAt": "2026-11-02T06:28:45.125Z"
       },
       {
         "id": "cmvouks2s0000bu7kdf9acn68",
