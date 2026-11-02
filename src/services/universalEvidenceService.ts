@@ -182,20 +182,8 @@ export const universalEvidenceService = {
     const fileId = params.fileId || `ev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const fileName = params.file ? params.file.name : params.fileName || "case_document.pdf";
 
-    // Fast local cache check first
-    if (!params.forceReprocess) {
-      const cached =
-        this.getByFileId(fileId) ||
-        this.getByFileName(fileName, params.caseId || params.caseNumber);
-
-      if (cached && cached.processingStatus === "COMPLETED") {
-        // If cached and now associated with a case, bind case details
-        if (params.caseId && !cached.caseId) {
-          await this.bindToCase(cached.id, params.caseId, params.caseNumber);
-        }
-        return cached;
-      }
-    }
+    // Only the server's content checksum can establish that an upload is unchanged.
+    // A repeated filename/file ID may contain new facts and must reach processing.
 
     // Call server processing pipeline
     try {
@@ -229,6 +217,7 @@ export const universalEvidenceService = {
           current.unshift(record);
         }
         // Immediately feed newly harvested vocabulary from this file into the portal-wide AutoSuggest dictionary!
+        persistLocalCache(current);
         if (resJson.harvestedVocabulary && typeof window !== "undefined") {
           try {
             const { words = [], phrases = [] } = resJson.harvestedVocabulary;

@@ -1,11 +1,25 @@
 import {evidenceOwner} from "@/lib/evidenceOwnership";
 import { apiAccess } from "@/lib/apiSecurity";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
+import type { UserSession } from "@/types";
 import fs from "fs";
 import path from "path";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
+export const maxDuration = 180;
+
+function scheduleCaseComparisons(records: UniversalEvidenceRecord[], user: UserSession) {
+  const ids = [...new Set(records.filter(r => r.module === 'FIR' && r.caseId).map(r => r.caseId!))];
+  if (!ids.length) return;
+  after(async () => {
+    for (const id of ids) try {
+      const fir = await authorizedAnalysisFir(id, user);
+      if (fir) await refreshCaseAnalysis(fir, user);
+    } catch (error) { console.error('Evidence saved; case comparison refresh failed:', error); }
+  });
+}
 
 function readEvidenceStore(): UniversalEvidenceRecord[] {
   try {
@@ -144,6 +158,7 @@ export async function POST(req: NextRequest) {
       }
 
       writeEvidenceStore(updatedStore);
+      scheduleCaseComparisons(incomingList, apiUser);
       return NextResponse.json({ success: true, count: incomingList.length });
     }
 
@@ -177,6 +192,7 @@ export async function POST(req: NextRequest) {
       }
 
       writeEvidenceStore(updatedStore);
+      scheduleCaseComparisons([inc], apiUser);
       return NextResponse.json({ success: true, record: inc });
     }
 
@@ -218,6 +234,8 @@ export async function PUT(req: NextRequest) {
     store[idx] = updated;
     writeEvidenceStore(store);
 
+    scheduleCaseComparisons([updated], apiUser);
+
     return NextResponse.json({ success: true, record: updated });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -238,6 +256,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     let store = readEvidenceStore();
+    const originalStore = store;
     const initialCount = store.length;
 
     if (id) {
@@ -249,6 +268,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     writeEvidenceStore(store);
+    scheduleCaseComparisons(originalStore.filter(r => !store.some(next => next.id === r.id)), apiUser);
     return NextResponse.json({ success: true, deletedCount: initialCount - store.length });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

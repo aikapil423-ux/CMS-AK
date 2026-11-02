@@ -1,8 +1,9 @@
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
+import { normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-3.5-flash";
+const GEMINI_MODEL = process.env.CMS_EVIDENCE_MODEL || "gemini-3.5-flash";
 
 export async function POST(req: NextRequest) {
   const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     let contents: any[] = [];
-    const prompt = `You are an elite Law Enforcement Document Analyzer & Evidence Classifier for Indian Police (CMS Haryana / BNSS 2023 / IPC).
+    const cmsPrompt = `You are an elite Law Enforcement Document Analyzer & Evidence Classifier for Indian Police (CMS Haryana / BNSS 2023 / IPC).
 
 STRICT ANTI-HALLUCINATION / NO-FABRICATION RULE (दस्तावेज़ में जो है केवल वही भरें, खुद से कुछ न बनाएं):
 - MANDATORY USER INSTRUCTION: "jb upload and autofill form me prcoss krne ke baad vhi field fill kre jo document me mile khud se data bna kr fill na kre agr document me na mila hai to"
@@ -140,6 +141,10 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
   }
 }`;
 
+    const documentId = String(formData.get('fileId') || file?.name || 'complaint-intake-document');
+    const savedPrompt = withInvestigationPrompt(cmsPrompt, documentId);
+    const prompt = savedPrompt.text;
+
     if (file) {
       let mimeType = file.type || "";
       const lowerName = file.name.toLowerCase();
@@ -216,6 +221,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
             generationConfig: {
               temperature: 0.1,
               responseMimeType: "application/json",
+              maxOutputTokens: 32768,
             },
           }),
         });
@@ -246,7 +252,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
       );
     }
 
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const rawText = geminiData?.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('');
 
     if (!rawText) {
       return NextResponse.json(
@@ -258,6 +264,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
     // Clean JSON if needed
     const cleanJson = rawText.replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
     const parsedData = JSON.parse(cleanJson);
+    if (parsedData.investigation) parsedData.investigation = normalizeInvestigation(parsedData.investigation, documentId, parsedData.rawText || parsedData.incident?.details || fallbackText, savedPrompt.audit);
 
     return NextResponse.json({
       success: true,

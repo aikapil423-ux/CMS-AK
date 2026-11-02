@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FIR Knowledge Graph</title>
+<link rel="stylesheet" href="vendor/style.css"><link rel="stylesheet" href="workspace.css"></head>
+<body>
+<main id="workspace">
+  <header class="workspace-header"><div><strong>Knowledge Graph</strong><span id="graphCounts">Waiting for processed case data…</span></div><div class="modes" role="group" aria-label="Graph view"><button data-mode="2d" class="active" aria-pressed="true">2D</button><button data-mode="3d" aria-pressed="false">3D</button><button data-mode="network" aria-pressed="false">Network</button></div><button id="fullscreen">Full screen</button><button id="export">Export SVG</button></header>
+  <div class="lenses"><label>Node distance <input id="distance" type="range" min="60" max="320" value="120"><output id="distanceValue">120</output></label><label>Node size <input id="nodeSize" type="range" min="60" max="200" value="100"><output id="nodeSizeValue">100</output></label><label>Text <input id="textSize" type="range" min="0" max="100" value="100"><output id="textSizeValue">100</output></label><button id="relayout">↻ Re-layout</button><button id="sidebarToggle">Entities</button></div>
+  <div class="graph-path-controls"><strong>Find Path</strong><select id="pathSource" aria-label="Path from"><option value="">From…</option></select><span>→</span><select id="pathTarget" aria-label="Path to"><option value="">To…</option></select><button id="findPath" class="primary">Find</button><button id="clearPath">Clear</button><span id="pathInfo" class="path-info" style="display:none"></span></div>
+  <div class="workspace-body"><aside id="entitySide"><div class="side-head"><strong>Entities</strong><span id="entityCount"></span></div><label class="search-label"><input id="entitySearch" type="search" placeholder="Search entities…" aria-label="Search entities"></label><div id="typeFilters" class="filters"></div><div id="entityList"></div></aside>
+  <section class="canvas-shell" aria-label="Interactive knowledge graph"><div id="graphPaneFull"></div><canvas id="graph3d" aria-label="3D knowledge graph: drag to rotate, shift-drag to pan, scroll to zoom" hidden></canvas><div id="inspector" hidden></div><div class="canvas-controls"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="fit">Fit</button><button id="reset">Reset</button><span id="modeHint">Pan / zoom • Select a node to inspect • Click a legend to filter</span></div><div id="emptyState" hidden>No matching entities. Clear the search or filters.</div></section></div>
+  <div id="status" role="status"></div>
+</main>
+<script src="vendor/d3.v7.min.js"></script><script src="vendor/graph.js"></script><script src="graph3d.js"></script><script src="workspace.js"></script>
+</body></html>

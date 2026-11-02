@@ -77,6 +77,7 @@ import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement
 import { generateIIFVChargesheetHtmlFromFir } from "@/utils/iifvChargesheetGenerator";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { FIRSummaryTab } from "@/components/fir/FIRSummaryTab";
+import { FIRCaseAnalysisPanel } from "@/components/fir/FIRCaseAnalysisPanel";
 import { FIRLegalAssistant } from "@/components/fir/FIRLegalAssistant";
 import { CrimeDetailModal } from "@/components/fir/CrimeDetailModal";
 import { finalReportClient, type FinalReportHistoryEvent } from "@/services/finalReportClient";
@@ -84,6 +85,8 @@ import { CctnsFinalReportModal } from "@/components/fir/CctnsFinalReportModal";
 import { ModifyActsModal } from "@/components/fir/ModifyActsModal";
 
 type ActiveTab =
+  | "knowledge_graph"
+  | "case_contradictions"
   | "overview"
   | "case_diaries"
   | "documents"
@@ -1824,6 +1827,8 @@ export default function FIRProfilePage() {
             icon: Scale,
           },
           { key: "summary", label: "Investigation Summary", icon: Sparkles },
+          { key: "knowledge_graph", label: "Knowledge Graph", icon: Globe2 },
+          { key: "case_contradictions", label: "Case contradictions", icon: AlertTriangle },
           { key: "reports", label: "Final Form / Reports", icon: FileCheck2 },
           { key: "history", label: "Timeline & Audit", icon: HistoryIcon },
           { key: "confidential_dossier", label: "Confidential Dossier", icon: Lock },
@@ -1849,6 +1854,9 @@ export default function FIRProfilePage() {
       </div>
 
       {/* TAB CONTENT */}
+      {(activeTab === "knowledge_graph" || activeTab === "case_contradictions") && (
+        <FIRCaseAnalysisPanel key={firId} firId={firId} mode={activeTab === "knowledge_graph" ? "graph" : "contradictions"} />
+      )}
 
       {/* 1. OVERVIEW TAB */}
       {activeTab === "overview" && (

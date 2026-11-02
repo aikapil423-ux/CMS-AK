@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/haryana-police/AI-Investigation",
+  "commit": "2972df8",
+  "extractionSource": "prompts/extraction.js:EXTRACTION_PROMPT",
+  "resolutionSource": "js/identity.js",
+  "resolutionNote": "Reference resolution is deterministic code. resolution.txt is the CMS integration contract derived from its rules, not a separate prompt found in the repository."
+}

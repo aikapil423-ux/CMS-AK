@@ -1,14 +1,17 @@
 import { apiAccess } from "@/lib/apiSecurity";
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { UniversalEvidenceRecord, EvidenceModuleType } from "@/types/evidence";
 import { extractVocabulary } from "@/lib/vocabularyExtractor";
 import { losslessCompressionService } from "@/services/losslessCompressionService";
+import { investigationPrompts, normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-3.5-flash";
+const GEMINI_MODEL = process.env.CMS_EVIDENCE_MODEL || "gemini-3.5-flash";
+export const maxDuration = 300;
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
 function readEvidenceStore(): UniversalEvidenceRecord[] {
@@ -52,6 +55,7 @@ export async function POST(req: NextRequest) {
     const moduleType = ((formData.get("module") as string) || "COMPLAINTS") as EvidenceModuleType;
     const uploadedBy = apiUser.name;
     const forceReprocess = formData.get("forceReprocess") === "true";
+    const deferCaseAnalysis = formData.get('deferCaseAnalysis') === 'true';
 
     if (!file && !fallbackText && !rawDataUrl) {
       return NextResponse.json({ success: false, error: "No document file or text content provided." }, { status: 400 });
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const fileName = file ? file.name : (formData.get("fileName") as string) || "evidence_document.pdf";
     const fileSize = file ? file.size : rawDataUrl ? Math.round(rawDataUrl.length * 0.75) : fallbackText.length;
-    const fileType = file ? file.type || "application/octet-stream" : "application/pdf";
+    const fileType = file ? file.type || "application/octet-stream" : rawDataUrl.match(/^data:([^;,]+)/)?.[1] || (fallbackText ? 'text/plain' : 'application/pdf');
 
     // 1. Compute checksum to enforce Process-Once-and-Reuse-Everywhere
     let fileBuffer: Buffer | null = null;
@@ -80,11 +84,14 @@ export async function POST(req: NextRequest) {
     const store = readEvidenceStore();
     const existing = store.find(
       (r) =>
-        r.ownerId === apiUser.id && r.caseId === (caseId || undefined) && (r.rawDocument?.sha256Hash === sha256Hash || r.fileId === fileId) &&
-        r.processingStatus === "COMPLETED"
+        r.ownerId === apiUser.id && r.caseId === (caseId || undefined) && r.rawDocument?.sha256Hash === sha256Hash
     );
 
-    if (existing && !forceReprocess) {
+    const activePromptAudit = GEMINI_API_KEY ? investigationPrompts().audit : undefined;
+    const storedPromptAudit = existing?.structuredData?.investigation?.promptAudit;
+    const promptUnchanged = !activePromptAudit || (storedPromptAudit?.extractionHash === activePromptAudit.extractionHash && storedPromptAudit?.resolutionHash === activePromptAudit.resolutionHash);
+    if (existing?.processingStatus === 'PROCESSING' && Date.now() - Date.parse(existing.updatedAt) < 600000) return NextResponse.json({ success: false, error: 'This evidence is already processing. Retry shortly.' }, { status: 409 });
+    if (existing?.processingStatus === 'COMPLETED' && !forceReprocess && promptUnchanged) {
       // If found in cache, simply bind to the new caseId/caseNumber if requested, and return!
       if (caseId && !existing.caseId) existing.caseId = caseId;
       if (caseNumber && !existing.caseNumber) existing.caseNumber = caseNumber;
@@ -146,7 +153,7 @@ export async function POST(req: NextRequest) {
       processingStatus: "PROCESSING",
       verificationStatus: "AI_EXTRACTED",
       processingVersion: 1,
-      processingEngine: GEMINI_API_KEY ? "Gemini-3.5-Flash" : "Local-Parser",
+      processingEngine: GEMINI_API_KEY ? GEMINI_MODEL : "Local-Parser",
       retryCount: existing ? (existing.retryCount || 0) + 1 : 0,
       auditTrail: [
         ...(existing?.auditTrail || []),
@@ -155,7 +162,7 @@ export async function POST(req: NextRequest) {
           action: existing ? "REPROCESSED" : "PROCESS_STARTED",
           performedBy: uploadedBy,
           timestamp: nowIso,
-          details: `Evidence processing initialized via ${GEMINI_API_KEY ? "Gemini 3.5 Flash" : "Local Parser"}.`,
+          details: `Evidence processing initialized via ${GEMINI_API_KEY ? GEMINI_MODEL : "Local Parser"}.`,
         },
       ],
       createdAt: existing ? existing.createdAt : nowIso,
@@ -174,10 +181,11 @@ export async function POST(req: NextRequest) {
     // 4. Run Processing Engine
     try {
       let geminiData: any = null;
+      let promptAudit: ReturnType<typeof withInvestigationPrompt>['audit'] | undefined;
 
       if (GEMINI_API_KEY) {
         let contents: any[] = [];
-        const prompt = `You are a Law Enforcement Evidence Analyzer & Crime Case Document Parser for Haryana Police (BNSS 2023 / BNS 2023 / IPC).
+        const cmsPrompt = `You are a Law Enforcement Evidence Analyzer & Crime Case Document Parser for Haryana Police (BNSS 2023 / BNS 2023 / IPC).
 STRICT ANTI-HALLUCINATION:
 - Extract ONLY facts EXPLICITLY mentioned in the document.
 - Never invent dummy data. If a field is not present, return empty string or empty array.
@@ -214,6 +222,10 @@ Return a valid JSON object matching:
   "rawText": ""
 }`;
 
+        const referencePrompt = withInvestigationPrompt(cmsPrompt, newRecordId);
+        const prompt = referencePrompt.text;
+        promptAudit = referencePrompt.audit;
+
         if (fileBuffer) {
           const base64Data = fileBuffer.toString("base64");
           contents = [
@@ -223,13 +235,7 @@ Return a valid JSON object matching:
                 { text: prompt },
                 {
                   inlineData: {
-                    mimeType: fileType.includes("pdf")
-                      ? "application/pdf"
-                      : fileType.includes("image")
-                      ? fileType
-                      : fileType.includes("audio")
-                      ? fileType
-                      : "application/pdf",
+                    mimeType: fileType,
                     data: base64Data,
                   },
                 },
@@ -249,12 +255,14 @@ Return a valid JSON object matching:
           `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: "POST",
+            signal: AbortSignal.timeout(150000),
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents,
               generationConfig: {
                 temperature: 0.1,
                 responseMimeType: "application/json",
+                maxOutputTokens: 32768,
               },
             }),
           }
@@ -262,7 +270,7 @@ Return a valid JSON object matching:
 
         if (geminiRes.ok) {
           const gJson = await geminiRes.json();
-          const rawReply = gJson.candidates?.[0]?.content?.parts?.[0]?.text;
+          const rawReply = gJson.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('');
           if (rawReply) {
             geminiData = JSON.parse(rawReply.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim());
           }
@@ -270,7 +278,11 @@ Return a valid JSON object matching:
       }
 
       // If Gemini succeeded or fallback to local parsing
-      const extractedRawText = geminiData?.rawText || fallbackText || "";
+      if (GEMINI_API_KEY && (!geminiData || !Array.isArray(geminiData.investigation?.entities))) throw new Error('AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.');
+      if (moduleType === "FIR" && !geminiData && !fallbackText.trim()) {
+        throw new Error("Document text could not be extracted. Configure the AI service or provide extracted text, then retry processing. Original evidence is retained.");
+      }
+      const extractedRawText = geminiData?.rawText || geminiData?.incident?.details || fallbackText || "";
       const isHindi = /[\u0900-\u097F]/.test(extractedRawText);
       const isEnglish = /[a-zA-Z]/.test(extractedRawText);
       const lang: "hindi" | "english" | "bilingual" = isHindi && isEnglish ? "bilingual" : isHindi ? "hindi" : "english";
@@ -360,6 +372,7 @@ Return a valid JSON object matching:
         extractedText: extractedRawText,
         detectedLanguage: lang,
         structuredData: {
+          investigation: geminiData?.investigation && promptAudit ? normalizeInvestigation(geminiData.investigation, newRecordId, extractedRawText, promptAudit) : undefined,
           classifiedDocumentName: geminiData?.classifiedDocumentName || fileName,
           verifiedDocumentTitle: geminiData?.verifiedDocumentTitle || "Verified Case Evidence",
           documentCategory: geminiData?.documentCategory || "EVIDENCE",
@@ -405,6 +418,14 @@ Return a valid JSON object matching:
       if (fIdx !== -1) finalStore[fIdx] = completedRecord;
       else finalStore.unshift(completedRecord);
       writeEvidenceStore(finalStore);
+
+      // Evidence is safely saved before the case-wide AI pass. Failure never discards the upload.
+      if (moduleType === "FIR" && caseId && !deferCaseAnalysis) after(async () => {
+        try {
+          const fir = await authorizedAnalysisFir(caseId, apiUser);
+          if (fir) await refreshCaseAnalysis(fir, apiUser);
+        } catch (error) { console.error("Case comparison refresh failed; saved evidence retained:", error); }
+      });
 
       const harvested = extractVocabulary(completedRecord.extractedText || "");
       if (completedRecord.structuredData?.classifiedDocumentName) {

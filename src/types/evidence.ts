@@ -65,6 +65,7 @@ export interface ExtractedLegalSectionEntity {
 }
 
 export interface ProcessedEvidenceStructuredData {
+  investigation?: import('./investigation').InvestigationExtraction;
   classifiedDocumentName?: string;
   verifiedDocumentTitle?: string;
   documentCategory?: string;
