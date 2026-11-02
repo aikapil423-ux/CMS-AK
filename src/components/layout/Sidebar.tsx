@@ -29,6 +29,7 @@ import {
   ReceiptText,
   ClipboardList,
   FileBarChart,
+  Radio,
   BookmarkCheck,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -60,6 +61,7 @@ export function Sidebar() {
   const [registrationsOpen, setRegistrationsOpen] = useState(true);
   const [reportsOpen, setReportsOpen] = useState(true);
   const [prosecutionOpen, setProsecutionOpen] = useState(true);
+  const [telecomOpen, setTelecomOpen] = useState(true);
   const [managementOpen, setManagementOpen] = useState(false);
   const [stationInfoOpen, setStationInfoOpen] = useState(false);
 
@@ -70,11 +72,12 @@ export function Sidebar() {
   const isRegistrationsPath = pathname.startsWith("/registrations");
   const isReportsPath = pathname.startsWith("/reports");
   const isProsecutionPath = pathname.startsWith("/prosecution");
+  const isTelecomPath = pathname.startsWith("/telecom");
   const isManagementPath = pathname.startsWith("/settings");
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION">("COMPLAINTS");
+  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION" | "TELECOM">("COMPLAINTS");
 
   useEffect(() => {
     if (isRoznamchaPath) {
@@ -126,7 +129,19 @@ export function Sidebar() {
   const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "FIR"));
   const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && !isProsecutionPath && activeModule === "REGISTRATIONS"));
   const showReports = !isPortalHome && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isProsecutionPath && activeModule === "REPORTS"));
+  const showTelecom = !isPortalHome && (isTelecomPath || activeModule === "TELECOM");
   const showProsecution = !isPortalHome && (isProsecutionPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "PROSECUTION"));
+
+  // TELECOM NAVIGATION ITEMS
+  const telecomNavItems: NavItem[] = [
+    { name: "Overview & Dashboard", href: "/telecom", icon: Radio, badge: "Live", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "CDR Call Analytics", href: "/telecom?tab=CDR", icon: BookOpen, badge: "Records", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "Top Contacts Matrix", href: "/telecom?tab=CONTACTS", icon: Users, badge: "Ranked", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "Multi-CDR Link Graph", href: "/telecom?tab=GRAPH", icon: Sparkles, badge: "Visual", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
+    { name: "Cell Tower & Movement", href: "/telecom?tab=TOWER", icon: Shield, badge: "GIS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "Upload Telecom Evidence", href: "/telecom?tab=UPLOAD", icon: FileText, badge: "Intake", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+  ];
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
@@ -644,6 +659,95 @@ export function Sidebar() {
                           className={cn(
                             "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
                             item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* TELECOM EVIDENCE ANALYSIS TOGGLE SLIDE BAR */}
+        {showTelecom && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setTelecomOpen(!telecomOpen);
+              }}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
+                isTelecomPath ? "bg-slate-100/50" : ""
+              )}
+              title="Toggle Telecom Menu"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Radio className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+                    Telecom Evidence
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {telecomOpen ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </span>
+              )}
+            </button>
+
+            {telecomOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {telecomNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || (pathname.startsWith("/telecom") && item.href.includes(pathname));
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? item.name : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded
+                          ? "justify-between px-2.5 py-1.5"
+                          : "justify-center p-2",
+                        isActive
+                          ? "bg-slate-900 text-white font-semibold shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon
+                          className={cn(
+                            "w-4 h-4 shrink-0 transition-colors",
+                            isActive
+                              ? "text-white"
+                              : "text-slate-400 group-hover:text-slate-700"
+                          )}
+                        />
+                        {isExpanded && (
+                          <span className="truncate">{item.name}</span>
+                        )}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span
+                          className={cn(
+                            "text-[9px] font-bold px-1.5 py-0.2 rounded border font-mono shrink-0 ml-1.5",
+                            isActive
+                              ? "bg-white/20 text-white border-white/30"
+                              : item.badgeColor ||
+                                  "bg-slate-100 text-slate-500 border-slate-200"
                           )}
                         >
                           {item.badge}

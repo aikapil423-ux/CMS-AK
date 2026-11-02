@@ -14,6 +14,8 @@ import {
   X,
   ClipboardList,
   FileBarChart,
+  Radio,
+  PhoneCall,
 } from "lucide-react";
 import { useModule, PoliceModule } from "@/context/ModuleContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -63,6 +65,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   const isRegistrations = pathname.startsWith("/registrations");
   const isReports = pathname.startsWith("/reports");
   const isProsecution = pathname.startsWith("/prosecution");
+  const isTelecom = pathname.startsWith("/telecom");
 
   const handleNavigate = (path: string, moduleKey?: PoliceModule) => {
     if (moduleKey) {
@@ -128,6 +131,15 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       color: "purple",
       isActive: isReports,
     },
+    {
+      id: "TELECOM",
+      title: "Telecom Evidence Analysis",
+      titleHi: "दूरसंचार साक्ष्य विश्लेषण (CDR/IPDR)",
+      href: "/telecom",
+      icon: PhoneCall,
+      color: "cyan",
+      isActive: isTelecom,
+    },
   ];
 
   const quickLinks = [
@@ -183,7 +195,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
+              className="p-1 rounded text-white hover:text-white hover:bg-white/10 cursor-pointer transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -219,6 +231,8 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
                           ? "bg-indigo-100 text-indigo-800 group-hover:bg-indigo-200"
                           : mod.color === "purple"
                           ? "bg-purple-100 text-purple-800 group-hover:bg-purple-200"
+                          : mod.color === "cyan"
+                          ? "bg-cyan-100 text-cyan-800 group-hover:bg-cyan-200"
                           : "bg-blue-100 text-blue-800 group-hover:bg-blue-200"
                       }`}
                     >
