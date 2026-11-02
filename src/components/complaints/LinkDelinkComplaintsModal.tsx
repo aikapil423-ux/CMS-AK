@@ -84,7 +84,7 @@ export function LinkDelinkComplaintsModal({
 
   // === LINK MODE STATE ===
   const [primaryComplaintId, setPrimaryComplaintId] = useState<string>(preSelectedComplaintId || "");
-  const [targetComplaintId, setTargetComplaintId] = useState<string>("");
+  const [targetComplaintIds, setTargetComplaintIds] = useState<string[]>([]);
   const [primarySearch, setPrimarySearch] = useState("");
   const [targetSearch, setTargetSearch] = useState("");
   const [isPrimaryDropdownOpen, setIsPrimaryDropdownOpen] = useState(false);
@@ -112,6 +112,7 @@ export function LinkDelinkComplaintsModal({
   useEffect(() => {
     if (preSelectedComplaintId) {
       setPrimaryComplaintId(preSelectedComplaintId);
+      setTargetComplaintIds([]);
       setDelinkSourceComplaintId(preSelectedComplaintId);
     }
   }, [preSelectedComplaintId]);
@@ -172,9 +173,28 @@ export function LinkDelinkComplaintsModal({
     });
   }, [complaints, targetSearch, primaryComplaintId, selectedPrimaryComplaint]);
 
-  const selectedTargetComplaint = useMemo(() => {
-    return complaints.find((c) => c.id === targetComplaintId || c.complaintNumber === targetComplaintId);
-  }, [complaints, targetComplaintId]);
+  const selectedTargetComplaints = useMemo(() => {
+    return complaints.filter((c) =>
+      (targetComplaintIds.includes(c.id) || targetComplaintIds.includes(c.complaintNumber)) &&
+      c.id !== selectedPrimaryComplaint?.id && c.complaintNumber !== selectedPrimaryComplaint?.complaintNumber
+    );
+  }, [complaints, targetComplaintIds, selectedPrimaryComplaint]);
+
+  const toggleTargetComplaint = (id: string) => {
+    const target = complaints.find((c) => c.id === id || c.complaintNumber === id);
+    if (!target || target.id === selectedPrimaryComplaint?.id) return;
+    setTargetComplaintIds((selected) =>
+      selected.includes(target.id) || selected.includes(target.complaintNumber)
+        ? selected.filter((value) => value !== target.id && value !== target.complaintNumber)
+        : [...selected, target.id]
+    );
+  };
+
+  const removeTargetComplaint = (id: string) => {
+    const target = complaints.find((c) => c.id === id || c.complaintNumber === id);
+    if (!target) return;
+    setTargetComplaintIds((selected) => selected.filter((value) => value !== target.id && value !== target.complaintNumber));
+  };
 
   // Complaints that have active links (for Delink Mode)
   const complaintsWithLinks = useMemo(() => {
@@ -240,19 +260,15 @@ export function LinkDelinkComplaintsModal({
     return list;
   }, [selectedDelinkSourceComplaint]);
 
-  // Submit Link
+  // Submit Link (Multiple Target Complaints Support)
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPrimaryComplaint) {
       alert("Please select the primary complaint.");
       return;
     }
-    if (!selectedTargetComplaint) {
-      alert("Please select the target complaint to link.");
-      return;
-    }
-    if (selectedPrimaryComplaint.complaintNumber === selectedTargetComplaint.complaintNumber) {
-      alert("Cannot link a complaint to itself.");
+    if (selectedTargetComplaints.length === 0) {
+      alert("Please select at least one target complaint to link.");
       return;
     }
 
@@ -265,18 +281,28 @@ export function LinkDelinkComplaintsModal({
 
     setIsSubmitting(true);
     try {
-      const result = await ComplaintService.linkComplaintsFull({
-        primaryComplaintId: selectedPrimaryComplaint.id,
-        targetComplaintId: selectedTargetComplaint.id,
-        linkType,
-        reason: finalReason,
-        officerName: officerName.trim(),
-      });
+      let lastResult: any = null;
+      const linkedNumbers: string[] = [];
+
+      for (const target of selectedTargetComplaints) {
+        if (selectedPrimaryComplaint.complaintNumber === target.complaintNumber) continue;
+        const res = await ComplaintService.linkComplaintsFull({
+          primaryComplaintId: selectedPrimaryComplaint.id,
+          targetComplaintId: target.id,
+          linkType,
+          reason: finalReason,
+          officerName: officerName.trim(),
+        });
+        lastResult = res;
+        linkedNumbers.push(target.complaintNumber);
+      }
 
       setSuccessToast(
-        `Complaints ${selectedPrimaryComplaint.complaintNumber} and ${selectedTargetComplaint.complaintNumber} have been linked successfully!`
+        `Complaint ${selectedPrimaryComplaint.complaintNumber} successfully linked with ${linkedNumbers.length} complaint(s) (${linkedNumbers.join(", ")})!`
       );
-      onSuccess(result);
+      if (lastResult) {
+        onSuccess(lastResult);
+      }
 
       setTimeout(() => {
         setSuccessToast(null);
@@ -362,7 +388,7 @@ export function LinkDelinkComplaintsModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            className="text-white hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -449,16 +475,17 @@ export function LinkDelinkComplaintsModal({
                   )}
                 </div>
 
-                {selectedPrimaryComplaint && (
+                {selectedPrimaryComplaint && !preSelectedComplaintId && (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setPrimaryComplaintId("");
+                      setTargetComplaintIds([]);
                       setPrimarySearch("");
                       setIsPrimaryDropdownOpen(true);
                     }}
-                    className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
+                    className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded cursor-pointer"
                   >
                     Change
                   </button>
@@ -486,6 +513,7 @@ export function LinkDelinkComplaintsModal({
                         key={c.id}
                         onClick={() => {
                           setPrimaryComplaintId(c.id);
+                          setTargetComplaintIds([]);
                           setIsPrimaryDropdownOpen(false);
                           setPrimarySearch("");
                         }}
@@ -523,107 +551,139 @@ export function LinkDelinkComplaintsModal({
               </div>
             </div>
 
-            {/* Step 2: Select Target Complaint to Link */}
+            {/* Step 2: Select Multiple Target Complaints to Link */}
             <div className="relative" ref={targetRef}>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                2. Select Target Complaint to Link With <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  2. Select Target Complaints to Link <span className="text-red-500">*</span>
+                  <span className="ml-1.5 lowercase text-[11px] font-normal text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                    Multiple complaints can be selected
+                  </span>
+                </label>
+                {selectedTargetComplaints.length > 0 && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    {selectedTargetComplaints.length} selected
+                  </span>
+                )}
+              </div>
 
+              {/* Selected Pills Container */}
+              {selectedTargetComplaints.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 p-2 mb-2 bg-blue-50/70 border border-blue-200 rounded-xl max-h-28 overflow-y-auto">
+                  {selectedTargetComplaints.map((sc) => (
+                    <span
+                      key={sc.id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-blue-300 text-blue-900 rounded-lg text-xs font-semibold shadow-2xs"
+                    >
+                      <span className="font-mono font-bold text-blue-700">{sc.complaintNumber}</span>
+                      <span className="text-slate-700 max-w-[130px] truncate">({sc.complainantName})</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTargetComplaint(sc.id)}
+                        className="text-slate-400 hover:text-red-600 ml-0.5 p-0.5 rounded"
+                        title="Remove"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setTargetComplaintIds([])}
+                    className="text-[11px] text-red-600 hover:underline font-bold px-2 py-1 self-center"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
+
+              {/* Search Box / Dropdown Trigger */}
               <div
                 onClick={() => setIsTargetDropdownOpen(true)}
                 className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-slate-300 rounded-xl flex items-center justify-between cursor-pointer hover:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600 shadow-2xs"
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Search className="w-4 h-4 text-slate-400 shrink-0" />
-                  {selectedTargetComplaint ? (
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="font-mono font-bold text-xs text-blue-900 bg-blue-100 px-2 py-0.5 rounded">
-                        {selectedTargetComplaint.complaintNumber}
-                      </span>
-                      <span className="text-xs font-bold text-slate-800 truncate">
-                        {selectedTargetComplaint.complainantName}
-                      </span>
-                      <span className="text-[11px] text-slate-500 font-mono truncate hidden sm:inline">
-                        • {formatDate(selectedTargetComplaint.createdAt)}
-                      </span>
-                    </div>
-                  ) : (
-                    <input
-                      type="text"
-                      value={targetSearch}
-                      onChange={(e) => {
-                        setTargetSearch(e.target.value);
-                        setIsTargetDropdownOpen(true);
-                      }}
-                      onFocus={() => setIsTargetDropdownOpen(true)}
-                      placeholder="Search target complaint by number, name, or date..."
-                      className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
-                    />
-                  )}
-                </div>
-
-                {selectedTargetComplaint && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTargetComplaintId("");
-                      setTargetSearch("");
+                  <input
+                    type="text"
+                    value={targetSearch}
+                    onChange={(e) => {
+                      setTargetSearch(e.target.value);
                       setIsTargetDropdownOpen(true);
                     }}
-                    className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
-                  >
-                    Change
-                  </button>
-                )}
+                    onFocus={() => setIsTargetDropdownOpen(true)}
+                    placeholder="Search target complaints by number, name, or date to add..."
+                    className="w-full text-xs text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    {isTargetDropdownOpen ? "Click to close" : "Click to select"}
+                  </span>
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
 
-              {/* Target Dropdown Menu */}
+              {/* Target Dropdown Menu with Multiple Checkboxes */}
               {isTargetDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 max-h-56 bg-white border border-slate-200 rounded-xl shadow-xl overflow-y-auto z-50 p-1.5 animate-in fade-in-50">
-                  <div className="p-2 border-b border-slate-100">
+                <div className="absolute left-0 right-0 top-full mt-1.5 max-h-64 bg-white border border-slate-200 rounded-xl shadow-xl overflow-y-auto z-50 p-1.5 animate-in fade-in-50">
+                  <div className="p-2 border-b border-slate-100 flex items-center justify-between gap-2">
                     <input
                       type="text"
                       value={targetSearch}
                       onChange={(e) => setTargetSearch(e.target.value)}
-                      placeholder="Search by name, complaint no., or date (DD/MM/YYYY)..."
+                      placeholder="Filter by name, complaint no., or date..."
                       autoFocus
                       className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-emerald-500"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsTargetDropdownOpen(false)}
+                      className="text-xs bg-slate-100 hover:bg-slate-200 font-bold px-2 py-1 rounded text-slate-700"
+                    >
+                      Done
+                    </button>
                   </div>
                   {filteredTargetComplaints.length === 0 ? (
                     <div className="p-3 text-center text-xs text-slate-500">No complaints found</div>
                   ) : (
-                    filteredTargetComplaints.map((c) => (
-                      <div
-                        key={c.id}
-                        onClick={() => {
-                          setTargetComplaintId(c.id);
-                          setIsTargetDropdownOpen(false);
-                          setTargetSearch("");
-                        }}
-                        className={`p-2.5 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors ${
-                          c.id === targetComplaintId
-                            ? "bg-blue-50 text-blue-900 font-bold border border-blue-200"
-                            : "hover:bg-slate-50 text-slate-800"
-                        }`}
-                      >
-                        <div className="space-y-0.5 truncate pr-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded">
-                              {c.complaintNumber}
-                            </span>
-                            <span className="font-bold text-slate-900 truncate">{c.complainantName}</span>
+                    filteredTargetComplaints.map((c) => {
+                      const isSelected = targetComplaintIds.includes(c.id) || targetComplaintIds.includes(c.complaintNumber);
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => toggleTargetComplaint(c.id)}
+                          className={`p-2.5 rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors ${
+                            isSelected
+                              ? "bg-blue-50/90 text-blue-900 font-bold border border-blue-300"
+                              : "hover:bg-slate-50 text-slate-800"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {}} // handled by parent onClick
+                              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
+                            />
+                            <div className="space-y-0.5 truncate">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-blue-700 bg-blue-100/70 px-1.5 py-0.5 rounded">
+                                  {c.complaintNumber}
+                                </span>
+                                <span className="font-bold text-slate-900 truncate">{c.complainantName}</span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 truncate">
+                                {c.categoryDisplay} • {c.incidentPlace || "N/A"}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-500 truncate">
-                            {c.categoryDisplay} • {c.incidentPlace || "N/A"}
+                          <div className="text-right text-[10px] text-slate-500 font-mono shrink-0">
+                            {formatDate(c.createdAt)}
                           </div>
                         </div>
-                        <div className="text-right text-[10px] text-slate-500 font-mono shrink-0">
-                          {formatDate(c.createdAt)}
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -712,7 +772,7 @@ export function LinkDelinkComplaintsModal({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedPrimaryComplaint || !selectedTargetComplaint}
+                disabled={isSubmitting || !selectedPrimaryComplaint || selectedTargetComplaints.length === 0}
                 className="px-5 py-2.5 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Link2 className="w-4 h-4 text-emerald-400" />
@@ -765,7 +825,7 @@ export function LinkDelinkComplaintsModal({
                   )}
                 </div>
 
-                {selectedDelinkSourceComplaint && (
+                {selectedDelinkSourceComplaint && !preSelectedComplaintId && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -775,7 +835,7 @@ export function LinkDelinkComplaintsModal({
                       setDelinkSourceSearch("");
                       setIsDelinkSourceDropdownOpen(true);
                     }}
-                    className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded"
+                    className="text-xs text-slate-400 hover:text-red-600 font-bold px-1.5 py-0.5 rounded cursor-pointer"
                   >
                     Change
                   </button>

@@ -4656,7 +4656,7 @@ function NoticeTemplatesContent() {
                 <button
                   type="button"
                   onClick={() => setSelectComplaintModalOpen(false)}
-                  className="p-1.5 text-slate-300 hover:text-white rounded-lg cursor-pointer"
+                  className="p-1.5 text-white hover:text-white rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

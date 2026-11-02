@@ -1554,28 +1554,50 @@ export const ComplaintService = {
   async linkComplaint(
     complaintId: string,
     targetComplaintNumber: string,
-    relationType: string = "LINKED"
+    relationType: string = "LINKED",
+    officerName: string = "Investigating Officer"
   ): Promise<ComplaintItem> {
-    const index = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
-    if (index === -1) throw new Error("Complaint not found");
+    if (!mutationDepth) await hydrateComplaints();
+    complaintsStore = loadComplaintsFromStorage();
 
-    complaintsStore[index] = {
-      ...complaintsStore[index],
-      linkedComplaintNumber: targetComplaintNumber,
-      isCrossComplaint: relationType === "CROSS",
-      crossComplaintNumber: relationType === "CROSS" ? targetComplaintNumber : undefined,
-      updatedAt: new Date().toISOString(),
-    };
+    const pIdx = complaintsStore.findIndex((c) => c.id === complaintId || c.complaintNumber === complaintId);
+    if (pIdx === -1) throw new Error("Primary complaint not found");
 
-    this.addTimelineEvent(complaintsStore[index].id, {
-      title: `Complaint Linked with ${targetComplaintNumber}`,
-      description: `Relation marked as: ${relationType}. Cross-referencing files for unified enquiry.`,
-      category: "STATUS_CHANGE",
-      officerName: "Investigating Officer",
-      timestamp: new Date().toISOString(),
+    // Strictly validate that target complaint actually exists in the register database
+    const tIdx = complaintsStore.findIndex(
+      (c) => c.complaintNumber.trim().toUpperCase() === targetComplaintNumber.trim().toUpperCase() ||
+             c.id === targetComplaintNumber.trim()
+    );
+    if (tIdx === -1) {
+      throw new Error(`Target complaint "${targetComplaintNumber}" does not exist in the register database.`);
+    }
+
+    if (pIdx === tIdx) {
+      throw new Error("Cannot link a complaint to itself.");
+    }
+
+    const primary = complaintsStore[pIdx];
+    const target = complaintsStore[tIdx];
+
+    const linkTypeEnum: "RELATED" | "CROSS" | "DUPLICATE" | "SAME_ACCUSED" =
+      relationType === "CROSS"
+        ? "CROSS"
+        : relationType === "DUPLICATE" || relationType === "REPEATED"
+        ? "DUPLICATE"
+        : relationType === "SAME_ACCUSED"
+        ? "SAME_ACCUSED"
+        : "RELATED";
+
+    // Use full bidirectional linking
+    const result = await this.linkComplaintsFull({
+      primaryComplaintId: primary.id,
+      targetComplaintId: target.id,
+      linkType: linkTypeEnum,
+      reason: `Linked as ${relationType} with ${target.complaintNumber}`,
+      officerName,
     });
 
-    return complaintsStore[index];
+    return result.primary;
   },
 
   async linkComplaintsFull(payload: {

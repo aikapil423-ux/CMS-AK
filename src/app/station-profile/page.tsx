@@ -747,7 +747,7 @@ export default function StationProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-300 hover:text-white p-1 rounded hover:bg-white/10"
+                className="text-white hover:text-white p-1 rounded hover:bg-white/10"
               >
                 <X className="w-4 h-4" />
               </button>

@@ -295,7 +295,7 @@ export function TransferFIRModal({
 
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+            className="w-7 h-7 rounded-md hover:bg-white/10 text-white hover:text-white flex items-center justify-center cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

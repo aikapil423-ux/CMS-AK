@@ -402,11 +402,21 @@ export default function FIRProfilePage() {
   const [selectedEvidenceRecord, setSelectedEvidenceRecord] = useState<UniversalEvidenceRecord | null>(null);
   const [evidenceRefreshTrigger, setEvidenceRefreshTrigger] = useState(0);
 
-  // Sync universal evidence records from server on mount
+  // Sync universal evidence records and telecom evidence documents from server on mount
+  const [telecomDocs, setTelecomDocs] = useState<any[]>([]);
   useEffect(() => {
     universalEvidenceService.syncFromServer(firId).then(() => {
       setEvidenceRefreshTrigger((c) => c + 1);
     });
+
+    fetch("/api/telecom?firId=" + encodeURIComponent(firId))
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.files && Array.isArray(data.files)) {
+          setTelecomDocs(data.files);
+        }
+      })
+      .catch((e) => console.warn("Failed to fetch telecom docs for FIR profile:", e));
   }, [firId]);
 
   // Combine all documents: fir.documents + linked universalEvidenceService records + origin complaint documents
@@ -502,8 +512,32 @@ export default function FIRProfilePage() {
       }
     }
 
+    // 3. Documents from Telecom Evidence & Forensic Docket
+    if (telecomDocs && telecomDocs.length > 0) {
+      telecomDocs.forEach((tDoc) => {
+        const key = (tDoc.originalFilename || "").toLowerCase().trim();
+        if (!existingNames.has(key) && !existingIds.has(tDoc.id)) {
+          list.push({
+            id: tDoc.id,
+            firId: fir.id,
+            title: "[Telecom " + tDoc.category + "] " + tDoc.originalFilename,
+            fileName: tDoc.originalFilename,
+            category: "TELECOM EVIDENCE: " + tDoc.category,
+            uploadedBy: tDoc.uploadedBy || "Telecom Nodal Officer",
+            uploadedAt: tDoc.uploadedAt ? tDoc.uploadedAt.replace("T", " ").slice(0, 16) : fir.firDate,
+            fileSize: tDoc.fileSizeBytes ? ((tDoc.fileSizeBytes / 1024).toFixed(1) + " KB") : "42 KB",
+            dataUrl: tDoc.dataUrl,
+            fileUrl: tDoc.dataUrl || ("/api/telecom?action=download&id=" + tDoc.id),
+            originSource: "Telecom Forensic Docket (" + (tDoc.operator || "Operator") + ")",
+          });
+          existingNames.add(key);
+          existingIds.add(tDoc.id);
+        }
+      });
+    }
+
     return list;
-  }, [fir, evidenceRefreshTrigger]);
+  }, [fir, evidenceRefreshTrigger, telecomDocs]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1622,6 +1656,17 @@ export default function FIRProfilePage() {
               <span>Re-open Case</span>
             </Button>
           )}
+
+          {/* CDR / Telecom Evidence Analysis Module */}
+          <Button
+            size="sm"
+            onClick={() => router.push(`/telecom?firId=${fir.id}&firNumber=${encodeURIComponent(fir.firNumber)}`)}
+            className="bg-[#0b192c] hover:bg-[#132845] text-white font-bold text-xs gap-1.5 cursor-pointer shadow-xs border border-slate-800"
+            title="Open Dedicated Telecom Forensic and CDR Analysis Workspace for this FIR"
+          >
+            <Phone className="w-3.5 h-3.5 text-amber-400" />
+            <span>CDR Analysis</span>
+          </Button>
 
           <Button size="sm" variant="outline" onClick={() => setIsBailOpen(true)} className="border-blue-300 text-blue-900 font-bold text-xs gap-1.5"><Scale className="w-3.5 h-3.5" />Bail Details</Button>
 
@@ -2986,7 +3031,7 @@ export default function FIRProfilePage() {
               </div>
               <button
                 onClick={() => setIsAssignModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3062,7 +3107,7 @@ export default function FIRProfilePage() {
               </div>
               <button
                 onClick={() => setIsUploadZimniModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3209,7 +3254,7 @@ export default function FIRProfilePage() {
               </div>
               <button
                 onClick={() => setIsDocModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3304,7 +3349,7 @@ export default function FIRProfilePage() {
               </div>
               <button
                 onClick={() => setIsFinalFormModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -3423,7 +3468,7 @@ export default function FIRProfilePage() {
                 <button
                   type="button"
                   onClick={() => setDocPreviewItem(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-white hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

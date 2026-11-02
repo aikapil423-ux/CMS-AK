@@ -33,7 +33,7 @@ export function RoleSwitcherModal({ isOpen, onClose }: RoleSwitcherModalProps) {
               <p className="text-[11px] text-slate-300">Test different views and permission boundaries</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

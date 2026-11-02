@@ -131,7 +131,7 @@ export const AddPropertyItemModal: React.FC<AddPropertyItemModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-300 hover:text-white p-1 rounded-md transition-colors"
+            className="text-white hover:text-white p-1 rounded-md transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

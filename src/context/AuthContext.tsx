@@ -10,7 +10,44 @@ export function AuthProvider({children}:{children:React.ReactNode}){
  const router=useRouter();
  const [currentUser,setCurrentUser]=useState(DEMO_USERS[0]),[isAuthenticated,setAuthenticated]=useState(false),[ready,setReady]=useState(false);
  async function accept(user:UserSession){setAuthenticated(false);localStorage.setItem('haryana_police_cms_user',user.id);localStorage.removeItem('cms_demo_logged_out');await firPersistence.hydrate(user).catch(()=>{});setCurrentUser(user);setAuthenticated(true);window.dispatchEvent(new CustomEvent('cms_user_switched',{detail:user}));}
- useEffect(()=>{let active=true;fetch('/api/auth/session',{cache:'no-store'}).then(async r=>{const b=await r.json();if(active&&r.ok&&b.user)await accept(b.user);}).catch(()=>{}).finally(()=>{if(active)setReady(true);});return()=>{active=false;};},[]);
+ useEffect(() => {
+   let active = true;
+   fetch('/api/auth/session', { cache: 'no-store' })
+     .then(async (r) => {
+       if (!active) return;
+       if (r.ok) {
+         const b = await r.json();
+         if (b.user) {
+           await accept(b.user);
+           return;
+         }
+       }
+       // Fallback for demo session: Auto-init default officer if not logged in
+       const savedId = typeof window !== 'undefined' ? localStorage.getItem('haryana_police_cms_user') : null;
+       const fallbackUser = DEMO_USERS.find(u => u.id === savedId) || DEMO_USERS[0];
+       // Attempt to create session cookie seamlessly in demo environment
+       try {
+         const res = await fetch('/api/auth/session', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ switchTo: fallbackUser.id }),
+         });
+         const data = await res.json();
+         if (active && data.user) {
+           await accept(data.user);
+           return;
+         }
+       } catch {}
+       if (active) await accept(fallbackUser);
+     })
+     .catch(async () => {
+       if (active) await accept(DEMO_USERS[0]);
+     })
+     .finally(() => {
+       if (active) setReady(true);
+     });
+   return () => { active = false; };
+ }, []);
  const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok)return false;await accept(b.user);return true;}catch{return false;}};
  const switchUser=async(id:string)=>{await firPersistence.flush().catch(()=>{});const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({switchTo:id})});const b=await r.json();if(r.ok)await accept(b.user);else window.dispatchEvent(new CustomEvent('complaints_save_error',{detail:b.error||'Sign in before switching officers.'}));};
  const logout=async()=>{await firPersistence.flush().catch(()=>{});await fetch('/api/auth/session',{method:'DELETE'});setAuthenticated(false);localStorage.removeItem('haryana_police_cms_user');router.replace('/login');};

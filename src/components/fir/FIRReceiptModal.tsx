@@ -117,7 +117,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             </Button>
             <button
               onClick={onClose}
-              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="Close modal"
             >
               <X className="w-5 h-5" />

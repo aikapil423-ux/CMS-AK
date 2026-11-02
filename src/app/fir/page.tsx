@@ -1382,7 +1382,7 @@ function FIRRegisterPageContent() {
               </div>
               <button
                 onClick={() => setIsAssignModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>

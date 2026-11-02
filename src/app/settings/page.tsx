@@ -906,7 +906,7 @@ function SettingsPageContent() {
               </div>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1036,7 +1036,7 @@ function SettingsPageContent() {
               </div>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-white hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>

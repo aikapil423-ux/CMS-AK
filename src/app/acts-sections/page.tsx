@@ -1110,7 +1110,7 @@ function ActsAndSectionsContent() {
                 onClick={() => {
                   if (!isUploading) setUploadModalOpen(false);
                 }}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
+                className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1346,7 +1346,7 @@ function ActsAndSectionsContent() {
                 </div>
                 <button
                   onClick={handleCloseActModal}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

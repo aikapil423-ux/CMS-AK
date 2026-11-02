@@ -3426,17 +3426,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 <h3 className="font-bold text-slate-900 text-sm sm:text-base">
                   Linked, Cross & Repeated Complaints Intelligence
                 </h3>
-
               </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setLinkModalOpen(true)}
-                className="gap-1.5 text-xs font-semibold self-start sm:self-auto"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Link Another Complaint</span>
-              </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -5779,7 +5769,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 onClick={() => {
                   if (!isSavingDossier) setDossierModalOpen(false);
                 }}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
+                className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -6354,7 +6344,7 @@ PNO: ${complaint.assignedEoPno || currentUser.pno}`;
                 <button
                   type="button"
                   onClick={() => setReportPreviewItem(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-white hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>

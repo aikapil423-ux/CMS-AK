@@ -1255,7 +1255,7 @@ function GeneralDiaryContent() {
               <button
                 type="button"
                 onClick={closeBriefModal}
-                className="text-slate-400 hover:text-white hover:bg-slate-800 p-1.5 rounded-lg transition-colors cursor-pointer"
+                className="text-white hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-colors cursor-pointer"
                 title="Close (ESC)"
               >
                 <X className="w-5 h-5" />

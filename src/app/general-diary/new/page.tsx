@@ -2210,7 +2210,7 @@ function NewGDEntryContent() {
               <button
                 type="button"
                 onClick={() => setPreviewDoc(null)}
-                className="text-slate-300 hover:text-white p-1 rounded-lg"
+                className="text-white hover:text-white p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>

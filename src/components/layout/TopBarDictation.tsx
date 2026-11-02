@@ -643,21 +643,22 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             <button
               type="button"
               onClick={handleToggleListening}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer !text-white ${
                 isListening
-                  ? "bg-red-600 hover:bg-red-700 text-white ring-2 ring-red-400/30"
-                  : "bg-slate-900 hover:bg-slate-800 text-white"
+                  ? "!bg-red-600 hover:!bg-red-700 !text-white ring-2 ring-red-400/30"
+                  : "!bg-[#0b192c] hover:!bg-slate-800 !text-white"
               }`}
+              style={{ color: "#ffffff" }}
             >
               {isListening ? (
                 <>
-                  <MicOff className="w-3.5 h-3.5" />
-                  <span>Stop</span>
+                  <MicOff className="w-3.5 h-3.5 !text-white" style={{ color: "#ffffff" }} />
+                  <span className="!text-white" style={{ color: "#ffffff" }}>Stop</span>
                 </>
               ) : (
                 <>
-                  <Mic className="w-3.5 h-3.5" />
-                  <span>Start</span>
+                  <Mic className="w-3.5 h-3.5 !text-white" style={{ color: "#ffffff" }} />
+                  <span className="!text-white" style={{ color: "#ffffff" }}>Start</span>
                 </>
               )}
             </button>

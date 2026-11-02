@@ -172,7 +172,7 @@ export function ComplaintVerificationModal({
             <button
               type="button"
               onClick={onEdit}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+              className="p-1.5 text-white hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
               title="Close Preview"
             >
               <X className="w-5 h-5" />

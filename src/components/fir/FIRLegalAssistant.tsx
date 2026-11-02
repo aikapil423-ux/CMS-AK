@@ -1022,7 +1022,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
               <button
                 type="button"
                 onClick={() => setDetailModalSection(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

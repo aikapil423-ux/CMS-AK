@@ -91,7 +91,7 @@ export function GDTemplateModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+            className="p-1 text-white hover:text-white hover:bg-white/10 rounded-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>

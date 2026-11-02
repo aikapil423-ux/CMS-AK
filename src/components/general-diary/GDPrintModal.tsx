@@ -319,7 +319,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           <button
             type="button"
             onClick={onClose}
-            className="gd-print-noprint p-1 text-blue-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            className="gd-print-noprint p-1 text-white hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
             aria-label="Close register modal"
           >
             <X className="w-5 h-5" />

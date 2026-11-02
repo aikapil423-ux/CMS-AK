@@ -84,7 +84,7 @@ export function GDSearchModal({ isOpen, onClose, onSelectGD }: GDSearchModalProp
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

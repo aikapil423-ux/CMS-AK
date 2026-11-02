@@ -1707,7 +1707,7 @@ function KalandraWorkspaceContent() {
                 <button
                   type="button"
                   onClick={() => setViewingPackage(null)}
-                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   ✕
                 </button>

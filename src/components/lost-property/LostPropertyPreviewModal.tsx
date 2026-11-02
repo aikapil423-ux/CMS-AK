@@ -201,7 +201,7 @@ export const LostPropertyPreviewModal: React.FC<LostPropertyPreviewModalProps> =
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1.5 text-white hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>

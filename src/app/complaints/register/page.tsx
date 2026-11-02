@@ -5647,7 +5647,7 @@ export default function RegisterComplaintPage() {
                 <button
                   type="button"
                   onClick={() => setPreviewModalFile(null)}
-                  className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                  className="p-1.5 text-white hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>

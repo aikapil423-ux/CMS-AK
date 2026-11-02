@@ -3793,7 +3793,7 @@ function ArrestDocsContent() {
                 <button
                   type="button"
                   onClick={() => setIsPreviewModalOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-white hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
