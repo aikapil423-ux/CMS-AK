@@ -1,0 +1,386 @@
+{
+  "snapshotDate": "2026-11-02",
+  "timezone": "Asia/Calcutta",
+  "scope": "Local disk/backend data; publication to both public main branches explicitly authorized by user.",
+  "browserStorageIncluded": false,
+  "environmentFilesIncluded": false,
+  "loginSecretsIncluded": false,
+  "files": [
+    {
+      "path": "prisma/complaints-store.json",
+      "bytes": 174606,
+      "sha256": "389884be07bb54a2857fb14c06cc4c9f43a38b35164e40fe4d54acb448f82c63"
+    },
+    {
+      "path": "prisma/firs-store.json",
+      "bytes": 8316,
+      "sha256": "eb6add05aa548ce78e0b8f512fb6019188e7d7da26313f81d58545ce1c3f0918",
+      "workingCopySha256": "2f459af1d31a2c69f78d85cea1ec2245fa340bdc029689f486acd135073cfa62",
+      "workingCopyBytes": 8527
+    },
+    {
+      "path": "prisma/processed-evidence-store.json",
+      "bytes": 30506256,
+      "sha256": "1923ba38689906553d7d855adc81ad2d0f1394801df5759ac4774bbb1546eb63",
+      "workingCopySha256": "370315878afd0f43ee973b7ece7a4981ac5f742f914294053aa4e80cc3ee974b",
+      "workingCopyBytes": 30509893
+    },
+    {
+      "path": "prisma/telecom-store.json",
+      "bytes": 18859,
+      "sha256": "cfa8719c2c1e9ddfdbbfe3f9a78c4bad5c3defc8ad9eadbafc96c52ff35772ae"
+    },
+    {
+      "path": "prisma/gd-dismissed-suggestions.json",
+      "bytes": 260,
+      "sha256": "8d3cfd4888f69eddb83e68d6f74f972156a56e75af959632b2f863c9a3a44669",
+      "workingCopySha256": "f2d669f6a047baef24be837fcf0aec64969104cf18d7761dc3a1296217bf470e",
+      "workingCopyBytes": 270
+    },
+    {
+      "path": "prisma/seed-data.json",
+      "bytes": 37499,
+      "sha256": "449317bddc08969d2a6ce5ce41bf5e590771fc5aabc396efcaab4643cbfd8349"
+    },
+    {
+      "path": "prisma/local-data.snapshot.sqlite",
+      "bytes": 405504,
+      "sha256": "d3a4d634d8d586317f1b88984bf17b23865051e799ce4a5aec12d8d0486a00b3"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/005c64b206cb4c27_statutory_notice_section_35_notice_1792995809452.html.br",
+      "bytes": 4344,
+      "sha256": "6cd3d65e13d10494cf761eca605bad7c471248ac54f78ee897976a76515cc720"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/1afe60a20ec73ad7_Registered_Complaint_HAR-KKR-2026-CMP-4163.pdf.br",
+      "bytes": 3782,
+      "sha256": "33d685edc4ca9c8e52efb44acc361c4e0a4c35037fb158dd0c15578c46e159c7"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/32b80a83704ea4a3_statutory_notice_section_35_notice_1792994393692.html.br",
+      "bytes": 4379,
+      "sha256": "3ffe299c9ac9ca5a4d3adccf431c0cdfb0455e9fef8c8a55c80661b9b79224bb"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/3a64454c378963c0_Zimni_No_17_FIR_0004_2026.html.br",
+      "bytes": 13850,
+      "sha256": "289357a1b79feeaea9cb74559d1fa912e3c50e86a9e3d6b5d7f0d49766c6b405"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/40d1126cae9174ea_Registered_Complaint_HAR-KKR-2026-CMP-5470.pdf.br",
+      "bytes": 3717,
+      "sha256": "ac0921fb9376a75f6054b55d7e4601032b7bad798c3c25ba1c91c1c4f5c8f82d"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/524ada22444d049a_Registered_Complaint_HAR-KKR-2026-CMP-3335.pdf.br",
+      "bytes": 3555,
+      "sha256": "5b2d801c974f20469cb02a33358ecdc88be87324dec1035c448712e093d00384"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/5e4ee5613b614594_Registered_Complaint_HAR-KKR-2026-CMP-9420.pdf.br",
+      "bytes": 3793,
+      "sha256": "aa933044af9201594e654fd038d2669a9bf6a8a83ba450fe893ea523f0a2a09c"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/60f523ff71d3d1ae_complaint_snatching_market.txt.br",
+      "bytes": 586,
+      "sha256": "7816e44b481bada032128b7782ec400550aa3c9be6db8dddca2adb8f1691acdc"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/6815665d5b372fde_Registered_Complaint_HAR-KKR-2026-CMP-2715.pdf.br",
+      "bytes": 3892,
+      "sha256": "9285cf3296fe8873221c31a884810a4f83e405e9116af8b51544577e6f260fac"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/7deeed81b9471bf4_statutory_notice_section_35_notice_1793010525302.html.br",
+      "bytes": 5467,
+      "sha256": "51ee4ae1035895016a043488fc565e8360d6b1d1f585d191327643f67f72e19f"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/8555f5c580f3cad2_COMPLAINTS_9.pdf.br",
+      "bytes": 1057661,
+      "sha256": "c1104eb4687f2e3a75236573018c268c2748a9d4a4704926be784ae653fb1a08"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/8e4b22362344ae28_statutory_notice_section_35_notice_1792996002953.html.br",
+      "bytes": 4347,
+      "sha256": "4343782a068aecbbb978db0b3beace8c1e27d70281b2946b7eea2c3c0164dac4"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/98ccb3c726ec7a70_Registered_Complaint_HAR-KKR-2026-CMP-6858.pdf.br",
+      "bytes": 3808,
+      "sha256": "4ee6a8bb821ae9c23e6616d162aacf9564ee5c9dbc1b0648e07255bbb128d90b"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/a3b40d0668380674_Registered_Complaint_HAR-KKR-2026-CMP-1065.pdf.br",
+      "bytes": 3927,
+      "sha256": "664e09fa0f80918e41838803773f107d9a1c1ee56122ee67831f3e9587b95b86"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/a5954d5ac7a8f2db_____________.pdf.br",
+      "bytes": 3972265,
+      "sha256": "8e6cf650bb4770b62b5e0b6e05b41c4b481c78f7aace0ba630083c1da672753e"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/ac2b9f7bec828fa2_541_-_dsti.pdf.br",
+      "bytes": 1126625,
+      "sha256": "831703af767c639707f3a2410132f931a44918ec49a715ffb7f4a59de1ed349b"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/ade0c54c0cdffc43_COMPLAINT_5.pdf.br",
+      "bytes": 1194791,
+      "sha256": "ef03b364de03b01b09304fbe45d01a34b987a6256933e608c3146b5b58d69703"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/b537094035e88f43_Registered_Complaint_HAR-KKR-2026-CMP-8945.pdf.br",
+      "bytes": 4139,
+      "sha256": "15d5b0b58546d5980b2efd7489c6e4324983de0caacfb4169f67c6b14f5cfa7b"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/baa6d842e28b4656_Registered_Complaint_HAR-KKR-2026-CMP-7767.pdf.br",
+      "bytes": 3276,
+      "sha256": "de3779f9a692e5ece1fdc8a40b4ce33b13988c61f52164daa63f379b4f8ffb4f"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/d1677f13c58fda20_Haryana_Police_Appearance_Notice_______-______-_____.html.br",
+      "bytes": 5599,
+      "sha256": "390a8d8375203c3d6fa597522441881ea25a49eca26384d79a4ccfa1a8d1eedf"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/d2bf67b3fcf136f2_____________.pdf.br",
+      "bytes": 10553411,
+      "sha256": "5a541d97abff37ce4637ef056fa81788305750646332a4b65df7f4200adfcba5"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/d7045d5c3fb2f0a1_Registered_Complaint_HAR-KKR-2026-CMP-9708.pdf.br",
+      "bytes": 2881,
+      "sha256": "a3524f96f616d801b37f47166c9a6f41b5d5fec54b35f73c6dc838a254454b11"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/e7dc9fa199dd1c1b_COMPLAINT_16.pdf.br",
+      "bytes": 650145,
+      "sha256": "44e08577c0fb27175713f3e9a4b8df4505afdabc303a192be181314baa1924f6"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/f67a54a11b81e682_COMPLAINT_2.pdf.br",
+      "bytes": 654071,
+      "sha256": "d803df6806148fb027ba6e6f4cadafccdc14efcbf33755148dfe3940da742794"
+    },
+    {
+      "path": "prisma/storage/evidence/compressed/ff7ad83cdbb7f540_512-dsti.pdf.br",
+      "bytes": 456335,
+      "sha256": "2efcb3cc2b6a8a5a45535c766b316bb4e3269e7cd14f92c0fbc2b685b2ea22c4"
+    },
+    {
+      "path": "prisma/storage/evidence/original/005c64b206cb4c27_statutory_notice_section_35_notice_1792995809452.html",
+      "bytes": 9126,
+      "sha256": "005c64b206cb4c271dca92032a18f8feeec0c622dcc98bd1781824a6886a3f39"
+    },
+    {
+      "path": "prisma/storage/evidence/original/1afe60a20ec73ad7_Registered_Complaint_HAR-KKR-2026-CMP-4163.pdf",
+      "bytes": 8509,
+      "sha256": "1afe60a20ec73ad7bddf49b25bc9832c93ad194314b59b8cb60de20f63a8fede"
+    },
+    {
+      "path": "prisma/storage/evidence/original/32b80a83704ea4a3_statutory_notice_section_35_notice_1792994393692.html",
+      "bytes": 9123,
+      "sha256": "32b80a83704ea4a3125eab7bc04351848c8c1604f6b968dbede06ef66d6f5d12"
+    },
+    {
+      "path": "prisma/storage/evidence/original/3a64454c378963c0_Zimni_No_17_FIR_0004_2026.html",
+      "bytes": 77257,
+      "sha256": "3a64454c378963c03813a8f2fbd721b9e11a9872813b0ed30741eb26c5233d97"
+    },
+    {
+      "path": "prisma/storage/evidence/original/40d1126cae9174ea_Registered_Complaint_HAR-KKR-2026-CMP-5470.pdf",
+      "bytes": 8167,
+      "sha256": "40d1126cae9174eaaa4cf6bfbbc464ba314b7e2403bd0ed2f40f26e1e9cbccef"
+    },
+    {
+      "path": "prisma/storage/evidence/original/524ada22444d049a_Registered_Complaint_HAR-KKR-2026-CMP-3335.pdf",
+      "bytes": 8318,
+      "sha256": "524ada22444d049a9653d36b2a9e4eac9d575ab0d1a6faf08b5c5397e0a37748"
+    },
+    {
+      "path": "prisma/storage/evidence/original/5e4ee5613b614594_Registered_Complaint_HAR-KKR-2026-CMP-9420.pdf",
+      "bytes": 9008,
+      "sha256": "5e4ee5613b614594b582135cf25a76817801a4e90ca5046040f9a32433239046"
+    },
+    {
+      "path": "prisma/storage/evidence/original/60f523ff71d3d1ae_complaint_snatching_market.txt",
+      "bytes": 1822,
+      "sha256": "60f523ff71d3d1ae7ad554159f1cf24287269577c51829800eb5de7e6ec1c3f6",
+      "workingCopySha256": "b79c50c92da307a7998bba40323bbfcdaf4b22ea3241b67538f9c02cf173ce6c",
+      "workingCopyBytes": 1838
+    },
+    {
+      "path": "prisma/storage/evidence/original/627dda891c0487fa_Camera_Capture_2026-10-13T07-10-47.jpg",
+      "bytes": 148523,
+      "sha256": "627dda891c0487fab23fc193d31b044ac3afe4cec3741a6a1e2251889950da73"
+    },
+    {
+      "path": "prisma/storage/evidence/original/6815665d5b372fde_Registered_Complaint_HAR-KKR-2026-CMP-2715.pdf",
+      "bytes": 8578,
+      "sha256": "6815665d5b372fdeb9d82570f960ec391397f14753de9876707b764152c47566"
+    },
+    {
+      "path": "prisma/storage/evidence/original/7deeed81b9471bf4_statutory_notice_section_35_notice_1793010525302.html",
+      "bytes": 14687,
+      "sha256": "7deeed81b9471bf44f2cc8fb68289f2ddc6f9577a6ad1ea8d2fcfe3d03c437bd"
+    },
+    {
+      "path": "prisma/storage/evidence/original/8555f5c580f3cad2_COMPLAINTS_9.pdf",
+      "bytes": 1092930,
+      "sha256": "8555f5c580f3cad23ea58d1a17e55d23ebeaf4bd2ea3352e240abc5bea53ed85"
+    },
+    {
+      "path": "prisma/storage/evidence/original/8e4b22362344ae28_statutory_notice_section_35_notice_1792996002953.html",
+      "bytes": 9161,
+      "sha256": "8e4b22362344ae28f265ae5f35fa116e9d63f66410c9df9f8b66a4fc96f20666"
+    },
+    {
+      "path": "prisma/storage/evidence/original/98ccb3c726ec7a70_Registered_Complaint_HAR-KKR-2026-CMP-6858.pdf",
+      "bytes": 8460,
+      "sha256": "98ccb3c726ec7a70a89a9fa21c5f563817428217a24e051e72ce21db2cc249bb"
+    },
+    {
+      "path": "prisma/storage/evidence/original/a3b40d0668380674_Registered_Complaint_HAR-KKR-2026-CMP-1065.pdf",
+      "bytes": 10557,
+      "sha256": "a3b40d06683806747c17b78185c70150409d58828a3db5ffa6d5446563befa2c"
+    },
+    {
+      "path": "prisma/storage/evidence/original/a5954d5ac7a8f2db_____________.pdf",
+      "bytes": 4234952,
+      "sha256": "a5954d5ac7a8f2db807e7dad490d98b1b148f1b1790d65d1530b2e65c3c9ac8d"
+    },
+    {
+      "path": "prisma/storage/evidence/original/ac2b9f7bec828fa2_541_-_dsti.pdf",
+      "bytes": 1214848,
+      "sha256": "ac2b9f7bec828fa2fbea80d73c41ee81b35a5ddd70340f80ba7cd6e0427473c0"
+    },
+    {
+      "path": "prisma/storage/evidence/original/ade0c54c0cdffc43_COMPLAINT_5.pdf",
+      "bytes": 1306871,
+      "sha256": "ade0c54c0cdffc435964a7b3dc132be5543a4ed438d722cdb680bf064524b3ac"
+    },
+    {
+      "path": "prisma/storage/evidence/original/b537094035e88f43_Registered_Complaint_HAR-KKR-2026-CMP-8945.pdf",
+      "bytes": 10134,
+      "sha256": "b537094035e88f433f2d2b75088e22d6acaad4c19b99dc7a78af4d15a9e55cb0"
+    },
+    {
+      "path": "prisma/storage/evidence/original/baa6d842e28b4656_Registered_Complaint_HAR-KKR-2026-CMP-7767.pdf",
+      "bytes": 7500,
+      "sha256": "baa6d842e28b46567f5963f65ead66a80f191f58f5603eeacb689b8f84fa7da8"
+    },
+    {
+      "path": "prisma/storage/evidence/original/d1677f13c58fda20_Haryana_Police_Appearance_Notice_______-______-_____.html",
+      "bytes": 15201,
+      "sha256": "d1677f13c58fda209c291622c00f6d077622a95731c340d60f20aefebffe5096"
+    },
+    {
+      "path": "prisma/storage/evidence/original/d2bf67b3fcf136f2_____________.pdf",
+      "bytes": 11052185,
+      "sha256": "d2bf67b3fcf136f2046ced6060906d01b831d6c24d0bb24ed8ded74ab6765c52"
+    },
+    {
+      "path": "prisma/storage/evidence/original/d7045d5c3fb2f0a1_Registered_Complaint_HAR-KKR-2026-CMP-9708.pdf",
+      "bytes": 5872,
+      "sha256": "d7045d5c3fb2f0a1ddba097120f34ccdf988371aacf6c1e8e501bcea63ac913e"
+    },
+    {
+      "path": "prisma/storage/evidence/original/e7dc9fa199dd1c1b_COMPLAINT_16.pdf",
+      "bytes": 686974,
+      "sha256": "e7dc9fa199dd1c1b87fa560cf47dec6089559d1a25f4138939ad9600a1dd752f"
+    },
+    {
+      "path": "prisma/storage/evidence/original/f67a54a11b81e682_COMPLAINT_2.pdf",
+      "bytes": 710552,
+      "sha256": "f67a54a11b81e6828aaecd556136b01a6a2e0aa4e6c1c69cdd2ee6a4bc79fe1c"
+    },
+    {
+      "path": "prisma/storage/evidence/original/ff7ad83cdbb7f540_512-dsti.pdf",
+      "bytes": 530884,
+      "sha256": "ff7ad83cdbb7f540f6d71f418a159bcad815d5f169643a6ca190fdc896b147c3"
+    },
+    {
+      "path": "prisma/case-analysis/17e43ef1e141cfcbe25b17fb6b7637f12c44a342653abb57ec2a0eb181a28da0.json",
+      "bytes": 5246,
+      "sha256": "c4499e0a4ab0ab406e451fe87cb3911af696c790236174776698c70ed7b20fc7"
+    },
+    {
+      "path": "prisma/case-analysis/96121ec3f129b231ddfc4dd4b27d876a54018d4d200cb1e8f5a072d6e1f5f58a.json",
+      "bytes": 6453,
+      "sha256": "4f2c8523c56d262e06ad40ed445fbc64e4ea1319df085dd4ba00bc1051a29e80"
+    }
+  ],
+  "recordCounts": {
+    "prisma/complaints-store.json": 8,
+    "prisma/firs-store.json": 3,
+    "prisma/processed-evidence-store.json": 38,
+    "prisma/telecom-store.json": {
+      "files": 3,
+      "callRecords": 6,
+      "ipdrRecords": 2,
+      "towers": 4,
+      "towerDumpRecords": 2,
+      "subscribers": 2,
+      "investigationEvents": 1,
+      "savedFindings": 2,
+      "auditLogs": 1,
+      "snapshots": 0,
+      "statementChecks": 0,
+      "reconciliations": 0,
+      "mnpRecords": 0,
+      "contactAliases": 0,
+      "parsingProfiles": 0,
+      "evidenceRequests": 0,
+      "reviewChecklists": 0,
+      "customTableLayouts": 0,
+      "investigationNotes": 0,
+      "investigationBoards": 0,
+      "savedViews": 0,
+      "supervisorWorkflows": 0,
+      "handoverRecords": 0,
+      "reportVersions": 0,
+      "offlinePackages": 0,
+      "retentionPolicies": 0,
+      "hypotheses": 1,
+      "alternativeExpls": 0,
+      "sourceReliability": 0,
+      "reproductionRuns": 0,
+      "redactionLogs": 0,
+      "courtExhibits": 1,
+      "aiContradictions": 1,
+      "aiVerifications": 1,
+      "reviewQuestions": 2,
+      "evidenceCertificates": 1,
+      "disclosureLogs": 0,
+      "courtQueries": 0,
+      "dualApprovals": 0,
+      "accessJustifications": 0,
+      "caseArchives": 0,
+      "knowledgeBase": 0,
+      "methodRegistry": 0,
+      "qcChecklists": 1
+    },
+    "prisma/gd-dismissed-suggestions.json": 9,
+    "prisma/seed-data.json": {
+      "policeUnits": 0,
+      "users": 0,
+      "complaints": 0,
+      "complaintAssignmentHistory": 0,
+      "enquiryActionLogs": 0,
+      "complaintEvidences": 0,
+      "enquiryReports": 0,
+      "approvalHistory": 0,
+      "generalDiaryEntries": 0,
+      "auditLogs": 0,
+      "builderTemplates": 0,
+      "builderDrafts": 0,
+      "gdRecords": 8
+    }
+  },
+  "checksumFormat": "sha256 and bytes describe committed Git blobs; workingCopySha256/workingCopyBytes record platform line-ending differences when present."
+}

@@ -1,0 +1,148 @@
+{
+  "firId": "fir-demo-2026-motorcycle",
+  "fingerprint": "b55a54762374d25985c5232b5624db57b3bb7a1eef044ac385f2f4984234ece4",
+  "analyzedAt": "2026-11-02T09:53:28.659Z",
+  "sources": [
+    {
+      "id": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521",
+      "name": "FIR FIR/0003/2026 • saved facts",
+      "kind": "FIR",
+      "date": "2026-10-27T18:30:00+05:30",
+      "facts": {
+        "Incident date": "2026-10-27",
+        "Incident time": "18:30",
+        "Incident place": "Demo Market parking, Panipat",
+        "Complainant name": "Amit Demo (Demo)",
+        "Person:amit demo (demo):role": "Complainant",
+        "Person:vikram demo (fictional):role": "Accused"
+      },
+      "text": "Incident date: 2026-10-27\nIncident time: 18:30\nIncident place: Demo Market parking, Panipat\nComplainant name: Amit Demo (Demo)\nPerson:amit demo (demo):role: Complainant\nPerson:vikram demo (fictional):role: Accused\nDEMO: Motorcycle parked at Demo Market was found missing after 20 minutes. Unknown person suspected.",
+      "documentUrl": "/fir/fir-demo-2026-motorcycle",
+      "entityDetails": {
+        "Person:amit demo (demo)": {
+          "label": "Amit Demo (Demo)"
+        },
+        "Person:vikram demo (fictional)": {
+          "label": "Vikram Demo (Fictional)"
+        }
+      }
+    }
+  ],
+  "conflicts": [],
+  "nodes": [
+    {
+      "id": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521",
+      "label": "FIR FIR/0003/2026 • saved facts",
+      "type": "Document",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "entity-8e943d2179a16e53f0d9ae67f5bd316060be903b723641fc49227a17b9338c76",
+      "label": "Demo Market parking, Panipat",
+      "type": "Location",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "entity-c430cf1676d4f42276627415c334d462c4a355f5e22dbdeb2cf83f52fea09b20",
+      "label": "Amit Demo (Demo)",
+      "type": "Person",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ],
+      "properties": {
+        "role": "Complainant"
+      },
+      "citations": [
+        {
+          "sourceId": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+        }
+      ]
+    },
+    {
+      "id": "entity-2964acb5a810f0ca97231d21d44d1b680fbafea3c7eb8959d8428aa18cbd2519",
+      "label": "Complainant",
+      "type": "Role",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "entity-31106bbcfd8a207f0ec0622547a92f17f9390e50db384d846391bd025ef48177",
+      "label": "Vikram Demo (Fictional)",
+      "type": "Person",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ],
+      "properties": {
+        "role": "Accused"
+      },
+      "citations": [
+        {
+          "sourceId": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+        }
+      ]
+    },
+    {
+      "id": "entity-fc5c4396f16e179b9cc8b8d9ea1199461bda0ddd25ca1a038e817b851b9d447f",
+      "label": "Accused",
+      "type": "Role",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "id": "b79642bb623cc7a39448927e97d2b02b6c8403c9cc3be52354c9b829658ec29a",
+      "source": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521",
+      "target": "entity-8e943d2179a16e53f0d9ae67f5bd316060be903b723641fc49227a17b9338c76",
+      "label": "Incident place",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "75ec0add59df89680604dcebad7753216448815d09e78cf3f0b804d290f4ca79",
+      "source": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521",
+      "target": "entity-c430cf1676d4f42276627415c334d462c4a355f5e22dbdeb2cf83f52fea09b20",
+      "label": "Named in source",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "9ef1d6cb1939f8cd4a6df28bd6c467a4c29ed80e723d7d8300e9bac96ad23a21",
+      "source": "entity-c430cf1676d4f42276627415c334d462c4a355f5e22dbdeb2cf83f52fea09b20",
+      "target": "entity-2964acb5a810f0ca97231d21d44d1b680fbafea3c7eb8959d8428aa18cbd2519",
+      "label": "Recorded role",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "6ed870908d6ddba89c66160a0839bdd8042c894b108f39cd11b14648c2621069",
+      "source": "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521",
+      "target": "entity-31106bbcfd8a207f0ec0622547a92f17f9390e50db384d846391bd025ef48177",
+      "label": "Named in source",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    },
+    {
+      "id": "9a3e4a24cc0b132a51663016b707bcd198adf89d26d8ad09b7f5f1548bb74793",
+      "source": "entity-31106bbcfd8a207f0ec0622547a92f17f9390e50db384d846391bd025ef48177",
+      "target": "entity-fc5c4396f16e179b9cc8b8d9ea1199461bda0ddd25ca1a038e817b851b9d447f",
+      "label": "Recorded role",
+      "sourceIds": [
+        "fir-fir-demo-2026-motorcycle-fa84c76757f29fad0521"
+      ]
+    }
+  ],
+  "aiStatus": "COMPLETED",
+  "pendingEvidence": 0,
+  "aiMessage": "Add another source to compare statements."
+}
