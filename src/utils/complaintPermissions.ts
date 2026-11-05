@@ -104,15 +104,14 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
 
 /**
  * 2. Can Create / Upload / Generate Document against Complaint
- * Strict rule:
- * - When complaint is currently assigned to an EO:
- *   ONLY the assigned EO can create / upload / generate documents / drafts.
- *   SHO and superiors are strictly denied.
- * - If unassigned or at special intake stage:
- *   Authorized officer can proceed.
+ * Assigned EO and authorized station/supervisory officers can add documents.
+ * Complaint visibility is checked first to preserve station/district scope.
  */
 export function canCreateDocument(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
+  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
+    return { allowed: true };
+  }
   if (isComplaintAssignedToEo(complaint)) {
     if (isUserAssignedEo(user, complaint)) {
       return { allowed: true };
@@ -121,11 +120,6 @@ export function canCreateDocument(user: AuthUserContext, complaint: ComplaintIte
       allowed: false,
       reason: `Access Denied: Complaint is currently assigned to Enquiry Officer ${complaint.assignedEoName || ""}. Only the assigned EO can upload or generate documents.`,
     };
-  }
-
-  // If complaint is unassigned, SHO or Super Admin or Duty Officer can upload intake documents
-  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
-    return { allowed: true };
   }
 
   return {

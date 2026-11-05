@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
-import { ReportTab, CrimeSitrepData, WeeklyCrimeDiaryData, IgpPresentationData } from "@/types/reports";
+import { ReportTab, CrimeSitrepData, IgpPresentationData } from "@/types/reports";
 import { ReportsService } from "@/services/reportsService";
 import { CrimeSitrepView } from "@/components/reports/CrimeSitrepView";
-import { WeeklyCrimeDiaryView } from "@/components/reports/WeeklyCrimeDiaryView";
+import { WeeklyDiaryWorkbook } from "@/components/reports/WeeklyDiaryWorkbook";
 import { IgpPresentationView } from "@/components/reports/IgpPresentationView";
 import { SavedReportsView } from "@/components/reports/SavedReportsView";
 import { FileBarChart, RefreshCw, BookmarkCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
@@ -34,7 +34,6 @@ function ReportsContent() {
   });
 
   const [sitrepData, setSitrepData] = useState<CrimeSitrepData | null>(null);
-  const [weeklyData, setWeeklyData] = useState<WeeklyCrimeDiaryData | null>(null);
   const [igpData, setIgpData] = useState<IgpPresentationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -47,17 +46,15 @@ function ReportsContent() {
     setIsLoading(true);
     setLoadErrors({});
     try {
-      const [sitrep, weekly, igp] = await Promise.allSettled([
+      const [sitrep, igp] = await Promise.allSettled([
         ReportsService.getCrimeSitrep(undefined, undefined, currentUser.district),
-        ReportsService.getWeeklyCrimeDiary(currentUser.stationName, currentUser.district),
         ReportsService.getIgpPresentationData(currentUser.district),
       ]);
       if (generation !== loadGeneration.current) return;
       setSitrepData(sitrep.status === 'fulfilled' ? sitrep.value : null);
-      setWeeklyData(weekly.status === 'fulfilled' ? weekly.value : null);
       setIgpData(igp.status === 'fulfilled' ? igp.value : null);
       const errors: Partial<Record<ReportTab, string>> = {};
-      for (const [tab, result] of [['CrimeSITREP_District', sitrep], ['WEEKLY CRIME DIARY', weekly], ['IGP Meeting Presentation', igp]] as const) {
+      for (const [tab, result] of [['CrimeSITREP_District', sitrep], ['IGP Meeting Presentation', igp]] as const) {
         if (result.status === 'rejected') {
           console.error(`Failed to load ${tab}`, result.reason);
           errors[tab] = 'Report load nahi ho saki. Connection / data service check karke Retry karein.';
@@ -215,7 +212,7 @@ function ReportsContent() {
       </nav>
 
       {/* Main Content Area */}
-      {isLoading ? (
+      {isLoading && activeTab !== 'WEEKLY CRIME DIARY' ? (
         <div className="bg-white p-14 text-center border border-[#b7c1d4] text-slate-600 text-xs">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-3 text-[#203c88]" />
           <p className="font-semibold text-sm text-[#203c88]">Auditing Police Registers & Compiling Crime SITREP...</p>
@@ -248,8 +245,8 @@ function ReportsContent() {
             />
           )}
 
-          {activeTab === "WEEKLY CRIME DIARY" && weeklyData && (
-            <WeeklyCrimeDiaryView data={weeklyData} />
+          {activeTab === "WEEKLY CRIME DIARY" && (
+            <WeeklyDiaryWorkbook key={currentUser.id} />
           )}
 
           {activeTab === "IGP Meeting Presentation" && igpData && (

@@ -31,7 +31,7 @@ export interface ScrutinyPerformaRecord {
   submissionDate: string;
   scrutinyDate: string;
   scrutinyOfficer: string;
-  decision: "PASSED" | "OBJECTION_RETURNED" | "PENDING_FSL";
+  decision: "PASSED" | "OBJECTION_RETURNED" | "PENDING_FSL" | "DRAFT";
   checklist: ScrutinyChecklist;
   objectionsNote?: string;
   courtName: string;

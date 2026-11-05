@@ -87,16 +87,6 @@ export const ArrestMemoForm268: React.FC<ArrestMemoForm268Props> = ({
         className="a4-page bg-white border border-slate-300 p-8 sm:p-12 shadow-sm rounded-none print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-after-page page-break-after-always"
         style={{ minHeight: "1050px" }}
       >
-        {/* Header Right: Version / Date */}
-        <div className="flex justify-end mb-1">
-          <input
-            type="text"
-            readOnly={readOnly}
-            value={formData.headerVersion || "v3.0 dt 07.04.2025"}
-            onChange={(e) => onChangeField("headerVersion", e.target.value)}
-            className="font-bold text-xs text-right outline-none bg-transparent w-44"
-          />
-        </div>
 
         {/* Header Center */}
         <div className="text-center space-y-0.5 mb-5">
@@ -965,16 +955,6 @@ export const ArrestMemoForm268: React.FC<ArrestMemoForm268Props> = ({
         className="a4-page bg-white border border-slate-300 p-8 sm:p-12 shadow-sm rounded-none print:shadow-none print:border-none print:p-0 print:m-0 print:w-full print:break-after-page page-break-after-always"
         style={{ minHeight: "1050px" }}
       >
-        {/* Header Right */}
-        <div className="flex justify-end mb-1">
-          <input
-            type="text"
-            readOnly={readOnly}
-            value={formData.headerVersion || "v3.0 dt 07.04.2025"}
-            onChange={(e) => onChangeField("headerVersion", e.target.value)}
-            className="font-bold text-xs text-right outline-none bg-transparent w-44"
-          />
-        </div>
 
         {/* Header Center */}
         <div className="text-center space-y-0.5 mb-4">
@@ -1853,9 +1833,6 @@ export function generateArrestMemo4PageHtml(
 
   <!-- ================= PAGE 1 ================= -->
   <div class="a4-page">
-    <div class="text-right" style="font-size: 9pt; font-weight: bold;">
-      ${safeVal(formData.headerVersion || "v3.0 dt 07.04.2025")}
-    </div>
     <div class="text-center" style="margin-bottom: 18px;">
       <div style="font-size: 13pt; font-weight: bold;">${isHi ? "गिरफ्तारी/ न्यायालय में समर्पण फार्म" : "ARREST / SURRENDER IN COURT MEMO"}</div>
       <div style="font-size: 11pt; font-weight: bold;">${isHi ? "भाग-1" : "PART-1"}</div>
@@ -2195,9 +2172,6 @@ export function generateArrestMemo4PageHtml(
 
   <!-- ================= PAGE 3 ================= -->
   <div class="a4-page">
-    <div class="text-right" style="font-size: 9pt; font-weight: bold;">
-      ${safeVal(formData.headerVersion || "v3.0 dt 07.04.2025")}
-    </div>
     <div class="text-center" style="margin-bottom: 16px;">
       <div style="font-size: 13pt; font-weight: bold;">${isHi ? "गिरफ्तारी/ न्यायालय में समर्पण फार्म" : "ARREST / SURRENDER IN COURT MEMO"}</div>
       <div style="font-size: 11pt; font-weight: bold;">${isHi ? "भाग-2" : "PART-2"}</div>

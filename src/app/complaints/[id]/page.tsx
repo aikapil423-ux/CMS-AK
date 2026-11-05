@@ -12,7 +12,6 @@ import {
   ChevronDown,
   Calendar,
   Clock,
-  Phone,
   MapPin,
   User,
   Paperclip,
@@ -30,7 +29,6 @@ import {
   Printer,
   Sparkles,
   Link2,
-  Layers,
   ArrowRightLeft,
   ArrowUpDown,
   History as HistoryIcon,
@@ -112,7 +110,6 @@ import {
   canCreateShoReport,
   isSuperiorToSho,
   isShoOrSuperior,
-  isComplaintAssignedToEo,
   isUserAssignedEo,
 } from "@/utils/complaintPermissions";
 
@@ -205,24 +202,6 @@ const TEMPLATE_DROPDOWN_OPTIONS = [
     label: "1. Haryana Police Appearance Notice (Sec 173(3) BNSS)",
     desc: "Appearance notice with video-conferencing option & non-arrest guarantee",
     icon: FileText,
-  },
-  {
-    key: "cdr_requisition",
-    label: "2. CDR & Digital Evidence Requisition (Panipat Format)",
-    desc: "Call Detail Records, CAF, IMEI & WhatsApp requisition with non-VIP certificate",
-    icon: Phone,
-  },
-  {
-    key: "arrest_memo",
-    label: "3. Arrest & Surrender Memo Form 26.8(1) & Jama Talashi",
-    desc: "Form 26.8(1), Section 47 BNSS grounds, Jama Talashi & identification features",
-    icon: Shield,
-  },
-  {
-    key: "natgrid_proforma",
-    label: "4. NATGRID Intelligence Requisition Proforma",
-    desc: "Inter-agency intelligence query table (Banks, Telecom, Immigration, VAHAN)",
-    icon: Layers,
   },
 ];
 
@@ -769,14 +748,10 @@ export default function ComplaintProfilePage() {
   const isUnassigned = (!complaint?.assignedEoName || complaint?.status === "REGISTERED") && !isDirectFirCase;
 
   // Centralized Permissions
-  const isComplaintAssigned = complaint ? isComplaintAssignedToEo(complaint) : false;
   const docCreationPerm = complaint ? canCreateDocument(currentUser, complaint) : { allowed: false };
   const canUploadDocument = docCreationPerm.allowed;
   const canGenerateDocument = docCreationPerm.allowed;
-  // When complaint is assigned to an EO, assigned EO can generate reports, or SHO can generate supervisory reports once submitted or approved
-  const canGenerateReport = isComplaintAssigned
-    ? (isAssignedEo || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false))
-    : (docCreationPerm.allowed || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false));
+  const canGenerateReport = docCreationPerm.allowed || (complaint ? canCreateShoReport(currentUser, complaint).allowed : false);
 
   const canAssign = isSho && !isMhc && complaint ? canReassignEO(currentUser, complaint).allowed && !isDirectFirCase : false;
   const canAskProgress = complaint ? canAskProgressReport(currentUser, complaint).allowed && !isDirectFirCase : false;

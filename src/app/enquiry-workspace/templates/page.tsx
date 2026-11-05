@@ -2607,7 +2607,6 @@ function NoticeTemplatesContent() {
                   <span className="text-xs font-black uppercase tracking-wider text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-md">
                     पृष्ठ 1 / 4: गिरफ्तारी/ न्यायालय में समर्पण फार्म - भाग-1 (फार्म 26.8(1))
                   </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">v3.0 dt 07.04.2025</span>
                 </div>
 
                 <div className="text-center space-y-0.5 py-1">
@@ -3417,7 +3416,6 @@ function NoticeTemplatesContent() {
                   <span className="text-xs font-black uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md">
                     पृष्ठ 3 / 4: भाग-2 पहचान पत्र एवं 18-शारीरिक लक्षण तालिका
                   </span>
-                  <span className="font-mono text-xs font-bold text-slate-700">v3.0 dt 07.04.2025</span>
                 </div>
 
                 <div className="text-center space-y-0.5 py-1">

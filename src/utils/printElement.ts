@@ -8,8 +8,30 @@
  * 4. Multi-page documents break naturally across A4 pages without blank screens
  */
 
-function preparePrintableClone(el: HTMLElement): HTMLElement {
+export function preparePrintableClone(el: HTMLElement, freezeLayout = false): HTMLElement {
   const clone = el.cloneNode(true) as HTMLElement;
+  if (freezeLayout) {
+    // Snapshot the actual template appearance so screen/print media queries and
+    // missing Tailwind layers in the isolated preview cannot change formatting.
+    const properties = ['display', 'box-sizing', 'font-family', 'font-size', 'font-weight',
+      'font-style', 'line-height', 'letter-spacing', 'text-align', 'text-transform',
+      'text-decoration', 'color', 'white-space', 'word-break', 'overflow-wrap',
+      'grid-template-columns', 'grid-column', 'gap', 'flex-direction', 'flex-grow',
+      'flex-shrink', 'align-items', 'align-self', 'justify-content',
+      'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+      'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+      'border-top', 'border-right', 'border-bottom', 'border-left'];
+    const originals = el.querySelectorAll<HTMLElement>('*');
+    const copies = clone.querySelectorAll<HTMLElement>('*');
+    originals.forEach((source, index) => {
+      const computed = window.getComputedStyle(source);
+      const copy = copies[index];
+      for (const property of properties) copy.style.setProperty(property, computed.getPropertyValue(property));
+      if (source.classList.contains('w-full')) copy.style.width = '100%';
+      else if (/\bw-\d+\b/.test(source.className)) copy.style.width = computed.width;
+      if (/\bh-\d+\b/.test(source.className)) copy.style.height = computed.height;
+    });
+  }
 
   const origInputs = el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
     "input, textarea, select"
@@ -22,10 +44,12 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
     const orig = origInputs[i];
     const dest = cloneInputs[i];
     if (!dest) continue;
+    if (orig.hasAttribute('data-no-print')) { dest.remove(); continue; }
 
     if (orig instanceof HTMLTextAreaElement) {
       // Replace textarea with auto-wrapping pre-wrap text element in print clone so EVERY typed character and line-break renders completely in Print Preview
       const printBlock = document.createElement("div");
+      printBlock.setAttribute("data-print-field", "");
       printBlock.className = (dest.className || "")
         .replace(/\bbg-[^\s]+/g, "bg-transparent")
         .replace(/\bborder-[^\s]+/g, "border-transparent")
@@ -39,10 +63,11 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
       printBlock.style.wordBreak = "break-word";
       printBlock.style.overflow = "visible";
       printBlock.style.height = "auto";
-      printBlock.style.minHeight = "auto";
+      printBlock.style.minHeight = freezeLayout ? (dest.style.minHeight || window.getComputedStyle(orig).minHeight) : "auto";
       printBlock.style.display = "block";
       printBlock.style.border = "none";
       printBlock.style.background = "transparent";
+      printBlock.style.boxShadow = "none";
       dest.parentNode?.replaceChild(printBlock, dest);
     } else if (orig instanceof HTMLInputElement) {
       if (orig.type === "checkbox" || orig.type === "radio") {
@@ -57,6 +82,7 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
         // buttons
       } else {
         const printBlock = document.createElement("div");
+        printBlock.setAttribute("data-print-field", "");
         printBlock.className = (dest.className || "")
         .replace(/\bbg-[^\s]+/g, "bg-transparent")
         .replace(/\bborder-[^\s]+/g, "border-transparent")
@@ -70,7 +96,7 @@ function preparePrintableClone(el: HTMLElement): HTMLElement {
         printBlock.style.wordBreak = "break-word";
         printBlock.style.overflow = "visible";
         printBlock.style.height = "auto";
-        printBlock.style.minHeight = "auto";
+        printBlock.style.minHeight = freezeLayout ? (dest.style.minHeight || window.getComputedStyle(orig).minHeight) : "auto";
         printBlock.style.display = "block";
         printBlock.style.border = "none";
         printBlock.style.outline = "none";
@@ -150,6 +176,15 @@ export function printA4Element(
 
   const title = documentTitle || "Police Legal Document";
   const cloned = preparePrintableClone(el);
+
+  if (el.id === "zimni-printable-canvas") {
+    iframeDoc.open();
+    iframeDoc.write(getZimniPagedHtml(el));
+    iframeDoc.close();
+    const ready = iframeDoc.fonts?.ready || Promise.resolve();
+    void ready.then(() => setTimeout(() => iframe?.contentWindow?.print(), 350));
+    return;
+  }
 
   iframeDoc.open();
   iframeDoc.write(`
@@ -283,10 +318,10 @@ export function printA4Element(
           resize: none !important;
           outline: none !important;
         }
-        /* Remove any inner input box borders inside printable canvas */
+        /* Remove editor field chrome, preserving the Zimni layout's selected borders. */
         #zimni-printable-canvas input,
         #zimni-printable-canvas textarea,
-        #zimni-printable-canvas div,
+        #zimni-printable-canvas [data-print-field],
         #fir-printable-notice input,
         #fir-printable-notice textarea {
           box-shadow: none !important;
@@ -342,6 +377,102 @@ export function printA4Element(
       window.print();
     }
   }, 350);
+}
+
+/** Build the same measured A4 sheets for the Zimni preview and printer. */
+export function getZimniPagedHtml(el: HTMLElement): string {
+  const clone = preparePrintableClone(el, true);
+  clone.querySelectorAll('.no-print, button, [data-no-print], [aria-hidden="true"]').forEach(node => node.remove());
+  // Keep the print layout independent of Tailwind's responsive/layered rules.
+  // These same inline dimensions are used when measuring page overflow below.
+  clone.querySelectorAll<HTMLElement>('.grid-cols-12').forEach(row => {
+    row.style.display = 'grid';
+    row.style.gridTemplateColumns = 'repeat(12, minmax(0, 1fr))';
+    for (const cell of Array.from(row.children) as HTMLElement[]) {
+      const span = cell.classList.contains('col-span-9') ? 9 : cell.classList.contains('col-span-2') ? 2 : 1;
+      cell.style.gridColumn = `span ${span} / span ${span}`;
+      cell.style.minWidth = '0';
+      cell.style.boxSizing = 'border-box';
+    }
+  });
+  clone.querySelectorAll<HTMLElement>('[data-print-field]').forEach(field => {
+    field.style.width = '100%';
+    field.style.maxWidth = '100%';
+    field.style.minWidth = '0';
+    field.style.boxSizing = 'border-box';
+    field.style.wordBreak = 'normal';
+    field.style.overflowWrap = 'break-word';
+  });
+  clone.removeAttribute('id');
+  clone.className = 'zimni-page-content';
+  clone.removeAttribute('style');
+  const table = clone.querySelector<HTMLElement>('[data-zimni-table]');
+  const measure = document.createElement('div');
+  measure.style.cssText = 'position:absolute;left:-100000px;top:0;width:190mm;visibility:hidden;pointer-events:none';
+  const fontSize = el.classList.contains('text-xs') ? '12px' : el.classList.contains('text-base') ? '16px' : '14px';
+  measure.style.fontFamily = 'Georgia, "Times New Roman", serif';
+  measure.style.fontSize = fontSize;
+  measure.style.lineHeight = '1.6';
+  document.body.appendChild(measure);
+  const ruler = document.createElement('div');
+  ruler.style.height = '281mm';
+  measure.appendChild(ruler);
+  const available = ruler.getBoundingClientRect().height;
+  ruler.remove();
+  const pages: HTMLElement[] = [];
+  let page: HTMLElement;
+  let pageTable: HTMLElement | null = null;
+  function nextPage() {
+    page = document.createElement('div');
+    page.className = 'zimni-page-content';
+    measure.appendChild(page);
+    pages.push(page);
+    pageTable = null;
+  }
+  function appendBlock(block: HTMLElement, inTable: boolean) {
+    const target = () => {
+      if (!inTable || !table) return page;
+      if (!pageTable) {
+        pageTable = table.cloneNode(false) as HTMLElement;
+        page.appendChild(pageTable);
+      }
+      return pageTable;
+    };
+    const hadContent = Boolean(page.textContent?.trim());
+    target().appendChild(block);
+    if (available > 0 && page.getBoundingClientRect().height > available + 1 && hadContent) {
+      block.remove();
+      if (pageTable && !pageTable.children.length) pageTable.remove();
+      nextPage();
+      target().appendChild(block);
+    }
+  }
+  try {
+    nextPage();
+    for (const child of Array.from(clone.children)) {
+      if (child === table) {
+        for (const row of Array.from(child.children)) appendBlock(row as HTMLElement, true);
+      } else appendBlock(child as HTMLElement, false);
+    }
+    return `<!DOCTYPE html><html lang="hi"><head><meta charset="utf-8"><style>
+      @page { size:A4 portrait; margin:8mm 10mm; }
+      * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      html,body { margin:0; padding:0; background:#e2e8f0; }
+      .zimni-sheet { width:210mm; min-height:297mm; padding:8mm 10mm; margin:16px auto; background:white; box-shadow:0 1px 6px #94a3b8; }
+      .zimni-page-content { width:190mm; font:${fontSize}/1.6 Georgia,"Times New Roman",serif; color:#0f172a; }
+      .zimni-page-content .grid-cols-12 { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); }
+      .zimni-page-content [data-print-field] { border:none!important; background:transparent!important; box-shadow:none!important; }
+      .zimni-page-content [data-zimni-table] { box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+      .zimni-page-content [data-zimni-table] > * { break-inside:avoid; }
+      .zimni-page-content .no-print, .zimni-page-content button { display:none!important; }
+      @media print {
+        html,body { background:white!important; }
+        .zimni-sheet { width:190mm; min-height:0; padding:0; margin:0; box-shadow:none; break-after:page; }
+        .zimni-sheet:last-child { break-after:auto; }
+        .zimni-page-content { width:190mm!important; }
+      }
+    </style></head><body>${pages.map(p => `<section class="zimni-sheet">${p.outerHTML}</section>`).join('')}</body></html>`;
+  } finally { measure.remove(); }
 }
 
 /**

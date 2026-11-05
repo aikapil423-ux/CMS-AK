@@ -272,13 +272,17 @@ export const ProsecutionService = {
   // 1. SCRUTINY PERFORMA
   getScrutinyRecords: async (): Promise<ScrutinyPerformaRecord[]> => {
     if (typeof window === "undefined") return INITIAL_SCRUTINY_RECORDS;
+    const response = await fetch('/api/prosecution/scrutiny', {credentials:'same-origin',cache:'no-store'});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not load backend scrutiny records.');
+    const backend: ScrutinyPerformaRecord[] = result.records || [];
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SCRUTINY);
-      if (data) return JSON.parse(data);
+      if (data) return [...backend,...JSON.parse(data).filter((r:ScrutinyPerformaRecord)=>!backend.some(b=>b.id===r.id))];
       localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(INITIAL_SCRUTINY_RECORDS));
-      return INITIAL_SCRUTINY_RECORDS;
+      return [...backend,...INITIAL_SCRUTINY_RECORDS];
     } catch {
-      return INITIAL_SCRUTINY_RECORDS;
+      return [...backend,...INITIAL_SCRUTINY_RECORDS];
     }
   },
 
@@ -296,6 +300,11 @@ export const ProsecutionService = {
 
   deleteScrutinyRecord: async (id: string): Promise<void> => {
     if (typeof window === "undefined") return;
+    if (id.startsWith('SCRPDF-')) {
+      const response=await fetch('/api/prosecution/scrutiny?id='+encodeURIComponent(id),{method:'DELETE',credentials:'same-origin'});
+      if(!response.ok)throw new Error('Could not delete backend scrutiny record.');
+      return;
+    }
     try {
       const existing = await ProsecutionService.getScrutinyRecords();
       const updated = existing.filter((r) => r.id !== id);

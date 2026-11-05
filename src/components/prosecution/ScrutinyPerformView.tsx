@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import {
   ScrutinyPerformaRecord,
-  ScrutinyChecklist,
 } from "@/types/prosecution";
 import { ProsecutionService } from "@/services/prosecutionService";
 import {
@@ -14,27 +13,12 @@ import {
   Clock,
   Printer,
   Trash2,
-  FileCheck2,
-  Building,
-  User,
-  Scale,
   X,
   FileText,
 } from "lucide-react";
 import { printA4Element } from "@/utils/printElement";
-
-const INITIAL_CHECKLIST: ScrutinyChecklist = {
-  firAndGdCopies: true,
-  statements180Bnss: true,
-  sitePlanNaksha: true,
-  arrestMemoNotice35: true,
-  mlcPostMortemReport: true,
-  fslForensicReport: true,
-  section105AudioVideo: true,
-  seizureMalkhanaEntry: true,
-  antecedentRecord: true,
-  seniorOfficerSupervision: true,
-};
+import { ScrutinyPdfForm } from './ScrutinyPdfForm';
+import type { PdfScrutinyRecord } from '@/services/scrutinyRepository';
 
 export function ScrutinyPerformView() {
   const [records, setRecords] = useState<ScrutinyPerformaRecord[]>([]);
@@ -45,75 +29,28 @@ export function ScrutinyPerformView() {
 
   // Form state
   const availableFirs = ProsecutionService.getAvailableFirs();
-  const [selectedFirNumber, setSelectedFirNumber] = useState("");
-  const [saveError,setSaveError]=useState("");
+  const [loadError,setLoadError]=useState("");
   const caseConflict=(record:ScrutinyPerformaRecord)=>{
     const current=availableFirs.find(f=>f.firNumber===record.firNumber&&f.policeStation===record.policeStation);
     if(!current)return 'Linked FIR is unavailable. Verify this saved snapshot before use.';
     return current.accusedNames!==record.accusedNames||current.ioName!==record.investigationOfficer||current.actsAndSections!==record.actsAndSections
       ?`Saved snapshot differs from current FIR. Current accused: ${current.accusedNames}; IO: ${current.ioName}; sections: ${current.actsAndSections}. Review before using this record.`:'';
   };
-  const [courtName, setCourtName] = useState("Court of Ld. Chief Judicial Magistrate, Panipat");
-  const [challanType, setChallanType] = useState<ScrutinyPerformaRecord["challanType"]>("FINAL_CHARGESHEET");
-  const [scrutinyOfficer, setScrutinyOfficer] = useState("Sh. D.S. Yadav, Ld. Deputy ADA");
-  const [decision, setDecision] = useState<ScrutinyPerformaRecord["decision"]>("PASSED");
-  const [objectionsNote, setObjectionsNote] = useState("");
-  const [checklist, setChecklist] = useState<ScrutinyChecklist>(INITIAL_CHECKLIST);
-
   const loadData = async () => {
-    const list = await ProsecutionService.getScrutinyRecords();
-    setRecords(list);
+    try { setRecords(await ProsecutionService.getScrutinyRecords()); setLoadError(''); }
+    catch (error) { setLoadError(error instanceof Error ? error.message : 'Records could not be loaded.'); }
   };
-
   useEffect(() => {
-    loadData();
+    let active=true;
+    ProsecutionService.getScrutinyRecords().then(list=>{if(active){setRecords(list);setLoadError('');}})
+      .catch(error=>{if(active)setLoadError(error instanceof Error?error.message:'Records could not be loaded.');});
+    return()=>{active=false;};
   }, []);
-
-  const handleFirSelect = (firNo: string) => {
-    setSelectedFirNumber(firNo);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaveError('');
-    const firMeta = availableFirs.find((f) => f.firNumber === selectedFirNumber);
-    if(!firMeta){setSaveError('Select the correct FIR before saving.');return;}
-
-    const newRecord: ScrutinyPerformaRecord = {
-      id: `SCR-${Date.now()}`,
-      scrutinyNumber: `SCR/${new Date().getFullYear()}/${String(records.length + 1).padStart(4, "0")}`,
-      firNumber: firMeta.firNumber,
-      policeStation: firMeta.policeStation,
-      district: firMeta.district,
-      actsAndSections: firMeta.actsAndSections,
-      complainantName: firMeta?.complainantName || "State",
-      accusedNames: firMeta?.accusedNames || "Accused",
-      investigationOfficer: firMeta.ioName,
-      ioRankAndBelt: firMeta?.ioRank || "Sub-Inspector",
-      submissionDate: new Date().toLocaleDateString("en-IN"),
-      scrutinyDate: new Date().toLocaleDateString("en-IN"),
-      scrutinyOfficer,
-      decision,
-      checklist,
-      objectionsNote: decision === "OBJECTION_RETURNED" ? objectionsNote : undefined,
-      courtName,
-      challanType,
-    };
-
-    try {await ProsecutionService.saveScrutinyRecord(newRecord);}
-    catch(error){setSaveError(error instanceof Error?error.message:'Save failed');return;}
-    await loadData();
-    setIsModalOpen(false);
-    // Reset form
-    setDecision("PASSED");
-    setObjectionsNote("");
-    setChecklist(INITIAL_CHECKLIST);
-  };
 
   const handleDelete = async (id: string) => {
     if (confirm("Delete this scrutiny record?")) {
-      await ProsecutionService.deleteScrutinyRecord(id);
-      await loadData();
+      try { await ProsecutionService.deleteScrutinyRecord(id); await loadData(); }
+      catch (error) { setLoadError(error instanceof Error ? error.message : 'Delete failed.'); }
     }
   };
 
@@ -130,6 +67,7 @@ export function ScrutinyPerformView() {
 
   return (
     <div className="space-y-4">
+      {loadError && <p role="alert" className="text-red-700 text-xs">{loadError}</p>}
       {/* Control Action Bar */}
       <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1 min-w-[260px] max-w-md">
@@ -241,7 +179,7 @@ export function ScrutinyPerformView() {
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                           <Clock className="w-3 h-3" />
-                          Pending FSL
+                          {r.decision === 'DRAFT' ? 'Draft' : 'Pending FSL'}
                         </span>
                       )}
                     </td>
@@ -269,261 +207,12 @@ export function ScrutinyPerformView() {
         </div>
       </div>
 
-      {/* New Scrutiny Performa Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <FileCheck2 className="w-4 h-4 text-slate-800" />
-                <h3 className="text-sm font-bold text-slate-900">New Challan Scrutiny Performa</h3>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="p-4 space-y-4 overflow-y-auto text-xs">
-              {saveError && <p role="alert" className="text-red-700">{saveError}</p>}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Select Case FIR</label>
-                  <select
-                    value={selectedFirNumber}
-                    required
-                    onChange={(e) => handleFirSelect(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-lg bg-white font-medium"
-                  >
-                    <option value="" disabled>-- Select FIR (Required) --</option>
-                    {availableFirs.map((f) => (
-                      <option key={f.firNumber} value={f.firNumber}>
-                        {f.firNumber} - {f.policeStation} ({f.actsAndSections})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Challan Report Type</label>
-                  <select
-                    value={challanType}
-                    onChange={(e) => setChallanType(e.target.value as any)}
-                    className="w-full p-2 border border-slate-200 rounded-lg bg-white"
-                  >
-                    <option value="FINAL_CHARGESHEET">Final Form / Chargesheet (193 BNSS)</option>
-                    <option value="SUPPLEMENTARY">Supplementary Challan</option>
-                    <option value="CANCELLATION">Cancellation Report</option>
-                    <option value="UNTRACED">Untraced Report</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Target Court</label>
-                  <input
-                    type="text"
-                    value={courtName}
-                    onChange={(e) => setCourtName(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Scrutiny Officer / ADA</label>
-                  <input
-                    type="text"
-                    value={scrutinyOfficer}
-                    onChange={(e) => setScrutinyOfficer(e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-lg"
-                  />
-                </div>
-              </div>
-
-              {/* 10-Point Checklist */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block border-b border-slate-200 pb-1">
-                  Statutory Verification Checklist (10 Points)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.firAndGdCopies}
-                      onChange={(e) => setChecklist({ ...checklist, firAndGdCopies: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>1. FIR & First GD Copy Annexed</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.statements180Bnss}
-                      onChange={(e) => setChecklist({ ...checklist, statements180Bnss: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>2. Witness Statements u/s 180 BNSS</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.sitePlanNaksha}
-                      onChange={(e) => setChecklist({ ...checklist, sitePlanNaksha: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>3. Scaled Site Plan / Naksha Moka</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.arrestMemoNotice35}
-                      onChange={(e) => setChecklist({ ...checklist, arrestMemoNotice35: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>4. Arrest Memo / 35(3) BNSS Notice</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.mlcPostMortemReport}
-                      onChange={(e) => setChecklist({ ...checklist, mlcPostMortemReport: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>5. MLC / Post-Mortem Report</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.fslForensicReport}
-                      onChange={(e) => setChecklist({ ...checklist, fslForensicReport: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>6. FSL / Ballistic / Chemical Report</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.section105AudioVideo}
-                      onChange={(e) => setChecklist({ ...checklist, section105AudioVideo: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>7. Sec 105 Audio-Video Recording</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.seizureMalkhanaEntry}
-                      onChange={(e) => setChecklist({ ...checklist, seizureMalkhanaEntry: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>8. Seizure Memo & Malkhana Reg. 19</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.antecedentRecord}
-                      onChange={(e) => setChecklist({ ...checklist, antecedentRecord: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>9. Accused Criminal Antecedent List</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checklist.seniorOfficerSupervision}
-                      onChange={(e) => setChecklist({ ...checklist, seniorOfficerSupervision: e.target.checked })}
-                      className="rounded"
-                    />
-                    <span>10. SHO / DSP Supervision Note</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Scrutiny Decision */}
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Scrutiny Decision</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDecision("PASSED")}
-                    className={`flex-1 py-1.5 px-3 rounded-lg border text-xs font-bold transition-colors ${
-                      decision === "PASSED"
-                        ? "bg-emerald-700 text-white border-emerald-700"
-                        : "bg-white text-slate-700 border-slate-200"
-                    }`}
-                  >
-                    Passed for Court
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDecision("OBJECTION_RETURNED")}
-                    className={`flex-1 py-1.5 px-3 rounded-lg border text-xs font-bold transition-colors ${
-                      decision === "OBJECTION_RETURNED"
-                        ? "bg-rose-700 text-white border-rose-700"
-                        : "bg-white text-slate-700 border-slate-200"
-                    }`}
-                  >
-                    Return with Objections
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDecision("PENDING_FSL")}
-                    className={`flex-1 py-1.5 px-3 rounded-lg border text-xs font-bold transition-colors ${
-                      decision === "PENDING_FSL"
-                        ? "bg-blue-700 text-white border-blue-700"
-                        : "bg-white text-slate-700 border-slate-200"
-                    }`}
-                  >
-                    Pending FSL
-                  </button>
-                </div>
-              </div>
-
-              {decision === "OBJECTION_RETURNED" && (
-                <div>
-                  <label className="text-[11px] font-bold text-rose-700 block mb-1">
-                    Deficiency & Objections to be Rectified by IO
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="List specific missing documents, unsigned memos, or discrepancies..."
-                    value={objectionsNote}
-                    onChange={(e) => setObjectionsNote(e.target.value)}
-                    className="w-full p-2 border border-rose-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-600 bg-rose-50/20"
-                    required
-                  />
-                </div>
-              )}
-
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-[#0b192c] hover:bg-[#081225] text-white font-bold"
-                >
-                  Save Scrutiny Record
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* The New button always opens the current 12-page editable packet. */}
+      {isModalOpen && <ScrutinyPdfForm onClose={() => setIsModalOpen(false)} onSaved={() => void loadData()} />}
 
       {/* View Performa / Print Modal */}
-      {viewingRecord && (
+      {viewingRecord && 'fields' in viewingRecord && <ScrutinyPdfForm initial={viewingRecord as PdfScrutinyRecord} onClose={()=>setViewingRecord(null)} onSaved={()=>void loadData()} />}
+      {viewingRecord && !('fields' in viewingRecord) && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in">
           <div className="bg-white w-full max-w-2xl rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50">

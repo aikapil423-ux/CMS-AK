@@ -1070,7 +1070,6 @@ export function generateNoticeDocumentHtml(
   <!-- PAGE 1: गिरफ्तारी/ न्यायालय में समर्पण फार्म - भाग-1 - फार्म संख्या 26.8(1)     -->
   <!-- ========================================================================= -->
   <div class="page-sheet">
-    <div class="page-version-tag">v3.0 dt 07.04.2025</div>
 
     <div class="header-center-title">
       <div class="h-main">गिरफ्तारी/ न्यायालय में समर्पण फार्म</div>
@@ -1344,7 +1343,6 @@ export function generateNoticeDocumentHtml(
   <!-- PAGE 3: भाग-2 पहचान पत्र (प्रत्येक अभियुक्त के लिए अलग अलग फार्म)               -->
   <!-- ========================================================================= -->
   <div class="page-sheet">
-    <div class="page-version-tag">v3.0 dt 07.04.2025</div>
 
     <div class="header-center-title">
       <div class="h-main">गिरफ्तारी/ न्यायालय में समर्पण फार्म</div>

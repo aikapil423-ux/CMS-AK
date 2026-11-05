@@ -44,7 +44,7 @@ import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { formatDate } from "@/lib/utils";
-import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml } from "@/utils/printElement";
+import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml, getZimniPagedHtml } from "@/utils/printElement";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { useLanguage } from "@/context/LanguageContext";
@@ -412,6 +412,7 @@ function ZimniWorkspaceContent() {
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<"compact" | "normal" | "large">("normal");
+  const [a4Preview, setA4Preview] = useState<string | null>(null);
   const [isSavingToFir, setIsSavingToFir] = useState(false);
   const [savedSuccessModal, setSavedSuccessModal] = useState<{
     open: boolean;
@@ -1030,10 +1031,6 @@ function ZimniWorkspaceContent() {
     borderBottom: data.horizontalBorders?.caseHeadingBottom ? `${bw} solid ${borderCol}` : "none",
   };
 
-  const closingTopStyle: React.CSSProperties = {
-    borderTop: data.horizontalBorders?.closingTop ? `${bw} solid ${borderCol}` : "none",
-  };
-
   return (
     <div className="space-y-4 pb-20 animate-in fade-in-50">
       {/* Navigation across IO Workspace */}
@@ -1154,6 +1151,12 @@ function ZimniWorkspaceContent() {
             </div>
 
             {/* Print / PDF Button */}
+            <Button size="sm" variant="outline" onClick={() => {
+              const canvas = document.getElementById("zimni-printable-canvas");
+              if (canvas) setA4Preview(getZimniPagedHtml(canvas));
+            }}>
+              <Eye className="w-3.5 h-3.5 mr-1" /> A4 Pages
+            </Button>
             <Button
               size="sm"
               onClick={handlePrint}
@@ -1377,13 +1380,22 @@ function ZimniWorkspaceContent() {
       </div>
 
       {/* ================= EDITABLE OFFICIAL ZIMNI LEGAL DOCUMENT CANVAS ================= */}
-      <div className="flex justify-center bg-slate-100/60 p-2 sm:p-6 rounded-2xl border border-slate-200/70">
+      {a4Preview && (
+        <div className="no-print fixed inset-0 z-50 bg-slate-900/70 p-3 sm:p-6 flex flex-col" role="dialog" aria-modal="true" aria-label="A4 template pages">
+          <div className="flex items-center justify-between bg-white p-3 rounded-t-lg">
+            <strong>A4 Pages · 210 × 297 mm</strong>
+            <Button size="sm" variant="outline" onClick={() => setA4Preview(null)}>Back to Edit</Button>
+          </div>
+          <iframe title="Case Zimni A4 page preview" srcDoc={a4Preview} sandbox="" className="w-full flex-1 bg-slate-200 border-0" />
+        </div>
+      )}
+      <div className="overflow-x-auto bg-slate-100/60 p-2 sm:p-6 rounded-2xl border border-slate-200/70">
         <div
           id="zimni-printable-canvas"
-          className={`w-full max-w-4xl bg-white border border-slate-300 shadow-sm rounded-lg p-6 sm:p-10 transition-all font-serif text-slate-900 ${
+          className={`mx-auto bg-white shadow-sm font-serif text-slate-900 ${
             fontSize === "compact" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
           }`}
-          style={{ minHeight: "1050px", lineHeight: "1.6" }}
+          style={{ width: "210mm", minHeight: "297mm", padding: "8mm 10mm", boxSizing: "border-box", lineHeight: "1.6", fontFamily: 'Georgia, "Times New Roman", serif' }}
         >
           {/* HEADER SECTION (पुलिस फार्म संख्या 25.54 (1) भाग (1) / रिपोर्ट जिमनी) */}
           {data.showHeader && (
@@ -1477,6 +1489,7 @@ function ZimniWorkspaceContent() {
 
           {/* ================= THE MAIN 3-COLUMN STATUTORY BOX TABLE ================= */}
           <div
+            data-zimni-table
             className="w-full rounded-none"
             style={tableContainerStyle}
           >
@@ -1738,7 +1751,6 @@ function ZimniWorkspaceContent() {
             {/* ================= CLOSING STATEMENT & SIGNATURE BLOCK ================= */}
             <div
               className="grid grid-cols-12"
-              style={closingTopStyle}
             >
               <div
                 className="col-span-2 bg-slate-50/20"
