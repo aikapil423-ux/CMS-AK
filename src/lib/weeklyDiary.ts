@@ -9,14 +9,16 @@ export type DiaryRow=Record<string,DiaryValue>;
 export interface DiaryLayout {
   columnWidths:Record<string,number>;rowHeights:Record<string,number>;fieldSizes:Record<string,{width:number;height:number}>;
   cellWidths:Record<string,number>;
+  merges:Record<string,string[]>;
+  formulas:Record<string,string>;
   tableWidths:Record<string,number>;
   labels:Record<string,string>;
-  cellFormats:Record<string,{bold?:boolean;italic?:boolean;align?:'left'|'center'|'right';fontSize?:number}>;
+  cellFormats:Record<string,{bold?:boolean;italic?:boolean;align?:'left'|'center'|'right';fontSize?:number;choices?:string[];highlightAbove?:number}>;
   hiddenRows:string[];hiddenFields:string[];extraRows:Record<string,number>;
   extraFields:Record<string,{id:string;label:string;value:string}[]>;
   customRows:Record<string,{id:string;cells:{value:string;width:number;height:number}[]}[]>;
 }
-export const emptyDiaryLayout=():DiaryLayout=>({columnWidths:{},tableWidths:{},cellWidths:{},labels:{},cellFormats:{},rowHeights:{},fieldSizes:{},hiddenRows:[],hiddenFields:[],extraRows:{},extraFields:{},customRows:{}});
+export const emptyDiaryLayout=():DiaryLayout=>({columnWidths:{},tableWidths:{},cellWidths:{},merges:{},formulas:{},labels:{},cellFormats:{},rowHeights:{},fieldSizes:{},hiddenRows:[],hiddenFields:[],extraRows:{},extraFields:{},customRows:{}});
 export interface DiaryPacket {version:string;from:string;to:string;station:string;fixed:Record<string,DiaryValue>;blocks:Record<string,DiaryRow[]>;overrides:Record<string,DiaryValue>;layout?:DiaryLayout;warnings:string[];generatedAt:string;revision?:string;}
 export const fixedKey=(sheet:string,row:number,col:number)=>`${sheet}!${row}:${col}`;
 export const dataKey=(sheet:string,block:string,row:number,col:number)=>`${sheet}!${block}:${row}:${col}`;

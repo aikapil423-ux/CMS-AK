@@ -106,10 +106,10 @@ test('API excludes unauthorized source records and rejects a foreign police stat
  const result=await route.POST({json:async()=>({action:'build',from:'2026-06-20',to:'2026-06-26',station:'P'})});assert.equal(result.status,200);assert.equal(persisted.blocks.dateA[0]['2'].value,'allowed');
 });
 test('UI wires cell resizing, adding/removing fields and rows into Save All Sheets',async()=>{
- const React=require('react'),state=[];let cursor=0,saved;class Textarea {}
+ const React=require('react'),state=[],xlsx=require('xlsx');let cursor=0,saved,exported;class Textarea {}
  const initial=build();
  const hooks={...React,useState(value){const i=cursor++;if(!(i in state)){state[i]=typeof value==='function'?value():value;if(i===0)state[i]=initial.from;if(i===1)state[i]=initial.to;if(i===3)state[i]='P';if(i===4)state[i]='RC';if(i===5)state[i]=initial;if(i===17)state[i]=JSON.stringify([initial.from,initial.to,'P',0]);}return [state[i],value=>{state[i]=typeof value==='function'?value(state[i]):value;}];},useRef:value=>({current:value}),useEffect(){}};
- const view=loader({'react':hooks,'@/context/AuthContext':{useAuth:()=>({currentUser:{id:'u',stationName:'P'}})},'@/utils/printElement':{printA4Element(){}}},
+ const view=loader({'react':hooks,'xlsx':{...xlsx,writeFile(workbook){exported=xlsx.read(xlsx.write(workbook,{bookType:'xlsx',type:'buffer'}));}},'@/context/AuthContext':{useAuth:()=>({currentUser:{id:'u',stationName:'P'}})},'@/utils/printElement':{printA4Element(){}}},
  {HTMLTextAreaElement:Textarea,prompt:()=> 'New notes',confirm:()=>true,crypto:{randomUUID:()=> 'custom-id'},fetch:async(url,options)=>{saved=JSON.parse(options.body);return {ok:true,json:async()=>({packet:{...initial,layout:saved.layout,overrides:{}}})};}})('src/components/reports/WeeklyDiaryWorkbook.tsx');
  function nodes(node){if(Array.isArray(node))return node.flatMap(nodes);if(!node||typeof node!=='object')return [];return [node,...nodes(node.props?.children)];}
  function text(node){if(Array.isArray(node))return node.map(text).join('');return node&&typeof node==='object'?text(node.props?.children):node==null?'':String(node);}
@@ -118,6 +118,25 @@ test('UI wires cell resizing, adding/removing fields and rows into Save All Shee
  nodes(tree).find(e=>e.props?.onPaste).props.onPaste({target:pasteTarget,clipboardData:{getData:type=>type==='text/plain'?'FIR-X\t2026-06-22\nFIR-Y\t2026-06-23':''},preventDefault(){prevented=true;}});
  assert.equal(prevented,true);assert.equal(state[6]['RC!dispatch:1:2'],'FIR-Y');assert.equal(state[14].extraRows.dispatch,2);
  tree=render();nodes(tree).find(e=>e.type==='button'&&text(e)==='Undo').props.onClick();tree=render();assert.equal(Object.keys(state[6]).length,0);assert.equal(state[14].extraRows.dispatch,undefined);
+ const firstCell=nodes(tree).find(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:2');
+ firstCell.props.onClick();
+ tree=render();
+ const secondCell=nodes(tree).find(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:3');
+ secondCell.props.onClick({shiftKey:true,currentTarget:{closest:()=>null}});
+ tree=render();
+ nodes(tree).find(e=>e.type==='button'&&text(e)==='Merge Cells').props.onClick();
+ tree=render();
+ const mergedCell=nodes(tree).find(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:2');
+ assert.equal(mergedCell.props.colSpan,2);
+ assert.ok(!nodes(tree).some(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:3'));
+ await nodes(tree).find(e=>e.type==='button'&&text(e).startsWith('Export Excel')).props.onClick();
+ assert.equal(exported?.SheetNames.length,22);
+ assert.ok(exported.Sheets.RC['!merges'].some(range=>range.s.c===1 && range.e.c===2 && range.s.r===range.e.r));
+ mergedCell.props.onClick();
+ tree=render();
+ nodes(tree).find(e=>e.type==='button'&&text(e)==='Unmerge Cells').props.onClick();
+ tree=render();
+ assert.ok(nodes(tree).some(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:3'));
  const headerCell=nodes(tree).find(e=>e.type==='td'&&e.props.onClick&&nodes(e).some(c=>typeof c.type==='function'&&c.type.name==='DiaryResizeHandles'&&c.props.info.table&&c.props.info.keys.length>2));
  assert.ok(headerCell);headerCell.props.onClick();tree=render();
  nodes(tree).find(e=>e.props?.['aria-label']==='Column width').props.onChange({target:{value:'100'}});tree=render();
@@ -151,6 +170,18 @@ test('UI wires cell resizing, adding/removing fields and rows into Save All Shee
  tree=render();assert.ok(nodes(tree).some(e=>e.props?.['aria-label']==='New notes'));
  nodes(tree).find(e=>e.type==='button'&&text(e)==='Remove Field').props.onClick();
  tree=render();nodes(tree).find(e=>e.type==='button'&&text(e).includes('+ Add Row · Table 1')).props.onClick();
+ state[21]=['RC!dispatch:0:3','RC!dispatch:1:3'];
+ tree=render();nodes(tree).find(e=>e.type==='button'&&text(e)==='Merge Cells').props.onClick();
+ tree=render();
+ const columnMerge=nodes(tree).find(e=>e.props?.['data-diary-cell']==='RC!dispatch:0:3');
+ assert.equal(columnMerge.props.rowSpan,2);
+ assert.ok(!nodes(tree).some(e=>e.props?.['data-diary-cell']==='RC!dispatch:1:3'));
+ await nodes(tree).find(e=>e.type==='button'&&text(e).startsWith('Export Excel')).props.onClick();
+ assert.ok(exported.Sheets.RC['!merges'].some(range=>range.s.c===2 && range.e.c===2 && range.e.r===range.s.r+1));
+ columnMerge.props.onClick();tree=render();
+ nodes(tree).find(e=>e.type==='button'&&text(e)==='Unmerge Cells').props.onClick();
+ tree=render();
+ assert.ok(nodes(tree).some(e=>e.props?.['data-diary-cell']==='RC!dispatch:1:3'));
  tree=render();nodes(tree).find(e=>e.type==='button'&&text(e)==='+ Add Blank Row').props.onClick();
  tree=render();await nodes(tree).find(e=>e.type==='button'&&text(e)==='Save All Sheets').props.onClick();
  assert.equal(saved.layout.columnWidths['RC:2'],undefined);assert.ok(Math.abs(saved.layout.cellWidths['RC!dispatch:0:2']*load('src/lib/weeklyDiaryGeometry.ts').diaryContentPixels(7)/100-400)<0.001);assert.ok(Object.keys(saved.layout.cellWidths).every(k=>k.startsWith('RC!dispatch:0:')));assert.equal(saved.layout.rowHeights['RC!dispatch:0'],90);assert.equal(Object.keys(saved.layout.rowHeights).length,1);assert.equal(saved.layout.extraFields['RC!dispatch:0:2'][0].label,'New notes');assert.ok(saved.layout.hiddenFields.includes('RC!dispatch:0:2'));assert.equal(saved.layout.extraRows.dispatch,2);assert.equal(saved.layout.customRows.RC.length,1);
@@ -174,4 +205,35 @@ test('diary dates reject future days using the Indian calendar boundary',()=>{
  assert.equal(lib.validDiaryPeriod('2026-11-01','2026-11-05','2026-11-05'),true);
  assert.equal(lib.validDiaryPeriod('2026-11-01','2026-11-06','2026-11-05'),false);
  assert.equal(lib.validDiaryPeriod('2026-11-06','2026-11-07','2026-11-05'),false);
+});
+
+test('saved merges follow case rows during refresh and reject ranges crossing rows',()=>{
+ const {validateDiaryLayout,rebaseDiaryLayout}=load('src/lib/weeklyDiaryLayout.ts');
+ const old=build([fir('A',{totalPropertyEstimatedValue:10}),fir('B',{totalPropertyEstimatedValue:20})]);
+ const next=build([fir('A',{totalPropertyEstimatedValue:30}),fir('B',{totalPropertyEstimatedValue:20})]);
+ const layout=lib.emptyDiaryLayout();
+ layout.merges['AMOUNT WISE!amountA:0:2']=['AMOUNT WISE!amountA:0:2','AMOUNT WISE!amountA:0:3'];
+ old.layout=validateDiaryLayout(layout);
+ const rebased=rebaseDiaryLayout(old,next);
+ assert.equal(rebased.merges['AMOUNT WISE!amountA:1:2']?.[1],'AMOUNT WISE!amountA:1:3');
+ assert.equal(old.blocks.amountA[0]['2'].value,'B');
+ assert.throws(()=>validateDiaryLayout({...layout,merges:{'AMOUNT WISE!amountA:0:2':['AMOUNT WISE!amountA:0:2','AMOUNT WISE!amountA:1:3']}}),/Invalid merge/);
+ const vertical={'RC!dispatch:0:3':['RC!dispatch:0:3','RC!dispatch:1:3']};
+ assert.equal(validateDiaryLayout({...layout,merges:vertical}).merges['RC!dispatch:0:3'].length,2);
+});
+
+test('grid formulas evaluate ranges and cross-sheet references and report circular formulas',()=>{
+ const {calculateGridFormulas}=load('src/lib/weeklyDiaryFormulaGrid.ts');
+ const sheets={First:[['input','formula'],['other','cycle']], 'Other sheet':[['remote']]};
+ const expressions={formula:"=SUM(A1:A2)+'Other sheet'!A1",cycle:'=B2'};
+ const result=calculateGridFormulas(expressions,sheets,key=>({input:'2',other:'3',remote:'4'})[key] || '');
+ assert.equal(result.formula,'9');
+ assert.match(result.cycle,/^#/);
+});
+
+test('clipboard preserves line breaks, tabs, quotes, and empty columns during range round trips',()=>{
+ const {writeDiaryClipboard,readDiaryClipboard}=load('src/lib/weeklyDiaryClipboard.ts');
+ const rows=[['Multiline\nnote','With\ttab',''],['A "quote"','','End']];
+ assert.equal(JSON.stringify(readDiaryClipboard(writeDiaryClipboard(rows))),JSON.stringify(rows));
+ assert.equal(JSON.stringify(readDiaryClipboard('a\tb\r\nc\td\r\n')),JSON.stringify([['a','b'],['c','d']]));
 });

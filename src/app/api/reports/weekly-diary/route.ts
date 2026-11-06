@@ -44,6 +44,13 @@ export async function POST(req:Request) {
         overrides[key]={value,origin:'MANUAL',source:'Officer edit'};
       }
       const layout=body.layout?validateDiaryLayout(body.layout):old.layout;
+      for(const [key,edit] of Object.entries(overrides)){
+        const choices=layout?.cellFormats?.[key]?.choices;
+        if(choices?.length && edit.value && !choices.includes(edit.value)
+          && old.overrides[key]?.value!==edit.value){
+          return Response.json({error:'Select a permitted dropdown value.'},{status:400});
+        }
+      }
       const packet=await saveDiary(user.id,calculateDiary({...old,overrides,layout}),body.revision);return Response.json({packet});
     }
     if(body.action!=='build')return Response.json({error:'Invalid action.'},{status:400});

@@ -3,7 +3,7 @@ import { diaryLandscape } from '@/lib/weeklyDiaryGeometry';
 export function weeklyDiaryPrintHtml(canvas:HTMLElement,columns:number) {
   const landscape=diaryLandscape(columns),clone=preparePrintableClone(canvas,true);
   clone.querySelectorAll('.no-print,[data-no-print]').forEach(node=>node.remove());
-  clone.style.width=landscape?'297mm':'210mm';clone.style.maxWidth='100%';clone.style.margin='0';clone.style.padding='10mm';clone.style.boxShadow='none';
+  clone.style.width=landscape?'297mm':'210mm';clone.style.maxWidth='100%';clone.style.minWidth='0';clone.style.margin='0';clone.style.padding='10mm';clone.style.boxShadow='none';
   clone.style.setProperty('box-decoration-break','clone');clone.style.setProperty('-webkit-box-decoration-break','clone');
   return `<!doctype html><html><head><meta charset="utf-8"><title>Weekly Crime Diary</title><style>
     @page{size:A4 ${landscape?'landscape':'portrait'};margin:0}
