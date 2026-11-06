@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
-import { ReportTab, CrimeSitrepData, IgpPresentationData } from "@/types/reports";
+import { ReportTab, CrimeSitrepData } from "@/types/reports";
+import type { IgpBriefing } from "@/lib/igpTemplate";
 import { ReportsService } from "@/services/reportsService";
 import { CrimeSitrepView } from "@/components/reports/CrimeSitrepView";
 import { WeeklyDiaryWorkbook } from "@/components/reports/WeeklyDiaryWorkbook";
@@ -34,7 +35,7 @@ function ReportsContent() {
   });
 
   const [sitrepData, setSitrepData] = useState<CrimeSitrepData | null>(null);
-  const [igpData, setIgpData] = useState<IgpPresentationData | null>(null);
+  const [igpData, setIgpData] = useState<IgpBriefing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditSuccess, setAuditSuccess] = useState(false);
@@ -48,7 +49,7 @@ function ReportsContent() {
     try {
       const [sitrep, igp] = await Promise.allSettled([
         ReportsService.getCrimeSitrep(undefined, undefined, currentUser.district),
-        ReportsService.getIgpPresentationData(currentUser.district),
+        ReportsService.getIgpPresentationData(),
       ]);
       if (generation !== loadGeneration.current) return;
       setSitrepData(sitrep.status === 'fulfilled' ? sitrep.value : null);
@@ -78,7 +79,7 @@ function ReportsContent() {
   useEffect(() => {
     loadData();
     return () => { loadGeneration.current++; };
-  }, [currentUser.district, currentUser.stationName]);
+  }, [currentUser.id, currentUser.district, currentUser.stationName]);
 
   const handleAuditLive = async () => {
     setIsAuditing(true);
@@ -250,7 +251,7 @@ function ReportsContent() {
           )}
 
           {activeTab === "IGP Meeting Presentation" && igpData && (
-            <IgpPresentationView data={igpData} />
+            <IgpPresentationView key={currentUser.id+igpData.district+igpData.cutoff} data={igpData} />
           )}
 
           {activeTab === "Saved Reports" && (

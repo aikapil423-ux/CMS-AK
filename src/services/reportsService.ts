@@ -2,11 +2,10 @@ import type {FIRItem} from "@/types";
 import {recordedCalendarDate} from "@/lib/dataIntegrity";
 import { stationStaffService } from "./stationStaffService";
 import { isComplaintResolved } from "@/lib/complaintIntegrity";
-import { comparativeCrimeRows } from "@/lib/reportIntegrity";
+import type { IgpBriefing } from "@/lib/igpTemplate";
 import {
   CrimeSitrepData,
   WeeklyCrimeDiaryData,
-  IgpPresentationData,
   SitrepFirEntry,
   SitrepHeadCount,
   SitrepArrestEntry,
@@ -22,9 +21,6 @@ import {
   PendingComplaint05P,
   AdampataFile,
   Parcha12StatePending,
-  ComparativeCrimeRow,
-  UnsolvedHeinousCase,
-  StationUiPendency,
   SavedReportEntry,
 } from "@/types/reports";
 import { firService } from "./firService";
@@ -584,86 +580,12 @@ export const ReportsService = {
   },
 
   // 3. DYNAMIC IGP MEETING PRESENTATION (Computed live from website cases)
-  getIgpPresentationData: async (district?: string): Promise<IgpPresentationData> => {
-    const activeDistrict = district || "Panipat";
-    const allFirs = firService.getAllFirs().filter(f=>f.district?.toLowerCase()===activeDistrict.toLowerCase());
-    const allComplaints = (await ComplaintService.getComplaints()).filter(c=>c.district?.toLowerCase()===activeDistrict.toLowerCase());
-
-    const comparativeRows = comparativeCrimeRows(allFirs);
-
-    // Station UI pendency dynamically counted per station
-    const stationsSet = Array.from(new Set(allFirs.map((f) => f.policeStation || "PS City Panipat")));
-    const uiPartAByStation: StationUiPendency[] = stationsSet.map((st, idx) => {
-      const stFirs = allFirs.filter((f) => (f.policeStation || "PS City Panipat") === st);
-      const uiCount = stFirs.filter((f) => f.status === "UNDER_INVESTIGATION" || !f.status).length;
-
-      const ages=stFirs.filter(f=>f.status === "UNDER_INVESTIGATION" || !f.status).map(f=>getDaysDiff(f.firDate));
-      const count=(min:number,max=Infinity)=>ages.filter(d=>d>min && d<=max).length;
-      return {
-        srNo: idx + 1,
-        stationName: st,
-        totalRegd: stFirs.length,
-        over2Year: count(730),
-        over1Year: count(365,730),
-        over6Month: count(180,365),
-        totalOver6Month: count(180),
-        pctOver6Month: uiCount ? count(180)/uiCount*100 : 0,
-        over3Month: count(90,180),
-        under3Month: ages.filter(d=>d<=90).length,
-        totalUi: uiCount,
-        uiPct: stFirs.length > 0 ? Number(((uiCount / stFirs.length) * 100).toFixed(1)) : 0,
-      };
-    });
-
-    // Unsolved Heinous Cases dynamically filtered from actual FIRs with heinous flag
-    const unsolvedHeinousCases: UnsolvedHeinousCase[] = allFirs
-      .filter((f) => (f.isHeinous || f.isHeinousCrime) && (f.status === "UNDER_INVESTIGATION" || !f.status))
-      .map((f: any, idx: number) => ({
-        srNo: idx + 1,
-        head: f.categoryDisplay || "Heinous Crime",
-        firNoDateSection: `${f.firNumber}, Dt ${f.firDate || "--"}, u/s ${f.actsAndSections || "--"}`,
-        station: f.policeStation || "--",
-        briefFactsHindi: f.briefFacts || f.incidentDetails || "--",
-      }));
-
-    // Cyber overview computed from actual complaints
-    const cyberComplaints = allComplaints.filter(
-      (c) => c.category?.toLowerCase().includes("cyber") || c.categoryDisplay?.toLowerCase().includes("cyber")
-    );
-
-    return {
-      currentYear:new Date().getFullYear(),previousYear:new Date().getFullYear()-1,
-      dataQualityWarnings:["Extortion, criminal checking and NDPS tables have no verified source feed; no-data sections are not certified NIL. Cyber amounts are unavailable."],
-      meetingDate: new Date().toLocaleDateString("en-IN"),
-      meetingTime: "11:00 AM",
-      meetingLocation: `Police Line, ${activeDistrict}`,
-      district: activeDistrict.toUpperCase(),
-      comparativeRows,
-      extortionOverview: {
-        totalCalls: null,
-        casesRegistered: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).length,
-        accusedNamed: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.length || 0),0),
-        accusedArrested: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.filter(a=>a.isArrested || a.custodyStatus === "ARRESTED").length || 0),0),
-        accusedPending: allFirs.filter(f=>/extortion/i.test(`${f.category} ${f.categoryDisplay}`)).reduce((sum,f)=>sum+(f.accusedList?.filter(a=>!a.isArrested && a.custodyStatus !== "ARRESTED").length || 0),0),
-        gangs: [],
-      },
-      uiPartAByStation,
-      unsolvedHeinousCases,
-      activeCriminals: [],
-      ndpsStats: [],
-      cyberOverview: {
-        complaints2025: cyberComplaints.filter(c=>new Date(c.createdAt).getFullYear()===new Date().getFullYear()-1).length,
-        complaints2026: cyberComplaints.filter(c=>new Date(c.createdAt).getFullYear()===new Date().getFullYear()).length,
-        defrauded2025: "Not available",
-        defrauded2026: "Not available",
-        holdPct2025: "Not available",
-        holdPct2026: "Not available",
-        firs2025: allFirs.filter(f=>/cyber/i.test(f.category) && f.firYear===new Date().getFullYear()-1).length,
-        firs2026: allFirs.filter((f) => f.category?.toLowerCase().includes("cyber") && f.firYear===new Date().getFullYear()).length,
-        recovered2025: "Not available",
-        recovered2026: "Not available",
-      },
-    };
+  getIgpPresentationData: async (cutoff?: string, signal?: AbortSignal): Promise<IgpBriefing> => {
+    const query = cutoff ? '?cutoff='+encodeURIComponent(cutoff) : '';
+    const response = await fetch('/api/reports/igp-briefing'+query, {cache:'no-store', signal});
+    const data = await response.json();
+    if (!response.ok) throw Error(data.error || 'IGP report could not be loaded.');
+    return data;
   },
 
   // In-memory fallback for saved reports across re-renders/environments
