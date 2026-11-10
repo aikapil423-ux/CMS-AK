@@ -31,11 +31,15 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === "gaps") {
-      const gapHours = parseInt(searchParams.get("gapHours") || "24", 10);
+      const gapHours = Number(searchParams.get("gapHours") ?? "24");
+      if (!Number.isInteger(gapHours) || gapHours < 1 || gapHours > 8760) {
+        return NextResponse.json({error:"Enter a minimum gap between 1 and 8760 hours."}, {status:400});
+      }
       const numA = searchParams.get("numA") || undefined;
       const numB = searchParams.get("numB") || undefined;
       const gaps = await telecomService.getCommunicationGaps({
         gapHoursThreshold: gapHours,
+        byContact: searchParams.get("byContact") === "true",
         numberA: numA,
         numberB: numB,
         firId,
@@ -44,7 +48,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === "spikes") {
-      const multiplier = parseFloat(searchParams.get("multiplier") || "2.5");
+      const multiplier = Number(searchParams.get("multiplier") ?? "2.5");
+      if (!Number.isFinite(multiplier) || multiplier < 1 || multiplier > 100) {
+        return NextResponse.json({error:"Enter a multiplier between 1 and 100."}, {status:400});
+      }
       const spikes = await telecomService.getSuddenActivitySpikes(firId, multiplier);
       return NextResponse.json({ success: true, spikes });
     }
@@ -57,14 +64,35 @@ export async function GET(req: NextRequest) {
     }
 
     if (action === "short_calls") {
-      const maxSec = parseInt(searchParams.get("maxSec") || "10", 10);
+      const maxSec = Number(searchParams.get("maxSec") ?? "30");
+      if (!Number.isInteger(maxSec) || maxSec < 1 || maxSec > 3600) {
+        return NextResponse.json({error:"Enter a duration between 1 and 3600 seconds."}, {status:400});
+      }
       const calls = await telecomService.getShortDurationCalls(maxSec, firId);
       return NextResponse.json({ success: true, calls });
     }
 
     if (action === "sim_timeline") {
       const timeline = await telecomService.getSimChangeTimeline(firId);
-      return NextResponse.json({ success: true, timeline });
+      const store = await telecomService.getStore();
+      const numbers = new Set(store.callRecords.filter(row => row.firId === firId)
+        .flatMap(row => [row.sourceNumber,row.destinationNumber]));
+      const mnpRecords = (store.mnpRecords || []).filter(record => numbers.has(record.msisdn));
+      return NextResponse.json({ success: true, timeline, mnpRecords });
+    }
+
+    if (action === "cdr_ipdr_check") {
+      if (!firId || firId === "ALL") return NextResponse.json({error:"Select one FIR."}, {status:400});
+      const store = await telecomService.getStore();
+      const excluded = new Set(store.files.filter(file=>file.isExcludedFromCalculations).map(file=>file.id));
+      const voice = store.callRecords.some(row=>row.firId===firId && !row.isExcluded && !excluded.has(row.fileId)
+        && (row.callType==="INCOMING" || row.callType==="OUTGOING") && row.durationSeconds>0);
+      const sessions = store.ipdrRecords.some(row=>row.firId===firId && !excluded.has(row.fileId)
+        && row.msisdn && Number.isFinite(Date.parse(row.sessionStart)));
+      if (!voice || !sessions) {
+        return NextResponse.json({error:"This check needs voice CDR records and IPDR sessions with subscriber numbers linked to the same FIR."},{status:400});
+      }
+      return NextResponse.json({success:true,report:await telecomService.getCdrIpdrConsistencyReport(firId)});
     }
 
     if (action === "data_quality") {
@@ -107,6 +135,10 @@ export async function GET(req: NextRequest) {
 
     // Default Full Master Payload
     const store = await telecomService.getStore();
+    const cdrContacts = firId && firId !== "ALL"
+      ? Object.fromEntries([...telecomService.getCdrTargetContacts(store, firId)]
+        .map(([target, contacts]) => [target, [...contacts.keys()].sort()]))
+      : {};
     const stats = await telecomService.getCdrStatistics({
       firId,
       fileId,
@@ -159,6 +191,7 @@ export async function GET(req: NextRequest) {
       success: true,
       files: store.files,
       stats,
+      cdrContacts,
       crossMatches,
       simTimeline,
       dataQuality,
@@ -225,14 +258,36 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const action = body.action;
     const requestedFir = body.firId || body.finding?.firId || body.hypothesis?.firId || body.exhibit?.firId || body.query?.firId || body.disclosure?.firId || body.qc?.firId || body.record?.firId || body.alias?.firId || body.request?.firId || body.note?.firId || body.board?.firId || body.view?.firId || body.handover?.firId || body.package?.firId || body.policy?.firId;
-    const { service: telecomService } = await telecomAccess(user, requestedFir);
+    const { service: telecomService, firs:visibleFirs } = await telecomAccess(user, requestedFir);
     await validateTelecomReferences(telecomService, body);
     if (["dual_approval_process", "supervisor_update", "retention_update", "handover_perform"].includes(action) && !["SUPER_ADMIN", "SHO", "DSP_SUBDIV", "SP_DISTRICT", "ASP_HQ"].includes(user.role)) return NextResponse.json({ error: "Supervisor role required" }, { status: 403 });
 
     // Phase 4 Handlers
+    if (action === "save_first_last") {
+      const fir = visibleFirs.find(item => item.id === body.firId);
+      if (!fir || typeof body.numA !== "string" || typeof body.numB !== "string" || body.numA === body.numB) {
+        return NextResponse.json({error:"Select one FIR, its CDR target, and a recorded contact."}, {status:400});
+      }
+      const processed = await telecomService.analyzeAndSaveCdrContact(
+        fir.id, fir.firNumber, body.numA, body.numB, user.name || user.id
+      );
+      return NextResponse.json({success:true, ...processed});
+    }
     if (action === "run_auto_analysis") {
       const result = await telecomService.runAutoAnalysis(body.firId);
-      return NextResponse.json({ success: true, ...result });
+      const { PROCESSING_MODEL, processWithAI } = await import("@/lib/openRouter");
+      const { totalCalls, incomingCalls, outgoingCalls, smsIncoming, smsOutgoing, daytimeCalls, nighttimeCalls, uniqueContactedNumbers } = result.stats;
+      const aggregates = {
+        totalCalls, incomingCalls, outgoingCalls, smsIncoming, smsOutgoing, daytimeCalls, nighttimeCalls, uniqueContactedNumbers,
+        activitySpikes: result.spikes.length,
+        savedFindings: result.findingsCreated,
+      };
+      try {
+        const aiAnalysis = await processWithAI([{ text: `Write a short telecom analysis for investigator review from these aggregate counts. Describe observable patterns and limitations. Do not infer identities, intent, guilt or that any activity is suspicious from timing or volume alone. Do not fabricate dates or source records. Aggregate counts: ${JSON.stringify(aggregates)}` }], { maxTokens: 4096, timeout: 60000 });
+        return NextResponse.json({ success: true, ...result, aiAnalysis, modelUsed: PROCESSING_MODEL });
+      } catch {
+        return NextResponse.json({ success: true, ...result, aiAnalysisError: "Telecom calculations were saved. GLM analysis is currently unavailable." });
+      }
     }
 
     if (action === "hypothesis_save") {
@@ -316,7 +371,8 @@ export async function POST(req: NextRequest) {
 
     // Existing Actions
     if (action === "reconcile_run") {
-      const summary = await telecomService.runReconciliation(body.firId);
+      if (!requestedFir || requestedFir === "ALL") return NextResponse.json({error:"Select one FIR."}, {status:400});
+      const summary = await telecomService.runReconciliation(requestedFir,true);
       return NextResponse.json({ success: true, summary });
     }
 

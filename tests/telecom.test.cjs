@@ -14,6 +14,129 @@ test('explicit UTC offset is preserved in normalized instant',()=>assert.equal(p
 test('custom mapping applies to dates times duration and direction',()=>{const r=parse('src,dst,day,clock,dur,kind\n9811111111,9822222222,15/10/2026,22:15:00,120,SMS_IN','CDR',{sourceNumberCol:'src',destinationNumberCol:'dst',callDateCol:'day',callTimeCol:'clock',durationCol:'dur',callTypeCol:'kind'}).calls[0];assert.equal(r.callDate,'2026-10-15');assert.equal(r.durationSeconds,120);assert.equal(r.callType,'SMS_IN')});
 test('quoted commas and multiline CSV fields are preserved',()=>{const r=parse('MSISDN,Subscriber Name,Address,City\n9811111111,Test,"House 1, Street 2\nFloor 3",Delhi','CAF').subscribers[0];assert.equal(r.city,'Delhi');assert.equal(r.address,'House 1, Street 2\nFloor 3')});
 test('empty evidence never reports successful parsing',()=>assert.ok(parse('garbage').errors.length));
+test('CDR Excel import finds operator headers after a title and a cover sheet',()=>{
+ const xlsx=require('xlsx'),book=xlsx.utils.book_new();
+ xlsx.utils.book_append_sheet(book,xlsx.utils.aoa_to_sheet([['Export summary']]),'Cover');
+ xlsx.utils.book_append_sheet(book,xlsx.utils.aoa_to_sheet([
+  ['Operator call records'],[],['A Party No.','B-PARTY NUMBER','Call Date & Time','Duration (Sec)'],
+  [9811111111,9822222222,'15/10/2026 22:15:00',120],[],[9811111111,'','15/10/2026 22:30:00',45],
+ ]),'Calls');
+ const result=fixture().svc.parseBuffer({fileBuffer:xlsx.write(book,{type:'buffer',bookType:'xlsx'}),fileName:'operator.xlsx',category:'CDR',operator:'AIRTEL',fileId:'excel'});
+ assert.equal(result.recordCount,1);
+ assert.equal(result.calls[0].sourceNumber,'9811111111');
+ assert.equal(result.calls[0].sourceRowNumber,4);
+ assert.match(result.errors[0],/^Row 6:/);
+});
+test('missing CDR number columns produce one actionable error',()=>{
+ const result=parse('Subscriber,Date,Duration\n9811111111,15/10/2026,120\n9822222222,15/10/2026,10');
+ assert.equal(result.recordCount,0);
+ assert.equal(result.errors.length,1);
+ assert.match(result.errors[0],/Calling Number.*Called Number/);
+});
+test('communication gaps endpoint applies FIR, contact pair and minimum-hour filters',async()=>{
+ const {svc,read}=fixture();
+ const base=read().callRecords[0];
+ read().callRecords=[
+  {...base,id:'first',firId:'fir_1',sourceNumber:'9811111111',destinationNumber:'9822222222',timestamp:'2026-10-15T00:00:00.000Z'},
+  {...base,id:'second',firId:'fir_1',sourceNumber:'9822222222',destinationNumber:'9811111111',timestamp:'2026-10-16T06:00:00.000Z'},
+  {...base,id:'other-party',firId:'fir_1',sourceNumber:'9811111111',destinationNumber:'9833333333',timestamp:'2026-10-15T12:00:00.000Z'},
+  {...base,id:'other-fir',firId:'other',sourceNumber:'9811111111',destinationNumber:'9822222222',timestamp:'2026-10-15T13:00:00.000Z'},
+ ];
+ const api=load('src/app/api/telecom/route.ts',{
+  '@/services/telecomAccess':{telecomAccess:async()=>({service:svc,firs:[]})},
+  '@/lib/apiSecurity':{apiAccess:()=>({id:'io',role:'IO'})},
+  '@/services/firService':{firService:{}},'next/server':{NextResponse:Response},
+ });
+ const url='http://localhost/api/telecom?action=gaps&firId=fir_1&numA=9811111111&numB=9822222222&gapHours=';
+ assert.equal((await api.GET(new Request(url+'0'))).status,400);
+ const result=await (await api.GET(new Request(url+'24'))).json();
+ assert.equal(result.gaps.length,1);
+ assert.equal(result.gaps[0].gapHours,30);
+ assert.equal(result.gaps[0].lastCallBefore.id,'first');
+ assert.equal(result.gaps[0].firstCallAfter.id,'second');
+ assert.equal((await (await api.GET(new Request(url+'31'))).json()).gaps.length,0);
+ const grouped=await (await api.GET(new Request(
+  'http://localhost/api/telecom?action=gaps&firId=fir_1&numA=9811111111&gapHours=24&byContact=true'
+ ))).json();
+ assert.equal(grouped.gaps.length,1);
+ assert.equal(grouped.gaps[0].numberA,'9811111111');
+ assert.equal(grouped.gaps[0].numberB,'9822222222');
+ assert.equal(grouped.gaps[0].gapHours,30);
+});
+test('short calls excludes SMS, zero durations and calls exactly 30 seconds long',async()=>{
+ const {svc,read}=fixture();
+ const base=read().callRecords[0];
+ read().callRecords=[
+  {...base,id:'voice',firId:'fir_1',callType:'OUTGOING',durationSeconds:29},
+  {...base,id:'limit',firId:'fir_1',callType:'INCOMING',durationSeconds:30},
+  {...base,id:'sms',firId:'fir_1',callType:'SMS_IN',durationSeconds:5},
+  {...base,id:'zero',firId:'fir_1',callType:'INCOMING',durationSeconds:0},
+  {...base,id:'other',firId:'other',callType:'INCOMING',durationSeconds:15},
+ ];
+ const calls=await svc.getShortDurationCalls(30,'fir_1');
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].id,'voice');
+});
+test('SIM timeline uses the target device for incoming rows and keeps distinct IMSIs',async()=>{
+ const {svc,read}=fixture();
+ const base=read().callRecords[0];
+ read().callRecords=[
+  {...base,firId:'fir_1',cdrTargetNumber:'9811111111',sourceNumber:'9822222222',destinationNumber:'9811111111',imei:'device',imsi:'sim-1'},
+  {...base,firId:'fir_1',cdrTargetNumber:'9811111111',sourceNumber:'9811111111',destinationNumber:'9822222222',imei:'device',imsi:'sim-2'},
+ ];
+ const timeline=await svc.getSimChangeTimeline('fir_1');
+ assert.equal(timeline.length,2);
+ assert.ok(timeline.every(item=>item.msisdn==='9811111111'));
+ assert.deepEqual(Array.from(timeline,item=>item.imsi).sort(),['sim-1','sim-2']);
+});
+test('multi-operator reconciliation requires two operators and persists a matching pair',async()=>{
+ const {svc,read}=fixture();
+ const base=read().callRecords[0],file=read().files[0];
+ read().files=[{...file,id:'a',operator:'AIRTEL'},{...file,id:'b',operator:'JIO'}];
+ read().callRecords=[{...base,id:'r1',fileId:'a',firId:'fir_1',operator:'AIRTEL'}];
+ await assert.rejects(svc.runReconciliation('fir_1',true),/two different operators/);
+ read().callRecords.push({...base,id:'r2',fileId:'b',firId:'fir_1',operator:'JIO'});
+ assert.equal((await svc.runReconciliation('fir_1',true)).matchedRecordsCount,1);
+ assert.equal(read().reconciliations.length,1);
+});
+test('target-oriented Vodafone CDR imports incoming SMS sender IDs and skips export notes',()=>{
+ const result=parse([
+  'Target /A PARTY NUMBER,CALL_TYPE,B PARTY NUMBER,Call date,Call Initiation Time,Service Type',
+  '-----',
+  '9811111111,Incoming,AD-EXAMPLE,15-10-2026,22:15:00,SMS',
+  '9811111111,Incoming,9822222222,15-10-2026,22:16:00,Voice',
+  '9811111111,Outgoing,9822222222,15-10-2026,22:17:00,Voice',
+  'Note :- Operator footer',
+ ].join('\n'));
+ assert.equal(result.recordCount,3);
+ assert.equal(result.errors.length,0);
+ assert.equal(result.calls[0].sourceNumber,'AD-EXAMPLE');
+ assert.equal(result.calls[0].destinationNumber,'9811111111');
+ assert.equal(result.calls[0].callType,'SMS_IN');
+ assert.equal(result.calls[1].sourceNumber,'9822222222');
+ assert.equal(result.calls[2].sourceNumber,'9811111111');
+ assert.equal(result.calls[0].cdrTargetNumber,'9811111111');
+});
+test('first and last contact choices are target-specific and save the processed result once',async()=>{
+ const {svc,read}=fixture();
+ const base=read().callRecords[0];
+ const file={...read().files[0],id:'cdr-target',linkedFirId:'fir_1',originalFilename:'Copy of CDR 9811111111_ FIR.xlsx'};
+ read().files.push(file);
+ read().callRecords.push(
+  {...base,id:'incoming',firId:'fir_1',fileId:file.id,sourceNumber:'9822222222',destinationNumber:'9811111111',callType:'INCOMING'},
+  {...base,id:'outgoing',firId:'fir_1',fileId:file.id,sourceNumber:'9811111111',destinationNumber:'9822222222',callType:'OUTGOING'},
+  {...base,id:'not-target',firId:'fir_1',fileId:file.id,sourceNumber:'9833333333',destinationNumber:'9822222222',callType:'OUTGOING'},
+  {...base,id:'other-fir',firId:'other',fileId:file.id,sourceNumber:'9811111111',destinationNumber:'9844444444',callType:'OUTGOING'}
+ );
+ assert.deepEqual([...svc.getCdrTargetContacts(read(),'fir_1').get('9811111111').keys()],['9822222222']);
+ await assert.rejects(svc.analyzeAndSaveCdrContact('fir_1','FIR','9822222222','9833333333','Officer'),/CDR target/);
+ const result=await svc.analyzeAndSaveCdrContact('fir_1','FIR','9811111111','9822222222','Officer');
+ assert.equal(result.result.totalCalls,2);
+ assert.equal(read().savedFindings[0].firstLastContact.incomingToA,1);
+ assert.equal(read().savedFindings[0].supportingRecordIds.length,2);
+ const repeated=await svc.analyzeAndSaveCdrContact('fir_1','FIR','9811111111','9822222222','Officer');
+ assert.equal(repeated.finding.id,result.finding.id);
+});
 test('IPDR retains source time and NAT identifiers',()=>{const r=parse('Source IP,Destination IP,Session Start,Translated IP,Translated Port\n10.0.0.1,8.8.8.8,2020-01-01T12:00:00Z,1.2.3.4,5678','IPDR').ipdrs[0];assert.equal(r.sessionStart,'2020-01-01T12:00:00.000Z');assert.equal(r.translatedIp,'1.2.3.4');assert.equal(r.translatedPort,5678)});
 test('tower dump retains evidence time and direction',()=>{const r=parse('Calling Party,Called Party,Timestamp,Call Type,Cell ID\n9811111111,9822222222,2020-01-01T12:00:00Z,INCOMING,C1','TOWER_DUMP').towerDumps[0];assert.equal(r.timestamp,'2020-01-01T12:00:00.000Z');assert.equal(r.callType,'INCOMING')});
 test('exclusions affect totals and target is not its own contact',async()=>{const {svc,read}=fixture();read().callRecords[0].isExcluded=true;assert.equal((await svc.getCdrStatistics({})).totalCalls,5);read().files[0].isExcludedFromCalculations=true;assert.equal((await svc.getCdrStatistics({})).totalCalls,0);read().files[0].isExcludedFromCalculations=false;const r=await svc.getCdrStatistics({targetNumber:'9812044819'});assert.ok(!r.mostFrequentNumbers.some(x=>x.number==='9812044819'));assert.ok(r.mostFrequentNumbers.some(x=>x.number==='9876543210'&&x.total===2))});

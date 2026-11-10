@@ -268,6 +268,10 @@ const BASE_DOC_STYLES = `
   }
 `;
 
+export function escapeDraftText(text: string) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export function generateEnquiryReportHtml(
   formData: PoliceReportFormData,
   categoryKey: string,
@@ -826,7 +830,7 @@ export function generateNoticeDocumentHtml(
     <div style="margin-top: 14px; font-size: 11pt;">
       <b>श्रीमान जी,</b><br/>
       <div class="body-para">
-        ${formData.allegationsBrief || "निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।"}
+        ${escapeDraftText(formData.allegationsBrief || "निवेदन है कि उपरोक्त अभियोग में निम्नलिखित मोबाईल फोन की काल डिटेल व कैफ आई0डी0/आई.एम.ई.आई. की सर्चिंग की आवश्यकता है। उपलब्ध करवायी जावे।")}
       </div>
     </div>
 
@@ -1712,7 +1716,7 @@ export function generateNoticeDocumentHtml(
         </tr>
         <tr>
           <td colspan="4" style="min-height: 55px; padding-bottom: 16px;">
-            <b>Brief summary of case :- &ldquo;</b>${summaryVal}<b>&rdquo;</b>
+            <b>Brief summary of case :- &ldquo;</b>${escapeDraftText(summaryVal)}<b>&rdquo;</b>
           </td>
         </tr>
         <tr>
@@ -1848,7 +1852,7 @@ export function generateNoticeDocumentHtml(
     <div class="section-block">
       <div class="section-label">SUBJECT MATTER & GIST OF COMPLAINT / ENQUIRY</div>
       <div class="section-content" style="background-color: #f1f5f9;">
-        <b>Subject / Allegations:</b> ${formData.allegationsBrief || "Verification of facts"}<br/>
+        <b>Subject / Allegations:</b> ${escapeDraftText(formData.allegationsBrief || "Verification of facts")}<br/>
         <b>Sections of Law:</b> ${formData.sectionsOfLaw || "Section 173(3) BNSS"}<br/>
         <b>Date of Alleged Incident:</b> ${formData.incidentDate || "N/A"}
       </div>
@@ -2054,7 +2058,7 @@ export function generateHaryanaPoliceProformaHtml(data: HaryanaPoliceProformaDat
             ${row.cells
               .map(
                 (cell) =>
-                  `<td style="padding: 8px 10px; ${cellBorderCss} vertical-align: top; font-size: 10pt; line-height: 1.6; white-space: pre-wrap; color: #000000;">${cell || ""}</td>`
+                  `<td style="padding: 8px 10px; ${cellBorderCss} vertical-align: top; font-size: 10pt; line-height: 1.6; white-space: pre-wrap; color: #000000;">${escapeDraftText(cell || "")}</td>`
               )
               .join("\n")}
           </tr>`;
@@ -2068,7 +2072,7 @@ export function generateHaryanaPoliceProformaHtml(data: HaryanaPoliceProformaDat
             ${label}
           </td>
           <td style="padding: 8px 10px; ${cellBorderCss} vertical-align: top; font-size: 10pt; line-height: 1.65; white-space: pre-wrap; color: #000000;">
-            ${val}
+            ${escapeDraftText(val)}
           </td>
         </tr>`;
       })

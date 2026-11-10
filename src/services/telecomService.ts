@@ -7,7 +7,7 @@ import fsSync from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import * as XLSX from "xlsx";
-import { evidenceTimestamp, evidenceDirection } from "@/lib/telecomParsing";
+import { evidenceTimestamp, evidenceDirection, evidenceHeader, callingHeaders, calledHeaders, targetPartyHeader } from "@/lib/telecomParsing";
 import {
   TelecomIntelligenceStore,
   ReconciliationMatchItem,
@@ -627,7 +627,11 @@ export class TelecomService {
       columnMapping: params.columnMapping,
     });
 
-    if (!recordCount) throw new Error(errors.join("; ") || "No valid evidence records found");
+    if (!recordCount) {
+      const summary=errors.slice(0,3).join("\n");
+      const remaining=errors.length-3;
+      throw new Error(summary ? summary+(remaining>0?"\n"+remaining+" more invalid rows.":"") : "No valid evidence records found");
+    }
     await fs.writeFile(savedDiskPath, params.fileBuffer);
 
     const newFile: TelecomEvidenceFile = {
@@ -728,15 +732,36 @@ export class TelecomService {
 
     let rawRows: Record<string, any>[] = [];
 
+    const sourceHeaders=opts.columnMapping?.sourceNumberCol ? [opts.columnMapping.sourceNumberCol] : callingHeaders;
+    const destinationHeaders=opts.columnMapping?.destinationNumberCol ? [opts.columnMapping.destinationNumberCol] : calledHeaders;
+    const isCdr=opts.category==="CDR" || opts.category==="OTHER";
     try {
-      if (ext === ".xlsx" || ext === ".xls") {
-        const workbook = XLSX.read(opts.fileBuffer, { type: "buffer", cellDates: true });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-      } else {
-        const workbook = XLSX.read(opts.fileBuffer.toString("utf8").replace(/^\uFEFF/, ""), { type: "string", raw: true });
-        rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+      const workbook=ext===".xlsx" || ext===".xls"
+        ? XLSX.read(opts.fileBuffer,{type:"buffer",cellDates:true})
+        : XLSX.read(opts.fileBuffer.toString("utf8").replace(/^\uFEFF/,""),{type:"string",raw:true});
+      if(isCdr){
+        const sourceKeys=new Set(sourceHeaders.map(evidenceHeader));
+        const destinationKeys=new Set(destinationHeaders.map(evidenceHeader));
+        for(const name of workbook.SheetNames){
+          const sheet=workbook.Sheets[name];
+          if(!sheet?.["!ref"])continue;
+          const range=XLSX.utils.decode_range(sheet["!ref"]);
+          const preview=XLSX.utils.sheet_to_json<unknown[]>(sheet,{
+            header:1,blankrows:true,range:{s:range.s,e:{r:Math.min(range.e.r,range.s.r+49),c:range.e.c}},
+          });
+          const headerIndex=preview.findIndex(row=>{
+            const keys=row.map(evidenceHeader);
+            const source=keys.findIndex(key=>sourceKeys.has(key));
+            return source>=0 && keys.some((key,i)=>i!==source && destinationKeys.has(key));
+          });
+          if(headerIndex<0)continue;
+          rawRows=XLSX.utils.sheet_to_json(sheet,{defval:"",range:{...range,s:{...range.s,r:range.s.r+headerIndex}}});
+          if(rawRows.length)break;
+        }
+        if(!rawRows.length)errors.push("No CDR records found. Include separate Calling Number (A Party) and Called Number (B Party) columns with data below the headers.");
+      }else{
+        const sheet=workbook.Sheets[workbook.SheetNames[0]];
+        if(sheet)rawRows=XLSX.utils.sheet_to_json(sheet,{defval:""});
       }
     } catch (err: any) {
       errors.push(`File parsing failed: ${err.message}`);
@@ -746,11 +771,11 @@ export class TelecomService {
     const getVal = (row: Record<string, any>, aliases: string[]): string => {
       const keys = Object.keys(row);
       for (const alias of aliases) {
-        const matched = keys.find((k) => k.trim().toLowerCase() === alias.toLowerCase());
-        if (matched && row[matched] !== undefined && row[matched] !== null) {
+        const matched = keys.find(k=>evidenceHeader(k)===evidenceHeader(alias) && String(row[k] ?? "").trim()!=="");
+        if (matched) {
           if (row[matched] instanceof Date) {
             const iso = row[matched].toISOString();
-            return /^(Call Date|Start Date|Date)$/i.test(alias) ? iso.slice(0, 10) : /^(Call Time|Start Time|Time)$/i.test(alias) ? iso.slice(11, 19) : iso;
+            return /^(Call Date|Start Date|Date)$/i.test(alias) ? iso.slice(0, 10) : /^(Call Time|Start Time|Time|Call Initiation Time)$/i.test(alias) ? iso.slice(11, 19) : iso;
           }
           return String(row[matched]).trim();
         }
@@ -767,6 +792,7 @@ export class TelecomService {
 
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];
+      const sourceRow = typeof row.__rowNum__ === "number" ? row.__rowNum__+1 : i+2;
       try {
       const aliases: [keyof ColumnMappingConfig, string][] = [["callDateCol", "Call Date"], ["callTimeCol", "Call Time"], ["timestampCol", "Date Time"], ["durationCol", "Duration"], ["callTypeCol", "Call Type"], ["firstCellCol", "First Cell ID"], ["lastCellCol", "Last Cell ID"], ["lacCol", "LAC"], ["imeiCol", "IMEI"], ["imsiCol", "IMSI"]];
       for (const [key, canonical] of aliases) {
@@ -777,31 +803,34 @@ export class TelecomService {
         }
       }
       if (opts.category === "CDR" || opts.category === "OTHER") {
-        const source = cleanNumber(
-          opts.columnMapping?.sourceNumberCol
-            ? row[opts.columnMapping.sourceNumberCol]
-            : getVal(row, ["Calling Party", "Calling No", "A_Party", "A-Party", "Calling_Number", "Source", "From", "Caller", "ANUM"])
-        );
-        const destination = cleanNumber(
-          opts.columnMapping?.destinationNumberCol
-            ? row[opts.columnMapping.destinationNumberCol]
-            : getVal(row, ["Called Party", "Called No", "B_Party", "B-Party", "Called_Number", "Destination", "To", "Dialled Number", "BNUM"])
-        );
-
-        if (!source || !destination) throw new Error("Both calling and called identifiers are required");
+        const partyA = getVal(row,sourceHeaders);
+        const partyB = getVal(row,destinationHeaders);
+        if (partyA && !partyB && Object.values(row).filter(value=>String(value ?? "").trim()).length===1
+          && (/^-{3,}$/.test(partyA) || /^(?:CALL_FORWARD|LRN|NOTE)\s*:\s*-/i.test(partyA))) continue;
 
         const rawDate = getVal(row, ["Call Date", "Date", "Start Date", "CALL_DATE", "Date Time"]);
-        const rawTime = getVal(row, ["Call Time", "Time", "Start Time", "CALL_TIME"]);
+        const rawTime = getVal(row, ["Call Time", "Time", "Start Time", "Call Initiation Time", "CALL_TIME"]);
         const rawDur = getVal(row, ["Duration", "Call Duration", "Duration (Sec)", "DURATION_SEC", "Dur(s)"]);
         const rawType = getVal(row, ["Call Type", "Type", "Direction", "CALL_TYPE"]).toUpperCase();
-        const firstCell = getVal(row, ["First Cell ID", "First CGI", "Cell ID", "CGI", "First_Cell_ID", "FirstCell"]);
-        const lastCell = getVal(row, ["Last Cell ID", "Last CGI", "Last_Cell_ID", "LastCell"]) || firstCell;
+        const firstCell = getVal(row, ["First Cell ID", "First CGI", "First Cell Global ID", "Cell ID", "CGI", "First_Cell_ID", "FirstCell"]);
+        const lastCell = getVal(row, ["Last Cell ID", "Last CGI", "Last Cell Global ID", "Last_Cell_ID", "LastCell"]) || firstCell;
         const lac = getVal(row, ["LAC", "First LAC", "First_LAC"]);
         const imei = getVal(row, ["IMEI", "Device IMEI", "Calling IMEI", "IMEI_A"]);
         const imsi = getVal(row, ["IMSI", "Calling IMSI", "IMSI_A"]);
 
-        const callType = evidenceDirection(rawType);
-        const combined = getVal(row, ["Date Time", "Timestamp", "Start Timestamp"]);
+        const direction = evidenceDirection(rawType);
+        const sms = direction.startsWith("SMS") || getVal(row,["Service Type"]).toUpperCase()==="SMS";
+        const callType = sms && direction==="INCOMING" ? "SMS_IN" : sms && direction==="OUTGOING" ? "SMS_OUT" : direction;
+        const targetRelative = !!getVal(row,[targetPartyHeader]) && (!opts.columnMapping?.sourceNumberCol
+          || evidenceHeader(opts.columnMapping.sourceNumberCol)===evidenceHeader(targetPartyHeader));
+        const [from,to] = targetRelative && (callType==="INCOMING" || callType==="SMS_IN") ? [partyB,partyA] : [partyA,partyB];
+        // SMS sender IDs are evidence identifiers, not telephone numbers.
+        const identifier = (value:string) => sms && /^(?=.*[A-Z])[A-Z0-9]+(?:-[A-Z0-9]+)*$/i.test(value)
+          ? value.toUpperCase() : cleanNumber(value);
+        const source = identifier(from);
+        const destination = identifier(to);
+        if (!source || !destination) throw new Error("Both calling and called identifiers are required");
+        const combined = getVal(row, ["Date Time", "Call Date Time", "Start Date Time", "Timestamp", "Start Timestamp"]);
         const normalized = evidenceTimestamp(combined || rawDate, combined ? "" : rawTime);
         const dateStr = normalized.date, timeStr = normalized.time;
         const duration = Number(rawDur || 0);
@@ -814,13 +843,14 @@ export class TelecomService {
           firNumber: opts.firNumber,
           sourceNumber: source || "UNKNOWN",
           destinationNumber: destination || "UNKNOWN",
+          cdrTargetNumber: targetRelative ? cleanNumber(partyA) : undefined,
           callType,
           callDate: dateStr,
           callTime: timeStr,
           timestamp: normalized.timestamp,
           originalTimestamp: combined || rawDate + " " + rawTime,
           originalTimezone: /(?:Z|[+-]\d{2}:\d{2})$/.test(combined) ? "EXPLICIT_OFFSET" : "Asia/Kolkata",
-          sourceRowNumber: i + 2,
+          sourceRowNumber: sourceRow,
           durationSeconds: duration,
           firstCellId: firstCell || undefined,
           lastCellId: lastCell || undefined,
@@ -907,7 +937,7 @@ export class TelecomService {
         }
       }
       } catch (error) {
-        errors.push("Row " + (i + 2) + ": " + (error instanceof Error ? error.message : "Invalid record"));
+        errors.push("Row " + sourceRow + ": " + (error instanceof Error ? error.message : "Invalid record"));
       }
     }
 
@@ -1071,6 +1101,52 @@ export class TelecomService {
   }
 
   // 1. First & Last Contact Analysis
+  public getCdrTargetContacts(store: TelecomIntelligenceStore, firId: string) {
+    // Older imports have no target metadata. A CDR filename target must also appear in the row.
+    const files = new Map(store.files.filter(file => file.linkedFirId === firId && !file.isExcludedFromCalculations)
+      .map(file => [file.id, file.originalFilename.match(/\bCDR[ _-]+(?:\+91[ _-]*)?([0-9]{10})(?![0-9])/i)?.[1]]));
+    const contacts = new Map<string, Map<string, NormalizedCallRecord[]>>();
+    for (const record of store.callRecords) {
+      if (!files.has(record.fileId) || record.firId !== firId || record.isExcluded ||
+        !["INCOMING", "OUTGOING", "SMS_IN", "SMS_OUT"].includes(record.callType)) continue;
+      const target = record.cdrTargetNumber || files.get(record.fileId);
+      if (!target || !/^\d+$/.test(target)) continue;
+      const other = record.sourceNumber === target ? record.destinationNumber
+        : record.destinationNumber === target ? record.sourceNumber : "";
+      if (!other || other === target) continue;
+      let parties = contacts.get(target);
+      if (!parties) contacts.set(target, parties = new Map());
+      if (!/^\d+$/.test(other)) continue;
+      const pair = parties.get(other);
+      if (pair) pair.push(record);
+      else parties.set(other, [record]);
+    }
+    return contacts;
+  }
+
+  public async analyzeAndSaveCdrContact(firId:string, firNumber:string, numberA:string, numberB:string, savedBy:string) {
+    const store = await this.getStore();
+    const records = this.getCdrTargetContacts(store, firId).get(numberA)?.get(numberB);
+    if (!records?.length) throw new Error("Select a CDR target and one of its recorded contacts.");
+    const result = this.summarizeFirstLastContact(store, numberA, numberB, records);
+    const {timeline, ...processed} = result;
+    const supportingRecordIds = timeline.map(record => record.id);
+    const supportingFileIds = [...new Set(timeline.map(record => record.fileId))];
+    const existing = store.savedFindings.find(finding => finding.firId === firId
+      && JSON.stringify(finding.firstLastContact) === JSON.stringify(processed)
+      && finding.supportingRecordIds.join(",") === supportingRecordIds.join(","));
+    const finding = existing || await this.saveFinding({
+      firId, firNumber, savedBy, findingType:"KEY_CONTACT",
+      title:`First & Last Contact: ${numberA} ↔ ${numberB}`,
+      summary:`${result.totalCalls} records. First: ${result.firstCallTimestamp}. Last: ${result.lastCallTimestamp}. Incoming: ${result.incomingToA}. Outgoing: ${result.outgoingFromA}. Duration: ${result.totalDurationSeconds} sec.`,
+      supportingFileIds, supportingRecordIds,
+      sourceCitations:store.files.filter(file => supportingFileIds.includes(file.id)).map(file => file.originalFilename),
+      limitationsWarning:"Based on available CDR records for the selected target and contact.",
+      savedToFirDocuments:false,
+    }, processed);
+    return {result, finding};
+  }
+
   public async getFirstLastContact(numberA: string, numberB: string, firId?: string): Promise<FirstLastContactResult | null> {
     const store = await this.getStore();
     let records = store.callRecords.filter(r => !r.isExcluded && !store.files.find(f => f.id === r.fileId)?.isExcludedFromCalculations);
@@ -1080,10 +1156,14 @@ export class TelecomService {
       (r) =>
         (r.sourceNumber === numberA && r.destinationNumber === numberB) ||
         (r.sourceNumber === numberB && r.destinationNumber === numberA)
-    ).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    );
 
     if (!matches.length) return null;
+    return this.summarizeFirstLastContact(store, numberA, numberB, matches);
+  }
 
+  private summarizeFirstLastContact(store:TelecomIntelligenceStore, numberA:string, numberB:string, records:NormalizedCallRecord[]):FirstLastContactResult {
+    const matches = [...records].sort((a,b)=>a.timestamp.localeCompare(b.timestamp) || a.id.localeCompare(b.id));
     const subA = store.subscribers.find((s) => s.msisdn === numberA)?.subscriberName;
     const subB = store.subscribers.find((s) => s.msisdn === numberB)?.subscriberName;
 
@@ -1116,6 +1196,7 @@ export class TelecomService {
   // 2. Communication Gap Detection
   public async getCommunicationGaps(params: {
     gapHoursThreshold: number;
+    byContact?: boolean;
     numberA?: string;
     numberB?: string;
     firId?: string;
@@ -1136,10 +1217,30 @@ export class TelecomService {
       );
     }
 
-    records.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    const timelines = new Map<string, NormalizedCallRecord[]>();
+    if (params.byContact) {
+      for (const record of records) {
+        const {sourceNumber, destinationNumber} = record;
+        if (!sourceNumber || !destinationNumber || sourceNumber === destinationNumber ||
+          sourceNumber === "UNKNOWN" || destinationNumber === "UNKNOWN") continue;
+        const pair = JSON.stringify([sourceNumber, destinationNumber].sort());
+        const timeline = timelines.get(pair);
+        if (timeline) timeline.push(record);
+        else timelines.set(pair, [record]);
+      }
+    } else {
+      timelines.set("", records);
+    }
 
+    return [...timelines.values()].flatMap(timeline => this.findGapsInTimeline(
+      timeline, params.gapHoursThreshold, params.numberA, params.numberB
+    )).sort((a,b) => a.gapStartTimestamp.localeCompare(b.gapStartTimestamp));
+  }
+
+  private findGapsInTimeline(records: NormalizedCallRecord[], minimumHours: number, target?: string, contact?: string): CommunicationGap[] {
+    records.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
     const gaps: CommunicationGap[] = [];
-    const minDiffMs = params.gapHoursThreshold * 3600 * 1000;
+    const minDiffMs = minimumHours * 3600 * 1000;
 
     for (let i = 0; i < records.length - 1; i++) {
       const prev = records[i];
@@ -1163,8 +1264,8 @@ export class TelecomService {
         }).length;
 
         gaps.push({
-          numberA: prev.sourceNumber,
-          numberB: prev.destinationNumber,
+          numberA: target || prev.sourceNumber,
+          numberB: contact || (prev.destinationNumber === target ? prev.sourceNumber : prev.destinationNumber),
           gapStartTimestamp: prev.timestamp,
           gapEndTimestamp: next.timestamp,
           gapHours,
@@ -1267,7 +1368,7 @@ export class TelecomService {
     if (firId && firId !== "ALL") records = records.filter((r) => r.firId === firId);
 
     return records
-      .filter((r) => r.durationSeconds <= maxSec)
+      .filter(r => (r.callType === "INCOMING" || r.callType === "OUTGOING") && r.durationSeconds > 0 && r.durationSeconds < maxSec)
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
       .slice(0, 100);
   }
@@ -1278,37 +1379,26 @@ export class TelecomService {
     let records = store.callRecords.filter(r => !r.isExcluded && !store.files.find(f => f.id === r.fileId)?.isExcludedFromCalculations);
     if (firId && firId !== "ALL") records = records.filter((r) => r.firId === firId);
 
-    const imeiMap = new Map<string, { msisdn: string; imsi: string; first: string; last: string; calls: number; file: string; operator?: string }>();
-
-    records.forEach((r) => {
-      if (r.imei) {
-        const key = `${r.imei}_${r.sourceNumber}`;
-        const item = imeiMap.get(key) || {
-          msisdn: r.sourceNumber,
-          imsi: r.imsi || "—",
-          first: r.timestamp,
-          last: r.timestamp,
-          calls: 0,
-          file: r.fileId,
-          operator: r.operator,
-        };
-        item.calls++;
-        if (r.timestamp < item.first) item.first = r.timestamp;
-        if (r.timestamp > item.last) item.last = r.timestamp;
-        imeiMap.set(key, item);
-      }
-    });
-
-    return Array.from(imeiMap.entries()).map(([key, d]) => ({
-      imei: key.split("_")[0],
-      imsi: d.imsi,
-      msisdn: d.msisdn,
-      firstObserved: d.first,
-      lastObserved: d.last,
-      totalCallsRecorded: d.calls,
-      sourceFile: d.file,
-      operator: d.operator,
-    })).sort((a, b) => b.lastObserved.localeCompare(a.lastObserved));
+    const files = new Map(store.files.map(file=>[file.id,file]));
+    const observations = new Map<string, SimChangeTimelineItem>();
+    for (const record of records) {
+      if (!record.imei && !record.imsi) continue;
+      const file = files.get(record.fileId);
+      const legacyTarget = file?.originalFilename.match(/\bCDR[ _-]+(?:\+91[ _-]*)?([0-9]{10})(?![0-9])/i)?.[1];
+      const target = record.cdrTargetNumber || legacyTarget;
+      const number = target && (target===record.sourceNumber || target===record.destinationNumber) ? target : record.sourceNumber;
+      const key = JSON.stringify([record.fileId,number,record.imei,record.imsi]);
+      const item = observations.get(key) || {
+        msisdn:number, imei:record.imei || "—", imsi:record.imsi || "—",
+        firstObserved:record.timestamp, lastObserved:record.timestamp, totalCallsRecorded:0,
+        sourceFile:file?.originalFilename || record.fileId, operator:record.operator || file?.operator,
+      };
+      item.totalCallsRecorded++;
+      if (record.timestamp < item.firstObserved) item.firstObserved=record.timestamp;
+      if (record.timestamp > item.lastObserved) item.lastObserved=record.timestamp;
+      observations.set(key,item);
+    }
+    return [...observations.values()].sort((a,b)=>b.lastObserved.localeCompare(a.lastObserved));
   }
 
   // 15. AI Data Quality Inspector
@@ -1598,11 +1688,12 @@ export class TelecomService {
   }
 
   // Save finding
-  public async saveFinding(finding: Omit<SavedAnalysisFinding, "id" | "savedAt">): Promise<SavedAnalysisFinding> {
+  public async saveFinding(finding: Omit<SavedAnalysisFinding, "id" | "savedAt">, processed?:SavedAnalysisFinding["firstLastContact"]): Promise<SavedAnalysisFinding> {
     const store = await this.getStore();
     const { reproduction: _untrustedBaseline, ...manualFinding } = finding;
     const newFinding: SavedAnalysisFinding = {
       ...manualFinding,
+      firstLastContact: processed,
       id: `find-${Date.now()}`,
       savedAt: new Date().toISOString(),
     };
@@ -1652,11 +1743,19 @@ export class TelecomService {
   // =========================================================================
 
   // Module 1 — Automated CDR Reconciliation Engine
-  public async runReconciliation(firId?: string): Promise<ReconciliationDashboardSummary> {
+  public async runReconciliation(firId?: string, multiOperatorOnly = false): Promise<ReconciliationDashboardSummary> {
     const store = await this.getStore();
     let calls = store.callRecords.filter(r => !r.isExcluded && !store.files.find(f => f.id === r.fileId)?.isExcludedFromCalculations);
     if (firId && firId !== "ALL") {
       calls = calls.filter(r => r.firId === firId);
+    }
+    const fileOperators = new Map(store.files.map(file=>[file.id,file.operator]));
+    const operatorFor = (record:NormalizedCallRecord) => record.operator || fileOperators.get(record.fileId);
+    calls = calls.filter(call=>Number.isFinite(Date.parse(call.timestamp)))
+      .sort((a,b)=>Date.parse(a.timestamp)-Date.parse(b.timestamp));
+    if (multiOperatorOnly) {
+      calls = calls.filter(record=>operatorFor(record) && operatorFor(record)!=="OTHER");
+      if (new Set(calls.map(operatorFor)).size<2) throw new Error("Upload usable CDR records from at least two different operators for this FIR.");
     }
 
     const fileIds = Array.from(new Set(calls.map(c => c.fileId)));
@@ -1672,21 +1771,21 @@ export class TelecomService {
       for (let j = i + 1; j < calls.length; j++) {
         const a = calls[i];
         const b = calls[j];
+        const diffSec = (Date.parse(b.timestamp)-Date.parse(a.timestamp))/1000;
+        if (diffSec > 180) break;
 
         // Same file exact duplicate check
         if (a.fileId === b.fileId && a.sourceNumber === b.sourceNumber && a.destinationNumber === b.destinationNumber && a.timestamp === b.timestamp && a.durationSeconds === b.durationSeconds) {
           duplicateRecords++;
           continue;
         }
+        if (a.fileId === b.fileId || (multiOperatorOnly && operatorFor(a)===operatorFor(b))) continue;
 
         // Cross-file or cross-operator match check
         const isDirect = (a.sourceNumber === b.sourceNumber && a.destinationNumber === b.destinationNumber);
         const isReciprocal = (a.sourceNumber === b.destinationNumber && a.destinationNumber === b.sourceNumber);
 
         if (isDirect || isReciprocal) {
-          const timeA = new Date(a.timestamp).getTime();
-          const timeB = new Date(b.timestamp).getTime();
-          const diffSec = Math.abs((timeA - timeB) / 1000);
           const durDiff = Math.abs(a.durationSeconds - b.durationSeconds);
 
           if (diffSec <= 15) {
@@ -1760,6 +1859,7 @@ export class TelecomService {
     const overlappingDatasets: { fileA: string; fileB: string; overlapStart: string; overlapEnd: string; commonCallCount: number }[] = [];
     for (let i = 0; i < fileIds.length; i++) {
       for (let j = i + 1; j < fileIds.length; j++) {
+        if (multiOperatorOnly && fileOperators.get(fileIds[i]) === fileOperators.get(fileIds[j])) continue;
         const a = calls.filter(c => c.fileId === fileIds[i]).map(c => c.timestamp).sort();
         const b = calls.filter(c => c.fileId === fileIds[j]).map(c => c.timestamp).sort();
         const start = a[0] > b[0] ? a[0] : b[0];
@@ -2661,8 +2761,11 @@ export class TelecomService {
   // Module 4 — CDR & IPDR Consistency Checker
   public async getCdrIpdrConsistencyReport(firId: string): Promise<CdrIpdrConsistencyReport> {
     const store = await this.getStore();
-    const cdrCalls = store.callRecords.filter(c => !c.isExcluded && !store.files.find(f => f.id === c.fileId)?.isExcludedFromCalculations && (!firId || firId === "ALL" || c.firId === firId));
-    const ipdrSessions = store.ipdrRecords.filter(i => !firId || firId === "ALL" || i.firId === firId);
+    const excluded = new Set(store.files.filter(file=>file.isExcludedFromCalculations).map(file=>file.id));
+    const cdrCalls = store.callRecords.filter(c => !c.isExcluded && !excluded.has(c.fileId)
+      && (c.callType==="INCOMING" || c.callType==="OUTGOING") && c.durationSeconds>0
+      && (!firId || firId === "ALL" || c.firId === firId));
+    const ipdrSessions = store.ipdrRecords.filter(i => !excluded.has(i.fileId) && (!firId || firId === "ALL" || i.firId === firId));
 
     const findings: CdrIpdrConsistencyReport["findings"] = [];
     let consistentCount = 0;

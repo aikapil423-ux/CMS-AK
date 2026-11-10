@@ -1,7 +1,7 @@
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
   const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -90,8 +90,8 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
   ]
 }`;
 
-    // If Gemini API Key is available, invoke AI document analysis
-    if (GEMINI_API_KEY) {
+    // If AI processing is configured, invoke AI document analysis
+    if (processingAIAvailable()) {
       let contents: any[] = [];
 
       if (file) {
@@ -140,50 +140,11 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
         ];
       }
 
-      const candidateModels = [
-        "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite",
-        "gemini-3.5-flash",
-        "gemini-3.6-flash",
-      ];
-
-      for (const model of candidateModels) {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        try {
-          const geminiRes = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents,
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
-            }),
-          });
-
-          if (geminiRes.ok) {
-            const data = await geminiRes.json();
-            const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (textResponse) {
-              const cleaned = textResponse
-                .replace(/^```json\s*/i, "")
-                .replace(/^```\s*/i, "")
-                .replace(/```$/i, "")
-                .trim();
-              const parsed = JSON.parse(cleaned);
-              return NextResponse.json({
-                success: true,
-                modelUsed: model,
-                actData: parsed,
-              });
-            }
-          }
-        } catch (err: any) {
-          console.warn(`Model ${model} failed:`, err?.message);
-        }
+      try {
+        const parsed = JSON.parse(await processWithAI(contents[0].parts, { json: true }));
+        return NextResponse.json({ success: true, modelUsed: PROCESSING_MODEL, actData: parsed });
+      } catch (error) {
+        console.warn("AI document processing failed:", error instanceof Error ? error.message : "Unknown error");
       }
     }
 

@@ -36,7 +36,7 @@ import {
   LegalAnalysisReport,
   LegalSuggestionItem,
 } from "@/types";
-import { LegalAssistantService } from "@/services/legalAssistantService";
+import { analyzeCaseLaw } from "@/lib/caseWritingClient";
 import { persistentFirService as firService } from "@/services/persistentFirService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,16 +111,16 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
     setIsAnalyzing(true);
     setAnalysisStep(0);
 
-    // Progressive step simulation for a realistic, polished experience
-    for (let i = 0; i < 4; i++) {
-      setAnalysisStep(i);
-      await new Promise((resolve) => setTimeout(resolve, 450));
+    let generatedReport: LegalAnalysisReport;
+    try {
+      generatedReport = await analyzeCaseLaw({ module: "FIR", caseId: fir.id });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Legal Help could not complete.");
+      return;
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    // Execute actual rule & deep NLP engine
-    const generatedReport = await LegalAssistantService.analyzeFIR(fir);
     setReport(generatedReport);
-    setIsAnalyzing(false);
 
     // Persist to FIR storage
     await firService.saveLegalAnalysis(fir.id, generatedReport);

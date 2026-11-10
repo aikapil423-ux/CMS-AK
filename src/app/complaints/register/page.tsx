@@ -1370,7 +1370,7 @@ export default function RegisterComplaintPage() {
     reader.readAsDataURL(file);
   };
 
-  // Execution pipeline powered by Gemini 3.5 Flash Model
+  // Execution pipeline powered by GLM 5.3 FlashX Legal Model
   const executeExtractionPipeline = async (
     file: File,
     dataUrl: string,
@@ -1381,7 +1381,7 @@ export default function RegisterComplaintPage() {
   ) => {
     try {
       setAutofillProgress(35);
-      setAutofillStepText(`Analyzing document with Gemini 3.5 Flash AI model...`);
+      setAutofillStepText(`Analyzing document with GLM 5.3 FlashX Legal AI model...`);
 
       const formData = new FormData();
       formData.append("file", file);
@@ -1403,7 +1403,7 @@ export default function RegisterComplaintPage() {
 
       const resJson = await res.json();
       if (!resJson.success || !resJson.data) {
-        throw new Error(resJson.error || "Failed to parse document with Gemini model");
+        throw new Error(resJson.error || "Failed to parse document with OpenRouter model");
       }
 
       setAutofillProgress(90);
@@ -1436,7 +1436,7 @@ export default function RegisterComplaintPage() {
         )
       );
 
-      // Populate Form Fields from Gemini 3.5 Flash extraction
+      // Populate Form Fields from GLM 5.3 FlashX Legal extraction
       const c = geminiData.complainant || {};
       const a = geminiData.accused || {};
       const inc = geminiData.incident || {};
@@ -1818,7 +1818,7 @@ export default function RegisterComplaintPage() {
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     } catch (err: any) {
-      console.warn("Gemini AI API Error:", err);
+      console.warn("OpenRouter AI API Error:", err);
       // STRICT: Never fabricate fake names or addresses when document processing fails!
       if (textContent && textContent.trim().length > 20) {
         extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel, attachedDocId);

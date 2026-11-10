@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { writeCaseDraft } from "@/lib/caseWritingClient";
 import { useParams, useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
@@ -572,9 +573,11 @@ export default function ComplaintProfilePage() {
     if (!complaint) return;
     setIsSubmittingReport(true);
     try {
+      const reportId = `rep_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       await ComplaintService.submitEoReportWithOutcome(
         complaint.id,
         {
+          id: reportId,
           title: uploadReportTitle || uploadReportFileName || "Official Enquiry Report",
           reportType: uploadReportCategory.toLowerCase().replace(/[^a-z0-9]/g, "_"),
           reportTypeLabel: uploadReportCategory,
@@ -596,6 +599,12 @@ export default function ComplaintProfilePage() {
         currentUser.pno,
         currentUser.role
       );
+      if (uploadReportDataUrl) {
+        void universalEvidenceService.registerAndProcess({
+          dataUrl: uploadReportDataUrl, fileName: uploadReportFileName, fileId: reportId,
+          caseId: complaint.id, caseNumber: complaint.complaintNumber, module: "COMPLAINTS",
+        }).catch(error => console.warn("Signed report processing failed:", error));
+      }
       await loadComplaint();
       setUploadReportModalOpen(false);
       setUploadReportTitle("");
@@ -1623,43 +1632,16 @@ export default function ComplaintProfilePage() {
   };
 
   // Generate AI Report draft
-  const handleGenerateAiReport = () => {
+  const handleGenerateAiReport = async () => {
     if (!complaint) return;
     setIsAiGenerating(true);
-    setTimeout(() => {
-      const generated = `PRELIMINARY ENQUIRY REPORT (UNDER SECTION 173(3) BNSS)
-Police Station: ${complaint.policeStation}
-Complaint Reference: ${complaint.complaintNumber}
-Date of Inquiry: ${formatDate(new Date())}
-Designated Officer: ${complaint.assignedEoName || currentUser.name} (${complaint.assignedEoRank || currentUser.rankDisplay})
-
-1. BRIEF FACTS:
-The complainant, ${complaint.complainantName}, lodged an application reporting an incident at ${complaint.incidentPlace} regarding ${complaint.categoryDisplay}.
-Allegation: "${complaint.incidentDetails}"
-
-2. ENQUIRY CONDUCTED & EVIDENCE INSPECTED:
-- Spot visit conducted at the place of occurrence.
-- Statements of complainant and neighboring witnesses recorded.
-- Attached digital evidence / documents inspected (${complaint.attachments?.length || 0} files examined).
-- Accused party named: ${complaint.accusedList?.[0]?.name || "Unidentified offenders"}.
-
-3. LEGAL EVALUATION:
-The facts disclosed indicate elements pertaining to ${complaint.categoryDisplay}.
-Compliance with Section 35(3) BNSS notice requirements was initiated.
-
-4. RECOMMENDATION:
-${
-  complaint.priority === "CRITICAL_SENSITIVE" || complaint.category === "PHYSICAL_ASSAULT_AFFRAY"
-    ? "Substantiated cognizable elements. Formal registration of FIR recommended under appropriate BNS sections."
-    : "No immediate cognizable violence detected. Parties directed towards lawful civil remedy / mediation accord."
-}
-
-Submitted by:
-${complaint.assignedEoName || currentUser.name}, ${complaint.assignedEoRank || currentUser.rankDisplay}
-PNO: ${complaint.assignedEoPno || currentUser.pno}`;
-      setAiReportText(generated);
+    try {
+      setAiReportText(await writeCaseDraft({ module: "COMPLAINT", caseId: complaint.id, purpose: "report", title: "Preliminary Enquiry Report" }));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Report draft failed.");
+    } finally {
       setIsAiGenerating(false);
-    }, 900);
+    }
   };
 
   // Build combined history timeline matching official format (No duplicate entries)

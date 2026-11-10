@@ -3,6 +3,7 @@ import { ComplaintService } from "./complaintService";
 import { complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
 import { convertKrutiDevIfDetected } from "@/utils/universalDocumentParser";
+import { summarizeCase } from "@/lib/caseWritingClient";
 
 export interface IdentifiedPerson {
   id: string;
@@ -33,6 +34,8 @@ export interface ComplaintAnalysisReport {
   complaintNumber: string;
   shortTitle: string;
   overviewSummary: string;
+  aiAnalysis?: string;
+  aiAnalysisError?: string;
   identifiedPersons: IdentifiedPerson[];
   extractedDocuments: ExtractedDocumentInfo[];
   unreadableDocuments: Array<{ fileName: string; reason: string }>;
@@ -521,11 +524,22 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
     }
   }
 
+  let aiAnalysis: string | undefined;
+  let aiAnalysisError: string | undefined;
+  try {
+    const summary = await summarizeCase({ module: "COMPLAINT", caseId: complaint.id });
+    aiAnalysis = [summary.caseSynopsis, summary.workDoneSummary, summary.pendingWorkSummary].join("\n\n");
+  } catch (error) {
+    aiAnalysisError = error instanceof Error ? error.message : "AI analysis is unavailable.";
+  }
+
   return {
     complaintId: complaint.id,
     complaintNumber: complaint.complaintNumber,
     shortTitle,
     overviewSummary: complaint.incidentDetails || complaint.complaintDescription || "Complaint registered in Station General Registry.",
+    aiAnalysis,
+    aiAnalysisError,
     identifiedPersons: deduplicatedPersons,
     extractedDocuments,
     unreadableDocuments,

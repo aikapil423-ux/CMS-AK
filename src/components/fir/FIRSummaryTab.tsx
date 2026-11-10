@@ -1,5 +1,7 @@
 "use client";
 
+import { summarizeCase } from "@/lib/caseWritingClient";
+
 import React, { useState } from "react";
 import {
   Sparkles,
@@ -89,6 +91,7 @@ export function FIRSummaryTab({
           ? `${currentUser.role || "Officer"} ${currentUser.name}`
           : "CMS Investigative Intelligence"
       );
+      Object.assign(generated, await summarizeCase({ module: "FIR", caseId: fir.id }));
 
       setSummary(generated);
 
@@ -102,6 +105,7 @@ export function FIRSummaryTab({
       await firService.updateFir(fir.id, { investigationSummary: generated });
     } catch (err) {
       console.error("Failed to generate or persist FIR summary:", err);
+      alert(err instanceof Error ? err.message : "FIR summary could not be generated.");
     } finally {
       setIsProcessing(false);
     }

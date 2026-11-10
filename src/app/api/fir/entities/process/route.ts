@@ -1,3 +1,4 @@
+import { processingAIAvailable } from "@/lib/openRouter";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (typeof body.firId !== 'string') return Response.json({ error: 'FIR ID required.' }, { status: 400 });
     const fir = await authorizedAnalysisFir(body.firId, user);
     if (!fir) return Response.json({ error: 'FIR not found or access denied.' }, { status: 404 });
-    if (!process.env.GEMINI_API_KEY) return Response.json({ jobs: [], aiAvailable: false });
+    if (!processingAIAvailable()) return Response.json({ jobs: [], aiAvailable: false });
     let all: UniversalEvidenceRecord[] = [];
     try { all = JSON.parse(await fs.readFile(path.join(process.cwd(), 'prisma', 'processed-evidence-store.json'), 'utf8')); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }

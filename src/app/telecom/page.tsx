@@ -4,10 +4,14 @@
 // Comprehensive Haryana Police Telecom Evidence & Forensic Investigation Workspace (Phase 4)
 // Investigation Quality Control, AI Evidence Verification & Court-Ready Digital Forensics
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
+import { TelecomResultsTable } from "@/components/telecom/TelecomResultsTable";
+import { CommunicationGapsPanel } from "@/components/telecom/CommunicationGapsPanel";
+import { EvidenceAnalysisPanel } from "@/components/telecom/EvidenceAnalysisPanel";
+import { CallAnalysisPanel } from "@/components/telecom/CallAnalysisPanel";
 import {
   Phone,
   PhoneCall,
@@ -77,7 +81,6 @@ import {
   CrossFirMatch,
   NormalizedTowerRecord,
   SavedAnalysisFinding,
-  SimChangeTimelineItem,
   DataQualityReport,
   ActivitySpike,
   StatementConsistencyResult,
@@ -86,9 +89,7 @@ import {
   ReciprocalAnalysis,
   TelecomCategory,
   TelecomOperator,
-  ReconciliationMatchItem,
   ReconciliationDashboardSummary,
-  MnpHistoryItem,
   ContactAlias,
   EvidenceCompletenessAssessment,
   TelecomEvidenceRequest,
@@ -111,7 +112,6 @@ import {
   InvestigationHypothesis,
   AlternativeExplanation,
   SourceReliabilityScore,
-  CdrIpdrConsistencyReport,
   AnalysisReproductionRun,
   EvidenceIndexItem,
   CourtExhibitPackage,
@@ -169,14 +169,11 @@ export default function TelecomEvidencePage() {
   const [files, setFiles] = useState<TelecomEvidenceFile[]>([]);
   const [stats, setStats] = useState<CdrStatistics | null>(null);
   const [crossMatches, setCrossMatches] = useState<CrossFirMatch[]>([]);
-  const [simTimeline, setSimTimeline] = useState<SimChangeTimelineItem[]>([]);
   const [dataQuality, setDataQuality] = useState<DataQualityReport | null>(null);
   const [activitySpikes, setActivitySpikes] = useState<ActivitySpike[]>([]);
   const [towers, setTowers] = useState<NormalizedTowerRecord[]>([]);
   const [availableFirs, setAvailableFirs] = useState<any[]>([]);
   const [savedFindings, setSavedFindings] = useState<SavedAnalysisFinding[]>([]);
-  const [reconciliations, setReconciliations] = useState<ReconciliationMatchItem[]>([]);
-  const [mnpRecords, setMnpRecords] = useState<MnpHistoryItem[]>([]);
   const [contactAliases, setContactAliases] = useState<ContactAlias[]>([]);
   const [evidenceRequests, setEvidenceRequests] = useState<TelecomEvidenceRequest[]>([]);
   const [unifiedTimeline, setUnifiedTimeline] = useState<UnifiedTimelineEvent[]>([]);
@@ -187,7 +184,6 @@ export default function TelecomEvidencePage() {
   const [hypotheses, setHypotheses] = useState<InvestigationHypothesis[]>([]);
   const [alternativeExpls, setAlternativeExpls] = useState<AlternativeExplanation[]>([]);
   const [sourceReliability, setSourceReliability] = useState<SourceReliabilityScore[]>([]);
-  const [consistencyReport, setConsistencyReport] = useState<CdrIpdrConsistencyReport | null>(null);
   const [evidenceIndex, setEvidenceIndex] = useState<EvidenceIndexItem[]>([]);
   const [courtExhibits, setCourtExhibits] = useState<CourtExhibitPackage[]>([]);
   const [aiContradictions, setAiContradictions] = useState<AiContradictionItem[]>([]);
@@ -216,6 +212,25 @@ export default function TelecomEvidencePage() {
   const [firstLastNumB, setFirstLastNumB] = useState("");
   const [firstLastResult, setFirstLastResult] = useState<FirstLastContactResult | null>(null);
   const [loadingFirstLast, setLoadingFirstLast] = useState(false);
+  const [firstLastContacts, setFirstLastContacts] = useState<{firId:string; contacts:Record<string,string[]>} | null>(null);
+  const [firstLastMessage, setFirstLastMessage] = useState("");
+  const firstLastRequest = useRef<AbortController | null>(null);
+  const telecomLoadGeneration = useRef(0);
+  const contactMap = firstLastContacts?.firId === selectedFirId ? firstLastContacts.contacts : {};
+  const targetOptions = Object.keys(contactMap).sort();
+  const partyOptions = Object.hasOwn(contactMap,firstLastNumA) ? contactMap[firstLastNumA] : [];
+
+  function selectTelecomFir(firId:string) {
+    if (firId === selectedFirId) return;
+    telecomLoadGeneration.current++;
+    firstLastRequest.current?.abort();
+    setFirstLastNumA("");
+    setFirstLastNumB("");
+    setFirstLastResult(null);
+    setFirstLastMessage("");
+    setLoadingFirstLast(false);
+    setSelectedFirId(firId);
+  }
 
   const [gapHours, setGapHours] = useState(12);
   const [gapsList, setGapsList] = useState<CommunicationGap[]>([]);
@@ -304,6 +319,7 @@ export default function TelecomEvidencePage() {
         alert(
           "✓ Auto-Analysis Complete!\n\n" +
           data.summary + "\n\n" +
+          (data.aiAnalysis ? "GLM analysis for review\n" + data.aiAnalysis + "\n\n" : data.aiAnalysisError ? data.aiAnalysisError + "\n\n" : "") +
           "• Findings generated: " + data.findingsCreated + "\n" +
           "• Hypotheses formulated: " + data.hypothesesCreated + "\n" +
           "All panels have been updated with synthesized telecom intelligence."
@@ -320,6 +336,7 @@ export default function TelecomEvidencePage() {
   };
 
   const loadTelecomData = async () => {
+    const generation = ++telecomLoadGeneration.current;
     setRefreshing(true);
     try {
       const url = new URL("/api/telecom", window.location.origin);
@@ -331,17 +348,16 @@ export default function TelecomEvidencePage() {
       const res = await fetch(url.toString());
       if (res.ok) {
         const data = await res.json();
+        if (generation !== telecomLoadGeneration.current) return;
         setFiles(data.files || []);
         setStats(data.stats || null);
+        setFirstLastContacts({firId:selectedFirId, contacts:data.cdrContacts || {}});
         setCrossMatches(data.crossMatches || []);
-        setSimTimeline(data.simTimeline || []);
         setDataQuality(data.dataQuality || null);
         setActivitySpikes(data.activitySpikes || []);
         setTowers(data.towers || []);
         setAvailableFirs(data.firs || []);
         setSavedFindings(data.savedFindings || []);
-        setReconciliations(data.reconciliations || []);
-        setMnpRecords(data.mnpRecords || []);
         setContactAliases(data.contactAliases || []);
         setEvidenceRequests(data.evidenceRequests || []);
         setUnifiedTimeline(data.unifiedTimeline || []);
@@ -351,7 +367,6 @@ export default function TelecomEvidencePage() {
         setHypotheses(data.hypotheses || []);
         setAlternativeExpls(data.alternativeExpls || []);
         setSourceReliability(data.sourceReliability || []);
-        setConsistencyReport(data.consistencyReport || null);
         setEvidenceIndex(data.evidenceIndex || []);
         setCourtExhibits(data.courtExhibits || []);
         setAiContradictions(data.aiContradictions || []);
@@ -370,7 +385,7 @@ export default function TelecomEvidencePage() {
     } catch (err) {
       console.error("Failed to load telecom data:", err);
     } finally {
-      setRefreshing(false);
+      if (generation === telecomLoadGeneration.current) setRefreshing(false);
     }
   };
 
@@ -685,12 +700,12 @@ export default function TelecomEvidencePage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold tracking-tight">Telecom Evidence Analysis Workspace</h1>
+                  <h1 className="text-lg font-bold tracking-tight text-white!">Telecom Evidence Analysis Workspace</h1>
                   <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">
                     Phase 4 Quality Control &amp; Court Forensics
                   </span>
                 </div>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-white">
                   {isHindi
                     ? "दूरसंचार साक्ष्य गुणवत्ता नियंत्रण, AI सत्यापन एवं न्यायालय साक्ष्य तैयारी • BNSS 2023 & BSA 2023 Compliant"
                     : "Telecom Evidence Quality Control, AI Verification & Court-Ready Forensics • BNSS 2023 & BSA 2023 Compliant"}
@@ -702,10 +717,10 @@ export default function TelecomEvidencePage() {
           {/* FIR Filter & Main Actions */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-white/10 rounded-lg p-1 border border-white/15">
-              <span className="text-[11px] font-bold text-slate-300 px-2">FIR Context:</span>
+              <span className="text-[11px] font-bold text-white px-2">FIR Context:</span>
               <select
                 value={selectedFirId}
-                onChange={(e) => setSelectedFirId(e.target.value)}
+                onChange={(e) => selectTelecomFir(e.target.value)}
                 className="bg-transparent text-white text-xs font-bold py-1 px-2 focus:outline-none cursor-pointer"
               >
                 <option value="ALL" className="bg-slate-900 text-white">All Portal FIRs (Cross-Case)</option>
@@ -754,23 +769,23 @@ export default function TelecomEvidencePage() {
         {activeFir && (
           <div className="max-w-7xl mx-auto mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 text-[11px]">
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Active FIR</span>
+              <span className="text-white block text-[10px] uppercase font-bold">Active FIR</span>
               <span className="font-mono font-bold text-amber-300">{activeFir.firNumber}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Police Station</span>
+              <span className="text-white block text-[10px] uppercase font-bold">Police Station</span>
               <span className="font-semibold text-slate-200">{activeFir.policeStation}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Investigating Officer</span>
+              <span className="text-white block text-[10px] uppercase font-bold">Investigating Officer</span>
               <span className="font-semibold text-slate-200">{activeFir.assignedIoName || "Assigned IO"}</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Evidence Files</span>
+              <span className="text-white block text-[10px] uppercase font-bold">Evidence Files</span>
               <span className="font-bold text-white">{files.length} Evidence Files</span>
             </div>
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold">Court Readiness</span>
+              <span className="text-white block text-[10px] uppercase font-bold">Court Readiness</span>
               <span className="font-bold text-emerald-400">
                 {courtExhibits.some(e => e.status === "READY_FOR_COURT" && e.bsaCertificateAttached) ? "Marked Ready — Review Required" : "Draft Preparation"}
               </span>
@@ -1011,75 +1026,97 @@ export default function TelecomEvidencePage() {
                         Contact Ranking &amp; Aggregated Frequency Table
                       </h4>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-100 text-slate-600 text-[11px] uppercase font-bold border-b border-slate-200">
-                          <tr>
-                            <th className="px-4 py-2.5">Party Number</th>
-                            <th className="px-3 py-2.5">Subscriber / Verified Alias</th>
-                            <th className="px-3 py-2.5 text-center">Incoming</th>
-                            <th className="px-3 py-2.5 text-center">Outgoing</th>
-                            <th className="px-3 py-2.5 text-center">Total</th>
-                            <th className="px-3 py-2.5">Duration</th>
-                            <th className="px-3 py-2.5">First Contact</th>
-                            <th className="px-3 py-2.5">Last Contact</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {(stats?.mostFrequentNumbers || []).map((c, i) => (
-                            <tr key={i} className="hover:bg-slate-50/70">
-                              <td className="px-4 py-2.5 font-mono font-bold text-slate-900">{c.number}</td>
-                              <td className="px-3 py-2.5 font-semibold text-blue-900">{c.subscriberName || "Pending KYC"}</td>
-                              <td className="px-3 py-2.5 text-center font-bold text-emerald-700">{c.incoming}</td>
-                              <td className="px-3 py-2.5 text-center font-bold text-blue-700">{c.outgoing}</td>
-                              <td className="px-3 py-2.5 text-center font-black text-slate-900">{c.total}</td>
-                              <td className="px-3 py-2.5 font-mono text-slate-700">{Math.round(c.durationSeconds / 60)}m {c.durationSeconds % 60}s</td>
-                              <td className="px-3 py-2.5 font-mono text-slate-600">{c.firstSeen || "-"}</td>
-                              <td className="px-3 py-2.5 font-mono text-slate-600">{c.lastSeen || "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="p-3">
+                      <TelecomResultsTable title="Top Contacts" firLabel={activeFir?.firNumber}
+                        headers={["Party Number","Subscriber / Verified Alias","Incoming","Outgoing","Total","Duration (sec)","First Contact","Last Contact"]}
+                        rows={(stats?.mostFrequentNumbers || []).map(contact=>({
+                          key:contact.number,
+                          values:[contact.number,contact.subscriberName || "Pending KYC",contact.incoming,contact.outgoing,
+                            contact.total,contact.durationSeconds,contact.firstSeen || "—",contact.lastSeen || "—"],
+                        }))} />
                     </div>
                   </div>
                 )}
 
+                {callIntelSubTab === "GAPS" && (
+                  <CommunicationGapsPanel key={selectedFirId} firId={selectedFirId} firLabel={activeFir?.firNumber} contacts={contactMap} />
+                )}
+                {(callIntelSubTab === "SPIKES" || callIntelSubTab === "RECIPROCAL" || callIntelSubTab === "SHORT_CALLS") && (
+                  <CallAnalysisPanel key={selectedFirId+":"+callIntelSubTab} mode={callIntelSubTab} firId={selectedFirId} firLabel={activeFir?.firNumber} contacts={contactMap} />
+                )}
                 {callIntelSubTab === "FIRST_LAST" && (
                   <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
                     <h4 className="font-bold text-sm text-slate-900">First &amp; Last Recorded Contact</h4>
+                    <datalist id="first-last-cdr-targets">
+                      {targetOptions.map(identifier => <option key={identifier} value={identifier} />)}
+                    </datalist>
+                    <datalist id="first-last-cdr-contacts">
+                      {partyOptions.map(identifier => <option key={identifier} value={identifier} />)}
+                    </datalist>
                     <div className="flex flex-wrap items-center gap-2">
                       <input
                         type="text"
-                        placeholder="Party A (9812044819)"
+                        aria-label="Party A"
+                        placeholder="Search CDR target"
+                        list="first-last-cdr-targets"
+                        disabled={!targetOptions.length || loadingFirstLast}
                         value={firstLastNumA}
-                        onChange={(e) => setFirstLastNumA(e.target.value)}
+                        onChange={(e) => { setFirstLastNumA(e.target.value); setFirstLastNumB(""); setFirstLastResult(null); setFirstLastMessage(""); }}
                         className="border border-slate-300 rounded px-3 py-1.5 text-xs font-mono w-44"
                       />
                       <input
                         type="text"
-                        placeholder="Party B (9876543210)"
+                        aria-label="Party B"
+                        placeholder="Search Party B"
+                        list="first-last-cdr-contacts"
+                        disabled={!partyOptions.length || loadingFirstLast}
                         value={firstLastNumB}
-                        onChange={(e) => setFirstLastNumB(e.target.value)}
+                        onChange={(e) => { setFirstLastNumB(e.target.value); setFirstLastResult(null); setFirstLastMessage(""); }}
                         className="border border-slate-300 rounded px-3 py-1.5 text-xs font-mono w-44"
                       />
                       <Button
                         size="sm"
+                        disabled={loadingFirstLast || !targetOptions.includes(firstLastNumA) || !partyOptions.includes(firstLastNumB)}
                         onClick={async () => {
-                          if (!firstLastNumA || !firstLastNumB) return;
+                          const request = new AbortController();
+                          firstLastRequest.current?.abort();
+                          firstLastRequest.current = request;
                           setLoadingFirstLast(true);
+                          setFirstLastResult(null);
+                          setFirstLastMessage("");
                           try {
-                            const res = await fetch(`/api/telecom?action=first_last&numA=${firstLastNumA}&numB=${firstLastNumB}&firId=${selectedFirId}`);
+                            const res = await fetch("/api/telecom", {
+                              method:"POST", signal:request.signal, headers:{"Content-Type":"application/json"},
+                              body:JSON.stringify({action:"save_first_last",numA:firstLastNumA,numB:firstLastNumB,firId:selectedFirId}),
+                            });
                             const data = await res.json();
-                            setFirstLastResult(data.result);
+                            if (request.signal.aborted) return;
+                            if (!res.ok) throw new Error(data.error || "Contact analysis failed.");
+                            setFirstLastResult(data.result ?? null);
+                            if (data.finding) {
+                              setSavedFindings(current => [data.finding, ...current.filter(f => f.id !== data.finding.id)]);
+                              setFirstLastMessage("Analysis saved to this FIR’s telecom findings.");
+                            }
+                          } catch (error) {
+                            if (!request.signal.aborted) setFirstLastMessage(error instanceof Error ? error.message : "Contact analysis failed.");
                           } finally {
-                            setLoadingFirstLast(false);
+                            if (!request.signal.aborted) setLoadingFirstLast(false);
                           }
                         }}
                         className="bg-[#0b192c] text-white text-xs font-bold"
                       >
-                        Analyze
+                        {loadingFirstLast ? "Analyzing…" : "Analyze"}
                       </Button>
                     </div>
+                    {firstLastMessage && <p role="status" className="text-xs text-slate-600">{firstLastMessage}</p>}
+                    {!targetOptions.length && <p className="text-xs text-slate-600">
+                      {refreshing ? "Loading CDR contacts…" : selectedFirId === "ALL" || !selectedFirId
+                        ? "Select an FIR to see its CDR contacts."
+                        : "No identified CDR targets available for this FIR."}
+                    </p>}
+                    {!!targetOptions.length && !partyOptions.length && <p className="text-xs text-slate-600">
+                      {targetOptions.includes(firstLastNumA) ? "No incoming or outgoing phone numbers found for this target." : "Select a CDR target in Party A to see its contacts."}
+                    </p>}
                     {firstLastResult && (
                       <div className="bg-slate-50 border border-slate-200 rounded p-4 text-xs grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div>
@@ -1100,6 +1137,10 @@ export default function TelecomEvidencePage() {
                         </div>
                       </div>
                     )}
+                    {firstLastResult && <TelecomResultsTable title="First and Last Contact Records" firLabel={activeFir?.firNumber}
+                      headers={["Time (UTC)","Calling number","Called number","Direction","Duration (sec)"]}
+                      rows={firstLastResult.timeline.map(record=>({key:record.id,values:[record.timestamp,record.sourceNumber,
+                        record.destinationNumber,record.callType,record.durationSeconds]}))} />}
                   </div>
                 )}
               </div>
@@ -1124,88 +1165,19 @@ export default function TelecomEvidencePage() {
                       Verified Cell Tower Metadata Master ({towers.length} Sites)
                     </h4>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-100 text-slate-600 text-[11px] uppercase font-bold border-b border-slate-200">
-                        <tr>
-                          <th className="px-4 py-2.5">Cell ID / CGI</th>
-                          <th className="px-3 py-2.5">Site Name</th>
-                          <th className="px-3 py-2.5">LAC/TAC</th>
-                          <th className="px-3 py-2.5">Coordinates</th>
-                          <th className="px-3 py-2.5">Azimuth</th>
-                          <th className="px-3 py-2.5">RF Uncertainty</th>
-                          <th className="px-3 py-2.5">Observed Events</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {towers.map((t, i) => (
-                          <tr key={i} className="hover:bg-slate-50/70">
-                            <td className="px-4 py-2.5 font-mono font-bold text-slate-900">{t.cellId}</td>
-                            <td className="px-3 py-2.5 font-semibold text-slate-800">{t.siteName}</td>
-                            <td className="px-3 py-2.5 font-mono text-slate-600">{t.lac || "N/A"}</td>
-                            <td className="px-3 py-2.5 font-mono text-slate-700">{t.latitude.toFixed(4)}, {t.longitude.toFixed(4)}</td>
-                            <td className="px-3 py-2.5 font-mono text-slate-700">{t.azimuth !== undefined ? `${t.azimuth}°` : "Omni"}</td>
-                            <td className="px-3 py-2.5 font-mono text-slate-700">±{t.uncertaintyRadiusMeters}m</td>
-                            <td className="px-3 py-2.5 font-bold text-slate-900">{t.totalEventsObserved} calls</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="p-3">
+                    <TelecomResultsTable title="Verified Cell Tower Metadata" firLabel={activeFir?.firNumber}
+                      headers={["Cell ID / CGI","Site Name","LAC/TAC","Coordinates","Azimuth","RF Uncertainty (m)","Observed Events"]}
+                      rows={towers.map(tower=>({key:tower.cellId,values:[tower.cellId,tower.siteName,tower.lac || "N/A",
+                        tower.latitude.toFixed(4)+", "+tower.longitude.toFixed(4),tower.azimuth ?? "Omni",
+                        tower.uncertaintyRadiusMeters,tower.totalEventsObserved]}))} />
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Sub-tab: CDR & IPDR CONSISTENCY (Module 4) */}
-            {telecomSubTab === "CDR_IPDR_CONSISTENCY" && (
-              <div className="space-y-4">
-                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-                  <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-sm text-slate-900">CDR &amp; IPDR Consistency &amp; Cross-Data Correlation</h4>
-                      <p className="text-xs text-slate-500">Cross-checks cellular voice calls against internet packet data sessions</p>
-                    </div>
-                    {consistencyReport && (
-                      <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded">
-                        {consistencyReport.consistentCount} Consistent Overlaps
-                      </span>
-                    )}
-                  </div>
-
-                  {consistencyReport && (
-                    <div className="space-y-3 text-xs">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Concurrent Sessions</span>
-                          <span className="text-base font-black text-slate-900">{consistencyReport.consistentCount}</span>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Potential Discrepancies</span>
-                          <span className="text-base font-black text-amber-700">{consistencyReport.potentialDiscrepanciesCount}</span>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded border border-slate-200">
-                          <span className="text-[10px] text-slate-400 uppercase font-bold block">Missing Coverage</span>
-                          <span className="text-base font-black text-slate-700">{consistencyReport.missingRecordsCount}</span>
-                        </div>
-                      </div>
-
-                      <div className="divide-y divide-slate-100 mt-4">
-                        {consistencyReport.findings.map((f, idx) => (
-                          <div key={idx} className="py-2.5 flex items-start justify-between">
-                            <div>
-                              <span className="font-bold text-slate-900 block">{f.issueType}</span>
-                              <span className="text-slate-600 text-[11px]">{f.description}</span>
-                            </div>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                              {f.severity}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {(telecomSubTab === "SIM_IMEI_MNP" || telecomSubTab === "CDR_IPDR_CONSISTENCY" || telecomSubTab === "RECONCILIATION") && (
+              <EvidenceAnalysisPanel key={selectedFirId+":"+telecomSubTab} mode={telecomSubTab} firId={selectedFirId} firLabel={activeFir?.firNumber} files={files} />
             )}
           </div>
         )}
@@ -1950,7 +1922,7 @@ export default function TelecomEvidencePage() {
                 <label className="font-bold text-slate-700 block mb-1">Target FIR (Case Docket):</label>
                 <select
                   value={selectedFirId}
-                  onChange={(e) => setSelectedFirId(e.target.value)}
+                  onChange={(e) => selectTelecomFir(e.target.value)}
                   className="w-full border border-slate-300 rounded p-2 text-xs font-semibold bg-slate-50"
                 >
                   <option value="ALL">All Portal FIRs (Cross-Case)</option>

@@ -1,5 +1,7 @@
 "use client";
 
+import { CaseDraftButton } from "@/components/ui/CaseDraftButton";
+
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -1615,6 +1617,7 @@ function NoticeTemplatesContent() {
               </Link>
             )}
 
+            {complaint && <CaseDraftButton key={complaint.id + activeTemplate} module="COMPLAINT" caseId={complaint.id} purpose="document" title={activeTemplate.replace(/_/g, " ")} onDraft={text => handleFieldChange("allegationsBrief", text)} />}
             {/* Always-visible Save to Complaint Button */}
             <Button
               onClick={() => {

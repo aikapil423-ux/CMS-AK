@@ -1,7 +1,7 @@
+import { processingAIAvailable, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
   const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       uploadedAt: string;
     }> = [];
 
-    const filePartsForGemini: any[] = [];
+    const fileParts: any[] = [];
     let combinedFallbackText = "";
 
     for (let i = 0; i < allFiles.length; i++) {
@@ -63,17 +63,17 @@ export async function POST(req: NextRequest) {
       if (mimeType.startsWith("text/")) {
         const textContent = buffer.toString("utf-8");
         combinedFallbackText += `\n[Document ${i + 1}: ${file.name}]\n${textContent}\n`;
-        filePartsForGemini.push({
+        fileParts.push({
           text: `[Uploaded Text Document: ${file.name}]\n${textContent}`,
         });
       } else {
-        filePartsForGemini.push({
+        fileParts.push({
           inline_data: {
             mime_type: mimeType,
             data: base64Data,
           },
         });
-        filePartsForGemini.push({
+        fileParts.push({
           text: `[Above attachment is Document ${i + 1}: ${file.name}]`,
         });
       }
@@ -90,52 +90,12 @@ STRICT RULES:
 3. ANTI-HALLUCINATION: Extract ONLY what is explicitly written or visible in the documents. Do NOT invent, assume, or fabricate any data.
 4. FORMAT: Output clean, well-punctuated narrative text suitable for the Police General Diary Brief. Do not include markdown meta-commentary, greetings, or explanations like "Here is the extracted text". Just provide the extracted body text directly.`;
 
-    const candidateModels = [
-      "gemini-3.5-flash-lite",
-      "gemini-3.1-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-3.6-flash",
-      "gemini-flash-lite-latest",
-    ];
-
     let extractedText = "";
-
-    if (GEMINI_API_KEY && filePartsForGemini.length > 0) {
-      const contents = [
-        {
-          role: "user",
-          parts: [{ text: prompt }, ...filePartsForGemini],
-        },
-      ];
-
-      for (const model of candidateModels) {
-        try {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-          const geminiRes = await fetch(apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents,
-              generationConfig: {
-                temperature: 0.1,
-              },
-            }),
-          });
-
-          if (geminiRes.ok) {
-            const data = await geminiRes.json();
-            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText && rawText.trim()) {
-              extractedText = rawText.trim();
-              break;
-            }
-          } else {
-            const err = await geminiRes.text();
-            console.warn(`Model ${model} returned (${geminiRes.status}):`, err.slice(0, 150));
-          }
-        } catch (e: any) {
-          console.warn(`Error calling model ${model}:`, e?.message);
-        }
+    if (processingAIAvailable() && fileParts.length) {
+      try {
+        extractedText = await processWithAI([{ text: prompt }, ...fileParts]);
+      } catch (error) {
+        console.warn("Diary document extraction failed:", error instanceof Error ? error.message : "Unknown error");
       }
     }
 

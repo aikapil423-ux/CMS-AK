@@ -336,6 +336,13 @@ export function ComplaintAnalysisHeader({
           </div>
 
           {/* Unreadable Documents Explicit Alert */}
+          {analysisReport.aiAnalysis && (
+            <details className="rounded border border-slate-200 p-3 text-xs">
+              <summary className="cursor-pointer font-semibold">AI analysis of saved case records</summary>
+              <p className="mt-2 whitespace-pre-wrap">{analysisReport.aiAnalysis}</p>
+            </details>
+          )}
+          {analysisReport.aiAnalysisError && <p role="status" className="text-xs text-amber-800">{analysisReport.aiAnalysisError}</p>}
           {analysisReport.unreadableDocuments.length > 0 && (
             <div className="bg-amber-50/70 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-amber-950">

@@ -1,8 +1,8 @@
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { formatDate } from "@/lib/utils";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(req: NextRequest) {
   const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -80,7 +80,7 @@ Return ONLY valid JSON matching this exact structure without markdown backticks:
   "rawText": "Extracted text..."
 }`;
 
-    if (GEMINI_API_KEY) {
+    if (processingAIAvailable()) {
       let contents: any[] = [];
 
       if (file) {
@@ -129,61 +129,20 @@ Return ONLY valid JSON matching this exact structure without markdown backticks:
         ];
       }
 
-      const candidateModels = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-2.5-pro",
-      ];
-
-      for (const model of candidateModels) {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-        try {
-          const geminiRes = await fetch(apiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents,
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-              },
-            }),
-          });
-
-          if (geminiRes.ok) {
-            const data = await geminiRes.json();
-            const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (textResponse) {
-              const cleaned = textResponse
-                .replace(/^```json\s*/i, "")
-                .replace(/^```\s*/i, "")
-                .replace(/```$/i, "")
-                .trim();
-              const parsed = JSON.parse(cleaned);
-
-              // Ensure rows have IDs
-              if (Array.isArray(parsed.rows)) {
-                parsed.rows = parsed.rows.map((r: any, idx: number) => ({
-                  id: r.id || `row_${idx + 1}`,
-                  label: r.label || `पंक्ति ${idx + 1}`,
-                  cells: Array.isArray(r.cells) ? r.cells : [r.cells || ""],
-                }));
-              }
-
-              return NextResponse.json({
-                success: true,
-                modelUsed: model,
-                proformaData: parsed,
-              });
-            }
-          }
-        } catch (err: any) {
-          console.warn(`Model ${model} error:`, err?.message);
+      try {
+        const parsed = JSON.parse(await processWithAI(contents[0].parts, { json: true }));
+        // Ensure rows have IDs
+        if (Array.isArray(parsed.rows)) {
+          parsed.rows = parsed.rows.map((r: any, idx: number) => ({
+            id: r.id || `row_${idx + 1}`,
+            label: r.label || `पंक्ति ${idx + 1}`,
+            cells: Array.isArray(r.cells) ? r.cells : [r.cells || ""],
+          }));
         }
+
+        return NextResponse.json({ success: true, modelUsed: PROCESSING_MODEL, proformaData: parsed });
+      } catch (error) {
+        console.warn("AI document processing failed:", error instanceof Error ? error.message : "Unknown error");
       }
     }
 

@@ -58,6 +58,7 @@ export interface NormalizedCallRecord {
   firNumber?: string;
   sourceNumber: string; // Calling party (A-Party)
   destinationNumber: string; // Called party (B-Party)
+  cdrTargetNumber?: string;
   callType: CallDirection;
   callDate: string; // YYYY-MM-DD
   callTime: string; // HH:MM:SS
@@ -971,6 +972,7 @@ export interface InvestigationEvent {
 }
 
 export interface SavedAnalysisFinding {
+  firstLastContact?: Omit<FirstLastContactResult, "timeline">;
   reproduction?: { version: 1; method: "CONTACT" | "NIGHT_ACTIVITY"; targetNumber?: string; baselineHash: string };
   id: string;
   firId?: string;

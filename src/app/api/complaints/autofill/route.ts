@@ -1,9 +1,8 @@
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.CMS_EVIDENCE_MODEL || "gemini-3.5-flash";
 
 export async function POST(req: NextRequest) {
   const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
@@ -194,74 +193,9 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
       ];
     }
 
-    const candidateModels = [
-      "gemini-3.5-flash-lite",
-      "gemini-3.1-flash-lite",
-      "gemini-3.1-flash-lite-preview",
-      "gemini-flash-lite-latest",
-      "gemini-3.5-flash",
-      "gemini-3.6-flash",
-      "gemini-3.7-flash",
-    ];
+    const modelUsed = PROCESSING_MODEL;
+    const rawText = await processWithAI(contents[0].parts, { json: true, maxTokens: 32768 });
 
-    let geminiData: any = null;
-    let modelUsed = "";
-    let lastError = "";
-
-    for (const model of candidateModels) {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-      try {
-        const geminiRes = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents,
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json",
-              maxOutputTokens: 32768,
-            },
-          }),
-        });
-
-        if (geminiRes.ok) {
-          geminiData = await geminiRes.json();
-          modelUsed = model;
-          break;
-        } else {
-          const errText = await geminiRes.text();
-          console.warn(`Model ${model} returned (${geminiRes.status}):`, errText.slice(0, 200));
-          lastError = errText;
-          // If 503 or 429, try next model candidate immediately
-          continue;
-        }
-      } catch (err: any) {
-        console.warn(`Error calling model ${model}:`, err?.message);
-        lastError = err?.message;
-      }
-    }
-
-    if (!geminiData) {
-      return NextResponse.json(
-        {
-          error: `Gemini API service temporarily unavailable: ${lastError}`,
-        },
-        { status: 502 }
-      );
-    }
-
-    const rawText = geminiData?.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('');
-
-    if (!rawText) {
-      return NextResponse.json(
-        { error: "No response text received from Gemini model." },
-        { status: 500 }
-      );
-    }
-
-    // Clean JSON if needed
     const cleanJson = rawText.replace(/^```json/i, "").replace(/^```/, "").replace(/```$/, "").trim();
     const parsedData = JSON.parse(cleanJson);
     if (parsedData.investigation) parsedData.investigation = normalizeInvestigation(parsedData.investigation, documentId, parsedData.rawText || parsedData.incident?.details || fallbackText, savedPrompt.audit);
@@ -274,7 +208,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
   } catch (error: any) {
     console.error("Autofill processing error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to process document with Gemini AI" },
+      { error: error?.message || "Failed to process document with OpenRouter AI" },
       { status: 500 }
     );
   }

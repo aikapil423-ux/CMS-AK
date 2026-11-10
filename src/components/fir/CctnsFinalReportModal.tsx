@@ -1,5 +1,7 @@
 "use client";
 
+import { CaseDraftButton } from "@/components/ui/CaseDraftButton";
+
 import React, { useEffect, useRef, useState } from 'react';
 import type { ComplaintReportItem, FIRItem } from '@/types';
 import { toStatutoryFinalReport, initialFinalReport, validateFinalReport, type FinalReportData } from '@/lib/finalReport';
@@ -203,6 +205,10 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
               <button className={buttonClass} onClick={() => change('witnesses',[...data.witnesses,{selected:true,name:'',relation:'',relativeName:'',dob:'',occupation:'',evidence:'',address:'',statement:''}])}>Add witness</button>
             </>}
             {tab === 1 && <div className="grid sm:grid-cols-2 gap-4">
+              <CaseDraftButton module="FIR" caseId={fir.id} purpose="report" title="Brief Facts of Case for I.I.F.-V" onDraft={text => {
+                touched.current.add("briefFacts");
+                setData(current => ({ ...current, briefFacts: text, autoFilled: Object.fromEntries(Object.entries(current.autoFilled || {}).filter(([key]) => key !== "briefFacts")) }));
+              }} />
               {field('labAnalysis','Results of Laboratory Analysis',undefined,'textarea')}{field('briefFacts','Brief Facts of Case',undefined,'textarea',true)}
               {field('prosecutorApproved','Approved by Public Prosecutor',['Yes','No'],'text',true)}
               {data.prosecutorApproved === 'Yes' && field('approvalDate','Date of Approval',undefined,'date',true)}

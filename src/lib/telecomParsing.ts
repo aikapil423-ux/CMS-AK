@@ -1,5 +1,23 @@
 import type { CallDirection } from "@/types/telecom";
 
+export const targetPartyHeader = "Target / A Party Number";
+
+export const callingHeaders = [
+  "Calling Party", "Calling Party Number", "Calling Party No", "Calling Number", "Calling No",
+  "A Party", "A Party Number", "A Party No", "A Number", "A No", "ANUM", "A MSISDN",
+  "Source", "Source Number", "From", "From Number", "Caller", "Caller Number", "Originating Number", targetPartyHeader,
+];
+
+export const calledHeaders = [
+  "Called Party", "Called Party Number", "Called Party No", "Called Number", "Called No",
+  "B Party", "B Party Number", "B Party No", "B Number", "B No", "BNUM", "B MSISDN",
+  "Destination", "Destination Number", "To", "To Number", "Callee", "Callee Number", "Dialled Number", "Dialed Number",
+];
+
+export function evidenceHeader(value:unknown):string {
+  return String(value ?? "").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+}
+
 /** Unzoned operator records are interpreted as IST, never the host timezone. */
 export function evidenceTimestamp(date: string, time = "") {
   const raw = `${date.trim()}${time.trim() && !/[T ]\d{1,2}:/.test(date) ? "T" + time.trim() : ""}`;

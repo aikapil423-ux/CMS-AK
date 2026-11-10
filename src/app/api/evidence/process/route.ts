@@ -1,3 +1,4 @@
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
 import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
@@ -9,8 +10,6 @@ import { extractVocabulary } from "@/lib/vocabularyExtractor";
 import { losslessCompressionService } from "@/services/losslessCompressionService";
 import { investigationPrompts, normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.CMS_EVIDENCE_MODEL || "gemini-3.5-flash";
 export const maxDuration = 300;
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
@@ -87,7 +86,7 @@ export async function POST(req: NextRequest) {
         r.ownerId === apiUser.id && r.caseId === (caseId || undefined) && r.rawDocument?.sha256Hash === sha256Hash
     );
 
-    const activePromptAudit = GEMINI_API_KEY ? investigationPrompts().audit : undefined;
+    const activePromptAudit = processingAIAvailable() ? investigationPrompts().audit : undefined;
     const storedPromptAudit = existing?.structuredData?.investigation?.promptAudit;
     const promptUnchanged = !activePromptAudit || (storedPromptAudit?.extractionHash === activePromptAudit.extractionHash && storedPromptAudit?.resolutionHash === activePromptAudit.resolutionHash);
     if (existing?.processingStatus === 'PROCESSING' && Date.now() - Date.parse(existing.updatedAt) < 600000) return NextResponse.json({ success: false, error: 'This evidence is already processing. Retry shortly.' }, { status: 409 });
@@ -153,7 +152,7 @@ export async function POST(req: NextRequest) {
       processingStatus: "PROCESSING",
       verificationStatus: "AI_EXTRACTED",
       processingVersion: 1,
-      processingEngine: GEMINI_API_KEY ? GEMINI_MODEL : "Local-Parser",
+      processingEngine: processingAIAvailable() ? PROCESSING_MODEL : "Local-Parser",
       retryCount: existing ? (existing.retryCount || 0) + 1 : 0,
       auditTrail: [
         ...(existing?.auditTrail || []),
@@ -162,7 +161,7 @@ export async function POST(req: NextRequest) {
           action: existing ? "REPROCESSED" : "PROCESS_STARTED",
           performedBy: uploadedBy,
           timestamp: nowIso,
-          details: `Evidence processing initialized via ${GEMINI_API_KEY ? GEMINI_MODEL : "Local Parser"}.`,
+          details: `Evidence processing initialized via ${processingAIAvailable() ? PROCESSING_MODEL : "Local Parser"}.`,
         },
       ],
       createdAt: existing ? existing.createdAt : nowIso,
@@ -180,10 +179,10 @@ export async function POST(req: NextRequest) {
 
     // 4. Run Processing Engine
     try {
-      let geminiData: any = null;
+      let extractedData: any = null;
       let promptAudit: ReturnType<typeof withInvestigationPrompt>['audit'] | undefined;
 
-      if (GEMINI_API_KEY) {
+      if (processingAIAvailable()) {
         let contents: any[] = [];
         const cmsPrompt = `You are a Law Enforcement Evidence Analyzer & Crime Case Document Parser for Haryana Police (BNSS 2023 / BNS 2023 / IPC).
 STRICT ANTI-HALLUCINATION:
@@ -251,59 +250,37 @@ Return a valid JSON object matching:
           ];
         }
 
-        const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            signal: AbortSignal.timeout(150000),
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents,
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-                maxOutputTokens: 32768,
-              },
-            }),
-          }
-        );
-
-        if (geminiRes.ok) {
-          const gJson = await geminiRes.json();
-          const rawReply = gJson.candidates?.[0]?.content?.parts?.filter((p: { text?: string; thought?: boolean }) => p.text && !p.thought).map((p: { text: string }) => p.text).join('');
-          if (rawReply) {
-            geminiData = JSON.parse(rawReply.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim());
-          }
-        }
+        const reply = await processWithAI(contents[0].parts, { json: true, maxTokens: 32768 });
+        extractedData = JSON.parse(reply);
       }
 
-      // If Gemini succeeded or fallback to local parsing
-      if (GEMINI_API_KEY && (!geminiData || !Array.isArray(geminiData.investigation?.entities))) throw new Error('AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.');
-      if (moduleType === "FIR" && !geminiData && !fallbackText.trim()) {
+      // Use the AI result or local parsing when AI is unconfigured
+      if (processingAIAvailable() && (!extractedData || !Array.isArray(extractedData.investigation?.entities))) throw new Error('AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.');
+      if (moduleType === "FIR" && !extractedData && !fallbackText.trim()) {
         throw new Error("Document text could not be extracted. Configure the AI service or provide extracted text, then retry processing. Original evidence is retained.");
       }
-      const extractedRawText = geminiData?.rawText || geminiData?.incident?.details || fallbackText || "";
+      const extractedRawText = extractedData?.rawText || extractedData?.incident?.details || fallbackText || "";
       const isHindi = /[\u0900-\u097F]/.test(extractedRawText);
       const isEnglish = /[a-zA-Z]/.test(extractedRawText);
       const lang: "hindi" | "english" | "bilingual" = isHindi && isEnglish ? "bilingual" : isHindi ? "hindi" : "english";
 
       const persons: any[] = [];
-      if (geminiData?.complainant?.name) {
+      if (extractedData?.complainant?.name) {
         persons.push({
           id: `p_comp_${Date.now()}`,
-          name: geminiData.complainant.name,
+          name: extractedData.complainant.name,
           role: "Complainant",
-          relativeName: geminiData.complainant.relativeName,
-          relationType: geminiData.complainant.relationType,
-          gender: geminiData.complainant.gender,
-          age: geminiData.complainant.age,
-          mobile: geminiData.complainant.mobile,
-          address: geminiData.complainant.address,
+          relativeName: extractedData.complainant.relativeName,
+          relationType: extractedData.complainant.relationType,
+          gender: extractedData.complainant.gender,
+          age: extractedData.complainant.age,
+          mobile: extractedData.complainant.mobile,
+          address: extractedData.complainant.address,
         });
       }
 
-      if (Array.isArray(geminiData?.accusedList)) {
-        geminiData.accusedList.forEach((acc: any, i: number) => {
+      if (Array.isArray(extractedData?.accusedList)) {
+        extractedData.accusedList.forEach((acc: any, i: number) => {
           if (acc.name) {
             persons.push({
               id: `p_acc_${Date.now()}_${i}`,
@@ -317,8 +294,8 @@ Return a valid JSON object matching:
         });
       }
 
-      if (Array.isArray(geminiData?.witnessList)) {
-        geminiData.witnessList.forEach((w: any, i: number) => {
+      if (Array.isArray(extractedData?.witnessList)) {
+        extractedData.witnessList.forEach((w: any, i: number) => {
           if (w.name) {
             persons.push({
               id: `p_wit_${Date.now()}_${i}`,
@@ -372,28 +349,28 @@ Return a valid JSON object matching:
         extractedText: extractedRawText,
         detectedLanguage: lang,
         structuredData: {
-          investigation: geminiData?.investigation && promptAudit ? normalizeInvestigation(geminiData.investigation, newRecordId, extractedRawText, promptAudit) : undefined,
-          classifiedDocumentName: geminiData?.classifiedDocumentName || fileName,
-          verifiedDocumentTitle: geminiData?.verifiedDocumentTitle || "Verified Case Evidence",
-          documentCategory: geminiData?.documentCategory || "EVIDENCE",
+          investigation: extractedData?.investigation && promptAudit ? normalizeInvestigation(extractedData.investigation, newRecordId, extractedRawText, promptAudit) : undefined,
+          classifiedDocumentName: extractedData?.classifiedDocumentName || fileName,
+          verifiedDocumentTitle: extractedData?.verifiedDocumentTitle || "Verified Case Evidence",
+          documentCategory: extractedData?.documentCategory || "EVIDENCE",
           persons,
-          complainant: geminiData?.complainant,
-          accusedList: Array.isArray(geminiData?.accusedList) ? geminiData.accusedList : [],
-          witnessList: Array.isArray(geminiData?.witnessList) ? geminiData.witnessList : [],
+          complainant: extractedData?.complainant,
+          accusedList: Array.isArray(extractedData?.accusedList) ? extractedData.accusedList : [],
+          witnessList: Array.isArray(extractedData?.witnessList) ? extractedData.witnessList : [],
           incident: {
-            place: geminiData?.incident?.place,
-            landmark: geminiData?.incident?.landmark,
-            date: geminiData?.incident?.date,
-            time: geminiData?.incident?.time,
-            isDateTimeKnown: Boolean(geminiData?.incident?.isDateTimeKnown),
-            category: geminiData?.incident?.category,
-            details: geminiData?.incident?.details || extractedRawText,
-            summary: geminiData?.incident?.summary || geminiData?.complaint?.summary,
+            place: extractedData?.incident?.place,
+            landmark: extractedData?.incident?.landmark,
+            date: extractedData?.incident?.date,
+            time: extractedData?.incident?.time,
+            isDateTimeKnown: Boolean(extractedData?.incident?.isDateTimeKnown),
+            category: extractedData?.incident?.category,
+            details: extractedData?.incident?.details || extractedRawText,
+            summary: extractedData?.incident?.summary || extractedData?.complaint?.summary,
           },
-          vehicles: Array.isArray(geminiData?.vehicles) ? geminiData.vehicles : [],
-          properties: Array.isArray(geminiData?.properties) ? geminiData.properties : [],
-          legalSections: Array.isArray(geminiData?.legalSections) ? geminiData.legalSections : [],
-          missingInformationFlags: !geminiData?.complainant?.name ? ["Complainant details unstated"] : [],
+          vehicles: Array.isArray(extractedData?.vehicles) ? extractedData.vehicles : [],
+          properties: Array.isArray(extractedData?.properties) ? extractedData.properties : [],
+          legalSections: Array.isArray(extractedData?.legalSections) ? extractedData.legalSections : [],
+          missingInformationFlags: !extractedData?.complainant?.name ? ["Complainant details unstated"] : [],
         },
         processingStatus: "COMPLETED",
         verificationStatus: "AI_EXTRACTED",

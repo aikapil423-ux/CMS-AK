@@ -50,10 +50,10 @@ async function runVerificationTests() {
   const match2 = CmsCapabilityRegistry.semanticMatch("is complaint ko Sadar Karnal transfer karo", "/complaints");
   assert(match2.some(m => m.capabilityId.includes("transfer") && m.operationType === "STATE_CHANGING"), "Transfer query matches STATE_CHANGING action");
 
-  // TEST 5: Model Identification Query (Gemini 3.6 Flash)
+  // TEST 5: Model Identification Query (GLM 5.3 FlashX Legal)
   console.log("\n--- 5. Active Model Identification ---");
   const modelQueryRes = await CmsAgentService.processUserInput("CSM AI agent kis model se juda hua hai?");
-  assert(modelQueryRes.text.includes("Gemini 3.6 Flash"), "Correctly states Gemini 3.6 Flash model");
+  assert(modelQueryRes.text.includes("GLM 5.3 FlashX Legal"), "Correctly states GLM 5.3 FlashX Legal model");
 
   // TEST 6: Read-Only Navigation - Immediate Execution (Zero Permission Delay)
   console.log("\n--- 6. Zero-Permission Navigation Commands ---");

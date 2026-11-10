@@ -43,7 +43,7 @@ import {
   LegalSuggestionItem,
   LegalActItem,
 } from "@/types";
-import { LegalAssistantService } from "@/services/legalAssistantService";
+import { analyzeCaseLaw } from "@/lib/caseWritingClient";
 import { ActsService } from "@/services/actsService";
 import { BareActViewerModal } from "@/components/acts/BareActViewerModal";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -338,16 +338,16 @@ export function ComplaintLegalAssistant({
     setIsAnalyzing(true);
     setAnalysisStep(0);
 
-    // Progressive step simulation for a realistic, polished experience
-    for (let i = 0; i < 4; i++) {
-      setAnalysisStep(i);
-      await new Promise((resolve) => setTimeout(resolve, 450));
+    let generatedReport: LegalAnalysisReport;
+    try {
+      generatedReport = await analyzeCaseLaw({ module: "COMPLAINT", caseId: complaint.id });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Legal Help could not complete.");
+      return;
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    // Execute actual rule & deep NLP engine
-    const generatedReport = await LegalAssistantService.analyzeComplaint(complaint);
     setReport(generatedReport);
-    setIsAnalyzing(false);
 
     // Update parent if callback provided
     if (onUpdateComplaint) {

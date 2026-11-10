@@ -2,6 +2,8 @@
 import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { writeCaseDraft } from "@/lib/caseWritingClient";
+import { escapeDraftText } from "@/utils/documentHtmlGenerators";
 import { useParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
@@ -1023,14 +1025,22 @@ export default function FIRProfilePage() {
         break;
     }
 
+    try {
+      const narrative = await writeCaseDraft({ module: "FIR", caseId: fir.id, purpose: "document", title });
+      content = content.split("\n\n")[0] + "\n\n" + narrative;
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Document draft failed.");
+      return;
+    }
+
     const newDoc: FIRDocumentItem = {
       id: `doc-${Date.now()}`,
       title,
-      fileName: `${title.toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf`,
+      fileName: `${title.toLowerCase().replace(/[^a-z0-9]/g, "_")}.txt`,
       category,
       uploadedBy: currentUser.name || "IO",
       uploadedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
-      fileSize: "18.4 KB",
+      fileSize: `${(new Blob([content]).size / 1024).toFixed(1)} KB`,
       dataUrl: `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`,
     };
 
@@ -1091,7 +1101,7 @@ export default function FIRProfilePage() {
     }
   };
 
-  const handleOpenGenerateReportDraft = (typeKey: string) => {
+  const handleOpenGenerateReportDraft = async (typeKey: string) => {
     if (!fir) return;
     setGenerateReportDropdownOpen(false);
 
@@ -1163,6 +1173,13 @@ export default function FIRProfilePage() {
           fir.assignedIoName || currentUser.name
         }`;
         break;
+    }
+
+    try {
+      content = await writeCaseDraft({ module: "FIR", caseId: fir.id, purpose: "report", title });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Report draft failed.");
+      return;
     }
 
     setActiveDraftReport(null);
@@ -1268,7 +1285,7 @@ export default function FIRProfilePage() {
             }</p>
           </div>
           <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${
-            report.content || report.conclusionSummary || ""
+            escapeDraftText(report.content || report.conclusionSummary || "")
           }</div>
         </div>
       `);
@@ -1306,7 +1323,7 @@ export default function FIRProfilePage() {
           }</p>
         </div>
         <div style="white-space: pre-wrap; font-size: 13px; font-family: Arial, sans-serif;">${
-          report.content || report.conclusionSummary || ""
+          escapeDraftText(report.content || report.conclusionSummary || "")
         }</div>
       </div>
     `);
@@ -1366,6 +1383,18 @@ export default function FIRProfilePage() {
   const handleUploadReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fir || !uploadReportTitle.trim()) return;
+    const file = new FormData(e.currentTarget as HTMLFormElement).get("signedReport");
+    if (!(file instanceof File) || !file.size) return;
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    }).catch(() => "");
+    if (!dataUrl) {
+      alert("The signed report file could not be read.");
+      return;
+    }
 
     const newReport: ComplaintReportItem = {
       id: `rep-${Date.now()}`,
@@ -1379,14 +1408,19 @@ export default function FIRProfilePage() {
       officerRank: currentUser.rankDisplay || "IO",
       conclusionSummary: uploadReportRemarks || "Signed police report uploaded to case docket.",
       isUploaded: true,
-      fileFormat: "PDF",
-      fileSize: "1.2 MB",
+      fileName: file.name,
+      dataUrl,
+      fileFormat: file.name.split(".").pop()?.toUpperCase() || "OTHER",
+      fileSize: `${(file.size / 1024).toFixed(1)} KB`,
       status: "Saved in Complaint",
       versionNumber: 1,
       createdAt: new Date().toISOString(),
     };
 
     await firService.addReport(fir.id, newReport);
+    void universalEvidenceService.registerAndProcess({
+      file, fileId: newReport.id, caseId: fir.id, caseNumber: fir.firNumber, module: "FIR",
+    }).catch(error => console.warn("Signed report processing failed:", error));
     await firService.addAuditRecord(
       fir.id,
       "REPORT_UPLOADED",
@@ -3740,6 +3774,7 @@ export default function FIRProfilePage() {
                 </label>
                 <input
                   type="file"
+                  name="signedReport"
                   required
                   className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
                 />

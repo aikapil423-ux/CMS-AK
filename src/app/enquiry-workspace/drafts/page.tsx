@@ -1,5 +1,7 @@
 "use client";
 
+import { CaseDraftButton } from "@/components/ui/CaseDraftButton";
+
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
@@ -1694,6 +1696,19 @@ function EnquiryDraftsContent() {
               </Link>
             )}
 
+            {complaint && (
+              <CaseDraftButton key={complaint.id + title + columns.length} module="COMPLAINT" caseId={complaint.id} purpose="report" title={title} onDraft={text => setRows(current => {
+                const findings = current.find(row => ["row_findings", "row_final_report", "row_ncr_findings", "row_ai_findings"].includes(row.id));
+                if (findings) {
+                  const index = columns.length > 1 ? 1 : 0;
+                  return current.map(row => row === findings
+                    ? { ...row, cells: row.cells.map((value, cell) => cell === index ? text : value) }
+                    : row);
+                }
+                const cells = columns.length > 1 ? columns.map((_, index) => index === 1 ? text : "") : [text];
+                return [...current, { id: "row_ai_findings", label: "Analysis of Saved Case Records", cells }];
+              })} />
+            )}
             {/* Always-visible Save to Complaint / Save in Reports Button */}
             <Button
               onClick={() => {

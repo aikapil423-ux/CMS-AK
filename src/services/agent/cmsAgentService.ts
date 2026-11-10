@@ -162,7 +162,7 @@ export class CmsAgentService {
     const targetStation = stMatch ? stMatch[1].trim() : "PS City Panipat";
 
     // -------------------------------------------------------------
-    // INTENT: AI MODEL INQUIRY (Gemini 3.6 Flash)
+    // INTENT: AI MODEL INQUIRY
     // -------------------------------------------------------------
     if (
       q.includes("kis model") ||
@@ -178,7 +178,7 @@ export class CmsAgentService {
       return {
         id: `msg_model_${Date.now()}`,
         sender: "agent",
-        text: `🤖 **CMS AI Operating Agent मॉडल विवरण:**\n\n* **सक्रिय AI मॉडल:** **Google Gemini 3.6 Flash** (\`gemini-3.6-flash\`)\n* **आर्किटेक्चर:** Hybrid Neural-Domain Architecture\n  * **LLM Engine:** Gemini 3.6 Flash (हाई-स्पीड कॉम्प्रिहेंशन, वॉयस डिक्टेशन व मल्टी-मॉडल एनालिसिस)\n  * **कानूनी व डोमेन इंजन:** Haryana Police Case Management Operating Engine (BNS 2023, BNSS 2023, BSA 2023 व Punjab Police Rules 1934)\n* **एपीआई प्रोवाइडर:** Google AI Studio / Gemini API\n* **एक्सेस स्टेटस:** ✅ सक्रिय (Active & Ready)\n\nआप किसी भी फॉर्म को खोलने, FIR/शिकायत विश्लेषण करने, या कानूनी प्रपत्र तैयार करने का निर्देश दे सकते हैं।`,
+        text: `🤖 **CMS AI Operating Agent मॉडल विवरण:**\n\n* **सक्रिय AI मॉडल:** **GLM 5.3 FlashX Legal** (\`z-ai/glm-5.3-flashx-legal\`)\n* **आर्किटेक्चर:** Hybrid Neural-Domain Architecture\n  * **LLM Engine:** GLM 5.3 FlashX Legal (दस्तावेज़ और केस डेटा का विश्लेषण)\n  * **कानूनी व डोमेन इंजन:** Haryana Police Case Management Operating Engine (BNS 2023, BNSS 2023, BSA 2023 व Punjab Police Rules 1934)\n* **एपीआई प्रोवाइडर:** OpenRouter\n\nआप किसी भी फॉर्म को खोलने, FIR/शिकायत विश्लेषण करने, या कानूनी प्रपत्र तैयार करने का निर्देश दे सकते हैं।`,
         timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
         suggestedPrompts: [
           "register complaint form kholo",

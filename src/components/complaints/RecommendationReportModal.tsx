@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { CaseDraftButton } from "@/components/ui/CaseDraftButton";
+import { escapeDraftText } from "@/utils/documentHtmlGenerators";
 import {
   X,
   Sparkles,
@@ -313,7 +315,7 @@ Dated: ${reportDateStr}
         (sec) => `
     <div class="report-section-block" style="border: 1px solid #64748b; padding: 12px 14px; background: #ffffff;">
       <h3 style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000000; border-bottom: 1px solid #cbd5e1; padding-bottom: 3px;">${sec.heading}</h3>
-      <div style="font-size: 12.5px; color: #111827; white-space: pre-wrap; word-break: break-word; font-family: Arial, sans-serif; line-height: 1.5;">${sec.content}</div>
+      <div style="font-size: 12.5px; color: #111827; white-space: pre-wrap; word-break: break-word; font-family: Arial, sans-serif; line-height: 1.5;">${escapeDraftText(sec.content)}</div>
     </div>`
       )
       .join("")}
@@ -835,6 +837,23 @@ Dated: ${reportDateStr}
         <div className="bg-white border-t border-slate-200 p-4 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           
           <div className="flex items-center gap-2">
+            {isOpen && <CaseDraftButton
+              key={complaint.id + selectedRecType}
+              module="COMPLAINT"
+              caseId={complaint.id}
+              purpose="report"
+              title={`${selectedRecType} recommendation report factual analysis`}
+              onDraft={text => {
+                setSections(current => {
+                  const existing = current.find(section => section.id === "sec_ai_analysis");
+                  return existing
+                    ? current.map(section => section === existing ? { ...section, content: text } : section)
+                    : [...current, { id: "sec_ai_analysis", heading: `${current.length + 1}. Analysis of Saved Case Records:`, content: text }];
+                });
+                setIsDirty(true);
+                setActiveTab("edit");
+              }}
+            />}
             <Button
               type="button"
               variant="outline"
