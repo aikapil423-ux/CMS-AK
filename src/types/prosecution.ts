@@ -1,3 +1,5 @@
+import type { CourtAffidavit, bailReplyTypes, statusReportTypes } from "@/lib/courtAffidavit";
+
 export type ProsecutionMainTab = "challan_scrutiny" | "courts";
 
 export type ChallanScrutinySubTab = "scrutiny_perform" | "common_malpractices";
@@ -51,6 +53,7 @@ export interface MalpracticeDeficiency {
 }
 
 export interface BailReplyRecord {
+  affidavit?: CourtAffidavit;
   id: string;
   applicationNo: string;
   firNumber: string;
@@ -58,7 +61,7 @@ export interface BailReplyRecord {
   courtName: string;
   applicantAccusedName: string;
   fatherName?: string;
-  bailType: "REGULAR" | "ANTICIPATORY" | "INTERIM";
+  bailType: keyof typeof bailReplyTypes;
   ipcOrBnsSections: string;
   hearingDate: string;
   status: "DRAFT" | "SUBMITTED" | "GRANTED" | "REJECTED";
@@ -70,6 +73,8 @@ export interface BailReplyRecord {
 }
 
 export interface CourtStatusReportRecord {
+  affidavit?: CourtAffidavit;
+  reportType?: keyof typeof statusReportTypes;
   id: string;
   reportRefNo: string;
   firNumber: string;
@@ -77,7 +82,7 @@ export interface CourtStatusReportRecord {
   courtName: string;
   caseTitle: string;
   petitionNumber: string;
-  investigationStage: "UNDER_INVESTIGATION" | "CHALLAN_PREPARED" | "PENDING_SANCTION" | "UNTRACED";
+  investigationStage?: "UNDER_INVESTIGATION" | "CHALLAN_PREPARED" | "PENDING_SANCTION" | "UNTRACED";
   keyEvidenceCollected: string;
   accusedStatus: string;
   policePrayer: string;

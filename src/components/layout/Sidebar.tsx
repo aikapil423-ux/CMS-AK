@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Shield,
   FileText,
@@ -42,6 +42,60 @@ interface NavItem {
   icon: React.ElementType;
   badge?: string;
   badgeColor?: string;
+}
+
+const prosecutionNavItems: (NavItem & { tab: string })[] = [
+  { name: "Challan Scrutiny", tab: "challan_scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2, badge: "Scrutiny", badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  { name: "Courts", tab: "courts", href: "/prosecution?tab=courts&subtab=bail_reply", icon: Scale },
+];
+
+function ProsecutionNav({ isExpanded, isProsecutionPath }: { isExpanded: boolean; isProsecutionPath: boolean }) {
+  const activeTab = useSearchParams().get("tab") === "courts" ? "courts" : "challan_scrutiny";
+  return (
+    <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+      {prosecutionNavItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = isProsecutionPath && activeTab === item.tab;
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            title={!isExpanded ? item.name : undefined}
+            className={cn(
+              "flex items-center rounded-md text-xs font-medium transition-all group",
+              isExpanded
+                ? "justify-between px-2.5 py-1.5"
+                : "justify-center p-2",
+              isActive
+                ? "bg-[#203c88] text-white font-semibold"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            )}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Icon
+                className={cn(
+                  "w-3.5 h-3.5 shrink-0",
+                  isActive ? "text-white" : "text-slate-400 group-hover:text-slate-700"
+                )}
+              />
+              {isExpanded && <span className="truncate">{item.name}</span>}
+            </div>
+            {isExpanded && item.badge && (
+              <span
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
+                  item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+                )}
+              >
+                {item.badge}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </nav>
+  );
 }
 
 export function Sidebar() {
@@ -178,15 +232,6 @@ export function Sidebar() {
     { name: "WEEKLY CRIME DIARY", href: "/reports?tab=weekly_crime_diary", icon: BookOpen, badge: "PPR", badgeColor: "bg-amber-50 text-amber-800 border-amber-200" },
     { name: "IGP Meeting Presentation", href: "/reports?tab=igp_presentation", icon: FileText, badge: "Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
     { name: "Saved Reports", href: "/reports?tab=saved_reports", icon: BookmarkCheck, badge: "Saved", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  ];
-
-  // PROSECUTION NAVIGATION ITEMS
-  const prosecutionNavItems: NavItem[] = [
-    { name: "Challan Scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2, badge: "Scrutiny", badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-    { name: "Common Malpractices", href: "/prosecution?tab=challan_scrutiny&subtab=common_malpractices", icon: Scale, badge: "Rules", badgeColor: "bg-rose-50 text-rose-700 border-rose-200" },
-    { name: "Bail Reply", href: "/prosecution?tab=courts&subtab=bail_reply", icon: ReceiptText, badge: "Bail", badgeColor: "bg-amber-50 text-amber-700 border-amber-200" },
-    { name: "Status Report", href: "/prosecution?tab=courts&subtab=status_report", icon: FileText, badge: "Court", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "Other Court Docs", href: "/prosecution?tab=courts&subtab=other", icon: BookmarkCheck, badge: "Misc", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   ];
 
   // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
@@ -797,48 +842,9 @@ export function Sidebar() {
             </button>
 
             {prosecutionOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {prosecutionNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href || (pathname.startsWith("/prosecution") && item.href.includes(pathname));
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? item.name : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{item.name}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
+              <Suspense fallback={null}>
+                <ProsecutionNav isExpanded={isExpanded} isProsecutionPath={isProsecutionPath} />
+              </Suspense>
             )}
           </div>
         )}

@@ -334,25 +334,11 @@ export function MobileHeader() {
                     {t("Challan Scrutiny")}
                   </Link>
                   <Link
-                    href="/prosecution?tab=challan_scrutiny&subtab=common_malpractices"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("Common Malpractices")}
-                  </Link>
-                  <Link
                     href="/prosecution?tab=courts&subtab=bail_reply"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    {t("Bail Reply")}
-                  </Link>
-                  <Link
-                    href="/prosecution?tab=courts&subtab=status_report"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("Status Report")}
+                    {t("Courts")}
                   </Link>
                 </>
               ) : (

@@ -47,4 +47,5 @@ next-env.d.ts
 prisma/dev.db
 prisma/case-analysis/
 prisma/scrutiny-records/
+prisma/court-affidavits/
 prisma/weekly-diary/

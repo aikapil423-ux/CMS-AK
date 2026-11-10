@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Scale,
-  FileCheck,
   ClipboardCheck,
   AlertTriangle,
   FileSpreadsheet,
@@ -64,15 +63,6 @@ function ProsecutionContent() {
     }
   }, [searchParams]);
 
-  const handleSelectMainTab = (newTab: ProsecutionMainTab) => {
-    setMainTab(newTab);
-    if (newTab === "challan_scrutiny") {
-      router.replace(`/prosecution?tab=challan_scrutiny&subtab=${scrutinySubTab}`);
-    } else {
-      router.replace(`/prosecution?tab=courts&subtab=${courtsSubTab}`);
-    }
-  };
-
   const handleSelectScrutinySubTab = (sub: ChallanScrutinySubTab) => {
     setScrutinySubTab(sub);
     router.replace(`/prosecution?tab=challan_scrutiny&subtab=${sub}`);
@@ -86,7 +76,7 @@ function ProsecutionContent() {
   return (
     <div className="min-h-screen bg-slate-50/70 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-indigo-600 rounded-lg text-white shadow-sm">
@@ -99,39 +89,6 @@ function ProsecutionContent() {
 
             </div>
           </div>
-        </div>
-
-        {/* Primary Tab Switcher */}
-        <div
-          data-no-translate="true"
-          className="flex items-center bg-slate-200/80 p-1 rounded-xl self-start sm:self-auto"
-        >
-          <button
-            key="btn-main-challan-scrutiny"
-            type="button"
-            onClick={() => handleSelectMainTab("challan_scrutiny")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition ${
-              mainTab === "challan_scrutiny"
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileCheck className="w-4 h-4" />
-            <span>Challan Scrutiny</span>
-          </button>
-          <button
-            key="btn-main-courts"
-            type="button"
-            onClick={() => handleSelectMainTab("courts")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition ${
-              mainTab === "courts"
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <Scale className="w-4 h-4" />
-            <span>Courts</span>
-          </button>
         </div>
       </div>
 
