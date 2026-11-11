@@ -27,7 +27,7 @@
     min-height: 34px;
   }
   /* Increase contrast of secondary text throughout the interface. */
-  .cms-court-theme :where(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500, .text-zinc-400, .text-zinc-500):not(thead *, .cms-topbar *, header.lg\:hidden *, .cms-module-selected *, .cms-persona-badge, .a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(.text-slate-400, .text-slate-500, .text-gray-400, .text-gray-500, .text-zinc-400, .text-zinc-500):not(thead *, .cms-topbar *, header.lg\:hidden *, .cms-module-selected *, .cms-persona-badge, .a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, [class*="bg-[#0b192c]"] *) {
     color: #334155;
   }
 
@@ -97,7 +97,8 @@
   .cms-topbar :where(span, svg, button) { color: inherit; }
   .cms-topbar > div > div:first-child { color: white; }
   .cms-topbar :where(button:hover) { background-color: #3153a6; }
-  .cms-topbar :where(.bg-slate-100) {
+  .cms-topbar :where(.bg-slate-100),
+  .cms-shell header.lg\:hidden :where(.bg-slate-100) {
     background: #eef1ff !important;
     color: #203c88 !important;
   }

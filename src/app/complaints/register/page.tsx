@@ -65,6 +65,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import {
@@ -2973,9 +2974,6 @@ export default function RegisterComplaintPage() {
               <span className="text-slate-900 font-bold">{autoStationComplaintNo || "Loading..."}</span>
               <span className="text-[10px] text-slate-400 font-sans">({currentUser?.stationName || "PS City Panipat"})</span>
             </span>
-            <span className="text-[10px] text-slate-500">
-              (जब तक रजिस्टर नहीं होता, तब तक यह नंबर रिजर्व रहेगा)
-            </span>
           </div>
           </div>
         </div>
@@ -3168,9 +3166,6 @@ export default function RegisterComplaintPage() {
                     <User className="w-4 h-4 text-blue-600" />
                     <span>1. Complainant Details</span>
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Particulars of citizen(s) lodging the complaint (All fields are mandatory)
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -3250,9 +3245,9 @@ export default function RegisterComplaintPage() {
 
                   {/* (a) Name, Relation, Relative Name, Age, Gender (All Mandatory) */}
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                    <div className="sm:col-span-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-slate-700">
+                    <div className="sm:col-span-5">
+                      <div className="flex items-center justify-between h-5 mb-1">
+                        <label className="text-xs font-semibold text-slate-700 leading-none">
                           Complainant Full Name *
                         </label>
                         <VoiceInputButton
@@ -3274,12 +3269,12 @@ export default function RegisterComplaintPage() {
                           if (idx === 0) markFieldAsEdited("complainantName");
                         }}
                         placeholder="e.g. Rameshwar Dass"
-                        className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all font-medium ${
+                        className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all font-medium ${
                           validationErrors[`comp_${idx}_name`]
                             ? "border-red-500 bg-red-50"
                             : isAutofilled("complainantName") && idx === 0
                             ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                            : "bg-slate-50 border-slate-300"
+                            : "bg-slate-50 border border-slate-300"
                         }`}
                       />
                       {validationErrors[`comp_${idx}_name`] && (
@@ -3288,8 +3283,8 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-semibold text-slate-700 truncate" title="Relation (Optional)">
+                      <div className="flex items-center justify-between h-5 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 truncate leading-none" title="Relation (Optional)">
                           Relation
                         </label>
                       </div>
@@ -3299,10 +3294,10 @@ export default function RegisterComplaintPage() {
                           handleComplainantChange(idx, "relationType", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantRelationType");
                         }}
-                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-center transition-all ${
+                        className={`w-full h-10 px-1.5 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold transition-all ${
                           isAutofilled("complainantRelationType") && idx === 0
                             ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                            : "bg-slate-50 border-slate-300"
+                            : "bg-slate-50 border-slate-300 text-slate-800"
                         }`}
                       >
                         <option value="">Select</option>
@@ -3315,8 +3310,8 @@ export default function RegisterComplaintPage() {
                     </div>
 
                     <div className="sm:col-span-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-slate-700">
+                      <div className="flex items-center justify-between h-5 mb-1">
+                        <label className="text-xs font-semibold text-slate-700 leading-none truncate" title="Relative Name">
                           Relative Name {comp.relationType ? `(${comp.relationType})` : ""}
                         </label>
                         <VoiceInputButton
@@ -3338,17 +3333,17 @@ export default function RegisterComplaintPage() {
                           if (idx === 0) markFieldAsEdited("complainantRelativeName");
                         }}
                         placeholder="e.g. Sh. Balwant Rai (Optional)"
-                        className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                        className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                           isAutofilled("complainantRelativeName") && idx === 0
                             ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                            : "bg-slate-50 border-slate-300"
+                            : "bg-slate-50 border border-slate-300"
                         }`}
                       />
                     </div>
 
                     <div className="sm:col-span-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-semibold text-slate-700 truncate" title="Age (Years, Optional)">
+                      <div className="flex items-center justify-between h-5 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 truncate leading-none" title="Age (Years, Optional)">
                           Age
                         </label>
                       </div>
@@ -3362,7 +3357,7 @@ export default function RegisterComplaintPage() {
                           if (idx === 0) markFieldAsEdited("complainantAge");
                         }}
                         placeholder="35"
-                        className={`w-full px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center transition-all ${
+                        className={`w-full h-10 px-2 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] text-center transition-all ${
                           validationErrors[`comp_${idx}_age`]
                             ? "border-red-500 bg-red-50"
                             : isAutofilled("complainantAge") && idx === 0
@@ -3375,9 +3370,9 @@ export default function RegisterComplaintPage() {
                       )}
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-semibold text-slate-700">
+                    <div className="sm:col-span-1">
+                      <div className="flex items-center justify-between h-5 mb-1">
+                        <label className="block text-xs font-semibold text-slate-700 leading-none">
                           Gender
                         </label>
                       </div>
@@ -3387,15 +3382,15 @@ export default function RegisterComplaintPage() {
                           handleComplainantChange(idx, "gender", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantGender");
                         }}
-                        className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold transition-all ${
+                        className={`w-full h-10 px-1.5 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold transition-all ${
                           isAutofilled("complainantGender") && idx === 0
                             ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                            : "bg-slate-50 border-slate-300"
+                            : "bg-slate-50 border-slate-300 text-slate-800"
                         }`}
                       >
                         <option value="MALE">Male</option>
                         <option value="FEMALE">Female</option>
-                        <option value="TRANSGENDER">Transgender</option>
+                        <option value="TRANSGENDER">Trans</option>
                       </select>
                     </div>
                   </div>
@@ -3407,16 +3402,18 @@ export default function RegisterComplaintPage() {
                       <span>Present Residential Address (All fields mandatory) *</span>
                     </h5>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
                       {/* Nationality Dropdown */}
                       <div className="sm:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Nationality *
-                        </label>
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="block text-xs font-semibold text-slate-700 leading-none">
+                            Nationality *
+                          </label>
+                        </div>
                         <select
                           value={comp.nationalityChoice}
                           onChange={(e: any) => handleComplainantChange(idx, "nationalityChoice", e.target.value)}
-                          className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold"
+                          className="w-full h-10 px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-slate-800"
                         >
                           <option value="Indian">Indian</option>
                           <option value="Other">Other</option>
@@ -3426,15 +3423,17 @@ export default function RegisterComplaintPage() {
                       {/* If Other, column for fill opens */}
                       {comp.nationalityChoice === "Other" && (
                         <div className="sm:col-span-3 animate-in fade-in-50">
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">
-                            Specify Nationality *
-                          </label>
+                          <div className="flex items-center justify-between h-5 mb-1">
+                            <label className="block text-xs font-semibold text-slate-700 leading-none">
+                              Specify Nationality *
+                            </label>
+                          </div>
                           <input
                             type="text"
                             value={comp.otherNationality}
                             onChange={(e) => handleComplainantChange(idx, "otherNationality", e.target.value)}
                             placeholder="e.g. British / American / Canadian"
-                            className={`w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                            className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                               validationErrors[`comp_${idx}_otherNationality`]
                                 ? "border-red-500 bg-red-50"
                                 : "border-slate-300"
@@ -3450,8 +3449,8 @@ export default function RegisterComplaintPage() {
 
                       {/* Address */}
                       <div className={comp.nationalityChoice === "Other" ? "sm:col-span-6" : "sm:col-span-9"}>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-slate-700">
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="text-xs font-semibold text-slate-700 leading-none">
                             Address (House / Street / Mohalla) *
                           </label>
                           <VoiceInputButton
@@ -3465,20 +3464,20 @@ export default function RegisterComplaintPage() {
                             iconOnly={true}
                           />
                         </div>
-                        <input
-                          type="text"
+                        <AutoResizeTextarea
+                          minRows={1}
                           value={comp.presentAddress}
                           onChange={(e) => {
                             handleComplainantChange(idx, "presentAddress", e.target.value);
                             if (idx === 0) markFieldAsEdited("complainantPresentAddress");
                           }}
                           placeholder="e.g. House No. 89, Gali No. 4, Mohan Nagar"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                          className={`w-full min-h-[40px] px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all resize-none leading-relaxed ${
                             validationErrors[`comp_${idx}_presentAddress`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentAddress") && idx === 0
                               ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                              : "bg-slate-50 border-slate-300"
+                              : "bg-slate-50 border border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentAddress`] && (
@@ -3490,8 +3489,8 @@ export default function RegisterComplaintPage() {
 
                       {/* Village / City */}
                       <div className="sm:col-span-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-slate-700">
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="text-xs font-semibold text-slate-700 leading-none">
                             Village / City *
                           </label>
                           <VoiceInputButton
@@ -3513,12 +3512,12 @@ export default function RegisterComplaintPage() {
                             if (idx === 0) markFieldAsEdited("complainantPresentCity");
                           }}
                           placeholder="e.g. Panipat"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                          className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentCity`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentCity") && idx === 0
                               ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                              : "bg-slate-50 border-slate-300"
+                              : "bg-slate-50 border border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentCity`] && (
@@ -3530,8 +3529,8 @@ export default function RegisterComplaintPage() {
 
                       {/* District */}
                       <div className="sm:col-span-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-slate-700">
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="text-xs font-semibold text-slate-700 leading-none">
                             District *
                           </label>
                           <VoiceInputButton
@@ -3553,12 +3552,12 @@ export default function RegisterComplaintPage() {
                             if (idx === 0) markFieldAsEdited("complainantPresentDistrict");
                           }}
                           placeholder="e.g. Panipat"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                          className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentDistrict`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentDistrict") && idx === 0
                               ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                              : "bg-slate-50 border-slate-300"
+                              : "bg-slate-50 border border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentDistrict`] && (
@@ -3570,8 +3569,8 @@ export default function RegisterComplaintPage() {
 
                       {/* State */}
                       <div className="sm:col-span-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-slate-700">
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="text-xs font-semibold text-slate-700 leading-none">
                             State *
                           </label>
                           <VoiceInputButton
@@ -3593,12 +3592,12 @@ export default function RegisterComplaintPage() {
                             if (idx === 0) markFieldAsEdited("complainantPresentState");
                           }}
                           placeholder="e.g. Haryana"
-                          className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                          className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
                             validationErrors[`comp_${idx}_presentState`]
                               ? "border-red-500 bg-red-50"
                               : isAutofilled("complainantPresentState") && idx === 0
                               ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                              : "bg-slate-50 border-slate-300"
+                              : "bg-slate-50 border border-slate-300"
                           }`}
                         />
                         {validationErrors[`comp_${idx}_presentState`] && (
@@ -3610,16 +3609,18 @@ export default function RegisterComplaintPage() {
 
                       {/* Country (By default India if nationality is Indian) */}
                       <div className="sm:col-span-3">
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">
-                          Country *
-                        </label>
+                        <div className="flex items-center justify-between h-5 mb-1">
+                          <label className="block text-xs font-semibold text-slate-700 leading-none">
+                            Country *
+                          </label>
+                        </div>
                         <input
                           type="text"
                           value={comp.presentCountry}
                           onChange={(e) => handleComplainantChange(idx, "presentCountry", e.target.value)}
                           placeholder="e.g. India"
                           readOnly={comp.nationalityChoice === "Indian"}
-                          className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                          className={`w-full h-10 px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                             comp.nationalityChoice === "Indian"
                               ? "bg-slate-100 text-slate-700 cursor-not-allowed font-medium"
                               : "bg-slate-50"
@@ -3639,8 +3640,8 @@ export default function RegisterComplaintPage() {
 
                     {/* Mobile No. showing Country Code: Default +91 and 10 digits if Indian, editable if other */}
                     <div className="pt-2">
-                      <div className="flex items-center justify-between max-w-md mb-1">
-                        <label className="text-xs font-semibold text-slate-700">
+                      <div className="flex items-center justify-between w-64 h-5 mb-1">
+                        <label className="text-xs font-semibold text-slate-700 leading-none">
                           Mobile Number {comp.nationalityChoice === "Indian" ? "(Strictly 10 Digits)" : "(Contact Phone)"} *
                         </label>
                         <VoiceInputButton
@@ -3655,7 +3656,7 @@ export default function RegisterComplaintPage() {
                           iconOnly={true}
                         />
                       </div>
-                      <div className="max-w-md flex items-center gap-2">
+                      <div className="w-64 flex items-center gap-2">
                         {comp.nationalityChoice === "Indian" ? (
                           <div className="w-full relative flex items-center">
                             <span className="absolute left-3 font-mono font-bold text-xs text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
@@ -3670,24 +3671,24 @@ export default function RegisterComplaintPage() {
                                 if (idx === 0) markFieldAsEdited("complainantMobile");
                               }}
                               placeholder="9812000000"
-                              className={`w-full pl-14 pr-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                              className={`w-full h-10 pl-14 pr-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
                                 validationErrors[`comp_${idx}_mobile`]
                                   ? "border-red-500 bg-red-50"
                                   : isAutofilled("complainantMobile") && idx === 0
                                   ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                                  : "bg-slate-50 border-slate-300"
+                                  : "bg-slate-50 border border-slate-300"
                               }`}
                             />
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 w-full">
-                            <div className="w-24 shrink-0">
+                            <div className="w-20 shrink-0">
                               <input
                                 type="text"
                                 value={comp.countryCode}
                                 onChange={(e) => handleComplainantChange(idx, "countryCode", e.target.value)}
                                 placeholder="+1"
-                                className="w-full px-2.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-center focus:ring-2 focus:ring-[#0b192c]"
+                                className="w-full h-10 px-2.5 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-center focus:ring-2 focus:ring-[#0b192c]"
                                 title="Country Code"
                               />
                             </div>
@@ -3700,12 +3701,12 @@ export default function RegisterComplaintPage() {
                                 if (idx === 0) markFieldAsEdited("complainantMobile");
                               }}
                               placeholder="Enter Phone Number"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                              className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg font-mono tracking-wider focus:ring-2 focus:ring-[#0b192c] transition-all ${
                                 validationErrors[`comp_${idx}_mobile`]
                                   ? "border-red-500 bg-red-50"
                                   : isAutofilled("complainantMobile") && idx === 0
                                   ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                                  : "bg-slate-50 border-slate-300"
+                                  : "bg-slate-50 border border-slate-300"
                               }`}
                             />
                           </div>
@@ -3714,9 +3715,6 @@ export default function RegisterComplaintPage() {
                       {validationErrors[`comp_${idx}_mobile`] && (
                         <p className="text-[11px] text-red-600 mt-0.5">{validationErrors[`comp_${idx}_mobile`]}</p>
                       )}
-                      <span className="text-[10px] text-slate-400 mt-0.5 block">
-                        Official station SMS receipt and verification OTP dispatched to this number.
-                      </span>
                     </div>
 
                     {/* Permanent Address Same Checkbox */}
@@ -3737,10 +3735,10 @@ export default function RegisterComplaintPage() {
                     {!comp.isPermanentSameAsPresent && (
                       <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3 mt-2 animate-in fade-in-50">
                         <h6 className="text-xs font-bold text-slate-800">Permanent Address (All fields mandatory) *</h6>
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start">
                           <div className="sm:col-span-12">
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-semibold text-slate-700">
+                            <div className="flex items-center justify-between h-5 mb-1">
+                              <label className="text-xs font-semibold text-slate-700 leading-none">
                                 Permanent Address (House / Street / Mohalla) *
                               </label>
                               <VoiceInputButton
@@ -3751,12 +3749,12 @@ export default function RegisterComplaintPage() {
                                 iconOnly={true}
                               />
                             </div>
-                            <input
-                              type="text"
+                            <AutoResizeTextarea
+                              minRows={1}
                               value={comp.permanentAddress}
                               onChange={(e) => handleComplainantChange(idx, "permanentAddress", e.target.value)}
                               placeholder="Permanent Address Line"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full min-h-[40px] px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] resize-none leading-relaxed ${
                                 validationErrors[`comp_${idx}_permanentAddress`]
                                   ? "border-red-500 bg-red-50"
                                   : "border-slate-300"
@@ -3770,8 +3768,8 @@ export default function RegisterComplaintPage() {
                           </div>
 
                           <div className="sm:col-span-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-semibold text-slate-700">Permanent Village / City *</label>
+                            <div className="flex items-center justify-between h-5 mb-1">
+                              <label className="text-xs font-semibold text-slate-700 leading-none">Permanent Village / City *</label>
                               <VoiceInputButton
                                 onTranscript={(val) => handleComplainantChange(idx, "permanentCity", val)}
                                 currentValue={comp.permanentCity}
@@ -3784,7 +3782,7 @@ export default function RegisterComplaintPage() {
                               type="text"
                               value={comp.permanentCity}
                               onChange={(e) => handleComplainantChange(idx, "permanentCity", e.target.value)}
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                                 validationErrors[`comp_${idx}_permanentCity`]
                                   ? "border-red-500 bg-red-50"
                                   : "border-slate-300"
@@ -3797,8 +3795,8 @@ export default function RegisterComplaintPage() {
                             )}
                           </div>
                           <div className="sm:col-span-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-semibold text-slate-700">District *</label>
+                            <div className="flex items-center justify-between h-5 mb-1">
+                              <label className="text-xs font-semibold text-slate-700 leading-none">District *</label>
                               <VoiceInputButton
                                 onTranscript={(val) => handleComplainantChange(idx, "permanentDistrict", val)}
                                 currentValue={comp.permanentDistrict}
@@ -3811,7 +3809,7 @@ export default function RegisterComplaintPage() {
                               type="text"
                               value={comp.permanentDistrict}
                               onChange={(e) => handleComplainantChange(idx, "permanentDistrict", e.target.value)}
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                                 validationErrors[`comp_${idx}_permanentDistrict`]
                                   ? "border-red-500 bg-red-50"
                                   : "border-slate-300"
@@ -3824,8 +3822,8 @@ export default function RegisterComplaintPage() {
                             )}
                           </div>
                           <div className="sm:col-span-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-semibold text-slate-700">State *</label>
+                            <div className="flex items-center justify-between h-5 mb-1">
+                              <label className="text-xs font-semibold text-slate-700 leading-none">State *</label>
                               <VoiceInputButton
                                 onTranscript={(val) => handleComplainantChange(idx, "permanentState", val)}
                                 currentValue={comp.permanentState}
@@ -3838,7 +3836,7 @@ export default function RegisterComplaintPage() {
                               type="text"
                               value={comp.permanentState}
                               onChange={(e) => handleComplainantChange(idx, "permanentState", e.target.value)}
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                                 validationErrors[`comp_${idx}_permanentState`]
                                   ? "border-red-500 bg-red-50"
                                   : "border-slate-300"
@@ -3851,12 +3849,14 @@ export default function RegisterComplaintPage() {
                             )}
                           </div>
                           <div className="sm:col-span-3">
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">Country *</label>
+                            <div className="flex items-center justify-between h-5 mb-1">
+                              <label className="block text-xs font-semibold text-slate-700 leading-none">Country *</label>
+                            </div>
                             <input
                               type="text"
                               value={comp.permanentCountry}
                               onChange={(e) => handleComplainantChange(idx, "permanentCountry", e.target.value)}
-                              className={`w-full px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
                                 validationErrors[`comp_${idx}_permanentCountry`]
                                   ? "border-red-500 bg-red-50"
                                   : "border-slate-300"
@@ -4029,15 +4029,15 @@ export default function RegisterComplaintPage() {
                                 iconOnly={true}
                               />
                             </div>
-                            <input
-                              type="text"
+                            <AutoResizeTextarea
+                              minRows={1}
                               value={acc.address}
                               onChange={(e) => {
                                 handleAccusedChange(idx, "address", e.target.value);
                                 markFieldAsEdited(`accused_${idx}_address`);
                               }}
                               placeholder="e.g. Shop No. 12, Old Grain Market, Thanesar"
-                              className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                              className={`w-full min-h-[40px] px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all resize-none leading-relaxed ${
                                 validationErrors[`acc_${idx}_address`]
                                   ? "border-red-500 bg-red-50"
                                   : (isAutofilled(`accused_${idx}_address`) || (idx === 0 && isAutofilled("accused_0_address")))
@@ -4141,16 +4141,38 @@ export default function RegisterComplaintPage() {
                 </span>
               </div>
 
-              {/* Row 1: Place of Incident & Crime Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      (a) Place of Incident (Crime Spot) *
-                    </label>
-                    <VoiceInputButton
-                      onTranscript={(val) => {
-                        setIncidentPlace(val);
+              {/* Combined Row: Place of Incident, Crime Category, and Date / Time of Incident */}
+              <div className="p-3 bg-white/90 border border-indigo-200 rounded-xl shadow-2xs">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                  {/* (a) Place of Incident (Crime Spot) */}
+                  <div className="flex-1 min-w-[220px]">
+                    <div className="flex items-center justify-between h-5 mb-1">
+                      <label className="text-xs font-semibold text-slate-700 leading-none">
+                        (a) Place of Incident (Crime Spot) *
+                      </label>
+                      <VoiceInputButton
+                        onTranscript={(val) => {
+                          setIncidentPlace(val);
+                          markFieldAsEdited("incidentPlace");
+                          if (validationErrors.incidentPlace) {
+                            setValidationErrors((prev) => {
+                              const next = { ...prev };
+                              delete next.incidentPlace;
+                              return next;
+                            });
+                          }
+                        }}
+                        currentValue={incidentPlace}
+                        fieldLabel="Place of Incident"
+                        preferredLang={voiceLang}
+                        iconOnly={true}
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={incidentPlace}
+                      onChange={(e) => {
+                        setIncidentPlace(e.target.value);
                         markFieldAsEdited("incidentPlace");
                         if (validationErrors.incidentPlace) {
                           setValidationErrors((prev) => {
@@ -4160,164 +4182,132 @@ export default function RegisterComplaintPage() {
                           });
                         }
                       }}
-                      currentValue={incidentPlace}
-                      fieldLabel="Place of Incident"
-                      preferredLang={voiceLang}
-                      iconOnly={true}
+                      placeholder="e.g. Near New Bus Stand Chowk, Thanesar"
+                      className={`w-full h-10 px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                        validationErrors.incidentPlace
+                          ? "border-red-500 bg-red-50"
+                          : isAutofilled("incidentPlace")
+                          ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
+                          : "bg-white border-slate-300"
+                      }`}
                     />
-                  </div>
-                  <input
-                    type="text"
-                    value={incidentPlace}
-                    onChange={(e) => {
-                      setIncidentPlace(e.target.value);
-                      markFieldAsEdited("incidentPlace");
-                      if (validationErrors.incidentPlace) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.incidentPlace;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder="e.g. Near New Bus Stand Chowk, Thanesar"
-                    className={`w-full px-3 py-2 text-xs sm:text-sm rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
-                      validationErrors.incidentPlace
-                        ? "border-red-500 bg-red-50"
-                        : isAutofilled("incidentPlace")
-                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                        : "bg-white border-slate-300"
-                    }`}
-                  />
-                  {validationErrors.incidentPlace && (
-                    <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.incidentPlace}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
-                      (b) Class of Incident (Crime Category) *
-                    </label>
-                  </div>
-                  <select
-                    value={incidentCategory}
-                    onChange={(e: any) => {
-                      setIncidentCategory(e.target.value);
-                      markFieldAsEdited("incidentCategory");
-                    }}
-                    className={`w-full px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
-                      isAutofilled("incidentCategory")
-                        ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                        : "bg-white border-slate-300"
-                    }`}
-                  >
-                    {dynamicCategories.length > 0 ? (
-                      dynamicCategories.map((c) => (
-                        <option key={c.code} value={c.code}>
-                          {c.label}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
-                        <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
-                        <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
-                        <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
-                        <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
-                        <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
-                        <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
-                        <option value="MISSING_PERSON">Missing Person</option>
-                        <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
-                        <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
-                        <option value="OTHER_GENERAL">Other General Matter</option>
-                      </>
+                    {validationErrors.incidentPlace && (
+                      <p className="text-[11px] text-red-600 mt-0.5">{validationErrors.incidentPlace}</p>
                     )}
-                  </select>
-                </div>
-              </div>
-
-              {/* Row 2: Date / Time of Incident Known toggle & Inputs */}
-              <div className="p-3 bg-white/90 border border-indigo-200 rounded-xl shadow-2xs">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <label className="text-xs font-bold text-slate-800 whitespace-nowrap">
-                      (c) Date / Time of Incident Known?
-                    </label>
-                    <div className="flex items-center gap-1 bg-slate-50 p-0.5 rounded-lg border border-slate-200 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setIsDateTimeKnown(true)}
-                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                          isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        Yes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsDateTimeKnown(false)}
-                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-                          !isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
-                        }`}
-                      >
-                        No
-                      </button>
-                    </div>
                   </div>
 
-                  {isDateTimeKnown ? (
-                    <div className="flex flex-1 flex-col sm:flex-row items-center gap-2.5 min-w-0">
-                      <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
-                        <div className="flex items-center gap-1 shrink-0">
-                          <label className="text-xs font-semibold text-slate-600">
-                            Date *
-                          </label>
-                        </div>
-                        <DatePickerDDMMYYYY
-                          value={incidentDate}
-                          onChange={(e) => {
-                            setIncidentDate(e.target.value);
-                            markFieldAsEdited("incidentDate");
-                          }}
-                          placeholder="DD/MM/YYYY"
-                          size="sm"
-                          className={isAutofilled("incidentDate") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : (validationErrors.incidentDate ? "!border-red-500 !bg-red-50" : "")}
-                        />
-                      </div>
-                      <div className="w-full sm:flex-1 flex items-center gap-2 min-w-0">
-                        <div className="flex items-center gap-1 shrink-0">
-                          <label className="text-xs font-semibold text-slate-600">
-                            Time
-                          </label>
-                        </div>
-                        <input
-                          type="time"
-                          value={incidentTime}
-                          onChange={(e) => {
-                            setIncidentTime(e.target.value);
-                            markFieldAsEdited("incidentTime");
-                          }}
-                          className={`w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
-                            isAutofilled("incidentTime")
-                              ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
-                              : "border-slate-300"
+                  {/* (b) Class of Incident (Crime Category) */}
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="flex items-center justify-between h-5 mb-1">
+                      <label className="text-xs font-semibold text-slate-700 leading-none">
+                        (b) Class of Incident (Crime Category) *
+                      </label>
+                    </div>
+                    <select
+                      value={incidentCategory}
+                      onChange={(e: any) => {
+                        setIncidentCategory(e.target.value);
+                        markFieldAsEdited("incidentCategory");
+                      }}
+                      className={`w-full h-10 px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] font-medium transition-all ${
+                        isAutofilled("incidentCategory")
+                          ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
+                          : "bg-white border-slate-300"
+                      }`}
+                    >
+                      {dynamicCategories.length > 0 ? (
+                        dynamicCategories.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.label}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="FINANCIAL_FRAUD_CHEATING">Financial Fraud / Cheating</option>
+                          <option value="CYBER_CRIME">Cyber Crime / Online Fraud</option>
+                          <option value="LAND_PROPERTY_DISPUTE">Land / Boundary Dispute</option>
+                          <option value="PHYSICAL_ASSAULT_AFFRAY">Physical Assault / Affray</option>
+                          <option value="PROPERTY_THEFT_BURGLARY">Theft / Burglary</option>
+                          <option value="DOMESTIC_VIOLENCE_DOWRY">Domestic Violence / Dowry</option>
+                          <option value="PUBLIC_NUISANCE">Public Nuisance / Brawl</option>
+                          <option value="MISSING_PERSON">Missing Person</option>
+                          <option value="NARCOTICS_DRUGS_INFO">Narcotics / Drugs Information</option>
+                          <option value="HARASSMENT_STALKING">Harassment / Stalking</option>
+                          <option value="OTHER_GENERAL">Other General Matter</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  {/* (c) Date / Time of Incident Known toggle & Inputs */}
+                  <div className="shrink-0 flex flex-col justify-end">
+                    <div className="flex items-center justify-between h-5 mb-1">
+                      <label className="text-xs font-semibold text-slate-700 leading-none whitespace-nowrap">
+                        (c) Date/Time Known?
+                      </label>
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs ml-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsDateTimeKnown(true)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
                           }`}
-                        />
+                        >
+                          Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsDateTimeKnown(false)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                            !isDateTimeKnown ? "bg-[#0b192c] text-white shadow-2xs" : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          No
+                        </button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-1 items-center gap-2 min-w-0">
-                      <label className="text-xs font-semibold text-slate-600 shrink-0">
-                        Approx Period
-                      </label>
-                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+
+                    {isDateTimeKnown ? (
+                      <div className="flex items-center gap-2">
+                        {/* Date Input */}
+                        <div className="w-[145px] shrink-0">
+                          <DatePickerDDMMYYYY
+                            value={incidentDate}
+                            onChange={(e) => {
+                              setIncidentDate(e.target.value);
+                              markFieldAsEdited("incidentDate");
+                            }}
+                            placeholder="DD/MM/YYYY"
+                            size="md"
+                            className={isAutofilled("incidentDate") ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100" : (validationErrors.incidentDate ? "!border-red-500 !bg-red-50" : "")}
+                          />
+                        </div>
+
+                        {/* Time Input */}
+                        <div className="w-[125px] shrink-0">
+                          <input
+                            type="time"
+                            value={incidentTime}
+                            onChange={(e) => {
+                              setIncidentTime(e.target.value);
+                              markFieldAsEdited("incidentTime");
+                            }}
+                            className={`w-full h-10 px-2.5 py-1.5 text-xs sm:text-sm bg-white border rounded-lg focus:ring-2 focus:ring-[#0b192c] transition-all ${
+                              isAutofilled("incidentTime")
+                                ? "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100"
+                                : "border-slate-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 w-[278px]">
                         <input
                           type="text"
                           value={incidentApproxPeriod}
                           onChange={(e) => setIncidentApproxPeriod(e.target.value)}
-                          placeholder="e.g. Occurring over past 15 days or exact date not recalled"
-                          className="w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
+                          placeholder="e.g. Past 15 days"
+                          className="w-full h-10 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c]"
                         />
                         <VoiceInputButton
                           onTranscript={(val) => setIncidentApproxPeriod(val)}
@@ -4327,15 +4317,15 @@ export default function RegisterComplaintPage() {
                           iconOnly={true}
                         />
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Row 3: Intake Mode, Subject Headline, Fresh/Old, and Is FIR Registered */}
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end p-3.5 bg-white/90 border border-indigo-200 rounded-xl shadow-2xs">
                 {/* Mode of Intake */}
-                <div className="sm:col-span-3">
+                <div className="sm:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-slate-700 truncate" title="Mode of Intake">
                       Mode of Intake *
@@ -4424,7 +4414,7 @@ export default function RegisterComplaintPage() {
               )}
 
                 {/* Subject Headline */}
-                <div className="sm:col-span-4">
+                <div className="sm:col-span-5">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-slate-700 truncate" title="Subject Headline">
                       Subject (Brief Headline) *

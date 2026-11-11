@@ -691,26 +691,16 @@ export default function TelecomEvidencePage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
       {/* Top Header / Context Banner */}
-      <div className="bg-[#0b192c] text-white border-b border-slate-800 px-4 sm:px-6 py-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold tracking-tight text-white!">Telecom Evidence Analysis Workspace</h1>
-                  <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                    Phase 4 Quality Control &amp; Court Forensics
-                  </span>
-                </div>
-                <p className="text-xs text-white">
-                  {isHindi
-                    ? "दूरसंचार साक्ष्य गुणवत्ता नियंत्रण, AI सत्यापन एवं न्यायालय साक्ष्य तैयारी • BNSS 2023 & BSA 2023 Compliant"
-                    : "Telecom Evidence Quality Control, AI Verification & Court-Ready Forensics • BNSS 2023 & BSA 2023 Compliant"}
-                </p>
-              </div>
+      <div className="bg-[#0b192c] text-white border-b border-slate-800 px-4 sm:px-6 py-3.5 shadow-sm">
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-400/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight !text-white text-white">
+                Telecom Evidence Analysis Workspace
+              </h1>
             </div>
           </div>
 
@@ -746,7 +736,7 @@ export default function TelecomEvidencePage() {
               onClick={handleRunAutoAnalysis}
               disabled={autoAnalyzing || refreshing}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs gap-1.5 shadow-xs cursor-pointer border border-indigo-400/40"
-              title="Execute full automated correlation analysis across all records and update all workspace panels"
+              title="Execute full automated correlation analysis across all records"
             >
               <Zap className={`w-3.5 h-3.5 text-amber-300 ${autoAnalyzing ? "animate-pulse" : ""}`} />
               <span>{autoAnalyzing ? "Analyzing..." : "Auto Analysis"}</span>
@@ -767,32 +757,32 @@ export default function TelecomEvidencePage() {
 
         {/* Active FIR Metadata Strip */}
         {activeFir && (
-          <div className="max-w-7xl mx-auto mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 text-[11px]">
+          <div className="w-full mt-3 pt-3 border-t border-slate-700/60 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 text-[11px]">
             <div>
-              <span className="text-white block text-[10px] uppercase font-bold">Active FIR</span>
-              <span className="font-mono font-bold text-amber-300">{activeFir.firNumber}</span>
+              <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Active FIR</span>
+              <span className="font-mono font-bold text-amber-300 text-xs">{activeFir.firNumber}</span>
             </div>
             <div>
-              <span className="text-white block text-[10px] uppercase font-bold">Police Station</span>
-              <span className="font-semibold text-slate-200">{activeFir.policeStation}</span>
+              <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Police Station</span>
+              <span className="font-semibold text-white text-xs">{activeFir.policeStation}</span>
             </div>
             <div>
-              <span className="text-white block text-[10px] uppercase font-bold">Investigating Officer</span>
-              <span className="font-semibold text-slate-200">{activeFir.assignedIoName || "Assigned IO"}</span>
+              <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Investigating Officer</span>
+              <span className="font-semibold text-white text-xs">{activeFir.assignedIoName || "Assigned IO"}</span>
             </div>
             <div>
-              <span className="text-white block text-[10px] uppercase font-bold">Evidence Files</span>
-              <span className="font-bold text-white">{files.length} Evidence Files</span>
+              <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Evidence Files</span>
+              <span className="font-bold text-white text-xs">{files.length} Evidence Files</span>
             </div>
             <div>
-              <span className="text-white block text-[10px] uppercase font-bold">Court Readiness</span>
-              <span className="font-bold text-emerald-400">
-                {courtExhibits.some(e => e.status === "READY_FOR_COURT" && e.bsaCertificateAttached) ? "Marked Ready — Review Required" : "Draft Preparation"}
+              <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Court Readiness</span>
+              <span className="font-bold text-emerald-300 text-xs">
+                {courtExhibits.some(e => e.status === "READY_FOR_COURT" && e.bsaCertificateAttached) ? "Ready for Court" : "Draft Preparation"}
               </span>
             </div>
             <div className="flex items-center justify-end">
               <Link href={`/fir/${activeFir.id}`}>
-                <Button size="sm" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-[11px] h-7 px-2 font-bold gap-1">
+                <Button size="sm" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-[11px] h-7 px-2 font-bold gap-1 cursor-pointer">
                   Return to FIR <ArrowRight className="w-3 h-3" />
                 </Button>
               </Link>
@@ -803,7 +793,7 @@ export default function TelecomEvidencePage() {
 
       {/* Main 9 Tabs Navigation Bar */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="w-full px-4 sm:px-6">
           <div className="flex items-center gap-1 overflow-x-auto py-2 no-scrollbar">
             {[
               { id: "OVERVIEW", label: "Overview", icon: Layers },
@@ -838,41 +828,41 @@ export default function TelecomEvidencePage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+      <div className="w-full px-4 sm:px-6 pt-5">
 
         {/* ========================================================================= */}
         {/* 1. OVERVIEW TAB */}
         {/* ========================================================================= */}
         {activeTab === "OVERVIEW" && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Calls</span>
                 <span className="text-xl font-black text-slate-900">{stats?.totalCalls || 0}</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">{files.length} Lawful Files</span>
               </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-emerald-600 block">Incoming</span>
                 <span className="text-xl font-black text-emerald-700">{stats?.incomingCalls || 0}</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">Calls to Target</span>
               </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-blue-600 block">Outgoing</span>
                 <span className="text-xl font-black text-blue-700">{stats?.outgoingCalls || 0}</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">Dialed by Target</span>
               </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-purple-600 block">Unique Contacts</span>
                 <span className="text-xl font-black text-purple-700">{stats?.uniqueContactedNumbers || 0}</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">Separate Parties</span>
               </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-rose-600 block">Cell Towers</span>
                 <span className="text-xl font-black text-rose-700">{towers.length} Sites</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">Verified CGI/LAC</span>
               </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
                 <span className="text-[10px] uppercase font-bold text-amber-600 block">Court Exhibits</span>
                 <span className="text-xl font-black text-amber-700">{courtExhibits.length} Ready</span>
                 <span className="text-[11px] text-slate-500 block mt-0.5">Sec 63 BSA Docket</span>
@@ -880,37 +870,31 @@ export default function TelecomEvidencePage() {
             </div>
 
             {/* Quality Control & Court Readiness Banner */}
-            <div className="bg-gradient-to-r from-slate-900 to-[#122844] text-white rounded-xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="bg-[#0b192c] text-white rounded-xl p-3 px-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0">
-                  <Award className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0">
+                  <Award className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">Court-Ready Forensic Evidence Docket (Section 63 BSA / Sec 193 BNSS)</h3>
-                  <p className="text-xs text-slate-300">
-                    Findings require source review. File hashes identify evidence; they do not verify analytical conclusions.
-                  </p>
+                  <h3 className="font-bold text-xs sm:text-sm">Court-Ready Forensic Evidence Docket (Section 63 BSA / Sec 193 BNSS)</h3>
                 </div>
               </div>
               <Button
                 size="sm"
                 onClick={() => setActiveTab("QUALITY_CONTROL")}
-                className="bg-white text-slate-950 hover:bg-slate-100 font-bold text-xs shrink-0"
+                className="bg-white text-slate-950 hover:bg-slate-100 font-bold text-xs shrink-0 cursor-pointer"
               >
                 Inspect Quality Control
               </Button>
             </div>
 
             {/* Uploaded Evidence Docket Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="p-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+              <div className="p-3 px-4 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-xs uppercase text-slate-800">
                     Uploaded Telecom Records &amp; Source Files ({files.length})
                   </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Original files preserved unchanged in secure forensic storage with SHA-256 validation
-                  </p>
                 </div>
                 <Button
                   size="sm"
@@ -936,30 +920,38 @@ export default function TelecomEvidencePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {files.map((f) => (
-                      <tr key={f.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-2.5 font-bold text-slate-900 flex items-center gap-2">
-                          <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>{f.originalFilename}</span>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-slate-100 text-slate-700">
-                            {f.category}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">{f.operator}</td>
-                        <td className="px-3 py-2.5 font-mono font-bold text-slate-900">{f.recordCount} rows</td>
-                        <td className="px-3 py-2.5 font-mono text-[10px] text-slate-500" title={f.sha256Hash}>
-                          {f.sha256Hash.slice(0, 16)}...
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-600">{f.uploadedBy}</td>
-                        <td className="px-3 py-2.5">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            {f.parsingStatus}
-                          </span>
+                    {files.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                          No telecom source records uploaded yet. Click "Upload Record" above to import CDR, IPDR, CAF, or SDR files.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      files.map((f) => (
+                        <tr key={f.id} className="hover:bg-slate-50/70">
+                          <td className="px-4 py-2.5 font-bold text-slate-900 flex items-center gap-2">
+                            <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>{f.originalFilename}</span>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-slate-100 text-slate-700">
+                              {f.category}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">{f.operator}</td>
+                          <td className="px-3 py-2.5 font-mono font-bold text-slate-900">{f.recordCount} rows</td>
+                          <td className="px-3 py-2.5 font-mono text-[10px] text-slate-500" title={f.sha256Hash}>
+                            {f.sha256Hash.slice(0, 16)}...
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-600">{f.uploadedBy}</td>
+                          <td className="px-3 py-2.5">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              {f.parsingStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

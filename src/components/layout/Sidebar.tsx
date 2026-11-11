@@ -189,11 +189,6 @@ export function Sidebar() {
   // TELECOM NAVIGATION ITEMS
   const telecomNavItems: NavItem[] = [
     { name: "Overview & Dashboard", href: "/telecom", icon: Radio, badge: "Live", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "CDR Call Analytics", href: "/telecom?tab=CDR", icon: BookOpen, badge: "Records", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Top Contacts Matrix", href: "/telecom?tab=CONTACTS", icon: Users, badge: "Ranked", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Multi-CDR Link Graph", href: "/telecom?tab=GRAPH", icon: Sparkles, badge: "Visual", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "Cell Tower & Movement", href: "/telecom?tab=TOWER", icon: Shield, badge: "GIS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Upload Telecom Evidence", href: "/telecom?tab=UPLOAD", icon: FileText, badge: "Intake", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
