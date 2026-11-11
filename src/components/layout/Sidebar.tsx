@@ -164,27 +164,32 @@ export function Sidebar() {
       try {
         window.localStorage.setItem("cms_active_module", "PROSECUTION");
       } catch {}
+    } else if (isTelecomPath) {
+      setActiveModule("TELECOM");
+      try {
+        window.localStorage.setItem("cms_active_module", "TELECOM");
+      } catch {}
     } else {
       try {
         const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS" || saved === "PROSECUTION") {
+        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS" || saved === "PROSECUTION" || saved === "TELECOM") {
           setActiveModule(saved);
         }
       } catch {}
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath, isProsecutionPath]);
+  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath, isProsecutionPath, isTelecomPath]);
 
   // Check if user is on portal home page (Select Operational Module)
   const isPortalHome = pathname === "/";
 
   // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
-  const showRoznamcha = !isPortalHome && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "ROZNAMCHA"));
-  const showComplaints = !isPortalHome && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "COMPLAINTS"));
-  const showFir = !isPortalHome && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "FIR"));
-  const showRegistrations = !isPortalHome && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && !isProsecutionPath && activeModule === "REGISTRATIONS"));
-  const showReports = !isPortalHome && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isProsecutionPath && activeModule === "REPORTS"));
+  const showRoznamcha = !isPortalHome && !isTelecomPath && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "ROZNAMCHA"));
+  const showComplaints = !isPortalHome && !isTelecomPath && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "COMPLAINTS"));
+  const showFir = !isPortalHome && !isTelecomPath && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "FIR"));
+  const showRegistrations = !isPortalHome && !isTelecomPath && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && !isProsecutionPath && activeModule === "REGISTRATIONS"));
+  const showReports = !isPortalHome && !isTelecomPath && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isProsecutionPath && activeModule === "REPORTS"));
   const showTelecom = !isPortalHome && (isTelecomPath || activeModule === "TELECOM");
-  const showProsecution = !isPortalHome && (isProsecutionPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "PROSECUTION"));
+  const showProsecution = !isPortalHome && !isTelecomPath && (isProsecutionPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "PROSECUTION"));
 
   // TELECOM NAVIGATION ITEMS
   const telecomNavItems: NavItem[] = [
