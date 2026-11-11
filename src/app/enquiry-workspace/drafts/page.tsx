@@ -1,5 +1,6 @@
 "use client";
 
+import { translateCaseDraft } from "@/lib/caseWritingClient";
 import { CaseDraftButton } from "@/components/ui/CaseDraftButton";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
@@ -622,6 +623,52 @@ function EnquiryDraftsContent() {
   const [officerName, setOfficerName] = useState(TEMPLATE_PRESETS[initialFormat].officerName);
   const [officerRank, setOfficerRank] = useState(TEMPLATE_PRESETS[initialFormat].officerRank);
   const [officerLocation, setOfficerLocation] = useState(TEMPLATE_PRESETS[initialFormat].officerLocation);
+  const [documentLanguage, setDocumentLanguage] = useState<"hi" | "en">("en");
+  const [languageBusy, setLanguageBusy] = useState(false);
+  const [draftBusy, setDraftBusy] = useState(false);
+  const [languageMessage, setLanguageMessage] = useState("");
+  const currentDocument = JSON.stringify({ complaintId: complaint?.id, activeFormat, headerLeft, headerRight,
+    subHeaderLeft, title, subTitle, closingLine, officerName, officerRank, officerLocation, columns, rows });
+  const latestDocument = useRef(currentDocument);
+  useEffect(() => { latestDocument.current = currentDocument; }, [currentDocument]);
+
+  async function changeDocumentLanguage(language: "hi" | "en") {
+    if (languageBusy || draftBusy) return;
+    setLanguageBusy(true);
+    setLanguageMessage("");
+    try {
+      const translated = await translateCaseDraft([
+        headerLeft, headerRight, subHeaderLeft, title, subTitle, closingLine, officerRank, officerLocation,
+        ...columns, ...rows.flatMap(row => [row.label, ...row.cells]),
+      ], language);
+      if (latestDocument.current !== currentDocument) {
+        setLanguageMessage("The draft changed during translation. Select a language again to translate your latest edits.");
+        return;
+      }
+      const [left, right, subHeader, heading, subtitle, closing, rank, location, ...table] = translated;
+      setHeaderLeft(left);
+      setHeaderRight(right);
+      setSubHeaderLeft(subHeader);
+      setTitle(heading);
+      setSubTitle(subtitle);
+      setClosingLine(closing);
+      setOfficerRank(rank);
+      setOfficerLocation(location);
+      setColumns(table.slice(0, columns.length));
+      let cursor = columns.length;
+      setRows(rows.map(row => {
+        const label = table[cursor++];
+        const cells = table.slice(cursor, cursor + row.cells.length);
+        cursor += row.cells.length;
+        return { ...row, label, cells };
+      }));
+      setDocumentLanguage(language);
+    } catch (error) {
+      setLanguageMessage(error instanceof Error ? error.message : "Draft translation failed.");
+    } finally {
+      setLanguageBusy(false);
+    }
+  }
   const [reportDate, setReportDate] = useState(`Dated: ${formatDate(new Date())}`);
 
   // Appearance & Border Controls
@@ -1328,6 +1375,7 @@ function EnquiryDraftsContent() {
       {/* Top Workspace Navigation Tabs */}
       <EnquiryWorkspaceNav complaintId={complaint?.id} />
 
+
       {/* 1. REQUIRED COMPLAINT DROPDOWN & ANALYSIS HEADER */}
       <ComplaintAnalysisHeader
         initialComplaintId={complaintIdParam}
@@ -1697,7 +1745,7 @@ function EnquiryDraftsContent() {
             )}
 
             {complaint && (
-              <CaseDraftButton key={complaint.id + title + columns.length} module="COMPLAINT" caseId={complaint.id} purpose="report" title={title} onDraft={text => setRows(current => {
+              <CaseDraftButton key={complaint.id + title + columns.length} module="COMPLAINT" caseId={complaint.id} purpose="report" title={title} language={documentLanguage} disabled={languageBusy} onBusyChange={setDraftBusy} onDraft={text => setRows(current => {
                 const findings = current.find(row => ["row_findings", "row_final_report", "row_ncr_findings", "row_ai_findings"].includes(row.id));
                 if (findings) {
                   const index = columns.length > 1 ? 1 : 0;
@@ -1936,6 +1984,17 @@ function EnquiryDraftsContent() {
             >
               {showSignatures ? "✓ Signatures: Active" : "✕ Signatures: Hidden"}
             </button>
+            <div role="group" aria-label="Template and draft language" className="flex items-center gap-1 border rounded p-1">
+              <span className="text-xs mr-1">Template / Draft:</span>
+              {(["hi", "en"] as const).map(language => <button key={language} type="button"
+                disabled={languageBusy || draftBusy} aria-pressed={documentLanguage === language}
+                onClick={() => changeDocumentLanguage(language)}
+                className={documentLanguage === language ? "px-2 py-1 text-xs rounded bg-blue-900 text-white disabled:opacity-50" : "px-2 py-1 text-xs rounded bg-white text-slate-700 disabled:opacity-50"}>
+                {language === "hi" ? "हिन्दी" : "English"}
+              </button>)}
+            </div>
+            {(languageBusy || languageMessage) && <p role="status" className="w-full text-sm text-slate-700">{languageBusy ? "Translating template and draft… Please wait." : languageMessage}</p>}
+
           </div>
 
           {/* Table Row & Column Add Actions */}

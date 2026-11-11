@@ -1,8 +1,8 @@
 import { sessionUser, sameOrigin } from '@/lib/serverSession';
 import type { UserSession } from '@/types';
 
-export function apiAccess(req: Request): UserSession | Response {
-  const user = sessionUser(req);
+export async function apiAccess(req: Request): Promise<UserSession | Response> {
+  const user = await sessionUser(req);
   if (!user) return Response.json({error:'Login required.'},{status:401});
   if (!['GET','HEAD','OPTIONS'].includes(req.method) && !sameOrigin(req)) return Response.json({error:'Invalid request origin.'},{status:403});
   const url = new URL(req.url);
@@ -14,6 +14,7 @@ export function scopeAllowed(user: UserSession, record: {district?: string;polic
   if (user.role === 'SUPER_ADMIN') return true;
   const norm=(value?:string)=>(value||'').trim().toLowerCase();
   if (!norm(user.district) || norm(user.district)!==norm(record.district)) return false;
+  if (user.role === 'DSP_SUBDIV' && user.unitId) return Boolean(user.jurisdictionUnits?.some(name => norm(name) === norm(record.policeStation || record.stationName)));
   if (['SP_DISTRICT','DSP_SUBDIV','ASP_HQ'].includes(user.role)) return true;
   return !!norm(user.stationName) && norm(user.stationName)===norm(record.policeStation || record.stationName);
 }

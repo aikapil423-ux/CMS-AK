@@ -15,18 +15,38 @@ export async function readFirRecords():Promise<FIRItem[]> {
   try{const data=JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file(),'utf8'));if(!Array.isArray(data))throw new Error('Invalid FIR store.');return data;}
   catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return [];throw error;}
 }
-export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIRItem[]> {
-  const changes=changesSchema.parse(input),target=file();
+async function withFirStore<T>(update: (records: FIRItem[]) => T): Promise<T> {
+  const target=file();
   await fs.mkdir(path.dirname(target),{recursive:true});
   let lock;
   for(let i=0;i<100;i++){try{lock=await fs.open(target+'.lock','wx');break;}catch(error){if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;await new Promise(resolve=>setTimeout(resolve,25));}}
   if(!lock)throw new FirRepositoryConflict('Another FIR save is in progress. Retry.');
   const temp=target+'.'+randomUUID()+'.tmp';
   try{
-    const records=await readFirRecords(),saved:FIRItem[]=[];
+    const records=await readFirRecords();
+    const result=update(records);
+    await fs.writeFile(temp,JSON.stringify(records,null,2),'utf8');
+    await fs.rename(temp,target);
+    return result;
+  }finally{await fs.unlink(temp).catch(()=>{});await lock.close();await fs.unlink(target+'.lock');}
+}
+export async function updateFirTransfer(id: string, update: (record: FIRItem) => FIRItem) {
+  return withFirStore(records => {
+    const index = records.findIndex(record => record.id === id);
+    if (index < 0) return null;
+    const current = records[index];
+    return records[index] = { ...update(current), persistenceVersion: (current.persistenceVersion || 0) + 1 };
+  });
+}
+export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIRItem[]> {
+  const changes=changesSchema.parse(input);
+  return withFirStore(records => {
+    const saved:FIRItem[]=[];
     if(new Set(changes.map(c=>c.record.id)).size!==changes.length)throw new FirRepositoryConflict('Duplicate FIR identifiers.');
     for(const change of changes){
       const proposed=change.record as unknown as FIRItem,index=records.findIndex(f=>f.id===proposed.id),old=records[index];
+      proposed.custodyUnit=old?.custodyUnit;
+      proposed.recordTransfers=old?.recordTransfers;
       if(Number(proposed.firDate.slice(0,4))!==proposed.firYear)throw new Error("FIR year must match its registration date.");
       if(!isFirVisibleToUser(user,old || proposed))throw new FirRepositoryAccessError('FIR is outside your assignment or jurisdiction.');
       if(!old && !['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(user.role))throw new FirRepositoryAccessError('Only intake officers may register FIRs.');
@@ -42,8 +62,6 @@ export async function saveFirRecords(input:unknown,user:UserSession):Promise<FIR
       if(index<0)records.push(next);else records[index]=next;
       saved.push(next);
     }
-    await fs.writeFile(temp,JSON.stringify(records,null,2),'utf8');
-    await fs.rename(temp,target);
     return saved;
-  }finally{await fs.unlink(temp).catch(()=>{});await lock.close();await fs.unlink(target+'.lock');}
+  });
 }

@@ -7,12 +7,12 @@ import { refreshCaseAnalysis } from '@/services/caseAnalysisService';
 export const runtime='nodejs';
 export const maxDuration=120;
 export async function GET(req:Request){
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   try{return Response.json({records:(await readFirRecords()).filter(f=>isFirVisibleToUser(user,f))},{headers:{'Cache-Control':'no-store'}});}
   catch{return Response.json({error:'FIR records could not be loaded.'},{status:503});}
 }
 export async function POST(req:Request){
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   try{
     const records=await saveFirRecords((await req.json()).changes,user);
     after(async()=>{for(const fir of records){try{await refreshCaseAnalysis(fir,user);}catch(error){console.error('FIR saved; case comparison refresh failed:',error);}}});

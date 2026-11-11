@@ -8,7 +8,7 @@ import { UniversalEvidenceRecord } from "@/types/evidence";
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
 
 export async function GET(req: Request) {
- const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
+ const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   if(apiUser.role !== "SUPER_ADMIN") return Response.json({error:"Storage administration requires Super Admin."},{status:403});
   try {
     const stats = losslessCompressionService.getStorageOptimizationStats();
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   if(apiUser.role !== "SUPER_ADMIN") return Response.json({error:"Storage administration requires Super Admin."},{status:403});
   try {

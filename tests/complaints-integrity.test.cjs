@@ -1,12 +1,18 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'cms-complaints-'));fs.mkdirSync(path.join(temp,'prisma'));fs.writeFileSync(path.join(temp,'prisma','complaints-store.json'),'[]');
-const modules=new Map(),storage=new Map(),events=[];let actor='usr_mhc_1',quota=false,failSave=false;let route;
+const modules=new Map(),storage=new Map(),events=[];let actor='usr_mhc_1',quota=false,failSave=false;let route, alternatePosting;
 const window={localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(quota)throw new Error('Quota');storage.set(k,v);}},dispatchEvent:e=>events.push(e),addEventListener:()=>{}};
 class CustomEvent{constructor(type,options){this.type=type;this.detail=options?.detail;}}
 const process_={...process,cwd:()=>temp,env:{...process.env,NODE_ENV:'test',CMS_SESSION_SECRET:'test-secret-'.repeat(4)}};
 function load(file){if(modules.has(file))return modules.get(file);const exports={};modules.set(file,exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
 vm.runInNewContext(code,{exports,console,Date,Intl,Map,Set,Buffer,URL,Request,Response,structuredClone,crypto:require('node:crypto').webcrypto,globalThis:{},process:process_,setTimeout,queueMicrotask,window,CustomEvent,fetch:async(url,options={})=>{if(failSave&&options.method==='POST')return Response.json({error:'Simulated backend failure'},{status:503});const auth=load('src/lib/serverSession.ts');const req=new Request('http://local'+url,{...options,headers:{...options.headers,cookie:'cms_session='+auth.issueSession(actor)}});return (options.method==='POST'?route.POST:route.GET)(req);},require(n){
+ if(n==='@/lib/prisma')return {prisma:{user:{findUnique:async({where})=>{
+   const person=DEMO_USERS.find(row=>row.id===where.id || row.pno===where.pno);
+   if(!person || (where.pno && person.id!=='usr_sho_1'))return null;
+   return {...person,fullName:person.name,status:'ACTIVE',passwordHash:'test-salt:'+require('node:crypto').scryptSync('test-secret-pin','test-salt',64).toString('hex'),
+     unit:alternatePosting && person.id==='usr_sho_1' ? alternatePosting : {id:'unit-'+person.stationCode,code:person.stationCode,name:person.stationName,district:person.district}};
+ }},policeUnit:{findMany:async()=>[]}}};
  if(n==='next/server')return {NextResponse:Response};
  if(n==='./generalDiaryService')return {GeneralDiaryService:new Proxy({},{get:()=>async()=>({id:'qa-gd'})})};
  if(n==='./evidenceBlobStore')return {evidenceBlobStore:{put:async()=>{},get:async()=>null}};
@@ -26,8 +32,8 @@ let saved;
 test('unsigned/forged sessions cannot access API; empty register stays empty',async()=>{
  assert.equal((await route.GET(new Request('http://local/api/complaints?viewerRole=SHO'))).status,401);
  assert.equal((await route.POST(new Request('http://local/api/complaints',{method:'POST',body:JSON.stringify({complaints:[]})}))).status,401);
- assert.equal(sessionUser(new Request('http://local',{headers:{cookie:'cms_session=forged.123'}})),null);
- assert.equal(validLogin('not-a-user','123456'),null);assert.equal(validLogin('HR-04291882','wrong'),null);
+ assert.equal(await sessionUser(new Request('http://local',{headers:{cookie:'cms_session=forged.123'}})),null);
+ assert.equal(await validLogin('not-a-user','123456'),null);assert.equal(await validLogin('HR-04291882','wrong'),null);
  const r=await route.GET(new Request('http://local/api/complaints',{headers:{cookie:'cms_session='+issueSession('usr_sho_1')}}));assert.equal((await r.json()).complaints.length,0);
 });
 test('permission checks use exact officer identity, station, district and document ownership',()=>{
@@ -99,11 +105,23 @@ test('more than 30 records remain available when browser cache is full',async()=
  quota=true;const records=await s.getComplaints({viewerRole:'MHC_GD_INCHARGE',viewerStation:'PS City Panipat'});quota=false;
  assert.equal(records.length,36);assert.equal(JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json'))).length,36);
 });
-test('production rejects demo PIN and accepts only the configured officers credentials',()=>{
- const env=process_.env;const previous={NODE_ENV:env.NODE_ENV,CMS_LOGIN_CREDENTIALS:env.CMS_LOGIN_CREDENTIALS};env.NODE_ENV='production';env.CMS_LOGIN_CREDENTIALS='{}';
- assert.equal(validLogin('HR-04291882','123456'),null);
- const hash=require('node:crypto').scryptSync('test-secret-pin','test-salt',64).toString('hex');env.CMS_LOGIN_CREDENTIALS=JSON.stringify({'HR-04291882':'test-salt:'+hash});
- assert.equal(validLogin('HR-04291882','test-secret-pin').id,'usr_sho_1');assert.equal(validLogin('HR-06281923','test-secret-pin'),null);
+test('production rejects demo PIN and accepts only database credentials',async()=>{
+ const env=process_.env;const previous={NODE_ENV:env.NODE_ENV};env.NODE_ENV='production';
+ assert.equal(await validLogin('HR-04291882','123456'),null);
+ assert.equal((await validLogin('HR-04291882','test-secret-pin')).id,'usr_sho_1');assert.equal(await validLogin('HR-06281923','test-secret-pin'),null);
  Object.assign(env,previous);
+});
+test('an existing session resolves a transferred officer against the new posting',async()=>{
+ const request=new Request('http://local',{headers:{cookie:'cms_session='+issueSession('usr_sho_1')}});
+ const before=await sessionUser(request);
+ const original={district:before.district,policeStation:before.stationName};
+ assert.equal(permissions.canViewComplaint(before,original).allowed,true);
+ alternatePosting={id:'unit-other',name:'Other Station',code:'OTHER',district:before.district};
+ try {
+   const after=await sessionUser(request);
+   assert.equal(after.unitId,'unit-other');
+   assert.equal(permissions.canViewComplaint(after,original).allowed,false);
+   assert.equal(permissions.canViewComplaint(after,{...original,policeStation:'Other Station'}).allowed,true);
+ } finally { alternatePosting=undefined; }
 });
 after(()=>fs.rmSync(temp,{recursive:true,force:true}));

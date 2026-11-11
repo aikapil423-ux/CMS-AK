@@ -325,6 +325,7 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
       {/* 3. REPORT ACTIVE VIEW */}
       {report && (
         <div className="space-y-6">
+          {report.advisoryWarning && <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{report.advisoryWarning} Showing CMS suggestions for officer review.</p>}
           {/* Executive Metrics Overview Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">

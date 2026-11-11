@@ -19,9 +19,9 @@ function session({ ai = false, reply } = {}) {
     if (modules.has(file)) return modules.get(file);
     const exports = {}; modules.set(file, exports);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    vm.runInNewContext(code, { exports, console, Error, AbortSignal, process: { cwd: () => 'test-root', env: ai ? { GEMINI_API_KEY: 'test-key' } : {} },
-      fetch: async () => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(reply || { conflicts: [] }) }] } }] }) }),
-      require(name) {
+    vm.runInNewContext(code, { exports, console, Error, AbortSignal, process: { cwd: () => 'test-root', env: ai ? { OPENROUTER_API_KEY: 'test-key' } : {} },
+      fetch: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(reply || { conflicts: [] }) } }]  }) }),
+      require(name) {if(name==='server-only')return {};
         if (name === 'node:fs/promises') return fakeFs;
         if (name === '@/lib/evidenceOwnership') return { evidenceOwner: r => r.ownerId };
         if (name === '@/lib/firIntegrity') return { isFirVisibleToUser: u => u.id === user.id };

@@ -5,7 +5,7 @@ import { POST as processEvidence } from '@/app/api/evidence/process/route';
 export const runtime='nodejs';
 export const maxDuration=300;
 export async function POST(req:NextRequest) {
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   try {
     const form=await req.formData(),id=form.get('caseId');
     const fir=typeof id==='string'?await authorizedAnalysisFir(id,user):null;

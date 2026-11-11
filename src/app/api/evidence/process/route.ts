@@ -1,4 +1,5 @@
-import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
+import { canAccessEvidenceCase } from "@/services/evidenceCaseAccess";
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/geminiProcessing";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
 import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
@@ -41,7 +42,7 @@ function computeSha256(buffer: Buffer | string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const formData = await req.formData();
@@ -52,6 +53,9 @@ export async function POST(req: NextRequest) {
     const caseId = (formData.get("caseId") as string) || "";
     const caseNumber = (formData.get("caseNumber") as string) || "";
     const moduleType = ((formData.get("module") as string) || "COMPLAINTS") as EvidenceModuleType;
+    if (!await canAccessEvidenceCase(apiUser, { module: moduleType, caseId })) {
+      return NextResponse.json({error:'Case not found or access denied.'},{status:404});
+    }
     const uploadedBy = apiUser.name;
     const forceReprocess = formData.get("forceReprocess") === "true";
     const deferCaseAnalysis = formData.get('deferCaseAnalysis') === 'true';
@@ -138,8 +142,8 @@ export async function POST(req: NextRequest) {
         mimeType: fileType,
         dataUrl,
         sha256Hash,
-        uploadedAt: nowIso,
-        uploadedBy,
+        uploadedAt: existing?.rawDocument.uploadedAt || nowIso,
+        uploadedBy: existing?.rawDocument.uploadedBy || uploadedBy,
       },
       extractedText: fallbackText || "",
       detectedLanguage: "bilingual",
@@ -189,7 +193,7 @@ STRICT ANTI-HALLUCINATION:
 - Extract ONLY facts EXPLICITLY mentioned in the document.
 - Never invent dummy data. If a field is not present, return empty string or empty array.
 - PRESERVE ORIGINAL LANGUAGE (Hindi in Hindi, English in English).
-- Incident Details: Verbatim complete complaint text in "incident.details".
+- Put the verbatim complete document text in "rawText". Leave "incident.details" empty to reuse that transcript without duplicating it in the response.
 - Complaint Description: Concise structured summary in "complaint.summary".
 
 Return a valid JSON object matching:
@@ -250,13 +254,16 @@ Return a valid JSON object matching:
           ];
         }
 
-        const reply = await processWithAI(contents[0].parts, { json: true, maxTokens: 32768 });
+        const reply = await processWithAI(contents[0].parts, {
+          json: true, maxTokens: 32768, timeout: 240000,
+          system: 'Extract concise structured facts. Transcribe the source once in rawText; do not repeat the full transcript in other fields. Return all required investigation arrays, using empty arrays when no supported facts exist.',
+        });
         extractedData = JSON.parse(reply);
       }
 
       // Use the AI result or local parsing when AI is unconfigured
       if (processingAIAvailable() && (!extractedData || !Array.isArray(extractedData.investigation?.entities))) throw new Error('AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.');
-      if (moduleType === "FIR" && !extractedData && !fallbackText.trim()) {
+      if (!extractedData && !fallbackText.trim()) {
         throw new Error("Document text could not be extracted. Configure the AI service or provide extracted text, then retry processing. Original evidence is retained.");
       }
       const extractedRawText = extractedData?.rawText || extractedData?.incident?.details || fallbackText || "";

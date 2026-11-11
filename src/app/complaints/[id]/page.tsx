@@ -664,10 +664,8 @@ export default function ComplaintProfilePage() {
   }, [complaintId,currentUser]);
 
   useEffect(() => {
-    if (complaint?.isReportViewedBySho) {
-      setIsReportViewed(true);
-    }
-  }, [complaint?.isReportViewedBySho]);
+    setIsReportViewed(Boolean(complaint?.isReportViewedBySho));
+  }, [complaint?.id, complaint?.eoRecommendedReportId, complaint?.isReportViewedBySho]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !complaint) return;
@@ -2011,7 +2009,7 @@ export default function ComplaintProfilePage() {
 
     if (
       !entriesMap.has("EVENT_FIR_REGISTERED") &&
-      (complaint.isFirRegistered || complaint.firNumber || complaint.dispositionType === "FIR_REGISTERED")
+      complaint.isFirRegistered
     ) {
       addOrMergeEvent({
         id: "hist_fir_registered",
@@ -2404,6 +2402,16 @@ export default function ComplaintProfilePage() {
         </div>
       )}
 
+      {complaint.isSentToSho && complaint.isFirRegistered && (
+        <div className="rounded border border-blue-300 bg-blue-50 p-4 text-sm" role="status">
+          FIR is already registered for this complaint. This report is saved in Reports; the complaint's pre-FIR approval/closure workflow does not apply. Continue further action in the linked FIR using View FIR in Register.
+        </div>
+      )}
+      {isReportReviewPending && !isSho && (
+        <div className="rounded border border-amber-300 bg-amber-50 p-4 text-sm" role="status">
+          Report sent to SHO — awaiting review. The authorized SHO can view the report and approve or return it for correction. Approval leads to FIR registration, NCR or closure; rejection returns it to the assigned EO for correction and resubmission.
+        </div>
+      )}
       {/* 4. SHO REPORT REVIEW BANNER (VIEW REPORT -> APPROVE & REJECT) */}
       {isSho && !isMhc && isReportReviewPending && (
         <div className={`rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs animate-in fade-in-50 border-2 ${
@@ -2527,7 +2535,7 @@ export default function ComplaintProfilePage() {
       )}
 
       {/* 2. SUCCESS BANNER: FORMAL FIR REGISTERED */}
-      {(complaint.isFirRegistered || complaint.firNumber) && (
+      {complaint.isFirRegistered && (
         <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -3193,7 +3201,7 @@ export default function ComplaintProfilePage() {
                                         Processing...
                                       </span>
                                     ) : evidenceRec?.processingStatus === "FAILED" ? (
-                                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">
+                                      <span title={evidenceRec.errorMessage || "Processing failed; original file is retained."} className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">
                                         <AlertTriangle className="w-2.5 h-2.5 text-red-600" />
                                         Processing Failed
                                       </span>
@@ -3238,12 +3246,18 @@ export default function ComplaintProfilePage() {
                                 {evidenceRec?.processingStatus === "FAILED" && (
                                   <button
                                     type="button"
-                                    onClick={async () => {
+                                    onClick={async (event) => {
+                                      const button = event.currentTarget;
+                                      button.disabled = true;
+                                      button.setAttribute("aria-busy", "true");
                                       try {
                                         await universalEvidenceService.retryProcessing(evidenceRec.id, currentUser.name);
-                                        setEvidenceRefreshTrigger((c) => c + 1);
                                       } catch (err: any) {
                                         alert("Retry failed: " + err.message);
+                                      } finally {
+                                        button.disabled = false;
+                                        button.removeAttribute("aria-busy");
+                                        setEvidenceRefreshTrigger((c) => c + 1);
                                       }
                                     }}
                                     className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer"

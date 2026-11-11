@@ -14,7 +14,7 @@ import { calculateDiary,diaryFormula } from '@/lib/weeklyDiaryCalculations';
 import { validateDiaryLayout,rebaseDiaryLayout } from '@/lib/weeklyDiaryLayout';
 export const runtime='nodejs';
 async function scoped(req:Request) {
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   const [allFirs,allComplaints]=await Promise.all([readFirRecords(),readComplaints()]);
   const firs=allFirs.filter(f=>isFirVisibleToUser(user,f)),complaints=allComplaints.filter(c=>canViewComplaint(user,c).allowed);
   const stations=[...new Set([...firs.map(f=>f.policeStation),...complaints.map(c=>c.policeStation),user.stationName].filter(Boolean))].sort();

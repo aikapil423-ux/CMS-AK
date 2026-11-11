@@ -48,8 +48,8 @@ export function MobileHeader() {
                   {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : isProsecution ? t("Prosecution") : "HP CMS"}
                 </span>
                 <span
-                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] px-1.5 py-0.2 rounded border border-[#6d85bd]/60 font-mono font-bold"
-                  style={{ color: "#203c88", backgroundColor: "#eef1ff" }}
+                  className="text-[10px] bg-white/20 !text-white px-1.5 py-0.2 rounded border border-white/30 font-mono font-bold"
+                  style={{ color: "#ffffff", backgroundColor: "rgba(255, 255, 255, 0.2)" }}
                 >
                   {currentUser.rank.slice(0, 3)}
                 </span>

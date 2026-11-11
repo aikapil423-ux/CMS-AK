@@ -107,182 +107,30 @@ const DEFAULT_MALPRACTICES: MalpracticeDeficiency[] = [
   },
 ];
 
-const INITIAL_SCRUTINY_RECORDS: ScrutinyPerformaRecord[] = [
-  {
-    id: "SCR-2026-0041",
-    scrutinyNumber: "SCR/2026/0041",
-    firNumber: "FIR/0004/2026",
-    policeStation: "PS City Panipat",
-    district: "Panipat",
-    actsAndSections: "Sec 304, 3(5) BNS (Snatching)",
-    complainantName: "Vikas Kumar R/o Model Town",
-    accusedNames: "Amit @ Mita, Rahul",
-    investigationOfficer: "SI Sandeep Singh",
-    ioRankAndBelt: "Sub-Inspector, 412/PNP",
-    submissionDate: "15/10/2026",
-    scrutinyDate: "16/10/2026",
-    scrutinyOfficer: "Sh. D.S. Yadav, Ld. Deputy ADA",
-    decision: "PASSED",
-    courtName: "Court of Ld. Chief Judicial Magistrate, Panipat",
-    challanType: "FINAL_CHARGESHEET",
-    checklist: {
-      firAndGdCopies: true,
-      statements180Bnss: true,
-      sitePlanNaksha: true,
-      arrestMemoNotice35: true,
-      mlcPostMortemReport: true,
-      fslForensicReport: true,
-      section105AudioVideo: true,
-      seizureMalkhanaEntry: true,
-      antecedentRecord: true,
-      seniorOfficerSupervision: true,
-    },
-    objectionsNote: "All statutory documents in order. Recovery of snatched mobile verified with IMEI and seizure memo. Fit for court submission.",
-  },
-  {
-    id: "SCR-2026-0038",
-    scrutinyNumber: "SCR/2026/0038",
-    firNumber: "FIR/0003/2026",
-    policeStation: "PS Model Town Panipat",
-    district: "Panipat",
-    actsAndSections: "Sec 103(1), 3(5) BNS (Murder)",
-    complainantName: "Mohit Verma R/o Sec 12",
-    accusedNames: "Rohit @ Kalu",
-    investigationOfficer: "Insp. Rakesh Sharma",
-    ioRankAndBelt: "Inspector (SHO)",
-    submissionDate: "16/10/2026",
-    scrutinyDate: "17/10/2026",
-    scrutinyOfficer: "Sh. Rajesh Bishnoi, Ld. Assistant ADA",
-    decision: "OBJECTION_RETURNED",
-    courtName: "Court of Ld. Sessions Judge, Panipat",
-    challanType: "FINAL_CHARGESHEET",
-    checklist: {
-      firAndGdCopies: true,
-      statements180Bnss: true,
-      sitePlanNaksha: true,
-      arrestMemoNotice35: true,
-      mlcPostMortemReport: true,
-      fslForensicReport: false,
-      section105AudioVideo: true,
-      seizureMalkhanaEntry: true,
-      antecedentRecord: false,
-      seniorOfficerSupervision: true,
-    },
-    objectionsNote: "1. FSL Madhuban chemical report regarding weapon of offence (Iron Rod) is pending. 2. Verification of previous criminal antecedent list not annexed.",
-  },
-];
 
-const INITIAL_BAIL_REPLIES: BailReplyRecord[] = [
-  {
-    id: "BAIL-2026-0012",
-    applicationNo: "BA/142/2026",
-    firNumber: "FIR/0003/2026",
-    policeStation: "PS Model Town Panipat",
-    courtName: "Court of Ld. Additional Sessions Judge-I, Panipat",
-    applicantAccusedName: "Rohit @ Kalu S/o Mahesh",
-    fatherName: "Sh. Mahesh Kumar",
-    bailType: "REGULAR",
-    ipcOrBnsSections: "Sec 103(1), 3(5) BNS (Murder)",
-    hearingDate: "20/10/2026",
-    status: "SUBMITTED",
-    groundsOfOpposition: [
-      "Grave and heinous nature of crime punishable with life imprisonment or capital penalty",
-      "Weapon of offence (Iron Rod) recovered directly at the instance of accused",
-      "Eyewitnesses belong to same locality; high probability of threat or tampering with witnesses",
-      "FSL Madhuban report awaited; investigation in critical stage",
-    ],
-    ioCaseSummary: "Accused hit the deceased Sunil Kumar on the head with lethal force during a road scuffle resulting in fatal skull fracture. Eye-witness testimony firmly establishes prima-facie guilt.",
-    antecedentsDetails: "Accused is previously involved in FIR No. 112/2024 u/s 323, 341 IPC at PS Sadar Panipat.",
-    submittedByOfficer: "Insp. Rakesh Sharma, SHO",
-    submissionDate: "17/10/2026",
-  },
-  {
-    id: "BAIL-2026-0009",
-    applicationNo: "ABA/89/2026",
-    firNumber: "FIR/0004/2026",
-    policeStation: "PS City Panipat",
-    courtName: "Court of Ld. Sessions Judge, Panipat",
-    applicantAccusedName: "Rahul S/o Naresh",
-    fatherName: "Sh. Naresh Kumar",
-    bailType: "ANTICIPATORY",
-    ipcOrBnsSections: "Sec 304, 3(5) BNS (Snatching)",
-    hearingDate: "19/10/2026",
-    status: "SUBMITTED",
-    groundsOfOpposition: [
-      "Custodial interrogation is strictly required to unearth inter-district snatching syndicate",
-      "Recovery of motorcycle used in commission of crime is still pending",
-      "Accused has been evading arrest and not cooperating with IO",
-    ],
-    ioCaseSummary: "Applicant was rider of motorcycle who snatched complainant mobile phone at high speed near Red Light Chowk Panipat.",
-    antecedentsDetails: "No other FIR verified yet.",
-    submittedByOfficer: "SI Sandeep Singh, IO",
-    submissionDate: "16/10/2026",
-  },
-];
 
-const INITIAL_STATUS_REPORTS: CourtStatusReportRecord[] = [
-  {
-    id: "SR-2026-0005",
-    reportRefNo: "SR/HC/2026/005",
-    firNumber: "FIR/0002/2026",
-    policeStation: "PS Chandni Bagh Panipat",
-    courtName: "Hon'ble High Court of Punjab & Haryana, Chandigarh",
-    caseTitle: "Mukesh @ Billa v. State of Haryana",
-    petitionNumber: "CRM-M-48921-2026",
-    investigationStage: "UNDER_INVESTIGATION",
-    keyEvidenceCollected: "110 Grams smack recovered from polythene packet during naka. Weighment memo, sampling in presence of Gazetted Officer (DSP) completed under Sec 50 NDPS Act.",
-    accusedStatus: "Accused in judicial custody at District Jail Panipat since 15/10/2026.",
-    policePrayer: "Humble prayer to dismiss the petition as commercial narcotics trafficking involves serious socio-economic peril.",
-    hearingDate: "22/10/2026",
-    submittedBy: "Sh. Suresh Kumar, DSP Headquarter Panipat",
-    submissionDate: "17/10/2026",
-  },
-];
 
-const INITIAL_MISC_COURT: CourtMiscApplicationRecord[] = [
-  {
-    id: "MCA-2026-0021",
-    applicationType: "PRODUCTION_WARRANT",
-    firNumber: "FIR/0003/2026",
-    policeStation: "PS Model Town Panipat",
-    courtName: "Court of Ld. CJM, Panipat",
-    targetPersonName: "Rohit @ Kalu S/o Mahesh (District Jail Panipat)",
-    groundsAndFacts: "Accused is currently lodged in judicial custody. Physical production required before court for voice sample collection / test identification proceedings.",
-    hearingDate: "21/10/2026",
-    status: "FILED",
-    filingDate: "17/10/2026",
-    officerName: "Insp. Rakesh Sharma",
-  },
-  {
-    id: "MCA-2026-0019",
-    applicationType: "PROCLAMATION_84_BNSS",
-    firNumber: "FIR/0004/2026",
-    policeStation: "PS City Panipat",
-    courtName: "Court of Ld. JMIC, Panipat",
-    targetPersonName: "Sanjay @ Sanju S/o Ramesh (Absconding Co-accused)",
-    groundsAndFacts: "Non-Bailable Warrants repeatedly returned unexecuted. Accused has concealed himself to avoid execution of process.",
-    hearingDate: "25/10/2026",
-    status: "FILED",
-    filingDate: "16/10/2026",
-    officerName: "SI Sandeep Singh",
-  },
-];
+
+function officerStorageKey(key: string) {
+  const officerId = localStorage.getItem("haryana_police_cms_user");
+  if (!officerId) throw new Error("Sign in to access prosecution records.");
+  return key + ":" + officerId;
+}
 
 export const ProsecutionService = {
   // 1. SCRUTINY PERFORMA
   getScrutinyRecords: async (): Promise<ScrutinyPerformaRecord[]> => {
-    if (typeof window === "undefined") return INITIAL_SCRUTINY_RECORDS;
+    if (typeof window === "undefined") return [];
     const response = await fetch('/api/prosecution/scrutiny', {credentials:'same-origin',cache:'no-store'});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not load backend scrutiny records.');
     const backend: ScrutinyPerformaRecord[] = result.records || [];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.SCRUTINY);
+      const data = localStorage.getItem(officerStorageKey(STORAGE_KEYS.SCRUTINY));
       if (data) return [...backend,...JSON.parse(data).filter((r:ScrutinyPerformaRecord)=>!backend.some(b=>b.id===r.id))];
-      localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(INITIAL_SCRUTINY_RECORDS));
-      return [...backend,...INITIAL_SCRUTINY_RECORDS];
+      return backend;
     } catch {
-      return [...backend,...INITIAL_SCRUTINY_RECORDS];
+      return backend;
     }
   },
 
@@ -291,7 +139,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getScrutinyRecords();
       const updated = [record, ...existing.filter((r) => r.id !== record.id)];
-      localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.SCRUTINY), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not save scrutiny record. Check browser storage and retry.");
       throw new Error('Scrutiny record could not be saved. Check browser storage and retry.');
@@ -308,7 +156,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getScrutinyRecords();
       const updated = existing.filter((r) => r.id !== id);
-      localStorage.setItem(STORAGE_KEYS.SCRUTINY, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.SCRUTINY), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not delete scrutiny record. Check browser storage and retry.");
     }
@@ -318,9 +166,9 @@ export const ProsecutionService = {
   getMalpractices: async (): Promise<MalpracticeDeficiency[]> => {
     if (typeof window === "undefined") return DEFAULT_MALPRACTICES;
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.MALPRACTICES);
+      const data = localStorage.getItem(officerStorageKey(STORAGE_KEYS.MALPRACTICES));
       if (data) return JSON.parse(data);
-      localStorage.setItem(STORAGE_KEYS.MALPRACTICES, JSON.stringify(DEFAULT_MALPRACTICES));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.MALPRACTICES), JSON.stringify(DEFAULT_MALPRACTICES));
       return DEFAULT_MALPRACTICES;
     } catch {
       return DEFAULT_MALPRACTICES;
@@ -332,7 +180,7 @@ export const ProsecutionService = {
     try {
       const list = await ProsecutionService.getMalpractices();
       const updated = list.map((item) => (item.id === id ? { ...item, isChecked: !item.isChecked } : item));
-      localStorage.setItem(STORAGE_KEYS.MALPRACTICES, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.MALPRACTICES), JSON.stringify(updated));
       return updated;
     } catch {
       return DEFAULT_MALPRACTICES;
@@ -342,7 +190,7 @@ export const ProsecutionService = {
   resetMalpractices: async (): Promise<MalpracticeDeficiency[]> => {
     if (typeof window === "undefined") return DEFAULT_MALPRACTICES;
     try {
-      localStorage.setItem(STORAGE_KEYS.MALPRACTICES, JSON.stringify(DEFAULT_MALPRACTICES));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.MALPRACTICES), JSON.stringify(DEFAULT_MALPRACTICES));
       return DEFAULT_MALPRACTICES;
     } catch {
       return DEFAULT_MALPRACTICES;
@@ -351,14 +199,13 @@ export const ProsecutionService = {
 
   // 3. BAIL REPLIES
   getBailReplies: async (): Promise<BailReplyRecord[]> => {
-    if (typeof window === "undefined") return INITIAL_BAIL_REPLIES;
+    if (typeof window === "undefined") return [];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.BAIL_REPLIES);
+      const data = localStorage.getItem(officerStorageKey(STORAGE_KEYS.BAIL_REPLIES));
       if (data) return JSON.parse(data);
-      localStorage.setItem(STORAGE_KEYS.BAIL_REPLIES, JSON.stringify(INITIAL_BAIL_REPLIES));
-      return INITIAL_BAIL_REPLIES;
+      return [];
     } catch {
-      return INITIAL_BAIL_REPLIES;
+      return [];
     }
   },
 
@@ -367,7 +214,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getBailReplies();
       const updated = [reply, ...existing.filter((r) => r.id !== reply.id)];
-      localStorage.setItem(STORAGE_KEYS.BAIL_REPLIES, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.BAIL_REPLIES), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not save bail reply. Check browser storage and retry.");
     }
@@ -378,7 +225,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getBailReplies();
       const updated = existing.filter((r) => r.id !== id);
-      localStorage.setItem(STORAGE_KEYS.BAIL_REPLIES, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.BAIL_REPLIES), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not delete bail reply. Check browser storage and retry.");
     }
@@ -386,14 +233,13 @@ export const ProsecutionService = {
 
   // 4. STATUS REPORTS
   getStatusReports: async (): Promise<CourtStatusReportRecord[]> => {
-    if (typeof window === "undefined") return INITIAL_STATUS_REPORTS;
+    if (typeof window === "undefined") return [];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.STATUS_REPORTS);
+      const data = localStorage.getItem(officerStorageKey(STORAGE_KEYS.STATUS_REPORTS));
       if (data) return JSON.parse(data);
-      localStorage.setItem(STORAGE_KEYS.STATUS_REPORTS, JSON.stringify(INITIAL_STATUS_REPORTS));
-      return INITIAL_STATUS_REPORTS;
+      return [];
     } catch {
-      return INITIAL_STATUS_REPORTS;
+      return [];
     }
   },
 
@@ -402,7 +248,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getStatusReports();
       const updated = [report, ...existing.filter((r) => r.id !== report.id)];
-      localStorage.setItem(STORAGE_KEYS.STATUS_REPORTS, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.STATUS_REPORTS), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not save status report. Check browser storage and retry.");
     }
@@ -413,7 +259,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getStatusReports();
       const updated = existing.filter((r) => r.id !== id);
-      localStorage.setItem(STORAGE_KEYS.STATUS_REPORTS, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.STATUS_REPORTS), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not delete status report. Check browser storage and retry.");
     }
@@ -421,14 +267,13 @@ export const ProsecutionService = {
 
   // 5. MISC COURT APPLICATIONS
   getMiscApplications: async (): Promise<CourtMiscApplicationRecord[]> => {
-    if (typeof window === "undefined") return INITIAL_MISC_COURT;
+    if (typeof window === "undefined") return [];
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.MISC_COURT);
+      const data = localStorage.getItem(officerStorageKey(STORAGE_KEYS.MISC_COURT));
       if (data) return JSON.parse(data);
-      localStorage.setItem(STORAGE_KEYS.MISC_COURT, JSON.stringify(INITIAL_MISC_COURT));
-      return INITIAL_MISC_COURT;
+      return [];
     } catch {
-      return INITIAL_MISC_COURT;
+      return [];
     }
   },
 
@@ -437,7 +282,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getMiscApplications();
       const updated = [app, ...existing.filter((r) => r.id !== app.id)];
-      localStorage.setItem(STORAGE_KEYS.MISC_COURT, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.MISC_COURT), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not save misc court application. Check browser storage and retry.");
     }
@@ -448,7 +293,7 @@ export const ProsecutionService = {
     try {
       const existing = await ProsecutionService.getMiscApplications();
       const updated = existing.filter((r) => r.id !== id);
-      localStorage.setItem(STORAGE_KEYS.MISC_COURT, JSON.stringify(updated));
+      localStorage.setItem(officerStorageKey(STORAGE_KEYS.MISC_COURT), JSON.stringify(updated));
     } catch (e) {
       throw new Error("Could not delete misc court application. Check browser storage and retry.");
     }

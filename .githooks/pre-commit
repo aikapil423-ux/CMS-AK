@@ -1,15 +1,5 @@
 #!/bin/sh
-# Automatically export latest SQLite database into prisma/seed-data.json
-# and stage database, schema, and seed files on every commit.
-
-node scripts/export-seed.mjs
-
-git add \
-  prisma/dev.db \
-  prisma/seed.mjs \
-  prisma/seed-data.json \
-  prisma/schema.prisma \
-  prisma/schema.postgresql.prisma \
-  prisma/complaints-store.json \
-  prisma/gd-dismissed-suggestions.json \
-  prisma/processed-evidence-store.json 2>/dev/null || true
+if ! git diff --cached --quiet --diff-filter=ACMRT -- prisma/storage/ prisma/case-analysis/ prisma/court-affidavits/ prisma/scrutiny-records/ prisma/weekly-diary/ prisma/dev.db prisma/seed-data.json ':(glob)prisma/*-store.json' prisma/gd-dismissed-suggestions.json; then
+  echo "Unstage runtime case data before committing." >&2
+  exit 1
+fi

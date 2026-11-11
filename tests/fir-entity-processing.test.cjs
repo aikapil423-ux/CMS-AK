@@ -16,6 +16,7 @@ function session() {
   }).outputText, { exports, process: { cwd: () => 'test', env: { GEMINI_API_KEY: 'test-key' } }, console, Headers, Response, FormData, File, URL,
     require(name) {
       if (name === 'node:fs/promises') return { readFile: async () => JSON.stringify(records) };
+      if (name === '@/lib/openRouter') return { processingAIAvailable: () => true };
       if (name === '@/lib/apiSecurity') return { apiAccess: () => user };
       if (name === '@/lib/evidenceOwnership') return { evidenceOwner: r => r.ownerId };
       if (name === '@/services/caseAnalysisService') return { authorizedAnalysisFir: async id => id === fir.id ? fir : null };

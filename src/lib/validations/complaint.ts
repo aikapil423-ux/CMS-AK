@@ -34,7 +34,7 @@ export const complaintRegistrationSchema = z.object({
     
   // Complainant Details
   complainantName: z.string().min(2, "Complainant name is required"),
-  complainantRelationType: z.enum(["S/O", "D/O", "W/O", "C/O"]).optional(),
+  complainantRelationType: z.preprocess(value => typeof value === "string" ? value.trim().toUpperCase() || undefined : value, z.enum(["S/O", "D/O", "W/O", "C/O"], { error: "Select a valid relation or leave it blank." }).optional()),
   complainantRelativeName: z.string().optional(),
   complainantFatherSpouse: z.string().optional(),
   complainantGender: z.enum(["MALE", "FEMALE", "TRANSGENDER", "OTHER"]).optional().default("MALE"),

@@ -7,7 +7,7 @@ export const runtime='nodejs';
 const resultSchema=z.object({text:z.string().max(40000),summary:z.string().max(4000),uncertainties:z.array(z.string().max(500)).max(20)});
 const mimeTypes=new Set(['application/pdf','image/png','image/jpeg','image/webp','audio/mpeg','audio/wav','audio/x-wav','audio/mp4','audio/webm','audio/ogg']);
 export async function POST(req:NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   if(req.headers.get('origin') && req.headers.get('origin')!==req.nextUrl.origin) return NextResponse.json({error:'Origin rejected'},{status:403});
   if(Number(req.headers.get('content-length')||0)>9*1024*1024) return NextResponse.json({error:'Maximum attachment size is 8 MB'},{status:413});

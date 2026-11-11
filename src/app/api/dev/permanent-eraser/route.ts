@@ -76,7 +76,7 @@ function tryAutoRemoveFromSourceCode(item: { textSnippet: string; tagName?: stri
 }
 
 export async function GET(req: Request) {
- const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
+ const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
     ensureFile();
     const data = fs.readFileSync(PERMANENT_RULES_FILE, "utf-8");
@@ -87,7 +87,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     ensureFile();
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     ensureFile();

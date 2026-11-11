@@ -132,6 +132,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        {currentUser.unitId && ['SHO','SP_DISTRICT','SUPER_ADMIN'].includes(currentUser.role) &&
+          <div className="px-4 pt-2"><Link href="/record-transfers" className="text-sm font-semibold text-blue-800 underline">Record transfers</Link></div>}
         {/* Dynamic Page Content */}
         <main className="cms-main flex-1 p-3 sm:p-6 w-full mx-auto min-w-0">{children}</main>
 

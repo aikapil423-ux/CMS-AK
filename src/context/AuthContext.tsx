@@ -22,36 +22,43 @@ export function AuthProvider({children}:{children:React.ReactNode}){
            return;
          }
        }
-       // Fallback for demo session: Auto-init default officer if not logged in
-       const savedId = typeof window !== 'undefined' ? localStorage.getItem('haryana_police_cms_user') : null;
-       const fallbackUser = DEMO_USERS.find(u => u.id === savedId) || DEMO_USERS[0];
-       // Attempt to create session cookie seamlessly in demo environment
-       try {
-         const res = await fetch('/api/auth/session', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ switchTo: fallbackUser.id }),
-         });
-         const data = await res.json();
-         if (active && data.user) {
-           await accept(data.user);
-           return;
-         }
-       } catch {}
-       if (active) await accept(fallbackUser);
      })
-     .catch(async () => {
-       if (active) await accept(DEMO_USERS[0]);
-     })
+     .catch(() => {})
      .finally(() => {
        if (active) setReady(true);
      });
    return () => { active = false; };
  }, []);
+ useEffect(() => {
+   if (!isAuthenticated || !currentUser.unitId) return;
+   let active = true;
+   const checkPosting = async () => {
+     try {
+       const response = await fetch('/api/auth/session', { cache: 'no-store' });
+       if (!active) return;
+       if (response.status === 401) { setAuthenticated(false); return; }
+       if (!response.ok) return;
+       const { user } = await response.json() as { user: UserSession };
+       if (active && (user.id !== currentUser.id || user.unitId !== currentUser.unitId ||
+           user.role !== currentUser.role || user.stationName !== currentUser.stationName ||
+           user.district !== currentUser.district ||
+           JSON.stringify(user.jurisdictionUnits) !== JSON.stringify(currentUser.jurisdictionUnits))) {
+         window.location.reload();
+       }
+     } catch { /* Protected requests still check the current posting. */ }
+   };
+   window.addEventListener('focus', checkPosting);
+   const timer = window.setInterval(checkPosting, 30000);
+   return () => {
+     active = false;
+     window.clearInterval(timer);
+     window.removeEventListener('focus', checkPosting);
+   };
+ }, [isAuthenticated, currentUser]);
  const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok)return false;await accept(b.user);return true;}catch{return false;}};
  const switchUser=async(id:string)=>{await firPersistence.flush().catch(()=>{});const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({switchTo:id})});const b=await r.json();if(r.ok)await accept(b.user);else window.dispatchEvent(new CustomEvent('complaints_save_error',{detail:b.error||'Sign in before switching officers.'}));};
  const logout=async()=>{await firPersistence.flush().catch(()=>{});await fetch('/api/auth/session',{method:'DELETE'});setAuthenticated(false);localStorage.removeItem('haryana_police_cms_user');router.replace('/login');};
  if(!ready)return <div className="p-6 text-sm text-slate-600">Loading session…</div>;
- return <AuthContext.Provider value={{currentUser,isAuthenticated,availableUsers:DEMO_USERS,switchUser,login,logout}}>{children}</AuthContext.Provider>;
+ return <AuthContext.Provider value={{currentUser,isAuthenticated,availableUsers:process.env.NODE_ENV==='development'?DEMO_USERS:[currentUser],switchUser,login,logout}}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const context=useContext(AuthContext);if(!context)throw new Error('useAuth must be used within an AuthProvider');return context;}

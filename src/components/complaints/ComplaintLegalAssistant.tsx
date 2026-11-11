@@ -563,6 +563,7 @@ export function ComplaintLegalAssistant({
       {/* ========================================================================= */}
       {report && (
         <>
+          {report.advisoryWarning && <p role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{report.advisoryWarning} Showing CMS suggestions for officer review.</p>}
           {/* STATS OVERVIEW TILES */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div

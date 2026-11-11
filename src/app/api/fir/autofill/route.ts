@@ -1,11 +1,11 @@
-import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/geminiProcessing";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizeInvestigation, withInvestigationPrompt } from "@/services/investigationPromptService";
 
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const formData = await req.formData();
@@ -103,7 +103,8 @@ Return ONLY a valid, parseable JSON object matching this schema with no markdown
     const prompt = savedPrompt.text;
     let contents: any[] = [];
 
-    if (file) {
+    if (file && (file.size <= 14 * 1024 * 1024 || !fallbackText.trim())) {
+      if (file.size > 14 * 1024 * 1024) return NextResponse.json({ error: "Upload a file up to 14 MB or provide extracted text." }, { status: 413 });
       let mimeType = file.type || "";
       const lowerName = file.name.toLowerCase();
       if (!mimeType || mimeType === "application/octet-stream") {
@@ -112,7 +113,7 @@ Return ONLY a valid, parseable JSON object matching this schema with no markdown
         else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) mimeType = "image/jpeg";
         else if (lowerName.endsWith(".webp")) mimeType = "image/webp";
         else if (lowerName.endsWith(".txt")) mimeType = "text/plain";
-        else mimeType = "application/pdf";
+        else mimeType = "application/octet-stream";
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -151,7 +152,7 @@ Return ONLY a valid, parseable JSON object matching this schema with no markdown
 
     if (!processingAIAvailable()) {
       return NextResponse.json(
-        { error: "OPENROUTER_API_KEY is not configured on the server." },
+        { error: "AI processing is unavailable. Check the server AI settings." },
         { status: 500 }
       );
     }

@@ -10,7 +10,7 @@ const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-eviden
 
 
 export async function GET(req: Request) {
- const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
+ const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
     let records: UniversalEvidenceRecord[] = [];
     if (fs.existsSync(EVIDENCE_STORE_PATH)) {
@@ -95,7 +95,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = await req.json();

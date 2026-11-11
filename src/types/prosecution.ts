@@ -53,6 +53,7 @@ export interface MalpracticeDeficiency {
 }
 
 export interface BailReplyRecord {
+  revision?: string;
   affidavit?: CourtAffidavit;
   id: string;
   applicationNo: string;
@@ -73,6 +74,7 @@ export interface BailReplyRecord {
 }
 
 export interface CourtStatusReportRecord {
+  revision?: string;
   affidavit?: CourtAffidavit;
   reportType?: keyof typeof statusReportTypes;
   id: string;

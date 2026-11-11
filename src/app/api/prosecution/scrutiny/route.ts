@@ -7,12 +7,12 @@ import { SCRUTINY_FIELDS, type ScrutinyValues } from '@/lib/scrutinyPdfTemplate'
 export const runtime='nodejs';
 export const maxDuration=180;
 export async function GET(req:Request) {
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   try{return Response.json({records:await listPdfScrutiny(user)},{headers:{'Cache-Control':'no-store'}});}
   catch{return Response.json({error:'Saved scrutiny records could not be loaded.'},{status:503});}
 }
 export async function POST(req:Request) {
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   try {
     const body=await req.json();
     if(typeof body.firId!=='string')return Response.json({error:'Select FIR.'},{status:400});
@@ -44,7 +44,7 @@ export async function POST(req:Request) {
   }catch(e){return Response.json({error:e instanceof Error?e.message:'Scrutiny save failed.'},{status:409});}
 }
 export async function DELETE(req:Request) {
-  const user=apiAccess(req);if(user instanceof Response)return user;
+  const user=await apiAccess(req);if(user instanceof Response)return user;
   const id=new URL(req.url).searchParams.get('id');if(!id)return Response.json({error:'ID required.'},{status:400});
   try {await deletePdfScrutiny(id,user);return Response.json({success:true});}
   catch{return Response.json({error:'Record not found or access denied.'},{status:404});}

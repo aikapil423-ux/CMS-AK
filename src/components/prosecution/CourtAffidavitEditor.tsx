@@ -92,7 +92,7 @@ function AffidavitPreview({ draft }: { draft: CourtAffidavit }) {
         <tbody>
           <tr><td>1</td><td>{f.title}</td><td>{f.date}</td><td>{f.indexPages}</td></tr>
           {annexures.flatMap((row, index) => {
-            const item = <tr key={index}><td>{index + 2}</td><td>{[row.number, row.description].filter(Boolean).join(" — ")}</td><td>{row.date}</td><td>{row.pages}</td></tr>;
+            const item = <tr key={index}><td>{index + 2}</td><td>{[row.number, row.description].filter(Boolean).join(" — ")}</td><td>{row.date}</td><td data-linked-scan={row.sourceId ? index : undefined}>{row.sourceId ? "Attach original separately" : row.pages}</td></tr>;
             return index === vernacularStart ? [<tr key="vernaculars"><th colSpan={4}>Vernaculars</th></tr>, item] : [item];
           })}
         </tbody>
@@ -212,10 +212,65 @@ export function CourtAffidavitEditor({ kind, record, onClose, onSaved }: { kind:
     setBusy("Saving…");
     setNotice("");
     try {
-      await post({ action: "save", kind, id: draftId, category, affidavit: draft });
+      await post({ action: "save", kind, id: draftId, revision: record?.revision, category, affidavit: draft });
       onSaved();
     } catch (error) { setNotice(error instanceof Error ? error.message : "Save failed."); }
     finally { setBusy(""); }
+  }
+
+  async function downloadCourtBundle() {
+    if (!printRef.current) return;
+    const preview = printRef.current.cloneNode(true) as HTMLElement;
+    setBusy("bundle");
+    setNotice("");
+    try {
+      const [{ PDFDocument }, { default: html2pdf }] = await Promise.all([import("pdf-lib"), import("html2pdf.js")]);
+      const annexures = [...draft.annexures.filter(row => !row.vernacular), ...draft.annexures.filter(row => row.vernacular)];
+      const scans = [];
+      for (const [index, row] of annexures.entries()) {
+        if (!row.sourceId) continue;
+        const response = await fetch(sourceLink(row.sourceId), { cache: "no-store" });
+        if (!response.ok) throw new Error("Could not verify or download annexure " + (row.number || index + 1) + ".");
+        const bytes = await response.arrayBuffer();
+        let scan;
+        try { scan = await PDFDocument.load(bytes); }
+        catch { throw new Error("Annexure " + (row.number || index + 1) + " must be an unlocked PDF."); }
+        const selection = row.sourcePages?.trim();
+        const indices: number[] = [];
+        if (selection) {
+          for (const entry of selection.split(",")) {
+            const match = /^(\d+)(?:\s*-\s*(\d+))?$/.exec(entry.trim());
+            const first = Number(match?.[1]);
+            const last = Number(match?.[2] ?? match?.[1]);
+            if (!match || first < 1 || last < first || last > scan.getPageCount()) {
+              throw new Error("Invalid original page selection for annexure " + (row.number || index + 1) + ".");
+            }
+            for (let page = first; page <= last; page++) indices.push(page - 1);
+          }
+        } else indices.push(...scan.getPageIndices());
+        scans.push({ scan, indices });
+        const cell = preview.querySelector('[data-linked-scan="' + index + '"]');
+        if (cell) cell.textContent = "Appended scan (" + indices.length + " pages)";
+      }
+      const body: ArrayBuffer = await html2pdf().from(preview).set({
+        margin: 8, jsPDF: { unit: "mm", format: "a4", compress: true },
+        pagebreak: { before: ".court-sheet + .court-sheet", avoid: "tr" },
+      }).toPdf().output("arraybuffer");
+      const bundle = await PDFDocument.load(body);
+      for (const { scan, indices } of scans) {
+        for (const page of await bundle.copyPages(scan, indices)) bundle.addPage(page);
+      }
+      const url = URL.createObjectURL(new Blob([new Uint8Array(await bundle.save())], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = (title.replace(/[^a-z0-9 -]/gi, "").trim() || "Court bundle") + ".pdf";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Court bundle could not be created.");
+    } finally {
+      setBusy("");
+    }
   }
 
   function editAnnexure(index: number, change: Partial<CourtAnnexure>) {
@@ -250,7 +305,10 @@ export function CourtAffidavitEditor({ kind, record, onClose, onSaved }: { kind:
           const files = Array.from(event.target.files || []); event.target.value = ""; void upload(files);
         }} /></label>
         <button type="button" className={buttonStyle} onClick={() => setMode(mode === "edit" ? "preview" : "edit")}>{mode === "edit" ? "A4 Preview" : "Back to Edit"}</button>
-        {mode === "preview" && <button type="button" className={buttonStyle} onClick={() => { if (printRef.current) printA4Element(printRef.current, title); }}>Print / PDF</button>}
+        {mode === "preview" && <>
+          <button type="button" className={buttonStyle} onClick={() => { if (printRef.current) printA4Element(printRef.current, title); }}>Print draft</button>
+          {draft.annexures.some(row => row.sourceId) && <button type="button" className={buttonStyle} disabled={!!busy} onClick={downloadCourtBundle}>Download PDF with annexures</button>}
+        </>}
       </div>
       {(busy || notice) && <p role="status" className="whitespace-pre-wrap px-4 py-2 text-xs text-slate-700">{busy || notice}</p>}
       <div className="min-h-0 flex-1 overflow-auto bg-slate-50 p-4">

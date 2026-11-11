@@ -704,7 +704,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
 // GET — search / serverNow / byId
 // ------------------------------------------------------------------
 export async function GET(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -910,7 +910,7 @@ export async function GET(req: NextRequest) {
 // POST — create locked entry / drafts / verify / suggestions
 // ------------------------------------------------------------------
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = (await req.json()) as Record<string, unknown>;

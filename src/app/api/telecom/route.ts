@@ -10,7 +10,7 @@ import { TelecomCategory, TelecomOperator } from "@/types/telecom";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = apiAccess(req);
+    const user = await apiAccess(req);
     if (user instanceof Response) return user;
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action");
@@ -253,7 +253,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = apiAccess(req);
+    const user = await apiAccess(req);
     if (user instanceof Response) return user;
     const body = await req.json();
     const action = body.action;

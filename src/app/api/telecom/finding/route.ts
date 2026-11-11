@@ -6,7 +6,7 @@ import { apiAccess } from "@/lib/apiSecurity";
 
 export async function POST(req: NextRequest) {
   try {
-    const user = apiAccess(req);
+    const user = await apiAccess(req);
     if (user instanceof Response) return user;
     const body = await req.json();
     const { service: telecomService } = await telecomAccess(user, body.firId);

@@ -6,7 +6,7 @@ function loader(stubs={},extra={}) {
   const cache={};return function load(file){
     if(cache[file])return cache[file];const exports={};cache[file]=exports;
     vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,
-      {exports,process,console,Response,AbortSignal,...extra,require(name){if(name in stubs)return stubs[name];if(name.startsWith('@/'))return load('src/'+name.slice(2)+'.ts');return require(name);}}, {filename:file});return exports;
+      {exports,process,console,Response,AbortSignal,...extra,require(name){if(name==='server-only')return {};if(name in stubs)return stubs[name];if(name.startsWith('@/'))return load('src/'+name.slice(2)+'.ts');return require(name);}}, {filename:file});return exports;
   };
 }
 test('all 12 native pages expose every form field once, with no PDF or scan background',()=>{
@@ -58,7 +58,7 @@ test('autofill uses only matching case/owner processed data and rejects unquoted
     {process:{cwd:()=>os.tmpdir(),env:{GEMINI_API_KEY:'synthetic'}},fetch:async(url,options)=>{
       const prompt=JSON.parse(options.body).contents[0].parts[0].text;
       assert.doesNotMatch(prompt,/Wrong case|Wrong owner/);
-      return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify({fields:[{id:'complaint.propertyValue',value:'2500',sourceId:'own',quote:'Property value is 2500.'},{id:'forward.dueDate',value:'invented',sourceId:'own',quote:'not in source'},{id:'review.1.0',value:'yes',sourceId:'own',quote:'Property value is 2500.'}]})}]}}]})};
+      return {ok:true,json:async()=>({candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify({fields:[{id:'complaint.propertyValue',value:'2500',sourceId:'own',quote:'Property value is 2500.'},{id:'forward.dueDate',value:'invented',sourceId:'own',quote:'not in source'},{id:'review.1.0',value:'yes',sourceId:'own',quote:'Property value is 2500.'}]})}]}}]})};
     }});
   const r=await load('src/services/scrutinyAutofill.ts').prepareScrutinyFields({id:'f1',firNumber:'F1',policeStation:'P',district:'D',accusedList:[]},{id:'u1',role:'ENQUIRY_OFFICER'});
   assert.equal(r.fields['complaint.propertyValue'].value,'2500');assert.equal(r.fields['complaint.propertyValue'].origin,'PROCESSED');assert.equal(r.fields['forward.dueDate'],undefined);assert.equal(r.fields['review.1.0'],undefined);

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { NextRequest } from 'next/server';
 import { apiAccess } from '@/lib/apiSecurity';
 import { affidavitLabels, bailReplyTypes, statusReportTypes, type AffidavitField, type AffidavitFields, type CourtAffidavit } from '@/lib/courtAffidavit';
-import { processWithAI } from '@/lib/openRouter';
+import { processWithAI } from '@/lib/geminiProcessing';
 import { authorizedAnalysisFir } from '@/services/caseAnalysisService';
 import { readFirRecords } from '@/services/firRepository';
 import { readComplaints } from '@/services/complaintRepository';
@@ -37,7 +37,7 @@ const affidavitSchema = z.object({
 });
 const saveSchema = z.object({
   action: z.literal('save'), kind: kinds, id: z.string().min(1).max(200).optional(), category: z.string(),
-  affidavit: affidavitSchema,
+  affidavit: affidavitSchema, revision: z.string().uuid().optional(),
 });
 const prepareSchema = z.object({
   action: z.enum(['sources', 'prepare']), firId: z.string().min(1).max(200),
@@ -73,7 +73,7 @@ async function readRecord(file: string): Promise<Stored | null> {
 }
 
 export async function GET(req: Request) {
-  const user = apiAccess(req);
+  const user = await apiAccess(req);
   if (user instanceof Response) return user;
   const kind = kinds.safeParse(new URL(req.url).searchParams.get('kind'));
   if (!kind.success) return Response.json({ error: 'Select a document kind.' }, { status: 400 });
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = apiAccess(req);
+  const user = await apiAccess(req);
   if (user instanceof Response) return user;
   if (req.headers.get('content-type')?.startsWith('multipart/form-data')) {
     try {
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
       else if (!origin.id && firFields[key] === value) sources[key] = { id: '', name: linked.module === 'FIR' ? 'Saved FIR' : 'Saved complaint' };
     }
     const annexures = input.affidavit.annexures.map(row => ({ ...row, sourceId: row.sourceId && sourceMap.has(row.sourceId) ? row.sourceId : undefined }));
-    const common = { id, affidavit: { ...input.affidavit, sources, annexures, customType: input.category === 'OTHER' ? input.affidavit.customType : undefined }, firNumber: linked.module === 'FIR' ? f.fir || linked.reference : '', policeStation: f.station || '', courtName: f.court || '', hearingDate: f.hearing || '', submissionDate: f.date || '' };
+    const common = { id, revision: randomUUID(), affidavit: { ...input.affidavit, sources, annexures, customType: input.category === 'OTHER' ? input.affidavit.customType : undefined }, firNumber: linked.module === 'FIR' ? f.fir || linked.reference : '', policeStation: f.station || '', courtName: f.court || '', hearingDate: f.hearing || '', submissionDate: f.date || '' };
     const record: BailReplyRecord | CourtStatusReportRecord = input.kind === 'bail' ? {
       ...common, applicationNo: f.petition || '', applicantAccusedName: f.petitioner || '', fatherName: f.father,
       bailType: input.category as BailReplyRecord['bailType'], ipcOrBnsSections: f.sections || '',
@@ -209,11 +209,25 @@ export async function POST(req: Request) {
       keyEvidenceCollected: f.facts || '', accusedStatus: f.custody || '', policePrayer: f.prayer || '', submittedBy: f.deponent || '',
     };
     await fs.mkdir(directory(user.id), { recursive: true });
+    const lock = file + '.lock';
+    try {
+      await fs.mkdir(lock);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      return Response.json({ error: 'A save is in progress. Reopen the draft before saving.' }, { status: 409 });
+    }
     const temp = file + '.' + randomUUID() + '.tmp';
     try {
+      const latest = await readRecord(file);
+      if (latest?.record.revision !== input.revision || Boolean(latest) !== Boolean(previous)) {
+        return Response.json({ error: 'This draft has changed. Reopen it before saving.' }, { status: 409 });
+      }
       await fs.writeFile(temp, JSON.stringify({ kind: input.kind, record } satisfies Stored), { mode: 0o600 });
       await fs.rename(temp, file);
-    } finally { await fs.rm(temp, { force: true }); }
+    } finally {
+      await fs.rmdir(lock);
+      await fs.rm(temp, { force: true });
+    }
     return Response.json({ record });
   } catch {
     return Response.json({ error: 'Court document could not be processed. Please retry.' }, { status: 503 });
@@ -221,7 +235,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = apiAccess(req);
+  const user = await apiAccess(req);
   if (user instanceof Response) return user;
   const params = new URL(req.url).searchParams;
   const kind = kinds.safeParse(params.get('kind'));

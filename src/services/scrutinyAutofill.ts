@@ -1,4 +1,4 @@
-import { processingAIAvailable, processWithAI } from "@/lib/openRouter";
+import { processingAIAvailable, processWithAI } from "@/lib/geminiProcessing";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { FIRItem, UserSession } from '@/types';

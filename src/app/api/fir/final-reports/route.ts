@@ -16,7 +16,7 @@ function failed(error: unknown) {
   return NextResponse.json({ error: 'Backend could not save/load the report. Check database configuration and retry.' }, { status: 503 });
 }
 export async function GET(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   const notifyUser = req.nextUrl.searchParams.get('notificationsFor');
   if (notifyUser) {
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   catch (error) { return failed(error); }
 }
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body=await req.json();
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   catch (error) { return failed(error); }
 }
 export async function PATCH(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = z.object({ action: z.enum(['SEND_TO_SHO', 'SUBMIT_CHI', 'VIEW_SHO', 'APPROVE_SHO', 'REJECT_SHO']).default('SEND_TO_SHO'), reason: z.string().trim().max(10000).optional(), chiNumber: z.string().trim().min(1).max(100).optional(), id: z.string().min(1), firId: z.string().min(1), expectedVersion: z.number().int().positive(), authorId: z.string().min(1) }).parse(await req.json());

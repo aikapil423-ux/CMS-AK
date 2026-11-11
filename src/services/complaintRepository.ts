@@ -20,7 +20,7 @@ export async function readComplaints():Promise<ComplaintItem[]>{
  catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return [];throw e;}
 }
 function authorize(user:UserSession,next:ComplaintItem,old?:ComplaintItem,registeredFir=false){
- if(!old){if(!isShoOrSuperior(user.role)&&(next.assignedEoId||next.assignedEoName||next.assignedEoPno))throw new ComplaintAccessError('Only supervisory officers can assign an EO.');if(next.shoDecision||next.shoApprovedAt||next.isFirApprovedBySho||next.isSentToSho)throw new ComplaintAccessError('New complaints must start at intake without approval.');if(!isShoOrSuperior(user.role)&&!['MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role))throw new ComplaintAccessError('Only intake officers can register complaints.');if(user.role!=='SUPER_ADMIN'&&(user.district!==next.district||(!isShoOrSuperior(user.role)||user.role==='SHO')&&user.stationName!==next.policeStation))throw new ComplaintAccessError('Registration outside your jurisdiction.');return;}
+ if(!old){if(user.unitId && user.role==='DSP_SUBDIV' && !canViewComplaint(user,next).allowed)throw new ComplaintAccessError('Registration outside your subdivision.');if(!isShoOrSuperior(user.role)&&(next.assignedEoId||next.assignedEoName||next.assignedEoPno))throw new ComplaintAccessError('Only supervisory officers can assign an EO.');if(next.shoDecision||next.shoApprovedAt||next.isFirApprovedBySho||next.isSentToSho)throw new ComplaintAccessError('New complaints must start at intake without approval.');if(!isShoOrSuperior(user.role)&&!['MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role))throw new ComplaintAccessError('Only intake officers can register complaints.');if(user.role!=='SUPER_ADMIN'&&(user.district!==next.district||(!isShoOrSuperior(user.role)||user.role==='SHO')&&user.stationName!==next.policeStation))throw new ComplaintAccessError('Registration outside your jurisdiction.');return;}
  if(!canViewComplaint(user,old).allowed)throw new ComplaintAccessError('Complaint access denied.');
  if(old.policeStation!==next.policeStation||old.district!==next.district||old.complaintNumber!==next.complaintNumber)throw new ComplaintAccessError('Complaint identity and source jurisdiction cannot be overwritten.');
  if(registeredFir && ['MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role)){
@@ -56,6 +56,7 @@ export async function saveComplaintChanges(input:unknown,user:UserSession){
  const list=await readComplaints(),saved:ComplaintItem[]=[];
  for(const change of body.changes){let next=change.complaint as unknown as ComplaintItem;const index=list.findIndex(c=>c.id===next.id),old=list[index];
  const registeredFir=body.operation==='registerFir' && old ? (await readFirRecords()).some(f=>f.sourceComplaintId===old.id&&f.firNumber===next.firNumber&&f.policeStation===old.policeStation&&f.district===old.district) : false;
+ next={...next,custodyUnit:old?.custodyUnit,recordTransfers:old?.recordTransfers};
  authorize(user,next,old,registeredFir);
  if((old?.persistenceVersion||0)!==change.expectedVersion)throw new ComplaintConflict('Complaint changed on another device. Reload and retry.');
  if(!old){const year=Number(next.createdAt.slice(0,4));if(!Number.isInteger(year)||year<1900||year>new Date().getFullYear()+1)throw new Error('Invalid registration date');complaintRegistrationSchema.parse(next);
@@ -67,10 +68,31 @@ export async function saveComplaintChanges(input:unknown,user:UserSession){
  next={...next,documents:next.documents?.map(d=>oldDocuments.has(d.id)?d:{...d,createdByUserId:user.id,uploadedBy:user.name}),reports:next.reports?.map(r=>oldReports.has(r.id)?r:{...r,createdByUserId:user.id,officerName:user.name,createdByName:user.name,createdByRole:user.role})};
  const auditIds=new Set(old?.auditTrail?.map(a=>a.id)||[]),timelineIds=new Set(old?.timeline?.map(t=>t.id)||[]);
  next={...next,auditTrail:next.auditTrail?.map(a=>auditIds.has(a.id)?a:{...a,performedBy:user.name,userPno:user.pno,userRole:user.role}),timeline:next.timeline?.map(t=>timelineIds.has(t.id)?t:{...t,officerName:user.name})};
+ // Intake/OCR references and recommendations are not proof of FIR registration.
+ const linkedFir=(await readFirRecords()).find(f=>f.sourceComplaintId===next.id && f.policeStation===next.policeStation && f.district===next.district);
+ next={...next,isFirRegistered:Boolean(linkedFir)};
+ if(linkedFir)next={...next,firNumber:linkedFir.firNumber};
  next=stabilizeComplaint({...next,persistenceVersion:(old?.persistenceVersion||0)+1},old);next.daysPending=computeDaysPending(next);
  if(index<0)list.unshift(next);else list[index]=next;saved.push(next);
  }
  const temp=file+'.'+randomUUID()+'.tmp';try{await fs.writeFile(temp,JSON.stringify(list,null,2),'utf8');await fs.rename(temp,file);}finally{await fs.unlink(temp).catch(()=>{});}
  return saved;
  });
+}
+
+export async function updateComplaintTransfer(id: string, update: (record: ComplaintItem) => ComplaintItem) {
+  return withLock(async () => {
+    const records = await readComplaints();
+    const index = records.findIndex(record => record.id === id);
+    if (index < 0) return null;
+    const current = records[index];
+    const saved = { ...update(current), persistenceVersion: (current.persistenceVersion || 0) + 1 };
+    records[index] = saved;
+    const temp = file + '.' + randomUUID() + '.tmp';
+    try {
+      await fs.writeFile(temp, JSON.stringify(records, null, 2), 'utf8');
+      await fs.rename(temp, file);
+    } finally { await fs.unlink(temp).catch(() => {}); }
+    return saved;
+  });
 }

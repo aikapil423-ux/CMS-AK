@@ -13,7 +13,7 @@ import type { UniversalEvidenceRecord } from '@/types/evidence';
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
-  const user = apiAccess(req);
+  const user = await apiAccess(req);
   if (user instanceof Response) return user;
   const today = diaryToday();
   const cutoff = new URL(req.url).searchParams.get('cutoff') || today;
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   try {
     const [allFirs, allComplaints] = await Promise.all([readFirRecords(), readComplaints()]);
     const district = user.district?.trim() || '';
-    const inDistrict = (record: {district?: string}) => !!district && record.district?.trim().toLowerCase() === district.toLowerCase();
+    const inDistrict = (record: {district?: string; custodyUnit?: {district: string}}) => !!district && (record.custodyUnit?.district ?? record.district)?.trim().toLowerCase() === district.toLowerCase();
     const firs = allFirs.filter(fir=>inDistrict(fir) && isFirVisibleToUser(user,fir));
     const complaints = allComplaints.filter(complaint=>inDistrict(complaint) && canViewComplaint(user,complaint).allowed);
     const caseIds = new Set(firs.flatMap(fir=>[fir.id, fir.sourceComplaintId]));

@@ -4,7 +4,7 @@ import { CmsCapabilityRegistry } from "@/services/agent/cmsCapabilityRegistry";
 import { CmsAgentService } from "@/services/agent/cmsAgentService";
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = await req.json();

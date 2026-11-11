@@ -1,3 +1,4 @@
+import type { TransferableRecord } from '@/lib/recordCustody';
 export type SystemRole =
   | 'SUPER_ADMIN'
   | 'SP_DISTRICT'
@@ -33,6 +34,8 @@ export interface UserSession {
   roleDisplay: string;
   stationName: string;
   stationCode: string;
+  unitId?: string;
+  jurisdictionUnits?: string[];
   district: string;
   avatarUrl?: string;
 }
@@ -249,7 +252,7 @@ export interface ComplaintEvidenceAttachment {
   processedRecordId?: string;
 }
 
-export interface ComplaintItem {
+export interface ComplaintItem extends TransferableRecord {
   persistenceVersion?: number;
   resolvedAt?: string;
   id: string;
@@ -1114,6 +1117,7 @@ export interface LegalSuggestionItem {
 }
 
 export interface LegalAnalysisReport {
+  advisoryWarning?: string;
   complaintId?: string;
   complaintNumber?: string;
   firId?: string;
@@ -1533,7 +1537,7 @@ export interface FIRCompletionEvent {
   reason?: string;
 }
 
-export interface FIRItem {
+export interface FIRItem extends TransferableRecord {
   accusedChargesheetDrafts?: Record<string, {
     accusedId: string; name: string; relation: string; relativeName: string; status: string;
     chargesheetDetails: import('@/lib/accusedChargesheet').AccusedChargesheetDetails;

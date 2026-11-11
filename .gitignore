@@ -49,3 +49,8 @@ prisma/case-analysis/
 prisma/scrutiny-records/
 prisma/court-affidavits/
 prisma/weekly-diary/
+
+prisma/storage/
+prisma/*-store.json
+prisma/gd-dismissed-suggestions.json
+prisma/seed-data.json

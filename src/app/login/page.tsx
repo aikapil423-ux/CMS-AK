@@ -2,23 +2,23 @@
 
 import React, { useState } from "react";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
-import { Shield, Lock, User, Building2, AlertCircle, ArrowRight } from "lucide-react";
+import { Shield, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { DEMO_USERS, MOCK_POLICE_STATIONS } from "@/lib/mockData";
+import { DEMO_USERS } from "@/lib/mockData";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [pno, setPno] = useState("HR-04291882");
-  const [pin, setPin] = useState("123456");
-  const [station, setStation] = useState(MOCK_POLICE_STATIONS[0]);
+  const demo = process.env.NODE_ENV === "development";
+  const [pno, setPno] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null); setIsLoading(true);
-    const ok = await login(pno, pin, station);
+    const ok = await login(pno, pin);
     setIsLoading(false);
     if(ok)router.push('/');else setError('Invalid PNO or PIN. Please verify your credentials.');
   };
@@ -28,7 +28,7 @@ export default function LoginPage() {
     setPin('123456');
     setError(null);
     setIsLoading(true);
-    const ok = await login(user.pno,'123456', station);
+    const ok = await login(user.pno,'123456');
     setIsLoading(false);
     if(ok) {
       router.push('/');
@@ -56,7 +56,7 @@ export default function LoginPage() {
           <div className="border-b border-slate-100 pb-3 mb-4">
             <h2 className="text-base font-bold text-slate-900">Police Personnel Login</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Local demo PIN: 123456. Production access requires configured credentials.
+              {demo ? "Local demo PIN: 123456." : "Sign in with your assigned PNO and PIN."}
             </p>
           </div>
 
@@ -68,25 +68,7 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Police Station / Jurisdiction
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <select
-                  value={station}
-                  onChange={(e) => setStation(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-medium"
-                >
-                  {MOCK_POLICE_STATIONS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -133,8 +115,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Quick Demo Switcher */}
-          <div className="mt-5 pt-4 border-t border-slate-200">
+          {demo && <div className="mt-5 pt-4 border-t border-slate-200">
             <p className="text-[11px] font-bold text-slate-600 mb-2 uppercase tracking-wider flex items-center justify-between">
               <span>Prototype Demo Personas</span>
               <span className="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">1-Click Login</span>
@@ -159,7 +140,7 @@ export default function LoginPage() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
 
         {/* Security Notice */}

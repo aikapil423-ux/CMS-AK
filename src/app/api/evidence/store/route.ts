@@ -1,3 +1,4 @@
+import { canAccessEvidenceCase, canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import {evidenceOwner} from "@/lib/evidenceOwnership";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
@@ -50,7 +51,7 @@ function writeEvidenceStore(records: UniversalEvidenceRecord[]): void {
 }
 
 export async function GET(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -63,7 +64,9 @@ export async function GET(req: NextRequest) {
 
     const fileName = searchParams.get("fileName");
 
-    const store = readEvidenceStore().filter(r=>apiUser.role === "SUPER_ADMIN" || evidenceOwner(r) === apiUser.id);
+    const store = (await Promise.all(readEvidenceStore().map(async record =>
+      await canReadCaseEvidence(apiUser, record) ? record : null
+    ))).filter(record => record !== null);
 
     if (recordId) {
       const record = store.find((r) => r.id === recordId);
@@ -119,7 +122,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = await req.json();
@@ -142,8 +145,15 @@ export async function POST(req: NextRequest) {
         inc.ownerId=apiUser.id;
         if (existingIdx !== -1) {
           // Metadata synchronization must never replace the original uploaded bytes.
-          inc.rawDocument = updatedStore[existingIdx].rawDocument;
+          const current = updatedStore[existingIdx];
+          if (current.caseId && inc.caseId && current.caseId !== inc.caseId) {
+            return Response.json({error:'Evidence is already bound to another case.'},{status:409});
+          }
+          inc.caseId = current.caseId || inc.caseId;
+          inc.module = current.module;
+          inc.rawDocument = current.rawDocument;
           inc.fileId = updatedStore[existingIdx].fileId;
+          if (!await canAccessEvidenceCase(apiUser, inc)) return Response.json({error:'Case access denied.'},{status:403});
           updatedStore[existingIdx] = {
             ...updatedStore[existingIdx],
             ...inc,
@@ -153,6 +163,7 @@ export async function POST(req: NextRequest) {
             ],
           };
         } else {
+          if (!await canAccessEvidenceCase(apiUser, inc)) return Response.json({error:'Case access denied.'},{status:403});
           updatedStore.unshift(inc);
         }
       }
@@ -176,9 +187,15 @@ export async function POST(req: NextRequest) {
       if (existingIdx !== -1 && evidenceOwner(updatedStore[existingIdx]) !== apiUser.id) return Response.json({error:"Evidence belongs to another officer"},{status:403});
       inc.ownerId=apiUser.id;
       if (existingIdx !== -1) {
-        if (!inc.rawDocument?.dataUrl && updatedStore[existingIdx].rawDocument?.dataUrl) {
-          inc.rawDocument.dataUrl = updatedStore[existingIdx].rawDocument.dataUrl;
+        const current = updatedStore[existingIdx];
+        if (current.caseId && inc.caseId && current.caseId !== inc.caseId) {
+          return Response.json({error:'Evidence is already bound to another case.'},{status:409});
         }
+        inc.rawDocument = current.rawDocument;
+        inc.fileId = current.fileId;
+        inc.caseId = current.caseId || inc.caseId;
+        inc.module = current.module;
+        if (!await canAccessEvidenceCase(apiUser, inc)) return Response.json({error:'Case access denied.'},{status:403});
         updatedStore[existingIdx] = {
           ...updatedStore[existingIdx],
           ...inc,
@@ -188,6 +205,7 @@ export async function POST(req: NextRequest) {
           ],
         };
       } else {
+        if (!await canAccessEvidenceCase(apiUser, inc)) return Response.json({error:'Case access denied.'},{status:403});
         updatedStore.unshift(inc);
       }
 
@@ -203,7 +221,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const body = await req.json();
@@ -221,12 +239,13 @@ export async function PUT(req: NextRequest) {
     }
 
     const current = store[idx];
+    if (!await canAccessEvidenceCase(apiUser, {module:current.module, caseId:current.caseId || updates?.caseId})) return Response.json({error:'Case access denied.'},{status:403});
     if (evidenceOwner(current) !== apiUser.id) return Response.json({error:"Evidence belongs to another officer"},{status:403});
     if(current.caseId && updates?.caseId && updates.caseId !== current.caseId)return Response.json({error:"Evidence is already bound to another case."},{status:409});
     const updated: UniversalEvidenceRecord = {
       ...current,
       ...updates,
-      id:current.id,fileId:current.fileId,caseId:current.caseId || updates?.caseId,ownerId:apiUser.id,rawDocument:current.rawDocument,
+      id:current.id,fileId:current.fileId,module:current.module,caseId:current.caseId || updates?.caseId,ownerId:apiUser.id,rawDocument:current.rawDocument,
       updatedAt: new Date().toISOString(),
       auditTrail: auditEntry ? [...(current.auditTrail || []), {...auditEntry,performedBy:apiUser.name,performedByRole:apiUser.role,timestamp:new Date().toISOString()}] : current.auditTrail,
     };
@@ -243,7 +262,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -259,13 +278,16 @@ export async function DELETE(req: NextRequest) {
     const originalStore = store;
     const initialCount = store.length;
 
-    if (id) {
-      store = store.filter((r) => r.id !== id || evidenceOwner(r) !== apiUser.id);
-    } else if (fileId) {
-      store = store.filter((r) => evidenceOwner(r) !== apiUser.id || r.fileId !== fileId && r.id !== fileId);
-    } else if (caseId) {
-      store = store.filter((r) => r.caseId !== caseId || evidenceOwner(r) !== apiUser.id);
+    const matches = store.filter(record => evidenceOwner(record) === apiUser.id && (
+      id ? record.id === id : fileId ? record.fileId === fileId || record.id === fileId : record.caseId === caseId
+    ));
+    for (const record of matches) {
+      if (!await canAccessEvidenceCase(apiUser, record)) {
+        return Response.json({error:'Case access denied.'},{status:403});
+      }
     }
+    const removed = new Set(matches);
+    store = store.filter(record => !removed.has(record));
 
     writeEvidenceStore(store);
     scheduleCaseComparisons(originalStore.filter(r => !store.some(next => next.id === r.id)), apiUser);

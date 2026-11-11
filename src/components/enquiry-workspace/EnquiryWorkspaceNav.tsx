@@ -9,12 +9,15 @@ import { useLanguage } from "@/context/LanguageContext";
 interface EnquiryWorkspaceNavProps {
   complaintId?: string | null;
   rightAction?: React.ReactNode;
+  documentLanguage?: "hi" | "en";
+  onDocumentLanguageChange?: (language: "hi" | "en") => void;
+  languageBusy?: boolean;
 }
 
-export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspaceNavProps) {
+export function EnquiryWorkspaceNav({ complaintId, rightAction, documentLanguage, onDocumentLanguageChange, languageBusy }: EnquiryWorkspaceNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { language, setLanguage, isHindi } = useLanguage();
+  const { isHindi } = useLanguage();
 
   const activeComplaintId = complaintId || searchParams.get("complaintId");
   const querySuffix = activeComplaintId ? `?complaintId=${encodeURIComponent(activeComplaintId)}` : "";
@@ -81,14 +84,13 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
       <div className="flex items-center gap-2">
         {rightAction}
 
-        {/* Language Switcher */}
-        <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
+        {onDocumentLanguageChange && <div role="group" aria-label="Template and draft language" className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
           <Languages className="w-3.5 h-3.5 text-blue-700 ml-1" />
           <button
             type="button"
-            onClick={() => setLanguage("hi")}
-            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
-              isHindi
+            disabled={languageBusy} aria-pressed={documentLanguage === "hi"}
+            onClick={() => onDocumentLanguageChange("hi")}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${documentLanguage === "hi"
                 ? "bg-amber-600 text-white shadow-2xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
             }`}
@@ -97,16 +99,16 @@ export function EnquiryWorkspaceNav({ complaintId, rightAction }: EnquiryWorkspa
           </button>
           <button
             type="button"
-            onClick={() => setLanguage("en")}
-            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
-              !isHindi
+            disabled={languageBusy} aria-pressed={documentLanguage === "en"}
+            onClick={() => onDocumentLanguageChange("en")}
+            className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${documentLanguage === "en"
                 ? "bg-blue-700 text-white shadow-2xs"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
             }`}
           >
             English
           </button>
-        </div>
+        </div>}
 
         <Link href="/enquiry-workspace">
           <button

@@ -1,5 +1,7 @@
 "use client";
 
+import { recordedCalendarDate } from "@/lib/dataIntegrity";
+import { complaintRelationFromSource } from "@/lib/complaintRelation";
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,7 +59,6 @@ import {
   IntelligenceCheckResult,
   ComplaintEvidenceAttachment,
   ComplaintDocumentItem,
-  RelativeRelation,
   AccusedPerson,
 } from "@/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -124,7 +125,7 @@ const DIRECTION_TEMPLATES = [
 interface ComplainantFormItem {
   id: string;
   name: string;
-  relationType?: RelativeRelation | string;
+  relationType?: string;
   relativeName?: string;
   gender?: "MALE" | "FEMALE" | "TRANSGENDER" | string;
   age?: string;
@@ -330,6 +331,8 @@ export default function RegisterComplaintPage() {
     typeLabel: string;
   } | null>(null);
   const [autofillSuccessNotice, setAutofillSuccessNotice] = useState<{
+    transcriptOmitted?: boolean;
+    identityNeedsReview?: boolean;
     fileName: string;
     category: string;
     typeLabel: string;
@@ -370,7 +373,7 @@ export default function RegisterComplaintPage() {
     {
       id: "comp_1",
       name: "",
-      relationType: "S/O",
+      relationType: undefined,
       relativeName: "",
       gender: "MALE",
       age: "",
@@ -922,7 +925,7 @@ export default function RegisterComplaintPage() {
       {
         id: "comp_1",
         name: "",
-        relationType: "S/O",
+        relationType: undefined,
         relativeName: "",
         gender: "MALE",
         age: "",
@@ -1022,7 +1025,7 @@ export default function RegisterComplaintPage() {
       {
         id: `comp_${Date.now()}`,
         name: "",
-        relationType: "S/O",
+        relationType: undefined,
         relativeName: "",
         gender: "MALE",
         age: "",
@@ -1340,18 +1343,6 @@ export default function RegisterComplaintPage() {
       evidenceBlobStore.put(attachedDoc.id, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
       evidenceBlobStore.put(file.name, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
 
-      // Register with universal evidence service
-      universalEvidenceService
-        .registerAndProcess({
-          file,
-          dataUrl,
-          fileName: file.name,
-          fileId: attachedDoc.id,
-          module: "COMPLAINTS",
-          uploadedBy: currentUser?.name || "Intake Officer",
-        })
-        .catch((err) => console.warn("Background evidence registration warning:", err));
-
       setAttachments((prev) => [attachedDoc, ...prev.filter((a) => a.name !== file.name)]);
 
       // Check if it's a readable text file
@@ -1370,7 +1361,7 @@ export default function RegisterComplaintPage() {
     reader.readAsDataURL(file);
   };
 
-  // Execution pipeline powered by GLM 5.3 FlashX Legal Model
+  // Execution pipeline powered by Gemini Model
   const executeExtractionPipeline = async (
     file: File,
     dataUrl: string,
@@ -1381,29 +1372,26 @@ export default function RegisterComplaintPage() {
   ) => {
     try {
       setAutofillProgress(35);
-      setAutofillStepText(`Analyzing document with GLM 5.3 FlashX Legal AI model...`);
+      setAutofillStepText(`Analyzing document with Gemini AI model...`);
 
       const formData = new FormData();
       formData.append("file", file);
+      if (attachedDocId) formData.append("fileId", attachedDocId);
       if (textContent) {
         formData.append("text", textContent);
       }
 
       setAutofillProgress(60);
-      setAutofillStepText("Verifying inner contents & classifying document name...");
+      setAutofillStepText(textContent?.trim() ? "Gemini is extracting fields from the document text..." : "Reading the upload and extracting fields with Gemini. Scanned pages may take longer...");
 
       const res = await fetch("/api/complaints/autofill", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error(`API returned status ${res.status}`);
-      }
-
-      const resJson = await res.json();
-      if (!resJson.success || !resJson.data) {
-        throw new Error(resJson.error || "Failed to parse document with OpenRouter model");
+      const resJson = await res.json().catch(() => ({}));
+      if (!res.ok || !resJson.success || !resJson.data) {
+        throw new Error(resJson.error || "Gemini could not extract the document fields");
       }
 
       setAutofillProgress(90);
@@ -1436,7 +1424,7 @@ export default function RegisterComplaintPage() {
         )
       );
 
-      // Populate Form Fields from GLM 5.3 FlashX Legal extraction
+      // Populate Form Fields from Gemini extraction
       const c = geminiData.complainant || {};
       const a = geminiData.accused || {};
       const inc = geminiData.incident || {};
@@ -1450,8 +1438,9 @@ export default function RegisterComplaintPage() {
       const extractedState = c.state ? String(c.state).trim() : "";
       const extractedAddress = c.presentAddress ? String(c.presentAddress).trim() : "";
       const extractedMobile = c.mobile ? String(c.mobile).replace(/\D/g, "").slice(0, 10) : "";
-      const extractedRelativeName = c.relativeName ? String(c.relativeName).trim() : "";
-      const extractedRelationType = c.relationType ? (c.relationType as RelativeRelation) : (c.gender === "FEMALE" ? "W/O" : "S/O");
+      const sourceRelation = complaintRelationFromSource(textContent || geminiData.incident?.details || geminiData.rawText || "", extractedName);
+      const extractedRelativeName = sourceRelation.relative || (typeof c.relativeName === "string" ? c.relativeName : "");
+      const extractedRelationType = sourceRelation.type || (/^(S|D|W|C)\/O$/.test(c.relationType || "") ? c.relationType : undefined);
       const extractedGender = c.gender === "FEMALE" ? "FEMALE" : c.gender === "TRANSGENDER" ? "TRANSGENDER" : c.gender === "MALE" ? "MALE" : "MALE";
 
       setComplainants([
@@ -1645,7 +1634,8 @@ export default function RegisterComplaintPage() {
       setComplaintDescription(summaryText);
       if (comp.type) setComplaintAgeType(comp.type);
       if (comp.isFirRegistered !== undefined) setIsFirRegistered(Boolean(comp.isFirRegistered));
-      if (comp.firNumber) setFirNumber(comp.firNumber);
+      setFirNumber(comp.isFirRegistered === true && comp.firNumber ? String(comp.firNumber).trim() : "");
+      setFirDate(comp.isFirRegistered === true && typeof comp.firDate === "string" ? recordedCalendarDate(comp.firDate) : "");
 
       setValidationErrors({});
       setAutofillProgress(100);
@@ -1654,7 +1644,7 @@ export default function RegisterComplaintPage() {
       const filledKeys = new Set<string>();
       if (extractedName) filledKeys.add("complainantName");
       if (extractedRelativeName) filledKeys.add("complainantRelativeName");
-      if (c.relationType && String(c.relationType).trim()) filledKeys.add("complainantRelationType");
+      if (extractedRelationType) filledKeys.add("complainantRelationType");
       if (c.gender && String(c.gender).trim()) filledKeys.add("complainantGender");
       if (extractedAge) filledKeys.add("complainantAge");
       if (extractedMobile) filledKeys.add("complainantMobile");
@@ -1802,9 +1792,11 @@ export default function RegisterComplaintPage() {
 
       // Set success notice
       setAutofillSuccessNotice({
+        transcriptOmitted: resJson.transcriptOmitted === true,
+        identityNeedsReview: resJson.identityNeedsReview === true,
         fileName: classifiedName,
         category,
-        typeLabel: `${verifiedTitle} • AI Verified`,
+        typeLabel: `${verifiedTitle} • AI Extracted`,
         dataUrl,
         complainantName: extractedName || "Not Mentioned in Document",
         complainantRelative: extractedRelativeName ? `${extractedRelationType} ${extractedRelativeName}` : "Not Mentioned",
@@ -1818,11 +1810,17 @@ export default function RegisterComplaintPage() {
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     } catch (err: any) {
-      console.warn("OpenRouter AI API Error:", err);
+      console.warn("Gemini autofill error:", err);
       // STRICT: Never fabricate fake names or addresses when document processing fails!
       if (textContent && textContent.trim().length > 20) {
         extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel, attachedDocId);
       } else {
+        if (attachedDocId) {
+          void universalEvidenceService.registerAndProcess({
+            file, dataUrl, fileName: file.name, fileId: attachedDocId, module: "COMPLAINTS",
+            uploadedBy: currentUser?.name || "Intake Officer",
+          }).catch(error => console.warn("Background evidence registration warning:", error));
+        }
         alert(`Document Processing Notice: ${err?.message || "Could not extract fields from document"}. Please enter complaint details manually.`);
       }
       setIsAutofilling(false);
@@ -1851,21 +1849,7 @@ export default function RegisterComplaintPage() {
     }
 
     // 3. Relative Name
-    let extractedRelative = "";
-    let extractedRelation: RelativeRelation = "S/O";
-    const relMatch = textContent.match(/(?:पुत्र|s\/o)[\s:]+([^\n,]+)/i);
-    const relWMatch = textContent.match(/(?:पत्नी|w\/o)[\s:]+([^\n,]+)/i);
-    const relDMatch = textContent.match(/(?:पुत्री|d\/o)[\s:]+([^\n,]+)/i);
-    if (relMatch && relMatch[1]) {
-      extractedRelative = relMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
-      extractedRelation = "S/O";
-    } else if (relWMatch && relWMatch[1]) {
-      extractedRelative = relWMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
-      extractedRelation = "W/O";
-    } else if (relDMatch && relDMatch[1]) {
-      extractedRelative = relDMatch[1].replace(/(?:निवासी|r\/o|मो0).*$/i, "").trim();
-      extractedRelation = "D/O";
-    }
+    const { relative: extractedRelative, type: extractedRelation } = complaintRelationFromSource(textContent, extractedName);
 
     // 4. Address
     let extractedAddr = "";
@@ -2391,7 +2375,7 @@ export default function RegisterComplaintPage() {
           incidentLandmark: undefined,
           incidentDetails: incidentDetails || "Written citizen application received and attached to docket.",
           complainantName: primaryComp.name,
-          complainantRelationType: primaryComp.relationType,
+          complainantRelationType: primaryComp.relationType?.trim().toUpperCase() || undefined,
           complainantRelativeName: primaryComp.relativeName,
           complainantFatherSpouse: primaryComp.relativeName,
           complainantGender: primaryComp.gender,
@@ -2690,7 +2674,7 @@ export default function RegisterComplaintPage() {
 
       const primaryCompName = createdComplaint.complainantName || "नागरिक";
       const relationStr = createdComplaint.complainantFatherSpouse
-        ? ` (${createdComplaint.complainantRelationType || "S/O"} ${createdComplaint.complainantFatherSpouse})`
+        ? ` (${createdComplaint.complainantRelationType || ""} ${createdComplaint.complainantFatherSpouse})`
         : "";
       const mobileStr = createdComplaint.complainantMobile ? ` (मो: ${createdComplaint.complainantMobile})` : "";
       const addressStr = createdComplaint.incidentPlace || "इलाका थाना";
@@ -3019,7 +3003,7 @@ export default function RegisterComplaintPage() {
       <input
         ref={autofillFileInputRef}
         type="file"
-        accept="image/*,application/pdf,audio/*,.doc,.docx,.txt"
+        accept="image/*,application/pdf,audio/*,.docx,.xlsx,.xls,.txt"
         onChange={(e) => handleAutofillFileSelect(e.target.files)}
         className="hidden"
       />
@@ -3061,7 +3045,7 @@ export default function RegisterComplaintPage() {
               <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
               {autofillStepText}
             </span>
-            <span>Local Extractor</span>
+            <span>Gemini Autofill</span>
           </div>
         </div>
       )}
@@ -3113,6 +3097,8 @@ export default function RegisterComplaintPage() {
             </div>
           </div>
 
+          {autofillSuccessNotice.identityNeedsReview && <p role="status" className="text-sm text-amber-800">The handwritten complainant name could not be confirmed. Check the signed name line in the original attachment and enter it manually.</p>}
+          {autofillSuccessNotice.transcriptOmitted && <p role="status" className="text-sm text-amber-800">Fields extracted. The full complaint text could not be recovered. Open the original attachment to review and enter the incident details.</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-0.5 text-[11px]">
             <div className="p-2 bg-white/80 rounded-lg border border-emerald-200/80 space-y-0.5">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Complainant</span>
@@ -3308,7 +3294,7 @@ export default function RegisterComplaintPage() {
                         </label>
                       </div>
                       <select
-                        value={comp.relationType}
+                        value={comp.relationType || ""}
                         onChange={(e) => {
                           handleComplainantChange(idx, "relationType", e.target.value);
                           if (idx === 0) markFieldAsEdited("complainantRelationType");
@@ -3319,20 +3305,12 @@ export default function RegisterComplaintPage() {
                             : "bg-slate-50 border-slate-300"
                         }`}
                       >
-                        {dynamicRelations.length > 0 ? (
-                          dynamicRelations.map((r) => (
-                            <option key={r.code} value={r.code}>
-                              {r.label}
-                            </option>
-                          ))
-                        ) : (
-                          <>
-                            <option value="S/O">S/o</option>
-                            <option value="D/O">D/o</option>
-                            <option value="W/O">W/o</option>
-                            <option value="C/O">C/o</option>
-                          </>
-                        )}
+                        <option value="">Select</option>
+                        {(["S/O", "D/O", "W/O", "C/O"] as const).map(code => (
+                          <option key={code} value={code}>
+                            {dynamicRelations.find(relation => relation.code.trim().toUpperCase() === code)?.label || code}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

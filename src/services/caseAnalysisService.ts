@@ -76,7 +76,7 @@ async function analyze(fir: FIRItem, user: UserSession, force: boolean): Promise
     if (!Array.isArray(evidence)) throw new Error('Invalid evidence store.');
   } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   const caseIds = new Set([fir.id, fir.sourceComplaintId].filter(Boolean));
-  evidence = evidence.filter(e => e.caseId && caseIds.has(e.caseId) && (user.role === 'SUPER_ADMIN' || evidenceOwner(e) === user.id));
+  evidence = evidence.filter(e => e.caseId && caseIds.has(e.caseId) && (user.role === 'SUPER_ADMIN' || evidenceOwner(e) === user.id || (e.caseId === fir.id && e.module === 'FIR' && Boolean(fir.custodyUnit))));
   const unprocessedDocuments = (fir.documents || []).filter(d => !evidence.some(e => e.fileId === d.id || e.id === d.id)).length;
   const previous = await readCaseAnalysis(fir.id, user);
   const current = collectSources(fir, evidence);
@@ -97,7 +97,7 @@ async function analyze(fir: FIRItem, user: UserSession, force: boolean): Promise
   const result: CaseAnalysis = { firId: fir.id, fingerprint, analyzedAt: new Date().toISOString(), sources,
     conflicts: compareCaseFacts(sources), ...resolveInvestigationGraph(buildCaseGraph(current)), aiStatus: 'UNAVAILABLE',
     pendingEvidence: evidence.filter(e => e.processingStatus !== 'COMPLETED' || (processingAIAvailable() && !e.structuredData?.investigation)).length + unprocessedDocuments };
-  if (!processingAIAvailable()) result.aiMessage = 'AI comparison is unavailable: configure OPENROUTER_API_KEY on the server. Saved field differences are still shown.';
+  if (!processingAIAvailable()) result.aiMessage = 'AI comparison is unavailable: check the server AI settings. Saved field differences are still shown.';
   else if (sources.length < 2) { result.aiStatus = 'COMPLETED'; result.aiMessage = 'Add another source to compare statements.'; }
   else {
     try {

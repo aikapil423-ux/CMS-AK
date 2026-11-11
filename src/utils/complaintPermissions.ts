@@ -96,8 +96,13 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
   const norm=(v?:string)=>(v||'').trim().toLowerCase();
   if(!user?.id)return {allowed:false,reason:'Login required.'};
   if(user.role==='SUPER_ADMIN')return {allowed:true};
-  if(isSuperiorToSho(user.role))return {allowed:Boolean(norm(user.district)&&norm(user.district)===norm(complaint.district)),reason:'Complaint is outside your district.'};
-  if(!norm(user.stationName)||norm(user.stationName)!==norm(complaint.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
+  if(complaint.custodyUnit && !user.unitId)return {allowed:false,reason:'A verified posting is required.'};
+  const jurisdiction=complaint.custodyUnit ? {district:complaint.custodyUnit.district,policeStation:complaint.custodyUnit.name} : complaint;
+  if(user.unitId && (!norm(user.district) || norm(user.district)!==norm(jurisdiction.district))) return {allowed:false,reason:'Complaint is outside your district.'};
+  if(user.role==='DSP_SUBDIV' && user.unitId) return {allowed:Boolean(user.jurisdictionUnits?.some((name:string)=>norm(name)===norm(jurisdiction.policeStation))),reason:'Complaint is outside your subdivision.'};
+  if(isSuperiorToSho(user.role))return {allowed:Boolean(norm(user.district)&&norm(user.district)===norm(jurisdiction.district)),reason:'Complaint is outside your district.'};
+  if(complaint.custodyUnit && user.unitId !== complaint.custodyUnit.id)return {allowed:false,reason:'Complaint is outside your unit.'};
+  if(!norm(user.stationName)||norm(user.stationName)!==norm(jurisdiction.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
   if(['SHO','MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role||''))return {allowed:true};
   return {allowed:isUserAssignedEo(user,complaint),reason:'Only the assigned enquiry officer can view this complaint.'};
 }

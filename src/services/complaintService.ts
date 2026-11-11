@@ -264,6 +264,7 @@ export const ComplaintService = {
       const vStnCode = getStationComplaintCode(filter.viewerStation);
 
       list = list.filter((c) => {
+        if (c.custodyUnit) return c.custodyUnit.name.trim().toLowerCase() === vStn;
         const cStn = (c.policeStation || "").trim().toLowerCase();
         if (cStn && (cStn === vStn || cStn.includes(vStn) || vStn.includes(cStn))) {
           return true;
@@ -553,6 +554,7 @@ export const ComplaintService = {
       const vStn = viewerStation.trim().toLowerCase();
       const vStnCode = getStationComplaintCode(viewerStation);
       baseList = baseList.filter((c) => {
+        if (c.custodyUnit) return c.custodyUnit.name.trim().toLowerCase() === vStn;
         const cStn = (c.policeStation || "").trim().toLowerCase();
         if (cStn && (cStn === vStn || cStn.includes(vStn) || vStn.includes(cStn))) {
           return true;
@@ -656,7 +658,7 @@ export const ComplaintService = {
       incidentLandmark: input.incidentLandmark,
       incidentDetails: input.incidentDetails || "Written complaint filed",
       complainantName: input.complainantName,
-      complainantRelationType: input.complainantRelationType || "S/O",
+      complainantRelationType: input.complainantRelationType || undefined,
       complainantRelativeName: input.complainantRelativeName || input.complainantFatherSpouse || "",
       complainantFatherSpouse: input.complainantRelativeName || input.complainantFatherSpouse || "",
       complainantGender: input.complainantGender || "MALE",
@@ -2746,6 +2748,12 @@ export const ComplaintService = {
       eoRecommendedReportTitle: targetReportTitle || (complaint.reports && complaint.reports[0]?.title) || "Enquiry Report",
       eoRecommendedRemarks: remarks,
       shoActionRequired: true,
+      shoDecision: undefined,
+      shoDecisionAt: undefined,
+      shoDecisionBy: undefined,
+      rejectionReason: undefined,
+      rejectionAt: undefined,
+      rejectionBy: undefined,
       isReportViewedBySho: false,
       shoReportViewedAt: undefined,
       isRecommendedForFir,

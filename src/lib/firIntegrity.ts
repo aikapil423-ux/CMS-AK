@@ -1,3 +1,4 @@
+import type { TransferableRecord } from './recordCustody';
 import type { FIRItem } from '@/types';
 import { MOCK_ENQUIRY_OFFICERS } from '@/lib/mockData';
 
@@ -35,12 +36,14 @@ export function firPendingDays(fir:Pick<FIRItem,'firDate'|'status'|'finalFormDat
 }
 
 export function isFirVisibleToUser(
-  user?: { id?: string; pno?: string; name?: string; role?: string; stationName?: string; district?: string } | null,
-  fir?: Pick<FIRItem, 'assignedIoId' | 'assignedIoName' | 'policeStation'> & Partial<Pick<FIRItem, 'district'>> | null
+  user?: { id?: string; pno?: string; name?: string; role?: string; stationName?: string; district?: string; unitId?: string; jurisdictionUnits?: string[] } | null,
+  fir?: Pick<FIRItem, 'assignedIoId' | 'assignedIoName' | 'policeStation'> & Partial<Pick<FIRItem, 'district'>> & TransferableRecord | null
 ): boolean {
   if (!user || !fir) return false;
 
   const role = user.role || '';
+  if (fir.custodyUnit && !user.unitId && role !== 'SUPER_ADMIN') return false;
+  const jurisdiction = fir.custodyUnit ? { district: fir.custodyUnit.district, policeStation: fir.custodyUnit.name } : fir;
   const isSuperior =
     role === "DSP_SUBDIV" ||
     role === "SP_DISTRICT" ||
@@ -50,9 +53,15 @@ export function isFirVisibleToUser(
   // Superior district officers (SP, ASP, DSP, Super Admin) see all FIRs across all stations in the district
   if (role === 'SUPER_ADMIN') return true;
   const norm = (value?: string) => (value || '').trim().toLowerCase();
-  if (isSuperior) {
-    return Boolean(norm(user.district) && norm(fir.district) && norm(user.district) === norm(fir.district));
+  if (user.unitId && (!norm(user.district) || norm(user.district) !== norm(jurisdiction.district))) return false;
+  if (role === 'DSP_SUBDIV' && user.unitId) {
+    return Boolean(user.jurisdictionUnits?.some(name => norm(name) === norm(jurisdiction.policeStation)));
   }
+  if (isSuperior) {
+    return Boolean(norm(user.district) && norm(jurisdiction.district) && norm(user.district) === norm(jurisdiction.district));
+  }
+
+  if (fir.custodyUnit && user.unitId !== fir.custodyUnit.id) return false;
 
   // Station-level personnel: SHO, MHC, Duty Officer
   const isStationStaff =
@@ -64,15 +73,15 @@ export function isFirVisibleToUser(
 
   if (isStationStaff) {
     // If user has a police station assigned, only show FIRs of their station
-    if (user.stationName && fir.policeStation) {
+    if (user.stationName && jurisdiction.policeStation) {
       const norm = (s: string) => s.trim().toLowerCase();
-      return norm(user.stationName) === norm(fir.policeStation);
+      return fir.custodyUnit && user.unitId ? user.unitId === fir.custodyUnit.id : norm(user.stationName) === norm(jurisdiction.policeStation);
     }
     return false;
   }
 
   // Investigating Officer (IO / EO): only see FIRs assigned to them in their station
-  return Boolean(norm(user.stationName) && norm(fir.policeStation) && norm(user.stationName) === norm(fir.policeStation) && isUserAssignedIo(user, fir));
+  return Boolean(norm(user.stationName) && norm(jurisdiction.policeStation) && norm(user.stationName) === norm(jurisdiction.policeStation) && isUserAssignedIo(user, fir));
 }
 
 export function isUserAssignedIo(

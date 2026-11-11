@@ -46,7 +46,7 @@ function tryAutoReplaceInSourceCode(item: { originalText: string; newText: strin
 }
 
 export async function GET(req: Request) {
- const apiUser=apiAccess(req);if(apiUser instanceof Response)return apiUser;
+ const apiUser=await apiAccess(req);if(apiUser instanceof Response)return apiUser;
   try {
     ensureFile();
     const data = fs.readFileSync(PERMANENT_EDITS_FILE, "utf-8");
@@ -57,7 +57,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     ensureFile();

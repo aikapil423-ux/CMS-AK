@@ -1,9 +1,9 @@
-import {evidenceOwner} from "@/lib/evidenceOwnership";
+import { canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import zlib from "zlib";
+import { createHash } from "node:crypto";
 import { UniversalEvidenceRecord } from "@/types/evidence";
 
 const EVIDENCE_STORE_PATH = path.join(process.cwd(), "prisma", "processed-evidence-store.json");
@@ -21,7 +21,7 @@ function readStore(): UniversalEvidenceRecord[] {
 }
 
 export async function GET(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const { searchParams } = new URL(req.url);
@@ -34,11 +34,16 @@ export async function GET(req: NextRequest) {
     }
 
     const store = readStore();
-    const record = store.find((r) => (apiUser.role === "SUPER_ADMIN" || evidenceOwner(r) === apiUser.id) && ((!!id && (r.id === id || r.fileId === id)) || (!!sha256 && r.rawDocument?.sha256Hash === sha256)));
+    const matches = store.filter((r) => ((!!id && (r.id === id || r.fileId === id)) || (!!sha256 && r.rawDocument?.sha256Hash === sha256)));
 
+    let record: UniversalEvidenceRecord | undefined;
+    for (const candidate of matches) {
+      if (await canReadCaseEvidence(apiUser, candidate)) { record = candidate; break; }
+    }
     if (!record) {
       return NextResponse.json({ error: "Evidence record not found in system." }, { status: 404 });
     }
+
 
     const origFileName = record.rawDocument.fileName || "evidence_document.bin";
     const mimeType = record.rawDocument.mimeType || record.rawDocument.fileType || "application/octet-stream";
@@ -65,6 +70,10 @@ export async function GET(req: NextRequest) {
 
       if (!origBuf) {
         return NextResponse.json({ error: "Original file content could not be located." }, { status: 404 });
+      }
+
+      if (createHash('sha256').update(origBuf).digest('hex') !== originalHash.toLowerCase()) {
+        return NextResponse.json({error:'Original evidence failed SHA-256 verification.'},{status:409});
       }
 
       return new NextResponse(new Uint8Array(origBuf), {
@@ -94,6 +103,9 @@ export async function GET(req: NextRequest) {
 
     if (!compBuf) {
       return NextResponse.json({error:"Verified compressed copy is unavailable. Download the original or rerun compression."},{status:404});
+    }
+    if (createHash('sha256').update(compBuf).digest('hex') !== record.compression.compressedSha256?.toLowerCase()) {
+      return NextResponse.json({error:'Compressed evidence failed SHA-256 verification.'},{status:409});
     }
     // Determine download filename and content type
     let downloadFileName = `${path.parse(origFileName).name}.lossless${compExt}`;

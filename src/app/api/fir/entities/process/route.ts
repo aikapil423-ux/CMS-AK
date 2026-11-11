@@ -15,7 +15,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 180;
 
 export async function POST(req: NextRequest) {
-  const user = apiAccess(req); if (user instanceof Response) return user;
+  const user = await apiAccess(req); if (user instanceof Response) return user;
   try {
     const body = await req.json();
     if (typeof body.firId !== 'string') return Response.json({ error: 'FIR ID required.' }, { status: 400 });

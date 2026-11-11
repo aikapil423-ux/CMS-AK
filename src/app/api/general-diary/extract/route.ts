@@ -1,10 +1,10 @@
-import { processingAIAvailable, processWithAI } from "@/lib/openRouter";
+import { processingAIAvailable, processWithAI } from "@/lib/geminiProcessing";
 import { apiAccess } from "@/lib/apiSecurity";
 import { NextRequest, NextResponse } from "next/server";
 
 
 export async function POST(req: NextRequest) {
-  const apiUser = apiAccess(req); if (apiUser instanceof Response) return apiUser;
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
   try {
     const formData = await req.formData();

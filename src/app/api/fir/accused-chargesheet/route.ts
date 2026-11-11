@@ -12,7 +12,7 @@ const requestSchema = z.object({
 });
 
 export async function GET(req: Request) {
-  const user = apiAccess(req); if (user instanceof Response) return user;
+  const user = await apiAccess(req); if (user instanceof Response) return user;
   const firId = new URL(req.url).searchParams.get('firId');
   try {
     const fir = (await readFirRecords()).find(row => row.id === firId);
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const user = apiAccess(req); if (user instanceof Response) return user;
+  const user = await apiAccess(req); if (user instanceof Response) return user;
   try {
     const body = requestSchema.parse(await req.json());
     const fir = (await readFirRecords()).find(row => row.id === body.firId);
