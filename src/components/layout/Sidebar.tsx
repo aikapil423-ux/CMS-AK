@@ -107,6 +107,7 @@ export function Sidebar() {
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   // Toggle slide bar states: Modules above Management are open by default (true). Management and Station Info default closed (false).
   const [roznamchaOpen, setRoznamchaOpen] = useState(true);
@@ -1015,14 +1016,64 @@ export function Sidebar() {
             </div>
           )}
           <button
-            onClick={logout}
+            onClick={() => setShowSignOutModal(true)}
             title={t("Sign Out")}
-            className="text-slate-400 hover:text-slate-800 transition-colors p-1"
+            className="text-slate-400 hover:text-slate-800 transition-colors p-1 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in-0 duration-150">
+          <div
+            className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 text-slate-800 animate-in zoom-in-95 duration-150"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signout-modal-title"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                <LogOut className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 id="signout-modal-title" className="text-sm font-bold text-slate-900">
+                  {t("Sign Out Confirmation")}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {currentUser.name} ({currentUser.rankDisplay || currentUser.role})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+              {t("Are you sure you want to sign out of Haryana Police CMS?")}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowSignOutModal(false)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                {t("Cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSignOutModal(false);
+                  logout();
+                }}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors cursor-pointer shadow-xs"
+              >
+                {t("Confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
