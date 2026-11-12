@@ -204,10 +204,6 @@ export default function PostLoginPortalPage() {
                 FIR Register
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                Sec 173 BNSS
-              </span>
-
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
@@ -245,10 +241,6 @@ export default function PostLoginPortalPage() {
                 Registrations
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                PPR / CCTNS
-              </span>
-
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
@@ -286,10 +278,6 @@ export default function PostLoginPortalPage() {
                 Reports & Audit
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                SITREP / Audit
-              </span>
-
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
@@ -327,10 +315,6 @@ export default function PostLoginPortalPage() {
                 Telecom Evidence Analysis
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-cyan-800 bg-cyan-50 border border-cyan-200/70 px-2 py-0.5 rounded-md font-semibold">
-                CDR / IPDR / GIS
-              </span>
-
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
@@ -368,10 +352,6 @@ export default function PostLoginPortalPage() {
                 Prosecution & Courts
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-md font-semibold">
-                BNSS / Courts
-              </span>
-
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
               <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
