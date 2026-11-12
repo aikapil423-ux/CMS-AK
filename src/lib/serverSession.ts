@@ -3,12 +3,13 @@ import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
 
 const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
-const demoEnabled = () => process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' || process.env.ENABLE_DEMO_LOGIN === 'true' || true;
+export const demoEnabled = () => process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_LOGIN === 'true';
 
 function secret() {
   const configured = process.env.CMS_SESSION_SECRET;
   if (configured && configured.length >= 32) return configured;
-  return globals.cmsSessionSecret ??= (configured || 'haryana-police-cms-default-session-secret-key-32chars');
+  if (process.env.NODE_ENV === 'production' && !demoEnabled()) throw new Error('CMS_SESSION_SECRET must contain at least 32 characters.');
+  return globals.cmsSessionSecret ??= randomBytes(32).toString('hex');
 }
 
 export function issueSession(userId: string, _legacyStation?: string, demo = false) {
@@ -55,6 +56,11 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
 }
 
 export async function validLogin(pno: string, pin: string): Promise<UserSession | null> {
+  // Test personas must work even when the VM database has not been seeded.
+  if (demoEnabled() && pin === '123456') {
+    const demo = DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase());
+    if (demo) return demo;
+  }
   const { prisma } = await import('@/lib/prisma');
   const user = await prisma.user.findUnique({ where: { pno: pno.trim().toUpperCase() }, include: { unit: true } });
   if (user) {
@@ -75,7 +81,8 @@ export function sameOrigin(req:Request){
   if(origHost===reqHost)return true;
   if(origin===new URL(req.url).origin)return true;
   // Allow test VM IP or local network host connections
-  if(process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_LOGIN === 'true' || true) return true;
+  const allowed=(process.env.CMS_ALLOWED_ORIGINS || '').split(',').map(value=>value.trim());
+  if(allowed.includes(new URL(origin).origin)) return true;
  }catch{}
  return false;
 }

@@ -10,7 +10,10 @@ import { DEMO_USERS } from "@/lib/mockData";
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const demo = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" || true;
+  const [demo, setDemo] = useState(false);
+  React.useEffect(() => {
+    fetch("/api/auth/session", {cache:"no-store"}).then(r=>r.json()).then(b=>setDemo(b.demoEnabled === true)).catch(()=>setDemo(false));
+  }, []);
   const [pno, setPno] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +32,7 @@ export default function LoginPage() {
     e.preventDefault(); setError(null); setIsLoading(true);
     const ok = await login(pno, pin);
     setIsLoading(false);
-    if(ok)router.push('/');else setError('Invalid PNO or PIN. Please verify your credentials.');
+    if(ok)router.push('/');else setError((window as any).__lastLoginError || 'Invalid PNO or PIN. Please verify your credentials.');
   };
   const handleQuickDemoLogin = async (userId:string) => {
     const user=DEMO_USERS.find(u=>u.id===userId);if(!user)return;
