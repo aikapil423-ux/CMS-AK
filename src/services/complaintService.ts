@@ -1911,17 +1911,34 @@ export const ComplaintService = {
       timestamp: now.toISOString(),
     });
 
-    // Auto-record in Station General Diary
+    // Dispatch Suggestion to Station General Diary (waits for manual verification)
     const nowTime = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    await GeneralDiaryService.addEntry(
-      `Directive: Progress Report Demanded - ${complaint.complaintNumber}`,
-      `At ${nowTime} hours, ${requesterRole} ${requesterName} issued formal supervisory directions to Enquiry Officer ${complaint.assignedEoName || "Officer"} for expedited enquiry report in ${complaint.complaintNumber}. Instructions: "${remarks}". Compliance window: ${deadlineHours} hours.`,
-      "PATROL_DEPARTURE_RETURN",
-      requesterName,
-      shoPno,
-      complaint.policeStation,
-      complaint.complaintNumber
-    );
+    try {
+      await GeneralDiaryService.generateSuggestionFromSystemEvent({
+        eventType: "PROGRESS_REPORT_DEMANDED",
+        category: "INVESTIGATION_PROCESS",
+        typeCode: "INVESTIGATION_REPORTS",
+        typeDisplay: "Investigation Reports",
+        typeDisplayHi: "जांच आख्या / पर्यवेक्षी निर्देश (PPR 22.48)",
+        subject: `Directive: Progress Report Demanded - ${complaint.complaintNumber}`,
+        narrative: `At ${nowTime} hours, ${requesterRole} ${requesterName} issued formal supervisory directions to Enquiry Officer ${complaint.assignedEoName || "Officer"} for expedited enquiry report in ${complaint.complaintNumber}. Instructions: "${remarks}". Compliance window: ${deadlineHours} hours.`,
+        officer: {
+          name: requesterName,
+          rank: requesterRole,
+          beltNumber: `${shoPno.slice(-3)}/KKR`,
+          pno: shoPno,
+        },
+        policeStation: complaint.policeStation,
+        district: complaint.district || "Panipat",
+        relatedRecords: {
+          complaintNumber: complaint.complaintNumber,
+          personName: complaint.complainantName,
+          purpose: remarks,
+        },
+      });
+    } catch (gdErr) {
+      console.warn("Could not generate GD suggestion:", gdErr);
+    }
 
     saveComplaintsToStorage(complaintsStore);
     syncComplaintsToServer(complaintsStore);
@@ -3577,19 +3594,33 @@ ${reportBody}
       timestamp: nowIso,
     });
 
-    // Log to Roznamcha General Diary
+    // Log to Roznamcha General Diary as Suggestion (waits for manual verification)
     try {
-      await GeneralDiaryService.addEntry(
-        `Regular FIR Registered: ${firNumber} (ex-Complaint ${complaint.complaintNumber})`,
-        `Pursuant to preliminary enquiry under Section 173(3) BNSS, FIR No. ${firNumber} was officially registered under ${sections} at ${complaint.policeStation}. Complainant: ${complaint.complainantName}. Registered by ${officerName}.`,
-        "FIR_REGISTERED_ENTRY",
-        officerName,
-        "HR-04291882",
-        complaint.policeStation,
-        complaint.complaintNumber
-      );
+      await GeneralDiaryService.generateSuggestionFromSystemEvent({
+        eventType: "FIR_LODGED",
+        category: "INVESTIGATION_PROCESS",
+        typeCode: "CRIMINAL_CASE",
+        typeDisplay: "Criminal case",
+        typeDisplayHi: "पंजीकरण मुकद्दमा / FIR (PPR 22.48)",
+        subject: `Regular FIR Registered: ${firNumber} (ex-Complaint ${complaint.complaintNumber})`,
+        narrative: `Pursuant to preliminary enquiry under Section 173(3) BNSS, FIR No. ${firNumber} was officially registered under ${sections} at ${complaint.policeStation}. Complainant: ${complaint.complainantName}. Registered by ${officerName}.`,
+        officer: {
+          name: officerName,
+          rank: userRole || "SHO",
+          beltNumber: "HR-04291882",
+          pno: "04291882",
+        },
+        policeStation: complaint.policeStation,
+        district: complaint.district || "Panipat",
+        relatedRecords: {
+          complaintNumber: complaint.complaintNumber,
+          firNumber: firNumber,
+          personName: complaint.complainantName,
+          actsAndSections: sections,
+        },
+      });
     } catch (gdErr) {
-      console.warn("Could not log FIR to GD:", gdErr);
+      console.warn("Could not log FIR suggestion to GD:", gdErr);
     }
 
     // Synchronize to FIR Module Store

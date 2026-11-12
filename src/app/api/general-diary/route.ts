@@ -276,6 +276,19 @@ async function createLockedEntry(
   const policeStation = String(body.policeStation || DEFAULT_STATION);
   const district = String(body.district || DEFAULT_DISTRICT);
 
+  // Enforce policy: Automated GD entries must NEVER be auto-submitted as locked records.
+  // They must route as suggestions so only human users can review and lock them.
+  if (
+    source === "SYSTEM_EVENT" ||
+    source === "COMPLAINT_INTEGRATION" ||
+    source === "FIR_INTEGRATION" ||
+    actualAuthor.name === "System Automation" ||
+    actualAuthor.pno === "00000000"
+  ) {
+    const suggestion = await createSystemSuggestion(body);
+    return { record: suggestion, resequenced: 0 };
+  }
+
   const auditTrail: GDAuditLog[] = [
     {
       action: "CREATED",
@@ -582,6 +595,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
   const typeCodeMap: Record<string, string> = {
     COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
     COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
+    PROGRESS_REPORT_DEMANDED: "INVESTIGATION_REPORTS",
     COMPLAINT_NCR: "NON_COGNIZABLE_REPORT",
     COMPLAINT_FIR_RECOMMENDED: "CRIMINAL_CASE",
     FIR_LODGED: "CRIMINAL_CASE",
@@ -598,7 +612,7 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
   const defaultDisplayEn =
     eventType === "COMPLAINT_REGISTERED"
       ? "Citizen Information/Tip Received"
-      : eventType === "COMPLAINT_CLOSURE"
+      : eventType === "COMPLAINT_CLOSURE" || eventType === "PROGRESS_REPORT_DEMANDED"
       ? "Investigation Reports"
       : eventType === "COMPLAINT_NCR"
       ? "Non-Cognizable Report"
@@ -620,6 +634,8 @@ async function createSystemSuggestion(body: Record<string, unknown>): Promise<Ge
       ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
       : eventType === "COMPLAINT_CLOSURE"
       ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+      : eventType === "PROGRESS_REPORT_DEMANDED"
+      ? "जांच आख्या / पर्यवेक्षी निर्देश (PPR 22.48)"
       : eventType === "COMPLAINT_NCR"
       ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
       : eventType === "COMPLAINT_FIR_RECOMMENDED"

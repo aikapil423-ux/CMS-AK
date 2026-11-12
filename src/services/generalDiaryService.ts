@@ -1113,6 +1113,7 @@ export const GeneralDiaryService = {
     const typeCodeMap: Record<string, string> = {
       COMPLAINT_REGISTERED: "CITIZEN_INFORMATION_TIP_RECEIVED",
       COMPLAINT_CLOSURE: "INVESTIGATION_REPORTS",
+      PROGRESS_REPORT_DEMANDED: "INVESTIGATION_REPORTS",
       COMPLAINT_NCR: "NON_COGNIZABLE_REPORT",
       COMPLAINT_FIR_RECOMMENDED: "CRIMINAL_CASE",
       FIR_LODGED: "CRIMINAL_CASE",
@@ -1135,7 +1136,7 @@ export const GeneralDiaryService = {
     const defaultDisplayEn =
       event.eventType === "COMPLAINT_REGISTERED"
         ? "Citizen Information/Tip Received"
-        : event.eventType === "COMPLAINT_CLOSURE"
+        : event.eventType === "COMPLAINT_CLOSURE" || event.eventType === "PROGRESS_REPORT_DEMANDED"
         ? "Investigation Reports"
         : event.eventType === "COMPLAINT_NCR"
         ? "Non-Cognizable Report"
@@ -1158,6 +1159,8 @@ export const GeneralDiaryService = {
         ? "प्राप्ति दरख्वास्त शिकायत (PPR 22.48)"
         : event.eventType === "COMPLAINT_CLOSURE"
         ? "जांच आख्या / निस्तारण शिकायत (PPR 22.48)"
+        : event.eventType === "PROGRESS_REPORT_DEMANDED"
+        ? "जांच आख्या / पर्यवेक्षी निर्देश (PPR 22.48)"
         : event.eventType === "COMPLAINT_NCR"
         ? "असंज्ञेय अपराध रपट (BNSS धारा 174)"
         : event.eventType === "COMPLAINT_FIR_RECOMMENDED"
@@ -1594,6 +1597,38 @@ export const GeneralDiaryService = {
       subject:entryOrSubject,narrative:narrative || "",typeCode:typeof entryType === "string"?entryType:"OTHERS",
       policeStation:station,relatedRecords:{complaintNumber:relatedComplaintNumber},
     };
+
+    // Strict Safeguard: Automated entries MUST NEVER be auto-submitted as locked records.
+    // They must always route to "Auto Suggestions & Drafts" awaiting explicit human verification.
+    const isAuto =
+      (typeof entryOrSubject === "object" &&
+        (entryOrSubject.source === "SYSTEM_EVENT" ||
+         entryOrSubject.source === "COMPLAINT_INTEGRATION" ||
+         entryOrSubject.source === "FIR_INTEGRATION" ||
+         entryOrSubject.actualAuthor?.name === "System Automation" ||
+         entryOrSubject.actualAuthor?.pno === "00000000")) ||
+      officerPno === "00000000" ||
+      officerName === "System Automation";
+
+    if (isAuto) {
+      return this.generateSuggestionFromSystemEvent({
+        eventType: typeof payload.typeCode === "string" ? payload.typeCode : "SYSTEM_EVENT",
+        subject: payload.subject || "Automated Suggestion",
+        narrative: payload.narrative || "",
+        officer: (typeof entryOrSubject === "object" ? entryOrSubject.entryForOfficer : undefined) || {
+          name: officerName || "Duty Officer",
+          rank: "Officer",
+          beltNumber: "STATION",
+          pno: officerPno || "00000000",
+        },
+        policeStation: payload.policeStation || station || "PS City Panipat",
+        district: (typeof entryOrSubject === "object" ? entryOrSubject.district : undefined) || "Panipat",
+        category: typeof payload.category === "string" ? payload.category : undefined,
+        typeCode: typeof payload.typeCode === "string" ? payload.typeCode : undefined,
+        relatedRecords: payload.relatedRecords || {},
+      });
+    }
+
     const json=await gdApiPost<{record:GeneralDiaryRecord}>({...payload,action:"CREATE_LOCKED"});
     return json.record;
   },
