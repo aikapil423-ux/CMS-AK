@@ -292,6 +292,10 @@
     border: 1px solid #203c88;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
   }
+  .cms-court-theme :where([role="alertdialog"] button) {
+    min-height: 38px;
+    border-radius: 10px !important;
+  }
   .cms-court-theme :where([role="dialog"] header) {
     background: #203c88;
     color: white;

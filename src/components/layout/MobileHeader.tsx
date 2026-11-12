@@ -421,36 +421,36 @@ export function MobileHeader() {
 
       {/* Mobile Sign Out Confirmation Modal */}
       {showSignOutModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in-0 duration-150">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-150">
           <div
-            className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 text-slate-800 animate-in zoom-in-95 duration-150"
-            role="dialog"
+            className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 max-w-sm w-full p-6 text-slate-800 animate-in zoom-in-95 duration-150"
+            role="alertdialog"
             aria-modal="true"
             aria-labelledby="mobile-signout-modal-title"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+            <div className="flex items-center gap-3.5 mb-3.5">
+              <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200/60 shadow-2xs">
                 <Shield className="w-5 h-5 text-rose-600" />
               </div>
-              <div>
-                <h3 id="mobile-signout-modal-title" className="text-sm font-bold text-slate-900">
+              <div className="min-w-0">
+                <h3 id="mobile-signout-modal-title" className="text-sm font-bold text-slate-900 leading-tight">
                   {t("Sign Out Confirmation")}
                 </h3>
-                <p className="text-xs text-slate-500">
-                  {currentUser.name} ({currentUser.rankDisplay || currentUser.role})
+                <p className="text-xs text-slate-500 truncate mt-0.5">
+                  {currentUser.name}
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 mb-5 leading-relaxed">
+            <p className="text-xs text-slate-600 mb-6 leading-relaxed">
               {t("Are you sure you want to sign out of Haryana Police CMS?")}
             </p>
 
-            <div className="flex items-center justify-end gap-2.5">
+            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowSignOutModal(false)}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 active:scale-98 transition-all cursor-pointer border border-slate-300 text-center shadow-2xs"
               >
                 {t("Cancel")}
               </button>
@@ -460,7 +460,7 @@ export function MobileHeader() {
                   setShowSignOutModal(false);
                   logout();
                 }}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 transition-colors cursor-pointer shadow-xs"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 active:scale-98 transition-all cursor-pointer border border-rose-700 text-center shadow-xs"
               >
                 {t("Confirm")}
               </button>
