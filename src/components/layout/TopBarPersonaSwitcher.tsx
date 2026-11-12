@@ -165,9 +165,14 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
                 className={cn(
                   "px-2.5 py-0.5 rounded-md font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer",
                   selectedDistrict === d
-                    ? "bg-[#203c88] text-white hover:bg-[#1a3170] hover:text-white font-semibold shadow-xs"
+                    ? "cms-persona-chip-selected bg-[#203c88] !text-white font-semibold shadow-xs"
                     : "bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950 border border-slate-200"
                 )}
+                style={
+                  selectedDistrict === d
+                    ? { backgroundColor: "#203c88", color: "#ffffff", borderColor: "#203c88" }
+                    : undefined
+                }
               >
                 {d === "ALL" ? "All Districts" : d}
               </button>

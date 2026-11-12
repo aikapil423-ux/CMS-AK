@@ -104,6 +104,14 @@
   }
   /* Dropdown panels keep readable dark text on their white surface */
   .cms-topbar :where(.absolute) { color: #26334a; border-radius: 0 !important; border: 1px solid #b7c1d4; }
+  .cms-topbar :where(.absolute) .cms-persona-chip-selected {
+    background-color: #203c88 !important;
+    color: #ffffff !important;
+  }
+  .cms-topbar :where(.absolute) .cms-persona-chip-selected:hover {
+    background-color: #1a3170 !important;
+    color: #ffffff !important;
+  }
   .cms-court-theme .cms-shell header .cms-persona-badge { color: #ffffff; }
   .cms-court-theme .cms-shell header .cms-language-badge { color: #ffffff; }
   .cms-topbar :where(.absolute button:hover) { background: #eef1ff; }
