@@ -7,6 +7,8 @@ export async function GET(req:Request){const user=await sessionUser(req);return 
 export async function POST(req:Request){
  if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
  try{const b=z.object({pno:z.string().max(100).optional(),pin:z.string().max(100).optional(),station:z.string().max(200).optional(),switchTo:z.string().optional()}).parse(await req.json());
+ const actor = b.switchTo ? await sessionUser(req) : null;
+ if(b.switchTo && (actor?.id !== 'cms_developer_admin' || !demoEnabled())) return NextResponse.json({error:'Only Developer Admin can switch personas. Sign in using your own PNO and password.'},{status:403});
  const allowDemoSwitch = demoEnabled();
  let user = b.switchTo && allowDemoSwitch ? DEMO_USERS.find(u=>u.id===b.switchTo) : await validLogin(b.pno||'',b.pin||'');
  if(!user)return NextResponse.json({error:'Invalid PNO or PIN. Production login must be configured.'},{status:401});

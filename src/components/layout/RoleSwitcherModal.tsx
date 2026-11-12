@@ -14,7 +14,7 @@ interface RoleSwitcherModalProps {
 export function RoleSwitcherModal({ isOpen, onClose }: RoleSwitcherModalProps) {
   const { currentUser, switchUser } = useAuth();
 
-  if (!isOpen) return null;
+  if (!isOpen || currentUser.id !== 'cms_developer_admin') return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

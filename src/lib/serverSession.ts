@@ -12,6 +12,12 @@ function secret() {
   return globals.cmsSessionSecret ??= randomBytes(32).toString('hex');
 }
 
+export function developerAdminUser(): UserSession {
+  return { ...DEMO_USERS[0], id: 'cms_developer_admin', pno: 'DEV-ADMIN', name: 'Developer Admin',
+    role: 'SUPER_ADMIN', roleDisplay: 'Developer Administrator', rankDisplay: 'Developer Administrator',
+    stationName: 'CMS Administration', stationCode: 'CMS-ADMIN', district: 'All Districts' };
+}
+
 export function issueSession(userId: string, _legacyStation?: string, demo = false) {
   const value = Buffer.from(JSON.stringify({ userId, demo, version: 3, expires: Date.now() + 8 * 3600000 })).toString('base64url');
   return value + '.' + createHmac('sha256', secret()).update(value).digest('hex');
@@ -46,6 +52,7 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
     if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) return null;
     const data = JSON.parse(Buffer.from(value, 'base64url').toString());
     if (data.version !== 3 || !Number.isFinite(data.expires) || data.expires <= Date.now() || typeof data.userId !== 'string') return null;
+    if (data.userId === 'cms_developer_admin') return process.env.CMS_DEVELOPER_ADMIN_PASSWORD ? developerAdminUser() : null;
     if (data.demo) return demoEnabled() ? DEMO_USERS.find(user => user.id === data.userId) ?? null : null;
     const { prisma } = await import('@/lib/prisma');
     const user = await prisma.user.findUnique({ where: { id: data.userId }, include: { unit: true } });
@@ -56,6 +63,13 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
 }
 
 export async function validLogin(pno: string, pin: string): Promise<UserSession | null> {
+  if (pno.trim().toUpperCase() === 'DEV-ADMIN') {
+    const password = process.env.CMS_DEVELOPER_ADMIN_PASSWORD;
+    if (!password) return null;
+    const supplied = createHmac('sha256', secret()).update(pin).digest();
+    const expected = createHmac('sha256', secret()).update(password).digest();
+    return timingSafeEqual(supplied, expected) ? developerAdminUser() : null;
+  }
   // Test personas must work even when the VM database has not been seeded.
   if (demoEnabled() && pin === '123456') {
     const demo = DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase());

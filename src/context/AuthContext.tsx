@@ -59,6 +59,6 @@ export function AuthProvider({children}:{children:React.ReactNode}){
  const switchUser=async(id:string)=>{await firPersistence.flush().catch(()=>{});const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({switchTo:id})});const b=await r.json();if(r.ok)await accept(b.user);else window.dispatchEvent(new CustomEvent('complaints_save_error',{detail:b.error||'Sign in before switching officers.'}));};
  const logout=async()=>{await firPersistence.flush().catch(()=>{});await fetch('/api/auth/session',{method:'DELETE'});setAuthenticated(false);localStorage.removeItem('haryana_police_cms_user');router.replace('/login');};
  if(!ready)return <div className="p-6 text-sm text-slate-600">Loading session…</div>;
- return <AuthContext.Provider value={{currentUser,isAuthenticated,availableUsers:DEMO_USERS,switchUser,login,logout}}>{children}</AuthContext.Provider>;
+ return <AuthContext.Provider value={{currentUser,isAuthenticated,availableUsers:currentUser.id === "cms_developer_admin" ? DEMO_USERS : [currentUser],switchUser,login,logout}}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const context=useContext(AuthContext);if(!context)throw new Error('useAuth must be used within an AuthProvider');return context;}

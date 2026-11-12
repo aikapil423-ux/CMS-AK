@@ -108,6 +108,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
   };
 
   const activeRoleInfo = getRoleBadge(currentUser);
+  if (currentUser.id !== 'cms_developer_admin') return <span className="text-xs px-2" title={currentUser.pno}>{currentUser.name}</span>;
 
   return (
     <div className="relative" ref={dropdownRef}>

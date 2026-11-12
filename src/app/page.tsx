@@ -128,9 +128,6 @@ export default function PostLoginPortalPage() {
                 Roznamcha GD
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                PPR Ch. XXII
-              </span>
 
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
@@ -169,9 +166,6 @@ export default function PostLoginPortalPage() {
                 Complaint Management
               </h3>
             </div>
-            <span className="inline-block font-mono text-[9px] text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md">
-                Sec 173(3) BNSS
-              </span>
 
             {/* Status Pills */}
             <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">

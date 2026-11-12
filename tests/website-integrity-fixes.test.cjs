@@ -203,3 +203,19 @@ test('legal assistant keeps CMS suggestions when OpenRouter rejects the advisory
  assert.match(result.report.advisoryWarning,/HTTP 503/);
  assert.equal(result.report.suggestedSections[0].sectionNumber,'sample');
 });
+
+test('persona switching requires the authenticated developer administrator',async()=>{
+ let actor=null, enabled=true;
+ const {load}=environment({}, {
+  'next/server':{NextResponse:{json:(body,options)=>{const r=Response.json(body,options);r.cookies={set(){}};return r;}}},
+  '@/lib/serverSession':{sameOrigin:()=>true,demoEnabled:()=>enabled,sessionUser:async()=>actor,issueSession:()=> 'signed',validLogin:async()=>null},
+  '@/lib/mockData':{DEMO_USERS:[{id:'officer',name:'Officer'}]},
+ });
+ const route=load('src/app/api/auth/session/route.ts');
+ const send=()=>route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({switchTo:'officer'})}));
+ assert.equal((await send()).status,403);
+ actor={id:'normal',role:'SHO'};assert.equal((await send()).status,403);
+ actor={id:'other-admin',role:'SUPER_ADMIN'};assert.equal((await send()).status,403);
+ actor={id:'cms_developer_admin',role:'SUPER_ADMIN'};assert.equal((await send()).status,200);
+ enabled=false;assert.equal((await send()).status,403);
+});

@@ -35,18 +35,15 @@ export default function LoginPage() {
     if(ok)router.push('/');else setError((window as any).__lastLoginError || 'Invalid PNO or PIN. Please verify your credentials.');
   };
   const handleQuickDemoLogin = async (userId:string) => {
-    const user=DEMO_USERS.find(u=>u.id===userId);if(!user)return;
-    setPno(user.pno);
-    setPin('123456');
-    setError(null);
-    setIsLoading(true);
-    const ok = await login(user.pno,'123456');
-    setIsLoading(false);
-    if(ok) {
-      router.push('/');
-    } else {
-      const serverErr = (window as any).__lastLoginError;
-      setError(serverErr || ('Unable to sign in as ' + user.name + '. Please verify network or credentials.'));
+    if (!demo || isLoading) return;
+    const user = DEMO_USERS.find(u=>u.id===userId); if(!user)return;
+    setPno(user.pno); setPin('123456'); setError(null); setIsLoading(true);
+    try {
+      const ok = await login(user.pno, '123456');
+      if (ok) router.push('/');
+      else setError((window as any).__lastLoginError || 'Demo login failed. Please retry.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
