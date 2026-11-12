@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { UserCog, Check } from "lucide-react";
+import { UserCog } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { DEMO_USERS } from "@/lib/mockData";
@@ -50,9 +50,10 @@ function getRoleBadge(user: UserSession): { badge: string; colorClass: string } 
 }
 
 export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitcherProps) {
-  const { currentUser, switchUser } = useAuth();
+  const { currentUser, sessionUser, isViewAs, enterViewAs, exitViewAs } = useAuth();
   const { isHindi } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
@@ -99,16 +100,23 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
     };
   }, [isOpen]);
 
-  const handleSelect = (userId: string) => {
-    switchUser(userId);
+  // Click an officer to enter their ID view with the developer's own session.
+  // Clicking the officer currently being viewed returns to the developer's own ID.
+  const handleView = async (user: UserSession) => {
+    if (pendingId) return;
+    const isViewedNow = isViewAs && currentUser.id === user.id;
     setIsOpen(false);
-    if (typeof window !== "undefined") {
-      window.location.reload();
+    setPendingId(user.id);
+    const ok = isViewedNow ? await exitViewAs() : await enterViewAs(user);
+    setPendingId(null);
+    if (!ok && typeof window !== "undefined") {
+      const message = (window as unknown as { __lastViewAsError?: string }).__lastViewAsError;
+      window.dispatchEvent(new CustomEvent("complaints_save_error", { detail: message || "Officer ID could not be opened." }));
     }
   };
 
   const activeRoleInfo = getRoleBadge(currentUser);
-  if (currentUser.id !== 'cms_developer_admin') return <span className="text-xs px-2" title={currentUser.pno}>{currentUser.name}</span>;
+  if (sessionUser.id !== 'cms_developer_admin') return <span className="text-xs px-2" title={currentUser.pno}>{currentUser.name}</span>;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -121,14 +129,15 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
           isMobile
             ? "p-1.5 bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700"
             : "p-2 bg-white hover:bg-slate-50 border-slate-200/80 text-slate-700 hover:text-slate-950 shadow-2xs",
-          isOpen && "ring-2 ring-[#0b192c]/20 bg-slate-100"
+          isOpen && "ring-2 ring-[#0b192c]/20 bg-slate-100",
+          isViewAs && !isOpen && "ring-2 ring-amber-400"
         )}
         title={
           isHindi
-            ? `पद बदलें (वर्तमान: ${currentUser.name})`
-            : `Switch Police Persona (Current: ${currentUser.name})`
+            ? `किसी भी अधिकारी ID का दृश्य देखें (सत्र: ${sessionUser.name})`
+            : `Enter any officer ID view (session: ${sessionUser.name})`
         }
-        aria-label="Switch Police Persona"
+        aria-label="Enter officer ID view"
         aria-expanded={isOpen}
       >
         <UserCog className={isMobile ? "w-3.5 h-3.5 text-slate-700" : "w-4 h-4 text-slate-700 group-hover:text-slate-900"} />
@@ -147,11 +156,20 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
         >
           {/* Minimal Clean Header */}
           <div className="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-500">
-            <span>{isHindi ? "पद बदलें" : "Switch Police Persona"}</span>
+            <span>
+              {isHindi
+                ? "अधिकारी ID में जाएँ"
+                : "Enter officer ID"}
+            </span>
             <span className="text-[10px] text-slate-400 font-mono">
               {DEMO_USERS.length} {isHindi ? "पद" : "Roles"}
             </span>
           </div>
+          <p className="px-3 pt-1.5 text-[10px] text-slate-400">
+            {isHindi
+              ? "किसी भी ID पर क्लिक करें — आपका Developer Admin सत्र बना रहेगा, साइन-आउट आपके नियंत्रण में है।"
+              : "Click any ID to enter it — your Developer Admin session stays active; sign out stays yours."}
+          </p>
 
           {/* District Filter Chips */}
           <div className="p-1.5 border-b border-slate-100 flex items-center gap-1 overflow-x-auto text-[10px] bg-slate-50/50">
@@ -180,22 +198,25 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
             ))}
           </div>
 
-          {/* Minimalist List: Role badge + Name only (No extra details, no clutter) */}
-          <div className="p-1 space-y-0.5 max-h-72 overflow-y-auto">
+          {/* Minimalist List: Role badge + Name, click enters that officer's ID view */}
+          <div className="p-1 space-y-0.5 max-h-80 overflow-y-auto">
             {filteredUsers.map((user) => {
-              const isSelected = currentUser.id === user.id;
+              const isViewed = isViewAs && currentUser.id === user.id;
+              const isPending = pendingId === user.id;
               const roleInfo = getRoleBadge(user);
 
               return (
                 <button
                   key={user.id}
                   type="button"
-                  onClick={() => handleSelect(user.id)}
+                  disabled={isPending}
+                  onClick={() => handleView(user)}
                   className={cn(
                     "w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left transition-colors text-xs group",
-                    isSelected
-                      ? "bg-slate-100 text-slate-900 font-semibold"
-                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-950"
+                    isViewed
+                      ? "bg-amber-50 text-amber-950 font-semibold ring-1 ring-amber-300"
+                      : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+                    isPending && "opacity-60"
                   )}
                 >
                   <div className="flex items-center gap-2 min-w-0">
@@ -209,13 +230,38 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
                     </span>
                     <span className="truncate">{user.name}</span>
                   </div>
-                  {isSelected && (
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1.5" />
+                  {isPending ? (
+                    <span className="text-[9px] text-slate-400 shrink-0 ml-1.5">…</span>
+                  ) : isViewed ? (
+                    <span className="text-[9px] font-semibold text-amber-700 shrink-0 ml-1.5">
+                      {isHindi ? "इस ID में हैं — बाहर निकलें" : "Viewing — exit"}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-slate-400 shrink-0 ml-1.5">
+                      {isHindi ? "इसमें जाएँ" : "Enter"}
+                    </span>
                   )}
                 </button>
               );
             })}
           </div>
+
+          {/* Exit view while viewing another ID */}
+          {isViewAs && (
+            <div className="px-2 pb-1 pt-1 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={Boolean(pendingId)}
+                onClick={() => {
+                  setIsOpen(false);
+                  void exitViewAs();
+                }}
+                className="w-full text-left px-2 py-1.5 rounded-md text-[11px] font-semibold text-[#203c88] hover:bg-slate-50 disabled:opacity-60"
+              >
+                {isHindi ? "← अपनी Developer Admin ID पर लौटें" : "← Return to Developer Admin"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -205,7 +205,7 @@ export default function LoginPage() {
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white">Developer Admin</p>
                   <p className="text-[10px] text-slate-300">
-                    PNO: <span className="font-mono">DEV-ADMIN</span> • {demo ? '1-Click Login (demo mode)' : 'Password required'} • Persona switching
+                    PNO: <span className="font-mono">DEV-ADMIN</span> • {demo ? '1-Click Login (demo mode)' : 'Password required'} • Enter any officer ID view
                   </p>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2" />

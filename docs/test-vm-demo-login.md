@@ -14,7 +14,7 @@ CMS_DEVELOPER_ADMIN_PASSWORD=<unique developer administrator password>
 - `CMS_SESSION_SECRET` keeps signed sessions valid across restarts; without it a random per-process secret is used.
 - `CMS_DEVELOPER_ADMIN_PASSWORD` is only used when demo mode is disabled.
 
-The login page reads demo availability from `/api/auth/session`. Demo cards sign in with one click; they do not depend on seeded database passwords. The Developer Access card is also one-click: it signs in as `DEV-ADMIN` with the demo PIN. Only that administrator can use the in-app persona switcher. After switching to an officer, log in again as Developer Admin to regain administrator access.
+The login page reads demo availability from `/api/auth/session`. Demo cards sign in with one click; they do not depend on seeded database passwords. The Developer Access card is also one-click: it signs in as `DEV-ADMIN` with the demo PIN. The personnel directory (`/users`) lets that administrator open any officer ID as a read-only preview: the developer stays signed in as Developer Admin, no officer account is signed in, and the session ends only on an explicit sign out. Persona switching (`switchTo`) is rejected by the session API.
 
 Check the session endpoint response: an unauthenticated response is HTTP 401 and includes `demoEnabled: true`. After clicking a demo account, POST and subsequent GET of `/api/auth/session` should succeed.
 

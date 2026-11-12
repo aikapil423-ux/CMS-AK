@@ -204,18 +204,18 @@ test('legal assistant keeps CMS suggestions when OpenRouter rejects the advisory
  assert.equal(result.report.suggestedSections[0].sectionNumber,'sample');
 });
 
-test('persona switching requires the authenticated developer administrator',async()=>{
- let actor=null, enabled=true;
+test('viewing another officer ID never signs the viewer in as that officer',async()=>{
+ let logins=0,cookies=0;
  const {load}=environment({}, {
-  'next/server':{NextResponse:{json:(body,options)=>{const r=Response.json(body,options);r.cookies={set(){}};return r;}}},
-  '@/lib/serverSession':{sameOrigin:()=>true,demoEnabled:()=>enabled,sessionUser:async()=>actor,issueSession:()=> 'signed',validLogin:async()=>null},
-  '@/lib/mockData':{DEMO_USERS:[{id:'officer',name:'Officer'}]},
+  'next/server':{NextResponse:{json:(body,options)=>{const r=Response.json(body,options);r.cookies={set(){cookies++;}};return r;}}},
+  '@/lib/serverSession':{sameOrigin:()=>true,demoEnabled:()=>true,sessionUser:async()=>({id:'cms_developer_admin',role:'SUPER_ADMIN'}),issueSession:()=> 'signed',validLogin:async()=>{logins++;return {id:'officer',stationName:'PS Test'};}},
  });
  const route=load('src/app/api/auth/session/route.ts');
- const send=()=>route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({switchTo:'officer'})}));
- assert.equal((await send()).status,403);
- actor={id:'normal',role:'SHO'};assert.equal((await send()).status,403);
- actor={id:'other-admin',role:'SUPER_ADMIN'};assert.equal((await send()).status,403);
- actor={id:'cms_developer_admin',role:'SUPER_ADMIN'};assert.equal((await send()).status,200);
- enabled=false;assert.equal((await send()).status,403);
+ const view=await route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({switchTo:'officer'})}));
+ assert.equal(view.status,403);
+ assert.match((await view.json()).error,/Persona switching is disabled/);
+ assert.equal(logins,0);assert.equal(cookies,0);
+ const normal=await route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({pno:'IPS-01892012',pin:'123456'})}));
+ assert.equal(normal.status,200);assert.equal((await normal.json()).user.id,'officer');
+ assert.equal(cookies,1);
 });

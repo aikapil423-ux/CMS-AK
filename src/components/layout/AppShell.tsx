@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
 import { FirPersistenceStatus } from "@/components/fir/FirPersistenceStatus";
+import { ViewAsBanner } from "./ViewAsBanner";
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -71,6 +72,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen pb-20 lg:pb-8">
         <FirPersistenceStatus />
+        {/* Developer view-as indicator: stays visible while browsing another officer's ID */}
+        <ViewAsBanner />
         {/* Mobile Header */}
         <MobileHeader />
 

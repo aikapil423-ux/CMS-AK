@@ -21,8 +21,10 @@ export function developerAdminUser(): UserSession {
     stationName: 'CMS Administration', stationCode: 'CMS-ADMIN', district: 'All Districts' };
 }
 
-export function issueSession(userId: string, _legacyStation?: string, demo = false) {
-  const value = Buffer.from(JSON.stringify({ userId, demo, version: 3, expires: Date.now() + 8 * 3600000 })).toString('base64url');
+export function issueSession(userId: string, _legacyStation?: string, demo = false, viewAs?: string | null) {
+  const payload: { userId: string; demo: boolean; version: number; expires: number; viewAs?: string } = { userId, demo, version: 3, expires: Date.now() + 8 * 3600000 };
+  if (viewAs) payload.viewAs = viewAs;
+  const value = Buffer.from(JSON.stringify(payload)).toString('base64url');
   return value + '.' + createHmac('sha256', secret()).update(value).digest('hex');
 }
 
@@ -45,21 +47,64 @@ async function officerSession(user: { id: string; pno: string; fullName: string;
   };
 }
 
+function readSessionToken(req: Request): { userId: string; demo: boolean; viewAs?: string } | null {
+  const cookie = req.headers.get('cookie')?.split(';').map(value => value.trim()).find(value => value.startsWith('cms_session='))?.slice(12);
+  if (!cookie) return null;
+  const [value, signature, extra] = cookie.split('.');
+  if (extra || !value || !/^[a-f0-9]{64}$/.test(signature ?? '')) return null;
+  const expected = createHmac('sha256', secret()).update(value).digest();
+  if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) return null;
+  const data = JSON.parse(Buffer.from(value, 'base64url').toString());
+  if (data.version !== 3 || !Number.isFinite(data.expires) || data.expires <= Date.now() || typeof data.userId !== 'string') return null;
+  return { userId: data.userId, demo: Boolean(data.demo), viewAs: typeof data.viewAs === 'string' && data.viewAs ? data.viewAs : undefined };
+}
+
+// The raw signed-in principal: still the Developer Admin even while the session
+// is viewing another officer's ID. Used by the session route to authorize
+// entering, changing or leaving view-as without a second login.
+export async function sessionPrincipal(req: Request): Promise<{ userId: string; demo: boolean; viewAs?: string } | null> {
+  try {
+    return readSessionToken(req);
+  } catch {
+    return null;
+  }
+}
+
+// Officer IDs the Developer Admin may enter with their own session — every role is
+// viewable, including the SP office; only the developer identity itself is excluded.
+export async function viewableOfficer(id: string): Promise<UserSession | null> {
+  if (!id || id === 'cms_developer_admin') return null;
+  if (demoEnabled()) {
+    const demo = DEMO_USERS.find(user => user.id === id);
+    if (demo) return demo;
+  }
+  const { prisma } = await import('@/lib/prisma');
+  const user = await prisma.user.findUnique({ where: { id }, include: { unit: true } });
+  return user ? await officerSession(user) : null;
+}
+
+async function baseSessionUser(userId: string, demo: boolean): Promise<UserSession | null> {
+  if (userId === 'cms_developer_admin') return (demoEnabled() || process.env.CMS_DEVELOPER_ADMIN_PASSWORD) ? developerAdminUser() : null;
+  if (demo) return demoEnabled() ? DEMO_USERS.find(user => user.id === userId) ?? null : null;
+  const { prisma } = await import('@/lib/prisma');
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { unit: true } });
+  return user ? await officerSession(user) : null;
+}
+
 export async function sessionUser(req: Request): Promise<UserSession | null> {
   try {
-    const cookie = req.headers.get('cookie')?.split(';').map(value => value.trim()).find(value => value.startsWith('cms_session='))?.slice(12);
-    if (!cookie) return null;
-    const [value, signature, extra] = cookie.split('.');
-    if (extra || !value || !/^[a-f0-9]{64}$/.test(signature ?? '')) return null;
-    const expected = createHmac('sha256', secret()).update(value).digest();
-    if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) return null;
-    const data = JSON.parse(Buffer.from(value, 'base64url').toString());
-    if (data.version !== 3 || !Number.isFinite(data.expires) || data.expires <= Date.now() || typeof data.userId !== 'string') return null;
-    if (data.userId === 'cms_developer_admin') return (demoEnabled() || process.env.CMS_DEVELOPER_ADMIN_PASSWORD) ? developerAdminUser() : null;
-    if (data.demo) return demoEnabled() ? DEMO_USERS.find(user => user.id === data.userId) ?? null : null;
-    const { prisma } = await import('@/lib/prisma');
-    const user = await prisma.user.findUnique({ where: { id: data.userId }, include: { unit: true } });
-    return user ? await officerSession(user) : null;
+    const token = readSessionToken(req);
+    if (!token) return null;
+    const base = await baseSessionUser(token.userId, token.demo);
+    if (!base) return null;
+    // View-as: the developer keeps their own signed-in session while every screen and
+    // record filter resolves to the viewed officer. An unknown or removed target
+    // falls back to the developer's own view instead of failing the request.
+    if (base.id === 'cms_developer_admin' && token.viewAs) {
+      const viewed = await viewableOfficer(token.viewAs);
+      if (viewed) return viewed;
+    }
+    return base;
   } catch {
     return null;
   }

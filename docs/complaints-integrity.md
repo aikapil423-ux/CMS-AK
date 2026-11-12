@@ -1,6 +1,6 @@
 # Complaints integrity and sessions
 
-Complaints reads and writes require an HTTP-only signed session cookie. The API resolves the officer role and jurisdiction from the server roster; client query parameters cannot grant access. URL auto-login and unknown-PNO fallback have been removed. Local development still supports exact roster PNO + demo PIN 123456, and authenticated persona switching. Production disables both demo PIN access and persona switching.
+Complaints reads and writes require an HTTP-only signed session cookie. The API resolves the officer role and jurisdiction from the server roster; client query parameters cannot grant access. URL auto-login and unknown-PNO fallback have been removed. Local development still supports exact roster PNO + demo PIN 123456. Persona switching is disabled: the Developer Admin opens officer IDs as a read-only preview and stays signed in until an explicit sign out. Production also disables demo PIN access.
 
 Production must configure CMS_SESSION_SECRET (a persistent random secret of at least 32 bytes) and CMS_LOGIN_CREDENTIALS. CMS_LOGIN_CREDENTIALS is a JSON object keyed by exact roster PNO, with a separate `salt:hash` value per officer. Hashes are 64-byte Node crypto scrypt results encoded as 128 hexadecimal characters. Keep these values in the deployment secret store; do not commit them. Existing deployments need a fresh sign-in after this change. The current app still uses its configured officer roster; this does not introduce an identity provider or account provisioning.
 
