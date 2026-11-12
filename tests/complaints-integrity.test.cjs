@@ -125,3 +125,20 @@ test('an existing session resolves a transferred officer against the new posting
  } finally { alternatePosting=undefined; }
 });
 after(()=>fs.rmSync(temp,{recursive:true,force:true}));
+
+test('demo mode allows one-click developer admin while production still requires the configured password',async()=>{
+ const env=process_.env;const previous={NODE_ENV:env.NODE_ENV,PASSWORD:env.CMS_DEVELOPER_ADMIN_PASSWORD};
+ try{
+  env.NODE_ENV='production';delete env.CMS_DEVELOPER_ADMIN_PASSWORD;
+  assert.equal(await validLogin('DEV-ADMIN','123456'),null);
+  env.NODE_ENV='test';
+  const demoAdmin=await validLogin('DEV-ADMIN','123456');
+  assert.equal(demoAdmin.id,'cms_developer_admin');assert.equal(demoAdmin.role,'SUPER_ADMIN');
+  env.NODE_ENV='production';env.CMS_DEVELOPER_ADMIN_PASSWORD='test-dev-password';
+  assert.equal((await validLogin('DEV-ADMIN','test-dev-password')).id,'cms_developer_admin');
+  assert.equal(await validLogin('DEV-ADMIN','123456'),null);
+ }finally{
+  env.NODE_ENV=previous.NODE_ENV;
+  if(previous.PASSWORD===undefined)delete env.CMS_DEVELOPER_ADMIN_PASSWORD;else env.CMS_DEVELOPER_ADMIN_PASSWORD=previous.PASSWORD;
+ }
+});

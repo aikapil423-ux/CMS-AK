@@ -49,6 +49,20 @@ export default function LoginPage() {
     }
   };
 
+  const handleDeveloperLogin = async () => {
+    setError(null);
+    if (!demo) { setPno('DEV-ADMIN'); setPin(''); return; }
+    if (isLoading) return;
+    setPno('DEV-ADMIN'); setPin('123456'); setIsLoading(true);
+    try {
+      const ok = await login('DEV-ADMIN', '123456');
+      if (ok) router.push('/');
+      else setError((window as any).__lastLoginError || 'Developer admin login failed. Please retry.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-100">
       <div className="w-full max-w-md">
@@ -178,16 +192,20 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-3 pt-3 border-t border-slate-200">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Access</span>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Access</span>
+                {demo && <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-1.5 py-0.5 rounded">1-Click Login</span>}
+              </div>
               <button
                 type="button"
-                onClick={() => { setPno('DEV-ADMIN'); setPin(''); setError(null); }}
-                className="mt-1.5 w-full text-left p-2 rounded-lg bg-slate-800 hover:bg-slate-900 border border-slate-800 flex items-center justify-between transition-colors group cursor-pointer"
+                onClick={handleDeveloperLogin}
+                disabled={isLoading}
+                className="w-full text-left p-2 rounded-lg bg-slate-800 hover:bg-slate-900 disabled:opacity-60 border border-slate-800 flex items-center justify-between transition-colors group cursor-pointer"
               >
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white">Developer Admin</p>
                   <p className="text-[10px] text-slate-300">
-                    PNO: <span className="font-mono">DEV-ADMIN</span> • Password required • Persona switching
+                    PNO: <span className="font-mono">DEV-ADMIN</span> • {demo ? '1-Click Login (demo mode)' : 'Password required'} • Persona switching
                   </p>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2" />

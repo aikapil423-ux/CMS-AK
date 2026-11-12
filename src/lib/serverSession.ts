@@ -54,7 +54,7 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
     if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) return null;
     const data = JSON.parse(Buffer.from(value, 'base64url').toString());
     if (data.version !== 3 || !Number.isFinite(data.expires) || data.expires <= Date.now() || typeof data.userId !== 'string') return null;
-    if (data.userId === 'cms_developer_admin') return process.env.CMS_DEVELOPER_ADMIN_PASSWORD ? developerAdminUser() : null;
+    if (data.userId === 'cms_developer_admin') return (demoEnabled() || process.env.CMS_DEVELOPER_ADMIN_PASSWORD) ? developerAdminUser() : null;
     if (data.demo) return demoEnabled() ? DEMO_USERS.find(user => user.id === data.userId) ?? null : null;
     const { prisma } = await import('@/lib/prisma');
     const user = await prisma.user.findUnique({ where: { id: data.userId }, include: { unit: true } });
@@ -66,6 +66,8 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
 
 export async function validLogin(pno: string, pin: string): Promise<UserSession | null> {
   if (pno.trim().toUpperCase() === 'DEV-ADMIN') {
+    // Demo mode: one-click developer access. Operational deployments still require the configured password.
+    if (demoEnabled() && pin === '123456') return developerAdminUser();
     const password = process.env.CMS_DEVELOPER_ADMIN_PASSWORD;
     if (!password) return null;
     const supplied = createHmac('sha256', secret()).update(pin).digest();
