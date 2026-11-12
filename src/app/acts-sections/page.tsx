@@ -659,11 +659,11 @@ function ActsAndSectionsContent() {
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {[
             { key: "ALL", label: `All (${actsList.length})` },
-            { key: "CRIMINAL_CODE", label: "BNS Criminal Code" },
-            { key: "PROCEDURAL_CODE", label: "BNSS Procedure" },
-            { key: "EVIDENCE_CODE", label: "BSA Evidence" },
-            { key: "SPECIAL_ACT", label: "Arms & Special" },
-            { key: "ECONOMIC_PROPERTY", label: "Benami & Economic" },
+            { key: "CRIMINAL_CODE", label: "Criminal Law" },
+            { key: "PROCEDURAL_CODE", label: "Procedure (BNSS/CrPC)" },
+            { key: "EVIDENCE_CODE", label: "Evidence Law" },
+            { key: "SPECIAL_ACT", label: "Special & Local Acts" },
+            { key: "ECONOMIC_PROPERTY", label: "Economic & Property" },
           ].map((cat) => (
             <button
               key={cat.key}

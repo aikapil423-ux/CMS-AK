@@ -1,4 +1,5 @@
 import { LegalActItem, LegalSectionItem } from "@/types";
+import { buildComprehensiveActsCatalog } from "./comprehensiveActsCatalog";
 
 export const BUILTIN_LEGAL_ACTS: LegalActItem[] = [
   {
@@ -1105,10 +1106,11 @@ function saveLightweightToLocalStorage(acts: LegalActItem[]) {
 }
 
 export const ActsService = {
-  // Synchronous retrieval from in-memory cache + localStorage + built-ins
+  // Synchronous retrieval from in-memory cache + localStorage + built-ins (comprehensive catalog)
   getAllActs(): LegalActItem[] {
+    const authoritativeActs = buildComprehensiveActsCatalog();
     if (typeof window === "undefined") {
-      return BUILTIN_LEGAL_ACTS;
+      return authoritativeActs;
     }
 
     // If in-memory is empty, try loading from localStorage first
@@ -1141,14 +1143,14 @@ export const ActsService = {
     }
 
     const customIds = new Set(inMemoryCustomActs.map((c) => c.id));
-    const nonDuplicateBuiltins = BUILTIN_LEGAL_ACTS.filter((b) => !customIds.has(b.id));
+    const nonDuplicateBuiltins = authoritativeActs.filter((b) => !customIds.has(b.id));
     return [...nonDuplicateBuiltins, ...inMemoryCustomActs];
   },
 
   // Asynchronous retrieval (guaranteed full data from IndexedDB)
   async getAllActsAsync(): Promise<LegalActItem[]> {
     if (typeof window === "undefined") {
-      return BUILTIN_LEGAL_ACTS;
+      return buildComprehensiveActsCatalog();
     }
 
     try {
