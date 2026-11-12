@@ -882,18 +882,6 @@ export const ComplaintService = {
     officerNotificationsStore.unshift(notification);
     saveNotificationsToStorage(officerNotificationsStore);
 
-    // AUTO-RECORD IN GENERAL DIARY (ROZNAMCHA AAM) - PPR 22.48
-    const nowTime = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    await GeneralDiaryService.addEntry(
-      `Enquiry Officer Marked: ${updated.complaintNumber} -> ${eoName} (${eoRank})`,
-      `At ${nowTime} hours, Citizen Complaint ${updated.complaintNumber} (${updated.categoryDisplay}) was officially assigned to Enquiry Officer ${eoName}, ${eoRank}, PNO ${eoPno} (Roster: ${eoRoster?.rosterDuty || "Investigation"}). Supervisory Directions: "${directions}". Resolution timeline targeted for ${targetDays} days (${targetDate.toISOString().split("T")[0]}). Assigned by ${assignedByName}. Notification dispatched to EO desk.`,
-      "COMPLAINT_RECEIPT",
-      assignedByName,
-      "HR-04291882",
-      updated.policeStation,
-      updated.complaintNumber
-    );
-
     return { complaint: updated, notification };
   },
 
@@ -3278,7 +3266,7 @@ ${reportBody}
 
         const closureSubject = `फैसला / अंतिम निस्तारण शिकायत - ${complaint.complaintNumber} (${complaint.complainantName})`;
 
-        const closureNarrative = `बवक्त हाजा (${timeStr}), दरख्वास्त शिकायत क्रमांक ${complaint.complaintNumber} मनजानिब ${complaint.complainantName} (मोबाइल: ${complaint.complainantMobile || "N/A"}) निवासी ${complaint.complainantAddress || complaint.incidentPlace || "इलाका थाना"} बाबत '${compSubject}' की जांच आख्या जांच अधिकारी ${eoName} (${eoRank}, PNO: ${eoPno}) द्वारा प्रस्तुत की गई। थाना प्रभारी (SHO) ${shoName} (PNO: ${shoPno}) द्वारा पत्रावली व जांच आख्या का पूर्ण अवलोकन किया गया। मामले में कोई संज्ञेय अपराध घटित होना नहीं पाया गया / दोनों पक्षों के मध्य राजीनामा अथवा तथ्य निराधार पाए जाने के फलस्वरूप SHO महोदय द्वारा अंतिम निर्णय 'Closure (निस्तारण / फाइल दाखिल)' अनुमोदित किया गया। SHO आदेश/टिप्पणी: "${remarks ? remarks.trim() : "जांच आख्या अनुसार मामले में कोई संज्ञेय अपराध नहीं बनता। दोनों पक्षों में राजीनामा / शिकायत निराधार पाई गई। अतः दरख्वास्त शिकायत को निस्तारित (Closed) किया जाता है।"}" शिकायत पत्रावली को केंद्रीय शिकायत रजिस्टर में 'Complete / Closed' दर्ज किया गया तथा रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया।`;
+        const closureNarrative = `बवक्त हाजा (${timeStr}), दरख्वास्त शिकायत क्रमांक ${complaint.complaintNumber} मनजानिब ${complaint.complainantName} (मोबाइल: ${complaint.complainantMobile || "N/A"}) निवासी ${complaint.complainantAddress || complaint.incidentPlace || "इलाका थाना"} बाबत '${compSubject}' की जांच आख्या जांच अधिकारी ${eoName} (${eoRank}, PNO: ${eoPno}) द्वारा प्रस्तुत की गई। थाना प्रभारी (SHO) ${shoName} (PNO: ${shoPno}) द्वारा पत्रावली व जांच आख्या का पूर्ण अवलोकन किया गया। मामले में कोई संज्ञेय अपराध घटित होना नहीं पाया गया / दोनों पक्षों के मध्य राजीनामा अथवा तथ्य निराधार पाए जाने के फलस्वरूप SHO महोदय द्वारा अंतिम निर्णय 'Closure (निस्तारण / फाइल दाखिल)' अनुमोदित किया गया। SHO आदेश/टिप्पणी: "${remarks ? remarks.trim() : "जांच आख्या अनुसार मामले में कोई संज्ञेय अपराध नहीं बनता। दोनों पक्षों में राजीनामा / शिकायत निराधार पाई गई। अतः दरख्वास्त शिकायत को निस्तारित (Closed) किया जाता है।"}" शिकायत पत्रावली को केंद्रीय शिकायत रजिस्टर में 'Complete / Closed' दर्ज किया गया तथा रपट दर्ज रोजनामचा की गई।`;
 
         await GeneralDiaryService.generateSuggestionFromSystemEvent({
           eventType: "COMPLAINT_CLOSURE",

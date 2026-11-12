@@ -552,10 +552,10 @@ export function UidbRegistrationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-2xs">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-in fade-in-50 text-xs">
+    <div className="fixed inset-0 z-50 bg-white w-screen h-screen flex flex-col overflow-hidden animate-in fade-in-50 text-xs">
+      <div className="w-full h-full flex flex-col overflow-hidden bg-white">
         {/* Top Header */}
-        <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="px-4 sm:px-6 py-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
               <ClipboardList className="w-4 h-4" />
@@ -583,7 +583,7 @@ export function UidbRegistrationModal({
         </div>
 
         {/* Main 6 Tabs Bar */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1.5 border-b border-slate-200 overflow-x-auto shrink-0 select-none">
+        <div className="flex items-center gap-1.5 bg-slate-100 px-4 sm:px-6 py-2 border-b border-slate-200 overflow-x-auto shrink-0 select-none">
           {[
             { id: "general", label: "1. General Information" },
             { id: "informant", label: "2. Informant Information" },
@@ -621,7 +621,7 @@ export function UidbRegistrationModal({
         </div>
 
         {/* Tab Content Area */}
-        <form noValidate onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+        <form noValidate onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5 w-full">
           {/* Error Summary Banner if mandatory fields are missing */}
           {errors.length > 0 && (
             <div className="bg-rose-50 border-2 border-rose-300 rounded-xl p-3.5 space-y-2 animate-in fade-in slide-in-from-top-2">
@@ -2656,7 +2656,7 @@ export function UidbRegistrationModal({
           )}
 
           {/* Form Actions Footer */}
-          <div className="pt-3 border-t border-slate-200 flex items-center justify-between shrink-0 bg-white">
+          <div className="pt-3 pb-2 border-t border-slate-200 flex items-center justify-between shrink-0 bg-white sticky bottom-0 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.03)]">
             <span className="text-[11px] text-slate-400">
               * Click Submit to review confirmation and generate official I.I.F.-X Slip.
             </span>

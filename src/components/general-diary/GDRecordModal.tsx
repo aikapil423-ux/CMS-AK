@@ -444,11 +444,6 @@ export function GDRecordModal({
               )}
             </div>
 
-            {/* Statutory Legal Warning under PPR 22.48 */}
-            <div className="border border-slate-300 p-2.5 bg-slate-50 text-[10px] text-slate-600 leading-relaxed font-sans">
-              <strong>वैधानिक चेतावनी (Legal Notice):</strong> यह रोजनामचा प्रविष्टि पंजाब पुलिस नियम 1934 (नियम 22.48 व 22.49) के तहत थाना दैनिकी रजिस्टर नंबर 2 में दर्ज की गई है। एक बार लॉक होने के उपरांत यह प्रविष्टि न्यायालयीन साक्ष्य (Admissible in Evidence under Sec 35 Indian Evidence Act / BSA) हेतु पूर्णतः अपरिवर्तनीय व स्थाई है।
-            </div>
-
             {/* Signatures & Seal Footer */}
             <div className="pt-4 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
               <div className="text-center w-36">

@@ -315,17 +315,9 @@ export default function PostLoginPortalPage() {
                 Telecom Evidence Analysis
               </h3>
             </div>
-            {/* Status Pills */}
-            <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
-              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
-                <Radio className="w-3 h-3 text-cyan-600" />
-                Multi-Operator Ingestion
+            <span className="inline-block font-mono text-[9px] text-cyan-800 bg-cyan-50 border border-cyan-200/70 px-2 py-0.5 rounded-md font-semibold">
+                CDR / IPDR / GIS
               </span>
-              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
-                <Lock className="w-3 h-3 text-emerald-600" />
-                Cross-Case Intelligence
-              </span>
-            </div>
           </div>
 
           {/* Action Button */}
@@ -352,17 +344,9 @@ export default function PostLoginPortalPage() {
                 Prosecution & Courts
               </h3>
             </div>
-            {/* Status Pills */}
-            <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
-              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
-                <Scale className="w-3 h-3 text-indigo-500" />
-                Scrutiny & Bail Trackers
+            <span className="inline-block font-mono text-[9px] text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-md font-semibold">
+                BNSS / Courts
               </span>
-              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-emerald-600" />
-                Court Liaison Active
-              </span>
-            </div>
           </div>
 
           {/* Action Button */}

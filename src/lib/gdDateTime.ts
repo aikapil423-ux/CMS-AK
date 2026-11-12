@@ -196,6 +196,10 @@ export function getRecordLastActionTimeMs(record: {
     const upMs = new Date(record.updatedAt).getTime();
     if (!isNaN(upMs) && upMs > fallbackMs) fallbackMs = upMs;
   }
+  if (fallbackMs === 0 && record.activityDateTime) {
+    const actMs = parseGDActivityDateTimeToMs(record.activityDateTime);
+    if (!isNaN(actMs) && actMs > fallbackMs) fallbackMs = actMs;
+  }
 
   return fallbackMs;
 }

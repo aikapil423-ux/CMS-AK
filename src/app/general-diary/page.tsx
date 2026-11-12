@@ -54,7 +54,7 @@ import { GDVerificationModal } from "@/components/general-diary/GDVerificationMo
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { GDPrintModal } from "@/components/general-diary/GDPrintModal";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
-import { toDDMMYYYY, parseGDActivityDateTimeToMs, getGdRecordRemainingTime } from "@/lib/gdDateTime";
+import { toDDMMYYYY, parseGDActivityDateTimeToMs, getGdRecordRemainingTime, isGdRecordExpired } from "@/lib/gdDateTime";
 
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
 
@@ -430,7 +430,7 @@ function GeneralDiaryContent() {
   };
 
   const displayedRecords = useMemo(() => {
-    let list = [...paginatedData.records];
+    let list = paginatedData.records.filter((rec) => rec.isLocked || !isGdRecordExpired(rec));
 
     // Column-specific search filter
     for (const [col, term] of Object.entries(columnSearch)) {
@@ -999,7 +999,7 @@ function GeneralDiaryContent() {
       {/* Main Smart GD Register Table View */}
       {loading ? (
         <LoadingSkeleton count={5} />
-      ) : paginatedData.records.length === 0 ? (
+      ) : displayedRecords.length === 0 ? (
         <EmptyState
           title="No General Diary entries match the criteria"
           description="Try broadening your search or filter."

@@ -2562,7 +2562,7 @@ export default function RegisterComplaintPage() {
         : "तथा आगामी कानूनी कार्यवाही व SHO महोदय के अवलोकनार्थ प्रस्तुत किया गया।";
 
       const subjectStr = `प्राप्ति दरख्वास्त शिकायत - ${createdComplaint.complaintNumber} (${primaryCompName})`;
-      const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryCompName}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${createdComplaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रोजनामचा आम में इंद्राज बाबत सिस्टम ऑटो-सुझाव तैयार किया गया।`;
+      const narrativeStr = `बवक्त हाजा (${timeStr}), मुसम्मी ${primaryCompName}${relationStr}${mobileStr} निवासी ${addressStr} द्वारा थाना में उपस्थित होकर लिखित दरख्वास्त पेश की गई, जिसका विषय '${complaintTopic}' है। दरख्वास्त को केंद्रीय शिकायत रजिस्टर में क्रमांक ${createdComplaint.complaintNumber} पर बा-कायदा दर्ज किया गया ${assignedInfo} रपट दर्ज रोजनामचा की गई।`;
 
       await GeneralDiaryService.generateSuggestionFromSystemEvent({
         eventType: "COMPLAINT_REGISTERED",

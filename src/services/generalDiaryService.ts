@@ -789,7 +789,7 @@ export const GeneralDiaryService = {
       // Backend unreachable — fall back to the local in-memory register
     }
     memoryRecordsStore = loadRecordsFromStorage();
-    let list = [...memoryRecordsStore];
+    let list = [...memoryRecordsStore].filter((r) => !isGdRecordExpired(r));
 
     const today = new Date().toISOString().split("T")[0];
 

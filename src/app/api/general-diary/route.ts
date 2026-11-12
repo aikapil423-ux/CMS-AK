@@ -763,22 +763,25 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1") || 1);
     const pageSize = Math.max(1, parseInt(searchParams.get("pageSize") || "15") || 15);
 
-    // Reading the register must never delete drafts or suggestions.
+    // Auto-purge unlocked suggestions and drafts whose 24-hour window has expired (PPR 22.48 compliance)
+    await pruneExpiredSuggestionsAndDrafts();
 
     // Fetch ALL rows once — status counts are GLOBAL, so tab badges
     // (e.g. the Register count) never change with the active tab.
     const rows = await prisma.gDRecord.findMany({
       orderBy: [{ entryDateTime: "desc" }, { sequencePerDay: "desc" }],
-
     });
 
-    let list = rows.filter(row=>scopeAllowed(apiUser,row)).map(mapRowToRecord);
+    let list = rows
+      .filter((row) => scopeAllowed(apiUser, row))
+      .map(mapRowToRecord)
+      .filter((r) => !isGdRecordExpired(r));
 
     // Merge verified smart suggestions from live system state
     const verifiedSuggestions = getSmartVerifiedSuggestions();
     const existingIds = new Set(list.map((r) => r.id));
     for (const sugg of verifiedSuggestions) {
-      if (scopeAllowed(apiUser,sugg) && !existingIds.has(sugg.id)) {
+      if (scopeAllowed(apiUser, sugg) && !existingIds.has(sugg.id) && !isGdRecordExpired(sugg)) {
         list.push(sugg);
       }
     }

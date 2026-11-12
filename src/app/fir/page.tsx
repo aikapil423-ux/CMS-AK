@@ -52,6 +52,7 @@ import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
 import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { isUserAssignedIo, isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 
 type FIRSortField =
   | "firNumber"
@@ -958,54 +959,51 @@ function FIRRegisterPageContent() {
           </div>
 
           {/* Date Range Search: From - To */}
-          <div
-            className={`flex items-center gap-2 bg-white border rounded-lg px-2.5 py-1.5 shadow-2xs transition-colors shrink-0 ${
-              dateFrom || dateTo ? "border-red-400 bg-red-50/20" : "border-slate-200"
-            }`}
-          >
-            <Calendar className={`w-3.5 h-3.5 shrink-0 ${dateFrom || dateTo ? "text-red-600" : "text-slate-500"}`} />
-            <div className="flex items-center gap-1.5 text-xs">
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
-                <input
-                  type="date"
-                  max={new Date().toISOString().split("T")[0]}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
+              <div className="w-[128px]">
+                <DatePickerDDMMYYYY
+                  size="sm"
                   value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer py-0.5"
-                  title="Date From (प्रारम्भिक दिनांक से खोजें)"
+                  max={dateTo || new Date().toISOString().split("T")[0]}
+                  onValueChange={(val) => setDateFrom(val)}
+                  title="Date From (DD/MM/YYYY)"
+                  className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
                 />
               </div>
+            </div>
 
-              <span className="text-slate-300 font-light">|</span>
+            <span className="text-slate-300 font-light">|</span>
 
-              <div className="flex items-center gap-1">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
-                <input
-                  type="date"
-                  max={new Date().toISOString().split("T")[0]}
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
+              <div className="w-[128px]">
+                <DatePickerDDMMYYYY
+                  size="sm"
                   value={dateTo}
                   min={dateFrom || undefined}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="text-xs text-slate-700 bg-transparent focus:outline-none cursor-pointer py-0.5"
-                  title="Date To (अंतिम दिनांक तक खोजें)"
+                  max={new Date().toISOString().split("T")[0]}
+                  onValueChange={(val) => setDateTo(val)}
+                  title="Date To (DD/MM/YYYY)"
+                  className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
                 />
               </div>
-
-              {(dateFrom || dateTo) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDateFrom("");
-                    setDateTo("");
-                  }}
-                  title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
-                  className="text-red-500 hover:text-red-700 hover:bg-red-100 p-0.5 rounded transition-colors cursor-pointer ml-0.5"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
+
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+                title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 

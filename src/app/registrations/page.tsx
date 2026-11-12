@@ -489,7 +489,7 @@ function RegistrationsContent() {
     setSuccessBanner({
       regNumber: savedEntry.regNumber,
       type: "UIDB",
-      message: `अज्ञात शव पंजीकरण (UIDB/UD) संख्या ${savedEntry.regNumber} पोर्टल डेटाबेस में सफलतापूर्वक दर्ज हो गई है। यह अब नीचे दी गई तालिका में सबसे ऊपर उपलब्ध है।`,
+      message: `UIDB / UD Registration Number ${savedEntry.regNumber} has been successfully recorded in the portal database. It is now available at the top of the table below.`,
       entry: savedEntry,
     });
 
@@ -565,7 +565,7 @@ function RegistrationsContent() {
     setSuccessBanner({
       regNumber: saved.regNumber,
       type: saved.type,
-      message: `पंजीकरण संख्या ${saved.regNumber} सफलतापूर्वक दर्ज हो गया है। यह अब सूची में सबसे ऊपर उपलब्ध है।`,
+      message: `Registration Number ${saved.regNumber} has been successfully recorded in the portal. It is now available at the top of the list.`,
       entry: saved,
     });
     handleCloseModal();
@@ -695,13 +695,13 @@ function RegistrationsContent() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-xs sm:text-sm text-emerald-950">
-                  सफल पंजीकरण (Successfully Saved)
+                  Successfully Saved
                 </span>
                 <span className="px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded font-mono text-[11px] font-bold border border-emerald-300">
                   {successBanner.regNumber}
                 </span>
                 <span className="text-[10px] font-semibold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
-                  {successBanner.type === "UIDB" ? "लावारिस शव (UIDB/UD)" : successBanner.type}
+                  {successBanner.type === "UIDB" ? "UIDB / UD" : successBanner.type}
                 </span>
               </div>
               <p className="text-xs text-emerald-800 mt-0.5">
@@ -722,7 +722,7 @@ function RegistrationsContent() {
                 className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-lg border border-emerald-300 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>I.I.F.-X पर्ची देखें</span>
+                <span>View I.I.F.-X Slip</span>
               </button>
             )}
             <button
@@ -747,7 +747,7 @@ function RegistrationsContent() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-xs sm:text-sm text-sky-950">
-                  स्थिति अपडेट की गई (Status Updated)
+                  Status Updated
                 </span>
                 <span className="px-2 py-0.5 bg-sky-100 text-sky-900 rounded font-mono text-[11px] font-bold border border-sky-300">
                   {statusFeedback.regNumber}
@@ -764,7 +764,7 @@ function RegistrationsContent() {
                 </span>
               </div>
               <p className="text-xs text-sky-800 mt-0.5">
-                पंजीकरण संख्या {statusFeedback.regNumber} का स्टेटस सफलतापूर्वक &quot;{statusFeedback.newStatus}&quot; में बदल दिया गया है।
+                Registration Number {statusFeedback.regNumber} status successfully updated to &quot;{statusFeedback.newStatus}&quot;.
               </p>
             </div>
           </div>
@@ -782,10 +782,10 @@ function RegistrationsContent() {
       {/* 2. Four Main Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2.5">
         {[
-          { key: "UIDB", label: "UIDB / UD", hi: "लावारिस शव", count: counts.UIDB },
-          { key: "MISSING_PERSON", label: "Missing Person", hi: "गुमशुदा व्यक्ति", count: counts.MISSING_PERSON },
-          { key: "MISSING_CATTLE", label: "Missing Cattle", hi: "गुमशुदा पशु", count: counts.MISSING_CATTLE },
-          { key: "LOST_PROPERTY", label: "Lost Property", hi: "खोई संपत्ति", count: counts.LOST_PROPERTY },
+          { key: "UIDB", label: "UIDB / UD", count: counts.UIDB },
+          { key: "MISSING_PERSON", label: "Missing Person", count: counts.MISSING_PERSON },
+          { key: "MISSING_CATTLE", label: "Missing Cattle", count: counts.MISSING_CATTLE },
+          { key: "LOST_PROPERTY", label: "Lost Property", count: counts.LOST_PROPERTY },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -800,9 +800,6 @@ function RegistrationsContent() {
               }`}
             >
               <span>{tab.label}</span>
-              <span className="text-[10px] opacity-75 font-normal hidden sm:inline">
-                ({tab.hi})
-              </span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                   isActive ? "bg-slate-800 text-slate-200" : "bg-white text-slate-700 border border-slate-200/60"
@@ -1004,7 +1001,7 @@ function RegistrationsContent() {
                     <th className="py-2.5 px-4 min-w-[200px]">Owner Details</th>
                   </>
                 )}
-                <th className="py-2.5 px-3 w-36 text-center">Status / स्थिति</th>
+                <th className="py-2.5 px-3 w-36 text-center">Status</th>
                 <th className="py-2.5 px-4 text-right w-24">Actions</th>
               </tr>
             </thead>
@@ -1032,7 +1029,7 @@ function RegistrationsContent() {
                       </span>
                       {isJustSaved && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-600 text-white animate-pulse">
-                          <Sparkles className="w-2.5 h-2.5 inline" /> NEW / अभी दर्ज
+                          <Sparkles className="w-2.5 h-2.5 inline" /> NEW
                         </span>
                       )}
                     </div>
@@ -1182,7 +1179,7 @@ function RegistrationsContent() {
                         className={`appearance-none pl-5 pr-6 py-0.5 rounded-full text-[10px] font-bold uppercase border cursor-pointer outline-none transition-all shadow-2xs hover:shadow-xs focus:ring-2 focus:ring-slate-400/20 ${getStatusBadge(
                           row.status
                         )}`}
-                        title="Click to change status / स्थिति बदलें"
+                        title="Click to change status"
                       >
                         {(STATUS_OPTIONS_BY_TYPE[row.type] || ["OPEN", "TRACED", "CLOSED"]).map((statusName) => (
                           <option
@@ -1378,7 +1375,7 @@ function RegistrationsContent() {
               <div className="flex items-center gap-2">
                 <Tag className="w-4 h-4 text-emerald-300" />
                 <h3 className="font-semibold text-xs sm:text-sm">
-                  {editingEntry ? "Edit Missing Cattle Entry" : "Register Missing Cattle (गुमशुदा पशु पंजीकरण)"}
+                  {editingEntry ? "Edit Missing Cattle Entry" : "Register Missing Cattle"}
                 </h3>
               </div>
               <button
@@ -1394,7 +1391,7 @@ function RegistrationsContent() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Reg. Number (पंजीकरण सं.)
+                    Registration Number
                   </label>
                   <input
                     type="text"
@@ -1406,7 +1403,7 @@ function RegistrationsContent() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Date &amp; Time (दिनांक व समय)
+                    Date &amp; Time
                   </label>
                   <div className="grid grid-cols-2 gap-1.5">
                     <input
@@ -1431,22 +1428,22 @@ function RegistrationsContent() {
               {/* Cattle Type, Breed & Color */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Cattle Type (पशु प्रकार) *</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Cattle Type *</label>
                   <select
                     value={formData.cattleType || "Cow"}
                     onChange={(e) => setFormData({ ...formData, cattleType: e.target.value })}
                     className="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-xs bg-white"
                   >
-                    <option value="Cow">Cow (गाय)</option>
-                    <option value="Buffalo">Buffalo (भैंस)</option>
-                    <option value="Bull">Bull (बैल / सांड)</option>
-                    <option value="Calf">Calf (बछड़ा / बछड़ी)</option>
-                    <option value="Goat">Goat (बकरी)</option>
-                    <option value="Other">Other (अन्य)</option>
+                    <option value="Cow">Cow</option>
+                    <option value="Buffalo">Buffalo</option>
+                    <option value="Bull">Bull</option>
+                    <option value="Calf">Calf</option>
+                    <option value="Goat">Goat</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Breed (नस्ल)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Breed</label>
                   <input
                     type="text"
                     placeholder="e.g. Murrah / Sahiwal"
@@ -1456,7 +1453,7 @@ function RegistrationsContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Color (रंग)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Color</label>
                   <input
                     type="text"
                     placeholder="e.g. Black / White"
@@ -1471,7 +1468,7 @@ function RegistrationsContent() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Ear Tag Number / RFID (कान का टैग नंबर)
+                    Ear Tag Number / RFID
                   </label>
                   <input
                     type="text"
@@ -1483,7 +1480,7 @@ function RegistrationsContent() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                    Approx Value in ₹ (अनुमानित मूल्य)
+                    Approx Value in ₹
                   </label>
                   <input
                     type="text"
@@ -1498,7 +1495,7 @@ function RegistrationsContent() {
               {/* Horns & Marks */}
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                  Horns, Tail &amp; Identification Marks (सींग, पूंछ व पहचान चिन्ह)
+                  Horns, Tail &amp; Identification Marks
                 </label>
                 <input
                   type="text"
@@ -1512,7 +1509,7 @@ function RegistrationsContent() {
               {/* Owner Details */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Owner Name (मालिक का नाम) *</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Owner Name *</label>
                   <input
                     type="text"
                     required
@@ -1523,7 +1520,7 @@ function RegistrationsContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Mobile No (फ़ोन)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Mobile No</label>
                   <input
                     type="text"
                     placeholder="Mobile number"
@@ -1533,7 +1530,7 @@ function RegistrationsContent() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Village / Address (गाँव)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Village / Address</label>
                   <input
                     type="text"
                     placeholder="e.g. Vill. Umri"
@@ -1547,15 +1544,15 @@ function RegistrationsContent() {
               {/* Status & Officer */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Status (स्थिति)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">Status</label>
                   <select
                     value={formData.status || "OPEN"}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                     className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white"
                   >
-                    <option value="OPEN">Open (खोज जारी / Searching)</option>
-                    <option value="RESTORED">Restored / Handed Over (बरामद / सुपुर्द)</option>
-                    <option value="CLOSED">Closed (समाप्त)</option>
+                    <option value="OPEN">Open (Searching)</option>
+                    <option value="RESTORED">Restored / Handed Over</option>
+                    <option value="CLOSED">Closed</option>
                   </select>
                 </div>
                 <div>
@@ -1572,7 +1569,7 @@ function RegistrationsContent() {
 
               {/* Remarks */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-1">Remarks (टिप्पणी / गौशाला सूचना)</label>
+                <label className="block text-[11px] font-medium text-slate-600 mb-1">Remarks</label>
                 <input
                   type="text"
                   placeholder="e.g. Flashed to local gaushalas and cattle markets..."
@@ -1669,7 +1666,7 @@ function RegistrationsContent() {
             {/* Header */}
             <div className="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
               <span className="font-semibold text-xs text-slate-800">
-                Official Police Registration Slip (आधिकारिक पंजीकरण रसीद)
+                Official Police Registration Slip
               </span>
               <div className="flex items-center gap-1.5">
                 <button
@@ -1701,12 +1698,12 @@ function RegistrationsContent() {
                 </div>
                 <div className="text-[10px] text-slate-500 font-mono font-semibold">
                   {viewSlipEntry.type === "UIDB"
-                    ? "UIDB / UNNATURAL DEATH REGISTER SLIP (धारा 194 BNSS)"
+                    ? "UIDB / UNNATURAL DEATH REGISTER SLIP (SEC 194 BNSS)"
                     : viewSlipEntry.type === "MISSING_PERSON"
-                    ? "MISSING PERSON REPORT ACKNOWLEDGMENT (गुमशुदा व्यक्ति रसीद)"
+                    ? "MISSING PERSON REPORT ACKNOWLEDGMENT"
                     : viewSlipEntry.type === "MISSING_CATTLE"
-                    ? "MISSING CATTLE REGISTER ENTRY (पशु गुमशुदगी रसीद)"
-                    : "LOST PROPERTY REPORT ACKNOWLEDGMENT (खोया सामान पावती)"}
+                    ? "MISSING CATTLE REGISTER ENTRY"
+                    : "LOST PROPERTY REPORT ACKNOWLEDGMENT"}
                 </div>
               </div>
 
