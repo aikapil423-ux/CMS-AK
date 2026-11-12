@@ -3,7 +3,9 @@ import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
 
 const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
-export const demoEnabled = () => process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_LOGIN === 'true';
+export const demoEnabled = () => process.env.NODE_ENV !== 'production'
+  || process.env.ENABLE_DEMO_LOGIN === 'true'
+  || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 
 function secret() {
   const configured = process.env.CMS_SESSION_SECRET;
@@ -90,13 +92,17 @@ export function sameOrigin(req:Request){
  const origin=req.headers.get('origin');
  if(!origin)return true;
  try{
-  const origHost=new URL(origin).host;
-  const reqHost=req.headers.get('x-forwarded-host')||req.headers.get('host')||new URL(req.url).host;
-  if(origHost===reqHost)return true;
+  const originHost=new URL(origin).host;
+  const hosts=[req.headers.get('x-forwarded-host'),req.headers.get('host')]
+   .filter((value):value is string=>Boolean(value))
+   .flatMap(value=>value.split(','))
+   .map(value=>value.trim())
+   .filter(Boolean);
+  if(hosts.includes(originHost))return true;
   if(origin===new URL(req.url).origin)return true;
   // Allow test VM IP or local network host connections
-  const allowed=(process.env.CMS_ALLOWED_ORIGINS || '').split(',').map(value=>value.trim());
-  if(allowed.includes(new URL(origin).origin)) return true;
+  const allowed=(process.env.CMS_ALLOWED_ORIGINS || '').split(',').map(value=>value.trim()).filter(Boolean);
+  if(allowed.includes(origin)) return true;
  }catch{}
  return false;
 }

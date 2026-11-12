@@ -32,7 +32,9 @@ export default function LoginPage() {
     e.preventDefault(); setError(null); setIsLoading(true);
     const ok = await login(pno, pin);
     setIsLoading(false);
-    if(ok)router.push('/');else setError((window as any).__lastLoginError || 'Invalid PNO or PIN. Please verify your credentials.');
+    if(ok)router.push('/');else setError((window as any).__lastLoginError || (pin === '123456' && !demo
+      ? 'Demo login is disabled on this server. Sign in with your assigned PNO and password.'
+      : 'Invalid PNO or PIN. Please verify your credentials.'));
   };
   const handleQuickDemoLogin = async (userId:string) => {
     if (!demo || isLoading) return;
@@ -173,6 +175,23 @@ export default function LoginPage() {
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 ml-2" />
                 </button>
               ))}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-slate-200">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Access</span>
+              <button
+                type="button"
+                onClick={() => { setPno('DEV-ADMIN'); setPin(''); setError(null); }}
+                className="mt-1.5 w-full text-left p-2 rounded-lg bg-slate-800 hover:bg-slate-900 border border-slate-800 flex items-center justify-between transition-colors group cursor-pointer"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-white">Developer Admin</p>
+                  <p className="text-[10px] text-slate-300">
+                    PNO: <span className="font-mono">DEV-ADMIN</span> • Password required • Persona switching
+                  </p>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2" />
+              </button>
             </div>
           </div>}
         </div>
