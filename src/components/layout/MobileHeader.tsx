@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
   const pathname = usePathname();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, sessionUser, isViewAs, logout } = useAuth();
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
@@ -114,9 +114,21 @@ export function MobileHeader() {
             </div>
 
             <div className="p-3 border-b border-slate-200/80 bg-white">
-              <p className="text-xs font-semibold text-slate-900">{currentUser.name}</p>
-              <p className="text-[11px] text-slate-600">{t(currentUser.roleDisplay)}</p>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">PNO: {currentUser.pno}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-slate-900">{sessionUser.name}</p>
+                {isViewAs && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 shrink-0">
+                    Viewing
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-600">{t(sessionUser.roleDisplay)}</p>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">PNO: {sessionUser.pno}</p>
+              {isViewAs && (
+                <p className="mt-1.5 text-[10px] leading-snug text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-1">
+                  Opened under your own ID — {currentUser.name} ({currentUser.roleDisplay}) view. Data and changes follow that role.
+                </p>
+              )}
             </div>
 
             {/* Back to Module Selector Button in Drawer */}
@@ -437,7 +449,7 @@ export function MobileHeader() {
                   {t("Sign Out Confirmation")}
                 </h3>
                 <p className="text-xs text-slate-500 truncate mt-0.5">
-                  {currentUser.name}
+                  {sessionUser.name}
                 </p>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle, Eye, EyeOff, X } from "lucide-react";
+import { CheckCircle, Eye, X } from "lucide-react";
 import { DEMO_USERS } from "@/lib/mockData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function UsersDirectoryPage() {
           {isDeveloper
             ? isViewAs
               ? `You are viewing ${currentUser.name}'s ID with your Developer Admin session. Return to your own ID anytime; sign out stays under your control.`
-              : "Developer Admin can enter any officer ID with their own session — no separate login, no sign-out. Sign out only when you choose."
+              : "Developer Admin can enter any officer ID with their own session — no separate login, no sign-out. See and work in that role's view; changes follow that role's context. Sign out only when you choose."
             : "Officer IDs are shown for reference. Sign out and sign in with the assigned PNO to use another account."}
         </p>
       </div>

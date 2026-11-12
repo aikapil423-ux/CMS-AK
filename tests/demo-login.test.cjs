@@ -26,7 +26,7 @@ function load(file){
   return exports;
 }
 const {DEMO_USERS}=load('src/lib/mockData.ts');
-const {validLogin,sessionUser,issueSession,demoEnabled}=load('src/lib/serverSession.ts');
+const {validLogin,sessionUser,sessionPrincipal,issueSession,demoEnabled}=load('src/lib/serverSession.ts');
 const officer=(pno,pin)=>({
   id:'usr_real_1',pno,fullName:'Real Officer',rank:'SHO',role:'SHO',status:'ACTIVE',
   passwordHash:'test-salt:'+crypto.scryptSync(pin,'test-salt',64).toString('hex'),
@@ -70,4 +70,31 @@ test('an opted-out deployment rejects the demo PIN and demo sessions',async()=>{
   assert.equal(await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(demo.id,undefined,true)}})),null);
   delete process_.env.DISABLE_DEMO_LOGIN;
   process_.env.NODE_ENV='test';
+});
+
+test('view-as resolves the viewed officer from the developer session and falls back safely',async()=>{
+  process_.env.NODE_ENV='test';dbUser=null;dbUnavailable=true;
+  const developer='cms_developer_admin';
+  const sho=DEMO_USERS.find(u=>u.role==='SHO');
+  const sp=DEMO_USERS[0];
+  // The developer session with a view-as marker resolves to the viewed officer, including the SP.
+  const shoView=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer,undefined,false,sho.id)}}));
+  assert.equal(shoView.id,sho.id);assert.equal(shoView.stationName,sho.stationName);
+  const spView=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer,undefined,false,sp.id)}}));
+  assert.equal(spView.id,sp.id);
+  // The principal still exposes the real developer session behind the view.
+  const principal=await sessionPrincipal(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer,undefined,false,sp.id)}}));
+  assert.equal(principal.userId,developer);assert.equal(principal.viewAs,sp.id);
+  // Unknown targets and the developer identity itself fall back to the developer's own session.
+  const fallback=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer,undefined,false,'missing-id')}}));
+  assert.equal(fallback.id,developer);
+  const self=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer,undefined,false,developer)}}));
+  assert.equal(self.id,developer);
+  // A non-developer session never gains another identity through a view-as marker.
+  const dsp=DEMO_USERS.find(u=>u.role==='DSP_SUBDIV');
+  const unaffected=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(dsp.id,undefined,true,sho.id)}}));
+  assert.equal(unaffected.id,dsp.id);
+  // Without a marker (after exiting) the developer's own identity returns.
+  const exited=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(developer)}}));
+  assert.equal(exited.id,developer);
 });

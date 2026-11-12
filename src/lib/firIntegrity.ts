@@ -63,11 +63,11 @@ export function isFirVisibleToUser(
 
   if (fir.custodyUnit && user.unitId !== fir.custodyUnit.id) return false;
 
-  // Station-level personnel: SHO, MHC, Duty Officer
+  // Station-level personnel: SHO and MHC see every record of their station.
+  // The Duty Officer is deliberately NOT station-wide: they see only their assignments below.
   const isStationStaff =
     role === "SHO" ||
     role === "MHC_GD_INCHARGE" ||
-    role === "DUTY_OFFICER" ||
     user.id === "usr_sho_1" ||
     user.id === "usr_mhc_1";
 
@@ -80,8 +80,10 @@ export function isFirVisibleToUser(
     return false;
   }
 
-  // Investigating Officer (IO / EO): only see FIRs assigned to them in their station
-  return Boolean(norm(user.stationName) && norm(jurisdiction.policeStation) && norm(user.stationName) === norm(jurisdiction.policeStation) && isUserAssignedIo(user, fir));
+  // Investigating / Enquiry Officers and other readers: ONLY the records assigned to them —
+  // never another officer's case and never the whole station list. Assignment is the
+  // permission itself, so an assigned case stays visible even across a station boundary.
+  return isUserAssignedIo(user, fir);
 }
 
 export function isUserAssignedIo(

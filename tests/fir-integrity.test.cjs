@@ -93,8 +93,12 @@ test('visibility fails closed for missing stations and other districts', () => {
   assert.equal(isFirVisibleToUser({role:'SP_DISTRICT'}, {district:'Panipat'}), false);
   assert.equal(isFirVisibleToUser({role:'SUPER_ADMIN'}, {}), true);
 });
-test('partial names never grant IO access and station boundary applies', () => {
+test('assignment is the IO permission: assigned cases stay visible, the station list stays hidden', () => {
   assert.equal(isUserAssignedIo({name:'Ram'}, {assignedIoName:'SI Ram Kumar'}), false);
   assert.equal(isUserAssignedIo({name:'Ram Kumar'}, {assignedIoName:'SI Ram Kumar'}), true);
-  assert.equal(isFirVisibleToUser({id:'io1',stationName:'PS A'}, {assignedIoId:'io1',policeStation:'PS B'}), false);
+  // An assigned IO sees exactly their case, even across a station boundary.
+  assert.equal(isFirVisibleToUser({id:'io1',stationName:'PS A'}, {assignedIoId:'io1',policeStation:'PS B'}), true);
+  // A same-station IO without assignment never sees the station list or other officers' cases.
+  assert.equal(isFirVisibleToUser({id:'io2',stationName:'PS A'}, {assignedIoId:'io1',policeStation:'PS A'}), false);
+  assert.equal(isFirVisibleToUser({id:'io2',stationName:'PS A'}, {policeStation:'PS A'}), false);
 });

@@ -100,7 +100,7 @@ function ProsecutionNav({ isExpanded, isProsecutionPath }: { isExpanded: boolean
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, sessionUser, logout } = useAuth();
   const { t } = useLanguage();
 
   // State for hover-to-expand and optional lock pin
@@ -1043,7 +1043,7 @@ export function Sidebar() {
                   {t("Sign Out Confirmation")}
                 </h3>
                 <p className="text-xs text-slate-500 truncate mt-0.5">
-                  {currentUser.name}
+                  {sessionUser.name}
                 </p>
               </div>
             </div>

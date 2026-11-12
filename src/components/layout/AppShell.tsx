@@ -32,7 +32,7 @@ import { ViewAsBanner } from "./ViewAsBanner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, switching } = useAuth();
   const { t } = useLanguage();
 
   const router = useRouter();
@@ -40,12 +40,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   React.useEffect(()=>{const failure=(e:Event)=>setComplaintSaveError(String((e as CustomEvent).detail));window.addEventListener('complaints_save_error',failure);window.addEventListener('complaints_cache_warning',failure);return()=>{window.removeEventListener('complaints_save_error',failure);window.removeEventListener('complaints_cache_warning',failure);};},[]);
 
 
-  // If unauthenticated and not on /login, redirect to /login
+  // If unauthenticated and not on /login, redirect to /login — unless a persona/view-as
+  // switch is remounting the tree right now: that must never send the developer to /login.
   React.useEffect(() => {
-    if (!isAuthenticated && pathname !== "/login") {
+    if (!isAuthenticated && pathname !== "/login" && !switching) {
       router.replace("/login");
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, pathname, router, switching]);
 
   // If on login page or unauthenticated, render without shell
   if (!isAuthenticated && pathname !== "/login") return null;

@@ -29,7 +29,7 @@ export function OfficerIdPreview({
   return (
     <div className={cn("rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 space-y-1.5", compact && "p-2")}>
       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        Read-only ID — no login, no permission change
+        Officer ID card — no login, no permission change
       </p>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
         {fields.map(([label, value]) => (

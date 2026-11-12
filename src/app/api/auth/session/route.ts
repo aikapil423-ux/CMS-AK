@@ -12,7 +12,7 @@ export async function GET(req:Request){
 export async function POST(req:Request){
   if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
   try{const b=z.object({pno:z.string().max(100).optional(),pin:z.string().max(100).optional(),station:z.string().max(200).optional(),switchTo:z.string().max(100).optional(),viewAs:z.string().max(100).nullable().optional()}).parse(await req.json());
-  if(b.switchTo)return NextResponse.json({error:'Persona switching is disabled. Developer Admin can open an officer ID read-only; sign out stays explicit.'},{status:403});
+  if(b.switchTo)return NextResponse.json({error:'Persona switching is disabled. Developer Admin can enter an officer ID with their own session; sign out stays explicit.'},{status:403});
   // View-as: the Developer Admin enters another officer's ID with their own session.
   // No second login happens and the developer stays signed in until they sign out themselves.
   if(b.viewAs!==undefined){

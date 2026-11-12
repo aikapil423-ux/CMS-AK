@@ -98,11 +98,15 @@ export async function sessionUser(req: Request): Promise<UserSession | null> {
     const base = await baseSessionUser(token.userId, token.demo);
     if (!base) return null;
     // View-as: the developer keeps their own signed-in session while every screen and
-    // record filter resolves to the viewed officer. An unknown or removed target
-    // falls back to the developer's own view instead of failing the request.
+    // record filter resolves to the viewed officer. An unknown, removed or temporarily
+    // unresolvable target falls back to the developer's own view instead of ending the session.
     if (base.id === 'cms_developer_admin' && token.viewAs) {
-      const viewed = await viewableOfficer(token.viewAs);
-      if (viewed) return viewed;
+      try {
+        const viewed = await viewableOfficer(token.viewAs);
+        if (viewed) return viewed;
+      } catch {
+        return base;
+      }
     }
     return base;
   } catch {

@@ -204,18 +204,108 @@ test('legal assistant keeps CMS suggestions when OpenRouter rejects the advisory
  assert.equal(result.report.suggestedSections[0].sectionNumber,'sample');
 });
 
-test('viewing another officer ID never signs the viewer in as that officer',async()=>{
- let logins=0,cookies=0;
+test('view-as enters an officer ID with the developer session and never signs a second login',async()=>{
+ let logins=0,cookies=0;const tokens=[];let principal=null,effective=null;
+ const officer={id:'usr_sho_1',name:'Officer',role:'SHO',stationName:'PS Test'};
+ const developer={id:'cms_developer_admin',name:'Developer Admin',role:'SUPER_ADMIN'};
  const {load}=environment({}, {
   'next/server':{NextResponse:{json:(body,options)=>{const r=Response.json(body,options);r.cookies={set(){cookies++;}};return r;}}},
-  '@/lib/serverSession':{sameOrigin:()=>true,demoEnabled:()=>true,sessionUser:async()=>({id:'cms_developer_admin',role:'SUPER_ADMIN'}),issueSession:()=> 'signed',validLogin:async()=>{logins++;return {id:'officer',stationName:'PS Test'};}},
+  '@/lib/serverSession':{
+    sameOrigin:()=>true,demoEnabled:()=>true,
+    sessionUser:async()=>effective,sessionPrincipal:async()=>principal,
+    viewableOfficer:async(id)=>id==='usr_sp_1'?{...officer,id:'usr_sp_1',role:'SP_DISTRICT'}:(id==='usr_sho_1'?officer:null),
+    developerAdminUser:()=>developer,
+    issueSession:(userId,...rest)=>{tokens.push({userId,viewAs:rest[2]||null});return 'signed';},
+    validLogin:async()=>{logins++;return officer;},
+  },
  });
  const route=load('src/app/api/auth/session/route.ts');
- const view=await route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({switchTo:'officer'})}));
- assert.equal(view.status,403);
- assert.match((await view.json()).error,/Persona switching is disabled/);
- assert.equal(logins,0);assert.equal(cookies,0);
- const normal=await route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify({pno:'IPS-01892012',pin:'123456'})}));
- assert.equal(normal.status,200);assert.equal((await normal.json()).user.id,'officer');
- assert.equal(cookies,1);
+ const post=body=>route.POST(new Request('http://localhost/api/auth/session',{method:'POST',body:JSON.stringify(body)}));
+ // Legacy persona switching stays disabled and never logs anyone in.
+ const legacy=await post({switchTo:'usr_sho_1'});
+ assert.equal(legacy.status,403);
+ assert.match((await legacy.json()).error,/Persona switching is disabled/);
+ assert.equal(logins,0);assert.equal(cookies,0);assert.equal(tokens.length,0);
+ // A non-developer session cannot enter another ID.
+ principal={userId:'usr_dsp_1',demo:true};effective=officer;
+ assert.equal((await post({viewAs:'usr_sho_1'})).status,403);
+ assert.equal(cookies,0);
+ // The developer enters the SHO ID with their own session: no second login, officer stays signed out.
+ principal={userId:'cms_developer_admin',demo:false};effective=officer;
+ const enter=await post({viewAs:'usr_sho_1'});
+ assert.equal(enter.status,200);
+ const enterBody=await enter.json();
+ assert.equal(enterBody.user.id,'usr_sho_1');
+ assert.equal(enterBody.sessionUser.id,'cms_developer_admin');
+ assert.equal(enterBody.viewAsActive,true);
+ assert.deepEqual(tokens,[{userId:'cms_developer_admin',viewAs:'usr_sho_1'}]);
+ assert.equal(logins,0);
+ // The SP ID is also viewable with the developer session.
+ const sp=await post({viewAs:'usr_sp_1'});
+ assert.equal(sp.status,200);assert.equal((await sp.json()).user.id,'usr_sp_1');
+ assert.equal(tokens[1].viewAs,'usr_sp_1');
+ // Exiting returns the developer's own session and clears the view-as marker.
+ const exit=await post({viewAs:null});
+ assert.equal(exit.status,200);
+ const exitBody=await exit.json();
+ assert.equal(exitBody.user.id,'cms_developer_admin');
+ assert.equal(exitBody.viewAsActive,false);
+ assert.equal(tokens[2].viewAs,null);
+ assert.equal(logins,0);
+ // The session GET reports the active view and the real session user.
+ principal={userId:'cms_developer_admin',demo:false,viewAs:'usr_sho_1'};
+ const get=await route.GET(new Request('http://localhost/api/auth/session'));
+ const getBody=await get.json();
+ assert.equal(getBody.viewAsActive,true);
+ assert.equal(getBody.sessionUser.id,'cms_developer_admin');
+ assert.equal(getBody.user.id,'usr_sho_1');
+ // Without a view-as marker the flag stays off.
+ principal={userId:'cms_developer_admin',demo:false};effective=developer;
+ const plain=await route.GET(new Request('http://localhost/api/auth/session'));
+ assert.equal((await plain.json()).viewAsActive,false);
+ // A normal officer login still works with its own cookie and no view-as marker.
+ const normal=await post({pno:'HR-04291882',pin:'123456'});
+ assert.equal(normal.status,200);assert.equal((await normal.json()).user.id,'usr_sho_1');
+ assert.equal(tokens[3].userId,'usr_sho_1');assert.equal(tokens[3].viewAs,null);
+ assert.equal(logins,1);assert.equal(cookies,4);
+});
+
+test('register visibility: station staff see their whole station, superiors their jurisdiction, IO/EO only their assignments',()=>{
+ const permissions=environment().load('src/utils/complaintPermissions.ts');
+ const firIntegrity=environment().load('src/lib/firIntegrity.ts');
+ const complaint={complaintNumber:'C-1',policeStation:'PS City Panipat',district:'Panipat',assignedEoId:'usr_eo_1'};
+ const fir={firNumber:'FIR/0001/2026',policeStation:'PS City Panipat',district:'Panipat',assignedIoId:'usr_eo_1'};
+ const sho={id:'sho-x',role:'SHO',stationName:'PS City Panipat',district:'Panipat'};
+ const mhc={id:'mhc-x',role:'MHC_GD_INCHARGE',stationName:'PS City Panipat',district:'Panipat'};
+ const dsp={id:'dsp-x',role:'DSP_SUBDIV',unitId:'sdpo-1',stationName:'SDPO Office Panipat',district:'Panipat',jurisdictionUnits:['PS City Panipat']};
+ const sp={id:'sp-x',role:'SP_DISTRICT',district:'Panipat'};
+ const assignedIo={id:'usr_eo_1',role:'ENQUIRY_OFFICER',stationName:'PS City Panipat',district:'Panipat'};
+ const otherIo={id:'usr_eo_2',role:'ENQUIRY_OFFICER',stationName:'PS City Panipat',district:'Panipat'};
+ // MHC, SHO, DSP (subdivision) and SP (district) each see the station's whole register.
+ for(const actor of [sho,mhc,dsp,sp]){
+  assert.equal(permissions.canViewComplaint(actor,complaint).allowed,true,actor.role);
+  assert.equal(firIntegrity.isFirVisibleToUser(actor,fir),true,actor.role);
+ }
+ // The assigned IO/EO sees exactly their own case.
+ assert.equal(permissions.canViewComplaint(assignedIo,complaint).allowed,true,'assigned EO');
+ assert.equal(firIntegrity.isFirVisibleToUser(assignedIo,fir),true,'assigned IO');
+ // A different IO/EO of the SAME station sees nothing — not the station list, not others' cases.
+ assert.equal(permissions.canViewComplaint(otherIo,complaint).allowed,false,'other EO');
+ assert.equal(firIntegrity.isFirVisibleToUser(otherIo,fir),false,'other IO');
+ // The Duty Officer is assignment-scoped too: their assigned case is visible, the station list is not.
+ const duty={id:'usr_do_1',role:'DUTY_OFFICER',stationName:'PS City Panipat',district:'Panipat'};
+ assert.equal(permissions.canViewComplaint(duty,{...complaint,assignedEoId:'usr_do_1'}).allowed,true,'assigned DO');
+ assert.equal(permissions.canViewComplaint(duty,complaint).allowed,false,'unassigned DO');
+ assert.equal(firIntegrity.isFirVisibleToUser(duty,{...fir,assignedIoId:'usr_do_1'}),true,'assigned DO FIR');
+ assert.equal(firIntegrity.isFirVisibleToUser(duty,fir),false,'unassigned DO FIR');
+ // Unassigned records are invisible to IO/EO even in their own station.
+ assert.equal(permissions.canViewComplaint(assignedIo,{...complaint,assignedEoId:'usr_eo_2'}).allowed,false,'reassigned EO');
+ assert.equal(firIntegrity.isFirVisibleToUser(assignedIo,{...fir,assignedIoId:'usr_eo_2'}),false,'reassigned IO');
+ // Station staff and superiors never leak outside their jurisdiction.
+ assert.equal(permissions.canViewComplaint(sho,{...complaint,policeStation:'PS Chandni Bagh Panipat'}).allowed,false,'SHO other station');
+ assert.equal(firIntegrity.isFirVisibleToUser(sho,{...fir,policeStation:'PS Chandni Bagh Panipat'}),false,'SHO other station FIR');
+ assert.equal(permissions.canViewComplaint(sp,{...complaint,district:'Karnal'}).allowed,false,'SP other district');
+ assert.equal(firIntegrity.isFirVisibleToUser(sp,{...fir,district:'Karnal'}),false,'SP other district FIR');
+ assert.equal(permissions.canViewComplaint(dsp,{...complaint,policeStation:'PS Samalkha Panipat'}).allowed,false,'DSP outside subdivision');
+ assert.equal(firIntegrity.isFirVisibleToUser(dsp,{...fir,policeStation:'PS Samalkha Panipat'}),false,'DSP outside subdivision FIR');
 });

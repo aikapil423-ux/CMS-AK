@@ -102,9 +102,18 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
   if(user.role==='DSP_SUBDIV' && user.unitId) return {allowed:Boolean(user.jurisdictionUnits?.some((name:string)=>norm(name)===norm(jurisdiction.policeStation))),reason:'Complaint is outside your subdivision.'};
   if(isSuperiorToSho(user.role))return {allowed:Boolean(norm(user.district)&&norm(user.district)===norm(jurisdiction.district)),reason:'Complaint is outside your district.'};
   if(complaint.custodyUnit && user.unitId !== complaint.custodyUnit.id)return {allowed:false,reason:'Complaint is outside your unit.'};
-  if(!norm(user.stationName)||norm(user.stationName)!==norm(jurisdiction.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
-  if(['SHO','MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role||''))return {allowed:true};
-  return {allowed:isUserAssignedEo(user,complaint),reason:'Only the assigned enquiry officer can view this complaint.'};
+  if(['SHO','MHC_GD_INCHARGE'].includes(user.role||'')){
+    // Station staff see every complaint of their own station — and nothing outside it.
+    // The Duty Officer is deliberately NOT station-wide: like the IO/EO, they only see
+    // what is assigned to them (checked below), never the whole station list.
+    if(!norm(user.stationName)||norm(user.stationName)!==norm(jurisdiction.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
+    return {allowed:true};
+  }
+  // Enquiry / Investigating Officers, Duty Officers and other readers: ONLY the
+  // complaints assigned to them — never another officer's complaint and never the
+  // whole station list. Assignment is the permission itself, so an assigned complaint
+  // stays visible even when it belongs to another police station.
+  return {allowed:isUserAssignedEo(user,complaint),reason:'Only the assigned officer can view this complaint.'};
 }
 
 /**

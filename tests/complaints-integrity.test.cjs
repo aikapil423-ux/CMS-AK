@@ -39,7 +39,10 @@ test('unsigned/forged sessions cannot access API; empty register stays empty',as
 test('permission checks use exact officer identity, station, district and document ownership',()=>{
  const c={assignedEoId:'other',assignedEoName:'SI Ram Kumar',policeStation:'PS City Panipat',district:'Panipat'};
  assert.equal(permissions.isUserAssignedEo({id:'different',name:'Ram',role:'ENQUIRY_OFFICER'},c),false);
- assert.equal(permissions.canViewComplaint({id:'other',role:'ENQUIRY_OFFICER',stationName:'Other PS'},c).allowed,false);
+ // Assignment alone grants EO visibility — even across a station boundary.
+ assert.equal(permissions.canViewComplaint({id:'other',role:'ENQUIRY_OFFICER',stationName:'Other PS'},c).allowed,true);
+ // An EO without the assignment sees nothing, not even their own station's list.
+ assert.equal(permissions.canViewComplaint({id:'different',role:'ENQUIRY_OFFICER',stationName:'PS City Panipat'},c).allowed,false);
  assert.equal(permissions.canViewComplaint({id:'sho',role:'SHO'},c).allowed,false);
  assert.equal(permissions.canViewComplaint({id:'sp',role:'SP_DISTRICT',district:'Karnal'},c).allowed,false);
  assert.equal(permissions.canDeleteDocument({id:'other',pno:'123'},{createdByUserId:'HR-12345'}).allowed,false);

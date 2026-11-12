@@ -10,6 +10,8 @@ interface AuthContextType {
   /** The really signed-in session user — stays the Developer Admin while viewing another ID. */
   sessionUser:UserSession;
   isViewAs:boolean;
+  /** True while the app tree is being re-mounted for a persona/view-as switch — the login redirect must not fire. */
+  switching:boolean;
   enterViewAs:(user:UserSession)=>Promise<boolean>;
   exitViewAs:()=>Promise<boolean>;
   isAuthenticated:boolean;
@@ -19,8 +21,8 @@ interface AuthContextType {
 const AuthContext=createContext<AuthContextType|undefined>(undefined);
 export function AuthProvider({children}:{children:React.ReactNode}){
  const router=useRouter();
- const [currentUser,setCurrentUser]=useState(DEMO_USERS[0]),[sessionUser,setSessionUser]=useState(DEMO_USERS[0]),[isViewAs,setViewAs]=useState(false),[isAuthenticated,setAuthenticated]=useState(false),[ready,setReady]=useState(false);
- async function accept(user:UserSession,realUser?:UserSession,viewAs=false){setAuthenticated(false);localStorage.setItem('haryana_police_cms_user',user.id);localStorage.removeItem('cms_demo_logged_out');await firPersistence.hydrate(user).catch(()=>{});setCurrentUser(user);setSessionUser(realUser||user);setViewAs(viewAs);setAuthenticated(true);window.dispatchEvent(new CustomEvent('cms_user_switched',{detail:user}));}
+ const [currentUser,setCurrentUser]=useState(DEMO_USERS[0]),[sessionUser,setSessionUser]=useState(DEMO_USERS[0]),[isViewAs,setViewAs]=useState(false),[switching,setSwitching]=useState(false),[isAuthenticated,setAuthenticated]=useState(false),[ready,setReady]=useState(false);
+ async function accept(user:UserSession,realUser?:UserSession,viewAs=false){setSwitching(true);setAuthenticated(false);localStorage.setItem('haryana_police_cms_user',user.id);localStorage.removeItem('cms_demo_logged_out');try{await firPersistence.hydrate(user).catch(()=>{});}finally{setCurrentUser(user);setSessionUser(realUser||user);setViewAs(viewAs);setAuthenticated(true);setSwitching(false);window.dispatchEvent(new CustomEvent('cms_user_switched',{detail:user}));}}
  useEffect(() => {
    let active = true;
    fetch('/api/auth/session', { cache: 'no-store' })
@@ -66,7 +68,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
      window.removeEventListener('focus', checkPosting);
    };
  }, [isAuthenticated, currentUser]);
- const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok){if(typeof window!=='undefined')(window as any).__lastLoginError=b.error||'';return false;}await accept(b.user,b.sessionUser,Boolean(b.viewAsActive));return true;}catch(e:any){if(typeof window!=='undefined')(window as any).__lastLoginError=e.message||'Network error';return false;}};
+ const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=b.error||'';return false;}await accept(b.user,b.sessionUser,Boolean(b.viewAsActive));return true;}catch(e:unknown){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=e instanceof Error?e.message:'Network error';return false;}};
  // View-as never signs the Developer Admin out and never performs a second login:
  // the server re-issues the developer's own session with a view-as marker, so the
  // developer keeps their identity until they explicitly sign out.
@@ -76,9 +78,9 @@ export function AuthProvider({children}:{children:React.ReactNode}){
      await firPersistence.flush().catch(()=>{});
      const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({viewAs:user.id})});
      const b=await r.json();
-     if(!r.ok){if(typeof window!=='undefined')(window as any).__lastViewAsError=b.error||'Officer ID could not be opened.';return false;}
+     if(!r.ok){if(typeof window!=='undefined')(window as unknown as {__lastViewAsError?:string}).__lastViewAsError=b.error||'Officer ID could not be opened.';return false;}
      await accept(b.user,b.sessionUser,Boolean(b.viewAsActive));return true;
-   }catch(e:any){if(typeof window!=='undefined')(window as any).__lastViewAsError=e.message||'Network error';return false;}
+   }catch(e:unknown){if(typeof window!=='undefined')(window as unknown as {__lastViewAsError?:string}).__lastViewAsError=e instanceof Error?e.message:'Network error';return false;}
  };
  const exitViewAs=async()=>{
    try{
@@ -91,6 +93,6 @@ export function AuthProvider({children}:{children:React.ReactNode}){
  };
  const logout=async()=>{await firPersistence.flush().catch(()=>{});await fetch('/api/auth/session',{method:'DELETE'});setAuthenticated(false);localStorage.removeItem('haryana_police_cms_user');router.replace('/login');};
  if(!ready)return <div className="p-6 text-sm text-slate-600">Loading session…</div>;
- return <AuthContext.Provider value={{currentUser,sessionUser,isViewAs,enterViewAs,exitViewAs,isAuthenticated,login,logout}}>{children}</AuthContext.Provider>;
+ return <AuthContext.Provider value={{currentUser,sessionUser,isViewAs,switching,enterViewAs,exitViewAs,isAuthenticated,login,logout}}>{children}</AuthContext.Provider>;
 }
 export function useAuth(){const context=useContext(AuthContext);if(!context)throw new Error('useAuth must be used within an AuthProvider');return context;}
