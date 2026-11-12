@@ -270,20 +270,7 @@ Return ONLY a valid, parseable JSON object matching this schema without markdown
     }
     const extractionId = randomUUID();
     const result = { success: true, data: parsedData, modelUsed, transcriptOmitted, identityNeedsReview, extractionId };
-    const target = extractionPath(apiUser.id, extractionId);
-    const temp = target + ".tmp";
-    try {
-      await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(temp, JSON.stringify({
-        ...result, sourceName: file?.name ?? null, fileId: String(formData.get("fileId") || "").slice(0, 200),
-        savedAt: new Date().toISOString(),
-      }), { mode: 0o600, flag: "wx" });
-      await fs.rename(temp, target);
-    } catch {
-      return NextResponse.json({ error: "Fields were extracted but could not be saved to the server. Please retry." }, { status: 503 });
-    } finally {
-      await fs.unlink(temp).catch(() => {});
-    }
+    // No durable case data before the officer confirms registration.
     return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";

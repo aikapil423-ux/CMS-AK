@@ -429,6 +429,8 @@ Return a valid JSON object matching:
       console.error("Processing failure:", procErr);
       const failedRecord: UniversalEvidenceRecord = {
         ...inProgressRecord,
+        extractedText: "",
+        structuredData: { classifiedDocumentName: fileName, verifiedDocumentTitle: "", persons: [], accusedList: [] },
         processingStatus: "FAILED",
         errorMessage: procErr.message || "Failed to parse document stream",
         updatedAt: new Date().toISOString(),

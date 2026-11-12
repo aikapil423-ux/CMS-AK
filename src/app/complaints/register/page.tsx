@@ -321,6 +321,7 @@ export default function RegisterComplaintPage() {
   };
 
   // Top Section: Autofill from Uploaded Complaint Document
+  const autofillAbort = useRef<AbortController | null>(null);
   const autofillFileInputRef = useRef<HTMLInputElement>(null);
   const [isAutofilling, setIsAutofilling] = useState(false);
   const [autofillProgress, setAutofillProgress] = useState(0);
@@ -346,6 +347,7 @@ export default function RegisterComplaintPage() {
     categoryName: string;
     subject: string;
   } | null>(null);
+  const [pendingProcessedRecords, setPendingProcessedRecords] = useState<ProcessedComplaintDocumentRecord[]>([]);
   const [currentProcessedRecord, setCurrentProcessedRecord] = useState<ProcessedComplaintDocumentRecord | null>(null);
 
   // Common Header Configuration
@@ -875,52 +877,13 @@ export default function RegisterComplaintPage() {
 
   // Function to completely clear all fields in Register Complaint form & preserve backup draft
   const handleClearForm = () => {
-    // 0. Snapshot current form to backup before clearing if it has content
-    const currentData = {
-      sourceChannel,
-      priorityLevel,
-      complainants,
-      isAccusedKnown,
-      accusedList,
-      incidentPlace,
-      incidentLandmark,
-      isDateTimeKnown,
-      incidentDate,
-      incidentTime,
-      incidentApproxPeriod,
-      incidentCategory,
-      incidentDetails,
-      attachments: attachments.map((a: any) => ({ ...a, dataUrl: undefined })),
-      intakeMode,
-      complaintSubject,
-      complaintDescription,
-      isFirRegistered,
-      firNumber,
-      firDate,
-      complaintAgeType,
-      complaintClassification,
-      complaintPurpose,
-      selectedEoId,
-      shouldAssignEoNow,
-      directionTemplate,
-      assignedDirections,
-      targetDays,
-      linkedComplaintNo,
-      isCrossCaseTagged,
-      autofilledFieldKeys: Array.from(autofilledFieldKeys),
-      savedAt: new Date().toLocaleTimeString("en-IN"),
-    };
-
-    if (hasFormContent(currentData)) {
-      try {
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(FORM_LAST_DRAFT_BACKUP_KEY, JSON.stringify(currentData));
-        }
-      } catch (e) {
-        console.warn("Could not save backup draft before clear:", e);
-      }
-    }
-
+    autofillAbort.current?.abort();
+    setIsAutofilling(false);
+    setProcessingFileInfo(null);
+    setPendingProcessedRecords([]);
+    setCurrentProcessedRecord(null);
+    setAutofillSuccessNotice(null);
+    window.localStorage.removeItem(FORM_LAST_DRAFT_BACKUP_KEY);
     // 1. Reset Complainants
     setComplainants([
       {
@@ -1232,17 +1195,6 @@ export default function RegisterComplaintPage() {
           description: "",
         });
 
-        universalEvidenceService
-          .registerAndProcess({
-            file,
-            dataUrl: dataUrlStr,
-            fileName: file.name,
-            fileId: attId,
-            module: "COMPLAINTS",
-            uploadedBy: currentUser?.name || "Intake Officer",
-          })
-          .catch((err) => console.warn("Background evidence registration warning:", err));
-
         loadedCount++;
         const pct = Math.round((loadedCount / fileArray.length) * 100);
         setUploadProgress(pct);
@@ -1299,6 +1251,9 @@ export default function RegisterComplaintPage() {
   // 0. Intelligent Autofill from Uploaded Written / Scanned / Audio / Photo Complaint Document
   const handleAutofillFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    autofillAbort.current?.abort();
+    autofillAbort.current = new AbortController();
+    const uploadSignal = autofillAbort.current.signal;
     const file = files[0];
 
     // Determine media category and human label
@@ -1325,6 +1280,7 @@ export default function RegisterComplaintPage() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
+      if (uploadSignal.aborted) return;
       const dataUrl = e.target?.result as string;
 
       // 1. Seal this document into the complaint docket attachments with original name
@@ -1341,8 +1297,6 @@ export default function RegisterComplaintPage() {
       (attachedDoc as any).originalName = file.name;
 
       // Persist original binary into IndexedDB immediately
-      evidenceBlobStore.put(attachedDoc.id, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
-      evidenceBlobStore.put(file.name, dataUrl, { fileName: file.name, fileSize: file.size, mimeType: file.type });
 
       setAttachments((prev) => [attachedDoc, ...prev.filter((a) => a.name !== file.name)]);
 
@@ -1350,6 +1304,7 @@ export default function RegisterComplaintPage() {
       if (file.type.startsWith("text/") || /\.(txt|md|csv|json)$/i.test(file.name)) {
         const textReader = new FileReader();
         textReader.onload = (te) => {
+          if (uploadSignal.aborted) return;
           const textContent = te.target?.result as string;
           executeExtractionPipeline(file, dataUrl, typeLabel, category, textContent, attachedDoc.id);
         };
@@ -1371,6 +1326,7 @@ export default function RegisterComplaintPage() {
     textContent?: string,
     attachedDocId?: string
   ) => {
+    const signal = autofillAbort.current?.signal;
     try {
       setAutofillProgress(35);
       setAutofillStepText(`Analyzing document with Gemini AI model...`);
@@ -1386,11 +1342,13 @@ export default function RegisterComplaintPage() {
       setAutofillStepText(textContent?.trim() ? "Gemini is extracting fields from the document text..." : "Reading the upload and extracting fields with Gemini. Scanned pages may take longer...");
 
       const res = await fetch("/api/complaints/autofill", {
+        signal,
         method: "POST",
         body: formData,
       });
 
       const resJson = await res.json().catch(() => ({}));
+      if (signal?.aborted) return;
       if (!res.ok || !resJson.success || !resJson.data) {
         throw new Error(resJson.error || "Gemini could not extract the document fields");
       }
@@ -1405,7 +1363,6 @@ export default function RegisterComplaintPage() {
       const verifiedTitle = geminiData.verifiedDocumentTitle || typeLabel;
 
       if (classifiedName && classifiedName !== file.name) {
-        evidenceBlobStore.put(classifiedName, dataUrl, { fileName: classifiedName, fileSize: file.size, mimeType: file.type });
       }
 
       // Keep original document with its ORIGINAL name so officer knows what was uploaded
@@ -1775,21 +1732,13 @@ export default function RegisterComplaintPage() {
         },
       };
 
-      complaintAutoFillService.save(processedRecord);
-      setCurrentProcessedRecord(processedRecord);
+      // Incomplete OCR may populate editable fields but is never saved as completed processing.
+      if (!resJson.transcriptOmitted && fullVerbatimComplaint.trim()) {
+        setCurrentProcessedRecord(processedRecord);
+        setPendingProcessedRecords(prev => [...prev.filter(r => r.documentId !== processedRecord.documentId), processedRecord]);
+      }
 
       // Persistently register raw evidence and structured case data across CMS
-      universalEvidenceService
-        .registerAndProcess({
-          file,
-          dataUrl,
-          text: rawText,
-          fileName: classifiedName,
-          fileId: recId,
-          module: "COMPLAINTS",
-          uploadedBy: currentUser?.name || "Intake Officer",
-        })
-        .catch((err) => console.warn("Universal persistent evidence registration warning:", err));
 
       // Set success notice
       setAutofillSuccessNotice({
@@ -1811,16 +1760,13 @@ export default function RegisterComplaintPage() {
       setIsAutofilling(false);
       if (autofillFileInputRef.current) autofillFileInputRef.current.value = "";
     } catch (err: any) {
+      if (signal?.aborted || err?.name === "AbortError") return;
       console.warn("Gemini autofill error:", err);
       // STRICT: Never fabricate fake names or addresses when document processing fails!
       if (textContent && textContent.trim().length > 20) {
         extractStrictDataFromText(textContent, file.name, category, dataUrl, typeLabel, attachedDocId);
       } else {
         if (attachedDocId) {
-          void universalEvidenceService.registerAndProcess({
-            file, dataUrl, fileName: file.name, fileId: attachedDocId, module: "COMPLAINTS",
-            uploadedBy: currentUser?.name || "Intake Officer",
-          }).catch(error => console.warn("Background evidence registration warning:", error));
         }
         alert(`Document Processing Notice: ${err?.message || "Could not extract fields from document"}. Please enter complaint details manually.`);
       }
@@ -2025,19 +1971,9 @@ export default function RegisterComplaintPage() {
       },
     };
 
-    complaintAutoFillService.save(processedRecord);
+    // Keep extraction only in this registration draft.
     setCurrentProcessedRecord(processedRecord);
-
-    universalEvidenceService
-      .registerAndProcess({
-        dataUrl,
-        text: textContent,
-        fileName,
-        fileId: processedRecord.id,
-        module: "COMPLAINTS",
-        uploadedBy: currentUser?.name || "Intake Officer",
-      })
-      .catch((err) => console.warn("Universal persistent evidence registration warning:", err));
+    setPendingProcessedRecords(prev => [...prev.filter(r => r.documentId !== processedRecord.documentId), processedRecord]);
 
     // Tag attachment with processed flags
     setAttachments((prev) =>
@@ -2431,60 +2367,13 @@ export default function RegisterComplaintPage() {
           isCrossComplaint: isCrossCaseTagged || undefined,
           attachments,
           documents: documentsToSave,
-          processedDocuments: currentProcessedRecord ? [currentProcessedRecord] : [],
+          processedDocuments: pendingProcessedRecords.filter(r => attachments.some(a => a.id === r.documentId || a.name === r.rawDocument.fileName)),
         } as any,
         currentUser.name,
         currentUser.stationName,
         currentUser.district,
         currentUser.pno
       );
-
-      // Permanently bind processed document records in the database with the registered complaint ID & Number
-      if (currentProcessedRecord) {
-        complaintAutoFillService.bindToComplaint(
-          currentProcessedRecord.id,
-          complaint.id,
-          complaint.complaintNumber
-        );
-        universalEvidenceService.bindToCase(
-          currentProcessedRecord.id,
-          complaint.id,
-          complaint.complaintNumber
-        );
-        if (currentProcessedRecord.documentId) {
-          complaintAutoFillService.bindToComplaint(
-            currentProcessedRecord.documentId,
-            complaint.id,
-            complaint.complaintNumber
-          );
-          universalEvidenceService.bindToCase(
-            currentProcessedRecord.documentId,
-            complaint.id,
-            complaint.complaintNumber
-          );
-        }
-      }
-      documentsToSave.forEach((doc) => {
-        if (doc.isProcessed || doc.processedRecordId) {
-          complaintAutoFillService.bindToComplaint(
-            doc.processedRecordId || doc.id,
-            complaint.id,
-            complaint.complaintNumber
-          );
-          universalEvidenceService.bindToCase(
-            doc.processedRecordId || doc.id,
-            complaint.id,
-            complaint.complaintNumber
-          );
-        }
-        if (doc.id) {
-          universalEvidenceService.bindToCase(
-            doc.id,
-            complaint.id,
-            complaint.complaintNumber
-          );
-        }
-      });
 
       // 2. Generate the verified registered complaint PDF document and save it in complaint.documents synchronously
       try {
@@ -2545,19 +2434,7 @@ export default function RegisterComplaintPage() {
             },
           },
         };
-        complaintAutoFillService.save(regDocProcessedRecord);
-        universalEvidenceService
-          .registerAndProcess({
-            dataUrl: previewDataUrl,
-            text: previewHtml,
-            fileName: docFileName,
-            fileId: `doc_reg_${complaint.id}`,
-            caseId: complaint.id,
-            caseNumber: complaint.complaintNumber,
-            module: "COMPLAINTS",
-            uploadedBy: currentUser.name,
-          })
-          .catch((e) => console.warn("Registered complaint evidence registration warning:", e));
+        // Generated intake is derived from saved fields; it needs no AI reprocessing.
 
         await ComplaintService.addDocument(complaint.id, {
           fileName: docFileName,

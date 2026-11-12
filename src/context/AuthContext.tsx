@@ -55,7 +55,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
      window.removeEventListener('focus', checkPosting);
    };
  }, [isAuthenticated, currentUser]);
- const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok)return false;await accept(b.user);return true;}catch{return false;}};
+ const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok){if(typeof window!=='undefined')(window as any).__lastLoginError=b.error||'';return false;}await accept(b.user);return true;}catch(e:any){if(typeof window!=='undefined')(window as any).__lastLoginError=e.message||'Network error';return false;}};
  const switchUser=async(id:string)=>{await firPersistence.flush().catch(()=>{});const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({switchTo:id})});const b=await r.json();if(r.ok)await accept(b.user);else window.dispatchEvent(new CustomEvent('complaints_save_error',{detail:b.error||'Sign in before switching officers.'}));};
  const logout=async()=>{await firPersistence.flush().catch(()=>{});await fetch('/api/auth/session',{method:'DELETE'});setAuthenticated(false);localStorage.removeItem('haryana_police_cms_user');router.replace('/login');};
  if(!ready)return <div className="p-6 text-sm text-slate-600">Loading session…</div>;

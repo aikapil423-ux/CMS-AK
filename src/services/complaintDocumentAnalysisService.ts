@@ -1,6 +1,6 @@
 import { ComplaintItem, ComplaintDocumentItem, ComplaintEvidenceAttachment, UserSession } from "@/types";
 import { ComplaintService } from "./complaintService";
-import { complaintAutoFillService } from "./complaintAutoFillService";
+import { type ProcessedComplaintDocumentRecord, complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
 import { convertKrutiDevIfDetected } from "@/utils/universalDocumentParser";
 import { summarizeCase } from "@/lib/caseWritingClient";
@@ -252,6 +252,7 @@ function normalizeName(name: string): string {
  * Deep Analysis of a Complaint's Overview, Documents, Attachments and Enquiry Notes
  */
 export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): Promise<ComplaintAnalysisReport> {
+  await universalEvidenceService.syncFromServer(complaint.id, complaint.complaintNumber);
   const shortTitle = getComplaintShortTitle(complaint);
   const identifiedPersons: IdentifiedPerson[] = [];
   const extractedDocuments: ExtractedDocumentInfo[] = [];
@@ -375,18 +376,19 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
       (doc.fileName ? universalEvidenceService.getByFileName(doc.fileName, complaint.complaintNumber) : null);
 
     // 2. Check legacy complaintAutoFillService
-    const cachedRecord =
-      universalRecord ? null :
+    const embeddedRecord = (complaint.processedDocuments as ProcessedComplaintDocumentRecord[] | undefined)?.find((r: any) => r.documentId === doc.id || r.documentId === cleanId || r.id === (doc as any).processedRecordId || r.rawDocument?.fileName === doc.fileName);
+    const cachedRecord = embeddedRecord ||
+      (universalRecord ? null :
       (doc.id ? complaintAutoFillService.getByDocumentId(doc.id) : null) ||
       (cleanId ? complaintAutoFillService.getByDocumentId(cleanId) : null) ||
       ((doc as any).processedRecordId ? complaintAutoFillService.getByDocumentId((doc as any).processedRecordId) : null) ||
       (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.id) : null) ||
-      (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.complaintNumber) : null);
+      (doc.fileName ? complaintAutoFillService.getByFileName(doc.fileName, complaint.complaintNumber) : null));
 
     let docPersons: IdentifiedPerson[] = [];
 
     // Prioritize Universal Persistent Evidence Store
-    if (universalRecord && (universalRecord.extractedText || universalRecord.structuredData?.persons?.length > 0)) {
+    if (universalRecord?.processingStatus === "COMPLETED" && (universalRecord.extractedText || universalRecord.structuredData?.persons?.length > 0)) {
       const textToUse = universalRecord.extractedText || universalRecord.structuredData.incident?.details || "";
 
       if (Array.isArray(universalRecord.structuredData?.persons) && universalRecord.structuredData.persons.length > 0) {
@@ -555,19 +557,8 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
   let aiAnalysis: string | undefined;
   let aiAnalysisError: string | undefined;
 
-  // Check persistent cache first
-  const cachedAi = getCachedAnalysis(complaint.id);
-  if (cachedAi && cachedAi.aiAnalysis) {
-    aiAnalysis = cachedAi.aiAnalysis;
-  } else {
-    try {
-      const summary = await summarizeCase({ module: "COMPLAINT", caseId: complaint.id });
-      aiAnalysis = [summary.caseSynopsis, summary.workDoneSummary, summary.pendingWorkSummary].join("\n\n");
-      setCachedAnalysis(complaint.id, { aiAnalysis });
-    } catch (error) {
-      aiAnalysisError = error instanceof Error ? error.message : "AI analysis is unavailable.";
-    }
-  }
+  // Dropdown selection must not trigger a paid AI summary request.
+  aiAnalysis = complaint.processedDocuments?.map((record: any) => record.processedData?.analysis?.overviewSummary || "").filter(Boolean).join("\n\n") || undefined;
 
   return {
     complaintId: complaint.id,

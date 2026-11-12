@@ -711,6 +711,7 @@ export const ComplaintService = {
       linkedComplaintNumber: input.linkedComplaintNumber,
       crossComplaintNumber: input.isCrossComplaint ? input.linkedComplaintNumber : undefined,
       isCrossComplaint: input.isCrossComplaint,
+      processedDocuments: (input as any).processedDocuments || [],
       attachments: input.attachments || [],
       documents: [
         ...((input as any).documents || []),

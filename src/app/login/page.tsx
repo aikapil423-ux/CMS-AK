@@ -42,7 +42,8 @@ export default function LoginPage() {
     if(ok) {
       router.push('/');
     } else {
-      setError('Unable to sign in as ' + user.name + '. Please verify network or credentials.');
+      const serverErr = (window as any).__lastLoginError;
+      setError(serverErr || ('Unable to sign in as ' + user.name + '. Please verify network or credentials.'));
     }
   };
 

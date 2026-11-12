@@ -140,7 +140,7 @@ test('record transfer preserves original registration and requires independent a
  }
 });
 
-test('complaint autofill retries truncated output and saves the owner-scoped result', async () => {
+test('complaint autofill retries truncated output without persisting unregistered data', async () => {
  const saved=new Map();
  let user={id:'owner'}, calls=0;
  const {load}=environment({},{
@@ -169,7 +169,8 @@ test('complaint autofill retries truncated output and saves the owner-scoped res
  assert.equal(result.data.incident.details,'');
  assert.equal(result.transcriptOmitted,true);
  const req={nextUrl:new URL('http://localhost/api/complaints/autofill?id='+result.extractionId)};
- assert.equal((await route.GET(req)).status,200);
+ assert.equal(saved.size,0);
+ assert.equal((await route.GET(req)).status,404);
  user={id:'another-officer'};
  assert.equal((await route.GET(req)).status,404);
 });
