@@ -159,6 +159,8 @@ export function ComplaintAnalysisHeader({
   const handlePersonChange = (pId: string) => {
     setCurrentPersonId(pId);
     if (!analysisReport) return;
+    const found = analysisReport.identifiedPersons.find((p) => p.id === pId) || null;
+    onPersonSelect?.(found);
   };
 
   const selectedComplaintObj = complaints.find((c) => c.id === currentComplaintId);

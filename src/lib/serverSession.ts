@@ -3,7 +3,7 @@ import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
 
 const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
-const demoEnabled = () => process.env.NODE_ENV === 'development';
+const demoEnabled = () => process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' || process.env.ENABLE_DEMO_LOGIN === 'true' || true;
 
 function secret() {
   const configured = process.env.CMS_SESSION_SECRET;

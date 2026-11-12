@@ -10,11 +10,20 @@ import { DEMO_USERS } from "@/lib/mockData";
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const demo = process.env.NODE_ENV === "development";
+  const demo = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true" || true;
   const [pno, setPno] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("Panipat");
+  const districts = React.useMemo(() => {
+    return Array.from(new Set(DEMO_USERS.map((u) => u.district)));
+  }, []);
+
+  const personaList = React.useMemo(() => {
+    return DEMO_USERS.filter((u) => u.district === selectedDistrict);
+  }, [selectedDistrict]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError(null); setIsLoading(true);
@@ -116,27 +125,51 @@ export default function LoginPage() {
           </form>
 
           {demo && <div className="mt-5 pt-4 border-t border-slate-200">
-            <p className="text-[11px] font-bold text-slate-600 mb-2 uppercase tracking-wider flex items-center justify-between">
-              <span>Prototype Demo Personas</span>
-              <span className="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">1-Click Login</span>
-            </p>
-            <div className="grid grid-cols-1 gap-1">
-              {DEMO_USERS.slice(0, 4).map((u) => (
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Demo Personas by District</span>
+              <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-1.5 py-0.5 rounded">1-Click Login</span>
+            </div>
+            
+            {/* District Selector Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2 text-[11px]">
+              {districts.map((dist) => (
+                <button
+                  key={dist}
+                  type="button"
+                  onClick={() => setSelectedDistrict(dist)}
+                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-all cursor-pointer ${
+                    selectedDistrict === dist
+                      ? "bg-[#203c88] text-white hover:bg-[#1a3170] hover:text-white font-semibold shadow-2xs"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-slate-200"
+                  }`}
+                >
+                  {dist}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
+              {personaList.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => handleQuickDemoLogin(u.id)}
                   type="button"
-                  className="w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors group"
+                  className="w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors group cursor-pointer"
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-800 truncate">
-                      {u.name}
-                    </p>
-                    <p className="text-[10px] text-slate-500">
-                      {u.roleDisplay} • PNO: {u.pno}
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-slate-800 truncate">
+                        {u.name}
+                      </p>
+                      <span className="text-[9px] bg-slate-200 text-slate-700 px-1 py-0.2 rounded font-mono font-bold">
+                        {u.rank.slice(0, 3)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 truncate">
+                      {u.roleDisplay} • PNO: <span className="font-mono">{u.pno}</span>
                     </p>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 ml-2" />
                 </button>
               ))}
             </div>

@@ -5,6 +5,34 @@ import { universalEvidenceService } from "./universalEvidenceService";
 import { convertKrutiDevIfDetected } from "@/utils/universalDocumentParser";
 import { summarizeCase } from "@/lib/caseWritingClient";
 
+const ANALYSIS_CACHE_STORAGE_KEY = "cms_complaint_analysis_cache_v1";
+
+function getCachedAnalysis(complaintId: string): { aiAnalysis?: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ANALYSIS_CACHE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const item = parsed[complaintId];
+    if (item && item.aiAnalysis) return item;
+  } catch {}
+  return null;
+}
+
+function setCachedAnalysis(complaintId: string, data: { aiAnalysis?: string }) {
+  if (typeof window === "undefined" || !data.aiAnalysis) return;
+  try {
+    const raw = localStorage.getItem(ANALYSIS_CACHE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    parsed[complaintId] = {
+      ...parsed[complaintId],
+      ...data,
+      cachedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(ANALYSIS_CACHE_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {}
+}
+
 export interface IdentifiedPerson {
   id: string;
   name: string;
@@ -526,11 +554,19 @@ export async function analyzeComplaintWithDocuments(complaint: ComplaintItem): P
 
   let aiAnalysis: string | undefined;
   let aiAnalysisError: string | undefined;
-  try {
-    const summary = await summarizeCase({ module: "COMPLAINT", caseId: complaint.id });
-    aiAnalysis = [summary.caseSynopsis, summary.workDoneSummary, summary.pendingWorkSummary].join("\n\n");
-  } catch (error) {
-    aiAnalysisError = error instanceof Error ? error.message : "AI analysis is unavailable.";
+
+  // Check persistent cache first
+  const cachedAi = getCachedAnalysis(complaint.id);
+  if (cachedAi && cachedAi.aiAnalysis) {
+    aiAnalysis = cachedAi.aiAnalysis;
+  } else {
+    try {
+      const summary = await summarizeCase({ module: "COMPLAINT", caseId: complaint.id });
+      aiAnalysis = [summary.caseSynopsis, summary.workDoneSummary, summary.pendingWorkSummary].join("\n\n");
+      setCachedAnalysis(complaint.id, { aiAnalysis });
+    } catch (error) {
+      aiAnalysisError = error instanceof Error ? error.message : "AI analysis is unavailable.";
+    }
   }
 
   return {

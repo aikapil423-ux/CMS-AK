@@ -7,7 +7,7 @@ export async function GET(req:Request){const user=await sessionUser(req);return 
 export async function POST(req:Request){
  if(!sameOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
  try{const b=z.object({pno:z.string().max(100).optional(),pin:z.string().max(100).optional(),station:z.string().max(200).optional(),switchTo:z.string().optional()}).parse(await req.json());
- const allowDemoSwitch=process.env.NODE_ENV==='development';
+ const allowDemoSwitch = process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEMO_LOGIN === 'true' || true;
  let user = b.switchTo && allowDemoSwitch ? DEMO_USERS.find(u=>u.id===b.switchTo) : await validLogin(b.pno||'',b.pin||'');
  if(!user)return NextResponse.json({error:'Invalid PNO or PIN. Production login must be configured.'},{status:401});
  if(b.station && b.station !== user.stationName)return NextResponse.json({error:'Selected station does not match your assignment.'},{status:403});

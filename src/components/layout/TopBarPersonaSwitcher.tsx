@@ -55,6 +55,17 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("ALL");
+  const districts = React.useMemo(() => {
+    const list = Array.from(new Set(DEMO_USERS.map((u) => u.district)));
+    return ["ALL", ...list];
+  }, []);
+
+  const filteredUsers = React.useMemo(() => {
+    if (selectedDistrict === "ALL") return DEMO_USERS;
+    return DEMO_USERS.filter((u) => u.district === selectedDistrict);
+  }, [selectedDistrict]);
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -141,9 +152,31 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
             </span>
           </div>
 
+          {/* District Filter Chips */}
+          <div className="p-1.5 border-b border-slate-100 flex items-center gap-1 overflow-x-auto text-[10px] bg-slate-50/50">
+            {districts.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedDistrict(d);
+                }}
+                className={cn(
+                  "px-2.5 py-0.5 rounded-md font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer",
+                  selectedDistrict === d
+                    ? "bg-[#203c88] text-white hover:bg-[#1a3170] hover:text-white font-semibold shadow-xs"
+                    : "bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-950 border border-slate-200"
+                )}
+              >
+                {d === "ALL" ? "All Districts" : d}
+              </button>
+            ))}
+          </div>
+
           {/* Minimalist List: Role badge + Name only (No extra details, no clutter) */}
           <div className="p-1 space-y-0.5 max-h-72 overflow-y-auto">
-            {DEMO_USERS.map((user) => {
+            {filteredUsers.map((user) => {
               const isSelected = currentUser.id === user.id;
               const roleInfo = getRoleBadge(user);
 

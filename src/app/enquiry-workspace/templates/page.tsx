@@ -585,7 +585,8 @@ function NoticeTemplatesContent() {
       permanentAddress: person.address || "",
       currentAddress: person.address || "",
       mobileNo: person.phone || "",
-      vsName: person.name || prev.vsName,
+      vsName: person.name || "",
+      haryanaNoticeFullText: undefined, // Reset full text so it regenerates cleanly with the new person
     }));
 
     // 2. Update CDR target row with selected person's contact and identity
@@ -605,7 +606,7 @@ function NoticeTemplatesContent() {
         const updated = [...prev];
         updated[0] = {
           ...updated[0],
-          phone: person.phone || updated[0].phone,
+          phone: person.phone || "",
           reason: `Statement and evidence verification of ${person.name} (${roleDisplay}) in Complaint ${complaint?.complaintNumber || ""}`,
         };
         return updated;
@@ -793,6 +794,13 @@ function NoticeTemplatesContent() {
       });
     }
   };
+
+  // Template defaults must not replace the recipient selected in the dropdown.
+  useEffect(() => {
+    handlePersonSelected(selectedPerson);
+    // Only recipient/template changes reapply autofill; manual edits remain editable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPerson, activeTemplate]);
 
   const handleFieldChange = (field: keyof NoticeFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
