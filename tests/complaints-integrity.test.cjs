@@ -106,10 +106,11 @@ test('more than 30 records remain available when browser cache is full',async()=
  assert.equal(records.length,36);assert.equal(JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json'))).length,36);
 });
 test('production rejects demo PIN and accepts only database credentials',async()=>{
- const env=process_.env;const previous={NODE_ENV:env.NODE_ENV};env.NODE_ENV='production';
+ const env=process_.env;const previous={NODE_ENV:env.NODE_ENV,DISABLE:env.DISABLE_DEMO_LOGIN};env.NODE_ENV='production';env.DISABLE_DEMO_LOGIN='true';
  assert.equal(await validLogin('HR-04291882','123456'),null);
  assert.equal((await validLogin('HR-04291882','test-secret-pin')).id,'usr_sho_1');assert.equal(await validLogin('HR-06281923','test-secret-pin'),null);
  Object.assign(env,previous);
+ if(previous.DISABLE===undefined)delete env.DISABLE_DEMO_LOGIN;
 });
 test('an existing session resolves a transferred officer against the new posting',async()=>{
  const request=new Request('http://local',{headers:{cookie:'cms_session='+issueSession('usr_sho_1')}});
@@ -126,19 +127,22 @@ test('an existing session resolves a transferred officer against the new posting
 });
 after(()=>fs.rmSync(temp,{recursive:true,force:true}));
 
-test('demo mode allows one-click developer admin while production still requires the configured password',async()=>{
- const env=process_.env;const previous={NODE_ENV:env.NODE_ENV,PASSWORD:env.CMS_DEVELOPER_ADMIN_PASSWORD};
+test('demo mode allows one-click developer admin while an opted-out deployment still requires the configured password',async()=>{
+ const env=process_.env;const previous={NODE_ENV:env.NODE_ENV,PASSWORD:env.CMS_DEVELOPER_ADMIN_PASSWORD,DISABLE:env.DISABLE_DEMO_LOGIN};
  try{
-  env.NODE_ENV='production';delete env.CMS_DEVELOPER_ADMIN_PASSWORD;
+  env.NODE_ENV='production';delete env.CMS_DEVELOPER_ADMIN_PASSWORD;env.DISABLE_DEMO_LOGIN='true';
   assert.equal(await validLogin('DEV-ADMIN','123456'),null);
-  env.NODE_ENV='test';
+  delete env.DISABLE_DEMO_LOGIN;env.NODE_ENV='test';
   const demoAdmin=await validLogin('DEV-ADMIN','123456');
   assert.equal(demoAdmin.id,'cms_developer_admin');assert.equal(demoAdmin.role,'SUPER_ADMIN');
   env.NODE_ENV='production';env.CMS_DEVELOPER_ADMIN_PASSWORD='test-dev-password';
   assert.equal((await validLogin('DEV-ADMIN','test-dev-password')).id,'cms_developer_admin');
+  assert.equal((await validLogin('DEV-ADMIN','123456')).id,'cms_developer_admin');
+  env.DISABLE_DEMO_LOGIN='true';
   assert.equal(await validLogin('DEV-ADMIN','123456'),null);
  }finally{
   env.NODE_ENV=previous.NODE_ENV;
   if(previous.PASSWORD===undefined)delete env.CMS_DEVELOPER_ADMIN_PASSWORD;else env.CMS_DEVELOPER_ADMIN_PASSWORD=previous.PASSWORD;
+  if(previous.DISABLE===undefined)delete env.DISABLE_DEMO_LOGIN;else env.DISABLE_DEMO_LOGIN=previous.DISABLE;
  }
 });

@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript'),crypto=require('node:crypto');
 const modules=new Map();let dbQueries=0,dbUser=null,dbUnavailable=false;
 const process_={...process,env:{...process.env,NODE_ENV:'test',CMS_SESSION_SECRET:'test-secret-'.repeat(4)}};
-for(const key of ['ENABLE_DEMO_LOGIN','NEXT_PUBLIC_ENABLE_DEMO_LOGIN','CMS_DEVELOPER_ADMIN_PASSWORD'])delete process_.env[key];
+for(const key of ['ENABLE_DEMO_LOGIN','NEXT_PUBLIC_ENABLE_DEMO_LOGIN','CMS_DEVELOPER_ADMIN_PASSWORD','DISABLE_DEMO_LOGIN'])delete process_.env[key];
 function load(file){
   if(modules.has(file))return modules.get(file);
   const exports={};modules.set(file,exports);
@@ -62,11 +62,12 @@ test('demo mode enabled on a production build still logs demo users in without a
   delete process_.env.ENABLE_DEMO_LOGIN;
 });
 
-test('production without demo mode rejects the demo PIN and demo sessions',async()=>{
-  process_.env.NODE_ENV='production';delete process_.env.ENABLE_DEMO_LOGIN;dbUser=null;dbUnavailable=false;
+test('an opted-out deployment rejects the demo PIN and demo sessions',async()=>{
+  process_.env.NODE_ENV='production';delete process_.env.ENABLE_DEMO_LOGIN;process_.env.DISABLE_DEMO_LOGIN='true';dbUser=null;dbUnavailable=false;
   assert.equal(demoEnabled(),false);
   const demo=DEMO_USERS[0];
   assert.equal(await validLogin(demo.pno,'123456'),null);
   assert.equal(await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(demo.id,undefined,true)}})),null);
+  delete process_.env.DISABLE_DEMO_LOGIN;
   process_.env.NODE_ENV='test';
 });

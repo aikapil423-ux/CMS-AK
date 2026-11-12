@@ -3,9 +3,10 @@ import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
 
 const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
-export const demoEnabled = () => process.env.NODE_ENV !== 'production'
-  || process.env.ENABLE_DEMO_LOGIN === 'true'
-  || process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
+// Demo login is ON by default so a freshly deployed test VM works with no runtime setup.
+// An operational deployment must set DISABLE_DEMO_LOGIN=true; then demo cards, the demo PIN
+// and the one-click developer admin are all disabled and real credentials are required.
+export const demoEnabled = () => process.env.DISABLE_DEMO_LOGIN !== 'true';
 
 function secret() {
   const configured = process.env.CMS_SESSION_SECRET;
