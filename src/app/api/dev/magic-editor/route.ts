@@ -3,87 +3,163 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const LAYOUT_RULES_FILE = path.join(process.cwd(), "src", "lib", "permanent_layout_rules.json");
+const MODIFICATIONS_FILE = path.join(process.cwd(), "src", "lib", "magic_modifications.json");
+
+export interface MagicModification {
+  id: string;
+  timestamp: string;
+  url: string;
+  actionType: "RENAME_TEXT" | "RESIZE" | "DELETE_ELEMENT" | "ADD_BUTTON" | "MOVE_POSITION" | "CUSTOM_STYLE";
+  selector?: string;
+  tagName: string;
+  originalText?: string;
+  newText?: string;
+  width?: string;
+  height?: string;
+  fontSize?: string;
+  classes?: string;
+  styles?: Record<string, string>;
+  parentContext?: string;
+  isApplied?: boolean;
+}
 
 function ensureFile() {
-  if (!fs.existsSync(LAYOUT_RULES_FILE)) {
-    fs.writeFileSync(LAYOUT_RULES_FILE, JSON.stringify([]), "utf-8");
+  if (!fs.existsSync(MODIFICATIONS_FILE)) {
+    fs.writeFileSync(MODIFICATIONS_FILE, JSON.stringify([], null, 2), "utf-8");
   }
 }
 
+function readModifications(): MagicModification[] {
+  ensureFile();
+  try {
+    const raw = fs.readFileSync(MODIFICATIONS_FILE, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function writeModifications(data: MagicModification[]) {
+  ensureFile();
+  fs.writeFileSync(MODIFICATIONS_FILE, JSON.stringify(data, null, 2), "utf-8");
+}
+
+// GET: Return all modifications (or filtered by url)
 export async function GET(req: NextRequest) {
-  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
-
   try {
-    ensureFile();
-    const data = fs.readFileSync(LAYOUT_RULES_FILE, "utf-8");
-    return NextResponse.json({ rules: JSON.parse(data) });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message, rules: [] }, { status: 500 });
-  }
-}
+    const { searchParams } = new URL(req.url);
+    const urlFilter = searchParams.get("url");
+    const all = readModifications();
 
-export async function POST(req: NextRequest) {
-  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
-
-  try {
-    ensureFile();
-    const body = await req.json();
-    let current: any[] = [];
-    try {
-      current = JSON.parse(fs.readFileSync(LAYOUT_RULES_FILE, "utf-8"));
-    } catch {
-      current = [];
+    if (urlFilter) {
+      const filtered = all.filter((m) => m.url === urlFilter || m.url === "*");
+      return NextResponse.json({ success: true, modifications: filtered, allCount: all.length });
     }
 
-    const { actions } = body;
-    const actionsList = Array.isArray(actions) ? actions : [actions];
+    return NextResponse.json({ success: true, modifications: all });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message, modifications: [] }, { status: 500 });
+  }
+}
 
-    for (const act of actionsList) {
-      if (!act) continue;
+// POST: Add new modifications (supports single or array)
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const current = readModifications();
+    const incoming: MagicModification[] = Array.isArray(body.modifications)
+      ? body.modifications
+      : body.modification
+      ? [body.modification]
+      : Array.isArray(body.actions)
+      ? body.actions
+      : body.action
+      ? [body.action]
+      : [];
 
-      // Upsert: If a rule already exists for this element on this url, update it
+    for (const item of incoming) {
+      if (!item || !item.actionType) continue;
+
+      // Check if duplicate modification exists for same target on same url
       const existingIdx = current.findIndex(
-        (r) => r.elementText === act.elementText && r.url === act.url
+        (m) =>
+          m.url === item.url &&
+          m.tagName === item.tagName &&
+          (m.originalText === item.originalText || (item.selector && m.selector === item.selector)) &&
+          m.actionType === item.actionType
       );
 
-      const entry = {
-        id: `layout_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      const entry: MagicModification = {
+        id: item.id || `mod_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         timestamp: new Date().toISOString(),
-        ...act,
+        url: item.url || "*",
+        actionType: item.actionType,
+        selector: item.selector || "",
+        tagName: item.tagName || "div",
+        originalText: item.originalText || "",
+        newText: item.newText || "",
+        width: item.width,
+        height: item.height,
+        fontSize: item.fontSize,
+        classes: item.classes || "",
+        styles: item.styles || {},
+        parentContext: item.parentContext || "",
+        isApplied: true,
       };
 
       if (existingIdx >= 0) {
-        current[existingIdx] = entry;
+        current[existingIdx] = { ...current[existingIdx], ...entry };
       } else {
         current.push(entry);
       }
     }
 
-    fs.writeFileSync(LAYOUT_RULES_FILE, JSON.stringify(current, null, 2), "utf-8");
-    return NextResponse.json({ success: true, count: current.length });
+    writeModifications(current);
+    return NextResponse.json({ success: true, count: current.length, modifications: current });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
+// DELETE: Undo/delete a specific modification by id, or clear all for URL
 export async function DELETE(req: NextRequest) {
-  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
-
   try {
-    ensureFile();
     const { searchParams } = new URL(req.url);
+    const modId = searchParams.get("id");
     const urlFilter = searchParams.get("url");
+    const clearAll = searchParams.get("clearAll") === "true";
 
-    if (!urlFilter) {
-      fs.writeFileSync(LAYOUT_RULES_FILE, JSON.stringify([]), "utf-8");
-      return NextResponse.json({ success: true, message: "Cleared all layout rules" });
+    let current = readModifications();
+
+    if (modId) {
+      const beforeCount = current.length;
+      current = current.filter((m) => m.id !== modId);
+      writeModifications(current);
+      return NextResponse.json({
+        success: true,
+        removedId: modId,
+        count: current.length,
+        modifications: current,
+      });
     }
 
-    let current: any[] = JSON.parse(fs.readFileSync(LAYOUT_RULES_FILE, "utf-8"));
-    current = current.filter((r) => r.url !== urlFilter);
-    fs.writeFileSync(LAYOUT_RULES_FILE, JSON.stringify(current, null, 2), "utf-8");
-    return NextResponse.json({ success: true, rules: current });
+    if (urlFilter) {
+      current = current.filter((m) => m.url !== urlFilter);
+      writeModifications(current);
+      return NextResponse.json({
+        success: true,
+        clearedUrl: urlFilter,
+        count: current.length,
+        modifications: current,
+      });
+    }
+
+    if (clearAll) {
+      writeModifications([]);
+      return NextResponse.json({ success: true, message: "All modifications cleared", modifications: [] });
+    }
+
+    return NextResponse.json({ error: "No id or url specified to delete." }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

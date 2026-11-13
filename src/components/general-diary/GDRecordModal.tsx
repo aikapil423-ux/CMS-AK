@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { cleanGdNarrative } from "@/services/generalDiaryService";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { stationStaffService } from "@/services/stationStaffService";
+import { DEMO_USERS } from "@/lib/mockData";
 
 interface GDRecordModalProps {
   record: GeneralDiaryRecord | null;
@@ -74,6 +76,35 @@ export function GDRecordModal({
   const isSuggested = record.status === "SUGGESTED";
   const isDraft = record.status === "DRAFT";
 
+  // Resolve Station Moharrir Head Constable (MHC / मुंशी)
+  const stationMhc = React.useMemo(() => {
+    try {
+      const staffList = stationStaffService.getStaffForStation(record.policeStation);
+      const mhcStaff = staffList.find(
+        (s) => s.category === "MHC" || s.assignedDuty?.toLowerCase().includes("mhc") || s.assignedDuty?.toLowerCase().includes("moharrir")
+      );
+      if (mhcStaff) {
+        return {
+          name: mhcStaff.name,
+          rank: mhcStaff.rank || "Head Constable",
+          beltNumber: mhcStaff.beltNumber || "MHC",
+          pno: mhcStaff.pno || "",
+        };
+      }
+    } catch (e) {
+      console.warn("Could not load station staff for MHC:", e);
+    }
+
+    // Fallback to default MHC from DEMO_USERS
+    const demoMhc = DEMO_USERS.find((u) => u.role === "MHC_GD_INCHARGE");
+    return {
+      name: demoMhc?.name || "HC Devinder Kumar",
+      rank: demoMhc?.rankDisplay || "Head Constable (MHC)",
+      beltNumber: demoMhc?.pno || "334/PNP",
+      pno: demoMhc?.pno || "HR-05192834",
+    };
+  }, [record.policeStation]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
       <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]">
@@ -94,11 +125,6 @@ export function GDRecordModal({
                 <h3 className="font-bold text-sm leading-tight text-white">
                   {record.gdNumber || "Roznamcha Record"}
                 </h3>
-                {isLocked && (
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.2 rounded font-mono font-bold">
-                    LOCKED &amp; IMMUTABLE
-                  </span>
-                )}
                 {isSuggested && (
                   <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.2 rounded font-mono font-bold">
                     SUGGESTION
@@ -111,7 +137,7 @@ export function GDRecordModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-300">
-                PPR 1934 Rule 22.48 • Register No. II • {record.policeStation}
+                PPR 1934 Rule 22.48 • {record.policeStation}
               </p>
             </div>
           </div>
@@ -162,17 +188,14 @@ export function GDRecordModal({
               <div className="flex items-center justify-center gap-2 mb-1">
                 <Shield className="w-7 h-7 text-[#0b192c]" />
                 <span className="text-xs font-bold tracking-widest uppercase text-[#0b192c]">
-                  HARYANA POLICE • हरियाणा पुलिस
+                  हरियाणा पुलिस
                 </span>
               </div>
-              <h1 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-slate-950">
-                रोजनामचा आम (REGISTER NO. II)
+              <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-slate-950">
+                रोजनामचा रजिस्टर नंबर  II
               </h1>
               <p className="text-xs font-semibold uppercase text-slate-800 tracking-wider mt-0.5">
                 {record.policeStation}, District {record.district}
-              </p>
-              <p className="text-[11px] text-slate-600 italic mt-0.5">
-                (Statutory Station Diary Record under Punjab Police Rules 1934, Rule 22.48)
               </p>
             </div>
 
@@ -183,11 +206,6 @@ export function GDRecordModal({
                 <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2 py-0.5 bg-slate-50">
                   {record.gdNumber}
                 </span>
-                {record.sequencePerDay > 0 && (
-                  <span className="text-xs text-slate-700 border border-slate-300 px-1.5 py-0.5">
-                    Seq: #{record.sequencePerDay}
-                  </span>
-                )}
               </div>
               <div className="flex flex-col sm:items-end text-[11px] sm:text-xs">
                 <div>
@@ -215,9 +233,6 @@ export function GDRecordModal({
                   <span className="font-bold text-slate-950">
                     {record.typeDisplayHi}
                   </span>
-                  <span className="text-xs text-slate-600">
-                    ({record.typeDisplay})
-                  </span>
                 </div>
               </div>
 
@@ -238,7 +253,7 @@ export function GDRecordModal({
                 <div className="flex items-center gap-1.5 pb-1 border-b border-slate-300">
                   <User className="w-3.5 h-3.5 text-slate-700" />
                   <h4 className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-                    मुलाज़िम मुताल्लिक (Entry-For Officer)
+                    ENTRY FOR OFFICER
                   </h4>
                 </div>
                 <div className="space-y-0.5 text-slate-900">
@@ -267,7 +282,7 @@ export function GDRecordModal({
                   <div className="flex items-center gap-1.5">
                     <FileCheck2 className="w-3.5 h-3.5 text-slate-700" />
                     <h4 className="font-bold text-slate-950 uppercase tracking-wider text-[11px]">
-                      मुहर्रिर / लेखक (Actual Author)
+                      मुहर्रिर / लेखक
                     </h4>
                   </div>
                   <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2">
@@ -372,7 +387,7 @@ export function GDRecordModal({
             {/* Official Narrative / विवरण */}
             <div className="space-y-1.5 font-sans">
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wide border-b border-slate-400 pb-1">
-                इंद्राज का विस्तृत विवरण (Roznamcha Narrative):
+                इंद्राज का विस्तृत विवरण :
               </h4>
               <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap">
                 {cleanGdNarrative(record.narrative)}
@@ -426,24 +441,6 @@ export function GDRecordModal({
               );
             })()}
 
-            {/* Verification Status */}
-            <div className="border border-slate-400 p-2.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-800 font-sans">
-              <div className="flex items-center gap-2">
-                <BadgeCheck className="w-4 h-4 text-slate-800" />
-                <span className="font-bold">
-                  {record.isLocked ? "Statutory Status: LOCKED & IMMUTABLE" : `Status: ${record.status}`}
-                </span>
-              </div>
-              {record.verificationAuditId && (
-                <div className="flex items-center gap-1 text-[11px] font-mono">
-                  <span>Audit ID:</span>
-                  <span className="font-bold border border-slate-400 px-1.5 py-0.2">
-                    {record.verificationAuditId}
-                  </span>
-                </div>
-              )}
-            </div>
-
             {/* Signatures & Seal Footer */}
             <div className="pt-4 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
               <div className="text-center w-36">
@@ -456,13 +453,13 @@ export function GDRecordModal({
               <div className="text-right space-y-0.5">
                 <p className="text-slate-400">______________________________________</p>
                 <p className="font-bold text-slate-950">
-                  {record.verifiedBy?.name || record.actualAuthor.name} ({record.verifiedBy?.rank || record.actualAuthor.rank})
+                  {stationMhc.name}
                 </p>
-                <p className="text-slate-700 text-[11px]">
-                  Moharrir Head Constable / Station House Officer
+                <p className="text-slate-700 text-[11px] font-medium">
+                  Moharrir Head Constable (MHC / मुंशी थाना)
                 </p>
                 <p className="text-slate-600 font-mono text-[11px]">
-                  Belt: {record.verifiedBy?.beltNumber || record.actualAuthor.beltNumber} • {record.policeStation}
+                  Belt: {stationMhc.beltNumber} • {record.policeStation}
                 </p>
               </div>
             </div>
