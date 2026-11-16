@@ -17,6 +17,7 @@ import {
   ClipboardList,
   FileBarChart,
   Radio,
+  Pencil,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useModule } from "@/context/ModuleContext";
@@ -102,6 +103,11 @@ export default function PostLoginPortalPage() {
     router.push("/telecom");
   };
 
+  const handleSelectAudits = () => {
+    switchToModule("AUDITS");
+    router.push("/audits");
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-5 py-2 sm:py-3 animate-in fade-in-50 text-slate-800">
       {/* Title & Instructions - Minimalist */}
@@ -114,11 +120,6 @@ export default function PostLoginPortalPage() {
 
       {/* Primary operational modules: four cards per row on desktop. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-3 pt-1 w-full max-w-7xl">
-        <Link href="/audits" className="bg-white rounded-xl border border-slate-200 hover:border-blue-700 p-4 flex flex-col justify-between gap-5">
-          <div className="flex items-center gap-2"><ClipboardList className="w-5 h-5"/><h3 className="text-sm font-semibold">Audits & Inspection</h3></div>
-          <p className="text-xs text-slate-600">Case pendency · Reports · Court replies · Compliance</p>
-          <span className="border-t pt-3 text-xs flex justify-between">Authorized records <span>Open Audits →</span></span>
-        </Link>
         {/* TAB 1: ROZNAMCHA GD (GENERAL DIARY) */}
         <div
           onClick={handleSelectRoznamcha}
@@ -360,6 +361,44 @@ export default function PostLoginPortalPage() {
             <div className="text-xs font-medium text-slate-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
               <span>Open Prosecution</span>
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* TAB 8: AUDITS & INSPECTION */}
+        <div
+          onClick={handleSelectAudits}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg shrink-0 bg-slate-100 text-slate-800 group-hover:bg-slate-900 group-hover:text-white flex items-center justify-center transition-colors border border-slate-200/60">
+                <Pencil className="w-4 h-4" />
+              </div>
+              <h3 className="min-w-0 flex-1 whitespace-nowrap text-sm font-semibold text-slate-900 leading-snug group-hover:text-slate-900 transition-colors">
+                Audits &amp; Inspection
+              </h3>
+            </div>
+
+            {/* Status Pills */}
+            <div className="pt-0.5 flex flex-wrap gap-1.5 text-xs">
+              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
+                <Clock className="w-3 h-3 text-slate-400" />
+                Case Pendency
+              </span>
+              <span className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded-md border border-slate-200/60 text-[10px] font-normal flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-blue-600" />
+                Compliance Review
+              </span>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <span className="text-[11px] text-slate-400">Authorized Records</span>
+            <div className="text-xs font-medium text-slate-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>Open Audits</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
         </div>

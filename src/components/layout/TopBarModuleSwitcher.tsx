@@ -16,6 +16,7 @@ import {
   FileBarChart,
   Radio,
   PhoneCall,
+  Pencil,
 } from "lucide-react";
 import { useModule, PoliceModule } from "@/context/ModuleContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -77,7 +78,6 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   };
 
   const modules = [
-    { id: 'AUDITS', title: 'Audits & Inspection', titleHi: 'ऑडिट एवं निरीक्षण', href: '/audits', icon: ClipboardList, color: 'blue', isActive: pathname.startsWith('/audits') },
     {
       id: "ROZNAMCHA",
       title: "Roznamcha GD",
@@ -140,6 +140,15 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       icon: PhoneCall,
       color: "cyan",
       isActive: isTelecom,
+    },
+    {
+      id: "AUDITS",
+      title: "Audits & Inspection",
+      titleHi: "ऑडिट एवं निरीक्षण",
+      href: "/audits",
+      icon: Pencil,
+      color: "blue",
+      isActive: pathname.startsWith("/audits"),
     },
   ];
 
