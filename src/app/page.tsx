@@ -114,6 +114,11 @@ export default function PostLoginPortalPage() {
 
       {/* Primary operational modules: four cards per row on desktop. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-3 pt-1 w-full max-w-7xl">
+        <Link href="/audits" className="bg-white rounded-xl border border-slate-200 hover:border-blue-700 p-4 flex flex-col justify-between gap-5">
+          <div className="flex items-center gap-2"><ClipboardList className="w-5 h-5"/><h3 className="text-sm font-semibold">Audits & Inspection</h3></div>
+          <p className="text-xs text-slate-600">Case pendency · Reports · Court replies · Compliance</p>
+          <span className="border-t pt-3 text-xs flex justify-between">Authorized records <span>Open Audits →</span></span>
+        </Link>
         {/* TAB 1: ROZNAMCHA GD (GENERAL DIARY) */}
         <div
           onClick={handleSelectRoznamcha}

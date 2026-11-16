@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-export type PoliceModule = "COMPLAINTS" | "ROZNAMCHA" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION" | "TELECOM";
+export type PoliceModule = "COMPLAINTS" | "ROZNAMCHA" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION" | "TELECOM" | "AUDITS";
 
 interface ModuleContextType {
   activeModule: PoliceModule;
@@ -20,7 +20,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
 
   // Synchronize active module with route when navigating
   useEffect(() => {
-    if (pathname.startsWith("/general-diary")) {
+    if (pathname.startsWith("/audits")) {
+      setActiveModule("AUDITS");
+    } else if (pathname.startsWith("/general-diary")) {
       setActiveModule("ROZNAMCHA");
     } else if (
       pathname.startsWith("/fir") ||
@@ -45,7 +47,9 @@ export function ModuleProvider({ children }: { children: React.ReactNode }) {
 
   const switchToModule = (mod: PoliceModule) => {
     setActiveModule(mod);
-    if (mod === "ROZNAMCHA") {
+    if (mod === "AUDITS") {
+      router.push("/audits");
+    } else if (mod === "ROZNAMCHA") {
       router.push("/general-diary");
     } else if (mod === "FIR") {
       router.push("/fir");

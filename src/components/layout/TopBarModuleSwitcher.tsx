@@ -77,6 +77,7 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
   };
 
   const modules = [
+    { id: 'AUDITS', title: 'Audits & Inspection', titleHi: 'ऑडिट एवं निरीक्षण', href: '/audits', icon: ClipboardList, color: 'blue', isActive: pathname.startsWith('/audits') },
     {
       id: "ROZNAMCHA",
       title: "Roznamcha GD",

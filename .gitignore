@@ -49,6 +49,10 @@ prisma/case-analysis/
 prisma/scrutiny-records/
 prisma/court-affidavits/
 prisma/weekly-diary/
+prisma/audits/
+
+tmp/
+output/
 
 prisma/storage/
 prisma/*-store.json

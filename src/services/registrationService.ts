@@ -365,24 +365,24 @@ export const RegistrationService = {
     if (memoryStore) {
       return sortEntriesNewestFirst(memoryStore);
     }
-    if (typeof window === "undefined") return sortEntriesNewestFirst(INITIAL_RECORDS);
+    if (typeof window === "undefined") return sortEntriesNewestFirst([]);
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+        memoryStore = sortEntriesNewestFirst([]);
         safeSaveToLocalStorage(memoryStore);
         return [...memoryStore];
       }
       const parsed = JSON.parse(data);
       if (!Array.isArray(parsed)) {
-        memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+        memoryStore = sortEntriesNewestFirst([]);
         safeSaveToLocalStorage(memoryStore);
         return [...memoryStore];
       }
       memoryStore = sortEntriesNewestFirst(parsed);
       return [...memoryStore];
     } catch {
-      memoryStore = sortEntriesNewestFirst(INITIAL_RECORDS);
+      memoryStore = sortEntriesNewestFirst([]);
       return [...memoryStore];
     }
   },

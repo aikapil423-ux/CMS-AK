@@ -151,10 +151,13 @@ function RegistrationsContent() {
     loadData();
   }, []);
 
-  // Filter entries for active tab + search query + status
-  const currentTabEntries = useMemo(() => {
-    return entries.filter((e) => e.type === activeTab && (currentUser.role === "SUPER_ADMIN" || e.district?.toLowerCase() === currentUser.district.toLowerCase() && (["SP_DISTRICT","DSP_SUBDIV"].includes(currentUser.role) || e.stationName?.toLowerCase() === currentUser.stationName.toLowerCase())));
-  }, [entries, activeTab, currentUser]);
+  // Use the same permitted records for the table, tab badges and total.
+  const accessibleEntries = useMemo(() => entries.filter(e =>
+    currentUser.role === "SUPER_ADMIN" ||
+    e.district?.toLowerCase() === currentUser.district.toLowerCase() &&
+    (["SP_DISTRICT", "DSP_SUBDIV"].includes(currentUser.role) || e.stationName?.toLowerCase() === currentUser.stationName.toLowerCase())
+  ), [entries, currentUser]);
+  const currentTabEntries = useMemo(() => accessibleEntries.filter(e => e.type === activeTab), [accessibleEntries, activeTab]);
 
   const filteredEntries = useMemo(() => {
     return currentTabEntries.filter((item) => {
@@ -189,12 +192,12 @@ function RegistrationsContent() {
   // Counts for each tab badge
   const counts = useMemo(() => {
     return {
-      UIDB: entries.filter((e) => e.type === "UIDB").length,
-      MISSING_PERSON: entries.filter((e) => e.type === "MISSING_PERSON").length,
-      MISSING_CATTLE: entries.filter((e) => e.type === "MISSING_CATTLE").length,
-      LOST_PROPERTY: entries.filter((e) => e.type === "LOST_PROPERTY").length,
+      UIDB: accessibleEntries.filter((e) => e.type === "UIDB").length,
+      MISSING_PERSON: accessibleEntries.filter((e) => e.type === "MISSING_PERSON").length,
+      MISSING_CATTLE: accessibleEntries.filter((e) => e.type === "MISSING_CATTLE").length,
+      LOST_PROPERTY: accessibleEntries.filter((e) => e.type === "LOST_PROPERTY").length,
     };
-  }, [entries]);
+  }, [accessibleEntries]);
 
   // Switch tab handler
   const handleTabChange = (type: RegistrationType) => {
@@ -678,7 +681,7 @@ function RegistrationsContent() {
               {currentTabEntries.length} {activeTab === "UIDB" ? "UIDB / UD" : activeTab === "MISSING_PERSON" ? "Missing Person" : activeTab === "MISSING_CATTLE" ? "Missing Cattle" : "Lost Property"} Records
             </span>
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono border border-slate-200">
-              Total {entries.length} in Portal
+              Total {accessibleEntries.length} in Your Scope
             </span>
           </div>
 

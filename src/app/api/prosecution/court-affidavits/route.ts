@@ -196,7 +196,7 @@ export async function POST(req: Request) {
       else if (!origin.id && firFields[key] === value) sources[key] = { id: '', name: linked.module === 'FIR' ? 'Saved FIR' : 'Saved complaint' };
     }
     const annexures = input.affidavit.annexures.map(row => ({ ...row, sourceId: row.sourceId && sourceMap.has(row.sourceId) ? row.sourceId : undefined }));
-    const common = { id, revision: randomUUID(), affidavit: { ...input.affidavit, sources, annexures, customType: input.category === 'OTHER' ? input.affidavit.customType : undefined }, firNumber: linked.module === 'FIR' ? f.fir || linked.reference : '', policeStation: f.station || '', courtName: f.court || '', hearingDate: f.hearing || '', submissionDate: f.date || '' };
+    const common = { id, createdAt: previous ? previous.record.createdAt : new Date().toISOString(), updatedAt: new Date().toISOString(), revision: randomUUID(), affidavit: { ...input.affidavit, sources, annexures, customType: input.category === 'OTHER' ? input.affidavit.customType : undefined }, firNumber: linked.module === 'FIR' ? f.fir || linked.reference : '', policeStation: f.station || '', courtName: f.court || '', hearingDate: f.hearing || '', submissionDate: f.date || '' };
     const record: BailReplyRecord | CourtStatusReportRecord = input.kind === 'bail' ? {
       ...common, applicationNo: f.petition || '', applicantAccusedName: f.petitioner || '', fatherName: f.father,
       bailType: input.category as BailReplyRecord['bailType'], ipcOrBnsSections: f.sections || '',

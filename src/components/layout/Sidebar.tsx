@@ -181,7 +181,7 @@ export function Sidebar() {
   }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath, isProsecutionPath, isTelecomPath]);
 
   // Check if user is on portal home page (Select Operational Module)
-  const isPortalHome = pathname === "/";
+  const isPortalHome = pathname === "/" || pathname.startsWith('/audits');
 
   // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
   const showRoznamcha = !isPortalHome && !isTelecomPath && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "ROZNAMCHA"));
@@ -308,6 +308,7 @@ export function Sidebar() {
 
       {/* Navigation Links: Module specific isolation */}
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
+        <Link href="/audits" title="Audits & Inspection" className={cn('flex items-center gap-2 p-2 rounded text-xs',pathname.startsWith('/audits')?'bg-blue-900 text-white':'text-slate-600 hover:bg-slate-100')}><ClipboardList className="w-4 h-4 shrink-0"/>{isExpanded&&<span>Audits & Inspection</span>}</Link>
         {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR (Only visible if Roznamcha is open/active) */}
         {showRoznamcha && (
           <div className="space-y-1">
