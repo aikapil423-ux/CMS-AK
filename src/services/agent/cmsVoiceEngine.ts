@@ -510,8 +510,9 @@ class CmsVoiceEngineClass {
       return;
     }
 
-    // 1. Check for Wake-Word: "Hey Parth" / "हे पार्थ" / "Parth" (supports "hey parth", "हे पार्थ", "parth", and "hey cms")
-    const wakeRegex = /(?:^|\s)(?:hey|hay|hi|hello|हे|सुनो|नमस्ते|ok|okay)?\s*(?:parth|पार्थ|paarth|part|cms|सी\s*एम\s*एस|सी०एम०एस०|सीएमएस)(?:\s+agent|\s+एजेंट)?(?:\s*[,!?:-]*\s*|$)/i;
+    // 1. Check for Wake-Word: Strictly "Hey Parth" / "हे पार्थ" / "Hello Parth" / "सुनो पार्थ" / "Hey Path"
+    // Note: Completely removed all CMS references ("Hey CMS", "Hello CMS", "सुनो सीएमएस", "cms", etc.) as per user instruction.
+    const wakeRegex = /(?:^|\s)(?:hey|hay|hi|hello|हे|सुनो|नमस्ते|ok|okay)?\s*(?:parth|पार्थ|paarth|path|part|पारथ)(?:\s+agent|\s+एजेंट)?(?:\s*[,!?:-]*\s*|$)/i;
     const hasWakeWord = wakeRegex.test(raw);
 
     // If wake word is present, strip it out to extract the pure command
@@ -520,7 +521,7 @@ class CmsVoiceEngineClass {
       commandText = raw.replace(wakeRegex, "").trim();
     }
 
-    // If user said ONLY "Hey Parth" / "हे पार्थ" / "Parth" without trailing command:
+    // If user said ONLY "Hey Parth" / "हे पार्थ" / "Hello Parth" / "सुनो पार्थ" without trailing command:
     if (hasWakeWord && !commandText) {
       this.handleBargeIn();
       this.setStatus("LISTENING", "Wake word recognized! Listening for command...");
@@ -541,18 +542,18 @@ class CmsVoiceEngineClass {
       return;
     }
 
-    // If wake word was not said, check if user is in active listening or spoke an actionable command
+    // If wake word was not said:
     if (!hasWakeWord) {
-      // Check if utterance is an actionable command or user is in active listening mode
-      const isActionable = /(?:kholo|open|dikhao|show|batao|search|dhundo|filter|darj|bharo|register|check|fir|complaint|shikayat|gd|rapat|roznamcha|bns|bnss|bail|challan|sho|io|munshi|affidavit|acts|telecom|prosecution|audit|print|save|seizure|arrest|next|back)/i.test(raw);
-      if (isActionable || this.status === "LISTENING" || this.status === "STANDBY" || this.status === "INTERRUPTED") {
+      // Only process without wake-word if user is already in active LISTENING or INTERRUPTED mode
+      if (this.status === "LISTENING" || this.status === "INTERRUPTED") {
         commandText = raw;
       } else {
+        // In STANDBY mode, strictly require wake-word ("Hey Parth", "हे पार्थ", "Hello Parth", etc.)
         return;
       }
     }
 
-    // User gave: "Hey CMS <command>"
+    // User gave: "Hey Parth <command>"
     this.handleBargeIn();
     await this.formulateAndExecutePlan(commandText);
   }
