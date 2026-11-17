@@ -259,12 +259,12 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
     session.setLanguage(lang);
     if (currentUser) {
       session.setUser({
-        id: currentUser.id || currentUser.badgeNumber,
+        id: currentUser.id || currentUser.beltNumber || currentUser.pno,
         name: currentUser.name,
-        role: currentUser.role,
-        station: currentUser.policeStation,
+        role: currentUser.rankDisplay || currentUser.roleDisplay || currentUser.role,
+        station: currentUser.stationName,
         district: currentUser.district,
-        badgeNumber: currentUser.badgeNumber
+        badgeNumber: currentUser.beltNumber || currentUser.pno
       });
     }
     sessionRef.current=session;
@@ -318,12 +318,12 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   useEffect(() => {
     if (sessionRef.current && currentUser) {
       sessionRef.current.setUser({
-        id: currentUser.id || currentUser.badgeNumber,
+        id: currentUser.id || currentUser.beltNumber || currentUser.pno,
         name: currentUser.name,
-        role: currentUser.role,
-        station: currentUser.policeStation,
+        role: currentUser.rankDisplay || currentUser.roleDisplay || currentUser.role,
+        station: currentUser.stationName,
         district: currentUser.district,
-        badgeNumber: currentUser.badgeNumber
+        badgeNumber: currentUser.beltNumber || currentUser.pno
       });
     }
   }, [currentUser]);
