@@ -14,6 +14,8 @@ export class WebsiteOperatorSession {
   private stepFailed = false;
   private forceModel = false;
   private seenPlans = new Set<string>();
+  public language: "en-IN" | "hinglish" | "hi-IN" = "en-IN";
+  public setLanguage(lang: "en-IN" | "hinglish" | "hi-IN") { this.language = lang; }
   addAttachment(name:string,text:string) {this.attachments=[...this.attachments,{name:name.slice(0,200),text:text.slice(0,40000)}].slice(-3);}
 
   private experience=newExperience();
@@ -45,8 +47,17 @@ export class WebsiteOperatorSession {
     return false;
   }
   async run(text:string,navigate:(path:string)=>void):Promise<string> {
-    if(/^(stop|ruko|रुको|cancel)$/i.test(text.trim())){this.stop();return 'Workflow रोक दिया। पहले किए गए changes undo नहीं हुए।';}
-    if(this.busy) return 'एक command चल रही है; उसके पूरा होने दें।';
+    if(/^(stop|ruko|रुको|cancel)$/i.test(text.trim())){
+      this.stop();
+      if (this.language === 'en-IN') return 'Workflow stopped. Prior changes were not undone.';
+      if (this.language === 'hinglish') return 'Workflow rok diya gaya. Pehle ke changes save hain.';
+      return 'Workflow रोक दिया। पहले किए गए changes undo नहीं हुए।';
+    }
+    if(this.busy) {
+      if (this.language === 'en-IN') return 'A command is currently executing; please wait for it to finish.';
+      if (this.language === 'hinglish') return 'Ek command chal rahi hai; kripya wait karein.';
+      return 'एक command चल रही है; उसके पूरा होने दें।';
+    }
     if(/^(undo|wapas|वापस|पिछला बदलाव वापस)$/i.test(text.trim())) {
       const entry=this.undoStack.pop();const live=this.bridge.snapshot();const field=live.controls.find(c=>c.id===entry?.id);
       if(!entry || live.path!==entry.path || !field || field.value!==entry.after)return 'Undo available नहीं है या field manually बदल गया है।';
@@ -155,7 +166,13 @@ export class WebsiteOperatorSession {
         navigate(action.path);
         let reached=false;
         for(let i=0;i<30;i++){await new Promise(r=>setTimeout(r,100));if(location.pathname+location.search===action.path){await new Promise(r=>setTimeout(r,500));reached=true;break;}}
-        results.push(reached?`Page खुल गया: ${action.path}।`:'Navigation शुरू हुई; page खुलने की पुष्टि अभी नहीं हुई।');
+        let navMsg = reached?`Page खुल गया: ${action.path}।`:'Navigation शुरू हुई; page खुलने की पुष्टि अभी नहीं हुई।';
+        if (this.language === 'en-IN') {
+          navMsg = reached ? `Navigated to: ${action.path}.` : `Navigation initiated to ${action.path}.`;
+        } else if (this.language === 'hinglish') {
+          navMsg = reached ? `Page khol diya gaya hai: ${action.path}.` : `Navigation shuru hui: ${action.path}.`;
+        }
+        results.push(navMsg);
         if(!reached) this.stepFailed=true;else {this.experience.metrics.verifiedSteps++;this.record('navigate','verified');this.publish('running',`Page verified: ${action.path}`);}
         break;
       }
@@ -184,7 +201,12 @@ export class WebsiteOperatorSession {
       if(next){this.pendingField={path:after.path,id:next.id,label:next.label};this.experience.metrics.questions++;results.push(`${missing.length?missing.map(c=>c.label).join(', '):next.label} चाहिए। पहले ${next.label} बताएं।`);}
       else if(plan.question) {this.stepFailed=true;results.push(plan.question);}
     }
-    const answer=results.join('\n\n') || plan.message || 'Command स्पष्ट नहीं है। Page/field का नाम बताएं।';
+    const defaultClarification = this.language === 'en-IN'
+      ? 'Command was unclear. Please specify the page, field, or action.'
+      : this.language === 'hinglish'
+      ? 'Command clear nahi hai. Kripya page ya field ka naam batayein.'
+      : 'Command स्पष्ट नहीं है। Page/field का नाम बताएं।';
+    const answer=results.join('\n\n') || plan.message || defaultClarification;
     this.history.push({role:'assistant',text:answer});this.history=this.history.slice(-12);
     return answer;
   }

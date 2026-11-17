@@ -46,6 +46,7 @@ function writeModifications(data: MagicModification[]) {
 
 // GET: Return all modifications (or filtered by url)
 export async function GET(req: NextRequest) {
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
   try {
     const { searchParams } = new URL(req.url);
     const urlFilter = searchParams.get("url");
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
 
 // POST: Add new modifications (supports single or array)
 export async function POST(req: NextRequest) {
+  const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
   try {
     const body = await req.json();
     const current = readModifications();

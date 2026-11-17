@@ -8,17 +8,41 @@ import { WebsiteOperatorSession } from '@/services/agent/websiteOperatorSession'
 import { newExperience, type OperatorExperience } from '@/services/agent/operatorExperience';
 import { readOperatorAttachment } from '@/services/agent/operatorAttachment';
 import { voiceTurn } from '@/services/agent/operatorVoice';
+import { CmsVoiceEngine, CmsVoiceStatus, VoicePlan } from '@/services/agent/cmsVoiceEngine';
+import { CmsVoiceBadge } from './CmsVoiceBadge';
 
 type Message={id:string;sender:'user'|'agent';text:string;feedback?:boolean};
 interface CmsAgentModalProps {isOpen:boolean;onClose:()=>void;anchorPosition:{x:number;y:number}}
-const welcome:Message={id:'welcome',sender:'agent',text:'जय हिन्द! Kaam Hindi, English ya Hinglish mein batayein. Main current page, selected case aur aapki di hui details use karunga. Missing facts poochunga; final save/send se pehle review hoga. Example: “acts sections kholo then search Arms”.'};
+
+export type AgentLanguage = "en-IN" | "hinglish" | "hi-IN";
+
+const welcomeMessages: Record<AgentLanguage, string> = {
+  "en-IN": "Jai Hind! I am Parth, your Police AI Copilot. Please give commands in English or say “Hey Parth”. I can navigate across all 8 modules, search case records, look up BNS/BNSS sections, and assist in police investigations. Example: “Open FIR register” or “Search Arms in Acts”.",
+  "hinglish": "Jai Hind! Main Parth hoon, aapka Police AI Agent. “Hey Parth” bolein ya Hinglish mein type karein. Main current page, selected case aur aapki di hui details use karunga. Example: “FIR kholo”, “complaints check karo”, ya “BNS 303 search karo”.",
+  "hi-IN": "जय हिन्द! मैं पार्थ हूँ, आपका पुलिस एआई एजेंट। “Hey Parth” बोलें या हिन्दी में निर्देश दें। मैं आपके वर्तमान पेज, केस विवरण और कानूनी धाराओं पर कार्य करूँगा। उदाहरण: “एफआईआर रजिस्टर खोलो” या “धारा 303 BNS क्या है”।",
+};
+
+const placeholders: Record<AgentLanguage, string> = {
+  "en-IN": "“Hey Parth” or type your command (speaking stops playback)...",
+  "hinglish": "“Hey Parth” bolein ya type karein (bolte hi agent rukega)...",
+  "hi-IN": "“Hey Parth” बोलें या सीधे टाइप करें (बोलते ही एजेंट रुकेगा)...",
+};
 
 export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   const router=useRouter();const {currentUser,isAuthenticated}=useAuth();
-  const [messages,setMessages]=useState<Message[]>([welcome]);
+  const [lang,setLang]=useState<AgentLanguage>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cms_voice_lang') as AgentLanguage;
+      if (saved === 'en-IN' || saved === 'hinglish' || saved === 'hi-IN') return saved;
+    }
+    return 'en-IN';
+  });
+  const [messages,setMessages]=useState<Message[]>([
+    { id: 'welcome', sender: 'agent', text: welcomeMessages["en-IN"] }
+  ]);
   const [input,setInput]=useState('');const [loading,setLoading]=useState(false);
   const [expanded,setExpanded]=useState(false);const [listening,setListening]=useState(false);
-  const [lang,setLang]=useState('hi-IN');const [spoken,setSpoken]=useState(false);
+  const [spoken,setSpoken]=useState(false);
   const [experience,setExperience]=useState<OperatorExperience>(newExperience);
   const [files,setFiles]=useState<{name:string;summary:string;preview:string;uncertainties:string[]}[]>([]);
   const [error,setError]=useState('');
@@ -217,42 +241,111 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
 
   const sessionRef=useRef<WebsiteOperatorSession|null>(null);
   const attachmentAbortRef=useRef<AbortController|null>(null);
-  const voiceTurnRef=useRef<ReturnType<typeof voiceTurn>|null>(null);
   const busyRef=useRef(false);
   const sendRef=useRef<(text:string)=>void>(()=>{});sendRef.current=text=>{void send(text);};
-  const recognitionRef=useRef<any>(null);const uploadRef=useRef<HTMLInputElement>(null);const endRef=useRef<HTMLDivElement>(null);
+  const uploadRef=useRef<HTMLInputElement>(null);const endRef=useRef<HTMLDivElement>(null);
   const spokenRef=useRef(spoken);spokenRef.current=spoken;
-  const append=(text:string)=>setMessages(prev=>[...prev,{id:crypto.randomUUID(),sender:'agent',text}]);
+  const [voicePlan, setVoicePlan] = useState<VoicePlan | null>(null);
+  const [voiceStatus, setVoiceStatus] = useState<CmsVoiceStatus>("STANDBY");
+  const lastAgentSpeechRef = useRef<string[]>([]);
+
+  const append = (text: string) => {
+    lastAgentSpeechRef.current = [text, ...lastAgentSpeechRef.current.slice(0, 5)];
+    setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'agent', text }]);
+  };
+
   useEffect(()=>{
-    const session=new WebsiteOperatorSession(setExperience);sessionRef.current=session;setExperience(newExperience());setMessages([welcome]);setFiles([]);setInput('');
-    return ()=>{voiceTurnRef.current?.cancel();recognitionRef.current?.abort();attachmentAbortRef.current?.abort();session.clear();if(sessionRef.current===session)sessionRef.current=null;};
+    const session=new WebsiteOperatorSession(setExperience);
+    session.setLanguage(lang);
+    sessionRef.current=session;
+    setExperience(newExperience());
+    setMessages([{ id: 'welcome', sender: 'agent', text: welcomeMessages[lang] }]);
+    lastAgentSpeechRef.current = [welcomeMessages[lang]];
+    setFiles([]);
+    setInput('');
+
+    // Configure native CMS Voice Engine
+    CmsVoiceEngine.setNavigationHandler((path: string) => {
+      router.push(path);
+    });
+
+    CmsVoiceEngine.setCommandCallback(async (cmd: string) => {
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'user', text: `[Hey Parth] ${cmd}` }]);
+      const answer = await session.run(cmd, path => router.push(path));
+      append(answer);
+      return answer;
+    });
+
+    const unsubscribeStatus = CmsVoiceEngine.subscribeStatus((newStatus) => {
+      setVoiceStatus(newStatus);
+      setListening(newStatus === "LISTENING");
+    });
+
+    const unsubscribePlan = CmsVoiceEngine.subscribePlan((plan) => {
+      setVoicePlan(plan);
+    });
+
+    const unsubscribeTranscript = CmsVoiceEngine.subscribeTranscript(({ text, isFinal, source }) => {
+      if (source === "user") {
+        setInput(text);
+      }
+    });
+
+    if (CmsVoiceEngine.isEnabled()) {
+      CmsVoiceEngine.startContinuousListening();
+    }
+
+    return ()=>{
+      unsubscribeStatus();
+      unsubscribePlan();
+      unsubscribeTranscript();
+      attachmentAbortRef.current?.abort();
+      session.clear();
+      if(sessionRef.current===session) sessionRef.current=null;
+    };
   },[currentUser.id,isAuthenticated]);
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'});},[messages,experience.phase]);
+
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'});},[messages,experience.phase,voicePlan]);
+
   useEffect(()=>{
-    const Recognition=(window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if(!Recognition)return;
-    const recognition=new Recognition();recognition.lang=lang;recognition.continuous=false;recognition.interimResults=true;
-    recognition.onstart=()=>{setListening(true);voiceTurnRef.current=voiceTurn(setInput,text=>sendRef.current(text),stop);};
-    recognition.onend=()=>{setListening(false);voiceTurnRef.current?.end();};
-    recognition.onerror=(event:any)=>{voiceTurnRef.current?.cancel();setListening(false);setError(`Voice input: ${event.error}. Text se command de sakte hain.`);};
-    recognition.onresult=(event:any)=>voiceTurnRef.current?.result(event);
-    recognitionRef.current=recognition;
-    return ()=>{voiceTurnRef.current?.cancel();recognition.onstart=null;recognition.onresult=null;recognition.onend=null;recognition.onerror=null;recognition.abort();recognitionRef.current=null;};
+    CmsVoiceEngine.setLanguage(lang);
+    sessionRef.current?.setLanguage(lang);
+    setMessages(prev => {
+      if (prev.length === 1 && prev[0].id === 'welcome') {
+        return [{ id: 'welcome', sender: 'agent', text: welcomeMessages[lang] }];
+      }
+      return prev;
+    });
   },[lang]);
-  useEffect(()=>{if(!isOpen){voiceTurnRef.current?.cancel();recognitionRef.current?.abort();window.speechSynthesis?.cancel();}},[isOpen]);
-  useEffect(()=>()=>window.speechSynthesis?.cancel(),[]);
+
+  useEffect(()=>{
+    if(!isOpen){
+      CmsVoiceEngine.stopSpeaking();
+    } else {
+      if (CmsVoiceEngine.isEnabled()) {
+        CmsVoiceEngine.startContinuousListening();
+      }
+    }
+  },[isOpen]);
+
+  useEffect(()=>()=>CmsVoiceEngine.stopSpeaking(),[]);
+
   async function send(text=input){
-    if(!text.trim())return;
-    if(busyRef.current||loading){setInput(text);setError('Pehla command chal raha hai. Yeh command draft mein hai; complete hone par bhejein.');return;}
-    if(!isAuthenticated){setError('Pehle sign in karein.');return;}
+    const cmd = (text || input).trim();
+    if(!cmd) return;
+    if(busyRef.current||loading){setInput(cmd);setError('Pehla command chal raha hai. Yeh command draft mein hai; complete hone par bhejein.');return;}
+    if(!isAuthenticated && !currentUser?.id){setError('Pehle sign in karein.');return;}
     const session=sessionRef.current;if(!session)return;
-    busyRef.current=true;voiceTurnRef.current?.cancel();recognitionRef.current?.abort();
-    setMessages(prev=>[...prev,{id:crypto.randomUUID(),sender:'user',text}]);setInput('');setLoading(true);setError('');
+    busyRef.current=true;
+    CmsVoiceEngine.handleBargeIn("User submitted command");
+    setMessages(prev=>[...prev,{id:crypto.randomUUID(),sender:'user',text:cmd}]);setInput('');setLoading(true);setError('');
     try{
-      const answer=await session.run(text,path=>router.push(path));
+      const answer=await session.run(cmd,path=>router.push(path));
       if(sessionRef.current!==session)return;
       append(answer);
-      if(spokenRef.current && 'speechSynthesis' in window){window.speechSynthesis.cancel();const speech=new SpeechSynthesisUtterance(answer);speech.lang=lang;window.speechSynthesis.speak(speech);}
+      if(spokenRef.current){
+        void CmsVoiceEngine.speak(answer);
+      }
     }catch(e){setError(e instanceof Error?e.message:'Command failed');}finally{busyRef.current=false;setLoading(false);}
   }
   async function upload(event:React.ChangeEvent<HTMLInputElement>){
@@ -265,8 +358,24 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
       append(`${file.name}: ${result.summary} Extracted facts/source preview dekhkar batayein kya karna hai. Unclear details guess nahi ki jayengi.`);
     }catch(e){if(!controller.signal.aborted)setError(e instanceof Error?e.message:'Attachment failed');}finally{if(attachmentAbortRef.current===controller){attachmentAbortRef.current=null;setLoading(false);}}
   }
-  function stop(){voiceTurnRef.current?.cancel();attachmentAbortRef.current?.abort();sessionRef.current?.stop();recognitionRef.current?.abort();window.speechSynthesis?.cancel();}
-  function reset(){stop();const session=new WebsiteOperatorSession(setExperience);sessionRef.current=session;setExperience(newExperience());setMessages([welcome]);setFiles([]);setInput('');setError('');}
+  function stop(){
+    attachmentAbortRef.current?.abort();
+    sessionRef.current?.stop();
+    CmsVoiceEngine.handleBargeIn("User stop action");
+    CmsVoiceEngine.replan("User stop requested");
+  }
+  function reset(){
+    stop();
+    const session=new WebsiteOperatorSession(setExperience);
+    session.setLanguage(lang);
+    sessionRef.current=session;
+    setExperience(newExperience());
+    setMessages([{ id: 'welcome', sender: 'agent', text: welcomeMessages[lang] }]);
+    setFiles([]);
+    setInput('');
+    setError('');
+    setVoicePlan(null);
+  }
   function exportReport(){const data=sessionRef.current?.report();const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='cms-agent-quality-report.json';a.click();URL.revokeObjectURL(url);}
   if(!isOpen)return null;
 
@@ -362,19 +471,72 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
     >
       <div className="flex items-center gap-2 select-none pointer-events-none">
         <div>
-          <h2 className="font-bold text-sm flex items-center gap-1.5">
-            CMS AI Agent
+          <h2 className="font-bold text-sm flex items-center gap-1.5 text-blue-200">
+            Parth · AI Police Agent
           </h2>
           <p className="text-[10px] text-slate-300">{currentUser.stationName} · {experience.phase}</p>
         </div>
       </div>
       <div className="flex gap-2 items-center pointer-events-auto">
-        <button type="button" aria-label={spoken?'Disable spoken replies':'Enable spoken replies'} aria-pressed={spoken} onClick={()=>{setSpoken(!spoken);window.speechSynthesis?.cancel();}}><Volume2 size={17}/></button>
+        <CmsVoiceBadge compact />
+        <button type="button" aria-label={spoken?'Disable spoken replies':'Enable spoken replies'} aria-pressed={spoken} onClick={()=>{setSpoken(!spoken);CmsVoiceEngine.stopSpeaking();}}><Volume2 size={17}/></button>
         <button type="button" aria-label={expanded?'Minimize workspace':'Expand workspace'} onClick={()=>setExpanded(!expanded)}>{expanded?<Minimize2 size={17}/>:<Maximize2 size={17}/>}</button>
         <button type="button" aria-label="Close agent" onClick={onClose}><X size={18}/></button>
       </div>
     </header>
     <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50 select-text">
+      {/* Live Voice Plan & Re-planning Execution Card */}
+      {voicePlan && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-2.5 text-xs shadow-xs">
+          <div className="flex items-center justify-between font-semibold text-indigo-900 mb-1">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+              आवाज योजना (Voice Plan): {voicePlan.cleanIntent}
+            </span>
+            <span className="text-[10px] bg-indigo-200/70 text-indigo-800 px-1.5 py-0.5 rounded font-mono">
+              {voiceStatus}
+            </span>
+          </div>
+          <p className="text-[11px] text-indigo-700 italic mb-2">
+            &ldquo;{voicePlan.originalCommand}&rdquo;
+          </p>
+          {voicePlan.steps.length > 0 && (
+            <ul className="space-y-1 mt-1 pl-1">
+              {voicePlan.steps.map((s, idx) => (
+                <li key={s.id || idx} className="flex items-center gap-2 text-[11px]">
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                      s.status === "completed"
+                        ? "bg-emerald-600 text-white"
+                        : s.status === "running"
+                        ? "bg-blue-600 text-white animate-pulse"
+                        : s.status === "failed"
+                        ? "bg-red-600 text-white"
+                        : s.status === "cancelled"
+                        ? "bg-slate-400 text-white line-through"
+                        : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    {s.status === "completed" ? "✓" : idx + 1}
+                  </span>
+                  <span
+                    className={`${
+                      s.status === "completed"
+                        ? "text-emerald-900 font-medium"
+                        : s.status === "cancelled"
+                        ? "text-slate-400 line-through"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {s.description}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {experience.objective && <details className="bg-white border rounded-lg p-2 text-xs" open={loading}>
         <summary className="font-semibold">Current task · {experience.phase}</summary><p className="mt-2 whitespace-pre-wrap">{experience.objective}</p>
         <ol className="list-decimal pl-5 mt-2">{experience.steps.map((step,i)=><li key={i}>{step}</li>)}</ol>
@@ -394,17 +556,51 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
       <div ref={endRef}/>
     </div>
     <footer className="p-3 border-t space-y-2 rounded-b-2xl bg-white select-text">
-      <div className="flex justify-end text-xs">
-        <select aria-label="Voice language" value={lang} onChange={e=>setLang(e.target.value)} className="bg-slate-100 border border-slate-200 rounded px-2 py-0.5 text-[11px] text-slate-600 focus:outline-none">
-          <option value="hi-IN">Hindi / Hinglish</option>
-          <option value="en-IN">English</option>
+      <div className="flex justify-between items-center text-xs">
+        <span className="text-[10px] text-slate-500 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Wake Word: <strong>&ldquo;Hey Parth&rdquo;</strong> (Hands-free active)
+        </span>
+        <select
+          aria-label="Agent Language"
+          value={lang}
+          onChange={e=>setLang(e.target.value as AgentLanguage)}
+          className="bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-[11px] font-medium text-slate-700 focus:outline-none cursor-pointer"
+        >
+          <option value="en-IN">English (English)</option>
+          <option value="hinglish">Hinglish (हिंग्लिश)</option>
+          <option value="hi-IN">हिन्दी (Hindi)</option>
         </select>
       </div>
       <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();void send();}}>
         <input ref={uploadRef} type="file" accept=".txt,.csv,.md,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.webm,.ogg" className="hidden" onChange={upload}/>
         <button type="button" disabled={loading} aria-label="Attach document or audio" onClick={()=>uploadRef.current?.click()}><Paperclip size={18}/></button>
-        <button type="button" aria-label={listening?'Stop microphone':'Start microphone'} onClick={()=>{if(listening)recognitionRef.current?.stop();else if(recognitionRef.current){try{recognitionRef.current.start();}catch{setError('Microphone busy; retry karein.');}}else setError('Voice recognition unavailable; text input use karein.');}}><Mic size={18} className={listening?'text-red-600':''}/></button>
-        <input aria-label="Agent command" placeholder="Mic par bolein; bolna khatam hone par command auto-send hogi…" value={input} onChange={e=>{voiceTurnRef.current?.cancel();setInput(e.target.value);}} className="flex-1 min-w-0 border rounded-lg p-2 text-xs"/>
+        <button
+          type="button"
+          aria-label={listening ? 'Microphone active (listening)' : 'Start microphone'}
+          onClick={() => {
+            const next = !CmsVoiceEngine.isEnabled();
+            CmsVoiceEngine.setEnabled(next);
+            if (next) {
+              CmsVoiceEngine.startContinuousListening();
+            } else {
+              CmsVoiceEngine.stopContinuousListening();
+            }
+          }}
+          title={CmsVoiceEngine.isEnabled() ? 'Hands-free mic active (Click to pause)' : 'Hands-free mic paused (Click to start)'}
+          className={`p-1 rounded-full transition-all ${
+            CmsVoiceEngine.isEnabled() ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-500/50' : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Mic size={18} className={listening ? 'text-blue-600 animate-pulse' : ''}/>
+        </button>
+        <input
+          aria-label="Agent command"
+          placeholder={placeholders[lang]}
+          value={input}
+          onChange={e=>{setInput(e.target.value);}}
+          className="flex-1 min-w-0 border rounded-lg p-2 text-xs"
+        />
         {loading?<button type="button" aria-label="Stop task" onClick={stop}><Square size={18}/></button>:<button type="submit" aria-label="Send command" disabled={!input.trim()}><Send size={18}/></button>}
       </form>
     </footer>

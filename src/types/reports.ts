@@ -1,6 +1,6 @@
 // Types and interfaces for Haryana Police Crime & Administrative Reports
 
-export type ReportTab = "CrimeSITREP_District" | "WEEKLY CRIME DIARY" | "IGP Meeting Presentation" | "Saved Reports";
+export type ReportTab = "CrimeSITREP_District" | "WEEKLY CRIME DIARY" | "IGP Meeting Presentation" | "Saved Reports" | "WYSIWYG_A4_CANVAS";
 
 export interface SitrepHeadCount {
   srNo: number;

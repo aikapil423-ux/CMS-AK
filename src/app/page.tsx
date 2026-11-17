@@ -27,6 +27,7 @@ import { persistentFirService as firService } from "@/services/persistentFirServ
 import { RegistrationService } from "@/services/registrationService";
 import { isUserAssignedIo, isFirVisibleToUser } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
+import { RoleAdaptiveWorkspace } from "@/components/dashboard/RoleAdaptiveWorkspace";
 
 export default function PostLoginPortalPage() {
   const router = useRouter();
@@ -109,13 +110,20 @@ export default function PostLoginPortalPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5 py-2 sm:py-3 animate-in fade-in-50 text-slate-800">
+    <div className="max-w-6xl mx-auto space-y-6 py-2 sm:py-3 animate-in fade-in-50 text-slate-800">
+      {/* 1. Role-Adaptive Operational Command Workspace (SHO / IO / Munshi Views) */}
+      <RoleAdaptiveWorkspace
+        complaintCount={complaintCount}
+        gdCount={gdCount}
+        firCount={firCount}
+      />
+
       {/* Title & Instructions - Minimalist */}
-      <div className="px-1 text-center sm:text-left">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+      <div className="px-1 text-center sm:text-left flex items-center justify-between">
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           Select Operational Module
         </h2>
-
+        <span className="text-xs text-slate-400 font-medium">8 Operational Modules Active</span>
       </div>
 
       {/* Primary operational modules: four cards per row on desktop. */}

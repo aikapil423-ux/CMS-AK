@@ -8,17 +8,8 @@ import {
   CandidateCapabilityMatch,
   PageSchema,
 } from "@/types/cmsAgent";
-
-export interface WebsiteRouteInfo {
-  path: string;
-  title: string;
-  category: "General Diary" | "Complaints" | "FIR & Investigation" | "Enquiry" | "Legal & Reference" | "Administration";
-  description: string;
-  supportedActions: string[];
-  requiredRoles?: string[];
-  primaryApis: string[];
-  databaseEntities: string[];
-}
+import { DynamicModuleRegistry, type WebsiteRouteInfo } from "./dynamicModuleRegistry";
+export type { WebsiteRouteInfo };
 
 // ============================================================================
 // 1. COMPLETE CMS APPLICATION ROUTE & PAGE ARCHITECTURE
@@ -192,6 +183,123 @@ export const WEBSITE_ARCHITECTURE: WebsiteRouteInfo[] = [
     supportedActions: ["रोल बदलना", "पदभार स्विच करना"],
     primaryApis: ["/api/users"],
     databaseEntities: ["User"],
+  },
+  {
+    path: "/registrations",
+    title: "विशेष पंजीकरण रजिस्टर (Police Special Registrations)",
+    category: "General Diary",
+    description: "लावारिस लाश (UIDB), गुमशुदा व्यक्ति (Missing Person), पशु गुमशुदगी (Missing Cattle) व खोया सामान (Lost Property)।",
+    supportedActions: ["UIDB रिकॉर्ड खोजना", "गुमशुदा व्यक्ति खोजना", "खोया सामान दर्ज करना"],
+    primaryApis: ["/api/general-diary"],
+    databaseEntities: ["GDRecord"],
+  },
+  {
+    path: "/reports",
+    title: "उच्चाधिकारी रिपोर्ट एवं दैनिक ब्रीफिंग (Executive Reports)",
+    category: "Administration",
+    description: "IGP/SP उच्चाधिकारी दैनिक ब्रीफिंग, साप्ताहिक डायरी (Weekly Diary Workbook) व सांख्यिकीय आंकड़े।",
+    supportedActions: ["IGP ब्रीफिंग जनरेट करना", "साप्ताहिक डायरी देखना"],
+    primaryApis: ["/api/reports/igp-briefing", "/api/reports/weekly-diary"],
+    databaseEntities: ["GDRecord", "FIRItem", "Complaint"],
+  },
+  {
+    path: "/prosecution",
+    title: "अभियोजन एवं न्यायालय कार्यप्रणाली (Prosecution & Court)",
+    category: "Legal & Reference",
+    description: "अदालत में प्रस्तुत किए जाने वाले जवाब, जमानत आपत्ति (Bail Reply), स्टेटस रिपोर्ट, हलफनामा व केस स्क्रूटनी।",
+    supportedActions: ["जमानत जवाब तैयार करना", "हलफनामा जनरेट करना", "केस स्क्रूटनी देखना"],
+    primaryApis: ["/api/prosecution/court-affidavits", "/api/prosecution/scrutiny"],
+    databaseEntities: ["BailReplyRecord", "CourtStatusReportRecord"],
+  },
+  {
+    path: "/telecom",
+    title: "दूरसंचार सीडीआर एवं टावर विश्लेषण (Telecom Intelligence)",
+    category: "Administration",
+    description: "कॉल डिटेल रिकॉर्ड (CDR), आईपी डिटेल (IPDR), टावर डंप विश्लेषण, आईएमईआई ट्रैकिंग व संदिग्ध मोबाइल सहसंबंध।",
+    supportedActions: ["CDR अपलोड व विश्लेषण", "टावर डंप मैचिंग", "कॉमन नंबर सर्च"],
+    primaryApis: ["/api/telecom", "/api/telecom/finding"],
+    databaseEntities: ["TelecomFinding"],
+  },
+  {
+    path: "/audits",
+    title: "ऑडिट, निरीक्षण एवं केस पेंडेंसी समीक्षा (Audits & Inspection)",
+    category: "Administration",
+    description: "समस्त केसों की समय-सीमा पेंडेंसी, अधिकारी कार्यभार, डेटा विसंगतियां, निरीक्षण सत्र व प्रमाणित CSV/XLSX रिपोर्ट।",
+    supportedActions: ["पेंडेंसी ऑडिट देखना", "कार्यभार समीक्षा", "विसंगतियां खोजना", "निरीक्षण सत्र फाइनल करना"],
+    primaryApis: ["/api/audits"],
+    databaseEntities: ["AuditSnapshot", "AuditRequirement"],
+  },
+  {
+    path: "/record-transfers",
+    title: "केस व रिकॉर्ड स्थानांतरण (Record Transfers Desk)",
+    category: "Administration",
+    description: "अंतर-थाना व अनुभाग केस फाइल स्थानांतरण एवं कस्टडी हैंडओवर।",
+    supportedActions: ["ट्रांसफर सूची देखना", "कस्टडी स्वीकार करना"],
+    primaryApis: ["/api/record-transfers"],
+    databaseEntities: ["RecordTransfer"],
+  },
+  {
+    path: "/settings",
+    title: "सिस्टम सेटिंग्स (System Settings)",
+    category: "Administration",
+    description: "थाने की सिस्टम सेटिंग्स एवं स्टोरेज ऑप्टिमाइज़ेशन।",
+    supportedActions: ["स्टोरेज ऑप्टिमाइज़ेशन", "बैकअप सेटिंग्स"],
+    primaryApis: ["/api/settings"],
+    databaseEntities: ["SystemSettings"],
+  },
+  {
+    path: "/tada",
+    title: "यात्रा व दैनिक भत्ता (TA/DA Allowance Suite)",
+    category: "Administration",
+    description: "थाना पुलिस अधिकारियों का यात्रा भत्ता (TA) व दैनिक भत्ता (DA) बिलिंग।",
+    supportedActions: ["TA/DA बिल तैयार करना", "स्वीकृति स्टेटस"],
+    primaryApis: ["/api/tada"],
+    databaseEntities: ["TadaRecord"],
+  },
+  {
+    path: "/malkhana",
+    title: "मालखाना रजिस्टर एवं ज़ब्त संपत्ति (Malkhana & Seized Property)",
+    category: "General Diary",
+    description: "मुद्द नंबर (Mud No.) रजिस्टर, सील-बंद हथियार, एनडीपीएस माल, ज़ब्त वाहन, मालखाना इंद्राज व कोर्ट निस्तारण।",
+    supportedActions: ["मुद्द नंबर दर्ज करना", "मालखाना रजिस्टर देखना", "कोर्ट डिस्पोज़ल ट्रैक करना"],
+    primaryApis: ["/api/general-diary"],
+    databaseEntities: ["MalkhanaRecord"],
+  },
+  {
+    path: "/summons-warrants",
+    title: "समन व गैर-जमानती वारंट तामील डेस्क (Summons & Warrants Desk)",
+    category: "Prosecution",
+    description: "जमानती वारंट (BW), गैर-जमानती वारंट (NBW), धारा 84/85 BNSS भगोड़ा उद्घोषणा, कुर्की व समन तामील रिपोर्ट।",
+    supportedActions: ["समन तामील दर्ज करना", "NBW सूची देखना", "कुर्की आदेश ट्रैक करना"],
+    primaryApis: ["/api/prosecution"],
+    databaseEntities: ["WarrantRecord"],
+  },
+  {
+    path: "/fir-workspace/chargesheet",
+    title: "मुकम्मल चालान / चार्जशीट जनरेटर (Chargesheet Suite - 193 BNSS)",
+    category: "FIR & Investigation",
+    description: "7-खंडीय मुकम्मल अभियोग पत्र (Chargesheet), गवाहान फेहरिस्त, दस्तावेजी साक्ष्य सूची व एफएसएल लिंकिंग।",
+    supportedActions: ["चार्जशीट ड्राफ्ट करना", "स्क्रूटनी चेक करना", "कोर्ट चालान A4 प्रिंट"],
+    primaryApis: ["/api/fir/final-reports", "/api/fir"],
+    databaseEntities: ["FIRItem", "FinalReportRecord"],
+  },
+  {
+    path: "/cyber-cell",
+    title: "साइबर अपराध एवं म्यूल बैंक खाता अन्वेषण (Cyber Crime Cell)",
+    category: "Intelligence",
+    description: "1930 हेल्पलाइन पोर्टल, म्यूल खाते, धारा 106 BNSS बैंक फ्रीजिंग नोटिस, आईएमईआई ब्लैकलिस्टिंग व डिजिटल साक्ष्य।",
+    supportedActions: ["बैंक फ्रीजिंग नोटिस", "म्यूल खाता खोजना", "फिशिंग लिंक रिपोर्ट"],
+    primaryApis: ["/api/telecom"],
+    databaseEntities: ["CyberIncident"],
+  },
+  {
+    path: "/crime-intelligence",
+    title: "ग्राम अपराध पुस्तिका एवं हिस्ट्री-शीटर निगरानी (Crime Intelligence)",
+    category: "Supervision",
+    description: "थाना रजिस्टर नंबर 9 (Village Crime Diary) व रजिस्टर नंबर 10 (Bad Characters), पैरोल जंपर्स व बीट निगरानी।",
+    supportedActions: ["हिस्ट्री-शीटर प्रोफाइल", "बीट गश्त रूट मैप", "पैरोल ट्रैकर"],
+    primaryApis: ["/api/users"],
+    databaseEntities: ["HistorySheeterRecord"],
   },
 ];
 
@@ -1181,6 +1289,10 @@ export class CmsCapabilityRegistry {
    * Fast robust route finder with comprehensive police synonyms and variations
    */
   public static findRoute(query: string): WebsiteRouteInfo | null {
+    // Check dynamic module registry first (covers all 8 modules + dynamic additions)
+    const dynamicMatch = DynamicModuleRegistry.matchIntentToRoute(query);
+    if (dynamicMatch) return dynamicMatch;
+
     const q = query.toLowerCase();
 
     // 0. Role Switcher Modal / Dialog Box

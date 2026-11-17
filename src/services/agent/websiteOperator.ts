@@ -50,6 +50,16 @@ const commandAliases: [RegExp, string][] = [
   [/नोटिस/gu, 'notice'],
   [/समन/gu, 'summons'],
   [/गिरफ्तारी|गिरफ़्तारी/gu, 'arrest'],
+  [/ऑडिट|निरीक्षण|\baudits?\b|\binspections?\b/gu, 'audits'],
+  [/अभियोजन|प्रॉसिक्यूशन|\bprosecution\b|हलफनामा|\baffidavit\b|जमानत|\bbail\b|स्क्रूटनी|\bscrutiny\b/gu, 'prosecution'],
+  [/दूरसंचार|सीडीआर|टावर|\btelecom\b|\bcdr\b|\bipdr\b|\btower\b/gu, 'telecom'],
+  [/रिपोर्ट|ब्रीफिंग|साप्ताहिक डायरी|\breports?\b|\bbriefing\b|\bweekly diary\b/gu, 'reports'],
+  [/पंजीकरण|लावारिस लाश|गुमशुदा|लापता|खोया सामान|\bregistrations?\b|\bmissing\b|\buidb\b/gu, 'registrations'],
+  [/मालखाना|मुद्द नंबर|मुद नंबर|\bmalkhana\b/gu, 'malkhana'],
+  [/समन|वारंट|वारण्ट|\bsummons\b|\bwarrants?\b/gu, 'summons warrants'],
+  [/चालान|चार्जशीट|अभियोग पत्र|\bchargesheet\b|\bfinal report\b/gu, 'chargesheet'],
+  [/साइबर|ऑनलाइन फ्रॉड|\bcyber\b|\bcyber cell\b/gu, 'cyber cell'],
+  [/हिस्ट्री शीटर|अपराध इंटेलिजेंस|ग्राम अपराध|\bhistory sheeter\b/gu, 'crime intelligence'],
   [/दस्तावेज़|दस्तावेज|\bdocuments\b/gu, 'document'],
   [/दबाओ|दबाएं|क्लिक|\bdabao\b|\bdabaye\b/gu, 'click'],
   [/चुनो|चुनें|\bchuno\b/gu, 'select'],
@@ -106,6 +116,27 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
     if(snapshot.path!=='/fir' && routes.some(r=>r.path==='/fir'))return {message:'FIR register में record देख रहा हूँ।',actions:[{type:'navigate',path:'/fir'}],continue:true,localOnly:true};
     return {message:`FIR ${number}${year?'/'+year:''} visible records में नहीं मिली। Search/filter या year/station check करें।`,actions:[],localOnly:true};
   }
+
+  // Complaint Number Direct Lookup (e.g. "complaint 102 kholo" or "shikayat 05")
+  const complaintRef = q.match(/\b(?:complaint|shikayat|शिकायत|दरख्वास्त)\s*(?:(?:number|no\.?)\s*)?[/ -]?(\d+)\b/);
+  if (complaintRef && /\b(open|profile|kholo|dikhao|dekho|check)\b/.test(q)) {
+    const cNum = complaintRef[1];
+    const matchComplaint = (label: string) => new RegExp(`(?:#|complaint|no\\.?)\\s*${cNum}\\b`, 'i').test(label);
+    const directLinks = [...new Map(snapshot.controls.filter(c => !c.disabled && c.kind === 'link' && c.href && /^\/complaints\/[^/?]+$/.test(c.href) && matchComplaint(c.label)).map(c => [c.href!, c])).values()];
+    if (directLinks.length === 1) return { message: `शिकायत #${cNum} खोल रहा हूँ।`, actions: [{ type: 'navigate', path: directLinks[0].href! }], continue: true, localOnly: true };
+    if (snapshot.path !== '/complaints' && routes.some(r => r.path === '/complaints')) {
+      return { message: `Complaints desk में शिकायत #${cNum} देख रहा हूँ।`, actions: [{ type: 'navigate', path: `/complaints?search=${cNum}` }], continue: true, localOnly: true };
+    }
+  }
+
+  // GD / Roznamcha Entry Direct Lookup (e.g. "GD 15 kholo" or "rapat 42 dikhao")
+  const gdRef = q.match(/\b(?:gd|roznamcha|rapat|रोजनामचा|रपट)\s*(?:(?:entry|number|no\.?|इंद्राज)\s*)?[/ -]?(\d+)\b/);
+  if (gdRef && /\b(open|kholo|dikhao|dekho|check)\b/.test(q)) {
+    const gdNum = gdRef[1];
+    if (snapshot.path !== '/general-diary' && routes.some(r => r.path === '/general-diary')) {
+      return { message: `रोजनामचा में रपट #${gdNum} देख रहा हूँ।`, actions: [{ type: 'navigate', path: `/general-diary?search=${gdNum}` }], continue: true, localOnly: true };
+    }
+  }
   if (snapshot.caseFacts && /\b(fir|complainant|accused)\b|शिकायतकर्ता|आरोपी|अभियुक्त/i.test(text) && /\b(number|naam|name|batao|which|who)\b|नंबर|नाम|बताओ/i.test(text) && !/\b(save|fill|set|delete|send|register|kholo)\b|भर|खोल|मिटा/i.test(text.replace(/do not (?:navigate,?\s*)?(?:click,?\s*(?:or\s*)?)?(?:fill)?\s*anything/gi,''))) {
     const facts=snapshot.caseFacts;
     return {message:`FIR: ${facts.firNumber}\nComplainant: ${facts.complainant || 'उपलब्ध नहीं'}\nAccused: ${facts.accused.join(', ') || 'कोई accused दर्ज नहीं'}`,actions:[]};
@@ -140,7 +171,14 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
   if (localMatches.length === 1) return {message:localMatches[0].label,actions:[{type:'click',id:localMatches[0].id}]};
   if (wantsOpen) {
     const query = q.replace(/\b(open|karo|page|form|please|mujhe|dikhao|fill|likho)\b/g," ").trim();
-    const ranked = routes.map(r => ({r,score:scoreLabel(`${r.title} ${r.path.replace(/[-/]/g," ")}`,query)})).sort((a,b)=>b.score-a.score);
+    const ranked = routes.map(r => {
+      let score = scoreLabel(`${r.title} ${r.path.replace(/[-/]/g," ")}`,query);
+      const cleanPath = r.path.split('?')[0].replace(/^\//, '');
+      if (cleanPath === query || cleanPath === query.replace(/\s+/g, '-') || (cleanPath === 'general-diary' && (query === 'gd' || query === 'general diary' || query === 'roznamcha'))) {
+        score += 50;
+      }
+      return {r, score};
+    }).sort((a,b)=>b.score-a.score);
     if (ranked[0]?.score >= 30 && ranked[0].score > (ranked[1]?.score || 0)) return {message:`${ranked[0].r.title} खोल रहा हूँ।`,actions:[{type:"navigate",path:ranked[0].r.path}]};
     const ties = ranked.filter(r=>r.score>=30 && r.score===ranked[0]?.score);
     if(ties.length>1) return {message:'',actions:[],question:'कौन सा page खोलना है?',choices:ties.slice(0,8).map(({r})=>({label:`${r.title} (${r.path})`,actions:[{type:'navigate',path:r.path}]}))};

@@ -130,7 +130,7 @@ export function DraggableAgentButton() {
                 <Sparkles className="w-3.5 h-3.5 text-amber-300 absolute -top-1 -right-1.5 animate-spin" style={{ animationDuration: "8s" }} />
               </div>
               <span className="text-[9px] font-black tracking-tighter text-blue-100 uppercase mt-0.5 font-mono">
-                CMS AI
+                PARTH
               </span>
             </div>
 
@@ -143,8 +143,8 @@ export function DraggableAgentButton() {
           {/* Hover Tooltip */}
           <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 px-2.5 py-1.5 bg-slate-900/95 text-white text-[11px] rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 border border-slate-700/80 flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-blue-400" />
-            <span>Haryana Police CMS AI Agent</span>
-            <span className="text-[9px] text-slate-400 font-mono">(Draggable)</span>
+            <span>Parth · Haryana Police AI Agent</span>
+            <span className="text-[9px] text-slate-400 font-mono">(“Hey Parth”)</span>
           </div>
         </div>
       </div>

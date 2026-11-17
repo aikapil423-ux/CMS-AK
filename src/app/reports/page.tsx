@@ -10,7 +10,8 @@ import { CrimeSitrepView } from "@/components/reports/CrimeSitrepView";
 import { WeeklyDiaryWorkbook } from "@/components/reports/WeeklyDiaryWorkbook";
 import { IgpPresentationView } from "@/components/reports/IgpPresentationView";
 import { SavedReportsView } from "@/components/reports/SavedReportsView";
-import { FileBarChart, RefreshCw, BookmarkCheck, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { WysiwygA4DocumentCanvas } from "@/components/reports/WysiwygA4DocumentCanvas";
+import { FileBarChart, RefreshCw, BookmarkCheck, ShieldAlert, CheckCircle2, FileEdit } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from '@/context/AuthContext';
 
@@ -210,6 +211,19 @@ function ReportsContent() {
           <BookmarkCheck className="w-3.5 h-3.5" />
           <span>Saved Reports</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("WYSIWYG_A4_CANVAS")}
+          className={`flex-1 py-2.5 px-4 text-xs font-bold transition-colors text-center border flex items-center justify-center gap-1.5 ${
+            activeTab === "WYSIWYG_A4_CANVAS"
+              ? "bg-[#203c88] text-white border-[#203c88]"
+              : "bg-white text-slate-700 border-[#cbd3e3] hover:bg-[#eef1ff]"
+          }`}
+        >
+          <FileEdit className="w-3.5 h-3.5 text-amber-400" />
+          <span>A4 Document Canvas</span>
+        </button>
       </nav>
 
       {/* Main Content Area */}
@@ -256,6 +270,10 @@ function ReportsContent() {
 
           {activeTab === "Saved Reports" && (
             <SavedReportsView onLoadSitrepReport={handleLoadSavedSitrep} />
+          )}
+
+          {activeTab === "WYSIWYG_A4_CANVAS" && (
+            <WysiwygA4DocumentCanvas />
           )}
         </>
       )}

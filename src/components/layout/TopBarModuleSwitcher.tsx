@@ -106,15 +106,6 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       isActive: isFir,
     },
     {
-      id: "PROSECUTION",
-      title: "Prosecution & Courts",
-      titleHi: "अभियोजन एवं न्यायालय",
-      href: "/prosecution",
-      icon: Scale,
-      color: "indigo",
-      isActive: isProsecution,
-    },
-    {
       id: "REGISTRATIONS",
       title: "Registrations",
       titleHi: "पंजीकरण रजिस्टर",
@@ -140,6 +131,15 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       icon: PhoneCall,
       color: "cyan",
       isActive: isTelecom,
+    },
+    {
+      id: "PROSECUTION",
+      title: "Prosecution & Courts",
+      titleHi: "अभियोजन एवं न्यायालय",
+      href: "/prosecution",
+      icon: Scale,
+      color: "indigo",
+      isActive: isProsecution,
     },
     {
       id: "AUDITS",

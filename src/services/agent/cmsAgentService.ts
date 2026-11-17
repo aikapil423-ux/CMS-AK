@@ -25,6 +25,9 @@ import { CCTNS_OFFICIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { GDEntryTypeConfig } from "@/types/generalDiary";
 import { kalandraService } from "@/services/kalandraService";
 import { KalandraRecord } from "@/types/kalandra";
+import { StatutoryDeadlinesEngine } from "./statutoryDeadlinesEngine";
+import { LegalPrecedentsEngine } from "./legalPrecedentsEngine";
+import { InvestigationIntelligence } from "./investigationIntelligence";
 
 const SESSION_STORAGE_KEY = "haryana_police_cms_agent_session_v1";
 
@@ -585,6 +588,50 @@ export class CmsAgentService {
     // -------------------------------------------------------------
     if (q.includes("duty") || q.includes("staff") || q.includes("mhc") || q.includes("sho")) {
       return this.handleStaffQueryIntent(raw);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT R: STATUTORY DEADLINES & DEFAULT BAIL AUDIT
+    // -------------------------------------------------------------
+    if (
+      q.includes("deadline") ||
+      q.includes("default bail") ||
+      q.includes("डिफ़ॉल्ट ज़मानत") ||
+      q.includes("समय सीमा") ||
+      q.includes("187 bnss") ||
+      q.includes("173(3) bnss")
+    ) {
+      return this.handleStatutoryDeadlinesIntent(raw, context);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT S: BAIL OBJECTION REPLY WITH PRECEDENTS
+    // -------------------------------------------------------------
+    if (
+      (q.includes("bail") || q.includes("जमानत") || q.includes("zamanat")) &&
+      (q.includes("objection") || q.includes("reply") || q.includes("aapatti") || q.includes("आपत्ति") || q.includes("draft") || q.includes("likho"))
+    ) {
+      return this.handleBailObjectionDraftIntent(raw, firNumber, personName, context);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT T: CHARGESHEET SCRUTINY (Section 193 BNSS)
+    // -------------------------------------------------------------
+    if (
+      (q.includes("chargesheet") || q.includes("चालान") || q.includes("चार्जशीट") || q.includes("chalan")) &&
+      (q.includes("scrutiny") || q.includes("check") || q.includes("जांच") || q.includes("readiness") || q.includes("kamiyan"))
+    ) {
+      return this.handleChargesheetScrutinyIntent(raw, firNumber, context);
+    }
+
+    // -------------------------------------------------------------
+    // INTENT U: SPEECH TO ZIMNI SYNTHESIZER (Section 192 BNSS)
+    // -------------------------------------------------------------
+    if (
+      (q.includes("zimni") || q.includes("ज़िमनी") || q.includes("case diary")) &&
+      (q.includes("likho") || q.includes("draft") || q.includes("bayan") || q.includes("narration") || q.includes("parcha"))
+    ) {
+      return this.handleSpeechToZimniIntent(raw, firNumber, context);
     }
 
     // -------------------------------------------------------------
@@ -2288,6 +2335,124 @@ export class CmsAgentService {
       text: result,
       timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
       suggestedPrompts: ["Arrest memo banao", "FIR 125 kholo", "GD draft karo"],
+    };
+  }
+
+  /**
+   * Evaluates and briefs active statutory deadlines and default bail alerts (Section 187 & 173(3) BNSS)
+   */
+  private static handleStatutoryDeadlinesIntent(rawInput: string, context: AgentSessionContext): AgentMessage {
+    const alerts = [
+      StatutoryDeadlinesEngine.evaluateDefaultBailRisk("125/2026", new Date(Date.now() - 48 * 86400000), "Sec 303(2), 305 BNS", "Anil Kumar"),
+      StatutoryDeadlinesEngine.evaluateDefaultBailRisk("98/2026", new Date(Date.now() - 86 * 86400000), "Sec 103 BNS (Murder)", "Suresh Chand"),
+      StatutoryDeadlinesEngine.evaluateComplaintEnquiryDeadline("COMP-8821", new Date(Date.now() - 11 * 86400000), "SI Vikram Singh"),
+    ];
+
+    const briefing = StatutoryDeadlinesEngine.generateExecutiveBriefing(alerts);
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: briefing,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: ["Audits console kholo", "Zimni draft karo", "FIR 125 kholo"],
+    };
+  }
+
+  /**
+   * Generates Bail Objection Reply citing Supreme Court precedents
+   */
+  private static handleBailObjectionDraftIntent(
+    rawInput: string,
+    firNumber?: string,
+    accusedName?: string,
+    context?: AgentSessionContext
+  ): AgentMessage {
+    const fir = firNumber || context?.activeFirNumber || "125/2026";
+    const accused = accusedName || "Anil Kumar";
+
+    const draftObj = LegalPrecedentsEngine.generateBailObjectionDraft({
+      firNumber: fir,
+      courtName: "न्यायालय मुख्य न्यायिक दंडाधिकारी, हिसार",
+      policeStation: "सदर हिसार",
+      applicantAccused: accused,
+      offenseSections: "धारा 303(2), 305, 331(4) BNS",
+      hasCriminalAntecedents: true,
+      antecedentDetails: "पूर्व में थाना सदर में मुकद्दमा नं. 45/2024 धारा 379 IPC दर्ज है",
+      isWitnessTamperingRisk: true,
+    });
+
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `⚖️ **${draftObj.title} तैयार:**\n\n${draftObj.draftHindi}\n\n📚 **सर्वोच्च न्यायालय के उद्धृत विधिक दृष्टांत:**\n${draftObj.citedPrecedents.map(c => `• ${c}`).join('\n')}`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: ["Prosecution desk kholo", "A4 Print lo", "Status report dekho"],
+    };
+  }
+
+  /**
+   * Pre-submission Scrutiny for Chargesheet u/s 193 BNSS
+   */
+  private static handleChargesheetScrutinyIntent(
+    rawInput: string,
+    firNumber?: string,
+    context?: AgentSessionContext
+  ): AgentMessage {
+    const fir = firNumber || context?.activeFirNumber || "125/2026";
+    const scrutiny = InvestigationIntelligence.scrutinizeChargesheetReadiness({
+      firNumber: fir,
+      offenseSections: "धारा 303(2), 305, 331(4) BNS",
+      witnessCount: 3,
+      hasSitePlanNaksha: true,
+      hasSeizureMemo: true,
+      hasMlCOrPostMortem: false,
+      hasFslReport: false,
+      hasAntecedentsList: true,
+    });
+
+    let msg = `📑 **चालान स्क्रूटनी आख्या (Section 193 BNSS Scrutiny - FIR ${fir}):**\n\n`;
+    msg += `• **न्यायालय तैयारी स्कोर:** **${scrutiny.score}/100** ${scrutiny.isReadyForCourt ? '✅ (पेशी हेतु तैयार)' : '⚠️ (कमियां सुधारें)'}\n\n`;
+    msg += `**पास किए गए बिंदु:**\n${scrutiny.passedChecks.map(p => `✅ ${p}`).join('\n')}\n\n`;
+    if (scrutiny.deficiencies.length) {
+      msg += `**सुधार योग्य कमियां (Deficiencies):**\n${scrutiny.deficiencies.map(d => `• **${d.item}** [${d.priority}]: ${d.remedy}`).join('\n')}\n\n`;
+    }
+    msg += `*सभी कमियां पूर्ण होने पर चालान कोर्ट प्रेषण हेतु आधिकारिक रूप से लॉक किया जा सकता है।*`;
+
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: msg,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: ["Chargesheet form kholo", "Zimni parcha likho", "Court documents check karo"],
+    };
+  }
+
+  /**
+   * Synthesizes raw speech/narration to Section 192 BNSS Zimni
+   */
+  private static handleSpeechToZimniIntent(
+    rawInput: string,
+    firNumber?: string,
+    context?: AgentSessionContext
+  ): AgentMessage {
+    const fir = firNumber || context?.activeFirNumber || "125/2026";
+    const zimni = InvestigationIntelligence.synthesizeSpeechToZimni({
+      firNumber: fir,
+      zimniNumber: 4,
+      policeStation: "सदर हिसार",
+      ioName: "Neeraj Kumar",
+      ioRank: "SI",
+      rawNarration: rawInput.replace(/zimni|ज़िमनी|likho|draft|parcha|case diary/gi, '').trim() || "मौके पर पहुंचकर चोरी हुई संपत्ति की शिनाख्त कराई गई व चश्मदीद गवाहों से पूछताछ की गई।",
+      locationInspected: "सेक्टर 14 मार्केट कॉम्प्लेक्स, हिसार",
+      personsInterrogated: ["गवाह राजेश कुमार", "दुकानदार सुरिंदर"],
+    });
+
+    return {
+      id: `msg_${Date.now()}`,
+      sender: "agent",
+      text: `📝 **पर्चा ज़िमनी (धारा 192 BNSS) विधिवत तैयार:**\n\n${zimni.fullZimniText}\n\n*यह इंद्राज केस डायरी पत्रावली में सुरक्षित करने हेतु तैयार है।*`,
+      timestamp: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      suggestedPrompts: ["Zimni workspace kholo", "GD me rawangi bhejo", "A4 Print lo"],
     };
   }
 

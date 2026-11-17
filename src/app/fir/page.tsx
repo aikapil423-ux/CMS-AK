@@ -53,6 +53,8 @@ import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
 import { TableManagerService, ManagedColumn } from "@/services/tableManagerService";
 import { isUserAssignedIo, isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { BnssChallanCountdown } from "@/components/fir/BnssChallanCountdown";
+import { LawSectionTooltip } from "@/components/common/LawSectionTooltip";
 
 type FIRSortField =
   | "firNumber"
@@ -779,7 +781,7 @@ function FIRRegisterPageContent() {
         return (
           <td key="actsPlace" className="py-3 px-3 align-top max-w-xs">
             <div className="font-bold text-slate-800 text-xs">
-              {fir.actsAndSections}
+              <LawSectionTooltip sectionText={fir.actsAndSections} />
             </div>
             <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-1 truncate">
               <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
@@ -932,6 +934,33 @@ function FIRRegisterPageContent() {
           </Button>
         </div>
       </div>
+
+      {/* 2. Key Metric Counts Strip (Uniform Visual Rhythm) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] font-bold text-slate-500 uppercase">Total Registered</span>
+          <div className="text-xl font-black text-slate-900 mt-0.5">{statusCounts.all}</div>
+          <span className="text-[10px] text-slate-400">Station FIR Docket</span>
+        </div>
+        <div className="bg-white p-3 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs">
+          <span className="text-[11px] font-bold text-amber-800 uppercase">Under Investigation</span>
+          <div className="text-xl font-black text-amber-900 mt-0.5">{statusCounts.underInvestigation}</div>
+          <span className="text-[10px] text-amber-700 font-medium">Active IO Dockets</span>
+        </div>
+        <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs">
+          <span className="text-[11px] font-bold text-emerald-800 uppercase">Chargesheet Filed</span>
+          <div className="text-xl font-black text-emerald-900 mt-0.5">{statusCounts.chargesheetFiled}</div>
+          <span className="text-[10px] text-emerald-700 font-medium">Court Dispatched</span>
+        </div>
+        <div className="bg-white p-3 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs">
+          <span className="text-[11px] font-bold text-blue-800 uppercase">Closure / Other</span>
+          <div className="text-xl font-black text-blue-900 mt-0.5">{statusCounts.closureFiled + statusCounts.untracedCancelled}</div>
+          <span className="text-[10px] text-blue-700 font-medium">Disposed / Transferred</span>
+        </div>
+      </div>
+
+      {/* BNSS Section 193: 60/90 Day Statutory Challan Countdown Tracker */}
+      <BnssChallanCountdown firs={firs} />
 
       {/* Search & Table Filter Controls */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
