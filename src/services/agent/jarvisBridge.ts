@@ -43,6 +43,8 @@ class JarvisBridgeClass {
   private actionHandler: ActionHandler | null = null;
   private navigationHandler: NavigationHandler | null = null;
   private statusListeners: Set<StatusListener> = new Set();
+  private ws: WebSocket | null = null;
+  private wsConnected = false;
 
   constructor() {
     // Forward CmsVoiceEngine status changes
@@ -111,20 +113,82 @@ class JarvisBridgeClass {
     CmsVoiceEngine.setEnabled(enabled);
   }
 
-  public connect(url?: string): void {
+  public connect(url: string = "ws://127.0.0.1:8000/ws"): void {
     // Native engine: start continuous listening directly
     CmsVoiceEngine.setEnabled(true);
     CmsVoiceEngine.startContinuousListening();
+
+    if (typeof window !== "undefined" && !this.ws) {
+      try {
+        const socket = new WebSocket(url);
+        socket.onopen = () => {
+          this.ws = socket;
+          this.wsConnected = true;
+          this.syncCurrentContext();
+        };
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "command_result" && data.message) {
+              if (data.speakText) {
+                void CmsVoiceEngine.speak(data.speakText);
+              }
+            }
+          } catch {}
+        };
+        socket.onerror = () => {
+          this.wsConnected = false;
+        };
+        socket.onclose = () => {
+          this.wsConnected = false;
+          this.ws = null;
+        };
+      } catch {
+        this.wsConnected = false;
+      }
+    }
+  }
+
+  public syncCurrentContext(): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        const snap = this.liveBridge.snapshot();
+        this.ws.send(JSON.stringify({
+          type: "context",
+          payload: {
+            path: snap.path,
+            title: snap.title,
+            controls: snap.controls,
+            errors: snap.errors,
+            caseFacts: snap.caseFacts,
+            user: snap.user
+          }
+        }));
+      } catch {}
+    }
   }
 
   public disconnect(): void {
     CmsVoiceEngine.setEnabled(false);
+    if (this.ws) {
+      try { this.ws.close(); } catch {}
+      this.ws = null;
+      this.wsConnected = false;
+    }
   }
 
   public send(response: JarvisResponse): void {
     // Local in-memory pass-through
     if (response.speakText) {
       void CmsVoiceEngine.speak(response.speakText);
+    }
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify({
+          type: "command",
+          commandText: response.speakText || response.message
+        }));
+      } catch {}
     }
   }
 

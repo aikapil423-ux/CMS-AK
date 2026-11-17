@@ -257,6 +257,16 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   useEffect(()=>{
     const session=new WebsiteOperatorSession(setExperience);
     session.setLanguage(lang);
+    if (currentUser) {
+      session.setUser({
+        id: currentUser.id || currentUser.badgeNumber,
+        name: currentUser.name,
+        role: currentUser.role,
+        station: currentUser.policeStation,
+        district: currentUser.district,
+        badgeNumber: currentUser.badgeNumber
+      });
+    }
     sessionRef.current=session;
     setExperience(newExperience());
     setMessages([{ id: 'welcome', sender: 'agent', text: welcomeMessages[lang] }]);
@@ -304,6 +314,19 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
       if(sessionRef.current===session) sessionRef.current=null;
     };
   },[currentUser.id,isAuthenticated]);
+
+  useEffect(() => {
+    if (sessionRef.current && currentUser) {
+      sessionRef.current.setUser({
+        id: currentUser.id || currentUser.badgeNumber,
+        name: currentUser.name,
+        role: currentUser.role,
+        station: currentUser.policeStation,
+        district: currentUser.district,
+        badgeNumber: currentUser.badgeNumber
+      });
+    }
+  }, [currentUser]);
 
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:'smooth'});},[messages,experience.phase,voicePlan]);
 

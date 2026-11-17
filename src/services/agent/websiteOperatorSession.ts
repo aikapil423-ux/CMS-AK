@@ -16,6 +16,20 @@ export class WebsiteOperatorSession {
   private seenPlans = new Set<string>();
   public language: "en-IN" | "hinglish" | "hi-IN" = "en-IN";
   public setLanguage(lang: "en-IN" | "hinglish" | "hi-IN") { this.language = lang; }
+  public setUser(user?: { id?: string; name?: string; role?: string; station?: string; district?: string; badgeNumber?: string }) {
+    this.bridge.setUser(user);
+    if (typeof window !== 'undefined') {
+      try {
+        const snap = this.bridge.snapshot();
+        fetch('http://127.0.0.1:8000/api/context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, path: snap.path, title: snap.title, controls: snap.controls, errors: snap.errors, caseFacts: snap.caseFacts }),
+          signal: AbortSignal.timeout(1000)
+        }).catch(() => {});
+      } catch {}
+    }
+  }
   addAttachment(name:string,text:string) {this.attachments=[...this.attachments,{name:name.slice(0,200),text:text.slice(0,40000)}].slice(-3);}
 
   private experience=newExperience();
