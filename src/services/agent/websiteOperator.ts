@@ -18,6 +18,7 @@ export interface WebsiteSnapshot {
   controls: WebsiteControl[];
   errors: string[];
   caseFacts?: {firNumber:string;complainant:string;accused:string[]};
+  user?: { id?: string; name?: string; role?: string; station?: string; district?: string; badgeNumber?: string };
 }
 export type OperatorAction = { type: "fill"; id: string; value: string } | { type: "click"; id: string } | { type: "navigate"; path: string };
 export interface OperatorPlan { message: string; actions: OperatorAction[]; question?: string; continue?:boolean; localOnly?:boolean; nextCommand?:string; choices?:{label:string;actions:OperatorAction[];resume?:string}[] }
@@ -142,6 +143,37 @@ export function planLocally(text: string, snapshot: WebsiteSnapshot, routes: Ope
     return {message:`FIR: ${facts.firNumber}\nComplainant: ${facts.complainant || 'उपलब्ध नहीं'}\nAccused: ${facts.accused.join(', ') || 'कोई accused दर्ज नहीं'}`,actions:[]};
   }
   const fields = snapshot.controls.filter(c => c.kind === "field" && !c.disabled);
+
+  // Page Explanation & User Session Awareness
+  const isUserQuery = /\b(main kaun hoon|meri id|my id|who am i|user info|officer info)\b|मैं कौन हूँ|मेरी आईडी/i.test(q);
+  if (isUserQuery) {
+    const u = snapshot.user;
+    const msg = u && u.name
+      ? `Jai Hind Sir! Aap **${u.name}** (${u.role || 'Police Officer'}) ke roop me logged in hain.\nID/Badge: **${u.id || u.badgeNumber || 'N/A'}** | Thana: **${u.station || 'Police Station'}**${u.district ? ` (${u.district})` : ''}.`
+      : `Aap Haryana Police CMS me Police Officer ke roop me logged in hain.`;
+    return { message: msg, actions: [], localOnly: true };
+  }
+
+  const isPageQuery = /\b(kaun sa page|kon sa page|what page|explain page|page details|page ke baare|is page (?:par|pe) kya|ye kya hai|ye kaun sa)\b|कौन सा पेज|पेज के बारे में|इस पेज पर क्या/i.test(q);
+  if (isPageQuery) {
+    const title = snapshot.title || "CMS Dashboard";
+    const path = snapshot.path;
+    const u = snapshot.user;
+    const missing = fields.filter(missingRequired);
+    const caseInfo = snapshot.caseFacts && snapshot.caseFacts.firNumber
+      ? `\n\n📌 **सक्रिय केस (Active Case):** FIR #${snapshot.caseFacts.firNumber} | शिकायतकर्ता: ${snapshot.caseFacts.complainant || 'N/A'} | आरोपी: ${snapshot.caseFacts.accused?.join(', ') || 'N/A'}`
+      : '';
+    const missingInfo = missing.length
+      ? `\n\n⚠️ **आवश्यक फील्ड जो खाली हैं (${missing.length}):** ${missing.slice(0, 5).map(c => c.label).join(', ')}${missing.length > 5 ? ' और अन्य' : ''}।`
+      : fields.length > 0 ? `\n\n✅ इस फॉर्म के सभी आवश्यक फील्ड भरे जा चुके हैं।` : '';
+    
+    let desc = `वर्तमान में आपकी स्क्रीन पर **'${title}'** (\`${path}\`) खुला हुआ है।`;
+    if (u?.name) {
+      desc = `जय हिन्द ${u.name} जी (${u.role || 'Officer'})${u.id ? ` [ID: ${u.id}]` : ''}!\n\n` + desc;
+    }
+    desc += `${caseInfo}${missingInfo}\n\nआप मुझे कोई भी फील्ड भरने, धाराएं खोजने या अगला पेज खोलने का निर्देश दे सकते हैं।`;
+    return { message: desc, actions: [], localOnly: true };
+  }
   if (/^(help|madad|मदद|kya kar|क्या कर)/.test(q) || /missing|required|क्या बाकी|kya baki|क्या जानकारी|kya jankari/.test(q)) {
     const missing = fields.filter(missingRequired);
     return {message: missing.length ? `ये जानकारी चाहिए: ${missing.map(c => c.label).join(", ")}` : `इस पेज पर ${fields.length} fields और ${snapshot.controls.filter(c=>c.kind !== "field").length} actions उपलब्ध हैं। Field का नाम और value बोलें, या page/button का नाम बताएं।`, actions:[]};
@@ -196,6 +228,11 @@ export class LiveWebsiteBridge {
   private elements = new Map<string, HTMLElement>();
   private ids = new WeakMap<HTMLElement,string>();
   private sequence = 0;
+  private userContext?: WebsiteSnapshot['user'];
+
+  setUser(user?: WebsiteSnapshot['user']) {
+    this.userContext = user;
+  }
   private visible(el: HTMLElement) {
     return !el.closest('[data-cms-agent-ui], [hidden], [inert], [aria-hidden="true"]') && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
   }
@@ -232,7 +269,8 @@ export class LiveWebsiteBridge {
         options:el instanceof HTMLSelectElement ? Array.from(el.options).filter(o=>!o.disabled).map(o=>({value:o.value,label:o.text})) : undefined});
     });
     const snapshot:WebsiteSnapshot = {path:location.pathname+location.search,title:document.querySelector('main h1')?.textContent || document.title,controls,
-      errors:Array.from(document.querySelectorAll<HTMLElement>('[role="alert"],[aria-invalid="true"]')).filter(el=>this.visible(el)).map(el=>el.textContent?.trim() || el.getAttribute('aria-label') || "Invalid field").filter(Boolean).slice(0,15)};
+      errors:Array.from(document.querySelectorAll<HTMLElement>('[role="alert"],[aria-invalid="true"]')).filter(el=>this.visible(el)).map(el=>el.textContent?.trim() || el.getAttribute('aria-label') || "Invalid field").filter(Boolean).slice(0,15),
+      user:this.userContext};
     const caseElement=document.querySelector<HTMLElement>('[data-agent-case]');
     if(caseElement && this.visible(caseElement)) {
       try {const facts=JSON.parse(caseElement.dataset.agentCase || '{}');if(typeof facts.firNumber==='string' && typeof facts.complainant==='string' && Array.isArray(facts.accused) && facts.accused.every((name:unknown)=>typeof name==='string'))snapshot.caseFacts=facts;} catch { /* Invalid context is unknown. */ }
