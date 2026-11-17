@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
-import { Shield, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
+import { Shield, Lock, User, AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { DEMO_USERS } from "@/lib/mockData";
@@ -16,6 +16,7 @@ export default function LoginPage() {
   }, []);
   const [pno, setPno] = useState("");
   const [pin, setPin] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,10 +66,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-100">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-5xl">
         {/* Header Insignia with Official CMS Haryana Police Logo */}
-        <div className="text-center mb-5 flex flex-col items-center">
-          <div className="bg-white/95 rounded-2xl p-3 shadow-lg border border-slate-200/40 inline-flex items-center justify-center max-w-[320px] w-full">
+        <div className="text-center mb-6 flex flex-col items-center">
+          <div className="bg-white/95 rounded-2xl p-3 shadow-lg border border-slate-200/40 inline-flex items-center justify-center max-w-[340px] w-full">
             <img
               src="/cms-haryana-logo.png"
               alt="CMS Case Management System - Haryana Police"
@@ -77,146 +78,183 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6 sm:p-7 text-slate-900">
-          <div className="border-b border-slate-100 pb-3 mb-4">
-            <h2 className="text-base font-bold text-slate-900">Police Personnel Login</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {demo ? "Local demo PIN: 123456." : "Sign in with your assigned PNO and PIN."}
-            </p>
+        {/* Two-Column Split Layout: Half Left (Login Form) & Half Right (Demo Personas) */}
+        <div className={`grid grid-cols-1 ${demo ? 'lg:grid-cols-2' : 'max-w-md mx-auto'} gap-6 items-stretch`}>
+          {/* Half Left: Police Personnel Login Card */}
+          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 sm:p-7 text-slate-900 flex flex-col justify-between">
+            <div>
+              <div className="border-b border-slate-100 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-[#203c88]" />
+                  <h2 className="text-base font-bold text-slate-900">Police Personnel Login</h2>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  {demo ? "Local demo PIN: 123456." : "Sign in with your assigned PNO and PIN."}
+                </p>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-700" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Permanent Police Number (PNO)
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      value={pno}
+                      onChange={(e) => setPno(e.target.value)}
+                      placeholder="e.g. HR-04291882"
+                      required
+                      className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Security PIN / Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      placeholder="••••••"
+                      required
+                      className="w-full pl-9 pr-10 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 focus:outline-none cursor-pointer"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
+                  isLoading={isLoading}
+                  className="w-full font-semibold text-xs sm:text-sm bg-[#203c88] hover:bg-[#1a3170] text-white mt-3 cursor-pointer"
+                >
+                  Sign In to CMS Portal
+                </Button>
+              </form>
+            </div>
+
+            <div className="mt-6 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+              <span>Security: RESTRICTED</span>
+              <span>CCTNS / ICJS Integrated</span>
+            </div>
           </div>
 
-          {error && (
-            <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-700" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Half Right: Demo Personas by District & Developer Access Card */}
+          {demo && (
+            <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 sm:p-7 text-slate-900 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Demo Personas by District</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Click any official role to sign in instantly</p>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-2 py-0.5 rounded">
+                    1-Click Login
+                  </span>
+                </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+                {/* District Selector Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2.5 text-[11px]">
+                  {districts.map((dist) => (
+                    <button
+                      key={dist}
+                      type="button"
+                      onClick={() => setSelectedDistrict(dist)}
+                      className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-all cursor-pointer ${
+                        selectedDistrict === dist
+                          ? "bg-[#203c88] text-white hover:bg-[#1a3170] hover:text-white font-semibold shadow-2xs"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-slate-200"
+                      }`}
+                    >
+                      {dist}
+                    </button>
+                  ))}
+                </div>
 
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Permanent Police Number (PNO)
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  value={pno}
-                  onChange={(e) => setPno(e.target.value)}
-                  placeholder="e.g. HR-04291882"
-                  required
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-mono"
-                />
+                {/* Personas List */}
+                <div className="grid grid-cols-1 gap-1.5 max-h-64 sm:max-h-72 overflow-y-auto pr-0.5">
+                  {personaList.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => handleQuickDemoLogin(u.id)}
+                      type="button"
+                      className="w-full text-left p-2.5 rounded-lg bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 flex items-center justify-between transition-colors group cursor-pointer"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-semibold text-slate-800 truncate">
+                            {u.name}
+                          </p>
+                          <span className="text-[9px] bg-slate-200 text-slate-700 px-1 py-0.2 rounded font-mono font-bold">
+                            {u.rank.slice(0, 3)}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                          {u.roleDisplay} • PNO: <span className="font-mono text-slate-700">{u.pno}</span>
+                        </p>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Security PIN / Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="••••••"
-                  required
-                  className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-800 focus:outline-none font-mono"
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              isLoading={isLoading}
-              className="w-full font-semibold text-xs sm:text-sm bg-slate-800 hover:bg-slate-900 mt-2"
-            >
-              Sign In to CMS Portal
-            </Button>
-          </form>
-
-          {demo && <div className="mt-5 pt-4 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Demo Personas by District</span>
-              <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-1.5 py-0.5 rounded">1-Click Login</span>
-            </div>
-            
-            {/* District Selector Chips */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-2 text-[11px]">
-              {districts.map((dist) => (
+              {/* Developer Access */}
+              <div className="mt-4 pt-3 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Access</span>
+                  <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-1.5 py-0.5 rounded">1-Click Login</span>
+                </div>
                 <button
-                  key={dist}
                   type="button"
-                  onClick={() => setSelectedDistrict(dist)}
-                  className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-all cursor-pointer ${
-                    selectedDistrict === dist
-                      ? "bg-[#203c88] text-white hover:bg-[#1a3170] hover:text-white font-semibold shadow-2xs"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-slate-200"
-                  }`}
-                >
-                  {dist}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
-              {personaList.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => handleQuickDemoLogin(u.id)}
-                  type="button"
-                  className="w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-between transition-colors group cursor-pointer"
+                  onClick={handleDeveloperLogin}
+                  disabled={isLoading}
+                  className="w-full text-left p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-60 border border-slate-800 flex items-center justify-between transition-colors group cursor-pointer"
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-slate-800 truncate">
-                        {u.name}
-                      </p>
-                      <span className="text-[9px] bg-slate-200 text-slate-700 px-1 py-0.2 rounded font-mono font-bold">
-                        {u.rank.slice(0, 3)}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      {u.roleDisplay} • PNO: <span className="font-mono">{u.pno}</span>
+                    <p className="text-xs font-semibold text-white">Developer Admin</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">
+                      PNO: <span className="font-mono text-amber-300">DEV-ADMIN</span> • 1-Click Login • Enter any officer ID view
                     </p>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 ml-2" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </button>
-              ))}
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Developer Access</span>
-                {demo && <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold px-1.5 py-0.5 rounded">1-Click Login</span>}
               </div>
-              <button
-                type="button"
-                onClick={handleDeveloperLogin}
-                disabled={isLoading}
-                className="w-full text-left p-2 rounded-lg bg-slate-800 hover:bg-slate-900 disabled:opacity-60 border border-slate-800 flex items-center justify-between transition-colors group cursor-pointer"
-              >
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white">Developer Admin</p>
-                  <p className="text-[10px] text-slate-300">
-                    PNO: <span className="font-mono">DEV-ADMIN</span> • {demo ? '1-Click Login (demo mode)' : 'Password required'} • Enter any officer ID view
-                  </p>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2" />
-              </button>
             </div>
-          </div>}
+          )}
         </div>
 
         {/* Security Notice */}
-        <p className="text-center text-[11px] text-slate-500 mt-5 max-w-xs mx-auto">
-          Authorized Haryana Police Personnel Only.
+        <p className="text-center text-[11px] text-slate-500 mt-6 max-w-sm mx-auto">
+          Authorized Haryana Police Personnel Only. Unauthorized access is punishable under IT Act 2000.
         </p>
       </div>
     </div>
