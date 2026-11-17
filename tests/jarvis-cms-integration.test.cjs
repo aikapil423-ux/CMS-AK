@@ -346,3 +346,34 @@ test('Parth AI Agent & Hey Parth wake word verification', () => {
     assert.equal(wakeRegex.test(phrase), true, `Phrase '${phrase}' should match Hey Parth wake word`);
   }
 });
+
+test('Parth Page Awareness and User Session Context', () => {
+  const operatorModule = runTsModule('src/services/agent/websiteOperator.ts');
+  const planLocally = operatorModule.planLocally;
+
+  const mockSnapshot = {
+    path: '/fir/101',
+    title: 'FIR No. 101/2026 Registration Proforma',
+    controls: [
+      { id: 'c1', label: 'Complainant Name', kind: 'field', type: 'text', value: 'Ramesh Sharma', section: 'Complainant Details', disabled: false },
+      { id: 'c2', label: 'Incident Time', kind: 'field', type: 'time', value: '', required: true, section: 'Occurrence', disabled: false }
+    ],
+    errors: [],
+    caseFacts: { firNumber: '101/2026', complainant: 'Ramesh Sharma', accused: ['Suresh Kumar'] },
+    user: { id: 'POL-4412', name: 'Inspector Anil Kumar', role: 'Station House Officer', station: 'PS Civil Lines Rohtak' }
+  };
+
+  // 1. Question: What is this page / Explain page
+  const pagePlan = planLocally('ye kaun sa page hai', mockSnapshot, []);
+  assert.equal(pagePlan.localOnly, true);
+  assert.ok(pagePlan.message.includes('FIR No. 101/2026'));
+  assert.ok(pagePlan.message.includes('Inspector Anil Kumar'));
+  assert.ok(pagePlan.message.includes('Incident Time'));
+
+  // 2. Question: Who am I / user info
+  const userPlan = planLocally('main kaun hoon', mockSnapshot, []);
+  assert.equal(userPlan.localOnly, true);
+  assert.ok(userPlan.message.includes('Inspector Anil Kumar'));
+  assert.ok(userPlan.message.includes('POL-4412'));
+  assert.ok(userPlan.message.includes('PS Civil Lines Rohtak'));
+});
