@@ -70,6 +70,7 @@ class CmsVoiceEngineClass {
 
   // Language setting: en-IN, hinglish, or hi-IN
   private language: VoiceLanguage = "en-IN";
+  private selectedVoiceId: string = "male-parth";
 
   // Re-start watchdog timer to keep continuous listening alive
   private restartTimeout: any = null;
@@ -93,10 +94,19 @@ class CmsVoiceEngineClass {
         if (savedLang && (savedLang === "en-IN" || savedLang === "hinglish" || savedLang === "hi-IN")) {
           this.language = savedLang;
         }
+        const savedVoice = localStorage.getItem("cms_preferred_voice");
+        if (savedVoice) {
+          this.selectedVoiceId = savedVoice;
+        }
       } catch {}
 
       if ("speechSynthesis" in window) {
         this.speechSynth = window.speechSynthesis;
+        if (typeof window.speechSynthesis.onvoiceschanged !== "undefined") {
+          window.speechSynthesis.onvoiceschanged = () => {
+            this.speechSynth?.getVoices();
+          };
+        }
       }
     }
   }
@@ -127,6 +137,19 @@ class CmsVoiceEngineClass {
 
   public getLanguage(): VoiceLanguage {
     return this.language;
+  }
+
+  public setSelectedVoice(voiceId: string) {
+    this.selectedVoiceId = voiceId;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("cms_preferred_voice", voiceId);
+      } catch {}
+    }
+  }
+
+  public getSelectedVoice(): string {
+    return this.selectedVoiceId;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -962,30 +985,66 @@ class CmsVoiceEngineClass {
 
       const utterance = new SpeechSynthesisUtterance(cleanSpoken);
       this.currentUtterance = utterance;
-      utterance.lang = this.language === "hi-IN" ? "hi-IN" : "en-IN";
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
 
-      // Select best voice matching selected language
+      const hasDevanagari = /[\u0900-\u097F]/.test(cleanSpoken);
+      utterance.lang = (this.language === "hi-IN" || hasDevanagari) ? "hi-IN" : "en-IN";
+      // Calm, authentic Indian conversational cadence
+      utterance.rate = 0.90;
+      utterance.pitch = (this.selectedVoiceId.includes("female") || this.selectedVoiceId.includes("aoede")) ? 1.05 : 0.95;
+
+      // Select voice with STRICT INDIAN ACCENT PRIORITY
+      // Eliminates foreign / US / UK accents (David, Mark, Hazel, George, Zira)
       try {
         const voices = this.speechSynth?.getVoices() || [];
+        
+        // Isolate Indian voices (hi-IN, en-IN, India, Hindi)
+        const indianVoices = voices.filter(v =>
+          /hi[-_]IN|en[-_]IN/i.test(v.lang) ||
+          /india|hindi|bharat/i.test(v.name)
+        );
+
+        const pool = indianVoices.length > 0 ? indianVoices : voices;
         let preferredVoice: SpeechSynthesisVoice | undefined;
-        if (this.language === "hi-IN") {
-          preferredVoice = voices.find(
-            (v) => v.lang.includes("hi") || v.name.includes("Hindi") || v.name.includes("Swara") || v.name.includes("Kalpana")
-          );
-        } else if (this.language === "en-IN") {
-          preferredVoice = voices.find(
-            (v) => v.lang.includes("en-IN") || v.name.includes("India") || v.name.includes("Heera") || v.name.includes("Ravi")
-          ) || voices.find((v) => v.lang.startsWith("en"));
+
+        if (this.language === "hi-IN" || hasDevanagari) {
+          // Pure Hindi with authentic Indian pronunciation
+          if (!this.selectedVoiceId.includes("female") && !this.selectedVoiceId.includes("aoede")) {
+            preferredVoice = pool.find(v =>
+              (/hi/i.test(v.lang) || /hindi/i.test(v.name)) &&
+              /madhur|hemant|ravi|male|prabhat|tarun/i.test(v.name)
+            );
+          }
+          if (!preferredVoice) {
+            preferredVoice = pool.find(v => /hi/i.test(v.lang) || /hindi/i.test(v.name));
+          }
         } else {
-          // hinglish: prefer Indian English voice that articulates Hinglish phonetics
-          preferredVoice = voices.find(
-            (v) => v.lang.includes("en-IN") || v.name.includes("India")
-          ) || voices.find((v) => v.lang.includes("hi"));
+          // Hinglish or Indian English
+          if (!this.selectedVoiceId.includes("female") && !this.selectedVoiceId.includes("aoede")) {
+            preferredVoice = pool.find(v =>
+              (/en[-_]in/i.test(v.lang) || /india/i.test(v.name)) &&
+              /prabhat|ravi|hemant|madhur|male/i.test(v.name)
+            ) || pool.find(v => /en[-_]in/i.test(v.lang) || /india/i.test(v.name));
+          } else {
+            preferredVoice = pool.find(v =>
+              (/en[-_]in/i.test(v.lang) || /india/i.test(v.name)) &&
+              /neerja|heera|swara|female/i.test(v.name)
+            ) || pool.find(v => /en[-_]in/i.test(v.lang) || /india/i.test(v.name));
+          }
         }
+
+        // Guaranteed Indian voice fallback:
+        if (!preferredVoice && indianVoices.length > 0) {
+          preferredVoice = indianVoices[0];
+        }
+        if (!preferredVoice) {
+          preferredVoice = voices.find(v => /hi/i.test(v.lang) || /en[-_]in/i.test(v.lang)) || voices[0];
+        }
+
         if (preferredVoice) {
           utterance.voice = preferredVoice;
+          if (preferredVoice.lang) {
+            utterance.lang = preferredVoice.lang;
+          }
         }
       } catch {}
 

@@ -249,6 +249,30 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   const [voiceStatus, setVoiceStatus] = useState<CmsVoiceStatus>("STANDBY");
   const lastAgentSpeechRef = useRef<string[]>([]);
 
+  // Voice Selection (Parth Male, Ravi, Swara, Gemini Live)
+  const [voiceChoice, setVoiceChoice] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("cms_preferred_voice") || "male-parth";
+    }
+    return "male-parth";
+  });
+
+  const handleVoiceChange = (v: string) => {
+    setVoiceChoice(v);
+    CmsVoiceEngine.setSelectedVoice(v);
+    if (typeof window !== "undefined") {
+      fetch("http://127.0.0.1:8000/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice: v }),
+      }).catch(() => {});
+    }
+  };
+
+  // 3-Second Inactivity / Silence Auto-Send
+  const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [autoSendCountdown, setAutoSendCountdown] = useState<number | null>(null);
+
   const append = (text: string) => {
     lastAgentSpeechRef.current = [text, ...lastAgentSpeechRef.current.slice(0, 5)];
     setMessages(prev => [...prev, { id: crypto.randomUUID(), sender: 'agent', text }]);
@@ -353,7 +377,50 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
 
   useEffect(()=>()=>CmsVoiceEngine.stopSpeaking(),[]);
 
+  // 3-second auto-execute on silence / inactivity
+  useEffect(() => {
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+      autoSendTimerRef.current = null;
+    }
+    if (!input.trim() || loading || busyRef.current) {
+      setAutoSendCountdown(null);
+      return;
+    }
+
+    setAutoSendCountdown(3);
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, 3 - Math.floor((Date.now() - startTime) / 1000));
+      if (remaining > 0) {
+        setAutoSendCountdown(remaining);
+      } else {
+        setAutoSendCountdown(null);
+      }
+    }, 250);
+
+    autoSendTimerRef.current = setTimeout(() => {
+      clearInterval(interval);
+      setAutoSendCountdown(null);
+      if (input.trim() && !loading && !busyRef.current) {
+        void send(input.trim());
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+      }
+    };
+  }, [input, loading]);
+
   async function send(text=input){
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+      autoSendTimerRef.current = null;
+    }
+    setAutoSendCountdown(null);
     const cmd = (text || input).trim();
     if(!cmd) return;
     if(busyRef.current||loading){setInput(cmd);setError('Pehla command chal raha hai. Yeh command draft mein hai; complete hone par bhejein.');return;}
@@ -579,21 +646,36 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
       <div ref={endRef}/>
     </div>
     <footer className="p-3 border-t space-y-2 rounded-b-2xl bg-white select-text">
-      <div className="flex justify-between items-center text-xs">
+      <div className="flex justify-between items-center text-xs gap-1.5 flex-wrap">
         <span className="text-[10px] text-slate-500 flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Wake Word: <strong>&ldquo;Hey Parth&rdquo;</strong> (Hands-free active)
+          Wake Word: <strong>&ldquo;Hey Parth&rdquo;</strong>
         </span>
-        <select
-          aria-label="Agent Language"
-          value={lang}
-          onChange={e=>setLang(e.target.value as AgentLanguage)}
-          className="bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-[11px] font-medium text-slate-700 focus:outline-none cursor-pointer"
-        >
-          <option value="en-IN">English (English)</option>
-          <option value="hinglish">Hinglish (हिंग्लिश)</option>
-          <option value="hi-IN">हिन्दी (Hindi)</option>
-        </select>
+        <div className="flex items-center gap-1.5 ml-auto">
+          <select
+            aria-label="Agent Voice"
+            value={voiceChoice}
+            onChange={e=>handleVoiceChange(e.target.value)}
+            className="bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-medium text-slate-700 focus:outline-none cursor-pointer"
+            title="Parth की आवाज़ बदलें (पुरुष/महिला/न्यूरल)"
+          >
+            <option value="male-parth">🎙️ Parth (पुरुष - शांत)</option>
+            <option value="male-ravi">🎙️ Inspector Ravi (Male)</option>
+            <option value="female-swara">🎙️ Officer Swara (Female)</option>
+            <option value="gemini-charon">🎙️ Charon (AI Deep Male)</option>
+            <option value="gemini-aoede">🎙️ Aoede (AI Female)</option>
+          </select>
+          <select
+            aria-label="Agent Language"
+            value={lang}
+            onChange={e=>setLang(e.target.value as AgentLanguage)}
+            className="bg-slate-100 border border-slate-200 rounded px-2 py-1 text-[11px] font-medium text-slate-700 focus:outline-none cursor-pointer"
+          >
+            <option value="en-IN">English</option>
+            <option value="hinglish">Hinglish</option>
+            <option value="hi-IN">हिन्दी</option>
+          </select>
+        </div>
       </div>
       <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();void send();}}>
         <input ref={uploadRef} type="file" accept=".txt,.csv,.md,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.webm,.ogg" className="hidden" onChange={upload}/>
@@ -617,13 +699,24 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
         >
           <Mic size={18} className={listening ? 'text-blue-600 animate-pulse' : ''}/>
         </button>
-        <input
-          aria-label="Agent command"
-          placeholder={placeholders[lang]}
-          value={input}
-          onChange={e=>{setInput(e.target.value);}}
-          className="flex-1 min-w-0 border rounded-lg p-2 text-xs"
-        />
+        <div className="relative flex-1 min-w-0">
+          <input
+            aria-label="Agent command"
+            placeholder={placeholders[lang]}
+            value={input}
+            onChange={e=>{setInput(e.target.value);}}
+            className="w-full border rounded-lg p-2 text-xs pr-14"
+          />
+          {autoSendCountdown !== null && (
+            <span
+              className="absolute right-2 top-2 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-mono animate-pulse cursor-pointer"
+              title="3 सेकंड बाद अपने आप सेंड होगा (Enter दबाएं या क्लिक करें)"
+              onClick={() => void send(input)}
+            >
+              Auto {autoSendCountdown}s
+            </span>
+          )}
+        </div>
         {loading?<button type="button" aria-label="Stop task" onClick={stop}><Square size={18}/></button>:<button type="submit" aria-label="Send command" disabled={!input.trim()}><Send size={18}/></button>}
       </form>
     </footer>
