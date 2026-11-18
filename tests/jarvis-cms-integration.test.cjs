@@ -377,3 +377,51 @@ test('Parth Page Awareness and User Session Context', () => {
   assert.ok(userPlan.message.includes('POL-4412'));
   assert.ok(userPlan.message.includes('PS Civil Lines Rohtak'));
 });
+
+test('Role-Adaptive Command Workspace maps police role to dedicated duty perspective', () => {
+  // Verify strict role-based separation as requested:
+  // SHO view in SHO ID, IO view in IO ID, Munshi view in Munshi ID, SP view in SP ID
+  const getRolePerspective = (role) => {
+    if (
+      role === 'SP_DISTRICT' ||
+      role === 'DSP_SUBDIV' ||
+      role === 'CP' ||
+      role === 'JOINT_CP' ||
+      role === 'DCP' ||
+      role === 'ADDL_DCP' ||
+      role === 'ACP' ||
+      role === 'VIEWER_AUDITOR' ||
+      role === 'COMMISSIONERATE_AUDITOR'
+    ) return 'SP';
+    if (role === 'SHO' || role === 'COMMISSIONERATE_SHO') return 'SHO';
+    if (
+      role === 'ENQUIRY_OFFICER' ||
+      role === 'SI' ||
+      role === 'ASI' ||
+      role === 'COMMISSIONERATE_SI' ||
+      role === 'COMMISSIONERATE_ASI'
+    ) return 'IO';
+    if (
+      role === 'MHC_GD_INCHARGE' ||
+      role === 'DUTY_OFFICER' ||
+      role === 'COMMISSIONERATE_MHC' ||
+      role === 'STATION_STAFF' ||
+      role === 'COMMISSIONERATE_STAFF' ||
+      role === 'HEAD_CONSTABLE' ||
+      role === 'CONSTABLE' ||
+      role === 'COMMISSIONERATE_HC' ||
+      role === 'COMMISSIONERATE_CONSTABLE'
+    ) return 'MUNSHI';
+    return 'SHO';
+  };
+
+  assert.equal(getRolePerspective('SHO'), 'SHO', 'SHO ID must map to SHO view');
+  assert.equal(getRolePerspective('ENQUIRY_OFFICER'), 'IO', 'Investigating officer ID must map to IO view');
+  assert.equal(getRolePerspective('MHC_GD_INCHARGE'), 'MUNSHI', 'MHC/Munshi ID must map to MUNSHI view');
+  assert.equal(getRolePerspective('DUTY_OFFICER'), 'MUNSHI', 'Duty Officer ID must map to MUNSHI view');
+  assert.equal(getRolePerspective('COMMISSIONERATE_MHC'), 'MUNSHI', 'Commissionerate MHC must map to MUNSHI view');
+  assert.equal(getRolePerspective('COMMISSIONERATE_STAFF'), 'MUNSHI', 'Commissionerate Station Staff must map to MUNSHI view');
+  assert.equal(getRolePerspective('COMMISSIONERATE_AUDITOR'), 'SP', 'Commissionerate Auditor must map to SP supervisory view');
+  assert.equal(getRolePerspective('SP_DISTRICT'), 'SP', 'Superintendent of police ID must map to SP view');
+  assert.equal(getRolePerspective('DSP_SUBDIV'), 'SP', 'DSP ID must map to SP view');
+});

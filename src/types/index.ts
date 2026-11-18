@@ -1,14 +1,33 @@
 import type { TransferableRecord } from '@/lib/recordCustody';
 export type SystemRole =
   | 'SUPER_ADMIN'
+  | 'DGP'
+  | 'ADGP'
+  | 'IG'
+  | 'DIG'
+  | 'CP'
+  | 'JOINT_CP'
+  | 'DCP'
+  | 'ADDL_DCP'
+  | 'ACP'
   | 'SP_DISTRICT'
+  | 'ASP'
   | 'DSP_SUBDIV'
+  | 'COMMANDANT'
+  | 'ADDL_COMMANDANT'
+  | 'ASST_COMMANDANT'
   | 'SHO'
+  | 'INSPECTOR'
+  | 'SI'
+  | 'ASI'
   | 'MHC_GD_INCHARGE'
   | 'DUTY_OFFICER'
   | 'ENQUIRY_OFFICER'
   | 'READER_TO_SHO'
-  | 'VIEWER_AUDITOR';
+  | 'HEAD_CONSTABLE'
+  | 'CONSTABLE'
+  | 'VIEWER_AUDITOR'
+  | string;
 
 export type PoliceRank =
   | 'CONSTABLE'
@@ -21,7 +40,16 @@ export type PoliceRank =
   | 'SUPERINTENDENT_OF_POLICE'
   | 'INSPECTOR_GENERAL'
   | 'ADGP'
-  | 'DGP';
+  | 'DGP'
+  | 'CP'
+  | 'JOINT_CP'
+  | 'DCP'
+  | 'ADDL_DCP'
+  | 'ACP'
+  | 'COMMANDANT'
+  | 'ADDL_COMMANDANT'
+  | 'ASST_COMMANDANT'
+  | string;
 
 export interface UserSession {
   beltNumber?: string;
@@ -37,6 +65,7 @@ export interface UserSession {
   unitId?: string;
   jurisdictionUnits?: string[];
   district: string;
+  zone?: string;
   avatarUrl?: string;
 }
 

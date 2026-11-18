@@ -38,6 +38,10 @@ export default function PostLoginPortalPage() {
   const [gdCount, setGdCount] = useState<number | null>(null);
   const [firCount, setFirCount] = useState<number | null>(null);
   const [regCount, setRegCount] = useState<number | null>(null);
+  const [overdueInquiryCount, setOverdueInquiryCount] = useState<number>(0);
+  const [pendingReportCount, setPendingReportCount] = useState<number>(0);
+  const [remandCustodyCount, setRemandCustodyCount] = useState<number>(0);
+  const [defaultBailRiskCount, setDefaultBailRiskCount] = useState<number>(0);
 
   useEffect(() => {
     async function loadStats() {
@@ -62,6 +66,32 @@ export default function PostLoginPortalPage() {
         setFirCount(visibleFirs.length);
         const regs = RegistrationService.getEntries();
         setRegCount(regs.filter(r=>currentUser.role === "SUPER_ADMIN" || r.district?.toLowerCase() === currentUser.district.toLowerCase() && (["SP_DISTRICT","DSP_SUBDIV"].includes(currentUser.role) || r.stationName?.toLowerCase()===currentUser.stationName.toLowerCase())).length);
+
+        // Real calculations for role tabs
+        const now = Date.now();
+        const overdue = activeComplaints.filter(c => {
+          if (c.daysPending && c.daysPending > 15) return true;
+          if (!c.incidentDate) return false;
+          const d = new Date(c.incidentDate).getTime();
+          return !isNaN(d) && (now - d) > 15 * 86400000;
+        }).length;
+        setOverdueInquiryCount(overdue);
+
+        const pendingReports = complaints.filter(c =>
+          c.status === "REPORT_SUBMITTED" || c.status === "RECOMMENDED_FOR_FIR"
+        ).length;
+        setPendingReportCount(pendingReports);
+
+        const remand = visibleFirs.filter(f =>
+          Boolean(f.briefFacts && /arrested|custody|remand/i.test(f.briefFacts))
+        ).length;
+        setRemandCustodyCount(remand);
+
+        const bailRisk = visibleFirs.filter(f => {
+          if (f.status === "CHARGESHEET_FILED" || f.status === "CLOSURE_REPORT_FILED") return false;
+          return Boolean(f.daysPending && f.daysPending > 60);
+        }).length;
+        setDefaultBailRiskCount(bailRisk);
       } catch (e) {
         // Fallback
       }
@@ -116,6 +146,14 @@ export default function PostLoginPortalPage() {
         complaintCount={complaintCount}
         gdCount={gdCount}
         firCount={firCount}
+        erssCount={0}
+        overdueInquiryCount={overdueInquiryCount}
+        pendingReportCount={pendingReportCount}
+        affidavitCount={0}
+        remandCustodyCount={remandCustodyCount}
+        pendingZimniCount={0}
+        defaultBailRiskCount={defaultBailRiskCount}
+        auditAlertsCount={0}
       />
 
       {/* Title & Instructions - Minimalist */}

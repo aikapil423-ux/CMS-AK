@@ -32,6 +32,18 @@ import {
   Radio,
   BookmarkCheck,
   Pencil,
+  MapPin,
+  UserPlus,
+  FolderTree,
+  BadgeCheck,
+  Building,
+  Clock,
+  Layers,
+  Landmark,
+  ShieldAlert,
+  Train,
+  FlaskConical,
+  Briefcase,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -101,14 +113,30 @@ function ProsecutionNav({ isExpanded, isProsecutionPath }: { isExpanded: boolean
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { currentUser, sessionUser, logout } = useAuth();
+  const searchParams = useSearchParams();
+  const { currentUser, sessionUser, logout, isViewAs } = useAuth();
   const { t } = useLanguage();
+
+  const isDeveloperAdmin =
+    (sessionUser?.id === "cms_developer_admin" || currentUser?.role === "SUPER_ADMIN") && !isViewAs;
 
   // State for hover-to-expand and optional lock pin
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const isExpanded = isHovered || isPinned;
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+  // Detect active module
+  const isRoznamchaPath = pathname.startsWith("/general-diary");
+  const isFirPath = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
+  const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
+  const isRegistrationsPath = pathname.startsWith("/registrations");
+  const isReportsPath = pathname.startsWith("/reports");
+  const isProsecutionPath = pathname.startsWith("/prosecution");
+  const isTelecomPath = pathname.startsWith("/telecom");
+  const isManagementPath = pathname.startsWith("/settings");
+  const isLocationsPath = pathname.startsWith("/admin/locations");
+  const isAccountsPath = pathname.startsWith("/admin/accounts");
 
   // Toggle slide bar states: Modules above Management are open by default (true). Management and Station Info default closed (false).
   const [roznamchaOpen, setRoznamchaOpen] = useState(true);
@@ -120,16 +148,8 @@ export function Sidebar() {
   const [telecomOpen, setTelecomOpen] = useState(true);
   const [managementOpen, setManagementOpen] = useState(false);
   const [stationInfoOpen, setStationInfoOpen] = useState(false);
-
-  // Detect active module
-  const isRoznamchaPath = pathname.startsWith("/general-diary");
-  const isFirPath = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
-  const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
-  const isRegistrationsPath = pathname.startsWith("/registrations");
-  const isReportsPath = pathname.startsWith("/reports");
-  const isProsecutionPath = pathname.startsWith("/prosecution");
-  const isTelecomPath = pathname.startsWith("/telecom");
-  const isManagementPath = pathname.startsWith("/settings");
+  const [locationsOpen, setLocationsOpen] = useState(isLocationsPath);
+  const [accountsOpen, setAccountsOpen] = useState(isAccountsPath);
 
   // Keep track of the last active module so when user is on /station-profile or /users,
   // ONLY the module that was currently open remains visible.
@@ -242,6 +262,32 @@ export function Sidebar() {
     { name: "Storage Optimization", href: "/settings?tab=storage-optimization", icon: HardDrive, badge: "Lossless", badgeColor: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-blue-100 text-blue-700 border-blue-200" },
     { name: "Settings", href: "/settings", icon: Settings },
+  ];
+
+  // DEVELOPER ONLY: LOCATION & ORGANIZATION MANAGEMENT
+  const locationNavItems: NavItem[] = [
+    { name: "Location Dashboard", href: "/admin/locations", icon: Layers },
+    { name: "State Management", href: "/admin/locations?tab=states", icon: MapPin },
+    { name: "Range Management", href: "/admin/locations?tab=ranges", icon: Radio },
+    { name: "Commissionerate & Zones", href: "/admin/locations?tab=commissionerates", icon: Landmark, badge: "Zones", badgeColor: "bg-blue-100 text-blue-800 border-blue-200" },
+    { name: "District Management", href: "/admin/locations?tab=districts", icon: Building2 },
+    { name: "Armed Police (HAP/IRB)", href: "/admin/locations?tab=armed-police", icon: ShieldAlert, badge: "Bn", badgeColor: "bg-purple-100 text-purple-800 border-purple-200" },
+    { name: "GRP Haryana (Railways)", href: "/admin/locations?tab=grp", icon: Train },
+    { name: "Forensic Labs & Training", href: "/admin/locations?tab=forensic-labs", icon: FlaskConical },
+    { name: "Deputation & Special Wings", href: "/admin/locations?tab=deputation-units", icon: Briefcase },
+    { name: "Office Management", href: "/admin/locations?tab=offices", icon: Building },
+    { name: "Police Station Management", href: "/admin/locations?tab=stations", icon: Shield },
+    { name: "Unit Management", href: "/admin/locations?tab=units", icon: Radio },
+    { name: "Organizational Hierarchy", href: "/admin/locations?tab=hierarchy", icon: FolderTree },
+  ];
+
+  // DEVELOPER ONLY: ACCOUNT MANAGEMENT & USER GENERATION
+  const accountNavItems: NavItem[] = [
+    { name: "Account Directory", href: "/admin/accounts", icon: Users },
+    { name: "Generate Account", href: "/admin/accounts?tab=new", icon: UserPlus, badge: "New", badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+    { name: "Special Allocations", href: "/admin/accounts?tab=special-allocations", icon: BadgeCheck },
+    { name: "Jurisdiction Policies", href: "/admin/accounts?tab=policies", icon: Shield },
+    { name: "Audit Logs", href: "/admin/accounts?tab=audits", icon: Clock },
   ];
 
   return (
@@ -865,6 +911,133 @@ export function Sidebar() {
           <Pencil className="w-4 h-4 shrink-0" />
           {isExpanded && <span>Audits & Inspection</span>}
         </Link>
+
+        {/* DEVELOPER ONLY: LOCATION & ORGANIZATION MANAGEMENT */}
+        {isDeveloperAdmin && (
+          <div className="space-y-1 pt-1 border-t border-blue-200/60">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setLocationsOpen(!locationsOpen);
+              }}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+                isExpanded ? "justify-between hover:bg-blue-50/70" : "justify-center hover:bg-blue-50/70",
+                isLocationsPath ? "bg-blue-50/70 text-[#1e3a8a]" : ""
+              )}
+              title="Location & Organization Management"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Building2 className="w-3.5 h-3.5 text-[#1e3a8a] shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#1e3a8a] truncate">
+                    {t("Location Management")}
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {locationsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                </span>
+              )}
+            </button>
+
+            {locationsOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {locationNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || (item.href === "/admin/locations" && pathname === "/admin/locations" && !searchParams.get("tab"));
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? t(item.name) : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
+                        isActive
+                          ? "bg-blue-900 text-white font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-700")} />
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
+
+        {/* DEVELOPER ONLY: ACCOUNT MANAGEMENT & USER GENERATION */}
+        {isDeveloperAdmin && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isExpanded) setIsPinned(true);
+                setAccountsOpen(!accountsOpen);
+              }}
+              className={cn(
+                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
+                isExpanded ? "justify-between hover:bg-emerald-50/70" : "justify-center hover:bg-emerald-50/70",
+                isAccountsPath ? "bg-emerald-50/70 text-emerald-900" : ""
+              )}
+              title="Account Management"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Users className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+                {isExpanded && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">
+                    {t("Account Management")}
+                  </span>
+                )}
+              </div>
+              {isExpanded && (
+                <span className="text-slate-400">
+                  {accountsOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                </span>
+              )}
+            </button>
+
+            {accountsOpen && (
+              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+                {accountNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href || (item.href === "/admin/accounts" && pathname === "/admin/accounts" && !searchParams.get("tab"));
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      title={!isExpanded ? t(item.name) : undefined}
+                      className={cn(
+                        "flex items-center rounded-md text-xs font-medium transition-all group",
+                        isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
+                        isActive
+                          ? "bg-emerald-800 text-white font-semibold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      )}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Icon className={cn("w-3.5 h-3.5 shrink-0", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-700")} />
+                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
+                      </div>
+                      {isExpanded && item.badge && (
+                        <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border", item.badgeColor)}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+          </div>
+        )}
 
         {/* 3. MANAGEMENT TOGGLE SLIDE BAR */}
         <div className="space-y-1">

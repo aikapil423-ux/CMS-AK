@@ -72,9 +72,32 @@ export async function sessionPrincipal(req: Request): Promise<{ userId: string; 
 
 // Officer IDs the Developer Admin may enter with their own session — every role is
 // viewable, including the SP office; only the developer identity itself is excluded.
+function masterAccountToSession(acc: any): UserSession {
+  return {
+    id: acc.id,
+    pno: acc.pno,
+    name: acc.fullName,
+    beltNumber: acc.beltNumber,
+    rank: acc.rank as UserSession['rank'],
+    rankDisplay: acc.rankDisplay || acc.designation,
+    role: (acc.role === 'DGP' || acc.role === 'ADGP' || acc.role === 'IG' || acc.role === 'DIG') ? 'SUPER_ADMIN' : acc.role as UserSession['role'],
+    roleDisplay: acc.roleDisplay,
+    stationName: acc.policeStation,
+    stationCode: acc.assignedUnitId || 'HAR-GEN',
+    district: acc.district,
+    unitId: acc.assignedUnitId,
+    jurisdictionUnits: acc.authorizedPoliceStations,
+  };
+}
+
 export async function viewableOfficer(id: string): Promise<UserSession | null> {
   if (!id || id === 'cms_developer_admin') return null;
   if (demoEnabled()) {
+    try {
+      const { getAccountById } = await import('@/services/accountMasterService');
+      const acc = await getAccountById(id);
+      if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
+    } catch {}
     const demo = DEMO_USERS.find(user => user.id === id);
     if (demo) return demo;
   }
@@ -85,7 +108,14 @@ export async function viewableOfficer(id: string): Promise<UserSession | null> {
 
 async function baseSessionUser(userId: string, demo: boolean): Promise<UserSession | null> {
   if (userId === 'cms_developer_admin') return (demoEnabled() || process.env.CMS_DEVELOPER_ADMIN_PASSWORD) ? developerAdminUser() : null;
-  if (demo) return demoEnabled() ? DEMO_USERS.find(user => user.id === userId) ?? null : null;
+  if (demo && demoEnabled()) {
+    try {
+      const { getAccountById } = await import('@/services/accountMasterService');
+      const acc = await getAccountById(userId);
+      if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
+    } catch {}
+    return DEMO_USERS.find(user => user.id === userId) ?? null;
+  }
   const { prisma } = await import('@/lib/prisma');
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { unit: true } });
   return user ? await officerSession(user) : null;
@@ -128,6 +158,24 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
   if (demoEnabled() && pin === '123456') {
     const demo = DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase());
     if (demo) return demo;
+  }
+  if (demoEnabled()) {
+    try {
+      const { getAccountByUsername } = await import('@/services/accountMasterService');
+      const acc = await getAccountByUsername(pno);
+      if (acc && acc.status === 'ACTIVE') {
+        if (acc.passwordHash) {
+          const [salt, hash, extra] = acc.passwordHash.split(':');
+          if (!extra && salt && /^[a-f0-9]{128}$/.test(hash ?? '')) {
+            const match = timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex'));
+            if (match) return masterAccountToSession(acc);
+          }
+        }
+        if (pin === '123456' || pin === acc.plainPinSample) {
+          return masterAccountToSession(acc);
+        }
+      }
+    } catch {}
   }
   const { prisma } = await import('@/lib/prisma');
   const user = await prisma.user.findUnique({ where: { pno: pno.trim().toUpperCase() }, include: { unit: true } });
