@@ -907,6 +907,7 @@ function FIRRegisterPageContent() {
 
         {/* Top Right Actions: Transfer FIR & Link / Duplicate FIR */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {canRegisterFir && <Link href="/fir/register" className="cms-register-fir-action inline-flex items-center gap-1.5 h-9 px-3.5 text-xs font-bold"><PlusCircle className="w-3.5 h-3.5" />Register FIR</Link>}
           <Button
             type="button"
             onClick={() => {

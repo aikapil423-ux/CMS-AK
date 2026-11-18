@@ -64,40 +64,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const canRegisterComplaint = isMhc || isSho || isSuperior;
   const canRegisterFir = isMhc || isSho || isSuperior;
 
-  const getBreadcrumbs = () => {
-    if (pathname === "/") return [{ label: "Portal Home", href: "/" }];
-    const crumbs = [{ label: "Home", href: "/" }];
-    if (pathname.startsWith("/complaints")) {
-      crumbs.push({ label: "Complaints", href: "/complaints" });
-      if (pathname.includes("/register")) crumbs.push({ label: "Register New", href: "/complaints/register" });
-      else if (pathname.split("/").length > 2 && pathname.split("/")[2]) crumbs.push({ label: `#${pathname.split("/")[2]}`, href: pathname });
-    } else if (pathname.startsWith("/fir")) {
-      crumbs.push({ label: "FIR Register", href: "/fir" });
-      if (pathname.includes("/register")) crumbs.push({ label: "New FIR", href: "/fir/register" });
-      else if (pathname.split("/").length > 2 && pathname.split("/")[2]) crumbs.push({ label: `#${pathname.split("/")[2]}`, href: pathname });
-    } else if (pathname.startsWith("/general-diary")) {
-      crumbs.push({ label: "Roznamcha GD", href: "/general-diary" });
-      if (pathname.includes("/new")) crumbs.push({ label: "New Entry", href: "/general-diary/new" });
-    } else if (pathname.startsWith("/registrations")) {
-      crumbs.push({ label: "Registrations", href: "/registrations" });
-    } else if (pathname.startsWith("/reports")) {
-      crumbs.push({ label: "Reports & Audit", href: "/reports" });
-    } else if (pathname.startsWith("/telecom")) {
-      crumbs.push({ label: "Telecom Evidence", href: "/telecom" });
-    } else if (pathname.startsWith("/prosecution")) {
-      crumbs.push({ label: "Prosecution & Courts", href: "/prosecution" });
-    } else if (pathname.startsWith("/audits")) {
-      crumbs.push({ label: "Audits & Inspection", href: "/audits" });
-    } else if (pathname.startsWith("/settings")) {
-      crumbs.push({ label: "Settings", href: "/settings" });
-    } else if (pathname.startsWith("/station-profile")) {
-      crumbs.push({ label: "Station Profile", href: "/station-profile" });
-    } else if (pathname.startsWith("/users")) {
-      crumbs.push({ label: "Staff Directory", href: "/users" });
-    }
-    return crumbs;
-  };
-
   return (
     <div className="cms-shell min-h-screen bg-white flex flex-col lg:flex-row antialiased text-slate-800">
       {complaintSaveError&&<div role="alert" className="fixed top-3 left-3 right-3 z-[150] bg-amber-50 text-amber-950 border border-amber-400 rounded-lg p-3 text-sm shadow-lg">{complaintSaveError}<button className="ml-4 underline" onClick={()=>setComplaintSaveError('')}>Dismiss</button></div>}
@@ -114,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Desktop Top Header Bar - Minimalist, clean backdrop-blur */}
         <header className="cms-topbar hidden lg:flex items-center justify-between min-h-16 px-6 bg-[#203c88] text-white border-b border-[#203c88] sticky top-0 z-45">
-          {/* Left: Station & Active Module Indicator + Breadcrumbs */}
+          {/* Left: Station & Active Module Indicator */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700">
               <Building className="w-3.5 h-3.5 text-slate-500" />
@@ -133,23 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Switch Module Dropdown with LayoutGrid Icon */}
             <TopBarModuleSwitcher />
 
-            {/* Breadcrumb Trail */}
-            <nav aria-label="Breadcrumb" className="hidden xl:flex items-center gap-1.5 text-xs text-white/80">
-              {getBreadcrumbs().map((crumb, idx, arr) => (
-                <React.Fragment key={crumb.label}>
-                  {idx > 0 && <span className="text-white/40">›</span>}
-                  {idx === arr.length - 1 ? (
-                    <span className="font-bold text-white bg-white/10 px-2 py-0.5 rounded-md border border-white/20">
-                      {crumb.label}
-                    </span>
-                  ) : (
-                    <Link href={crumb.href} className="hover:text-white transition-colors">
-                      {crumb.label}
-                    </Link>
-                  )}
-                </React.Fragment>
-              ))}
-            </nav>
+
           </div>
 
           {/* Right Header Controls */}
@@ -158,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <TopBarNotifications />
 
             {/* In FIR Module (e.g. /fir Register Page), Red Register FIR Button right after Bell icon */}
-            {isFir && pathname !== "/fir/register" && canRegisterFir && (
+            {isFir && pathname !== "/fir" && pathname !== "/fir/register" && canRegisterFir && (
               <Link href="/fir/register">
                 <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />
@@ -173,7 +123,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Bilingual Instant Language Switcher (Hindi / English) */}
             <TopBarLanguageSwitcher />
 
-            {isComplaints && canRegisterComplaint && (
+            {isComplaints && pathname !== '/complaints' && pathname !== '/complaints/register' && canRegisterComplaint && (
               <Link href="/complaints/register">
                 <Button size="sm" className="gap-1.5 text-xs bg-red-600 hover:bg-red-700 text-white shadow-xs">
                   <PlusCircle className="w-3.5 h-3.5" />

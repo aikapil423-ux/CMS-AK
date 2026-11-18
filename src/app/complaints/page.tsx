@@ -144,6 +144,8 @@ function ComplaintListContent() {
 
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [advancedFilters,setAdvancedFilters]=useState(false);
+  const [registerPage,setRegisterPage]=useState({key:"",page:1});
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -193,14 +195,14 @@ function ComplaintListContent() {
   }, []);
 
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
-    srNo: true,
+    srNo: false,
     complaintId: true,
     dateTime: true,
     complainant: true,
-    categoryLocation: true,
+    categoryLocation: false,
     status: true,
     assignedEo: true,
-    daysPending: true,
+    daysPending: false,
     action: true,
   });
 
@@ -879,6 +881,10 @@ function ComplaintListContent() {
     });
   }, [complaints, columnSearch, sortField, sortOrder, dateFrom, dateTo]);
 
+  const pageKey=JSON.stringify([searchQuery,selectedStatuses,priorityFilter,categoryFilter,dateFrom,dateTo,columnSearch,sortField,sortOrder]);
+  const pageCount=Math.max(1,Math.ceil(sortedComplaints.length/20));
+  const page=registerPage.key===pageKey?Math.min(registerPage.page,pageCount):1;
+  const pageComplaints=sortedComplaints.slice((page-1)*20,page*20);
   const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
     if (colKey === "srNo") {
       return (
@@ -1221,22 +1227,22 @@ function ComplaintListContent() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in-50">
+    <div className="cms-complaints space-y-6 animate-in fade-in-50">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="cms-page-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Complaints Management Register
+            Complaints
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            केंद्रीय जन-शिकायत पंजी • Electronic Case Ledger under Section 173(3) BNSS
+            Track enquiries, reports and approvals in your authorized scope.
           </p>
         </div>
 
         {/* Top Right Actions: Single High-Contrast Primary Button + Plain Secondary Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Primary High-Contrast Action Button */}
-          <Link href="/complaints/register">
+          {canRegisterComplaint && <Link href="/complaints/register">
             <Button
               type="button"
               className="bg-[#1e3a8a] hover:bg-[#152865] text-white font-bold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
@@ -1244,7 +1250,7 @@ function ComplaintListContent() {
               <PlusCircle className="w-4 h-4 text-white" />
               <span>Register Complaint</span>
             </Button>
-          </Link>
+          </Link>}
 
           {/* Secondary Actions with plain light border */}
           <Button
@@ -1270,30 +1276,6 @@ function ComplaintListContent() {
             <Link2 className="w-3.5 h-3.5 text-slate-500" />
             <span>Link / Delink</span>
           </Button>
-        </div>
-      </div>
-
-      {/* 2. Key Metric Counts Strip (Uniform Visual Rhythm) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] font-bold text-slate-500 uppercase">Total Enquiries</span>
-          <div className="text-xl font-black text-slate-900 mt-0.5">{statusCounts.all}</div>
-          <span className="text-[10px] text-slate-400">Station Ledger Total</span>
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs">
-          <span className="text-[11px] font-bold text-amber-800 uppercase">Under Enquiry</span>
-          <div className="text-xl font-black text-amber-900 mt-0.5">{statusCounts.pending}</div>
-          <span className="text-[10px] text-amber-700 font-medium">Inquiry in Progress</span>
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-rose-200 bg-rose-50/20 shadow-2xs">
-          <span className="text-[11px] font-bold text-rose-800 uppercase">Awaiting SHO Review</span>
-          <div className="text-xl font-black text-rose-900 mt-0.5">{statusCounts.notAssigned + statusCounts.correctionRequired}</div>
-          <span className="text-[10px] text-rose-700 font-medium">Action Pending</span>
-        </div>
-        <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs">
-          <span className="text-[11px] font-bold text-emerald-800 uppercase">Disposed / FIR</span>
-          <div className="text-xl font-black text-emerald-900 mt-0.5">{statusCounts.complete + statusCounts.firRegistered + statusCounts.firRegister}</div>
-          <span className="text-[10px] text-emerald-700 font-medium">Completed Enquiries</span>
         </div>
       </div>
 
@@ -1359,10 +1341,10 @@ function ComplaintListContent() {
       )}
 
       {/* Filter and Search Controls */}
-      <Card className="border-slate-200 !overflow-visible relative z-30 shadow-xs">
+      <Card className="cms-filter-panel border-slate-200 !overflow-visible relative z-30 shadow-xs">
         <CardContent className="p-2 sm:p-2.5 space-y-2 !overflow-visible">
           {/* Main Controls: Single Row Space-Optimized Flex Bar */}
-          <div className="flex flex-wrap lg:flex-nowrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Status Dropdown Button with Checkboxes */}
             <div className="relative z-40 shrink-0 w-full sm:w-auto sm:min-w-[150px]" ref={statusDropdownRef}>
               <button
@@ -1511,7 +1493,7 @@ function ComplaintListContent() {
             </div>
 
             {/* Search Bar (flex-1 expands to fill space) */}
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="cms-search relative flex-1 min-w-[240px]">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
               <input
                 type="text"
@@ -1522,6 +1504,8 @@ function ComplaintListContent() {
               />
             </div>
 
+            <button type="button" aria-expanded={advancedFilters} onClick={()=>setAdvancedFilters(!advancedFilters)} className="border border-slate-200 px-3 py-2 text-sm flex items-center gap-2"><SlidersHorizontal className="w-4 h-4"/>Advanced filters{(dateFrom||dateTo||categoryFilter!=='ALL')?' •':''}</button>
+            {advancedFilters && <>
             {/* Category Filter */}
             <div className="shrink-0">
               <select
@@ -1625,6 +1609,7 @@ function ComplaintListContent() {
                 Month
               </button>
             </div>
+            </>}
           </div>
 
           {/* Active Status & Date Badges / Filter Summary */}
@@ -1694,11 +1679,11 @@ function ComplaintListContent() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 px-1">
         <div className="flex items-center gap-3">
           <span>
-            Showing <strong className="text-slate-800">{complaints.length}</strong> {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
+            Showing <strong className="text-slate-800">{sortedComplaints.length}</strong> {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
           </span>
           <span className="text-slate-300">|</span>
           <span className="text-[11px] text-slate-500">
-            Use horizontal scroll <span className="font-mono">↔</span> for wide columns
+            Use Columns to show more details
           </span>
         </div>
 
@@ -1881,7 +1866,7 @@ function ComplaintListContent() {
       {/* Main Content: Table on Desktop, Cards on Mobile */}
       {loading ? (
         <LoadingSkeleton count={4} />
-      ) : complaints.length === 0 ? (
+      ) : sortedComplaints.length === 0 ? (
         <EmptyState
           title={isEo ? `No complaints assigned to ${currentUser.name}` : "No complaints found"}
           description={
@@ -1902,7 +1887,7 @@ function ComplaintListContent() {
       ) : (
         <div className="space-y-4">
           {/* Desktop Table View with Horizontal Scrolling & Column Customization */}
-          <div className="hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden max-h-[calc(100vh-16rem)] overflow-y-auto">
+          <div className="cms-register-table hidden md:block bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden max-h-[calc(100vh-16rem)] overflow-y-auto">
             <div className="overflow-x-auto min-w-full">
               <table className="min-w-[1050px] w-full text-left text-xs">
                 <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200 sticky top-0 z-20 shadow-2xs">
@@ -1960,21 +1945,22 @@ function ComplaintListContent() {
                     })}
 
                     {visibleColumns.action && (
-                      <th className="py-3 px-4 text-right align-top pt-3.5">Action</th>
+                      <th className="py-3 px-4 text-right align-top pt-3.5">Next action</th>
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {sortedComplaints.map((c, idx) => (
+                  {pageComplaints.map((c, idx) => (
                     <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
                       {columnOrder.map((col) => {
                         if (!visibleColumns[col]) return null;
-                        return renderComplaintCell(col, c, idx);
+                        return renderComplaintCell(col, c, (page-1)*20+idx);
                       })}
 
                       {visibleColumns.action && (
                         <td className="py-2.5 px-4 text-right align-middle">
                           <div className="flex flex-col items-end gap-1.5 min-w-[130px]">
+<Link href={`/complaints/${c.id}`} className="cms-open-case">Open case <Eye className="w-3.5 h-3.5"/></Link>
 {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (
                               <Link href={`/fir/register?complaintId=${c.id}`} className="w-full">
                                 <Button
@@ -2132,9 +2118,10 @@ function ComplaintListContent() {
             </div>
           </div>
 
+          <div className="cms-pagination"><span>Showing {(page-1)*20+1}–{Math.min(page*20,sortedComplaints.length)} of {sortedComplaints.length} complaints</span><div className="flex gap-2 items-center"><button disabled={page===1} onClick={()=>setRegisterPage({key:pageKey,page:page-1})}>Previous</button><span>Page {page} of {pageCount}</span><button disabled={page===pageCount} onClick={()=>setRegisterPage({key:pageKey,page:page+1})}>Next</button></div></div>
           {/* Mobile Card-Based View */}
           <div className="md:hidden space-y-3">
-            {sortedComplaints.map((c) => (
+            {pageComplaints.map((c) => (
               <Card key={c.id} className="border-slate-200 shadow-xs">
                 <CardContent className="p-4 space-y-3">
                   <div className="flex items-center justify-between">

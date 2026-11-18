@@ -1,0 +1,48 @@
+/* Screen-only application chrome; official print layouts retain their existing rules. */
+@media screen {
+.cms-court-theme .cms-shell > aside > .cms-sidebar-brand {background:#082953;min-height:86px;color:#fff}
+.cms-court-theme .cms-sidebar-brand-text {border-left:1px solid #ffffff55;padding-left:14px;margin-left:4px;white-space:nowrap}
+.cms-court-theme .cms-sidebar-brand-text h1 {color:#fff!important;font-size:25px;font-weight:750;line-height:1.15;letter-spacing:0}
+.cms-court-theme .cms-sidebar-brand-text p {color:#fff!important;font-size:16px;line-height:1.5;margin:0}
+.cms-court-theme .cms-shell {background:#f5f7fb;color:#243247}
+.cms-court-theme .cms-topbar {background:#fff!important;color:#34445d!important;border-bottom:1px solid #e6eaf1!important;min-height:76px;box-shadow:none;gap:16px}
+.cms-court-theme .cms-topbar > div > div:first-child {color:#34445d}
+.cms-court-theme .cms-topbar nav :is(span,a) {color:#64748b;background:transparent;border:0}
+.cms-court-theme .cms-topbar nav span.font-bold {color:#172b4d}
+.cms-court-theme .cms-topbar button:not(.absolute *) {background:#f5f7fb;color:#34445d;border:1px solid #e5eaf2;border-radius:8px!important;min-height:34px}
+.cms-court-theme .cms-topbar button:not(.absolute *):hover {background:#eaf0fb;color:#203c88}
+.cms-court-theme .cms-topbar .absolute {border-radius:12px!important;border-color:#e2e8f0;box-shadow:0 12px 32px #172b4d18}
+.cms-court-theme .cms-topbar a[href='/complaints/register'] button,
+.cms-court-theme .cms-page-heading a[href='/complaints/register'] button {background:#dc2626!important;border-color:#dc2626!important;color:#fff!important}
+.cms-court-theme .cms-topbar a[href='/complaints/register'] button:hover,
+.cms-court-theme .cms-page-heading a[href='/complaints/register'] button:hover {background:#b91c1c!important;border-color:#b91c1c!important}
+.cms-court-theme .cms-topbar a[href='/fir/register'] button,.cms-court-theme a.cms-register-fir-action {background:#dc2626!important;border:1px solid #dc2626;color:#fff!important;border-radius:8px;text-decoration:none}
+.cms-court-theme .cms-topbar a[href='/fir/register'] button:hover,.cms-court-theme a.cms-register-fir-action:hover {background:#b91c1c!important;border-color:#b91c1c}
+.cms-court-theme .cms-main {padding:28px}
+.cms-court-theme .cms-main > .cms-complaints {max-width:1560px;margin-inline:auto}
+.cms-court-theme .cms-complaints > .cms-page-heading h1 {font-size:28px;font-weight:700;color:#172b4d;letter-spacing:-.035em}
+.cms-court-theme .cms-page-heading > div > p {font-size:13px;color:#718096;margin-top:6px}
+.cms-court-theme .cms-complaints > .cms-filter-panel {border:1px solid #e6eaf1;border-radius:12px!important;box-shadow:none}
+.cms-court-theme .cms-filter-panel > div {padding:16px}
+.cms-court-theme .cms-filter-panel :is(input,select,button) {min-height:38px;border-radius:7px!important;font-size:13px}
+.cms-court-theme .cms-filter-panel .cms-search {order:-1}
+.cms-court-theme .cms-filter-panel .cms-search input {background:#fff}
+.cms-court-theme .cms-complaints .cms-register-table {border:1px solid #e6eaf1;border-radius:12px!important;box-shadow:0 2px 6px #172b4d03;max-height:70vh}
+.cms-court-theme .cms-register-table table {border:none;font-size:13px;min-width:850px}
+.cms-court-theme .cms-register-table :is(thead,thead tr,thead th) {background:#f8fafc!important;color:#5b6b82!important;border-color:#e6eaf1!important;font-weight:600!important}
+.cms-court-theme .cms-register-table thead :is(button,span,svg) {color:#5b6b82!important}
+.cms-court-theme .cms-register-table :is(td,th) {padding:16px 14px!important;border-left:none;border-right:none}
+.cms-court-theme .cms-register-table tbody tr {border-color:#edf0f5}
+.cms-court-theme .cms-register-table tbody tr:hover {background:#f6f9ff}
+.cms-court-theme .cms-register-table td button {border-radius:7px!important}
+.cms-court-theme .cms-register-table td .rounded-full {border-radius:999px!important}
+.cms-court-theme .cms-pagination {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 18px;background:#fff;border:1px solid #e6eaf1;border-radius:10px;font-size:13px}
+.cms-court-theme .cms-pagination button {padding:7px 12px;border:1px solid #dbe3ef;border-radius:7px;background:#fff}
+.cms-court-theme .cms-pagination button:disabled {opacity:.45;cursor:not-allowed}
+.cms-court-theme .cms-shell :is(a,button,input,select,textarea):focus-visible {outline:2px solid #3b6dd8;outline-offset:3px}
+.cms-court-theme .cms-page-heading button {border-radius:8px!important;min-height:40px}
+.cms-court-theme .cms-register-table a.cms-open-case {display:inline-flex;align-items:center;gap:8px;color:#203c88;font-weight:600;padding:7px 11px;border:1px solid #dce5f4;border-radius:7px;text-decoration:none}
+.cms-court-theme .cms-register-table .animate-pulse {animation:none}
+@media(max-width:1023px){.cms-court-theme .cms-main {padding:16px}}
+@media(prefers-reduced-motion:reduce){.cms-shell *,.cms-shell *::before,.cms-shell *::after {animation-duration:.01ms!important;transition-duration:.01ms!important}}
+}

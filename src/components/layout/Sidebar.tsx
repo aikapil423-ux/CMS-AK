@@ -254,23 +254,25 @@ export function Sidebar() {
       )}
     >
       {/* Insignia / Brand Header - Clean Minimalist */}
-      <div className="p-3 border-b border-slate-200/80 bg-white flex items-center justify-between overflow-hidden">
+      <div className="cms-sidebar-brand p-3 border-b border-slate-200/80 flex items-center justify-between overflow-hidden">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-white shrink-0"
+            className="relative w-10 h-12 overflow-hidden shrink-0"
             title="Haryana Police CMS"
           >
-            <Shield className="w-4 h-4" />
+            <img
+              src="/haryana-police-sidebar-reference.png"
+              alt="Haryana Police"
+              width={104}
+              height={66}
+              className="absolute max-w-none"
+              style={{ width: 104, height: 66, left: -47, top: -10 }}
+            />
           </div>
           {isExpanded && (
-            <div className="flex-1 min-w-0 animate-in fade-in duration-150">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                  {t("Haryana Police")}
-                </span>
-              </div>
-              <h1 className="text-xs font-semibold text-slate-900 tracking-tight truncate">{t("Case Management")}</h1>
-              <p className="text-[10px] text-slate-400 truncate">{currentUser.stationName}</p>
+            <div className="cms-sidebar-brand-text flex-1 min-w-0 animate-in fade-in duration-150">
+              <h1>CMS</h1>
+              <p>Haryana Police</p>
             </div>
           )}
         </div>
