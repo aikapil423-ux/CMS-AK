@@ -100,7 +100,8 @@ export function RoleAdaptiveWorkspace({
       role === "SPECIAL_UNIT_DUTY_OFFICER" ||
       role === "SPECIAL_UNIT_HC" ||
       role === "SPECIAL_UNIT_CONSTABLE" ||
-      role === "SPECIAL_UNIT_STAFF"
+      role === "SPECIAL_UNIT_STAFF" ||
+      role === "TRAINING_MHC"
     ) {
       return "MUNSHI";
     }

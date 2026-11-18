@@ -1634,6 +1634,30 @@ export default function AccountManagementPage() {
     }
   };
 
+  // Delete Account Confirmation & Execution (Developer Administrator only)
+  const confirmDeleteAccount = async () => {
+    if (!accountToDelete) return;
+    setDeletingAccount(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/accounts?id=${encodeURIComponent(accountToDelete.id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete account.");
+      }
+      setSuccessMsg(`Account for ${accountToDelete.fullName} (${accountToDelete.pno}) was deleted successfully.`);
+      setShowDeleteModal(false);
+      setAccountToDelete(null);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete account.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  };
+
   // View-As (1-Click Login As Officer)
   const handleLoginAsOfficer = async (acc: MasterAccount) => {
     const sessionObj = {
@@ -2155,6 +2179,7 @@ export default function AccountManagementPage() {
                       <option value="TRAINING_DIRECTOR">Director / DIG (Police Academy / HPA)</option>
                       <option value="TRAINING_PRINCIPAL">Principal / SP (PTC / RTC College)</option>
                       <option value="TRAINING_INSTRUCTOR">Training Instructor (Inspector / SI)</option>
+                      <option value="TRAINING_MHC">MHC (Moharrir Head Constable - Academy / Training)</option>
                       <option value="TRAINING_HC">Drill Instructor (DI) / Head Constable</option>
                       <option value="TRAINING_CONSTABLE">Recruit / Trainee Constable</option>
                     </optgroup>
