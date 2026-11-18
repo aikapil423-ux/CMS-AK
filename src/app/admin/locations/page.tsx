@@ -288,6 +288,15 @@ export default function LocationMasterPage() {
   const [formData, setFormData] = useState<any>({});
   const [savingModal, setSavingModal] = useState(false);
 
+  // Delete Confirmation Modal State (with explicit OK & Cancel)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [pendingDeleteEntity, setPendingDeleteEntity] = useState<{
+    type: EntityType;
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deletingEntity, setDeletingEntity] = useState(false);
+
   // Developer Admin Access Check
   const isDeveloper =
     (sessionUser?.id === "cms_developer_admin" || sessionUser?.role === "SUPER_ADMIN") &&
@@ -617,10 +626,16 @@ export default function LocationMasterPage() {
       }
     }
 
-    if (!confirm(`Are you sure you want to permanently delete "${name}"?\n\nThis action cannot be undone.`)) {
-      return;
-    }
+    // Hierarchy check passed (entity is confirmed empty).
+    // Open explicit Confirmation Modal with OK and Cancel.
+    setPendingDeleteEntity({ type, id, name });
+    setShowDeleteConfirmModal(true);
+  };
 
+  const confirmExecuteDelete = async () => {
+    if (!pendingDeleteEntity) return;
+    const { type, id, name } = pendingDeleteEntity;
+    setDeletingEntity(true);
     try {
       const res = await fetch(`/api/admin/locations?entityType=${type}&id=${encodeURIComponent(id)}`, {
         method: "DELETE",
@@ -631,9 +646,13 @@ export default function LocationMasterPage() {
         return;
       }
       setSuccessMsg(`Successfully deleted ${name}`);
+      setShowDeleteConfirmModal(false);
+      setPendingDeleteEntity(null);
       await loadData();
     } catch (err: any) {
       alert(`❌ Error deleting entity: ${err.message}`);
+    } finally {
+      setDeletingEntity(false);
     }
   };
 
@@ -3323,6 +3342,67 @@ export default function LocationMasterPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* GLOBAL DELETE CONFIRMATION MODAL WITH OK & CANCEL */}
+      {showDeleteConfirmModal && pendingDeleteEntity && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-red-200 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Confirm Deletion</h3>
+                <p className="text-xs text-slate-500">Developer Administrator Action</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl space-y-2 text-xs">
+              <p className="font-bold text-red-900">
+                Are you sure you want to permanently delete this {pendingDeleteEntity.type}?
+              </p>
+              <div className="bg-white p-2.5 rounded-lg border border-red-100 text-slate-800 font-semibold text-sm">
+                {pendingDeleteEntity.name}
+              </div>
+              <p className="text-[11px] text-red-700 font-medium">
+                ⚠️ Empty hierarchy status verified. This action cannot be undone and will permanently remove this record from the system.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setPendingDeleteEntity(null);
+                }}
+                disabled={deletingEntity}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmExecuteDelete}
+                disabled={deletingEntity}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-colors shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {deletingEntity ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>OK / Confirm Delete</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

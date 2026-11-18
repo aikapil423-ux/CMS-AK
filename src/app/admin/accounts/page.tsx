@@ -768,6 +768,11 @@ export default function AccountManagementPage() {
       roleDisplay = "Section Commander / ASI (Armed)";
       unitType = "ARMED_BATTALION";
       jurisdiction = "UNIT_BOUND";
+    } else if (newRole === "ARMED_MHC") {
+      designation = "Moharrir Head Constable (MHC)";
+      roleDisplay = "MHC (Battalion Malkhana & Armory Records)";
+      unitType = "ARMED_BATTALION";
+      jurisdiction = "BATTALION_WIDE";
     } else if (newRole === "ARMED_HC") {
       designation = "Head Constable (CHM / Section 2IC)";
       roleDisplay = "CHM / Head Constable (HAP / IRB)";
@@ -2185,6 +2190,7 @@ export default function AccountManagementPage() {
                       <option value="ARMED_INSPECTOR">Company Commander (Inspector Armed / CDI)</option>
                       <option value="ARMED_SI">Platoon Commander (Sub-Inspector Armed)</option>
                       <option value="ARMED_ASI">Section Commander (ASI Armed)</option>
+                      <option value="ARMED_MHC">MHC (Moharrir Head Constable - Armed Police / Battalion)</option>
                       <option value="ARMED_HC">Head Constable (CHM / Section 2IC)</option>
                       <option value="ARMED_CONSTABLE">Armed Constable (HAP / IRB Guard & Escort)</option>
                     </optgroup>

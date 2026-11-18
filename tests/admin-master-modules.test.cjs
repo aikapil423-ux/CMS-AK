@@ -135,10 +135,26 @@ test('Account Master Service: Generates accounts with secure scrypt PIN hash and
   const deactivated = await accService.toggleAccountStatus(created.id, 'INACTIVE', 'DEV-ADMIN', 'Developer Administrator');
   assert.equal(deactivated.status, 'INACTIVE');
 
+  // Test Deletion
+  const deleteOk = await accService.deleteAccount(created.id, 'DEV-ADMIN', 'Developer Administrator');
+  assert.equal(deleteOk, true);
+
+  // Attempting to delete DEV-ADMIN must fail
+  const devAccount = accounts.find((a) => a.pno === 'DEV-ADMIN' || a.id === 'cms_developer_admin');
+  if (devAccount) {
+    await assert.rejects(
+      async () => {
+        await accService.deleteAccount(devAccount.id);
+      },
+      /cannot be deleted/,
+      'Root developer administrator account cannot be deleted'
+    );
+  }
+
   // Audit Logs
   const logs = await accService.readAccountAuditLogs();
   assert.ok(logs.length > 0, 'Should have recorded audit logs');
-  assert.ok(logs.some((l) => l.targetUsername === testPno));
+  assert.ok(logs.some((l) => l.targetUsername === testPno && l.action === 'DELETE'));
 });
 
 test('Location Master Service: Enforces hierarchy integrity during deletion', async () => {

@@ -229,6 +229,7 @@ export type AccountRole =
   | 'ARMED_INSPECTOR'
   | 'ARMED_SI'
   | 'ARMED_ASI'
+  | 'ARMED_MHC'
   | 'ARMED_HC'
   | 'ARMED_CONSTABLE'
   | 'TRAINING_DIRECTOR'
