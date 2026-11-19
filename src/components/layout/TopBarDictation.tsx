@@ -1,19 +1,9 @@
 "use client";
 
+import { supportsWhisperDictation, WhisperRecognition } from "@/lib/whisperRecognition";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Mic,
-  MicOff,
-  Languages,
-  Copy,
-  Check,
-  Trash2,
-  X,
-  CornerDownLeft,
-  Volume2,
-  Sparkles,
-  Info,
-} from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 
 export type DictationLanguage = "hi-IN" | "en-IN";
 
@@ -22,22 +12,16 @@ interface TopBarDictationProps {
 }
 
 export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
-  const [isSupported, setIsSupported] = useState(true);
   const [selectedLang, setSelectedLang] = useState<DictationLanguage>("hi-IN");
   const [isListening, setIsListening] = useState(false);
-  const [interimText, setInterimText] = useState("");
-  const [accumulatedText, setAccumulatedText] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [insertedNotice, setInsertedNotice] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activeFieldName, setActiveFieldName] = useState<string>("");
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<WhisperRecognition | null>(null);
   const isListeningRef = useRef(false);
   const selectedLangRef = useRef<DictationLanguage>("hi-IN");
   const lastTargetElRef = useRef<HTMLInputElement | HTMLTextAreaElement | HTMLElement | null>(null);
-  const lastFinalTranscriptRef = useRef("");
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Sync ref with state
@@ -62,15 +46,10 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       if (lang === "hi-IN" || lang === "en-IN") {
         setSelectedLang(lang);
         selectedLangRef.current = lang;
+        if (recognitionRef.current) recognitionRef.current.lang = lang;
       }
     };
     window.addEventListener("cms-dictation-lang-changed", handleLangSync);
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setIsSupported(false);
-    }
 
     return () => {
       window.removeEventListener("cms-dictation-lang-changed", handleLangSync);
@@ -97,13 +76,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
         target.isContentEditable
       ) {
         lastTargetElRef.current = target;
-        const name =
-          target.getAttribute("aria-label") ||
-          target.getAttribute("placeholder") ||
-          (target as HTMLInputElement).name ||
-          target.id ||
-          (target.tagName === "TEXTAREA" ? "Textarea" : "Input Field");
-        setActiveFieldName(name.slice(0, 35));
+
       }
     };
 
@@ -192,142 +165,49 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
     };
   }, []);
 
-  // Start speech recognition
-  const startListening = useCallback(
-    (langOverride?: DictationLanguage) => {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const startListening = useCallback(() => {
+    if (recognitionRef.current) return;
+    if (!supportsWhisperDictation()) {
+      setErrorMessage("वॉइस डिक्टेशन के लिए HTTPS या localhost पर माइक रिकॉर्डिंग समर्थित ब्राउज़र की आवश्यकता है।");
+      return;
+    }
 
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        alert(
-          "वॉइस डिक्टेशन के लिए Web Speech API समर्थित ब्राउज़र (Google Chrome या Microsoft Edge) की आवश्यकता है।"
-        );
-        return;
+    const recognition = new WhisperRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = true;
+    recognition.lang = selectedLangRef.current;
+    recognition.onresult = ({ results }) => {
+      const text = results[0][0].transcript;
+      if (!insertTextIntoActiveElement(text)) {
+        setErrorMessage("Select an editable field before dictating.");
+      } else {
+        setErrorMessage(null);
       }
+    };
+    recognition.onerror = ({ error }) => {
+      setErrorMessage(error === "not-allowed"
+        ? "माइक्रोफ़ोन अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।"
+        : error);
+    };
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      isListeningRef.current = false;
+      setIsListening(false);
+      setIsTranscribing(false);
+    };
 
-      // Stop previous instance if running
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.abort();
-        } catch {
-          // ignore
-        }
-        recognitionRef.current = null;
-      }
+    setErrorMessage(null);
+    isListeningRef.current = true;
+    setIsListening(true);
+    recognition.start();
+  }, [insertTextIntoActiveElement]);
 
-      setErrorMessage(null);
-      lastFinalTranscriptRef.current = "";
-
-      const langToUse = langOverride || selectedLangRef.current;
-
-      try {
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = langToUse;
-
-        recognition.onstart = () => {
-          setIsListening(true);
-          isListeningRef.current = true;
-          setErrorMessage(null);
-        };
-
-        recognition.onresult = (event: any) => {
-          let currentInterim = "";
-          let finalChunk = "";
-
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0]?.transcript || "";
-            if (event.results[i].isFinal) {
-              finalChunk += " " + transcript;
-            } else {
-              currentInterim += " " + transcript;
-            }
-          }
-
-          setInterimText(currentInterim.trim());
-
-          if (finalChunk.trim()) {
-            const cleanFinal = finalChunk.trim();
-            if (cleanFinal !== lastFinalTranscriptRef.current) {
-              lastFinalTranscriptRef.current = cleanFinal;
-
-              // Append to accumulated text in scratchpad
-              setAccumulatedText((prev) => (prev ? prev + " " + cleanFinal : cleanFinal));
-
-              // Direct insertion into active input field
-              const inserted = insertTextIntoActiveElement(cleanFinal);
-              if (inserted) {
-                setInsertedNotice(true);
-                setTimeout(() => setInsertedNotice(false), 2500);
-              }
-            }
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          const code = event?.error;
-          if (code === "no-speech") {
-            // Keep listening, do not abort
-            return;
-          }
-          if (code === "aborted") {
-            return;
-          }
-          if (code === "not-allowed") {
-            setErrorMessage(
-              "माइक्रोफ़ोन अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।"
-            );
-          } else if (code === "network") {
-            setErrorMessage("नेटवर्क त्रुटि: इंटरनेट कनेक्शन की जाँच करें।");
-          } else {
-            setErrorMessage(`माइक त्रुटि: ${code}`);
-          }
-          setIsListening(false);
-          isListeningRef.current = false;
-        };
-
-        recognition.onend = () => {
-          // If still meant to be listening (user didn't click stop), restart for continuous dictation
-          if (isListeningRef.current) {
-            try {
-              recognition.start();
-            } catch {
-              setIsListening(false);
-              isListeningRef.current = false;
-            }
-          } else {
-            setIsListening(false);
-            setInterimText("");
-          }
-        };
-
-        recognition.start();
-        setIsListening(true);
-        isListeningRef.current = true;
-      } catch (err) {
-        console.error("Speech recognition start failed:", err);
-        setIsListening(false);
-        isListeningRef.current = false;
-      }
-    },
-    [insertTextIntoActiveElement]
-  );
-
-  // Stop speech recognition
   const stopListening = useCallback(() => {
+    if (!isListeningRef.current) return;
     isListeningRef.current = false;
     setIsListening(false);
-    setInterimText("");
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // ignore
-      }
-    }
+    setIsTranscribing(true);
+    recognitionRef.current?.stop();
   }, []);
 
   // Toggle listening state
@@ -353,42 +233,6 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       // ignore
     }
 
-    // If currently listening, seamlessly switch language by restarting recognition
-    if (isListeningRef.current) {
-      stopListening();
-      setTimeout(() => {
-        startListening(lang);
-      }, 150);
-    }
-  };
-
-  // Copy text to clipboard
-  const handleCopy = () => {
-    const textToCopy = (accumulatedText + " " + interimText).trim();
-    if (!textToCopy) return;
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  // Manual insertion into currently active field
-  const handleManualInsert = () => {
-    const textToInsert = (accumulatedText + " " + interimText).trim();
-    if (!textToInsert) return;
-    const ok = insertTextIntoActiveElement(textToInsert);
-    if (ok) {
-      setInsertedNotice(true);
-      setTimeout(() => setInsertedNotice(false), 2500);
-    } else {
-      alert("कृपया पहले किसी इनपुट या विवरण फ़ील्ड (Textarea) पर क्लिक करें।");
-    }
-  };
-
-  // Clear scratchpad
-  const handleClear = () => {
-    setAccumulatedText("");
-    setInterimText("");
-    lastFinalTranscriptRef.current = "";
   };
 
   return (
@@ -406,7 +250,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             startListening();
           }
         }}
-        className={`relative rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs select-none ${
+        className={`cms-dictation-trigger relative rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs select-none ${
           isMobile ? "w-8 h-8 p-1.5" : "w-8.5 h-8.5 p-2"
         } ${
           isListening
@@ -420,6 +264,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             ? "डिक्टेशन रोकें (Stop Dictation)"
             : `वॉइस डिक्टेशन (${selectedLang === "hi-IN" ? "हिंदी" : "English"})`
         }
+        disabled={isTranscribing}
         aria-label="Voice Dictation"
         aria-expanded={isPanelOpen}
       >
@@ -436,13 +281,8 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             <Mic className={`w-4 h-4 ${isPanelOpen ? "text-white" : "text-slate-700"}`} />
             {/* Subtle language badge in corner */}
             <span
-              className={`absolute -bottom-1 -right-1 text-[8px] font-bold px-0.5 leading-none rounded border shadow-2xs ${
-                isPanelOpen
-                  ? "bg-slate-800 text-slate-200 border-slate-700"
-                  : selectedLang === "hi-IN"
-                  ? "bg-amber-100 text-amber-900 border-amber-300"
-                  : "bg-blue-100 text-blue-900 border-blue-300"
-              }`}
+              className="cms-dictation-language-badge absolute -bottom-1 -right-1 text-[10px] font-bold px-0.5 leading-none rounded border border-slate-300 bg-white text-slate-900 shadow-2xs"
+              style={{ backgroundColor: "#ffffff", color: "#172b4d" }}
             >
               {selectedLang === "hi-IN" ? "हिं" : "EN"}
             </span>
@@ -450,219 +290,14 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
         )}
       </button>
 
-      {/* Dropdown Floating Dictation Panel / Scratchpad */}
       {isPanelOpen && (
-        <div
-          className={`absolute top-full mt-2 z-50 bg-white rounded-xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-top-2 ${
-            isMobile
-              ? "right-0 w-[calc(100vw-2rem)] max-w-sm"
-              : "right-0 w-96 max-w-[95vw]"
-          }`}
-        >
-          {/* Panel Header */}
-          <div className="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-            <div className="flex items-center gap-2 min-w-0">
-              <div
-                className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                  isListening ? "bg-red-600 animate-pulse" : "bg-slate-800"
-                }`}
-              >
-                <Mic className="w-3.5 h-3.5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs font-bold tracking-tight truncate">
-                    Police Voice Dictation
-                  </h4>
-                  <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider ${
-                      selectedLang === "hi-IN"
-                        ? "bg-amber-400 text-slate-950"
-                        : "bg-blue-400 text-slate-950"
-                    }`}
-                  >
-                    {selectedLang === "hi-IN" ? "हिंदी (hi-IN)" : "English (en-IN)"}
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 truncate">
-                  {isListening
-                    ? selectedLang === "hi-IN"
-                      ? "माइक चालू है — साफ़-साफ़ बोलें"
-                      : "Microphone active — speak clearly"
-                    : "माइक बंद है — शुरू करने के लिए बटन दबाएँ"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setIsPanelOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-                title="बंद करें"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Error Banner */}
-          {errorMessage && (
-            <div className="px-3 py-2 bg-red-50 border-b border-red-200 text-red-800 text-[11px] flex items-start gap-1.5">
-              <Info className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {/* Active Target Field Indicator */}
-          <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-200/70 flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1.5 text-slate-700 min-w-0">
-              <span className="font-semibold text-slate-500">🎯 फ़ोकस:</span>
-              <span className="font-medium text-slate-900 truncate">
-                {activeFieldName || "कोई फ़ील्ड चयनित नहीं"}
-              </span>
-            </div>
-            {insertedNotice && (
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 animate-in fade-in">
-                ✓ फ़ील्ड में लिखा गया!
-              </span>
-            )}
-          </div>
-
-          {/* Live Transcript Display Box */}
-          <div className="p-3">
-            <div className="relative">
-              <textarea
-                value={
-                  accumulatedText +
-                  (interimText ? (accumulatedText ? " " : "") + interimText : "")
-                }
-                onChange={(e) => setAccumulatedText(e.target.value)}
-                rows={3}
-                placeholder={
-                  selectedLang === "hi-IN"
-                    ? "यहाँ आपकी बोली गई बात टाइप होगी... (पेज पर किसी भी इनपुट या टेक्स्ट फ़ील्ड पर क्लिक करके बोलें तो वहाँ भी अपने आप टाइप होगा)"
-                    : "Your spoken text appears here... (Click any input or textarea on the page to type directly into it)"
-                }
-                className="w-full text-xs font-normal p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none resize-none leading-relaxed text-slate-800 placeholder:text-slate-400 overflow-hidden transition-[height] duration-75 min-h-[75px]"
-              />
-              {interimText && (
-                <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[10px] font-medium text-amber-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                  लाइव ट्रांसक्रिप्शन...
-                </div>
-              )}
-            </div>
-
-            {/* Language Quick Switcher Inside Panel */}
-            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
-              <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                <Languages className="w-3.5 h-3.5 text-slate-400" />
-                <span>Language:</span>
-                <button
-                  type="button"
-                  onClick={() => handleSelectLang("hi-IN")}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition-colors ${
-                    selectedLang === "hi-IN"
-                      ? "bg-amber-400 text-slate-950"
-                      : "hover:bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  हिंदी
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectLang("en-IN")}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold cursor-pointer transition-colors ${
-                    selectedLang === "en-IN"
-                      ? "bg-slate-900 text-white"
-                      : "hover:bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  English
-                </button>
-              </div>
-
-              {/* Clear Button */}
-              {(accumulatedText || interimText) && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="flex items-center gap-1 text-[11px] text-red-600 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded cursor-pointer"
-                  title="टेक्स्ट साफ़ करें"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span>साफ़ करें</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Action Footer */}
-          <div className="px-3.5 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              {/* Copy Button */}
-              <button
-                type="button"
-                onClick={handleCopy}
-                disabled={!accumulatedText && !interimText}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  copied
-                    ? "bg-emerald-600 text-white"
-                    : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
-                }`}
-                title="कॉपी करें"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>कॉपी हुआ!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>कॉपी</span>
-                  </>
-                )}
-              </button>
-
-              {/* Insert to Active Field Button */}
-              <button
-                type="button"
-                onClick={handleManualInsert}
-                disabled={!accumulatedText && !interimText}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                title="सक्रिय फ़ील्ड में डालें"
-              >
-                <CornerDownLeft className="w-3.5 h-3.5 text-blue-600" />
-                <span>फ़ील्ड में भरें</span>
-              </button>
-            </div>
-
-            {/* Mic Start / Stop Button */}
-            <button
-              type="button"
-              onClick={handleToggleListening}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer !text-white ${
-                isListening
-                  ? "!bg-red-600 hover:!bg-red-700 !text-white ring-2 ring-red-400/30"
-                  : "!bg-[#0b192c] hover:!bg-slate-800 !text-white"
-              }`}
-              style={{ color: "#ffffff" }}
-            >
-              {isListening ? (
-                <>
-                  <MicOff className="w-3.5 h-3.5 !text-white" style={{ color: "#ffffff" }} />
-                  <span className="!text-white" style={{ color: "#ffffff" }}>Stop</span>
-                </>
-              ) : (
-                <>
-                  <Mic className="w-3.5 h-3.5 !text-white" style={{ color: "#ffffff" }} />
-                  <span className="!text-white" style={{ color: "#ffffff" }}>Start</span>
-                </>
-              )}
-            </button>
-          </div>
+        <div role="dialog" aria-label="Voice dictation" className="cms-dictation-panel absolute right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 flex items-center gap-1">
+          <button type="button" title="हिंदी" aria-label="Hindi dictation" aria-pressed={selectedLang === "hi-IN"} onClick={() => handleSelectLang("hi-IN")} className={selectedLang === "hi-IN" ? "cms-dictation-selected" : ""}><span aria-hidden="true">अ</span></button>
+          <button type="button" title="English" aria-label="English dictation" aria-pressed={selectedLang === "en-IN"} onClick={() => handleSelectLang("en-IN")} className={selectedLang === "en-IN" ? "cms-dictation-selected" : ""}><span aria-hidden="true">A</span></button>
+          <button type="button" onClick={handleToggleListening} disabled={isTranscribing} aria-label={isTranscribing ? "Processing dictation" : isListening ? "Stop dictation" : "Start dictation"} title={errorMessage || (isTranscribing ? "Processing…" : isListening ? "Stop" : "Start")} className="cms-dictation-start">
+            {isListening ? <MicOff aria-hidden="true" className="w-3.5 h-3.5" /> : <Mic aria-hidden="true" className={`w-3.5 h-3.5 ${isTranscribing ? "animate-pulse" : ""}`} />}
+          </button>
+          <span role="status" className="sr-only">{errorMessage}</span>
         </div>
       )}
     </div>

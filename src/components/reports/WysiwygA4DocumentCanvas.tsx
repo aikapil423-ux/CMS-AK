@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { supportsWhisperDictation, WhisperRecognition } from "@/lib/whisperRecognition";
 import {
   Bold,
   Italic,
@@ -21,6 +22,10 @@ export function WysiwygA4DocumentCanvas() {
   const { currentUser } = useAuth();
   const [docLanguage, setDocLanguage] = useState<"HINDI" | "ENGLISH">("HINDI");
   const [isDictating, setIsDictating] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [dictationError, setDictationError] = useState("");
+  const recognitionRef = useRef<WhisperRecognition | null>(null);
+  useEffect(() => () => recognitionRef.current?.abort(), []);
   const [docTitle, setDocTitle] = useState("दैनिक स्थिति आख्या / मौका मुआयना रिपोर्ट");
   const [docContent, setDocContent] = useState(
     `सेवा में,
@@ -39,7 +44,35 @@ export function WysiwygA4DocumentCanvas() {
   };
 
   const toggleDictation = () => {
-    setIsDictating(!isDictating);
+    if (isDictating) {
+      setIsDictating(false);
+      setIsTranscribing(true);
+      recognitionRef.current?.stop();
+      return;
+    }
+    if (!supportsWhisperDictation()) {
+      setDictationError("Microphone recording requires a supported browser on HTTPS or localhost.");
+      return;
+    }
+    const recognition = new WhisperRecognition();
+    recognition.lang = docLanguage === "HINDI" ? "hi-IN" : "en-IN";
+    recognition.continuous = true;
+    recognition.onresult = ({ results }) => {
+      const text = results[0][0].transcript;
+      setDocContent(previous => previous ? `${previous.trimEnd()} ${text}` : text);
+    };
+    recognition.onerror = ({ error }) => setDictationError(
+      error === "not-allowed" ? "Allow microphone access in your browser." : error,
+    );
+    recognition.onend = () => {
+      setIsDictating(false);
+      setIsTranscribing(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    setDictationError("");
+    setIsDictating(true);
+    recognition.start();
   };
 
   const handleSave = () => {
@@ -87,6 +120,7 @@ export function WysiwygA4DocumentCanvas() {
           <button
             type="button"
             onClick={toggleDictation}
+            disabled={isTranscribing}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
               isDictating
                 ? "bg-rose-600 text-white animate-pulse"
@@ -94,8 +128,9 @@ export function WysiwygA4DocumentCanvas() {
             }`}
           >
             <Mic className="w-3.5 h-3.5" />
-            <span>{isDictating ? "Listening... बोलें (Recording)" : "बोलकर टाइप करें (Voice Dictation)"}</span>
+            <span>{isTranscribing ? "Transcribing…" : isDictating ? "Listening... बोलें (Recording)" : "बोलकर टाइप करें (Voice Dictation)"}</span>
           </button>
+          {dictationError && <span role="alert" className="text-xs text-rose-700">{dictationError}</span>}
 
           <button
             type="button"

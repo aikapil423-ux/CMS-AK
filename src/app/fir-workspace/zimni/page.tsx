@@ -1061,26 +1061,27 @@ function ZimniWorkspaceContent() {
             <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
             {/* Active FIR Selector Pill */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1">
+            <label className="flex h-7 w-40 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 sm:w-56">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">FIR:</span>
               <select
                 value={selectedFirId}
                 onChange={(e) => setSelectedFirId(e.target.value)}
-                className="text-xs font-bold bg-transparent text-slate-900 focus:outline-none cursor-pointer max-w-[200px] sm:max-w-[260px] truncate"
+                className="h-full min-h-0! min-w-0 flex-1 cursor-pointer truncate border-0! bg-transparent! text-xs! font-bold text-slate-900"
               >
+                {firs.length === 0 && <option value="">No FIR available</option>}
                 {firs.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.firNumber} — {f.complainantName || "Complaint"}
                   </option>
                 ))}
               </select>
-            </div>
+            </label>
 
             {/* Auto-Fill Button */}
             <button
               type="button"
               onClick={() => handleAutoFillFromFir()}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+              className="flex h-7 items-center gap-1 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
               title="Auto-fill details from selected FIR"
             >
               <Sparkles className="w-3.5 h-3.5" />

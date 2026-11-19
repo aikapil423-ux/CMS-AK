@@ -1,5 +1,12 @@
 /* Screen-only application chrome; official print layouts retain their existing rules. */
 @media screen {
+.cms-court-theme .cms-shell header button.cms-dictation-trigger {background:#203c88!important;color:#fff!important;border-color:#203c88!important}
+.cms-court-theme .cms-shell header button.cms-dictation-trigger :is(svg,span) {color:#fff!important}
+.cms-court-theme .cms-shell header button.cms-dictation-trigger span.cms-dictation-language-badge {background:#fff!important;color:#172b4d!important;border:1px solid #cbd5e1!important;font-size:10px;line-height:14px;min-width:18px;padding:0 2px;text-align:center;border-radius:3px!important}
+.cms-court-theme .cms-shell header .cms-dictation-panel button {display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;min-height:28px;padding:0;border-radius:6px!important;font-size:13px;font-weight:600;white-space:nowrap;color:#334155;background:#f1f5f9}
+.cms-court-theme .cms-shell header .cms-dictation-panel button.cms-dictation-selected {background:#203c88;color:#fff}
+.cms-court-theme .cms-shell header .cms-dictation-panel button.cms-dictation-start {background:#0b192c;color:#fff}
+.cms-court-theme .cms-shell header .cms-dictation-start svg {color:#fff}
 .cms-court-theme .cms-shell > aside > .cms-sidebar-brand {background:#082953;min-height:86px;color:#fff}
 .cms-court-theme .cms-sidebar-brand-text {border-left:1px solid #ffffff55;padding-left:14px;margin-left:4px;white-space:nowrap}
 .cms-court-theme .cms-sidebar-brand-text h1 {color:#fff!important;font-size:25px;font-weight:750;line-height:1.15;letter-spacing:0}

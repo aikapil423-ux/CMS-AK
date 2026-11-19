@@ -1,15 +1,15 @@
+import { supportsWhisperDictation, WhisperRecognition } from "@/lib/whisperRecognition";
 /**
  * Solo Native CMS Voice Engine
  * Haryana Police Crime Management System
  * 
- * Provides 100% self-contained, browser-native voice copilot capabilities:
+ * Provides voice copilot capabilities with local Whisper transcription:
  * 1. Wake-up word: "Hey CMS" (supports "hey cms", "हे सीएमएस", "cms agent")
  * 2. Hands-free continuous listening loop (no repeated mic clicks)
- * 3. Barge-in / Interruption: Stops speaking immediately when user speaks ("bole par ruke")
+ * 3. Barge-in / Interruption based on recognized speech
  * 4. Understand & Plan: Multi-step intent analysis across all 8 police modules
  * 5. Dynamic Re-planning: Seamlessly adapts and replans when interrupted or corrected
  * 
- * Eliminates all external Jarvis / Python / WebSocket dependencies.
  */
 
 import { DynamicModuleRegistry, ModuleDefinition } from "./dynamicModuleRegistry";
@@ -53,7 +53,7 @@ export type VoicePlanListener = (plan: VoicePlan | null) => void;
 class CmsVoiceEngineClass {
   private status: CmsVoiceStatus = "STANDBY";
   private enabled = true;
-  private recognition: any = null;
+  private recognition: WhisperRecognition | null = null;
   private speechSynth: SpeechSynthesis | null = null;
   private statusListeners: Set<VoiceStatusListener> = new Set();
   private transcriptListeners: Set<VoiceTranscriptListener> = new Set();
@@ -72,8 +72,6 @@ class CmsVoiceEngineClass {
   private language: VoiceLanguage = "en-IN";
   private selectedVoiceId: string = "male-parth";
 
-  // Re-start watchdog timer to keep continuous listening alive
-  private restartTimeout: any = null;
   private silenceTimer: any = null;
   private lastSpokenInterim = "";
 
@@ -227,9 +225,8 @@ class CmsVoiceEngineClass {
       return;
     }
 
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      this.setStatus("ERROR", "Web Speech API is not supported in this browser. Please use Google Chrome or Microsoft Edge for voice commands; text commands work on all browsers.");
+    if (!supportsWhisperDictation()) {
+      this.setStatus("ERROR", "Microphone recording requires a supported browser on HTTPS or localhost.");
       return;
     }
 
@@ -242,11 +239,9 @@ class CmsVoiceEngineClass {
     }
 
     try {
-      const recognition = new SpeechRec();
+      const recognition = new WhisperRecognition();
       recognition.continuous = true;
-      recognition.interimResults = true;
       recognition.lang = this.language;
-      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         if (this.status !== "SPEAKING" && this.status !== "PLANNING" && this.status !== "EXECUTING") {
@@ -263,7 +258,7 @@ class CmsVoiceEngineClass {
         }
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         let interim = "";
         let finalChunk = "";
 
@@ -329,44 +324,24 @@ class CmsVoiceEngineClass {
         }
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event) => {
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           this.isPermissionDenied = true;
           this.enabled = false;
-          clearTimeout(this.restartTimeout);
           this.setStatus("ERROR", "Microphone access blocked. Please allow microphone permissions in browser settings.");
           return;
         }
         if (event.error === "audio-capture") {
           this.enabled = false;
-          clearTimeout(this.restartTimeout);
           this.setStatus("ERROR", "No microphone detected. Please plug in or enable your microphone.");
           return;
         }
-        // 'no-speech' is expected during pauses in continuous listening
-        if (event.error !== "no-speech" && event.error !== "aborted") {
-          console.warn("[CmsVoiceEngine] Recognition note:", event.error);
-        }
+        this.setStatus("ERROR", event.error);
       };
 
       recognition.onend = () => {
-        // If permission was denied or disabled, do not restart
-        if (!this.enabled || this.isPermissionDenied) {
-          if (!this.isPermissionDenied) this.setStatus("OFF");
-          return;
-        }
-
-        // Auto-restart loop with backoff protection
-        clearTimeout(this.restartTimeout);
-        this.restartTimeout = setTimeout(() => {
-          if (this.enabled && !this.isPermissionDenied && this.recognition === recognition) {
-            try {
-              recognition.start();
-            } catch {
-              this.startContinuousListening();
-            }
-          }
-        }, 120);
+        if (this.recognition === recognition) this.recognition = null;
+        if (!this.isPermissionDenied && this.status !== "ERROR") this.setStatus("OFF");
       };
 
       this.recognition = recognition;
@@ -378,7 +353,6 @@ class CmsVoiceEngineClass {
   }
 
   public stopContinuousListening(): void {
-    clearTimeout(this.restartTimeout);
     if (this.recognition) {
       try {
         this.recognition.abort();

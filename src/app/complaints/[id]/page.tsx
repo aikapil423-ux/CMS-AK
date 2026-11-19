@@ -252,84 +252,12 @@ const REPORT_DROPDOWN_OPTIONS = [
 ];
 
 // Voice Dictation / Audio Input Component for any entry column
-function VoiceInputButton({
-  onTranscript,
-  fieldLabel = "this field",
-  className = "",
-}: {
+function VoiceInputButton(_props: {
   onTranscript: (text: string) => void;
   fieldLabel?: string;
   className?: string;
 }) {
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-
-  const toggleListening = () => {
-    if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
-        }
-      }
-      setIsListening(false);
-      return;
-    }
-
-    if (typeof window === "undefined") return;
-
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      const fallbackPrompt = window.prompt(
-        `Microphone dictation: Type or dictate text for ${fieldLabel}:`
-      );
-      if (fallbackPrompt) {
-        onTranscript(fallbackPrompt);
-      }
-      return;
-    }
-
-    try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = "en-IN"; // English (India) / Standard Legal
-
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognition.onresult = (event: any) => {
-        if (event.results && event.results[0] && event.results[0][0]) {
-          const transcript = event.results[0][0].transcript;
-          if (transcript) {
-            onTranscript(transcript.trim());
-          }
-        }
-        setIsListening(false);
-      };
-
-      recognition.onerror = (err: any) => {
-        console.warn("Speech recognition error:", err);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-    } catch (err) {
-      console.warn("Could not start speech recognition:", err);
-      setIsListening(false);
-    }
-  };
-
-  // Voice input buttons on form fields hidden as per user requirement
+  // Voice input buttons on form fields hidden as per user requirement.
   return null;
 }
 
