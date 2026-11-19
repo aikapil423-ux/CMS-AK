@@ -3535,7 +3535,7 @@ export default function ComplaintProfilePage() {
                 /* TABULAR FORM VIEW */
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
+                    <table className="cms-complaint-reports-table w-full text-left text-xs border-collapse">
                       <thead>
                         <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-bold">
                           <th className="py-3 px-3.5 w-12 text-center">#</th>
@@ -3544,12 +3544,13 @@ export default function ComplaintProfilePage() {
                           <th className="py-3 px-3.5 w-40">Status</th>
                           <th className="py-3 px-3.5 w-44">Officer &amp; Dispatch</th>
                           <th className="py-3 px-3.5 w-32">Date</th>
-                          <th className="py-3 px-3.5 w-52 text-right">Actions</th>
+                          <th className="py-3 px-3.5 w-36 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {complaint.reports.map((report, idx) => {
                           const isDraftStatus = report.status === "Draft";
+                          const isShoAuthored = /\bSHO\b/i.test(report.createdByRole || "") || /\bSHO\b/i.test(report.officerRank || "");
 
                           return (
                             <tr key={report.id} className="hover:bg-slate-50/80 transition-colors">
@@ -3640,8 +3641,13 @@ export default function ComplaintProfilePage() {
 
                               {/* Actions */}
                               <td className="py-3 px-3.5 align-top text-right">
-                                <div className="flex flex-wrap items-center justify-end gap-1">
-{isAssignedEo && !report.sentToSho && (
+                                <div className="cms-report-row-actions flex flex-col items-end gap-1.5">
+{isShoAuthored && (
+                                    <Button type="button" variant="primary" size="sm" disabled title="Send to Superior workflow will be added later" className="text-[11px] h-8 px-2.5 gap-1 bg-red-600 text-white font-bold disabled:opacity-100 disabled:cursor-not-allowed">
+                                      <Send className="w-3 h-3" /><span>Send to Superior</span>
+                                    </Button>
+                                  )}
+{!isShoAuthored && isAssignedEo && !report.sentToSho && (
                                     <Button
                                       type="button"
                                       variant="primary"
@@ -3769,6 +3775,7 @@ export default function ComplaintProfilePage() {
                   {complaint.reports.map((report) => {
                     const isSavedInComplaint = report.status === "Saved in Complaint" || report.status === "Saved" || !report.status;
                     const isDraftStatus = report.status === "Draft";
+                          const isShoAuthored = /\bSHO\b/i.test(report.createdByRole || "") || /\bSHO\b/i.test(report.officerRank || "");
 
                     return (
                       <Card key={report.id} className="border-slate-200 shadow-xs hover:shadow-md transition-shadow">
@@ -3864,7 +3871,12 @@ export default function ComplaintProfilePage() {
 
                           {/* Action buttons: View, Edit, Download, Print, Create New Version */}
                           <div className="pt-1 flex flex-wrap items-center justify-end gap-1.5">
-{isAssignedEo && !report.sentToSho && (
+{isShoAuthored && (
+                                    <Button type="button" variant="primary" size="sm" disabled title="Send to Superior workflow will be added later" className="text-[11px] h-8 px-2.5 gap-1 bg-red-600 text-white font-bold disabled:opacity-100 disabled:cursor-not-allowed">
+                                      <Send className="w-3 h-3" /><span>Send to Superior</span>
+                                    </Button>
+                                  )}
+{!isShoAuthored && isAssignedEo && !report.sentToSho && (
                               <Button
                                 type="button"
                                 variant="primary"
@@ -4050,7 +4062,7 @@ export default function ComplaintProfilePage() {
                     {combinedHistory.length} Steps
                   </span>
                 </h3>
-                
+
               </div>
 
               <div className="flex items-center gap-2">
@@ -4223,48 +4235,37 @@ export default function ComplaintProfilePage() {
         {/* TAB 7: CONFIDENTIAL DOSSIER (Strictly Restricted to Enquiry Officer ID - Isolated from Complaint File) */}
         {activeTab === "confidential_dossier" && isEoPersona && (
           <div className="space-y-5 animate-in fade-in-0 duration-200">
-            {/* Top Secrecy & Memory Protocol Banner */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-[#0d1f38] to-slate-900 border-2 border-amber-500/40 rounded-2xl shadow-md text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                    <Lock className="w-3 h-3 text-amber-400" />
-                    <span>EO Case Memory &amp; Classified Diary</span>
-                  </span>
-                  <span className="text-xs font-mono text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
-                    Officer: {currentUser.name} ({currentUser.rankDisplay || "Enquiry Officer"})
-                  </span>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-rose-400 bg-rose-950/60 border border-rose-800/50 px-2 py-0.5 rounded">
-                    Strictly Isolated
-                  </span>
+            <section aria-labelledby="confidential-dossier-title" className="flex flex-col justify-between gap-4 border border-slate-200 border-l-4 border-l-[#203c88] bg-white p-4 sm:p-5 xl:flex-row xl:items-center">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <h3 id="confidential-dossier-title" className="text-lg font-bold leading-tight text-[#172b4d]">
+                      EO Case Memory &amp; Classified Diary
+                    </h3>
+                  </div>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                  <span>Confidential Dossier • Enquiry Memory Notes</span>
-                </h3>
-                
               </div>
 
-              <div className="shrink-0 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 xl:shrink-0">
                 <Button
-                  size="sm"
-                  variant="primary"
+                  type="button"
+                  variant="secondary"
                   onClick={handleOpenUploadDossier}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs gap-1.5 shadow-sm px-3.5 py-2 cursor-pointer"
+                  className="flex-1 whitespace-nowrap sm:flex-none"
                 >
-                  <UploadCloud className="w-4 h-4" />
+                  <UploadCloud aria-hidden="true" className="size-4 shrink-0" />
                   <span>Upload Dossier File</span>
                 </Button>
                 <Button
-                  size="sm"
-                  variant="primary"
+                  type="button"
                   onClick={handleOpenNoteDossier}
-                  className="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs gap-1.5 shadow-sm px-3.5 py-2 cursor-pointer"
+                  className="flex-1 whitespace-nowrap sm:flex-none"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus aria-hidden="true" className="size-4 shrink-0" />
                   <span>New Memory Note</span>
                 </Button>
               </div>
-            </div>
+            </section>
 
             {/* Filter and Search Bar */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -5644,61 +5645,48 @@ export default function ComplaintProfilePage() {
               if (!isSavingDossier) setDossierModalOpen(false);
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-labelledby="dossier-entry-title" className="cms-dossier-modal relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
             {/* Modal Header */}
             <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-[#0e223d] text-white flex items-center justify-between border-b border-slate-800">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono uppercase tracking-wider flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-amber-400" />
-                    <span>EO Memory Isolated Docket</span>
-                  </span>
-                  <span className="text-xs font-mono text-slate-300 font-bold">
-                    {complaint.complaintNumber}
-                  </span>
-                </div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>Record Confidential Dossier Entry</span>
-                </h3>
-                <p className="text-[11px] text-slate-300">
-                  This note will NOT be attached to the complaint or visible in public receipts.
-                </p>
+                <h3 id="dossier-entry-title" className="text-base font-bold text-white">{dossierModalTab === "upload" ? "Upload Dossier File" : "New Memory Note"}</h3>
+                <p className="text-xs text-white/80">{complaint.complaintNumber}</p>
               </div>
               <button
                 onClick={() => {
                   if (!isSavingDossier) setDossierModalOpen(false);
                 }}
-                className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close dialog" type="button" className="p-1 rounded-md text-white hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Tabs: Upload Dossier File vs Write Memory Note */}
-            <div className="flex border-b border-slate-200 bg-slate-100/80 px-3 pt-2 gap-1">
+            {/* Modal Tabs: Upload Dossier File vs Memory Note */}
+            <div className="grid grid-cols-2 border-b border-slate-200 bg-slate-50 px-4 pt-2 gap-2">
               <button
                 type="button"
                 onClick={() => setDossierModalTab("upload")}
-                className={`flex items-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
                   dossierModalTab === "upload"
                     ? "border-emerald-600 text-emerald-800 bg-white rounded-t-lg shadow-2xs"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <UploadCloud className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Upload Audio, Video, PDF, Doc or Any File</span>
+                <span>Upload File</span>
               </button>
               <button
                 type="button"
                 onClick={() => setDossierModalTab("note")}
-                className={`flex items-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 sm:px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
                   dossierModalTab === "note"
                     ? "border-amber-600 text-amber-800 bg-white rounded-t-lg shadow-2xs"
                     : "border-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >
                 <FileText className="w-3.5 h-3.5 text-amber-600" />
-                <span>Write Memory Note</span>
+                <span>Memory Note</span>
               </button>
             </div>
 
@@ -5710,9 +5698,9 @@ export default function ComplaintProfilePage() {
                   <div className="flex items-center justify-between">
                     <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                       <UploadCloud className="w-4 h-4 text-emerald-600" />
-                      <span>Select Dossier File (Audio, Video, PDF, Word, Image, Any Format) *</span>
+                      <span>File *</span>
                     </label>
-                    <span className="text-[10px] text-slate-500 font-medium">Any format supported</span>
+
                   </div>
 
                   <div className="border-2 border-dashed border-emerald-300 hover:border-emerald-500 rounded-xl p-3.5 bg-white text-center transition-colors">
@@ -5786,22 +5774,9 @@ export default function ComplaintProfilePage() {
                         <div className="py-2 space-y-1.5">
                           <UploadCloud className="w-7 h-7 text-emerald-600 mx-auto" />
                           <p className="font-bold text-emerald-700 hover:underline text-xs">
-                            Click here to select Audio, Video, PDF, Word doc, or any file
+                            Choose file
                           </p>
-                          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] text-slate-500 pt-1">
-                            <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                              🎧 MP3, WAV, M4A
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200">
-                              🎬 MP4, MKV, AVI
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
-                              📄 PDF, Word DOCX/DOC
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              📸 JPG, PNG
-                            </span>
-                          </div>
+
                         </div>
                       )}
                     </label>
@@ -5813,7 +5788,7 @@ export default function ComplaintProfilePage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-semibold text-slate-800">
-                    {dossierModalTab === "upload" ? "Dossier File Title / Brief Description *" : "Entry Title / Brief Lead *"}
+                    {dossierModalTab === "upload" ? "File title *" : "Note title *"}
                   </label>
                   <VoiceInputButton
                     onTranscript={(txt) => setDossierTitle((p) => (p ? p + " " + txt : txt))}
@@ -5827,18 +5802,18 @@ export default function ComplaintProfilePage() {
                   onChange={(e) => setDossierTitle(e.target.value)}
                   placeholder={
                     dossierModalTab === "upload"
-                      ? "e.g. Call Recording of Witness Sunil / Spot Video / Patwari Demarcation Map"
-                      : "e.g. Secret Informant Tip regarding hidden vehicle / Off-record confession"
+                      ? "Enter file title"
+                      : "Enter note title"
                   }
                   className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none"
                 />
               </div>
 
               {/* Category & Tag Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="cms-dossier-field-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-semibold text-slate-800 mb-1">
-                    Dossier Category *
+                    Category *
                   </label>
                   <select
                     value={dossierCategory}
@@ -5856,7 +5831,7 @@ export default function ComplaintProfilePage() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="font-semibold text-slate-800">
-                      Reference / Intel Tag
+                      Reference
                     </label>
                     <span className="text-[10px] text-slate-400 font-medium">Optional</span>
                   </div>
@@ -5864,7 +5839,7 @@ export default function ComplaintProfilePage() {
                     type="text"
                     value={dossierReferenceTag}
                     onChange={(e) => setDossierReferenceTag(e.target.value)}
-                    placeholder="e.g. Mukhbir-Sunil / CDR-9812 / SuspectBrother"
+                    placeholder="Reference or tag"
                     className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
@@ -5875,8 +5850,8 @@ export default function ComplaintProfilePage() {
                 <div className="flex items-center justify-between mb-1">
                   <label className="font-semibold text-slate-800">
                     {dossierModalTab === "upload"
-                      ? "Investigation Context / Remarks (Optional)"
-                      : "Confidential Observations & Memory Notes *"}
+                      ? "Remarks (optional)"
+                      : "Notes *"}
                   </label>
                   <VoiceInputButton
                     onTranscript={(txt) => setDossierContent((p) => (p ? p + " " + txt : txt))}
@@ -5890,8 +5865,8 @@ export default function ComplaintProfilePage() {
                   onChange={(e) => setDossierContent(e.target.value)}
                   placeholder={
                     dossierModalTab === "upload"
-                      ? "Add optional remarks regarding who gave this recording/file, spot location, or investigation context..."
-                      : "Record confidential intel, personal recollection, witness body language, unverified allegations, or investigation strategy..."
+                      ? "Add remarks"
+                      : "Enter observations and notes"
                   }
                   className="w-full rounded-lg border border-slate-300 p-2.5 text-slate-900 bg-white focus:border-emerald-500 focus:outline-none font-sans"
                 />
@@ -5903,7 +5878,7 @@ export default function ComplaintProfilePage() {
                   <div className="flex items-center justify-between">
                     <label className="font-semibold text-slate-800 flex items-center gap-1.5">
                       <Paperclip className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Optional Attachment (Audio, Video, PDF, Word, Photo)</span>
+                      <span>Attachment</span>
                     </label>
                     <span className="text-[10px] text-slate-400">Optional</span>
                   </div>
@@ -5942,10 +5917,7 @@ export default function ComplaintProfilePage() {
                         <div className="py-1">
                           <UploadCloud className="w-5 h-5 text-slate-400 mx-auto mb-1" />
                           <p className="font-semibold text-amber-600 hover:underline text-xs">
-                            Click to attach Audio, Video, PDF, Word, or Photo
-                          </p>
-                          <p className="text-[10px] text-slate-400">
-                            Supports any audio, video, document, or image format
+                            Choose file
                           </p>
                         </div>
                       )}
@@ -5984,12 +5956,12 @@ export default function ComplaintProfilePage() {
                   ) : dossierModalTab === "upload" ? (
                     <>
                       <UploadCloud className="w-3.5 h-3.5" />
-                      <span>Upload to Confidential Dossier</span>
+                      <span>Upload File</span>
                     </>
                   ) : (
                     <>
                       <Lock className="w-3.5 h-3.5" />
-                      <span>Save Confidential Note</span>
+                      <span>Save Note</span>
                     </>
                   )}
                 </Button>

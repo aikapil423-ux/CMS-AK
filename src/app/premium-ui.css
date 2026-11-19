@@ -1,5 +1,21 @@
 /* Screen-only application chrome; official print layouts retain their existing rules. */
 @media screen {
+.cms-court-theme .cms-complaint-reports-table {table-layout:fixed;min-width:1100px}
+.cms-court-theme .cms-complaint-reports-table tbody td {vertical-align:middle!important;padding:14px!important}
+.cms-court-theme .cms-complaint-reports-table tbody td:nth-child(2) {overflow-wrap:anywhere;line-height:1.6}
+.cms-court-theme .cms-complaint-reports-table :is(th,td):nth-child(4) {width:180px}
+.cms-court-theme .cms-complaint-reports-table td:nth-child(4) > span {white-space:nowrap}
+.cms-court-theme .cms-complaint-reports-table td svg {flex-shrink:0}
+.cms-court-theme .cms-complaint-reports-table :is(th,td):last-child {width:160px}
+.cms-court-theme .cms-complaint-reports-table .cms-report-row-actions > button {display:inline-flex;align-items:center;justify-content:center;width:132px;min-width:132px;height:32px;min-height:32px;padding:0 10px!important;font-size:11px;white-space:nowrap;box-sizing:border-box}
+.cms-court-theme .cms-dossier-modal form {font-size:13px}
+.cms-court-theme .cms-dossier-modal .cms-dossier-field-grid > div {display:flex;flex-direction:column;min-width:0}
+.cms-court-theme .cms-dossier-modal .cms-dossier-field-grid > div > label,
+.cms-court-theme .cms-dossier-modal .cms-dossier-field-grid > div > div:first-child {height:24px;min-height:24px;display:flex;align-items:center;margin:0 0 6px;padding:0;background:transparent;border:0;font-size:12px}
+.cms-court-theme .cms-dossier-modal .cms-dossier-field-grid > div > label {background:transparent!important;border:0!important;padding:0!important}
+.cms-court-theme .cms-dossier-modal :is(input:not([type='file']),select) {height:42px;min-width:0;border-radius:6px!important}
+.cms-court-theme .cms-dossier-modal textarea {border-radius:6px!important;min-height:100px}
+.cms-court-theme .cms-dossier-modal label[for^='dossierAttachment'] {background:#fff!important;border:0!important;padding:10px!important}
 .cms-court-theme .cms-shell header button.cms-dictation-trigger {background:#203c88!important;color:#fff!important;border-color:#203c88!important}
 .cms-court-theme .cms-shell header button.cms-dictation-trigger :is(svg,span) {color:#fff!important}
 .cms-court-theme .cms-shell header button.cms-dictation-trigger span.cms-dictation-language-badge {background:#fff!important;color:#172b4d!important;border:1px solid #cbd5e1!important;font-size:10px;line-height:14px;min-width:18px;padding:0 2px;text-align:center;border-radius:3px!important}
