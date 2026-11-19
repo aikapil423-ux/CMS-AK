@@ -1317,10 +1317,11 @@ export default function ComplaintProfilePage() {
       );
 
       setFirModalOpen(false);
-      router.push(`/fir/register?gdNumber=${encodeURIComponent(gdRecord.gdNumber)}&complaintId=${encodeURIComponent(complaint.id)}`);
+      const gdQuery = gdRecord?.gdNumber && gdRecord.gdNumber !== "GD-PENDING-SUGGESTION" ? `&gdNumber=${encodeURIComponent(gdRecord.gdNumber)}` : "";
+      router.push(`/fir/register?complaintId=${encodeURIComponent(complaint.id)}${gdQuery}`);
     } catch (err: any) {
-      console.error("Error creating FIR GD entry:", err);
-      alert("Error: " + (err.message || "Failed to log Roznamcha GD entry"));
+      console.error("Error creating FIR GD suggestion:", err);
+      alert("Error: " + (err.message || "Failed to create Roznamcha GD suggestion"));
     }
   };
 
@@ -5151,7 +5152,7 @@ export default function ComplaintProfilePage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                 <Scale className="w-4 h-4 text-red-600" />
-                <span>Roznamcha GD Entry &amp; Register FIR</span>
+                <span>Roznamcha GD Auto-Suggestion &amp; Register FIR</span>
               </h3>
               <button onClick={() => setFirModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                 <X className="w-5 h-5" />
@@ -5227,7 +5228,7 @@ export default function ComplaintProfilePage() {
               </div>
 
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
-                A <strong>Criminal case</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
+                A <strong>Criminal case</strong> GD auto-suggestion will be generated in Roznamcha <strong>Auto-Suggestions &amp; Drafts</strong> with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">

@@ -544,7 +544,8 @@ export interface ComplaintAuditRecord {
     | 'SHO_RE_ENQUIRY'
     | 'SHO_REJECTED'
     | 'FIR_REGISTERED'
-    | 'GD_CRIMINAL_CASE_LOGGED';
+    | 'GD_CRIMINAL_CASE_LOGGED'
+    | 'GD_CRIMINAL_CASE_SUGGESTED';
   actionLabel: string;
   performedBy: string;
   userPno?: string;

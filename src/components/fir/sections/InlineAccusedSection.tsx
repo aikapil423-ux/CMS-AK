@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Crosshair,
   User,
@@ -36,6 +36,9 @@ import {
 } from "@/components/fir/firDropdownConstants";
 
 export interface ExtendedAccusedPerson extends AccusedPerson {
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   accusedType?: "Known" | "Unknown-Seen";
   isKnown?: boolean;
   isCaseAgainstPolice?: boolean;
@@ -115,6 +118,8 @@ export interface InlineAccusedSectionProps {
   onAddAccused: (accused: ExtendedAccusedPerson) => void;
   onUpdateAccused: (accused: ExtendedAccusedPerson) => void;
   onDeleteAccused: (id: string) => void;
+  hasValidationErrors?: boolean;
+  validationErrorMsg?: string | null;
 }
 
 export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
@@ -126,8 +131,11 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   onAddAccused,
   onUpdateAccused,
   onDeleteAccused,
+  hasValidationErrors,
+  validationErrorMsg,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const hasUserResetRef = useRef(false);
   const [accusedType, setAccusedType] = useState<"Known" | "Unknown-Seen">(
     isAccusedKnown ? "Known" : "Unknown-Seen"
   );
@@ -225,7 +233,35 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     }
   };
 
+  const isFieldMissing = (field: string) => {
+    if (errors[field]) return true;
+    if (!hasValidationErrors && !validationErrorMsg && !errorMsg) return false;
+    if (accusedType !== "Known") return false;
+
+    switch (field) {
+      case "firstName":
+        return !firstName?.trim();
+      case "gender":
+        return !gender?.trim();
+      case "age":
+        return !dob?.trim() && !yearOfBirth?.trim() && !ageYears?.trim() && !ageRangeFrom?.trim();
+      case "city":
+        return !city?.trim();
+      case "district":
+        return !district?.trim();
+      case "state":
+        return !state?.trim();
+      case "country":
+        return !country?.trim();
+      case "nationality":
+        return !nationality?.trim();
+      default:
+        return false;
+    }
+  };
+
   const handleClear = () => {
+    hasUserResetRef.current = true;
     setEditingId(null);
     setAccusedType(isAccusedKnown ? "Known" : "Unknown-Seen");
     setIsCaseAgainstPolice(false);
@@ -291,6 +327,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   };
 
   const handleEdit = (acc: ExtendedAccusedPerson) => {
+    hasUserResetRef.current = false;
     setEditingId(acc.id || null);
     const isKnown =
       acc.isKnown !== false &&
@@ -304,16 +341,21 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setPolicePersonnelName(acc.policePersonnelName || "");
     setUid(acc.uid || "");
     setNprNumber(acc.nprNumber || "");
-    const parts = (acc.name === "Unknown Accused" || acc.name === "Accused is not known" ? "" : acc.name || "").split(" ");
-    setFirstName(parts[0] || "");
-    setMiddleName(parts.length > 2 ? parts.slice(1, -1).join(" ") : "");
-    setLastName(parts.length > 1 ? parts[parts.length - 1] : "");
-    setAliases(acc.aliases || []);
+    const hasNameParts = Boolean(acc.firstName || acc.lastName);
+    const parts = (acc.name === "Unknown Accused" || acc.name === "Accused is not known" ? "" : acc.name || "").trim().split(/\s+/);
+    setFirstName(acc.firstName || parts[0] || "");
+    setMiddleName(acc.middleName || (hasNameParts ? "" : (parts.length > 2 ? parts.slice(1, -1).join(" ") : "")));
+    setLastName(acc.lastName || (hasNameParts ? "" : (parts.length > 1 ? parts[parts.length - 1] : "")));
+    if (acc.alias && (!acc.aliases || acc.aliases.length === 0)) {
+      setAliases([{ id: "alias-0", aliasName: acc.alias }]);
+    } else {
+      setAliases(acc.aliases || []);
+    }
     setGender(acc.gender || "Male");
     setMaritalStatus(acc.maritalStatus || "Married");
-    setRelationType(acc.relationType || "Father");
-    setRelativeName(acc.fatherName || acc.relativeName || "");
-    setMobile(acc.mobile || "");
+    setRelationType(acc.relationType || (acc as any).relationWithComplainant || "Father");
+    setRelativeName(acc.fatherName || acc.relativeName || (acc.alias && (acc.alias.includes("पुत्र") || acc.alias.includes("पत्नी") || acc.alias.includes("पुत्री")) ? acc.alias : ""));
+    setMobile(acc.mobile || (acc as any).phone || "");
     setLandline(acc.landline || "");
     setEmail(acc.email || "");
     setCategory(acc.category || "GENERAL");
@@ -337,6 +379,9 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       setState(firstAddr.state || acc.state || "Haryana");
       setCountry(firstAddr.country || acc.country || "India");
     } else {
+      if (acc.address) {
+        setColony(acc.address);
+      }
       setCity(acc.city || "Gurugram");
       setDistrict(acc.district || "Gurugram");
       setState(acc.state || "Haryana");
@@ -370,6 +415,12 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setErrors({});
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    if (accusedList.length > 0 && !editingId && !firstName && !lastName && !hasUserResetRef.current) {
+      handleEdit(accusedList[0]);
+    }
+  }, [accusedList, editingId, firstName, lastName]);
 
   const handleYearChange = (yearStr: string) => {
     const cleanYear = yearStr.replace(/\D/g, "").slice(0, 4);
@@ -1069,7 +1120,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       clearFieldError("firstName");
                     }}
                     className={`w-full p-2 rounded-lg border text-xs focus:ring-1 focus:ring-red-600 ${
-                      errors.firstName ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                      isFieldMissing("firstName") ? "mandatory-glow-error" : "border-slate-300"
                     }`}
                   />
                   {errors.firstName && (
@@ -1181,7 +1232,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       clearFieldError("gender");
                     }}
                     className={`w-full p-2 rounded-lg border bg-white text-xs ${
-                      errors.gender ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                      isFieldMissing("gender") ? "mandatory-glow-error" : "border-slate-300"
                     }`}
                   >
                     <option value="">-- Select Gender --</option>
@@ -1327,7 +1378,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
               {/* Age Panel */}
               <div
                 className={`p-3.5 bg-slate-50 border rounded-xl space-y-3 ${
-                  errors.age ? "border-red-500 bg-red-50/30 ring-1 ring-red-400" : "border-slate-200"
+                  isFieldMissing("age") ? "mandatory-glow-error" : "border-slate-200"
                 }`}
               >
                 <div className="flex items-center justify-between border-b border-slate-200/80 pb-1.5">
@@ -1362,6 +1413,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       onChange={(e) => handleDobChange(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
+                      className={isFieldMissing("age") ? "mandatory-glow-error" : ""}
                     />
                   </div>
 
@@ -1380,7 +1432,9 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         if (e.key === "-" || e.key === "+" || e.key === "e" || e.key === "E") e.preventDefault();
                       }}
                       onChange={(e) => handleYearChange(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                      className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                      className={`w-full p-2 h-9 rounded-lg border bg-white font-mono text-xs ${
+                        isFieldMissing("age") ? "mandatory-glow-error" : "border-slate-300"
+                      }`}
                     />
                   </div>
 
@@ -1405,7 +1459,9 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         setAgeYears(val ? String(Math.max(0, parseInt(val, 10))) : "");
                         clearFieldError("age");
                       }}
-                      className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs text-center"
+                      className={`w-full p-2 h-9 rounded-lg border bg-white font-mono text-xs text-center ${
+                        isFieldMissing("age") ? "mandatory-glow-error" : "border-slate-300"
+                      }`}
                     />
                   </div>
 
@@ -1468,7 +1524,9 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                               setAgeRangeTo(ageRangeFrom);
                             }
                           }}
-                          className="w-full p-2 h-9 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                          className={`w-full p-2 h-9 rounded-lg border bg-white font-mono text-xs ${
+                            isFieldMissing("age") ? "mandatory-glow-error" : "border-slate-300"
+                          }`}
                         />
                       </div>
                       <span className="text-slate-400 font-bold text-xs shrink-0">to</span>
@@ -1589,7 +1647,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         clearFieldError("city");
                       }}
                       className={`w-full p-2 rounded-lg border text-xs ${
-                        errors.city ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                        isFieldMissing("city") ? "mandatory-glow-error" : "border-slate-300 bg-white"
                       }`}
                     />
                     {errors.city && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.city}</p>}
@@ -1615,7 +1673,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         clearFieldError("district");
                       }}
                       className={`w-full p-2 rounded-lg border text-xs ${
-                        errors.district ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                        isFieldMissing("district") ? "mandatory-glow-error" : "border-slate-300 bg-white"
                       }`}
                     />
                     {errors.district && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.district}</p>}
@@ -1641,7 +1699,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         clearFieldError("state");
                       }}
                       className={`w-full p-2 rounded-lg border text-xs ${
-                        errors.state ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                        isFieldMissing("state") ? "mandatory-glow-error" : "border-slate-300 bg-white"
                       }`}
                     />
                     {errors.state && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.state}</p>}
@@ -1667,7 +1725,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                         clearFieldError("country");
                       }}
                       className={`w-full p-2 rounded-lg border text-xs ${
-                        errors.country ? "border-red-500 bg-red-50/50" : "border-slate-300 bg-white"
+                        isFieldMissing("country") ? "mandatory-glow-error" : "border-slate-300 bg-white"
                       }`}
                     />
                     {errors.country && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.country}</p>}
@@ -1767,7 +1825,7 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
                       clearFieldError("nationality");
                     }}
                     className={`w-full p-2 rounded-lg border text-xs ${
-                      errors.nationality ? "border-red-500 bg-red-50/50" : "border-slate-300"
+                      isFieldMissing("nationality") ? "mandatory-glow-error" : "border-slate-300"
                     }`}
                   />
                   {errors.nationality && <p className="text-[11px] text-red-600 mt-1 font-semibold">{errors.nationality}</p>}

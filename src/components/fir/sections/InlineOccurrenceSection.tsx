@@ -40,6 +40,8 @@ export interface InlineOccurrenceSectionProps {
   onUpdateOccurrence: (item: ExtendedFIROccurrenceItem) => void;
   onDeleteOccurrence: (id: string) => void;
   autoFilledFields?: Record<string, boolean>;
+  hasValidationErrors?: boolean;
+  validationErrorMsg?: string | null;
 }
 
 function getNowLocal() {
@@ -61,6 +63,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   onUpdateOccurrence,
   onDeleteOccurrence,
   autoFilledFields = {},
+  hasValidationErrors,
+  validationErrorMsg,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -281,7 +285,36 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     }
   }, [occurrencesList, editingId]);
 
+  const isFieldMissing = (fieldName: string) => {
+    if (!hasValidationErrors && !validationErrorMsg && !errorMsg) return false;
+    switch (fieldName) {
+      case "dateFrom":
+        return !dateFrom?.trim();
+      case "timeFrom":
+        return !timeFrom?.trim();
+      case "dateTo":
+        return !dateTo?.trim();
+      case "timeTo":
+        return !timeTo?.trim();
+      case "infoReceivedDate":
+        return !infoReceivedDate?.trim();
+      case "infoReceivedTime":
+        return !infoReceivedTime?.trim();
+      case "city":
+        return !city?.trim();
+      case "directionFromPs":
+        return !directionFromPs?.trim();
+      case "distanceKm":
+        return !distanceKm?.trim();
+      default:
+        return false;
+    }
+  };
+
   const getFieldHighlightClass = (fieldName: string) => {
+    if (isFieldMissing(fieldName)) {
+      return "mandatory-glow-error";
+    }
     const isAutoFilled =
       autoFilledFields[fieldName] ||
       (fieldName === "dateFrom" && (autoFilledFields.occurrenceDate || autoFilledFields.dateFrom || (autoFilledFields.occurrence && Boolean(dateFrom)))) ||
@@ -591,6 +624,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                   placeholder="DD/MM/YYYY"
                   size="sm"
                   required
+                  className={getFieldHighlightClass("infoReceivedDate")}
                 />
               </div>
               <div>
@@ -616,7 +650,7 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
                       setInfoReceivedTime(now.time);
                     }
                   }}
-                  className="w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs"
+                  className={`w-full p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs ${getFieldHighlightClass("infoReceivedTime")}`}
                   title={infoReceivedDate >= maxAllowedDate ? `Latest allowed time: ${currentNow.time}` : undefined}
                   required
                 />

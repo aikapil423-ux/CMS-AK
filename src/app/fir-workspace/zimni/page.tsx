@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useEffectEvent, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
@@ -59,7 +59,6 @@ interface HeaderLine {
 interface ZimniEntryRow {
   id: string;
   dateTime: string;
-  srNo: string;
   narration: string;
   hasBottomBorder?: boolean;
 }
@@ -114,289 +113,117 @@ interface ZimniProformaData {
   additionalSignatures: AdditionalSignature[];
 }
 
-const DEFAULT_IMAGE_ZIMNI_DATA_HI: ZimniProformaData = {
-  formNumberText: "पुलिस फार्म संख्या 25.54 (1) भाग (1)",
-  reportTitleText: "रिपोर्ट जिमनी",
-  showHeader: true,
-  borderStyle: "box",
-  borderWidth: "2px",
-  verticalBorders: {
-    outerLeft: true,
-    col1ToCol2: true,
-    col2ToCol3: true,
-    outerRight: true,
+const ZIMNI_LABELS = {
+  hi: {
+    formNumberText: "पुलिस फार्म संख्या 25.54 (1) भाग (1)",
+    reportTitleText: "रिपोर्ट जिमनी",
+    col1Title: "तिथि व समय",
+    col2Title: "क्रं. स.",
+    col3Title: "अनुसंधान का विवरण",
+    salutation: "श्रीमान जी,",
   },
-  horizontalBorders: {
-    outerTop: true,
-    headerBottom: true,
-    caseHeadingBottom: false,
-    closingTop: true,
-    outerBottom: true,
+  en: {
+    formNumberText: "Police Form No. 25.54 (1) Part (1)",
+    reportTitleText: "Case Diary (Zimni)",
+    col1Title: "Date & Time",
+    col2Title: "Sr. No.",
+    col3Title: "Record of Investigation / Proceedings",
+    salutation: "Respected Sir,",
   },
-  leftHeaderLines: [
-    { id: "lh_1", text: "थाना सैक्टर 20 पंचकूला" },
-    { id: "lh_2", text: "मु०नं० 137 दिनांक 24.08.2024" },
-    { id: "lh_3", text: "घटना स्थल:- गांव अभयपुर सैक्टर 19 पंचकूला" },
-    { id: "lh_4", text: "घटना तिथि:- 01.05.2024 से 01.06.2024 तक" },
-    { id: "lh_5", text: "अपराध:- 06 पोक्सो एक्ट & 376(3), 506 IPC" },
-  ],
-  rightHeaderLines: [
-    { id: "rh_1", text: "पुलिस आयुक्तालय पंचकूला" },
-    { id: "rh_2", text: "जिमनी न० 17" },
-    { id: "rh_3", text: "प्राप्ति तिथी...." },
-    { id: "rh_4", text: "रवानगी तिथी...." },
-  ],
-  col1Title: "तिथि व समय",
-  col2Title: "क्रं. स.",
-  col3Title: "अनुसंधान का विवरण",
-  showCaseHeading: true,
-  stateLine:
-    "राज्य द्वारा:- ललिता देवी पत्नी श्री फूतुपाला निवासी वार्ड न. 2 दरभंगा थाना कलियानपुर जिला समस्तीपुर बिहार। हाल निवासी मकान न. 357 गांव अभयपुर सैक्टर 19 पंचकूला थाना सैक्टर 20 पंचकूला।",
-  accusedLine:
-    "बनाम:- ------------------------*--------------------------*--------------------------",
-  ioLine:
-    "अनुसन्धानकर्ता:- स.उप.नि. जसबीर सिंह न. 128/पंचकूला पुलिस चौकी सैक्टर 19 पंचकूला।",
-  salutation: "श्रीमान जी,",
-  entries: [
-    {
-      id: "entry_1",
-      dateTime: "दिनांक\n11.11.2024\nसमय\n07.00.ए.एम.",
-      srNo: "1.",
-      narration:
-        "बा सिलसिला रिपोर्ट जिमनी पूर्व लिखित खुद के पश्चात निवेदन है कि समय गैर होने के कारण जिमनी हजा को बंद किया गया था जो अभियोग में नामजद आरोपी रोशन पुत्र सरजू वासी गांव मिशरौली माफी जिला अमेठी यू.पी. की गिरफ्तारी बकाया है जिसकी तलाश आरोपी रोशन के मोबाईल नम्बर की लोकेशन मुताबिक फेस 2 तलोजा, नवी मुंबई जिला महाराष्ट्र में की गई थी लेकिन सुराग नहीं चला था जो साईबर सेल से आरोपी रोशन के मोबाईल नम्बर 8528471236 की लोकेशन एन.आर.आप सागरी जिला नवी मुंबई के आस पास की होनी पाई गई है जो आरोपी की तलाश की जानी है जो बराए तलाश मन स.उप.नि. मय साथी कर्मचारी सि. अंकित न. 173/पंचकूला, HGH प्रदीप कुमार न. 6618/पंचकूला के बा सवारी गाड़ी प्राईवेट के रवाना थाना एन.आर.आय सागरी जिला नवी मुंबई का होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_2",
-      dateTime: "",
-      srNo: "2.",
-      narration:
-        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के थाना एन.आर.आय सागरी जिला नवी मुंबई महाराष्ट्र पहुंचा हूं जहां पर MHC थाना हाजिर मिले जिनको हालात अभियोग बतलाकर अभियोग की तफ्तीश में आने जाने बारे आमद रवानगी करवाई गई जो आरोपी रोशन की तलाश की गई लेकिन कोई सुराग नहीं चल सका है जो आरोपी रोशन के भाई दीपक के मोबाईल नम्बर 6394482571 के मुताबिक दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई पाया गया है जो मन स.उप.नि. मय साथी कर्मचारियों के प्राईवेट गाड़ी के रवाना गांव खूनी थाना मानपाडा जिला ठाणे मुंबई का होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_3",
-      dateTime: "",
-      srNo: "3.",
-      narration:
-        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के प्राईवेट गाड़ी के गांव खूनी थाना मानपाडा जिला ठाणे मुंबई पहुंचा हूं जहां पर दीपक पुत्र सरजू प्रसाद गांव खूनी थाना मानपाडा जिला ठाणे मुंबई हाजिर मिला है जिसका हालात अभियोग बतलाकर शामिल तफ्तीश पूछताछ में व्यस्त होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_4",
-      dateTime: "पुछताछ",
-      srNo: "4.",
-      narration:
-        "इस समय मेरी पुछताछ पर दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मैं पेन्ट का काम करता हूं जो रोशन मेरा छोटा भाई है जो मेरे घर से पता चला था कि काम के सिलसिले में मेरा भाई रोशन करीब 5-6 दिनों से मुम्बई आया हुआ है लेकिन वह मेरे घर पर नहीं आया, लेकिन मेरे को उसके बारे कुछ नहीं पता कि वह कहां पर रह रहा है और ना ही मैं उसके बारे में कुछ जानता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_5",
-      dateTime: "",
-      srNo: "5.",
-      narration:
-        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश दीपक पुत्र सरजू प्रसाद वासी गांव मिसरोली थाना संग्रामपुर जिला अमेठी उत्तर प्रदेश हाल गांव खूनी थाना मानपाडा जिला ठाणे मुंबई को उसके भाई रोशन को पेश करने के लिए एक नोटिस 35 BNS लिखकर दिया गया व नोटिस की एक कापी पर रिसीव ली गई जिसने अपने भाई रोशन को पुलिस चौकी सैक्टर 19 पंचकूला में पेश करने का वादा किया है व इसी समय वहां पर राजबीर पुत्र श्री मिश्री राज वासी कोटा राजस्थान नाम का ठेकेदार हाजिर मिला जिसको हालात अभियोग बतलाकर पुछताछ में व्यस्त होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_6",
-      dateTime: "पुछताछ",
-      srNo: "6.",
-      narration:
-        "इस समय मेरी पुछताछ पर राजबीर पुत्र श्री मिश्री राज वासी कोटा राजस्थान ने बतलाया कि मैं उपरोक्त नाम पते का रहने वाला हूं और पेन्ट का ठेकेदार हूं जो मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं और मेरा एक साथी राहुल नाम का ठेकेदार मेरा दोस्त है जो पनवेल नई मुम्बई ठेकेदारी का काम करते हैं जिसके पास काफी लड़के काम करते हैं वहां पर काफी लड़के यू.पी. के आए हुए हैं शायद उनके रोशन नाम का लड़का वहीं पर काम करता होगा।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_7",
-      dateTime: "",
-      srNo: "7.",
-      narration:
-        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश को बाद हिदायत फारिग करके मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के रवाना पनवेल करंजाडे नई मुम्बई का रवाना होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_8",
-      dateTime: "",
-      srNo: "8.",
-      narration:
-        "इस समय मन स.उप.नि. मय साथी कर्मचारियों के बा सवारी गाड़ी प्राईवेट के पनवेल करंजाडे नई मुम्बई पहुंचा हूं जहां पर राहुल शेखावत पुत्र श्री हुकम सिंह शेखावत... अजब कुमार पुत्र जवाहर लाल गांव रूपेपुर थाना अन्तु जिला प्रतापगढ़ यू.पी. हाजिर मिला जिनको हालात अभियोग बतलाकर पुछताछ में व्यस्त होता हूं।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_9",
-      dateTime: "पुछताछ",
-      srNo: "9.",
-      narration:
-        "इस समय मेरी पुछताछ पर राहुल शेखावत पुत्र श्री हुकम सिंह शेखावत ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं जो आप रोशन बारे पूछ रहे हो वह लड़का रोशन मेरे से करीब 2 दिनों पहले यहां से चला गया था क्योंकि उसका वजन 38 किलो था इस मारे कंपनी ने उस व्यक्ति को काम पर नहीं रखा। उसके बाद मेरे को ना तो रोशन मिला और ना ही उसका पता कि वह कहां पर रहता है।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_10",
-      dateTime: "पुछताछ",
-      srNo: "10.",
-      narration:
-        "इस समय मेरी पुछताछ पर अजब कुमार पुत्र जवाहर लाल गांव रूपेपुर थाना अन्तु जिला प्रतापगढ़ यू.पी. ने बतलाया कि मैं उपरोक्त पते का रहने वाला हूं और मेरे पास काफी व्यक्ति पेन्ट का काम करते हैं जो आप रोशन बारे पूछ रहे हो वह मेरी बुआ जी का लड़का है जो मुझे गांव से ही पता चला था कि रोशन भी काम के सिलसिले में मुंबई आया हुआ है लेकिन मैं उसका पता नहीं जानता कि वह कहां पर रह रहा है यदि मुझे उसके पते बारे कुछ पता चला तो मैं आपको बतला दूंगा।",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_11",
-      dateTime: "",
-      srNo: "11.",
-      narration:
-        "इस समय तक शामलात तफ्तीश से पुछताछ होती रही है जो शामलात तफ्तीश को बाद हिदायत फारिग किया गया जो समय गैर हो चुका है जो आईन्दा अभियोग में रोशन के शामिल तफ्तीश होने पर आगामी कार्यवाही अमल में लाई जाएगी। हालात अभियोग बारे इन्चार्ज चौकी थाना प्रबन्धक थाना को बजरिया फोन बतलाए गए। मन स.उप.नि. साथी कर्मचारियों के रवाना पंचकूला का होता हूं।",
-      hasBottomBorder: false,
-    },
-  ],
-  closingText: "रिपोर्ट जिमनी लिखी सेवा में प्रस्तुत है।",
-  officerNameRank: "स.उप.नि. जसबीर सिंह न. 128/पंचकूला",
-  officerPost: "पुलिस चौकी सैक्टर 19 पंचकूला",
-  signDate: "दिनांक - 11.11.2024",
-  hasSignatureGraphic: true,
-  additionalSignatures: [],
 };
 
-const DEFAULT_IMAGE_ZIMNI_DATA_EN: ZimniProformaData = {
-  formNumberText: "POLICE FORM NO. 25.54 (1) PART (1)",
-  reportTitleText: "CASE DIARY (ZIMNI) REPORT",
-  showHeader: true,
-  borderStyle: "box",
-  borderWidth: "2px",
-  verticalBorders: {
-    outerLeft: true,
-    col1ToCol2: true,
-    col2ToCol3: true,
-    outerRight: true,
-  },
-  horizontalBorders: {
-    outerTop: true,
-    headerBottom: true,
-    caseHeadingBottom: false,
-    closingTop: true,
-    outerBottom: true,
-  },
-  leftHeaderLines: [
-    { id: "lh_1", text: "Police Station Sector 20 Panchkula" },
-    { id: "lh_2", text: "FIR No. 137 Date 24.08.2024" },
-    { id: "lh_3", text: "Place of Occurrence: Village Abheypur, Sector 19, Panchkula" },
-    { id: "lh_4", text: "Date of Occurrence: 01.05.2024 to 01.06.2024" },
-    { id: "lh_5", text: "Offence: Sec 6 POCSO Act & 376(3), 506 IPC" },
-  ],
-  rightHeaderLines: [
-    { id: "rh_1", text: "Police Commissionerate Panchkula" },
-    { id: "rh_2", text: "Zimni No. 17" },
-    { id: "rh_3", text: "Received Date: ...." },
-    { id: "rh_4", text: "Dispatched Date: ...." },
-  ],
-  col1Title: "Date & Time",
-  col2Title: "Sr. No.",
-  col3Title: "Record of Investigation / Proceedings",
-  showCaseHeading: true,
-  stateLine:
-    "State through: Lalita Devi w/o Sh. Futupala r/o Ward No. 2 Darbhanga, PS Kalyanpur, Distt Samastipur, Bihar. Presently r/o H.No. 357, Village Abheypur, Sector 19, Panchkula, PS Sector 20 Panchkula.",
-  accusedLine:
-    "Versus: ------------------------*--------------------------*--------------------------",
-  ioLine:
-    "Investigating Officer: ASI Jasbir Singh, No. 128/Panchkula, Police Post Sector 19 Panchkula.",
-  salutation: "Respected Sir,",
-  entries: [
-    {
-      id: "entry_1",
-      dateTime: "Date\n11.11.2024\nTime\n07:00 AM",
-      srNo: "1.",
-      narration:
-        "In continuation of previous Zimni recorded by self, it is submitted that due to late hours the earlier diary was concluded. The named accused Roshan s/o Sarju r/o Village Mishroli Mafi, Distt Amethi (U.P.) remains to be arrested. Search was conducted based on mobile tower location at Phase 2 Taloja, Navi Mumbai, Maharashtra, but no clue was found. Cyber Cell has now indicated mobile number 8528471236 location near NRI Sagari, Distt Navi Mumbai. To trace the accused, I, ASI, along with Constable Ankit No. 173/Panchkula and HGH Pradeep Kumar No. 6618/Panchkula, proceed by private vehicle to PS NRI Sagari, Navi Mumbai.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_2",
-      dateTime: "",
-      srNo: "2.",
-      narration:
-        "At this time, I, ASI along with escort staff, reached PS NRI Sagari, Distt Navi Mumbai, Maharashtra by private vehicle. MHC of the police station was contacted, apprised of facts of the case, and departure/arrival entries were lodged. Search for accused Roshan was conducted in the area but no trace found. Calling brother of accused Roshan, namely Deepak on mobile 6394482571, revealed Deepak s/o Sarju Prasad r/o Misroli PS Sangrampur Distt Amethi UP, currently residing at Khuni Village, PS Manpada, Distt Thane Mumbai. Hence we proceed to Khuni Village.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_3",
-      dateTime: "",
-      srNo: "3.",
-      narration:
-        "Reached Khuni Village, PS Manpada, Distt Thane, Mumbai. Deepak s/o Sarju Prasad met present. After apprising him of the case, interrogation commenced.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_4",
-      dateTime: "Interrogation",
-      srNo: "4.",
-      narration:
-        "On interrogation, Deepak s/o Sarju Prasad stated that he resides at the said address and works as a painter. Roshan is his younger brother. He learned from family that Roshan had come to Mumbai 5-6 days ago for work, but did not visit Deepak's residence, and Deepak has no knowledge of his whereabouts.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_5",
-      dateTime: "",
-      srNo: "5.",
-      narration:
-        "Interrogation continued. Notice u/s 35 BNSS was served upon Deepak s/o Sarju Prasad to produce accused Roshan, and acknowledgment received. He promised to produce Roshan at Police Post Sector 19 Panchkula. Meanwhile, contractor Rajbir s/o Misri Raj r/o Kota Rajasthan met present and was questioned.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_6",
-      dateTime: "Interrogation",
-      srNo: "6.",
-      narration:
-        "On interrogation, Rajbir s/o Misri Raj stated that he is a painting contractor. Another contractor friend named Rahul works at Panvel Navi Mumbai where many labourers from UP are employed, and accused Roshan might be working there.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_7",
-      dateTime: "",
-      srNo: "7.",
-      narration:
-        "Departure to Panvel Karanjade Navi Mumbai by private vehicle.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_8",
-      dateTime: "",
-      srNo: "8.",
-      narration:
-        "Arrived at Panvel Karanjade Navi Mumbai. Met Rahul Shekhawat s/o Hukam Singh and Ajab Kumar s/o Jawahar Lal r/o Rupepur PS Antu Distt Pratapgarh UP. Questioning conducted.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_9",
-      dateTime: "Interrogation",
-      srNo: "9.",
-      narration:
-        "Rahul Shekhawat stated that Roshan had come looking for work 2 days ago but was turned away as he was underweight (38 kg). His current whereabouts are unknown.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_10",
-      dateTime: "Interrogation",
-      srNo: "10.",
-      narration:
-        "Ajab Kumar stated that Roshan is his cousin and came to Mumbai for work, but his exact address is unknown. He agreed to inform police if any clue is received.",
-      hasBottomBorder: false,
-    },
-    {
-      id: "entry_11",
-      dateTime: "",
-      srNo: "11.",
-      narration:
-        "Interrogation concluded and witnesses relieved. As night fell, further efforts will resume tomorrow. SHO and Incharge Police Post briefed telephonically. Escort party returns to Panchkula.",
-      hasBottomBorder: false,
-    },
-  ],
-  closingText: "Case Diary written and respectfully submitted.",
-  officerNameRank: "ASI Jasbir Singh, No. 128/Panchkula",
-  officerPost: "Police Post Sector 19 Panchkula",
-  signDate: "Date - 11.11.2024",
-  hasSignatureGraphic: true,
-  additionalSignatures: [],
-};
+function blankZimni(language: TemplateLanguage): ZimniProformaData {
+  return {
+    ...ZIMNI_LABELS[language],
+    showHeader: true,
+    borderStyle: "box",
+    borderWidth: "2px",
+    verticalBorders: { outerLeft: true, col1ToCol2: true, col2ToCol3: true, outerRight: true },
+    horizontalBorders: { outerTop: true, headerBottom: true, caseHeadingBottom: false, closingTop: true, outerBottom: true },
+    leftHeaderLines: [],
+    rightHeaderLines: [],
+    showCaseHeading: true,
+    stateLine: "",
+    accusedLine: "",
+    ioLine: "",
+    entries: [],
+    closingText: "",
+    officerNameRank: "",
+    officerPost: "",
+    signDate: "",
+    hasSignatureGraphic: false,
+    additionalSignatures: [],
+  };
+}
 
-const DEFAULT_IMAGE_ZIMNI_DATA = DEFAULT_IMAGE_ZIMNI_DATA_HI;
+const ZIMNI_HINDI_TERMS: Record<string, string> = {
+  "bharatiya nagarik suraksha sanhita": "भारतीय नागरिक सुरक्षा संहिता",
+  "bharatiya nyaya sanhita": "भारतीय न्याय संहिता",
+  "bharatiya sakshya adhiniyam": "भारतीय साक्ष्य अधिनियम",
+  "indian penal code": "भारतीय दंड संहिता",
+  "assistant sub-inspector": "सहायक उप-निरीक्षक",
+  "sub-inspector": "उप-निरीक्षक",
+  "asi": "सहायक उप-निरीक्षक",
+  "si": "उप-निरीक्षक",
+  "inspector": "निरीक्षक",
+  "bnss": "बीएनएसएस",
+  "bns": "बीएनएस",
+  "ipc": "आईपीसी",
+  "bsa": "बीएसए",
+  "section": "धारा",
+  "sections": "धाराएँ",
+  "panipat": "पानीपत",
+  "haryana": "हरियाणा",
+  "india": "भारत",
+  "city": "शहर",
+  "sadar": "सदर",
+  "sector": "सेक्टर",
+  "samalkha": "समालखा",
+  "vikram singh": "विक्रम सिंह",
+};
+const ZIMNI_HINDI_PATTERN = new RegExp(`\\b(?:${Object.keys(ZIMNI_HINDI_TERMS).join("|")})\\b`, "gi");
+
+function localizeZimniHindi(text: string) {
+  return text.replace(ZIMNI_HINDI_PATTERN, (term) => ZIMNI_HINDI_TERMS[term.toLowerCase()]);
+}
+
+function buildZimniFirFields(fir: FIRItem, language: TemplateLanguage) {
+  const isEn = language === "en";
+  const localize = (value: string) => isEn ? value : localizeZimniHindi(value);
+  const heading = (english: string, hindi: string, value?: string) =>
+    value?.trim() ? `${isEn ? english : hindi}: ${value.trim()}` : "";
+  const station = fir.policeStation?.replace(/^(?:थाना\s*|(?:Police Station|P\.?S\.?)\s+)/i, "").trim();
+  const firReference = [fir.firNumber, fir.firDate ? formatDate(fir.firDate) : ""].filter(Boolean).join(isEn ? " dated " : " दिनांक ");
+  const occurrenceDates = [fir.incidentDateFrom, fir.incidentDateTo].flatMap((date) => date ? [formatDate(date)] : []);
+  const complainant = [fir.complainantName, fir.complainantFatherSpouse, fir.complainantAddress].filter(Boolean).join(", ");
+  const accused = fir.accusedList?.filter((person) => person.name?.trim()).map((person) =>
+    [person.name, person.fatherName, person.address].filter(Boolean).join(", ")).join("; ");
+  const rank = localize(fir.assignedIoRank || "");
+  let officerName = localize(fir.assignedIoName || "");
+  if (rank && officerName.toLowerCase().startsWith(rank.toLowerCase() + " ")) {
+    officerName = officerName.slice(rank.length).trimStart();
+  }
+  const officer = [rank, officerName, fir.assignedIoBeltNumber].filter(Boolean).join(" ");
+  const headers = (lines: string[]) => lines.filter(Boolean).map((text, index) => ({ id: `fir_header_${index}`, text }));
+  return {
+    leftHeaderLines: headers([
+      heading("Police Station", "थाना", localize((station) || "")),
+      heading("FIR No.", "मु०नं०", firReference),
+      heading("Place of Occurrence", "घटना स्थल", localize((fir.incidentPlace || fir.incidentLandmark) || "")),
+      heading("Date of Occurrence", "घटना तिथि", occurrenceDates.join(isEn ? " to " : " से ")),
+      heading("Offence", "अपराध", localize((fir.actsAndSections) || "")),
+    ]),
+    rightHeaderLines: headers([
+      heading("District", "जिला", localize((fir.district) || "")),
+      heading("Zimni No.", "जिमनी न०", String((fir.caseDiaries?.length ?? 0) + 1)),
+    ]),
+    stateLine: heading("State through", "राज्य द्वारा", localize((complainant) || "")),
+    accusedLine: heading("Versus", "बनाम", localize((accused) || "")),
+    ioLine: heading("Investigating Officer", "अनुसन्धानकर्ता", officer),
+    officerNameRank: officer,
+    officerPost: localize(station || ""),
+  };
+}
 
 function ZimniWorkspaceContent() {
   const router = useRouter();
@@ -408,11 +235,16 @@ function ZimniWorkspaceContent() {
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [selectedFirId, setSelectedFirId] = useState<string>("");
   const [templateLang, setTemplateLang] = useState<TemplateLanguage>(globalLang || "hi");
-  const [data, setData] = useState<ZimniProformaData>(globalLang === "en" ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI);
+  const templateLanguageRef = useRef(templateLang);
+  const generatedFirFields = useRef<ReturnType<typeof buildZimniFirFields> | null>(null);
+  const [data, setData] = useState<ZimniProformaData>(() => blankZimni(globalLang || "hi"));
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<"compact" | "normal" | "large">("normal");
   const [a4Preview, setA4Preview] = useState<string | null>(null);
+  const fillRequest = useRef(0);
+  const manualEntrySequence = useRef(0);
+  const [isFilling, setIsFilling] = useState(false);
   const [isSavingToFir, setIsSavingToFir] = useState(false);
   const [savedSuccessModal, setSavedSuccessModal] = useState<{
     open: boolean;
@@ -430,220 +262,106 @@ function ZimniWorkspaceContent() {
     }
   }, [globalLang]);
 
-  // Load all FIRs
   useEffect(() => {
-    try {
-      const allFirs = firService.getAllFirs();
-      setFirs(allFirs);
-      if (allFirs.length > 0) {
-        if (urlFirId && allFirs.some((f) => f.id === urlFirId)) {
-          setSelectedFirId(urlFirId);
-        } else {
-          setSelectedFirId(allFirs[0].id);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load FIRs:", e);
-    }
+    const refreshFirs = () => setFirs(firService.getAllFirs());
+    refreshFirs();
+    return firService.subscribe(refreshFirs);
+  }, []);
+
+  useEffect(() => {
+    setSelectedFirId(urlFirId || "");
   }, [urlFirId]);
 
-  const activeFir = firs.find((f) => f.id === selectedFirId) || null;
+  const activeFir = firs.find((fir) => fir.id === selectedFirId);
+  const activeFirId = activeFir?.id;
 
-  // Language Toggle Handler
   const handleToggleLanguage = (lang: TemplateLanguage) => {
     if (lang === templateLang) return;
+    templateLanguageRef.current = lang;
     setTemplateLang(lang);
-
-    const isEn = lang === "en";
-    const baseDefault = isEn ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI;
-    const oppDefault = isEn ? DEFAULT_IMAGE_ZIMNI_DATA_HI : DEFAULT_IMAGE_ZIMNI_DATA_EN;
-
-    setData((prev) => {
-      // Check if current entries match the opposite sample default
-      const isDefaultEntries =
-        prev.entries.length === oppDefault.entries.length &&
-        prev.entries[0]?.narration === oppDefault.entries[0]?.narration;
-
-      // Check if left/right header lines match default
-      const isDefaultLeftHeader =
-        prev.leftHeaderLines.length === oppDefault.leftHeaderLines.length &&
-        prev.leftHeaderLines[0]?.text === oppDefault.leftHeaderLines[0]?.text;
-
-      const isDefaultRightHeader =
-        prev.rightHeaderLines.length === oppDefault.rightHeaderLines.length &&
-        prev.rightHeaderLines[0]?.text === oppDefault.rightHeaderLines[0]?.text;
-
-      return {
-        ...prev,
-        formNumberText: baseDefault.formNumberText,
-        reportTitleText: baseDefault.reportTitleText,
-        col1Title: baseDefault.col1Title,
-        col2Title: baseDefault.col2Title,
-        col3Title: baseDefault.col3Title,
-        salutation: baseDefault.salutation,
-        closingText:
-          prev.closingText === oppDefault.closingText || !prev.closingText
-            ? baseDefault.closingText
-            : prev.closingText,
-        officerNameRank:
-          prev.officerNameRank === oppDefault.officerNameRank || !prev.officerNameRank
-            ? baseDefault.officerNameRank
-            : prev.officerNameRank,
-        officerPost:
-          prev.officerPost === oppDefault.officerPost || !prev.officerPost
-            ? baseDefault.officerPost
-            : prev.officerPost,
-        signDate:
-          prev.signDate === oppDefault.signDate || !prev.signDate
-            ? baseDefault.signDate
-            : prev.signDate,
-        stateLine:
-          prev.stateLine === oppDefault.stateLine || !prev.stateLine
-            ? baseDefault.stateLine
-            : prev.stateLine,
-        accusedLine:
-          prev.accusedLine === oppDefault.accusedLine || !prev.accusedLine
-            ? baseDefault.accusedLine
-            : prev.accusedLine,
-        ioLine:
-          prev.ioLine === oppDefault.ioLine || !prev.ioLine
-            ? baseDefault.ioLine
-            : prev.ioLine,
-        leftHeaderLines: isDefaultLeftHeader ? baseDefault.leftHeaderLines : prev.leftHeaderLines,
-        rightHeaderLines: isDefaultRightHeader ? baseDefault.rightHeaderLines : prev.rightHeaderLines,
-        entries: isDefaultEntries ? baseDefault.entries : prev.entries,
-      };
+    const generated = generatedFirFields.current;
+    const translated = activeFir && generated ? buildZimniFirFields(activeFir, lang) : null;
+    generatedFirFields.current = translated;
+    setData((previous) => {
+      const next = { ...previous, ...ZIMNI_LABELS[lang] };
+      if (!generated || !translated) return next;
+      for (const key of ["stateLine", "accusedLine", "ioLine", "officerNameRank", "officerPost"] as const) {
+        if (previous[key] === generated[key]) next[key] = translated[key];
+      }
+      for (const key of ["leftHeaderLines", "rightHeaderLines"] as const) {
+        next[key] = previous[key].map((line) => {
+          const original = generated[key].find((header) => header.id === line.id);
+          const replacement = translated[key].find((header) => header.id === line.id);
+          return original?.text === line.text && replacement ? replacement : line;
+        });
+      }
+      return next;
     });
-
-    setSaveStatus(isEn ? "Switched to English Template" : "हिन्दी प्रारूप में बदला गया");
-    setTimeout(() => setSaveStatus(null), 3000);
   };
 
-  // Function to autofill / update proforma based on active FIR
-  const handleAutoFillFromFir = (overrideLang?: TemplateLanguage) => {
+  const handleAutoFillFromFir = async () => {
     if (!activeFir) return;
-    const isEn = (overrideLang || templateLang) === "en";
+    const fir = activeFir;
+    const request = ++fillRequest.current;
+    setIsFilling(true);
+    setSaveStatus(null);
+    const records = await universalEvidenceService.syncFromServer(fir.id);
+    if (request !== fillRequest.current) return;
+    const savedZimniIds = new Set(fir.caseDiaries?.filter((diary) => diary.isUploaded === false).map((diary) => diary.id));
+    const entries: ZimniEntryRow[] = [];
+    const seen = new Set<string>();
+    for (const record of records) {
+      if (record.module !== "FIR" || record.caseId !== fir.id || record.processingStatus !== "COMPLETED" || savedZimniIds.has(record.fileId)) continue;
+      const structured = record.structuredData;
+      const rows = (structured?.investigation?.events ?? []).map((event) => ({
+        dateTime: [event.date, event.time].filter(Boolean).join("\n"),
+        narration: event.source?.verbatimQuote?.trim() || event.title?.trim() || "",
+      })).filter((row) => row.narration);
+      if (!rows.length) {
+        const incident = structured?.incident;
+        const narration = incident?.details?.trim() || record.extractedText?.trim() || incident?.summary?.trim();
+        if (narration) rows.push({ dateTime: [incident?.date, incident?.time].filter(Boolean).join("\n"), narration });
+      }
+      for (const row of rows) {
+        const key = `${row.dateTime}|${row.narration.replace(/\s+/g, " ")}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        entries.push({ ...row, id: `processed_${entries.length}` });
+      }
+    }
 
-    const rawPs = activeFir.policeStation || "Sector 20 Panchkula";
-    const cleanPs = rawPs.replace(/^(थाना|Police Station)\s*/i, "").trim();
-    const psName = isEn ? `PS ${cleanPs}` : `थाना ${cleanPs}`;
-
-    const formattedDate = activeFir.firDate ? formatDate(activeFir.firDate) : formatDate(new Date());
-    const firNoStr = isEn
-      ? `FIR No. ${activeFir.firNumber || "137"} Date ${formattedDate}`
-      : `मु०नं० ${activeFir.firNumber || "137"} दिनांक ${formattedDate}`;
-
-    const rawPlace = activeFir.incidentPlace || activeFir.incidentLandmark || (isEn ? "Jurisdiction Area" : "संबंधित क्षेत्र");
-    const incidentPlaceStr = isEn ? `Place of Occurrence: ${rawPlace}` : `घटना स्थल:- ${rawPlace}`;
-
-    const incidentDateStr = isEn
-      ? `Date of Occurrence: ${
-          activeFir.incidentDateFrom
-            ? `${formatDate(activeFir.incidentDateFrom)}${
-                activeFir.incidentDateTo ? ` to ${formatDate(activeFir.incidentDateTo)}` : ""
-              }`
-            : formattedDate
-        }`
-      : `घटना तिथि:- ${
-          activeFir.incidentDateFrom
-            ? `${formatDate(activeFir.incidentDateFrom)}${
-                activeFir.incidentDateTo ? ` से ${formatDate(activeFir.incidentDateTo)} तक` : ""
-              }`
-            : formattedDate
-        }`;
-
-    const offenceStr = isEn
-      ? `Offence: ${activeFir.actsAndSections || "Sec 175 BNSS"}`
-      : `अपराध:- ${activeFir.actsAndSections || "धारा 175 BNSS"}`;
-
-    const distCommStr = isEn
-      ? `Police Commissionerate / District ${activeFir.district || "Panchkula"}`
-      : activeFir.district
-      ? activeFir.district.includes("कमिश्नर") || activeFir.district.includes("आयुक्तालय")
-        ? activeFir.district
-        : `पुलिस जिला / आयुक्तालय ${activeFir.district}`
-      : "पुलिस आयुक्तालय पंचकूला";
-
-    // Complainant state line
-    const complainantDetails = isEn
-      ? `State through: ${activeFir.complainantName || "Complainant"}${
-          activeFir.complainantFatherSpouse
-            ? ` w/o, s/o ${activeFir.complainantFatherSpouse}`
-            : ""
-        }${
-          activeFir.complainantAddress
-            ? ` r/o ${activeFir.complainantAddress}`
-            : ""
-        }, ${psName}.`
-      : `राज्य द्वारा:- ${activeFir.complainantName || "ललिता देवी"}${
-          activeFir.complainantFatherSpouse
-            ? ` पत्नी/पुत्र ${activeFir.complainantFatherSpouse}`
-            : ""
-        }${
-          activeFir.complainantAddress
-            ? ` निवासी ${activeFir.complainantAddress}`
-            : ""
-        } ${psName}।`;
-
-    // Accused line
-    const accusedNames =
-      activeFir.accusedList && activeFir.accusedList.length > 0
-        ? activeFir.accusedList
-            .map(
-              (a) =>
-                `${a.name}${a.fatherName ? (isEn ? ` s/o ${a.fatherName}` : ` पुत्र ${a.fatherName}`) : ""}${
-                  a.address ? (isEn ? ` r/o ${a.address}` : ` वासी ${a.address}`) : ""
-                }`
-            )
-            .join("; ")
-        : "------------------------*--------------------------*--------------------------";
-
-    const accusedLineStr = isEn ? `Versus: ${accusedNames}` : `बनाम:- ${accusedNames}`;
-
-    // IO Line
-    const ioName = activeFir.assignedIoName || currentUser?.name || (isEn ? "ASI Jasbir Singh" : "स.उप.नि. जसबीर सिंह");
-    const ioRank = activeFir.assignedIoRank || currentUser?.rankDisplay || (isEn ? "ASI" : "स.उप.नि.");
-    const ioBelt = activeFir.assignedIoBeltNumber || currentUser?.pno || (isEn ? "No. 128" : "नं. 128");
-    const ioLineStr = isEn
-      ? `Investigating Officer: ${ioRank} ${ioName} ${ioBelt}, ${psName}.`
-      : `अनुसन्धानकर्ता:- ${ioRank} ${ioName} ${ioBelt} ${psName}।`;
-
-    const zimniSeq = activeFir.caseDiaries?.length ? activeFir.caseDiaries.length + 1 : "1";
-    const zimniNoStr = isEn ? `Zimni No. ${zimniSeq}` : `जिमनी न० ${zimniSeq}`;
-    const recvStr = isEn ? "Received Date: ...." : "प्राप्ति तिथी....";
-    const dispStr = isEn ? "Dispatched Date: ...." : "रवानगी तिथी....";
-
-    setData((prev) => ({
-      ...prev,
-      leftHeaderLines: [
-        { id: `lh_${Date.now()}_1`, text: psName },
-        { id: `lh_${Date.now()}_2`, text: firNoStr },
-        { id: `lh_${Date.now()}_3`, text: incidentPlaceStr },
-        { id: `lh_${Date.now()}_4`, text: incidentDateStr },
-        { id: `lh_${Date.now()}_5`, text: offenceStr },
-      ],
-      rightHeaderLines: [
-        { id: `rh_${Date.now()}_1`, text: distCommStr },
-        { id: `rh_${Date.now()}_2`, text: zimniNoStr },
-        { id: `rh_${Date.now()}_3`, text: recvStr },
-        { id: `rh_${Date.now()}_4`, text: dispStr },
-      ],
-      stateLine: complainantDetails,
-      accusedLine: accusedLineStr,
-      ioLine: ioLineStr,
-      officerNameRank: `${ioRank} ${ioName} ${ioBelt}`,
-      officerPost: psName,
-      signDate: isEn ? `Date - ${formatDate(new Date())}` : `दिनांक - ${formatDate(new Date())}`,
-    }));
-
-    setSaveStatus(isEn ? "FIR Case Details Loaded (English)!" : "Selected FIR Details Populated!");
-    setTimeout(() => setSaveStatus(null), 3000);
+    const language = templateLanguageRef.current;
+    const isEn = language === "en";
+    const fields = buildZimniFirFields(fir, language);
+    generatedFirFields.current = fields;
+    setData((previous) => ({ ...previous, ...fields, entries }));
+    setIsFilling(false);
+    setSaveStatus(entries.length
+      ? (isEn ? "Processed FIR entries loaded" : "प्रोसेस किए गए FIR विवरण भर दिए गए")
+      : (isEn ? "No processed proceedings found for this FIR" : "इस FIR के लिए प्रोसेस की गई कार्यवाही उपलब्ध नहीं है"));
   };
 
-  // Restore Default Image Sample
-  const handleResetToImageSample = () => {
-    setData(templateLang === "en" ? DEFAULT_IMAGE_ZIMNI_DATA_EN : DEFAULT_IMAGE_ZIMNI_DATA_HI);
-    setSaveStatus(templateLang === "en" ? "Reset to English Sample!" : "Reset to Official Sample from Image!");
+  const fillSelectedFir = useEffectEvent(() => {
+    ++fillRequest.current;
+    setIsFilling(false);
+    setSaveStatus(null);
+    generatedFirFields.current = null;
+    setData(blankZimni(templateLang));
+    if (activeFir) void handleAutoFillFromFir();
+  });
+
+  useEffect(() => {
+    fillSelectedFir();
+    return () => { ++fillRequest.current; };
+  }, [activeFirId, selectedFirId]);
+
+  // Reset to a blank proforma
+  const handleResetTemplate = () => {
+    ++fillRequest.current;
+    setIsFilling(false);
+    generatedFirFields.current = null;
+    setData(blankZimni(templateLang));
+    setSaveStatus(templateLang === "en" ? "Template cleared" : "प्रारूप खाली कर दिया गया");
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
@@ -689,7 +407,7 @@ function ZimniWorkspaceContent() {
           : `Zimni No. ${zimniNum}: Case Diary Entry Recorded`;
 
       const fullDetails = data.entries
-        .map((e) => `[${e.srNo}] ${e.dateTime ? `${e.dateTime}: ` : ""}${e.narration}`)
+        .map((e, index) => `[${index + 1}.] ${e.dateTime ? `${e.dateTime}: ` : ""}${e.narration}`)
         .join("\n\n");
 
       const caseDiaryItem: FIRCaseDiaryItem = {
@@ -707,7 +425,7 @@ function ZimniWorkspaceContent() {
         fileName: fileName,
         fileUrl: dataUrl,
         fileSize: `${(new Blob([htmlContent]).size / 1024).toFixed(1)} KB`,
-        proformaData: data,
+        proformaData: { ...data, entries: data.entries.map((entry, index) => ({ ...entry, srNo: `${index + 1}.` })) },
         isUploaded: false,
         uploadedAt: new Date().toISOString(),
         createdBy: currentUser?.name || "Investigating Officer",
@@ -842,28 +560,19 @@ function ZimniWorkspaceContent() {
   };
 
   const handleAddEntryRow = (afterIndex?: number) => {
-    const nextSr = String(data.entries.length + 1) + ".";
-    const newEntry: ZimniEntryRow = {
-      id: `entry_${Date.now()}`,
-      dateTime: "",
-      srNo: nextSr,
-      narration: "",
-    };
-
-    if (afterIndex !== undefined) {
-      const updated = [...data.entries];
-      updated.splice(afterIndex + 1, 0, newEntry);
-      setData((prev) => ({ ...prev, entries: updated }));
-    } else {
-      setData((prev) => ({ ...prev, entries: [...prev.entries, newEntry] }));
-    }
+    const newEntry: ZimniEntryRow = { id: `manual_${++manualEntrySequence.current}`, dateTime: "", narration: "" };
+    setData((previous) => ({
+      ...previous,
+      entries: afterIndex === undefined
+        ? [...previous.entries, newEntry]
+        : [...previous.entries.slice(0, afterIndex + 1), newEntry, ...previous.entries.slice(afterIndex + 1)],
+    }));
   };
 
   const handleDeleteEntryRow = (id: string) => {
-    if (data.entries.length <= 1) return;
-    setData((prev) => ({
-      ...prev,
-      entries: prev.entries.filter((e) => e.id !== id),
+    setData((previous) => ({
+      ...previous,
+      entries: previous.entries.filter((entry) => entry.id !== id),
     }));
   };
 
@@ -1068,7 +777,7 @@ function ZimniWorkspaceContent() {
                 onChange={(e) => setSelectedFirId(e.target.value)}
                 className="h-full min-h-0! min-w-0 flex-1 cursor-pointer truncate border-0! bg-transparent! text-xs! font-bold text-slate-900"
               >
-                {firs.length === 0 && <option value="">No FIR available</option>}
+                <option value="">{firs.length ? "Select FIR" : "No FIR available"}</option>
                 {firs.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.firNumber} — {f.complainantName || "Complaint"}
@@ -1080,12 +789,13 @@ function ZimniWorkspaceContent() {
             {/* Auto-Fill Button */}
             <button
               type="button"
-              onClick={() => handleAutoFillFromFir()}
+              onClick={() => void handleAutoFillFromFir()}
+              disabled={!activeFir || isFilling}
               className="flex h-7 items-center gap-1 px-2.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
               title="Auto-fill details from selected FIR"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Auto-Fill</span>
+              <span>{isFilling ? "Loading…" : "Auto-Fill"}</span>
             </button>
           </div>
 
@@ -1172,7 +882,7 @@ function ZimniWorkspaceContent() {
             <Button
               size="sm"
               onClick={handleSaveToFir}
-              disabled={isSavingToFir}
+              disabled={isSavingToFir || isFilling}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs gap-1.5 h-7.5 px-3 shadow-2xs"
             >
               {isSavingToFir ? (
@@ -1264,15 +974,15 @@ function ZimniWorkspaceContent() {
                 </div>
               </div>
 
-              {/* Reset to Sample Button */}
+              {/* Reset Template Button */}
               <button
                 type="button"
-                onClick={handleResetToImageSample}
+                onClick={handleResetTemplate}
                 className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-amber-800 transition-colors"
-                title="Reset to default official sample"
+                title="Clear the template"
               >
                 <RotateCcw className="w-3 h-3 text-amber-700" />
-                <span>Reset to Sample</span>
+                <span>Clear Template</span>
               </button>
             </div>
 
@@ -1671,9 +1381,9 @@ function ZimniWorkspaceContent() {
                 >
                   <input
                     type="text"
-                    value={entry.srNo}
-                    onChange={(e) => handleUpdateEntry(entry.id, "srNo", e.target.value)}
-                    placeholder={`${index + 1}.`}
+                    value={`${index + 1}.`}
+                    readOnly
+                    aria-label="Serial number"
                     className="w-full text-center font-bold text-slate-900 bg-transparent hover:bg-amber-50/40 focus:bg-white border border-transparent hover:border-slate-300 focus:border-amber-500 rounded py-0.5 outline-none"
                   />
                 </div>
@@ -1695,7 +1405,7 @@ function ZimniWorkspaceContent() {
                     <div className="no-print absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <VoiceInputButton
                         currentValue={entry.narration}
-                        fieldLabel={`Zimni Entry ${entry.srNo}`}
+                        fieldLabel={`Zimni Entry ${index + 1}`}
                         preferredLang="hi-IN"
                         onTranscript={(text) => {
                           const updated = entry.narration ? `${entry.narration} ${text}` : text;
@@ -1733,16 +1443,14 @@ function ZimniWorkspaceContent() {
                         <span>नीचे नई पंक्ति जोड़ें</span>
                       </button>
 
-                      {data.entries.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteEntryRow(entry.id)}
-                          className="text-[11px] font-bold text-red-600 hover:text-red-800 hover:underline flex items-center gap-1"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>पंक्ति हटाएं</span>
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEntryRow(entry.id)}
+                        className="text-[11px] font-bold text-red-600 hover:text-red-800 hover:underline flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>पंक्ति हटाएं</span>
+                      </button>
                     </div>
                   </div>
                 </div>

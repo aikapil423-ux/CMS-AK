@@ -116,3 +116,47 @@ body {
     break-before: page !important;
   }
 }
+
+/* Mandatory Field Red Glow Styling */
+.mandatory-glow-error,
+[data-mandatory-error="true"],
+.field-error-glow,
+input.border-red-500,
+select.border-red-500,
+textarea.border-red-500,
+input.\!border-red-500,
+select.\!border-red-500,
+textarea.\!border-red-500,
+[class*="mandatory-glow-error"],
+div.border-red-500:not([role="alert"]):not(.bg-red-600):not(.bg-red-700),
+.border-red-500.bg-red-50,
+.\!border-red-500.\!bg-red-50,
+.border-red-500.bg-red-50\/50,
+.border-red-500.bg-red-50\/30 {
+  border-color: #ef4444 !important;
+  background-color: rgba(254, 242, 242, 0.75) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3), 0 0 14px rgba(239, 68, 68, 0.45) !important;
+  outline: none !important;
+  animation: mand-glow-pulse 1.8s ease-in-out infinite alternate !important;
+}
+
+.mandatory-glow-error:focus,
+[data-mandatory-error="true"]:focus,
+input.border-red-500:focus,
+select.border-red-500:focus,
+textarea.border-red-500:focus,
+input.\!border-red-500:focus,
+select.\!border-red-500:focus,
+textarea.\!border-red-500:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.45), 0 0 18px rgba(239, 68, 68, 0.6) !important;
+}
+
+@keyframes mand-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25), 0 0 6px rgba(239, 68, 68, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.4), 0 0 16px rgba(239, 68, 68, 0.55);
+  }
+}

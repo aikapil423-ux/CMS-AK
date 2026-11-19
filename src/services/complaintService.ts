@@ -3726,32 +3726,22 @@ ${reportBody}
 "${complaint.incidentDetails || "संज्ञेय अपराध बाबत शिकायत प्राप्त हुई।"}"
 वैधानिक आदेश (Statutory Order): प्राथमिक जांच / संज्ञेय अपराध के आधार पर धारा 173(3) BNSS, 2023 के तहत प्रथम सूचना रिपोर्ट (FIR) दर्ज की जा रही है। रुकका तैयार कर रोजनामचा में प्रविष्टि दर्ज की गई। अब CCTNS FIR रजिस्टर में विधिवत FIR दर्ज करने हेतु प्रेषित।`;
 
-    const gdRecord = await GeneralDiaryService.addEntry({
-      typeCode: "CRIMINAL_CASE",
+    const gdRecord = await GeneralDiaryService.generateSuggestionFromSystemEvent({
+      eventType: "COMPLAINT_FIR_RECOMMENDED",
       category: "INVESTIGATION_PROCESS",
+      typeCode: "CRIMINAL_CASE",
       typeDisplay: "Criminal case",
-      typeDisplayHi: "आपराधिक मामला",
+      typeDisplayHi: "आपराधिक मामला (FIR पंजीकरण अनुशंसा)",
       subject: `आपराधिक मामला: FIR दर्ज करने बाबत (शिकायत: ${complaint.complaintNumber})`,
       narrative,
-      caseType,
-      actsAndSections,
-      majorAct,
-      activityDate: nowIso.split("T")[0],
-      activityTime: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-      policeStation: complaint.policeStation,
-      district: complaint.district || "Panipat",
-      entryForOfficer: {
+      officer: {
         name: eoIoName,
         rank: eoIoRank,
         pno: eoIoPno,
         beltNumber: eoIoBelt,
       },
-      actualAuthor: {
-        name: officerName,
-        rank: officerRank,
-        pno: officerPno,
-        beltNumber: officerBelt,
-      },
+      policeStation: complaint.policeStation,
+      district: complaint.district || "Panipat",
       relatedRecords: {
         complaintNumber: complaint.complaintNumber,
         caseType,
@@ -3762,7 +3752,7 @@ ${reportBody}
 
     complaintsStore[index] = {
       ...complaint,
-      gdEntryNumber: gdRecord.gdNumber,
+      gdEntryNumber: gdRecord.gdNumber && gdRecord.gdNumber !== "GD-PENDING-SUGGESTION" ? gdRecord.gdNumber : complaint.gdEntryNumber,
       caseType,
       firSections: actsAndSections,
       updatedAt: nowIso,
@@ -3770,16 +3760,16 @@ ${reportBody}
 
     this.addAuditRecord(complaint.id, {
       action: "GD_CRIMINAL_CASE_LOGGED",
-      actionLabel: `Criminal Case GD Entry: ${gdRecord.gdNumber}`,
+      actionLabel: `Roznamcha GD Auto-Suggestion Generated`,
       performedBy: officerName,
       userRole: "SHO",
       timestamp: nowIso,
-      details: `General Diary Criminal Case Entry ${gdRecord.gdNumber} recorded. Case Type: ${caseType}, Sections: ${actsAndSections}. Forwarded to FIR Registration Form.`,
+      details: `General Diary Criminal Case auto-suggestion generated for complaint ${complaint.complaintNumber}. Case Type: ${caseType}, Sections: ${actsAndSections}. Sent to Auto-Suggestions & Drafts tab for review. Forwarded to FIR Registration Form.`,
     });
 
     this.addTimelineEvent(complaint.id, {
-      title: `Roznamcha GD Logged: ${gdRecord.gdNumber}`,
-      description: `Criminal Case GD entry logged in Roznamcha for regular FIR registration under ${actsAndSections}. Case Type: ${caseType}. Assigned IO: ${eoIoName}.`,
+      title: `Roznamcha GD Auto-Suggested`,
+      description: `Criminal Case GD auto-suggestion sent to Roznamcha Auto-Suggestions & Drafts for regular FIR registration under ${actsAndSections}. Case Type: ${caseType}. Assigned IO: ${eoIoName}.`,
       category: "STATUS_CHANGE",
       officerName,
       timestamp: nowIso,

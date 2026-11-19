@@ -638,7 +638,8 @@ function ComplaintListContent() {
       const targetComplaintId = firRegisterModalComplaint.id;
       setFirRegisterModalComplaint(null);
       fetchComplaints();
-      router.push(`/fir/register?gdNumber=${encodeURIComponent(gdRecord.gdNumber)}&complaintId=${encodeURIComponent(targetComplaintId)}`);
+      const gdQuery = gdRecord?.gdNumber && gdRecord.gdNumber !== "GD-PENDING-SUGGESTION" ? `&gdNumber=${encodeURIComponent(gdRecord.gdNumber)}` : "";
+      router.push(`/fir/register?complaintId=${encodeURIComponent(targetComplaintId)}${gdQuery}`);
     } catch (e) {
       console.error(e);
       alert("Error logging GD / preparing FIR");
@@ -2827,8 +2828,8 @@ function ComplaintListContent() {
               <div className="flex items-center gap-2">
                 <Scale className="w-5 h-5" />
                 <div>
-                  <h3 className="font-bold text-sm">Roznamcha GD Entry &amp; Register FIR</h3>
-                  <p className="text-[11px] text-red-100">Criminal Case GD entry will be logged before opening FIR form</p>
+                  <h3 className="font-bold text-sm">Roznamcha GD Auto-Suggestion &amp; Register FIR</h3>
+                  <p className="text-[11px] text-red-100">Criminal Case GD auto-suggestion will be sent to Auto-Suggestions &amp; Drafts</p>
                 </div>
               </div>
               <button onClick={() => setFirRegisterModalComplaint(null)} className="text-white hover:opacity-80">
@@ -2901,7 +2902,7 @@ function ComplaintListContent() {
               </div>
 
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-900 leading-relaxed text-[11px]">
-                A <strong>Criminal case</strong> GD entry will be logged into Roznamcha with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
+                A <strong>Criminal case</strong> GD auto-suggestion will be generated in Roznamcha <strong>Auto-Suggestions &amp; Drafts</strong> with Complaint No., EO/IO details, and these sections. Then the FIR Register Form will open with all details auto-filled.
               </div>
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
@@ -2915,7 +2916,7 @@ function ComplaintListContent() {
                 disabled={isRegisteringFir || !firCaseTypeInput}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
               >
-                {isRegisteringFir ? "Logging GD & Opening FIR Form..." : "Log Roznamcha GD & Register FIR"}
+                {isRegisteringFir ? "Creating Suggestion & Opening FIR Form..." : "Create GD Auto-Suggestion & Register FIR"}
               </Button>
             </div>
           </div>

@@ -25,9 +25,8 @@ import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { persistentFirService as firService } from "@/services/persistentFirService";
 import { RegistrationService } from "@/services/registrationService";
-import { isUserAssignedIo, isFirVisibleToUser } from "@/lib/firIntegrity";
+import { isFirVisibleToUser } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
-import { RoleAdaptiveWorkspace } from "@/components/dashboard/RoleAdaptiveWorkspace";
 
 export default function PostLoginPortalPage() {
   const router = useRouter();
@@ -38,10 +37,6 @@ export default function PostLoginPortalPage() {
   const [gdCount, setGdCount] = useState<number | null>(null);
   const [firCount, setFirCount] = useState<number | null>(null);
   const [regCount, setRegCount] = useState<number | null>(null);
-  const [overdueInquiryCount, setOverdueInquiryCount] = useState<number>(0);
-  const [pendingReportCount, setPendingReportCount] = useState<number>(0);
-  const [remandCustodyCount, setRemandCustodyCount] = useState<number>(0);
-  const [defaultBailRiskCount, setDefaultBailRiskCount] = useState<number>(0);
 
   useEffect(() => {
     async function loadStats() {
@@ -61,37 +56,10 @@ export default function PostLoginPortalPage() {
         setComplaintCount(activeComplaints.length);
         setGdCount(gdEntries.length);
         const firs = firService.getAllFirs();
-        const isIo = currentUser.role === "ENQUIRY_OFFICER";
         const visibleFirs = firs.filter(f=>isFirVisibleToUser(currentUser,f));
         setFirCount(visibleFirs.length);
         const regs = RegistrationService.getEntries();
         setRegCount(regs.filter(r=>currentUser.role === "SUPER_ADMIN" || r.district?.toLowerCase() === currentUser.district.toLowerCase() && (["SP_DISTRICT","DSP_SUBDIV"].includes(currentUser.role) || r.stationName?.toLowerCase()===currentUser.stationName.toLowerCase())).length);
-
-        // Real calculations for role tabs
-        const now = Date.now();
-        const overdue = activeComplaints.filter(c => {
-          if (c.daysPending && c.daysPending > 15) return true;
-          if (!c.incidentDate) return false;
-          const d = new Date(c.incidentDate).getTime();
-          return !isNaN(d) && (now - d) > 15 * 86400000;
-        }).length;
-        setOverdueInquiryCount(overdue);
-
-        const pendingReports = complaints.filter(c =>
-          c.status === "REPORT_SUBMITTED" || c.status === "RECOMMENDED_FOR_FIR"
-        ).length;
-        setPendingReportCount(pendingReports);
-
-        const remand = visibleFirs.filter(f =>
-          Boolean(f.briefFacts && /arrested|custody|remand/i.test(f.briefFacts))
-        ).length;
-        setRemandCustodyCount(remand);
-
-        const bailRisk = visibleFirs.filter(f => {
-          if (f.status === "CHARGESHEET_FILED" || f.status === "CLOSURE_REPORT_FILED") return false;
-          return Boolean(f.daysPending && f.daysPending > 60);
-        }).length;
-        setDefaultBailRiskCount(bailRisk);
       } catch (e) {
         // Fallback
       }
@@ -141,21 +109,6 @@ export default function PostLoginPortalPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 py-2 sm:py-3 animate-in fade-in-50 text-slate-800">
-      {/* 1. Role-Adaptive Operational Command Workspace (SHO / IO / Munshi Views) */}
-      <RoleAdaptiveWorkspace
-        complaintCount={complaintCount}
-        gdCount={gdCount}
-        firCount={firCount}
-        erssCount={0}
-        overdueInquiryCount={overdueInquiryCount}
-        pendingReportCount={pendingReportCount}
-        affidavitCount={0}
-        remandCustodyCount={remandCustodyCount}
-        pendingZimniCount={0}
-        defaultBailRiskCount={defaultBailRiskCount}
-        auditAlertsCount={0}
-      />
-
       {/* Title & Instructions - Minimalist */}
       <div className="px-1 text-center sm:text-left flex items-center justify-between">
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">

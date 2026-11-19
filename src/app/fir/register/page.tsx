@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense, useMemo } from "react";
+import React, { useState, useEffect, useRef, Suspense, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
@@ -500,6 +500,13 @@ function RegisterFIRForm() {
   const [autoFilledFields, setAutoFilledFields] = useState<Record<string, boolean>>({});
 
   const getFieldHighlightClass = (fieldName: string) => {
+    if (
+      errors[fieldName] ||
+      (fieldName === "firContentText" && errors.fir_content) ||
+      (fieldName === "complainantFirstName" && errors.complainant)
+    ) {
+      return "mandatory-glow-error";
+    }
     if (autoFilledFields[fieldName]) {
       return "!border-emerald-500 !bg-emerald-50/60 ring-1 ring-emerald-400/80 shadow-xs shadow-emerald-100 transition-all";
     }
@@ -668,6 +675,163 @@ function RegisterFIRForm() {
     }
   }, [tempPropCategory]);
 
+  // Comprehensive helper to populate FIR form from a linked Complaint
+  const applyComplaintToFir = useCallback((c: any, preserveSections = false) => {
+    if (!c) return;
+    setLinkedComplaint(c);
+    setComplaintNumber(c.complaintNumber);
+    setSourceOfComplaint("Haryana Police Grievance Portal");
+
+    const names = (c.complainantName || "").trim().split(/\s+/);
+    setComplainantFirstName(names[0] || "");
+    setComplainantLastName(names.slice(1).join(" ") || "");
+    setComplainantRelativeName(c.complainantFatherSpouse || c.complainantRelativeName || "");
+    setComplainantGender((c.complainantGender as any) || "MALE");
+    if (c.complainantAge) setComplainantAge(String(c.complainantAge));
+    setComplainantMobile(c.complainantMobile || "");
+    setPermHouseNo(c.complainantAddress || "");
+    setPermCity(c.complainantCity || "Panipat");
+    setPermDistrict(c.complainantDistrict || "Panipat");
+    setFirContentText(c.incidentDetails || "");
+    setBriefFacts(c.incidentDetails?.slice(0, 300) || "");
+    if ((c as any).gdEntryNumber) setGdEntryNumber((c as any).gdEntryNumber);
+    if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
+
+    // Legal analysis prefill (only if not preserving already found sections)
+    if (!preserveSections) {
+      if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
+        const acts = c.legalAnalysis.suggestedSections.map((s: any, idx: number) => ({
+          id: `act-pre-${idx}`,
+          srNo: idx + 1,
+          act: s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+          sections: `Sec ${s.sectionNumber}`,
+        }));
+        setActsAndSectionsList(acts);
+      } else if (c.firSections) {
+        setActsAndSectionsList([
+          {
+            id: "act-1",
+            srNo: 1,
+            act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+            sections: c.firSections,
+          },
+        ]);
+      } else {
+        setActsAndSectionsList([
+          {
+            id: "act-1",
+            srNo: 1,
+            act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
+            sections: "Sec 303(2), 305",
+          },
+        ]);
+      }
+    }
+
+    // Occurrence prefill
+    setOccurrencesList([
+      {
+        id: "occ-1",
+        srNo: 1,
+        day: "Monday",
+        dateFrom: c.incidentDate || new Date().toISOString().split("T")[0],
+        dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
+        timeFrom: c.incidentTime || "10:00",
+        timeTo: "12:00",
+        timePeriod: "Morning / General",
+        infoReceivedDate: new Date().toISOString().split("T")[0],
+        infoReceivedTime: new Date().toTimeString().slice(0, 5),
+        directionFromPs: "",
+        distanceKm: "",
+        area: c.incidentPlace || "Commercial Area",
+        city: c.complainantCity || "Panipat",
+        beatNo: "",
+        isKnownDate: true,
+        isForestPlace: false,
+      },
+    ]);
+
+    // Accused details mapping
+    const rawAccused: any[] = Array.isArray(c.accusedList) && c.accusedList.length > 0
+      ? c.accusedList
+      : c.accusedName
+      ? [{ name: c.accusedName, address: c.accusedAddress, phone: c.accusedPhone, alias: c.accusedAlias }]
+      : [];
+
+    if (rawAccused.length > 0) {
+      const mappedAccused: ExtendedAccusedPerson[] = rawAccused.map((acc: any, index: number) => {
+        const accName = (acc.name || "").trim();
+        const nameParts = accName ? accName.split(/\s+/) : [];
+        const isKnownAccused =
+          c.isAccusedKnown !== false &&
+          accName !== "Unknown Accused" &&
+          accName !== "Accused is not known" &&
+          acc.isKnown !== false;
+
+        return {
+          id: acc.id || `accused-cmp-${index + 1}-${Date.now()}`,
+          name: accName || "Unknown Accused",
+          firstName: nameParts[0] || "",
+          middleName: nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "",
+          lastName: nameParts.length > 1 ? nameParts[nameParts.length - 1] : "",
+          alias: acc.alias || "",
+          aliases: acc.alias ? [{ id: `alias-${index}`, aliasName: acc.alias }] : [],
+          fatherName: acc.fatherName || acc.relativeName || (acc.alias && (acc.alias.includes("पुत्र") || acc.alias.includes("पत्नी") || acc.alias.includes("पुत्री")) ? acc.alias : ""),
+          relativeName: acc.relativeName || acc.fatherName || "",
+          relationType: acc.relationType || acc.relationWithComplainant || "Father",
+          relationWithComplainant: acc.relationWithComplainant || "",
+          gender: acc.gender || "Male",
+          age: acc.age || "",
+          mobile: acc.phone || acc.mobile || "",
+          address: acc.address || "",
+          addressesList: acc.address
+            ? [{ id: `addr-${index}`, colony: acc.address, city: c.complainantCity || "Panipat", district: c.complainantDistrict || "Panipat", state: "Haryana", country: "India" }]
+            : [],
+          city: c.complainantCity || "Panipat",
+          district: c.complainantDistrict || "Panipat",
+          state: "Haryana",
+          country: "India",
+          isKnown: isKnownAccused,
+          isIdentified: isKnownAccused,
+          accusedType: isKnownAccused ? "Known" : "Unknown-Seen",
+          status: "SUSPECT",
+          custodyStatus: "SUSPECT",
+        };
+      });
+
+      setAccusedList(mappedAccused);
+      const anyKnown = mappedAccused.some((a) => a.isKnown !== false && a.accusedType !== "Unknown-Seen");
+      setIsAccusedKnown(anyKnown);
+    } else if (c.isAccusedKnown === false) {
+      setIsAccusedKnown(false);
+    }
+
+    setAutoFilledFields((prev) => ({
+      ...prev,
+      complaintNumber: true,
+      sourceOfComplaint: true,
+      complainantFirstName: Boolean(names[0]),
+      complainantLastName: Boolean(names.slice(1).join(" ")),
+      complainantRelativeName: Boolean(c.complainantFatherSpouse || c.complainantRelativeName),
+      complainantGender: true,
+      complainantAge: Boolean(c.complainantAge),
+      complainantMobile: Boolean(c.complainantMobile),
+      permHouseNo: Boolean(c.complainantAddress),
+      permCity: true,
+      permDistrict: true,
+      firContentText: Boolean(c.incidentDetails),
+      briefFacts: Boolean(c.incidentDetails),
+      actsAndSections: true,
+      occurrence: true,
+      occurrenceDate: Boolean(c.incidentDate),
+      occurrenceTime: Boolean(c.incidentTime),
+      occurrencePlace: Boolean(c.incidentPlace),
+      occurrenceCity: true,
+      accused: rawAccused.length > 0,
+      ...(Boolean((c as any).gdEntryNumber) ? { gdEntryNumber: true } : {}),
+    }));
+  }, [isSho, isSuperior, isMhc]);
+
   // Search and auto-fill details from General Diary (Roznamcha Rukka / Criminal Case Entry)
   const handleSearchAndAutofillGD = async (targetGdNumber?: string) => {
     const query = (targetGdNumber || gdEntryNumber || "").trim();
@@ -749,92 +913,36 @@ function RegisterFIRForm() {
       }
 
       if (linkedCompNo) {
-        const c = await ComplaintService.getComplaintById(linkedCompNo);
-        if (c) {
-          setLinkedComplaint(c);
-          setComplaintNumber(c.complaintNumber);
-          setSourceOfComplaint("Haryana Police Grievance Portal");
-          const names = (c.complainantName || "").split(" ");
-          setComplainantFirstName(names[0] || "");
-          setComplainantLastName(names.slice(1).join(" ") || "");
-          setComplainantRelativeName(c.complainantFatherSpouse || c.complainantRelativeName || "");
-          setComplainantGender((c.complainantGender as any) || "MALE");
-          if (c.complainantAge) setComplainantAge(String(c.complainantAge));
-          setComplainantMobile(c.complainantMobile || "");
-          setPermHouseNo(c.complainantAddress || "");
-          setPermCity(c.complainantCity || "Panipat");
-          setPermDistrict(c.complainantDistrict || "Panipat");
-          setFirContentText(c.incidentDetails || found.narrative || "");
-          setBriefFacts(c.incidentDetails?.slice(0, 300) || found.narrative?.slice(0, 300) || "");
-          if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
-
-          if (!foundSections) {
-            if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
-              const acts = c.legalAnalysis.suggestedSections.map((s: any, idx: number) => ({
-                id: `act-pre-${idx}`,
-                srNo: idx + 1,
-                act: s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-                sections: `Sec ${s.sectionNumber}`,
-              }));
-              setActsAndSectionsList(acts);
-            } else if (c.firSections) {
-              setActsAndSectionsList([
-                {
-                  id: "act-1",
-                  srNo: 1,
-                  act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-                  sections: c.firSections,
-                },
-              ]);
-            }
+        let c = null;
+        try {
+          if (complaintIdParam) {
+            c = await ComplaintService.getComplaintById(complaintIdParam);
           }
+          if (!c) {
+            c = await ComplaintService.getComplaintByNumber(linkedCompNo);
+          }
+          if (!c) {
+            const allC = await ComplaintService.getComplaints();
+            c =
+              allC.find(
+                (item) =>
+                  item.id === linkedCompNo ||
+                  item.complaintNumber === linkedCompNo ||
+                  item.complaintNumber.toLowerCase().includes(linkedCompNo.toLowerCase())
+              ) || null;
+          }
+        } catch {
+          // ignore
+        }
 
-          setOccurrencesList([
-            {
-              id: "occ-1",
-              srNo: 1,
-              day: "Monday",
-              dateFrom: c.incidentDate || new Date().toISOString().split("T")[0],
-              dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
-              timeFrom: c.incidentTime || "10:00",
-              timeTo: "12:00",
-              timePeriod: "Morning / General",
-              infoReceivedDate: new Date().toISOString().split("T")[0],
-              infoReceivedTime: new Date().toTimeString().slice(0, 5),
-              directionFromPs: "",
-              distanceKm: "",
-              area: c.incidentPlace || "Commercial Area",
-              city: c.complainantCity || "Panipat",
-              beatNo: "",
-              isKnownDate: true,
-              isForestPlace: false,
-            },
-          ]);
-
-          setAutoFilledFields({
-            complaintNumber: true,
-            sourceOfComplaint: true,
-            complainantFirstName: Boolean(names[0]),
-            complainantLastName: Boolean(names.slice(1).join(" ")),
-            complainantRelativeName: Boolean(c.complainantFatherSpouse || c.complainantRelativeName),
-            complainantGender: true,
-            complainantAge: Boolean(c.complainantAge),
-            complainantMobile: Boolean(c.complainantMobile),
-            permHouseNo: Boolean(c.complainantAddress),
-            permCity: true,
-            permDistrict: true,
-            firContentText: Boolean(c.incidentDetails),
-            briefFacts: Boolean(c.incidentDetails),
-            actsAndSections: true,
-            occurrence: true,
-            occurrenceDate: Boolean(c.incidentDate),
-            occurrenceTime: Boolean(c.incidentTime),
-            occurrencePlace: Boolean(c.incidentPlace),
-            occurrenceCity: true,
+        if (c) {
+          applyComplaintToFir(c, Boolean(foundSections || foundSectionsList));
+          setAutoFilledFields((prev) => ({
+            ...prev,
             gdEntryNumber: true,
             gdDate: true,
             gdTime: true,
-          });
+          }));
         }
       } else {
         setFirContentText(found.narrative);
@@ -860,112 +968,37 @@ function RegisterFIRForm() {
       })
       .catch(() => {});
 
-    if (gdNumberParam) {
-      handleSearchAndAutofillGD(gdNumberParam);
-    } else if (complaintIdParam) {
-      ComplaintService.getComplaintById(complaintIdParam)
-        .then((c) => {
+    const initData = async () => {
+      if (complaintIdParam) {
+        try {
+          const c = await ComplaintService.getComplaintById(complaintIdParam);
           if (c) {
-            setLinkedComplaint(c);
-            setComplaintNumber(c.complaintNumber);
-            setSourceOfComplaint("Haryana Police Grievance Portal");
-            const names = (c.complainantName || "").split(" ");
-            setComplainantFirstName(names[0] || "");
-            setComplainantLastName(names.slice(1).join(" ") || "");
-            setComplainantRelativeName(c.complainantFatherSpouse || c.complainantRelativeName || "");
-            setComplainantGender((c.complainantGender as any) || "MALE");
-            if (c.complainantAge) setComplainantAge(String(c.complainantAge));
-            setComplainantMobile(c.complainantMobile || "");
-            setPermHouseNo(c.complainantAddress || "");
-            setPermCity(c.complainantCity || "Panipat");
-            setPermDistrict(c.complainantDistrict || "Panipat");
-            setFirContentText(c.incidentDetails || "");
-            setBriefFacts(c.incidentDetails?.slice(0, 300) || "");
-            if ((c as any).gdEntryNumber) setGdEntryNumber((c as any).gdEntryNumber);
-            if (c.assignedEoId && (isSho || isSuperior) && !isMhc) setAssignedIoId(c.assignedEoId);
-
-            // Legal analysis prefill
-            if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
-              const acts = c.legalAnalysis.suggestedSections.map((s: any, idx: number) => ({
-                id: `act-pre-${idx}`,
-                srNo: idx + 1,
-                act: s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-                sections: `Sec ${s.sectionNumber}`,
-              }));
-              setActsAndSectionsList(acts);
-            } else {
-              setActsAndSectionsList([
-                {
-                  id: "act-1",
-                  srNo: 1,
-                  act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-                  sections: "Sec 303(2), 305",
-                },
-              ]);
-            }
-
-            // Occurrence prefill
-            setOccurrencesList([
-              {
-                id: "occ-1",
-                srNo: 1,
-                day: "Monday",
-                dateFrom: c.incidentDate || new Date().toISOString().split("T")[0],
-                dateTo: c.incidentDate || new Date().toISOString().split("T")[0],
-                timeFrom: "10:00",
-                timeTo: "12:00",
-                timePeriod: "Morning / General",
-                infoReceivedDate: new Date().toISOString().split("T")[0],
-                infoReceivedTime: new Date().toTimeString().slice(0, 5),
-                directionFromPs: "",
-                distanceKm: "",
-                area: c.incidentPlace || "Commercial Area",
-                city: "Panipat",
-                beatNo: "",
-                isKnownDate: true,
-                isForestPlace: false,
-              },
-            ]);
-
-            setAutoFilledFields({
-              complaintNumber: true,
-              sourceOfComplaint: true,
-              complainantFirstName: Boolean(names[0]),
-              complainantLastName: Boolean(names.slice(1).join(" ")),
-              complainantRelativeName: Boolean(c.complainantFatherSpouse || c.complainantRelativeName),
-              complainantGender: true,
-              complainantAge: Boolean(c.complainantAge),
-              complainantMobile: Boolean(c.complainantMobile),
-              permHouseNo: Boolean(c.complainantAddress),
-              permCity: true,
-              permDistrict: true,
-              firContentText: Boolean(c.incidentDetails),
-              briefFacts: Boolean(c.incidentDetails),
-              actsAndSections: true,
-              occurrence: true,
-              occurrenceDate: Boolean(c.incidentDate),
-              occurrenceTime: Boolean(c.incidentTime),
-              occurrencePlace: Boolean(c.incidentPlace),
-              occurrenceCity: true,
-              ...(Boolean((c as any).gdEntryNumber) ? { gdEntryNumber: true } : {}),
-            });
+            applyComplaintToFir(c);
           }
-        })
-        .catch((e) => console.warn("Prefill error:", e));
-    }
+        } catch (e) {
+          console.warn("Prefill error:", e);
+        }
+      }
 
-    // Auto-restore draft on mount if available (for current complaint, GD, or general)
-    let savedDraft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
-    if (!savedDraft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
-      savedDraft = firService.getFirDraft("default");
-    }
+      if (gdNumberParam) {
+        await handleSearchAndAutofillGD(gdNumberParam);
+      }
 
-    if (savedDraft && savedDraft.savedAt) {
-      applyDraftData(savedDraft);
-    }
+      // Auto-restore draft on mount if available (for current complaint, GD, or general)
+      let savedDraft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
+      if (!savedDraft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
+        savedDraft = firService.getFirDraft("default");
+      }
 
-    setIsDraftLoaded(true);
-  }, [complaintIdParam, gdNumberParam, draftKey]);
+      if (savedDraft && savedDraft.savedAt) {
+        applyDraftData(savedDraft);
+      }
+
+      setIsDraftLoaded(true);
+    };
+
+    initData();
+  }, [complaintIdParam, gdNumberParam, draftKey, applyComplaintToFir]);
 
   // Synchronous auto-save right before page unload (preserves data even on hard refresh Ctrl+F5)
   useEffect(() => {
@@ -1333,7 +1366,9 @@ function RegisterFIRForm() {
 
       if (draft.isAccusedKnown !== undefined) setIsAccusedKnown(draft.isAccusedKnown);
       if (draft.accusedMoreThan !== undefined) setAccusedMoreThan(draft.accusedMoreThan);
-      if (Array.isArray(draft.accusedList)) setAccusedList(draft.accusedList);
+      if (Array.isArray(draft.accusedList) && draft.accusedList.length > 0) {
+        setAccusedList(draft.accusedList);
+      }
 
       if (Array.isArray(draft.propertiesList)) setPropertiesList(draft.propertiesList);
       if (draft.countDeceased !== undefined) setCountDeceased(draft.countDeceased);
@@ -1403,7 +1438,15 @@ function RegisterFIRForm() {
     }
     setDraftRestoredNotice(null);
     setLastSavedTime(null);
-    handleClearAll();
+    if (complaintIdParam) {
+      ComplaintService.getComplaintById(complaintIdParam).then((c) => {
+        if (c) applyComplaintToFir(c);
+      });
+      setSaveDraftFeedback("Draft discarded. Complaint details restored!");
+      setTimeout(() => setSaveDraftFeedback(null), 3000);
+    } else {
+      handleClearAll();
+    }
   };
 
   // Apply auto-fill from uploaded and processed complaint document
@@ -2316,6 +2359,7 @@ function RegisterFIRForm() {
     if (tabKey === "complainant") {
       if (!complainantFirstName.trim()) {
         tabErrors.complainant = "Complainant First Name is mandatory.";
+        tabErrors.complainantFirstName = "Complainant First Name is mandatory.";
       }
       if (!complainantGender || !complainantGender.trim()) {
         tabErrors.complainantGender = "Complainant Gender is mandatory.";
@@ -2348,6 +2392,7 @@ function RegisterFIRForm() {
     if (tabKey === "fir_content") {
       if (!firContentText.trim() && !briefFacts.trim()) {
         tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
+        tabErrors.firContentText = "FIR Contents / Tehreer text is mandatory.";
       }
       if (!actionType || !actionType.trim()) {
         tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
@@ -2715,6 +2760,7 @@ function RegisterFIRForm() {
                   onChange={(e) => handleFirDateChange(e.target.value)}
                   placeholder="DD/MM/YYYY"
                   size="sm"
+                  className={getFieldHighlightClass("firDate")}
                 />
               </div>
               <input
@@ -2736,7 +2782,7 @@ function RegisterFIRForm() {
                     setFirTime(now.time);
                   }
                 }}
-                className="w-24 sm:w-28 p-1.5 rounded border border-slate-300 bg-white text-xs font-mono"
+                className={`w-24 sm:w-28 p-1.5 rounded border border-slate-300 bg-white text-xs font-mono ${getFieldHighlightClass("firTime")}`}
                 title={firDate >= maxAllowedFirDate ? `Latest allowed time: ${currentNow.time}` : undefined}
               />
             </div>
@@ -3561,7 +3607,7 @@ function RegisterFIRForm() {
                 ) : (
                   <div className={`text-center py-4 rounded-lg border border-dashed ${
                     errors.act_section
-                      ? "text-red-700 bg-red-50/70 border-red-300 font-semibold"
+                      ? "mandatory-glow-error text-red-700 bg-red-50/70 border-red-300 font-semibold"
                       : "text-slate-400 bg-slate-50/50 border-slate-200"
                   }`}>
                     No acts &amp; sections added yet. Please select an Act and Section(s) above and click &quot;Add Act&quot;.
@@ -3691,6 +3737,8 @@ function RegisterFIRForm() {
               onUpdateOccurrence={handleUpdateOccurrence}
               onDeleteOccurrence={handleDeleteOccurrence}
               autoFilledFields={autoFilledFields}
+              hasValidationErrors={Boolean(errors.occurrence)}
+              validationErrorMsg={errors.occurrence}
             />
           </div>
         )}
@@ -5015,7 +5063,7 @@ function RegisterFIRForm() {
                     Action Taken by Station House Officer (SHO) <span className="text-red-600">*</span>
                   </label>
                   <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1 rounded-xl transition-all ${
-                    errors.actionType ? "border border-red-500 bg-red-50/40 ring-1 ring-red-400 p-2" : ""
+                    errors.actionType ? "mandatory-glow-error border border-red-500 bg-red-50/40 ring-1 ring-red-400 p-2" : ""
                   }`}>
                     {actionTakenList.map((opt) => (
                       <label
@@ -5220,6 +5268,8 @@ function RegisterFIRForm() {
               onAddAccused={handleAddAccused}
               onUpdateAccused={handleUpdateAccused}
               onDeleteAccused={handleDeleteAccused}
+              hasValidationErrors={Boolean(errors.accused)}
+              validationErrorMsg={errors.accused}
             />
           </div>
         )}
