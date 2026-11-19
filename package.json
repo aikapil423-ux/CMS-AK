@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "predev": "npm run whisper:setup",
     "build": "next build",
     "start": "next start",
+    "prestart": "npm run whisper:setup",
+    "whisper:setup": "node scripts/setup-whisper.mjs",
     "lint": "eslint",
     "db:export-seed": "node scripts/export-seed.mjs",
     "db:seed": "node prisma/seed.mjs",

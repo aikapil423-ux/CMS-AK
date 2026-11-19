@@ -2,16 +2,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+Install Node.js dependencies and make Python 3.12 with `venv` available on your PATH. Then start the development server.
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -29,8 +24,8 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Dictation and deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`npm run dev` and `npm start` prepare the same Whisper Large-v3 Turbo model automatically. The first run downloads about 1.62 GB, verifies the model files against pinned SHA-256 checksums, and caches them in `.whisper/model`. Run `npm run whisper:setup` to provision the model ahead of time. Set `WHISPER_SETUP_PYTHON` if your Python executable has a different name or path.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For production dictation, use a persistent Node.js host with Python and writable storage. Run `npm ci`, `npm run build`, and `npm start` from the checkout. Persist `.whisper` between starts on the same host to reuse the model and Python environment. The dictation worker requires a local Python process and model files. A standard Vercel serverless deployment does not provide this setup.
