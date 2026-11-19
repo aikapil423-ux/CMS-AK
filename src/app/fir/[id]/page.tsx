@@ -51,6 +51,7 @@ import {
   ArrowRightLeft,
   Globe2,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { persistentFirService as firService } from "@/services/persistentFirService";
@@ -220,6 +221,26 @@ export default function FIRProfilePage() {
   const [docFileName, setDocFileName] = useState("");
   const [docFileDataUrl, setDocFileDataUrl] = useState("");
   const [docFileSize, setDocFileSize] = useState("");
+  const [retryingEvidenceIds, setRetryingEvidenceIds] = useState<Set<string>>(new Set());
+
+  const handleRetryEvidence = async (evId: string) => {
+    if (!evId) return;
+    setRetryingEvidenceIds((prev) => new Set(prev).add(evId));
+    try {
+      await universalEvidenceService.retryProcessing(evId, currentUser?.name || "Officer");
+    } catch (err: any) {
+      alert("Retry failed: " + (err?.message || "Failed to reprocess evidence"));
+    } finally {
+      setRetryingEvidenceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(evId);
+        return next;
+      });
+      if (firId) {
+        universalEvidenceService.syncFromServer(firId);
+      }
+    }
+  };
 
   // Header action dropdown states (Print, Crime Details, Arrest Docs)
   const [headerActionsDropdownOpen, setHeaderActionsDropdownOpen] = useState(false);
@@ -2400,6 +2421,24 @@ export default function FIRProfilePage() {
                                   {doc.fileName} {doc.fileSize ? `(${doc.fileSize})` : ""}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                  {evidenceRec?.processingStatus === "PROCESSING" || (evidenceRec?.id && retryingEvidenceIds.has(evidenceRec.id)) ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded animate-pulse">
+                                      <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-600" />
+                                      Processing...
+                                    </span>
+                                  ) : evidenceRec?.processingStatus === "FAILED" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRetryEvidence(evidenceRec.id)}
+                                      title={evidenceRec.errorMessage ? `${evidenceRec.errorMessage} — Click to retry processing` : "Processing failed — Click to restart processing"}
+                                      className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-300 hover:border-red-400 px-1.5 py-0.5 rounded cursor-pointer transition-colors shadow-2xs group"
+                                    >
+                                      <AlertTriangle className="w-2.5 h-2.5 text-red-600 group-hover:scale-110 transition-transform" />
+                                      <span>Processing Failed</span>
+                                      <span className="text-[9px] underline font-semibold text-red-700 ml-0.5">(Retry)</span>
+                                    </button>
+                                  ) : null}
+
                                   {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
                                     <span
                                       className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded shadow-2xs"
@@ -2438,6 +2477,29 @@ export default function FIRProfilePage() {
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              {/* Retry (if failed) */}
+                              {evidenceRec?.processingStatus === "FAILED" && (
+                                <button
+                                  type="button"
+                                  disabled={retryingEvidenceIds.has(evidenceRec.id)}
+                                  onClick={() => handleRetryEvidence(evidenceRec.id)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
+                                  title="Restart processing failed evidence"
+                                >
+                                  {retryingEvidenceIds.has(evidenceRec.id) ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 text-amber-700 animate-spin" />
+                                      <span>Processing...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <RotateCcw className="w-3.5 h-3.5 text-amber-700" />
+                                      <span>Retry</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
                               {/* Preview */}
                               <button
                                 type="button"

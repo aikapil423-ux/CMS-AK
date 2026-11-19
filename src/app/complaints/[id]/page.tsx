@@ -319,6 +319,24 @@ export default function ComplaintProfilePage() {
   // Universal Processed Evidence Review Modal State
   const [selectedEvidenceRecord, setSelectedEvidenceRecord] = useState<UniversalEvidenceRecord | null>(null);
   const [evidenceRefreshTrigger, setEvidenceRefreshTrigger] = useState(0);
+  const [retryingEvidenceIds, setRetryingEvidenceIds] = useState<Set<string>>(new Set());
+
+  const handleRetryEvidence = async (evId: string) => {
+    if (!evId) return;
+    setRetryingEvidenceIds((prev) => new Set(prev).add(evId));
+    try {
+      await universalEvidenceService.retryProcessing(evId, currentUser.name);
+    } catch (err: any) {
+      alert("Retry failed: " + (err?.message || "Failed to reprocess evidence"));
+    } finally {
+      setRetryingEvidenceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(evId);
+        return next;
+      });
+      setEvidenceRefreshTrigger((c) => c + 1);
+    }
+  };
 
   // Confidential Dossier State (Strictly EO ID only)
   const [dossierModalOpen, setDossierModalOpen] = useState(false);
@@ -3123,16 +3141,22 @@ export default function ComplaintProfilePage() {
                                     <p className="truncate font-semibold text-slate-900" title={doc.fileName}>
                                       {doc.fileName}
                                     </p>
-                                    {evidenceRec?.processingStatus === "PROCESSING" ? (
+                                    {evidenceRec?.processingStatus === "PROCESSING" || (evidenceRec?.id && retryingEvidenceIds.has(evidenceRec.id)) ? (
                                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded animate-pulse">
                                         <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-600" />
                                         Processing...
                                       </span>
                                     ) : evidenceRec?.processingStatus === "FAILED" ? (
-                                      <span title={evidenceRec.errorMessage || "Processing failed; original file is retained."} className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-300 px-1.5 py-0.5 rounded">
-                                        <AlertTriangle className="w-2.5 h-2.5 text-red-600" />
-                                        Processing Failed
-                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRetryEvidence(evidenceRec.id)}
+                                        title={evidenceRec.errorMessage ? `${evidenceRec.errorMessage} — Click to retry processing` : "Processing failed — Click to restart processing"}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 hover:bg-red-100 border border-red-300 hover:border-red-400 px-1.5 py-0.5 rounded cursor-pointer transition-colors shadow-2xs group"
+                                      >
+                                        <AlertTriangle className="w-2.5 h-2.5 text-red-600 group-hover:scale-110 transition-transform" />
+                                        <span>Processing Failed</span>
+                                        <span className="text-[9px] underline font-semibold text-red-700 ml-0.5">(Retry)</span>
+                                      </button>
                                     ) : null}
 
                                     {(evidenceRec?.rawDocument?.sha256Hash || doc.dataUrl || doc.fileUrl) && (
@@ -3174,25 +3198,22 @@ export default function ComplaintProfilePage() {
                                 {evidenceRec?.processingStatus === "FAILED" && (
                                   <button
                                     type="button"
-                                    onClick={async (event) => {
-                                      const button = event.currentTarget;
-                                      button.disabled = true;
-                                      button.setAttribute("aria-busy", "true");
-                                      try {
-                                        await universalEvidenceService.retryProcessing(evidenceRec.id, currentUser.name);
-                                      } catch (err: any) {
-                                        alert("Retry failed: " + err.message);
-                                      } finally {
-                                        button.disabled = false;
-                                        button.removeAttribute("aria-busy");
-                                        setEvidenceRefreshTrigger((c) => c + 1);
-                                      }
-                                    }}
-                                    className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                                    title="Retry processing failed evidence"
+                                    disabled={retryingEvidenceIds.has(evidenceRec.id)}
+                                    onClick={() => handleRetryEvidence(evidenceRec.id)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                    title="Restart processing failed evidence"
                                   >
-                                    <RotateCcw className="w-3 h-3 text-amber-700" />
-                                    <span>Retry</span>
+                                    {retryingEvidenceIds.has(evidenceRec.id) ? (
+                                      <>
+                                        <Loader2 className="w-3 h-3 text-amber-700 animate-spin" />
+                                        <span>Processing...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <RotateCcw className="w-3 h-3 text-amber-700" />
+                                        <span>Retry</span>
+                                      </>
+                                    )}
                                   </button>
                                 )}
                                 <button

@@ -3,7 +3,7 @@ import { supportsWhisperDictation, WhisperRecognition } from "@/lib/whisperRecog
  * Solo Native CMS Voice Engine
  * Haryana Police Crime Management System
  * 
- * Provides voice copilot capabilities with local Whisper transcription:
+ * Provides voice copilot capabilities with local Whisper Large-v3 Turbo transcription:
  * 1. Wake-up word: "Hey CMS" (supports "hey cms", "हे सीएमएस", "cms agent")
  * 2. Hands-free continuous listening loop (no repeated mic clicks)
  * 3. Barge-in / Interruption based on recognized speech

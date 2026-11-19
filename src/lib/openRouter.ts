@@ -72,11 +72,42 @@ export async function processWithAI(parts: ProcessingPart[], options: {
   const signal = options.timeout === null ? undefined : AbortSignal.timeout(options.timeout ?? 150000);
   let hasPdf = false;
   const content = await Promise.all(parts.map(async part => {
-    if ('text' in part) return { type: 'text', text: part.text };
+    if ('text' in part) {
+      let t = part.text;
+      if (t.includes('<!DOCTYPE') || /<html[\s>]/i.test(t)) {
+        t = t
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+      return { type: 'text', text: t };
+    }
     const mime = 'inlineData' in part ? part.inlineData.mimeType : part.inline_data.mime_type;
     const data = 'inlineData' in part ? part.inlineData.data : part.inline_data.data;
     const url = `data:${mime};base64,${data}`;
-    if (mime.startsWith('text/')) return { type: 'text', text: Buffer.from(data, 'base64').toString('utf8') };
+    if (mime.startsWith('text/')) {
+      const rawText = Buffer.from(data, 'base64').toString('utf8');
+      if (mime === 'text/html' || rawText.includes('<!DOCTYPE') || /<html[\s>]/i.test(rawText)) {
+        const clean = rawText
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/\s+/g, ' ')
+          .trim();
+        return { type: 'text', text: clean || rawText };
+      }
+      return { type: 'text', text: rawText };
+    }
     if (mime.startsWith('image/')) return { type: 'image_url', image_url: { url } };
     if (mime.startsWith('video/')) return { type: 'video_url', video_url: { url } };
     const bytes = Buffer.from(data, 'base64');

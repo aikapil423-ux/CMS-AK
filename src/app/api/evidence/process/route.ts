@@ -1,5 +1,5 @@
 import { canAccessEvidenceCase } from "@/services/evidenceCaseAccess";
-import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/geminiProcessing";
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
 import { apiAccess } from "@/lib/apiSecurity";
 import { after, NextRequest, NextResponse } from "next/server";
 import { authorizedAnalysisFir, refreshCaseAnalysis } from "@/services/caseAnalysisService";
@@ -60,13 +60,21 @@ export async function POST(req: NextRequest) {
     const forceReprocess = formData.get("forceReprocess") === "true";
     const deferCaseAnalysis = formData.get('deferCaseAnalysis') === 'true';
 
-    if (!file && !fallbackText && !rawDataUrl) {
+    const store = readEvidenceStore();
+    const existingById = store.find((r) => r.ownerId === apiUser.id && (r.fileId === fileId || r.id === fileId));
+
+    let effectiveDataUrl = rawDataUrl;
+    if (!file && !fallbackText && !effectiveDataUrl && existingById?.rawDocument?.dataUrl) {
+      effectiveDataUrl = existingById.rawDocument.dataUrl;
+    }
+
+    if (!file && !fallbackText && !effectiveDataUrl) {
       return NextResponse.json({ success: false, error: "No document file or text content provided." }, { status: 400 });
     }
 
-    const fileName = file ? file.name : (formData.get("fileName") as string) || "evidence_document.pdf";
-    const fileSize = file ? file.size : rawDataUrl ? Math.round(rawDataUrl.length * 0.75) : fallbackText.length;
-    const fileType = file ? file.type || "application/octet-stream" : rawDataUrl.match(/^data:([^;,]+)/)?.[1] || (fallbackText ? 'text/plain' : 'application/pdf');
+    const fileName = file ? file.name : (formData.get("fileName") as string) || existingById?.rawDocument?.fileName || "evidence_document.pdf";
+    const fileSize = file ? file.size : effectiveDataUrl ? Math.round(effectiveDataUrl.length * 0.75) : fallbackText.length;
+    const fileType = file ? file.type || "application/octet-stream" : effectiveDataUrl.match(/^data:([^;,]+)/)?.[1] || (fallbackText ? 'text/plain' : 'application/pdf');
 
     // 1. Compute checksum to enforce Process-Once-and-Reuse-Everywhere
     let fileBuffer: Buffer | null = null;
@@ -76,16 +84,15 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
       sha256Hash = computeSha256(fileBuffer);
-    } else if (rawDataUrl) {
-      fileBuffer = Buffer.from(rawDataUrl.split(",")[1] || "", "base64");
+    } else if (effectiveDataUrl) {
+      fileBuffer = Buffer.from(effectiveDataUrl.split(",")[1] || "", "base64");
       sha256Hash = computeSha256(fileBuffer);
     } else {
       sha256Hash = computeSha256(fallbackText);
     }
 
     // 2. CHECK CACHE: If already processed and COMPLETED, reuse immediately without re-running AI/OCR!
-    const store = readEvidenceStore();
-    const existing = store.find(
+    const existing = existingById || store.find(
       (r) =>
         r.ownerId === apiUser.id && r.caseId === (caseId || undefined) && r.rawDocument?.sha256Hash === sha256Hash
     );
@@ -120,7 +127,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Process new evidence or explicit reprocess
-    let dataUrl = rawDataUrl;
+    let dataUrl = effectiveDataUrl;
     if (!dataUrl && fileBuffer) {
       dataUrl = `data:${fileType};base64,${fileBuffer.toString("base64")}`;
     }
@@ -255,10 +262,20 @@ Return a valid JSON object matching:
         }
 
         const reply = await processWithAI(contents[0].parts, {
-          json: true, maxTokens: 32768, timeout: 240000,
+          json: true, maxTokens: 8192, timeout: 240000,
           system: 'Extract concise structured facts. Transcribe the source once in rawText; do not repeat the full transcript in other fields. Return all required investigation arrays, using empty arrays when no supported facts exist.',
         });
         extractedData = JSON.parse(reply);
+      }
+
+      if (extractedData && (!extractedData.investigation || !Array.isArray(extractedData.investigation?.entities))) {
+        extractedData.investigation = {
+          entities: Array.isArray(extractedData.investigation?.entities) ? extractedData.investigation.entities : [],
+          relationships: Array.isArray(extractedData.investigation?.relationships) ? extractedData.investigation.relationships : [],
+          events: Array.isArray(extractedData.investigation?.events) ? extractedData.investigation.events : [],
+          evidence: Array.isArray(extractedData.investigation?.evidence) ? extractedData.investigation.evidence : [],
+          statements: Array.isArray(extractedData.investigation?.statements) ? extractedData.investigation.statements : [],
+        };
       }
 
       // Use the AI result or local parsing when AI is unconfigured

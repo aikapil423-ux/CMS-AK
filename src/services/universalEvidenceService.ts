@@ -350,13 +350,27 @@ export const universalEvidenceService = {
    * Safe retry option for failed processing jobs without duplicating or losing raw files
    */
   async retryProcessing(recordId: string, officerName: string): Promise<UniversalEvidenceRecord> {
-    const record = this.getByFileId(recordId) || loadLocalCache().find((r) => r.id === recordId);
+    const records = loadLocalCache();
+    const record =
+      this.getByFileId(recordId) ||
+      records.find((r) => r.id === recordId || r.fileId === recordId);
     if (!record) throw new Error("Evidence record not found");
+
+    // Immediately reflect PROCESSING in cache so UI reacts with live spinner instantly
+    const idx = records.findIndex((r) => r.id === record.id || r.fileId === record.fileId);
+    if (idx !== -1) {
+      records[idx] = {
+        ...records[idx],
+        processingStatus: "PROCESSING",
+        errorMessage: undefined,
+      };
+      persistLocalCache(records);
+    }
 
     return this.registerAndProcess({
       fileId: record.fileId,
-      fileName: record.rawDocument.fileName,
-      dataUrl: record.rawDocument.dataUrl,
+      fileName: record.rawDocument?.fileName || "evidence_document.pdf",
+      dataUrl: record.rawDocument?.dataUrl,
       caseId: record.caseId,
       caseNumber: record.caseNumber,
       module: record.module,

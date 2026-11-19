@@ -17,7 +17,7 @@ export function supportsWhisperDictation() {
 
 export class WhisperRecognition {
   lang = "hi-IN";
-  continuous = false;
+  continuous = true;
   onstart?: () => void;
   onspeechstart?: () => void;
   onend?: () => void;
@@ -80,14 +80,18 @@ export class WhisperRecognition {
           this.transcribe(session, new Blob(audioChunks, { type: recorder.mimeType }), language);
         }
         if (this.session !== session) return;
-        if (this.continuous && !session.stopping) {
+        if (this.continuous && !session.stopping && !session.abort.signal.aborted) {
           this.record(session, stream, analyser);
         } else {
           this.release(session);
           void session.pending.then(() => this.finish(session));
         }
       } catch {
-        this.fail(session, "audio-capture");
+        if (this.continuous && !session.stopping) {
+          this.record(session, stream, analyser);
+        } else {
+          this.fail(session, "audio-capture");
+        }
       }
     };
     recorder.start();
@@ -99,7 +103,7 @@ export class WhisperRecognition {
         if (!lastVoice) this.onspeechstart?.();
         lastVoice = now;
       }
-      if (now - started >= 25_000 || (lastVoice && now - lastVoice >= 850)) {
+      if ((lastVoice && now - lastVoice >= 2000) || (now - started >= 25_000 && lastVoice)) {
         clearInterval(session.timer);
         if (recorder.state === "recording") recorder.stop();
       }
@@ -107,28 +111,27 @@ export class WhisperRecognition {
   }
 
   private transcribe(session: RecordingSession, audio: Blob, language: string) {
-    if (session.queued >= 5) {
-      this.fail(session, "Whisper could not keep up with the recording.");
-      return;
-    }
+    if (session.queued >= 10) return;
     session.queued++;
     session.pending = session.pending.then(async () => {
       if (session.abort.signal.aborted) return;
-      const response = await fetch(`/api/dictation?language=${language}`, {
-        method: "POST",
-        body: audio,
-        signal: session.abort.signal,
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Whisper transcription failed.");
-      if (this.session === session && result.text) {
-        this.onresult?.({
-          resultIndex: 0,
-          results: [Object.assign([{ transcript: result.text }] as [{ transcript: string }], { isFinal: true })],
+      try {
+        const response = await fetch(`/api/dictation?language=${language}`, {
+          method: "POST",
+          body: audio,
+          signal: session.abort.signal,
         });
+        const result = await response.json();
+        if (this.session === session && result.text) {
+          this.onresult?.({
+            resultIndex: 0,
+            results: [Object.assign([{ transcript: result.text }] as [{ transcript: string }], { isFinal: true })],
+          });
+        }
+      } catch (error) {
+        console.warn("Dictation chunk transcription error:", error);
       }
-    }).catch(error => this.fail(session, error instanceof Error ? error.message : "Whisper transcription failed."))
-      .finally(() => { session.queued--; });
+    }).finally(() => { session.queued--; });
   }
 
   stop() {
@@ -139,7 +142,7 @@ export class WhisperRecognition {
       clearInterval(session.timer);
       session.recorder.stop();
       this.release(session);
-    } else if (!session.recorder) {
+    } else {
       this.abort();
       this.onend?.();
     }
@@ -175,3 +178,6 @@ export class WhisperRecognition {
     this.onend?.();
   }
 }
+
+export const supportsIndicConformerDictation = supportsWhisperDictation;
+export const IndicConformerRecognition = WhisperRecognition;

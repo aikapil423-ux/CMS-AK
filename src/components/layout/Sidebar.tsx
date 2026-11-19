@@ -1192,26 +1192,27 @@ export function Sidebar() {
         </div>
       </div>
       {/* Footer / Logout */}
-      <div className="p-2.5 border-t border-slate-200/70 bg-slate-50/50 overflow-hidden">
-        <div
+      <div className="p-2 border-t border-slate-200/70 bg-slate-50/50 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowSignOutModal(true)}
+          title={t("Sign Out")}
           className={cn(
-            "flex items-center text-xs text-slate-500",
-            isExpanded ? "justify-between px-1.5 py-1" : "justify-center"
+            "w-full flex items-center text-xs text-slate-500 rounded-lg transition-all cursor-pointer group hover:bg-slate-200/70 hover:text-rose-700 active:scale-[0.99]",
+            isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-1.5"
           )}
         >
           {isExpanded && (
-            <div className="flex items-center gap-1.5 text-[11px] animate-in fade-in duration-150">
-              <span className="font-medium text-slate-600">{t("Haryana Police IT")}</span>
+            <div className="flex items-center gap-1.5 text-[11px] animate-in fade-in duration-150 min-w-0">
+              <span className="font-medium text-slate-600 group-hover:text-rose-700 transition-colors truncate">
+                {t("Haryana Police IT")}
+              </span>
             </div>
           )}
-          <button
-            onClick={() => setShowSignOutModal(true)}
-            title={t("Sign Out")}
-            className="text-slate-400 hover:text-slate-800 transition-colors p-1 cursor-pointer"
-          >
+          <span className="text-slate-400 group-hover:text-rose-600 transition-colors p-0.5">
             <LogOut className="w-3.5 h-3.5" />
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
 
       {/* Sign Out Confirmation Modal */}

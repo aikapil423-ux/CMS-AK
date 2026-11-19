@@ -20,6 +20,7 @@ REQUIREMENTS = (
     "ctranslate2==4.6.0",
     "av==15.1.0",
     "setuptools==80.9.0",
+    "huggingface_hub",
 )
 CHECKSUMS = {
     "config.json": "b0253ea6c0d3bea6b1e19e91a02acfd3b53f4467362efcb5a3e6b16c9b3a9b7e",
