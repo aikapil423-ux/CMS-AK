@@ -47,6 +47,15 @@ interface FIRLegalAssistantProps {
   onUpdateFir?: (updated: FIRItem) => void;
 }
 
+// Module-level background in-flight legal analysis map
+const inFlightFIRLegalAnalysisMap = new Map<
+  string,
+  {
+    promise: Promise<LegalAnalysisReport>;
+    startTime: number;
+  }
+>();
+
 export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) {
   const router = useRouter();
   const { isHindi } = useLanguage();
@@ -70,6 +79,39 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
       setReport(fir.legalAnalysis);
     }
   }, [fir.legalAnalysis]);
+
+  // Re-attach to any ongoing background legal analysis for this FIR
+  useEffect(() => {
+    const ongoing = inFlightFIRLegalAnalysisMap.get(fir.id);
+    if (ongoing) {
+      setIsAnalyzing(true);
+      const elapsed = Math.floor((Date.now() - ongoing.startTime) / 1800);
+      setAnalysisStep(Math.min(3, Math.max(0, elapsed)));
+
+      const stepTimer = setInterval(() => {
+        setAnalysisStep((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 1800);
+
+      ongoing.promise
+        .then(async (generatedReport) => {
+          setReport(generatedReport);
+          await firService.saveLegalAnalysis(fir.id, generatedReport);
+          if (onUpdateFir) {
+            onUpdateFir({ ...fir, legalAnalysis: generatedReport });
+          }
+        })
+        .catch((err) => {
+          console.warn("Background legal analysis failed:", err);
+        })
+        .finally(() => {
+          clearInterval(stepTimer);
+          setIsAnalyzing(false);
+          inFlightFIRLegalAnalysisMap.delete(fir.id);
+        });
+
+      return () => clearInterval(stepTimer);
+    }
+  }, [fir.id]);
 
   // Steps for simulated deep AI statutory scanning
   const ANALYSIS_STEPS = [
@@ -108,30 +150,40 @@ export function FIRLegalAssistant({ fir, onUpdateFir }: FIRLegalAssistantProps) 
   ];
 
   const handleRunLegalHelp = async () => {
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
     setAnalysisStep(0);
 
+    const stepTimer = setInterval(() => {
+      setAnalysisStep((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 1800);
+
     let generatedReport: LegalAnalysisReport;
     try {
-      generatedReport = await analyzeCaseLaw({ module: "FIR", caseId: fir.id });
+      const taskPromise = analyzeCaseLaw({ module: "FIR", caseId: fir.id });
+      inFlightFIRLegalAnalysisMap.set(fir.id, { promise: taskPromise, startTime: Date.now() });
+
+      generatedReport = await taskPromise;
+      setReport(generatedReport);
+
+      // Persist to FIR storage
+      await firService.saveLegalAnalysis(fir.id, generatedReport);
+
+      // Update parent if callback provided
+      if (onUpdateFir) {
+        const updatedFir: FIRItem = {
+          ...fir,
+          legalAnalysis: generatedReport,
+        };
+        onUpdateFir(updatedFir);
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : "Legal Help could not complete.");
       return;
     } finally {
+      clearInterval(stepTimer);
       setIsAnalyzing(false);
-    }
-    setReport(generatedReport);
-
-    // Persist to FIR storage
-    await firService.saveLegalAnalysis(fir.id, generatedReport);
-
-    // Update parent if callback provided
-    if (onUpdateFir) {
-      const updatedFir: FIRItem = {
-        ...fir,
-        legalAnalysis: generatedReport,
-      };
-      onUpdateFir(updatedFir);
+      inFlightFIRLegalAnalysisMap.delete(fir.id);
     }
   };
 

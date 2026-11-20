@@ -2,7 +2,7 @@
 
 import { summarizeCase } from "@/lib/caseWritingClient";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   RefreshCw,
@@ -41,6 +41,15 @@ interface FIRSummaryTabProps {
   currentUser?: any;
 }
 
+// Module-level background in-flight summary generation map
+const inFlightFIRSummaryMap = new Map<
+  string,
+  {
+    promise: Promise<any>;
+    startTime: number;
+  }
+>();
+
 export function FIRSummaryTab({
   fir,
   onUpdateFir,
@@ -49,10 +58,69 @@ export function FIRSummaryTab({
   const [summary, setSummary] = useState<InvestigationSummaryReport | null>(
     fir.investigationSummary || null
   );
+
+  useEffect(() => {
+    if (fir.investigationSummary) {
+      setSummary(fir.investigationSummary);
+    }
+  }, [fir.investigationSummary]);
+
+  useEffect(() => {
+    if (summary && Array.isArray(summary.pendingActionItems)) {
+      const zimniAction = summary.pendingActionItems.find((a) => a.id === "pend-zimni-next");
+      const currentZimnis = fir.caseDiaries || [];
+      const expectedTitle =
+        currentZimnis.length === 0
+          ? "प्रथम केस डायरी (Zimni No. 1) व प्रारम्भिक साक्ष्य संकलन"
+          : `अगली केस डायरी (Zimni No. ${currentZimnis.length + 1}) व गवाह बयान`;
+
+      if (zimniAction && zimniAction.title !== expectedTitle) {
+        const refreshed = FirSummaryService.buildLocalSummary(
+          fir,
+          summary,
+          currentUser?.name ? `${currentUser.role || "Officer"} ${currentUser.name}` : undefined
+        );
+        setSummary(refreshed);
+        onUpdateFir({ ...fir, investigationSummary: refreshed });
+        firService.updateFir(fir.id, { investigationSummary: refreshed }).catch(() => {});
+      }
+    }
+  }, [fir, summary, currentUser, onUpdateFir]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processStep, setProcessStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState<"all" | "completed" | "pending">("all");
+
+  // Re-attach to any ongoing background summary generation for this FIR
+  useEffect(() => {
+    const ongoing = inFlightFIRSummaryMap.get(fir.id);
+    if (ongoing) {
+      setIsProcessing(true);
+      const elapsed = Math.floor((Date.now() - ongoing.startTime) / 1500);
+      setProcessStep(Math.min(3, Math.max(0, elapsed)));
+
+      const stepTimer = setInterval(() => {
+        setProcessStep((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 1500);
+
+      ongoing.promise
+        .then(async (generated) => {
+          setSummary(generated);
+          onUpdateFir({ ...fir, investigationSummary: generated });
+          await firService.updateFir(fir.id, { investigationSummary: generated });
+        })
+        .catch((err) => {
+          console.warn("Background FIR summary generation error:", err);
+        })
+        .finally(() => {
+          clearInterval(stepTimer);
+          setIsProcessing(false);
+          inFlightFIRSummaryMap.delete(fir.id);
+        });
+
+      return () => clearInterval(stepTimer);
+    }
+  }, [fir.id]);
 
   const PROCESS_STEPS = [
     {
@@ -74,25 +142,30 @@ export function FIRSummaryTab({
   ];
 
   const handleGenerateOrUpdate = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
     setProcessStep(0);
 
-    // Multi-step progressive animation matching complaint profile
-    for (let i = 0; i < 4; i++) {
-      setProcessStep(i);
-      await new Promise((resolve) => setTimeout(resolve, 380));
-    }
+    const stepTimer = setInterval(() => {
+      setProcessStep((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 1500);
 
     try {
-      const generated = FirSummaryService.buildLocalSummary(
-        fir,
-        summary,
-        currentUser?.name
-          ? `${currentUser.role || "Officer"} ${currentUser.name}`
-          : "CMS Investigative Intelligence"
-      );
-      Object.assign(generated, await summarizeCase({ module: "FIR", caseId: fir.id }));
+      const summaryPromise = (async () => {
+        const generated = FirSummaryService.buildLocalSummary(
+          fir,
+          summary,
+          currentUser?.name
+            ? `${currentUser.role || "Officer"} ${currentUser.name}`
+            : "CMS Investigative Intelligence"
+        );
+        Object.assign(generated, await summarizeCase({ module: "FIR", caseId: fir.id }));
+        return generated;
+      })();
 
+      inFlightFIRSummaryMap.set(fir.id, { promise: summaryPromise, startTime: Date.now() });
+
+      const generated = await summaryPromise;
       setSummary(generated);
 
       const updatedFir: FIRItem = {
@@ -107,7 +180,9 @@ export function FIRSummaryTab({
       console.error("Failed to generate or persist FIR summary:", err);
       alert(err instanceof Error ? err.message : "FIR summary could not be generated.");
     } finally {
+      clearInterval(stepTimer);
       setIsProcessing(false);
+      inFlightFIRSummaryMap.delete(fir.id);
     }
   };
 

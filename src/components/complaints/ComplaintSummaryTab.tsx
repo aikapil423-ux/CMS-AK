@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   RefreshCw,
@@ -39,6 +39,15 @@ interface ComplaintSummaryTabProps {
   currentUser?: any;
 }
 
+// Module-level background in-flight summary generation map
+const inFlightComplaintSummaryMap = new Map<
+  string,
+  {
+    promise: Promise<any>;
+    startTime: number;
+  }
+>();
+
 export function ComplaintSummaryTab({
   complaint,
   onUpdateComplaint,
@@ -51,6 +60,37 @@ export function ComplaintSummaryTab({
   const [processStep, setProcessStep] = useState(0);
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState<"all" | "completed" | "pending">("all");
+
+  // Re-attach to any ongoing background summary generation for this complaint
+  useEffect(() => {
+    const ongoing = inFlightComplaintSummaryMap.get(complaint.id);
+    if (ongoing) {
+      setIsProcessing(true);
+      const elapsed = Math.floor((Date.now() - ongoing.startTime) / 1500);
+      setProcessStep(Math.min(3, Math.max(0, elapsed)));
+
+      const stepTimer = setInterval(() => {
+        setProcessStep((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 1500);
+
+      ongoing.promise
+        .then(async (generated) => {
+          setSummary(generated);
+          onUpdateComplaint({ ...complaint, investigationSummary: generated });
+          await ComplaintService.saveInvestigationSummary(complaint.id, generated);
+        })
+        .catch((err) => {
+          console.warn("Background complaint summary generation error:", err);
+        })
+        .finally(() => {
+          clearInterval(stepTimer);
+          setIsProcessing(false);
+          inFlightComplaintSummaryMap.delete(complaint.id);
+        });
+
+      return () => clearInterval(stepTimer);
+    }
+  }, [complaint.id]);
 
   const PROCESS_STEPS = [
     {
@@ -72,21 +112,24 @@ export function ComplaintSummaryTab({
   ];
 
   const handleGenerateOrUpdate = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
     setProcessStep(0);
 
-    // Multi-step progressive animation for visual polish
-    for (let i = 0; i < 4; i++) {
-      setProcessStep(i);
-      await new Promise((resolve) => setTimeout(resolve, 400));
-    }
+    const stepTimer = setInterval(() => {
+      setProcessStep((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 1500);
 
     try {
-      const generated = await ComplaintSummaryService.generateSummary(
+      const summaryPromise = ComplaintSummaryService.generateSummary(
         complaint,
         summary,
         currentUser?.name ? `${currentUser.role || "Officer"} ${currentUser.name}` : "CMS Investigative Intelligence"
       );
+
+      inFlightComplaintSummaryMap.set(complaint.id, { promise: summaryPromise, startTime: Date.now() });
+
+      const generated = await summaryPromise;
 
       // Save to local state
       setSummary(generated);
@@ -116,7 +159,9 @@ export function ComplaintSummaryTab({
       onUpdateComplaint(updatedComplaint);
       await ComplaintService.saveInvestigationSummary(complaint.id, fallback);
     } finally {
+      clearInterval(stepTimer);
       setIsProcessing(false);
+      inFlightComplaintSummaryMap.delete(complaint.id);
     }
   };
 

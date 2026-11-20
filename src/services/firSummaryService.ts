@@ -144,11 +144,21 @@ export const FirSummaryService = {
     // 5. Pending Actions
     const pendingActionItems: InvestigationSummaryActionItem[] = [];
 
+    const nextZimniNum = zimnis.length + 1;
     if (!fir.finalFormType) {
-      if (zimnis.length < 2) {
+      if (zimnis.length === 0) {
         pendingActionItems.push({
           id: "pend-zimni-next",
-          title: "अगली केस डायरी (Zimni No. 2) व गवाह बयान",
+          title: "प्रथम केस डायरी (Zimni No. 1) व प्रारम्भिक साक्ष्य संकलन",
+          status: "PENDING",
+          priority: "HIGH",
+          deadline: "Immediate",
+          detail: "धारा 175/192 बी.एन.एस.एस. के अंतर्गत घटनास्थल का निरीक्षण, नक्शा मौका तैयार करना व गवाहों के बयान लिपिबद्ध करें।",
+        });
+      } else {
+        pendingActionItems.push({
+          id: "pend-zimni-next",
+          title: `अगली केस डायरी (Zimni No. ${nextZimniNum}) व गवाह बयान`,
           status: "PENDING",
           priority: "HIGH",
           deadline: "Immediate",

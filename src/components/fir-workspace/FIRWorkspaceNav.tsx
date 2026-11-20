@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Scale, FileCheck2, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert, Gavel, PackageCheck } from "lucide-react";
+import { Scale, FileCheck2, Sparkles, ScrollText, ArrowLeft, Shield, FileText, ShieldAlert, Gavel, PackageCheck } from "lucide-react";
 
 interface FIRWorkspaceNavProps {
   firId?: string | null;
@@ -22,6 +22,7 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
   const isBuilder = pathname.includes("/fir-workspace/builder");
   const isZimni = pathname.includes("/fir-workspace/zimni");
   const isArrestDocs = pathname.includes("/fir-workspace/arrest-docs");
+  const isCrimeDetails = pathname.includes("/fir-workspace/crime-details");
   const isKalandra = pathname.includes("/fir-workspace/kalandra");
   const isPropertySeizure = pathname.includes("/fir-workspace/property-seizure");
 
@@ -55,7 +56,20 @@ export function FIRWorkspaceNav({ firId, rightAction }: FIRWorkspaceNavProps) {
           <span>Case Diaries (Zimni)</span>
         </Link>
 
-        {/* 3. Arrest Docs and IIF-III */}
+        {/* 3. Crime Details (IIF-II) */}
+        <Link
+          href={`/fir-workspace/crime-details${querySuffix}`}
+          className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+            isCrimeDetails
+              ? "text-amber-950 bg-amber-50 border border-amber-300 shadow-2xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          <Sparkles className={`w-3 h-3 ${isCrimeDetails ? "text-amber-700" : "text-amber-600"}`} />
+          <span>Crime Details (IIF-II)</span>
+        </Link>
+
+        {/* 4. Arrest Docs and IIF-III */}
         <Link
           href={`/fir-workspace/arrest-docs${querySuffix}`}
           className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer ${

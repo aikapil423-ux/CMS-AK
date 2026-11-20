@@ -36,21 +36,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { printA4Element } from "@/utils/printElement";
 
-interface CrimeDetailModalProps {
+export interface CrimeDetailModalProps {
   fir: FIRItem;
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmitted: (updatedFir: FIRItem) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSubmitted?: (updatedFir: FIRItem) => void;
   currentUserName?: string;
+  mode?: "modal" | "page";
 }
 
 export function CrimeDetailModal({
   fir,
-  isOpen,
+  isOpen = true,
   onClose,
   onSubmitted,
   currentUserName = "Investigating Officer",
+  mode = "modal",
 }: CrimeDetailModalProps) {
+  const isPageMode = mode === "page";
   const [activeTab, setActiveTab] = useState<
     "place" | "modus" | "accused" | "victim" | "witness" | "property"
   >("place");
@@ -473,7 +476,7 @@ export function CrimeDetailModal({
 
     if (updated) {
       setIsSavedSuccess(true);
-      onSubmitted(updated);
+      if (onSubmitted) onSubmitted(updated);
     }
   };
 
@@ -623,48 +626,50 @@ export function CrimeDetailModal({
     setShowConfirmDialog(false);
 
     if (updated) {
-      onSubmitted(updated);
-      onClose();
+      if (onSubmitted) onSubmitted(updated);
+      if (!isPageMode && onClose) onClose();
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-slate-300 flex flex-col">
-        {/* Modal Header Strip (CCTNS IIF-II Official Style) */}
-        <div className="px-5 py-3.5 bg-gradient-to-r from-[#0b192c] via-[#1e3e62] to-[#0b192c] text-white flex items-center justify-between border-b border-slate-800">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-red-600/30 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
-              <ShieldAlert className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">
-                  FORM IIF-II
-                </span>
-                <h3 className="text-sm sm:text-base font-black truncate">
-                  Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-300 truncate">
-                CCTNS Standard Investigation Proforma • FIR: {fir.firNumber} • PS: {fir.policeStation}
-              </p>
-            </div>
+  const innerModalContent = (
+    <div className={`bg-white rounded-2xl w-full flex flex-col overflow-hidden ${isPageMode ? "border border-slate-300 shadow-xs" : "max-w-5xl max-h-[95vh] shadow-2xl border border-slate-300"}`}>
+      {/* Modal Header Strip (CCTNS IIF-II Official Style) */}
+      <div className="px-5 py-3.5 bg-gradient-to-r from-[#0b192c] via-[#1e3e62] to-[#0b192c] text-white flex items-center justify-between border-b border-slate-800">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-lg bg-red-600/30 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+            <ShieldAlert className="w-4 h-4 text-amber-400" />
           </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-red-600 text-white px-2 py-0.5 rounded">
+                FORM IIF-II
+              </span>
+              <h3 className="text-sm sm:text-base font-black truncate">
+                Crime Detail Form (IIF-II) / अपराध विवरण प्रपत्र
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-300 truncate">
+              CCTNS Standard Investigation Proforma • FIR: {fir.firNumber} • PS: {fir.policeStation}
+            </p>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden sm:inline-block text-[11px] font-mono text-amber-300 bg-amber-950/50 border border-amber-500/40 px-2 py-0.5 rounded">
-              {fir.actsAndSections}
-            </span>
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-block text-[11px] font-mono text-amber-300 bg-amber-950/50 border border-amber-500/40 px-2 py-0.5 rounded">
+            {fir.actsAndSections}
+          </span>
+          {!isPageMode && onClose && (
             <button
               type="button"
               onClick={onClose}
               className="p-1 rounded-lg text-white hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
+      </div>
 
         {/* CCTNS Navigation Tabs (Panels) */}
         <div className="flex items-center gap-1 px-4 py-2 bg-slate-100 border-b border-slate-200 overflow-x-auto text-xs shrink-0">
@@ -2509,7 +2514,7 @@ export function CrimeDetailModal({
                       size="sm"
                       onClick={() => {
                         setShowPdfPreview(false);
-                        onClose();
+                        if (!isPageMode && onClose) onClose();
                       }}
                       className="w-full sm:w-auto bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs gap-1.5 cursor-pointer"
                     >
@@ -2523,6 +2528,15 @@ export function CrimeDetailModal({
           </div>
         )}
       </div>
+  );
+
+  if (isPageMode) {
+    return innerModalContent;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
+      {innerModalContent}
     </div>
   );
 }

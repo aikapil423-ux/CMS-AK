@@ -59,6 +59,15 @@ interface ComplaintLegalAssistantProps {
   onUpdateComplaint?: (updated: ComplaintItem) => void;
 }
 
+// Module-level background in-flight legal analysis map
+const inFlightComplaintLegalAnalysisMap = new Map<
+  string,
+  {
+    promise: Promise<LegalAnalysisReport>;
+    startTime: number;
+  }
+>();
+
 export function ComplaintLegalAssistant({
   complaint,
   documents,
@@ -298,6 +307,38 @@ export function ComplaintLegalAssistant({
     }
   }, [complaint.legalAnalysis]);
 
+  // Re-attach to any ongoing background legal analysis for this complaint
+  useEffect(() => {
+    const ongoing = inFlightComplaintLegalAnalysisMap.get(complaint.id);
+    if (ongoing) {
+      setIsAnalyzing(true);
+      const elapsed = Math.floor((Date.now() - ongoing.startTime) / 1800);
+      setAnalysisStep(Math.min(3, Math.max(0, elapsed)));
+
+      const stepTimer = setInterval(() => {
+        setAnalysisStep((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 1800);
+
+      ongoing.promise
+        .then(async (generatedReport) => {
+          setReport(generatedReport);
+          if (onUpdateComplaint) {
+            onUpdateComplaint({ ...complaint, legalAnalysis: generatedReport });
+          }
+        })
+        .catch((err) => {
+          console.warn("Background complaint legal analysis failed:", err);
+        })
+        .finally(() => {
+          clearInterval(stepTimer);
+          setIsAnalyzing(false);
+          inFlightComplaintLegalAnalysisMap.delete(complaint.id);
+        });
+
+      return () => clearInterval(stepTimer);
+    }
+  }, [complaint.id]);
+
   // Steps for simulated deep AI statutory scanning
   const ANALYSIS_STEPS = [
     {
@@ -335,27 +376,37 @@ export function ComplaintLegalAssistant({
   ];
 
   const handleRunLegalHelp = async () => {
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
     setAnalysisStep(0);
 
+    const stepTimer = setInterval(() => {
+      setAnalysisStep((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 1800);
+
     let generatedReport: LegalAnalysisReport;
     try {
-      generatedReport = await analyzeCaseLaw({ module: "COMPLAINT", caseId: complaint.id });
+      const taskPromise = analyzeCaseLaw({ module: "COMPLAINT", caseId: complaint.id });
+      inFlightComplaintLegalAnalysisMap.set(complaint.id, { promise: taskPromise, startTime: Date.now() });
+
+      generatedReport = await taskPromise;
+      setReport(generatedReport);
+
+      // Update parent if callback provided
+      if (onUpdateComplaint) {
+        const updatedComplaint: ComplaintItem = {
+          ...complaint,
+          legalAnalysis: generatedReport,
+        };
+        onUpdateComplaint(updatedComplaint);
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : "Legal Help could not complete.");
       return;
     } finally {
+      clearInterval(stepTimer);
       setIsAnalyzing(false);
-    }
-    setReport(generatedReport);
-
-    // Update parent if callback provided
-    if (onUpdateComplaint) {
-      const updatedComplaint: ComplaintItem = {
-        ...complaint,
-        legalAnalysis: generatedReport,
-      };
-      onUpdateComplaint(updatedComplaint);
+      inFlightComplaintLegalAnalysisMap.delete(complaint.id);
     }
   };
 

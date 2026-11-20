@@ -3304,7 +3304,7 @@ export default function ComplaintProfilePage() {
         )}
 
         {/* TAB: LEGAL ASSISTANT (BNS, BNSS, BSA Statutory Analysis & Bare Act Indexing) */}
-        {activeTab === "legal_assistant" && (
+        <div className={activeTab === "legal_assistant" ? "block animate-in fade-in-20" : "hidden"}>
           <ComplaintLegalAssistant
             complaint={complaint}
             documents={combinedDocuments}
@@ -3319,10 +3319,10 @@ export default function ComplaintProfilePage() {
               }
             }}
           />
-        )}
+        </div>
 
         {/* TAB: SUMMARY (Deep Investigation Case Summary: Overview, Documents & History) */}
-        {activeTab === "summary" && (
+        <div className={activeTab === "summary" ? "block animate-in fade-in-20" : "hidden"}>
           <ComplaintSummaryTab
             complaint={complaint}
             currentUser={currentUser}
@@ -3337,7 +3337,7 @@ export default function ComplaintProfilePage() {
               }
             }}
           />
-        )}
+        </div>
 
         {/* TAB 5: LINKS (Cross, Linked, Repeated) */}
         {activeTab === "links" && (

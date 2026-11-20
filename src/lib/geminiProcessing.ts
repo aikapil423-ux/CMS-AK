@@ -1,7 +1,7 @@
 import 'server-only';
 import { officeText, type ProcessingPart } from '@/lib/openRouter';
 
-export const PROCESSING_MODEL = process.env.CMS_GEMINI_MODEL?.trim() || 'gemini-3.8-flash';
+export const PROCESSING_MODEL = process.env.CMS_GEMINI_MODEL?.trim() || process.env.CMS_EVIDENCE_MODEL?.trim() || 'gemini-3.5-flash-lite';
 
 export function processingAIAvailable() {
   return Boolean(process.env.GEMINI_API_KEY?.trim()) &&

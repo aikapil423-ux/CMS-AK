@@ -901,11 +901,8 @@ function PropertySeizurePageContent() {
         >
           {/* ================= PAGE 1 ================= */}
           <div className="space-y-6">
-            {/* Top Header & Page Corner Number */}
+            {/* Top Header */}
             <div className="relative border-b-2 border-slate-900 pb-3 text-center">
-              <span className="absolute right-0 top-0 text-sm font-mono font-bold text-slate-600 border border-slate-400 rounded px-1.5 py-0.5">
-                {formData.pageNumber || "89"}
-              </span>
               <h1 className="text-xl sm:text-2xl font-black tracking-wide text-slate-950 underline uppercase">
                 {templateLang === "hi"
                   ? "सम्पत्ति तलाशी एवं जब्ती फॉर्म"

@@ -95,7 +95,29 @@ export default function FIRWorkspacePage() {
           </Card>
         </Link>
 
-        {/* 3. Arrest Docs and IIF-III */}
+        {/* 3. Crime Details (IIF-II) */}
+        <Link href="/fir-workspace/crime-details" className="block group">
+          <Card className="border-slate-200 hover:border-amber-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-amber-50/20 h-full">
+            <CardContent className="p-3.5 flex flex-col justify-between h-full">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight group-hover:text-amber-800 transition-colors">
+                    Crime Details (IIF-II)
+                  </h3>
+                </div>
+              </div>
+              <div className="flex items-center justify-end text-[11px] font-bold text-amber-700 mt-3 group-hover:translate-x-0.5 transition-all gap-1">
+                <span>Open Crime Details</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* 4. Arrest Docs and IIF-III */}
         <Link href="/fir-workspace/arrest-docs" className="block group">
           <Card className="border-slate-200 hover:border-rose-400 hover:shadow-md transition-all cursor-pointer bg-white group-hover:bg-rose-50/20 h-full">
             <CardContent className="p-3.5 flex flex-col justify-between h-full">

@@ -2578,7 +2578,7 @@ export default function FIRProfilePage() {
       )}
 
       {/* TAB: LEGAL ASSISTANT (BNS, BNSS, BSA Statutory Analysis & Bare Act Indexing) */}
-      {activeTab === "legal_assistant" && (
+      <div className={activeTab === "legal_assistant" ? "block animate-in fade-in-20" : "hidden"}>
         <FIRLegalAssistant
           fir={fir}
           onUpdateFir={async (updated) => {
@@ -2592,10 +2592,10 @@ export default function FIRProfilePage() {
             }
           }}
         />
-      )}
+      </div>
 
       {/* 4. SUMMARY TAB */}
-      {activeTab === "summary" && (
+      <div className={activeTab === "summary" ? "block animate-in fade-in-20" : "hidden"}>
         <FIRSummaryTab
           fir={fir}
           currentUser={currentUser}
@@ -2604,7 +2604,7 @@ export default function FIRProfilePage() {
             await firService.updateFir(updated.id, updated);
           }}
         />
-      )}
+      </div>
 
       {/* 5. REPORTS TAB (Official Reports Docket) */}
       {activeTab === "reports" && (
