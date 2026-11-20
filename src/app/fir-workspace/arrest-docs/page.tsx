@@ -3130,9 +3130,17 @@ function ArrestDocsContent() {
             </label>
             <select
               value={selectedFirId}
-              onChange={(e) => setSelectedFirId(e.target.value)}
+              onChange={(e) => {
+                setSelectedFirId(e.target.value);
+                setSelectedAccusedId("");
+              }}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
             >
+              <option value="">
+                {templateLang === "hi"
+                  ? "-- सक्रिय अभियोग (FIR) चुनें --"
+                  : "-- Select Active FIR Case --"}
+              </option>
               {firs.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.firNumber} — {f.actsAndSections.slice(0, 40)} ({f.complainantName})
@@ -3150,15 +3158,17 @@ function ArrestDocsContent() {
               onChange={(e) => handleSelectAccused(e.target.value)}
               className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
             >
-              {(activeFir?.accusedList && activeFir.accusedList.length > 0) ? (
+              <option value="">
+                {activeFir
+                  ? (templateLang === "hi" ? "-- अभियुक्त चुनें (Select Accused) --" : "-- Select Accused Person --")
+                  : (templateLang === "hi" ? "-- पहले FIR चुनें (Select FIR First) --" : "-- Select FIR First --")}
+              </option>
+              {(activeFir?.accusedList && activeFir.accusedList.length > 0) &&
                 activeFir.accusedList.map((acc, idx) => (
                   <option key={acc.id || `acc_${idx}`} value={acc.id || `acc_${idx}`}>
                     {acc.name} {acc.alias ? `(${acc.alias})` : ""} {acc.fatherName ? `s/o ${acc.fatherName}` : ""}
                   </option>
-                ))
-              ) : (
-                <option value="">{formData.noticeeName || (templateLang === "hi" ? "विकास शर्मा (डिफ़ॉल्ट अभियुक्त)" : "Vikas Sharma (Default Accused)")}</option>
-              )}
+                ))}
             </select>
           </div>
 

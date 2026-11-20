@@ -1128,7 +1128,7 @@ function FIRTemplateBuilderContent() {
               onChange={(e) => handleFirChange(e.target.value)}
               className="text-xs font-semibold bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-xs"
             >
-              <option value="" disabled>-- Select FIR (Required) --</option>
+              <option value="">-- सक्रिय अभियोग (FIR) चुनें --</option>
               {firsList.map((fir) => (
                 <option key={fir.id} value={fir.id}>
                   {fir.firNumber} — {fir.complainantName} ({fir.policeStation})

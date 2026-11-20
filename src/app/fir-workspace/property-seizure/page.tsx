@@ -723,7 +723,7 @@ function PropertySeizurePageContent() {
               onChange={(e) => handleSelectFir(e.target.value)}
               className="text-xs font-bold bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none focus:border-teal-500 max-w-xs"
             >
-              <option value="">{templateLang === "hi" ? "-- नमूना केस (FIR 60) --" : "-- Sample Case (FIR 60) --"}</option>
+              <option value="">{templateLang === "hi" ? "-- सक्रिय अभियोग (FIR) चुनें --" : "-- Select Active FIR Case --"}</option>
               {firs.map((f) => (
                 <option key={f.id} value={f.id}>
                   FIR #{f.firNumber} - PS {f.policeStation} ({f.actsAndSections || "Offence"})

@@ -777,7 +777,7 @@ function ZimniWorkspaceContent() {
                 onChange={(e) => setSelectedFirId(e.target.value)}
                 className="h-full min-h-0! min-w-0 flex-1 cursor-pointer truncate border-0! bg-transparent! text-xs! font-bold text-slate-900"
               >
-                <option value="">{firs.length ? "Select FIR" : "No FIR available"}</option>
+                <option value="">{firs.length ? (templateLang === "hi" ? "-- सक्रिय अभियोग (FIR) चुनें --" : "-- Select Active FIR Case --") : (templateLang === "hi" ? "कोई FIR उपलब्ध नहीं" : "No FIR available")}</option>
                 {firs.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.firNumber} — {f.complainantName || "Complaint"}

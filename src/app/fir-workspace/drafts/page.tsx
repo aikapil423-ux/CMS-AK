@@ -23,7 +23,7 @@ function FIRFinalFormContent(){
    <p className="text-sm text-slate-600">Select an FIR and prepare a verified report. Saving a report does not complete the FIR; SHO review and court submission remain separate steps.</p>
    {message && <p role="status" className="text-sm text-emerald-800">{message}</p>}
    <div className="grid gap-3 sm:grid-cols-2">
-    <label className="text-sm font-semibold">FIR<select className="mt-1 w-full rounded border p-2" value={selected} onChange={e=>{setSelected(e.target.value);setMessage('');}}><option value="">Select FIR</option>{firs.map(f=><option key={f.id} value={f.id}>{f.firNumber} — {f.policeStation} — {f.complainantName}</option>)}</select></label>
+    <label className="text-sm font-semibold">FIR<select className="mt-1 w-full rounded border p-2" value={selected} onChange={e=>{setSelected(e.target.value);setMessage('');}}><option value="">-- सक्रिय अभियोग (FIR) चुनें --</option>{firs.map(f=><option key={f.id} value={f.id}>{f.firNumber} — {f.policeStation} — {f.complainantName}</option>)}</select></label>
     <label className="text-sm font-semibold">Report category<select className="mt-1 w-full rounded border p-2" value={formType} onChange={e=>setFormType(e.target.value as FinalFormType)}>{(Object.keys(labels) as FinalFormType[]).map(type=><option key={type} value={type}>{labels[type]}</option>)}</select></label>
    </div>
   </div>

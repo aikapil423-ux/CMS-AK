@@ -25,8 +25,6 @@ function CrimeDetailsPageContent() {
     setFirs(allFirs);
     if (firIdParam && allFirs.some((f) => f.id === firIdParam || f.firNumber === firIdParam)) {
       setSelectedFirId(firIdParam);
-    } else if (allFirs.length > 0 && !selectedFirId) {
-      setSelectedFirId(allFirs[0].id);
     }
   }, [firIdParam]);
 
@@ -92,6 +90,9 @@ function CrimeDetailsPageContent() {
             onChange={(e) => setSelectedFirId(e.target.value)}
             className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900"
           >
+            <option value="">
+              -- सक्रिय अभियोग चुनें (Select Active FIR Case) --
+            </option>
             {firs.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.firNumber} — {f.actsAndSections?.slice(0, 40)} ({f.complainantName})
@@ -113,8 +114,16 @@ function CrimeDetailsPageContent() {
           currentUserName={currentUser?.name || "Investigating Officer"}
         />
       ) : (
-        <div className="p-8 text-center bg-white rounded-xl border border-slate-200 text-slate-500 text-xs font-semibold">
-          No FIR selected. Please select a registered FIR above to load Crime Detail Form (IIF-II).
+        <div className="p-12 text-center bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+          <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
+            <Sparkles className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">
+            कृपया सक्रिय अभियोग (FIR) चुनें
+          </h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Crime Details Form (IIF-II) भरने और प्रीव्यू देखने के लिए ऊपर दिए गए ड्रॉपडाउन से सक्रिय FIR केस का चयन करें।
+          </p>
         </div>
       )}
     </div>
