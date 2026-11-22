@@ -6,8 +6,24 @@ import { PrismaClient } from "@prisma/client";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const seedDataPath = path.join(__dirname, "seed-data.json");
+const storesSeedPath = path.join(__dirname, "fir-complaint-seed.json");
 
 const prisma = new PrismaClient();
+
+function seedLocalRegisters() {
+  if (!fs.existsSync(storesSeedPath)) return;
+  const parsed = JSON.parse(fs.readFileSync(storesSeedPath, "utf8"));
+  const data = parsed.data ?? {};
+  const targets = [
+    ["firs", "firs-store.json"],
+    ["complaints", "complaints-store.json"],
+  ];
+  for (const [key, fileName] of targets) {
+    if (!Array.isArray(data[key])) continue;
+    fs.writeFileSync(path.join(__dirname, fileName), JSON.stringify(data[key], null, 2) + "\n", "utf8");
+  }
+  console.log("[db:seed] FIR/complaint registers seeded from prisma/fir-complaint-seed.json.");
+}
 
 async function upsertMany(items, upsertFn) {
   for (const item of items) {
@@ -130,6 +146,8 @@ async function main() {
       create: item,
     })
   );
+
+  seedLocalRegisters();
 
   console.log("[db:seed] Database seeding completed successfully.");
 }
