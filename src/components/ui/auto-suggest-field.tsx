@@ -64,6 +64,7 @@ export function AutoSuggestField({
 }: AutoSuggestFieldProps) {
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const controlRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const lastAcceptTimeRef = useRef<number>(0);
 
   /**
    * Tracks which fragment of which sequence TAB should offer next.
@@ -96,10 +97,11 @@ export function AutoSuggestField({
    * clears it again, so the ghost comes back on the next keystroke.
    */
   const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
+  const [prevVal, setPrevVal] = useState(value);
+  if (prevVal !== value) {
+    setPrevVal(value);
     setDismissed(false);
-  }, [value]);
+  }
 
   const adjustHeight = useCallback(() => {
     if (as === "textarea" && controlRef.current) {
@@ -232,12 +234,47 @@ export function AutoSuggestField({
     <div
       ref={ghostRef}
       aria-hidden="true"
-      className={cn("pointer-events-none absolute inset-0 z-0 text-slate-400 select-none", layerRecipe)}
+      className={cn(
+        "pointer-events-none absolute inset-0 z-0 text-slate-400 select-none",
+        layerRecipe,
+        "!bg-transparent"
+      )}
+      style={{
+        ...style,
+        backgroundColor: "transparent",
+      }}
     >
       {/* Invisible copy of the typed text so the prediction starts right at the caret. */}
       <span className="invisible whitespace-pre-wrap">{spacerText}</span>
       {displayGhost && <span className="text-slate-400/90 font-normal">{displayGhost}</span>}
     </div>
+  );
+
+  const handleBadgeClick = (
+    e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastAcceptTimeRef.current < 200) return;
+    lastAcceptTimeRef.current = now;
+    accept();
+    if (controlRef.current) {
+      controlRef.current.focus();
+      const head = value.slice(0, value.length - (activeSuggestion?.replaceLength || 0));
+      const endPos = (head + (activeSuggestion?.text || "")).length;
+      try {
+        controlRef.current.setSelectionRange(endPos, endPos);
+      } catch {
+        // Some input elements do not support setSelectionRange
+      }
+    }
+  };
+
+  const resolvedInputClass = cn(
+    sharedClasses,
+    "block relative z-10 !bg-transparent",
+    activeSuggestion && "placeholder-transparent"
   );
 
   const controlProps = {
@@ -248,35 +285,33 @@ export function AutoSuggestField({
     required,
     disabled,
     readOnly,
-    style,
+    style: {
+      ...style,
+      backgroundColor: "transparent",
+    },
     "data-testid": dataTestId,
     placeholder,
     onChange: handleChange,
     onKeyDown: handleKeyDown,
     onScroll: syncScroll,
-    // Hide the native placeholder while a ghost hint is on screen.
-    className: cn(
-      sharedClasses,
-      "block relative z-10 bg-transparent",
-      activeSuggestion && "placeholder-transparent"
-    ),
   };
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative w-full rounded-lg bg-white", className)}>
       {ghostLayer}
       {as === "textarea" ? (
         <textarea
           {...controlProps}
           rows={rows}
           ref={controlRef as React.RefObject<HTMLTextAreaElement>}
-          className={cn(controlProps.className, "resize-none overflow-hidden transition-[height] duration-75")}
+          className={cn(resolvedInputClass, "resize-none overflow-hidden transition-[height] duration-75")}
         />
       ) : (
         <input
           {...controlProps}
           type="text"
           ref={controlRef as React.RefObject<HTMLInputElement>}
+          className={resolvedInputClass}
         />
       )}
 
@@ -285,11 +320,13 @@ export function AutoSuggestField({
         <button
           type="button"
           tabIndex={-1}
+          onClick={handleBadgeClick}
           onMouseDown={(e) => {
             e.preventDefault();
-            accept();
+            handleBadgeClick(e);
           }}
-          className="no-print absolute right-2.5 bottom-2.5 z-20 flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-950 text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow cursor-pointer select-none transition-all animate-in fade-in border border-slate-700/60"
+          onTouchEnd={handleBadgeClick}
+          className="no-print absolute right-2.5 bottom-2.5 z-20 flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-950 active:scale-95 text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow cursor-pointer select-none transition-all animate-in fade-in border border-slate-700/60"
           title="Press Tab, → or click here to complete"
         >
           <span className="text-slate-300">सुझाव</span>
