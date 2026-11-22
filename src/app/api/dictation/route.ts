@@ -243,8 +243,15 @@ export async function POST(request: NextRequest) {
   const user = await apiAccess(request);
   if (user instanceof Response) return user;
 
-  const language = request.nextUrl.searchParams.get("language");
-  if (language !== "hi" && language !== "en") {
+  const requestedLanguage = request.nextUrl.searchParams.get("language") ?? "";
+  // The UI speaks BCP-47 tags (hi-IN / en-IN, plus "hinglish"); the engines want
+  // the bare ISO code. Normalise instead of rejecting the browser's own value.
+  const language = /^hi/i.test(requestedLanguage) || requestedLanguage === "hinglish"
+    ? "hi"
+    : /^en/i.test(requestedLanguage)
+    ? "en"
+    : null;
+  if (!language) {
     return Response.json({ error: "Unsupported dictation language." }, { status: 400 });
   }
   const contentType = request.headers.get("content-type") ?? "";

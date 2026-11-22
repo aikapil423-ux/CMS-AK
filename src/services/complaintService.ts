@@ -934,6 +934,22 @@ export const ComplaintService = {
     };
   },
 
+  /**
+   * Loads the station register from the backend before a *read-only* view of it
+   * (the intelligence check) runs. Mutations already hydrate themselves, which
+   * is why a directly-opened / refreshed register form used to report
+   * "0 cross-cases / First-time complainant" against an empty in-memory store.
+   */
+  async ensureRegisterHydrated(): Promise<void> {
+    if (typeof window === "undefined") return;
+    try {
+      if (hydration) await hydration;
+      if (!hydrated) await hydrateComplaints();
+    } catch (error) {
+      console.warn("Register could not be refreshed before the intelligence check:", error);
+    }
+  },
+
   checkComplaintIntelligence(input: {
     complainantName: string;
     complainantFatherSpouse?: string;

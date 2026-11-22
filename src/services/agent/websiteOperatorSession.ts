@@ -1,5 +1,6 @@
 import { newExperience, normaliseFieldValue, privatePlanningSnapshot, redactSensitiveText, type OperatorExperience } from "./operatorExperience";
 import { LiveWebsiteBridge, matchControls, missingRequired, normalizeCommand, OperatorAction, OperatorPlan, OperatorRoute, planLocally, splitWorkflow } from './websiteOperator';
+import { agentBridgeHttp } from "@/lib/agentBridge";
 
 export class WebsiteOperatorSession {
   readonly bridge = new LiveWebsiteBridge();
@@ -21,7 +22,9 @@ export class WebsiteOperatorSession {
     if (typeof window !== 'undefined') {
       try {
         const snap = this.bridge.snapshot();
-        fetch('http://127.0.0.1:8000/api/context', {
+        const bridgeUrl = agentBridgeHttp("/api/context");
+        if (!bridgeUrl) return;
+        fetch(bridgeUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user, path: snap.path, title: snap.title, controls: snap.controls, errors: snap.errors, caseFacts: snap.caseFacts }),

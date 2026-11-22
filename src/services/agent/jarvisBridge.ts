@@ -5,6 +5,7 @@
  */
 
 import { CmsVoiceEngine, CmsVoiceStatus } from "./cmsVoiceEngine";
+import { agentBridgeWs } from "@/lib/agentBridge";
 import { OperatorAction, WebsiteSnapshot, LiveWebsiteBridge } from "./websiteOperator";
 import { DynamicModuleRegistry } from "./dynamicModuleRegistry";
 
@@ -113,12 +114,12 @@ class JarvisBridgeClass {
     CmsVoiceEngine.setEnabled(enabled);
   }
 
-  public connect(url: string = "ws://127.0.0.1:8000/ws"): void {
+  public connect(url: string = agentBridgeWs("/ws")): void {
     // Native engine: start continuous listening directly
     CmsVoiceEngine.setEnabled(true);
     CmsVoiceEngine.startContinuousListening();
 
-    if (typeof window !== "undefined" && !this.ws) {
+    if (typeof window !== "undefined" && !this.ws && url) {
       try {
         const socket = new WebSocket(url);
         socket.onopen = () => {

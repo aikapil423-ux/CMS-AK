@@ -9,6 +9,7 @@ import { newExperience, type OperatorExperience } from '@/services/agent/operato
 import { readOperatorAttachment } from '@/services/agent/operatorAttachment';
 import { voiceTurn } from '@/services/agent/operatorVoice';
 import { CmsVoiceEngine, CmsVoiceStatus, VoicePlan } from '@/services/agent/cmsVoiceEngine';
+import { agentBridgeHttp } from '@/lib/agentBridge';
 import { CmsVoiceBadge } from './CmsVoiceBadge';
 
 type Message={id:string;sender:'user'|'agent';text:string;feedback?:boolean};
@@ -260,8 +261,9 @@ export function CmsAgentModal({isOpen,onClose}:CmsAgentModalProps){
   const handleVoiceChange = (v: string) => {
     setVoiceChoice(v);
     CmsVoiceEngine.setSelectedVoice(v);
-    if (typeof window !== "undefined") {
-      fetch("http://127.0.0.1:8000/api/voice", {
+    const bridgeUrl = agentBridgeHttp("/api/voice");
+    if (typeof window !== "undefined" && bridgeUrl) {
+      fetch(bridgeUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ voice: v }),

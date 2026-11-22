@@ -265,6 +265,16 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       const activeLang = langOverride || selectedLangRef.current;
       setErrorMessage(null);
 
+      // Browsers only expose microphones in a secure context. On a plain-HTTP
+      // station URL (e.g. http://<ip>:18091) both Web Speech and Whisper die
+      // with a generic "mic permission" message, so state the real cause.
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        setErrorMessage(
+          "वॉइस डिक्टेशन केवल HTTPS (सुरक्षित) पते पर काम करता है। यह पेज http:// पर खुला है, इसलिए माइक उपलब्ध नहीं है। IT से HTTPS चालू करवाएं।"
+        );
+        return;
+      }
+
       // 1. Primary: Native Web Speech API for instantaneous streaming dictation ("बोलते बोलते टाइप होना")
       const SpeechRecognitionClass =
         typeof window !== "undefined"
@@ -507,7 +517,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
         <div
           role="dialog"
           aria-label="Voice dictation"
-          className="cms-dictation-panel absolute right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 flex items-center gap-1.5 animate-in fade-in-50"
+          className="cms-dictation-panel absolute right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 flex flex-wrap items-center gap-1.5 max-w-[340px] animate-in fade-in-50"
         >
           <button
             type="button"
@@ -557,7 +567,11 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
           )}
 
           {errorMessage && (
-            <span role="status" className="text-[10px] text-rose-600 max-w-[150px] truncate pl-1 font-medium">
+            <span
+              role="status"
+              title={errorMessage}
+              className="order-last basis-full w-[260px] max-w-[320px] whitespace-normal break-words leading-snug text-[10px] text-rose-600 pl-1 pt-1 border-t border-slate-100 font-medium"
+            >
               {errorMessage}
             </span>
           )}

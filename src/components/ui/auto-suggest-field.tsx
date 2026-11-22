@@ -235,7 +235,7 @@ export function AutoSuggestField({
       ref={ghostRef}
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute inset-0 z-0 text-slate-400 select-none",
+        "pointer-events-none absolute inset-0 z-20 text-slate-400 select-none",
         layerRecipe,
         "!bg-transparent"
       )}
@@ -274,7 +274,7 @@ export function AutoSuggestField({
   const resolvedInputClass = cn(
     sharedClasses,
     "block relative z-10 !bg-transparent",
-    activeSuggestion && "placeholder-transparent"
+    activeSuggestion && "cms-ghost-active"
   );
 
   const controlProps = {

@@ -237,6 +237,9 @@
     cursor: not-allowed;
   }
   .cms-court-theme :where(input, textarea)::placeholder { color: #8b9dbb; }
+  /* Ghost suggestion is on screen -> hide the hint text so only the grey
+     prediction shows. More specific than the rule above on purpose. */
+  .cms-court-theme :where(input, textarea).cms-ghost-active::placeholder { color: transparent; }
   .cms-court-theme :where(input[type="radio"], input[type="checkbox"]) { accent-color: #203c88; }
   
   .cms-court-theme :where(label.block):not(.a4-sheet *, [id^="printable-"] *) {

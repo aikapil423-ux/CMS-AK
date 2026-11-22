@@ -2007,10 +2007,14 @@ export default function RegisterComplaintPage() {
 
 
   // Run Intelligence Check locally without external model by checking specific filled fields in register complaint form
-  const handleRunIntelCheck = (tab: "all" | "cross" | "repeat" | "linked" | "fir" = "all") => {
+  const handleRunIntelCheck = async (tab: "all" | "cross" | "repeat" | "linked" | "fir" = "all") => {
     setIntelDropdownOpen(false);
     const primary = complainants[0] || {};
     const primaryAccused = isAccusedKnown && accusedList[0] ? accusedList[0] : null;
+
+    // Make sure the station register is in memory first: on a direct load or a
+    // refresh the store is still empty, which used to produce a false "Clean".
+    await ComplaintService.ensureRegisterHydrated();
 
     // Check specific fields filled in this register complaint form locally
     const result = ComplaintService.checkComplaintIntelligence({
