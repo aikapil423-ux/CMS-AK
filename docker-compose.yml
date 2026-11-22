@@ -1,0 +1,14 @@
+services:
+  cms:
+    build: .
+    image: 18k-cms:latest
+    container_name: 18k-cms
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    volumes:
+      - 18k-cms-db:/app/prisma
+
+volumes:
+  18k-cms-db:
+    external: true
