@@ -45,7 +45,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-prisma/dev.db
 prisma/case-analysis/
 prisma/scrutiny-records/
 prisma/court-affidavits/
@@ -55,7 +54,4 @@ prisma/audits/
 tmp/
 output/
 
-prisma/storage/
-prisma/*-store.json
 prisma/gd-dismissed-suggestions.json
-prisma/seed-data.json
