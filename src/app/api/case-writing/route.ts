@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { apiAccess } from '@/lib/apiSecurity';
-import { PROCESSING_MODEL, processingAIAvailable, processWithAI } from '@/lib/openRouter';
+import { PROCESSING_MODEL, processingAIAvailable, processWithAI } from '@/lib/geminiProcessing';
 import { authorizedAnalysisFir } from '@/services/caseAnalysisService';
 import { readComplaints } from '@/services/complaintRepository';
 import { LegalAssistantService } from '@/services/legalAssistantService';

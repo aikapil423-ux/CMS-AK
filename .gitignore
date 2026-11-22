@@ -26,6 +26,8 @@
 *.pem
 *.log
 *.code-workspace
+__pycache__/
+*.py[cod]
 
 # debug
 npm-debug.log*
@@ -45,7 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-prisma/dev.db
 prisma/case-analysis/
 prisma/scrutiny-records/
 prisma/court-affidavits/
@@ -56,6 +57,4 @@ tmp/
 output/
 
 prisma/storage/
-prisma/*-store.json
-prisma/gd-dismissed-suggestions.json
-prisma/seed-data.json
+

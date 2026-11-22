@@ -31,6 +31,7 @@ interface SectionKnowledgeBaseItem {
   recommendationType: "PRIMARY_OFFENCE" | "CORROBORATING_OFFENCE" | "PROCEDURAL_MANDATE" | "EVIDENTIARY_RULE";
   recommendationTypeLabel: string;
   keywords: string[];
+  matchMode?: "AND" | "OR";
   triggerPatterns: RegExp[];
   reasonTemplate: (context: any, matches: string[], docsFound: string[]) => string;
   evidenceFinder: (context: any) => string[];
@@ -60,10 +61,11 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     triableBy: "Magistrate of first class",
     recommendationType: "PRIMARY_OFFENCE",
     recommendationTypeLabel: "Primary Substantive Offence",
-    keywords: ["cheating", "fraud", "dhokhadhadi", "transferred", "money", "rupees", "rs.", "lakh", "fake", "job", "naukri", "bank", "account", "upi", "promise", "jhansa"],
+    keywords: ["cheating", "fraud", "dhokhadhadi", "transferred", "money", "fake appointment", "job racket", "jhansa", "inducement", "ठगी", "धोखाधड़ी"],
+    matchMode: "AND",
     triggerPatterns: [
-      /(?:cheat|fraud|धोखा|धोखाधड़ी|transferred|रुपये|पैसे|ठगी|naukri|job|fake\s*appointment|haryana\s*irrigation|advanc|induc)/i,
-      /(?:rs\.?|inr|lakh|crore|\d{4,})/i,
+      /(?:cheat|fraud|धोखा|धोखाधड़ी|ठगी|fake\s*appointment|job\s*racket|jhansa|झांसा|induce|inducement|gaban|गबन)/i,
+      /(?:(?:रुपये|पैसे|लाख|करोड़|राशि|धनराशि|valuable\s*property|funds|advance|payment|salary|salary\s*transfer|खाते\s*में\s*ट्रांसफर|bank\s*transfer|upi|rs\.?|inr)\s*(?:हड़प|ऐंठ|लिए|ट्रांसफर|दिए|ठग|धोखा|frauded)?)/i,
     ],
     reasonTemplate: (c, matches, docs) => {
       const amountMention = c.incidentDetails.match(/(?:rs\.?|inr|rupees|मु0-?)?\s*[\d,]+(?:\/-\s*रू0)?/i)?.[0] || "funds";
@@ -254,6 +256,118 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     evidenceFinder: () => ["Allegation of using iron pipe / blunt impact weapon", "Spot verification report noting impact weapon"],
   },
   {
+    id: "kb_bns_351_3",
+    actId: "act_bns_2023",
+    actTitle: "The Bharatiya Nyaya Sanhita, 2023",
+    actShortName: "BNS, 2023",
+    actFileName: "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+    sectionNumber: "Section 351(3)",
+    sectionTitle: "Criminal intimidation by threatening to cause death or grievous hurt",
+    chapter: "Chapter XIX - Of Criminal Intimidation, Insult & Annoyance (Sec 351 - 356)",
+    pageNumber: 106,
+    description:
+      "Whoever commits the offence of criminal intimidation by threatening to cause death or grievous hurt, or destruction of any property by fire, or an offence punishable with death or imprisonment for life or for a term which may extend to seven years.",
+    verbatimSnippet:
+      "Section 351(3) BNS: If the threat be to cause death or grievous hurt, or to cause the destruction of any property by fire, or to cause an offence punishable with death or with imprisonment for life, or with imprisonment for a term which may extend to seven years, shall be punished with imprisonment of either description for a term which may extend to seven years, or with fine, or with both.",
+    punishment: "Imprisonment of either description for up to 7 years, or fine, or both",
+    cognizable: "Cognizable",
+    bailable: "Non-bailable",
+    triableBy: "Magistrate of the first class",
+    recommendationType: "PRIMARY_OFFENCE",
+    recommendationTypeLabel: "Grave Threat Offence (Threat to Life)",
+    keywords: ["threat to kill", "jaan se marne", "jaan se maarne", "dhamki", "kill", "marne ki dhamki", "marenge", "khatam kar denge", "goli maar", "shoot"],
+    triggerPatterns: [
+      /(?:jaan\s*se\s*mar|जान\s*से\s*मारने|जान\s*से\s*खत्म|जान\s*लेने|threat\s*to\s*kill|kill\s*you|मार\s*डालेंगे|गोली\s*मार\s*देंगे|निपटा\s*दूंगा)/i,
+    ],
+    reasonTemplate: () =>
+      `अभियुक्तों द्वारा प्रार्थी को जान से मारने की सीधी व गंभीर धमकी दी गई। BNS की धारा 351(3) (जान से मारने या गंभीर चोट की धमकी - 7 वर्ष तक कारावास) पूर्णतः लागू होती है।`,
+    evidenceFinder: () => ["Specific verbal threat to kill recorded in complaint", "Witness statements corroborating threat to life"],
+  },
+  {
+    id: "kb_bns_331_4",
+    actId: "act_bns_2023",
+    actTitle: "The Bharatiya Nyaya Sanhita, 2023",
+    actShortName: "BNS, 2023",
+    actFileName: "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+    sectionNumber: "Section 331(4)",
+    sectionTitle: "House-trespass after preparation for causing hurt, assault or wrongful restraint",
+    chapter: "Chapter XVII - Of Offences Against Property (Sec 303 - 334)",
+    pageNumber: 98,
+    description:
+      "Whoever commits house-trespass, having made preparation for causing hurt to any person, or for assaulting any person, or for wrongfully restraining any person, or for putting any person in fear of hurt or of assault or of wrongful restraint.",
+    verbatimSnippet:
+      "Section 331(4) BNS: Whoever commits house-trespass, having made preparation for causing hurt to any person, or for assaulting any person, or for wrongfully restraining any person, or for putting any person in fear of hurt, or of assault, or of wrongful restraint, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.",
+    punishment: "Rigorous imprisonment up to 7 years and fine",
+    cognizable: "Cognizable",
+    bailable: "Non-bailable",
+    triableBy: "Magistrate of the first class",
+    recommendationType: "PRIMARY_OFFENCE",
+    recommendationTypeLabel: "Trespass with Preparation for Hurt",
+    keywords: ["trespass", "shop trespass", "house trespass", "dukan me ghuse", "makan me ghuse", "jabaran ghuse", "hathiyar lekar ghuse", "danda lekar ghuse"],
+    triggerPatterns: [
+      /(?:दुकान\s*पर\s*(?:झगड़ा|हमला|आए)|घर\s*पर\s*आ|घर\s*पर\s*(?:झगड़ा|हमला|आए)|दुकान\s*में\s*घुस|मकान\s*में\s*घुस|घर\s*में\s*घुस|जबरन\s*घुस|घुस\s*आए|घुस\s*गए|dukan\s*me\s*ghus|makan\s*me\s*ghus|ghar\s*me\s*ghus|forcefully\s*enter|trespass)/i,
+    ],
+    reasonTemplate: () =>
+      `अभियुक्त लाठी, डंडों व घातक हथियारों की पूर्व तैयारी के साथ जबरन प्रार्थी की दुकान/मकान में घुसे अथवा घर पर चढ़कर आए तथा भय का माहौल बनाया। BNS की धारा 331(4) (चोट पहुंचाने की तैयारी के साथ गृह-अतिचार - 7 वर्ष तक कारावास) पूर्णतः आकर्षित होती है।`,
+    evidenceFinder: () => ["Allegations of forceful entry/attack at shop/premises with weapons", "Inspection verifying trespass"],
+  },
+  {
+    id: "kb_bns_191_2",
+    actId: "act_bns_2023",
+    actTitle: "The Bharatiya Nyaya Sanhita, 2023",
+    actShortName: "BNS, 2023",
+    actFileName: "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+    sectionNumber: "Section 191(2)",
+    sectionTitle: "Rioting, armed with deadly weapon",
+    chapter: "Chapter XI - Of Offences Against Public Tranquillity (Sec 189 - 197)",
+    pageNumber: 58,
+    description:
+      "Whoever is guilty of rioting, being armed with a deadly weapon or with anything which, used as a weapon of offence, is likely to cause death.",
+    verbatimSnippet:
+      "Section 191(2) BNS: Whoever is guilty of rioting, being armed with a deadly weapon or with anything which, used as a weapon of offence, is likely to cause death, shall be punished with imprisonment of either description for a term which may extend to five years, or with fine, or with both.",
+    punishment: "Imprisonment of either description up to 5 years, or fine, or both",
+    cognizable: "Cognizable",
+    bailable: "Non-bailable",
+    triableBy: "Magistrate of the first class",
+    recommendationType: "PRIMARY_OFFENCE",
+    recommendationTypeLabel: "Armed Rioting Offence",
+    keywords: ["rioting", "balwa", "danga", "10-12 log", "lathi dande", "deadly weapon", "hathiyar", "iron rod", "pipe", "राड", "डंडे"],
+    triggerPatterns: [
+      /(?:बलवा|दंगा|10\s*से\s*12|10-12|3-4\s*साथी|साथियों\s*के\s*साथ|डंडे\s*व\s*अन्य\s*राड|डंडे|लाठी\s*डंडे|हथियार\s*लेकर|घातक\s*हथियार|lohe\s*ki\s*rod|lathi\s*dande|rioting\s*armed)/i,
+    ],
+    reasonTemplate: () =>
+      `अभियुक्तों का समूह लाठी, डंडों, लोहे की राड व घातक हथियारों से लैस होकर विधि-विरुद्ध जमाव (Unlawful Assembly) बनाकर आया तथा बलवा किया। BNS की धारा 191(2) (घातक हथियारों से लैस होकर बलवा - 5 वर्ष तक कारावास) पूर्णतः लागू होती है।`,
+    evidenceFinder: () => ["Allegations of armed group/associates with weapons", "Recovery/reference of lathis/dandas/iron rods from scene"],
+  },
+  {
+    id: "kb_bns_190",
+    actId: "act_bns_2023",
+    actTitle: "The Bharatiya Nyaya Sanhita, 2023",
+    actShortName: "BNS, 2023",
+    actFileName: "The_Bharatiya_Nyaya_Sanhita_2023.pdf",
+    sectionNumber: "Section 190",
+    sectionTitle: "Every member of unlawful assembly guilty of offence committed in prosecution of common object",
+    chapter: "Chapter XI - Of Offences Against Public Tranquillity (Sec 189 - 197)",
+    pageNumber: 58,
+    description:
+      "If an offence is committed by any member of an unlawful assembly in prosecution of the common object of that assembly, every person who, at the time of the committing of that offence, is a member of the same assembly, is guilty of that offence.",
+    verbatimSnippet:
+      "Section 190 BNS: If an offence is committed by any member of an unlawful assembly in prosecution of the common object of that assembly, or such as the members of that assembly knew to be likely to be committed in prosecution of that object, every person who, at the time of the committing of that offence, is a member of the same assembly, is guilty of that offence.",
+    punishment: "Same punishment as the substantive offence committed",
+    cognizable: "Cognizable",
+    bailable: "Non-bailable",
+    triableBy: "Court by which offence is triable",
+    recommendationType: "CORROBORATING_OFFENCE",
+    recommendationTypeLabel: "Unlawful Assembly Liability",
+    keywords: ["unlawful assembly", "common object", "10 to 12 persons", "mob", "associates"],
+    triggerPatterns: [
+      /(?:10\s*से\s*12|10-12|3-4\s*साथी|साथियों\s*के\s*साथ|भीड़|गिरोह|अवैध\s*जमाव|unlawful\s*assembly)/i,
+    ],
+    reasonTemplate: () =>
+      `अवैध जमाव के सदस्यों द्वारा सामूहिक उद्देश्य की पूर्ति में अपराध कारित किया गया। BNS की धारा 190 के तहत जमाव के प्रत्येक सदस्य का संयुक्त आपराधिक दायित्व बनता है।`,
+    evidenceFinder: () => ["Listing of multiple co-accused in FIR/complaint", "Shared presence and concerted action during incident"],
+  },
+  {
     id: "kb_bns_351_2",
     actId: "act_bns_2023",
     actTitle: "The Bharatiya Nyaya Sanhita, 2023",
@@ -275,10 +389,10 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationTypeLabel: "Intimidation Offence",
     keywords: ["threat", "threatened", "dhamki", "jaan se marne", "kill", "dhamkaya"],
     triggerPatterns: [
-      /(?:dhamki|धमकी|जान\s*से\s*मारने|धमकाया|threat|kill|निपटा\s*दूंगा)/i,
+      /(?:dhamki|धमकी|धमकाया|threat|निपटा\s*दूंगा)/i,
     ],
     reasonTemplate: () =>
-      `अभियुक्त द्वारा प्रार्थी को जान से मारने की सीधी धमकी दी गई तथा भयभीत किया गया। BNS की धारा 351(2) (आपराधिक अभित्रास / Criminal Intimidation) लागू होती है। यदि धमकी जान से मारने की है, तो 351(3) के अंतर्गत 7 वर्ष तक कारावास का प्रावधान है।`,
+      `अभियुक्त द्वारा प्रार्थी को धमकी दी गई तथा भयभीत किया गया। BNS की धारा 351(2) (आपराधिक अभित्रास / Criminal Intimidation) लागू होती है।`,
     evidenceFinder: () => ["Threat statement specifically quoted in complainant allegations", "Witness statements corroborating oral threats"],
   },
   {
@@ -303,11 +417,11 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationTypeLabel: "Public Peace Offence",
     keywords: ["abuse", "gali", "abusive", "insult", "gandi galiyan", "shantibhag"],
     triggerPatterns: [
-      /(?:gali|गालियां|अपशब्द|insult|गाली|गंदी-गंदी)/i,
+      /(?:gali|गालियां|अपशब्द|insult|गाली|गंदी-गंदी|गाली\s*गलौच|गाली-गलौच)/i,
     ],
     reasonTemplate: () =>
-      `अभियुक्त ने सार्वजनिक स्थान पर प्रार्थी को अकारण गालियां दीं तथा शांति भंग करने के इरादे से उत्तेजित किया। BNS की धारा 352 (शांति भंग कराने के आशय से जानबूझकर अपमान) आकर्षित होती है।`,
-    evidenceFinder: () => ["Verbatim abusive words recorded in intake proforma", "Eye-witness verification of public altercation"],
+      `अभियुक्त ने प्रार्थी को अकारण गालियां दीं तथा शांति भंग करने के इरादे से उत्तेजित किया। BNS की धारा 352 (शांति भंग कराने के आशय से जानबूझकर अपमान) आकर्षित होती है।`,
+    evidenceFinder: () => ["Verbatim abusive words recorded in intake proforma", "Eye-witness verification of altercation"],
   },
   {
     id: "kb_bns_3_5",
@@ -331,7 +445,7 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationTypeLabel: "Vicarious Liability Rule",
     keywords: ["group", "associates", "10 to 12", "saath", "milkar", "common intention", "aadmi", "aadi"],
     triggerPatterns: [
-      /(?:10\s*से\s*12|साथ\s*आये|मिलकर|common\s*intention|multiple\s*accused|साथियों|अन्य\s*आरोपियों)/i,
+      /(?:10\s*से\s*12|3-4\s*साथी|साथियों\s*के\s*साथ|साथ\s*आये|मिलकर|common\s*intention|multiple\s*accused|साथियों|अन्य\s*आरोपियों)/i,
     ],
     reasonTemplate: () =>
       `घटना में मुख्य आरोपी के साथ अन्य कई व्यक्ति (10-12 लोग) सामान्य आशय की पूर्ति में शामिल थे तथा समझौते के नाम पर दबाव बनाया। BNS की धारा 3(5) (साझा आशय / Common Intention) के तहत सभी सह-अभियुक्तों का संयुक्त दायित्व बनता है।`,
@@ -394,7 +508,9 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationType: "PROCEDURAL_MANDATE",
     recommendationTypeLabel: "Mandatory Procedural Provision",
     keywords: ["enquiry", "investigation", "14 days", "bnss", "sho", "preliminary", "spot visit"],
-    triggerPatterns: [/.*?/],
+    triggerPatterns: [
+      /(?:preliminary\s*enquiry|प्राथमिक\s*जांच|14\s*days|14\s*दिन|enquiry\s*report|spot\s*enquiry|मौका\s*जांच|जांच\s*हेतु|दर्ज\s*रजिस्टर|direction\s*of\s*sho)/i,
+    ],
     reasonTemplate: (c) =>
       `वर्तमान शिकायत में लगाए गए आरोपों की सजा 3 वर्ष से 7 वर्ष के मध्य आती है। नए आपराधिक कानून BNSS 2023 की धारा 173(3) के अनुसार, नियमित FIR दर्ज करने से पहले 14 दिनों के भीतर प्राथमिक जांच (Preliminary Enquiry) पूर्ण करना अनिवार्य कानूनी प्रक्रिया है।`,
     evidenceFinder: (c) => [
@@ -423,7 +539,9 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationType: "PROCEDURAL_MANDATE",
     recommendationTypeLabel: "Mandatory Procedural Provision",
     keywords: ["notice", "appearance", "section 35", "investigating officer", "suspect"],
-    triggerPatterns: [/.*?/],
+    triggerPatterns: [
+      /(?:notice\s*of\s*appearance|धारा\s*35|section\s*35|उपस्थिति\s*नोटिस|नोटिस\s*तामील|बयान\s*हेतु\s*तलब|तलब\s*किया)/i,
+    ],
     reasonTemplate: (c) =>
       `अभियुक्त के विरुद्ध आरोपों में यदि सजा 7 वर्ष से कम है, तो BNSS धारा 35(3) के अंतर्गत सीधे गिरफ्तारी के स्थान पर विधिवत उपस्थिति नोटिस (Notice of Appearance) जारी कर उनका पक्ष दर्ज करना कानूनी बाध्यता है।`,
     evidenceFinder: (c) => [
@@ -525,10 +643,11 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     triableBy: "Magistrate of first class",
     recommendationType: "PRIMARY_OFFENCE",
     recommendationTypeLabel: "Aggravated Theft in Vehicle/Dwelling",
-    keywords: ["vehicle", "car", "means of transportation", "dwelling", "house", "transport", "parked", "building", "shop", "parking"],
+    keywords: ["vehicle", "car", "means of transportation", "dwelling", "house", "transport", "parked", "building", "shop", "parking", "theft", "chori", "stolen"],
+    matchMode: "AND",
     triggerPatterns: [
+      /(?:theft|चोरी|चुरा|ताला\s*तोड़|सामान\s*चोरी|चोरी\s*हो\s*गई|stolen|stole|chori)/i,
       /(?:car|वाहन|गाड़ी|गाड़ी|dwelling|makaan|मकान|building|means\s*of\s*transport|shop|दुकान|parking|parivahan)/i,
-      /305/i,
     ],
     reasonTemplate: (ctx) => {
       const place = ctx.incidentPlace || "परिवहन साधन/वाहन";
@@ -739,7 +858,9 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationType: "PROCEDURAL_MANDATE",
     recommendationTypeLabel: "Mandatory Electronic Seizure Protocol",
     keywords: ["seizure", "search", "recovered", "recovery", "videography", "property", "fard maqboozgi"],
-    triggerPatterns: [/.*?/],
+    triggerPatterns: [
+      /(?:seizure|fard\s*maqboozgi|जब्ती|बरामद|बरामदगी|recovery\s*memo|seized|तलाशी|search\s*memo)/i,
+    ],
     reasonTemplate: (ctx) => {
       const prop = ctx.stolenPropertyDetails || "चोरी गई/संबंधित संपत्ति";
       return `एफआईआर में संपत्ति (${prop.slice(0, 75)}) की बरामदगी व जब्ती शामिल है। BNSS 2023 की धारा 105 के तहत तलाशी, जब्ती सूची (Seizure Memo) निर्माण तथा गवाहों के हस्ताक्षरों की मोबाइल फोन से ऑडियो-वीडियो रिकॉर्डिंग अनिवार्य कानूनी प्रक्रिया है।`;
@@ -795,7 +916,9 @@ const STATUTORY_SECTIONS_KB: SectionKnowledgeBaseItem[] = [
     recommendationType: "PROCEDURAL_MANDATE",
     recommendationTypeLabel: "Mandatory Chargesheet Timeline",
     keywords: ["chargesheet", "final report", "challan", "court", "timeline", "90 days", "60 days"],
-    triggerPatterns: [/.*?/],
+    triggerPatterns: [
+      /(?:chargesheet|final\s*report|चालान|अंतिम\s*रिपोर्ट|60\s*days|90\s*days|60\s*दिन|90\s*दिन|court\s*submission)/i,
+    ],
     reasonTemplate: (ctx) => {
       const ioName = ctx.assignedIoName || "जांच अधिकारी";
       return `अनुसंधान अधिकारी (${ioName}) को BNSS धारा 193(3) के अनुसार बिना किसी अनुचित विलंब के साक्ष्य पूर्ण कर न्यायालय के समक्ष अंतिम पुलिस प्रपत्र (चालान / Chargesheet) नियत 60/90 दिवस की कानूनी समय-सीमा में दाखिल करना अनिवार्य है।`;
@@ -895,10 +1018,14 @@ export class LegalAssistantService {
       let isMatch = false;
       const matchedTokens: string[] = [];
 
-      for (const pattern of kb.triggerPatterns) {
-        if (pattern.test(combinedCorpus)) {
-          isMatch = true;
-          break;
+      if (kb.matchMode === "AND") {
+        isMatch = kb.triggerPatterns.length > 0 && kb.triggerPatterns.every((pattern) => pattern.test(combinedCorpus));
+      } else {
+        for (const pattern of kb.triggerPatterns) {
+          if (pattern.test(combinedCorpus)) {
+            isMatch = true;
+            break;
+          }
         }
       }
 
@@ -1080,10 +1207,14 @@ export class LegalAssistantService {
       const matchedTokens: string[] = [];
 
       if (!isMatch) {
-        for (const pattern of kb.triggerPatterns) {
-          if (pattern.test(combinedCorpus)) {
-            isMatch = true;
-            break;
+        if (kb.matchMode === "AND") {
+          isMatch = kb.triggerPatterns.length > 0 && kb.triggerPatterns.every((pattern) => pattern.test(combinedCorpus));
+        } else {
+          for (const pattern of kb.triggerPatterns) {
+            if (pattern.test(combinedCorpus)) {
+              isMatch = true;
+              break;
+            }
           }
         }
       }

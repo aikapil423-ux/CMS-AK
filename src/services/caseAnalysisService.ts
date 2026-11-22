@@ -1,4 +1,4 @@
-import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/openRouter";
+import { processingAIAvailable, PROCESSING_MODEL, processWithAI } from "@/lib/geminiProcessing";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';

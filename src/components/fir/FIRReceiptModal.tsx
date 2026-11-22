@@ -5,6 +5,8 @@ import { Printer, X, Download, FileDown } from "lucide-react";
 import { FIRItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { useAuth } from "@/context/AuthContext";
+import { DEMO_USERS } from "@/lib/mockData";
 
 interface FIRReceiptModalProps {
   fir: FIRItem | null;
@@ -43,6 +45,26 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   const ioName = fir.assignedIoName || fir.actionTakenData?.directedIoName || "Pending Assignment";
   const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "HC (Head Constable)";
   const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "132";
+
+  const { currentUser } = useAuth();
+  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "Vedpal";
+  const matchedUser = DEMO_USERS.find((u) =>
+    u.name.toLowerCase().trim() === registeredName.toLowerCase().trim() ||
+    registeredName.toLowerCase().includes(u.name.toLowerCase().split(",")[0].trim()) ||
+    (currentUser && currentUser.name.toLowerCase().trim() === u.name.toLowerCase().trim())
+  ) || currentUser;
+
+  const officerNameDisplay = fir.signatureData?.officerInChargeName || registeredName;
+  const officerRankDisplay =
+    fir.signatureData?.officerInChargeRank ||
+    fir.registeredBy?.match(/\((.*?)\)/)?.[1] ||
+    matchedUser?.rankDisplay ||
+    matchedUser?.roleDisplay ||
+    "Inspector (SHO)";
+  const officerNoDisplay =
+    fir.signatureData?.officerInChargeNumber ||
+    matchedUser?.pno ||
+    "HR-POLICE";
 
   // Total Property value
   const totalPropVal = fir.totalPropertyEstimatedValue ?? (
@@ -85,15 +107,15 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[96vh]">
-        {/* Top Floating Control Bar */}
-        <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 overflow-y-auto animate-in fade-in-50">
+      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-2xl border border-neutral-300 overflow-hidden flex flex-col my-auto max-h-[96vh]">
+        {/* Top Floating Control Bar - Pure Dark Neutral (No Blue Tint) */}
+        <div className="no-print flex items-center justify-between px-5 py-3 bg-neutral-900 text-white border-b border-neutral-700">
           <div>
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
               Official FIR Preview (I.I.F.-I) • Haryana Police
             </h3>
-            <p className="text-[11px] text-slate-300">
+            <p className="text-[11px] text-neutral-300">
               Statutory Form under Section 173 B.N.S.S.
             </p>
           </div>
@@ -125,12 +147,12 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
           </div>
         </div>
 
-        {/* Printable Official Form Area */}
-        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-slate-100 flex justify-center">
+        {/* Printable Official Form Area - Neutral Desk Backdrop, Continuous White A4 Sheet */}
+        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-neutral-200/90 block">
           <div
             id="cctns-printable-fir"
             ref={receiptRef}
-            className="bg-white border border-slate-300 p-8 sm:p-12 shadow-md w-full max-w-[850px] font-serif text-slate-900 leading-normal text-[13px] space-y-6"
+            className="bg-white border border-neutral-300 p-8 sm:p-12 shadow-md w-full max-w-[850px] mx-auto font-serif text-black leading-normal text-[13px] space-y-6 h-auto min-h-full"
           >
             {/* Top Running Header */}
             <div>
@@ -206,31 +228,78 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                       </tr>
                     </thead>
                     <tbody>
-                      {fir.actsAndSectionsList && fir.actsAndSectionsList.length > 0 ? (
-                        fir.actsAndSectionsList.map((row, idx) => (
+                      {(() => {
+                        // Official Haryana Police FIR format: Every section has its own individual row with separate S.No.
+                        const expandedRows: { act: string; section: string }[] = [];
+
+                        if (fir.actsAndSectionsList && fir.actsAndSectionsList.length > 0) {
+                          for (const row of fir.actsAndSectionsList) {
+                            const act = (row.act || "").trim();
+                            const actUpper = act.toUpperCase();
+                            // Exclude BNSS and BSA procedural/evidentiary codes
+                            if (
+                              actUpper.includes("BNSS") ||
+                              actUpper.includes("NAGARIK") ||
+                              actUpper.includes("SURAKSHA") ||
+                              actUpper.includes("BSA") ||
+                              actUpper.includes("SAKSHYA")
+                            ) {
+                              continue;
+                            }
+                            const rawSections = (row.sections || "")
+                              .replace(/^Sec(tion)?\.?\s*/gi, "")
+                              .split(/[,;]/)
+                              .map((s) => s.trim().replace(/^Sec(tion)?\.?\s*/i, ""))
+                              .filter(Boolean);
+
+                            for (const sec of rawSections) {
+                              if (sec.includes("173(3)") && !sec.includes("303") && !sec.includes("351")) continue;
+                              expandedRows.push({
+                                act: act || "BHARATIYA NYAYA SANHITA, 2023",
+                                section: sec,
+                              });
+                            }
+                          }
+                        }
+
+                        // If expandedRows is still empty, fallback to substantive penal acts
+                        if (expandedRows.length === 0) {
+                          const actName =
+                            fir.majorAct && !fir.majorAct.toUpperCase().includes("BNSS")
+                              ? fir.majorAct
+                              : "BHARATIYA NYAYA SANHITA, 2023";
+
+                          const sourceSections = fir.bnsSections?.length
+                            ? fir.bnsSections
+                            : (fir.actsAndSections || "351(3), 331(4), 191(2), 352, 3(5)")
+                                .replace(/BNSS.*?(\;|$)/gi, "")
+                                .replace(/;\s*$/, "")
+                                .split(/[,;]/)
+                                .map((s) => s.trim().replace(/^Sec(tion)?\.?\s*/i, ""))
+                                .filter(Boolean);
+
+                          for (const sec of sourceSections) {
+                            expandedRows.push({
+                              act: actName,
+                              section: sec,
+                            });
+                          }
+                        }
+
+                        return expandedRows.map((row, idx) => (
                           <tr key={idx} className="border-b border-black last:border-b-0">
                             <td className="border-r border-black p-1.5 text-center">
-                              {row.srNo || idx + 1}
+                              {idx + 1}
                             </td>
                             <td className="border-r border-black p-1.5">
                               {row.act}
                             </td>
-                            <td className="p-1.5">
-                              {row.sections}
+                            <td className="p-1.5 font-medium">
+                              {row.section}
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td className="border-r border-black p-1.5 text-center">1</td>
-                          <td className="border-r border-black p-1.5">
-                            {fir.majorAct || fir.actsAndSections || "BHARATIYA NYAYA SANHITA, 2023"}
-                          </td>
-                          <td className="p-1.5">
-                            {fir.bnsSections?.join(", ") || "303(2), 305"}
-                          </td>
-                        </tr>
-                      )}
+                        ));
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -612,13 +681,11 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                     </tr>
                   ) : (
                     <tr>
-                      <td className="border-r border-black p-1.5 text-center">1</td>
-                      <td className="border-r border-black p-1.5">OTHERS</td>
-                      <td className="border-r border-black p-1.5">ALCOHOL</td>
-                      <td className="border-r border-black p-1.5">
-                        12 पेटी शराब मार्का ब्लैडर प्राईड व 2 पेटी पव्वा शराब मार्का रोयल स्टैग
-                      </td>
-                      <td className="p-1.5 text-right font-mono">.00</td>
+                      <td className="border-r border-black p-1.5 text-center">-</td>
+                      <td className="border-r border-black p-1.5 text-center">-</td>
+                      <td className="border-r border-black p-1.5 text-center">-</td>
+                      <td className="border-r border-black p-1.5 text-center">-</td>
+                      <td className="p-1.5 text-center font-mono">-</td>
                     </tr>
                   )}
                 </tbody>
@@ -629,7 +696,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             <div className="text-[13px]">
               <strong>10. Total value of property (In Rs/-) (सम्पत्ति का कुल मूल्य(रु में)):</strong>{" "}
               <span className="font-mono">
-                {totalPropVal !== undefined ? `${Number(totalPropVal).toFixed(2)}` : ".00"}
+                {totalPropVal && Number(totalPropVal) > 0 ? `${Number(totalPropVal).toFixed(2)}` : "-"}
               </span>
             </div>
 
@@ -733,7 +800,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                 <div><strong>14. Signature / Thumb impression</strong></div>
                 <div className="pl-6"><strong>of the complainant / informant</strong></div>
                 <div className="pl-6"><strong>(शिकायतकर्ता / सूचनाकर्ता के हस्ताक्षर /अंगूठे का निशान)</strong></div>
-                <div className="pt-8 pl-6 text-slate-700 italic">
+                <div className="pt-8 pl-6 text-black italic">
                   {fir.complainantName}
                 </div>
               </div>
@@ -742,9 +809,9 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                 <div><strong>Signature of Officer in charge, Police Station</strong></div>
                 <div><strong>(थाना प्रभारी के हस्ताक्षर)</strong></div>
                 <div className="pt-4 space-y-0.5">
-                  <div><strong>Name (नाम):</strong> {fir.registeredBy?.split("(")[0]?.trim() || "Vedpal"}</div>
-                  <div><strong>Rank (पद):</strong> {fir.registeredBy?.includes("Inspector") ? "I (Inspector)" : "I (Inspector)"}</div>
-                  <div><strong>No. (सं.):</strong> PSI</div>
+                  <div><strong>Name (नाम):</strong> {officerNameDisplay}</div>
+                  <div><strong>Rank (पद):</strong> {officerRankDisplay}</div>
+                  <div><strong>No. (सं.):</strong> {officerNoDisplay}</div>
                 </div>
               </div>
             </div>

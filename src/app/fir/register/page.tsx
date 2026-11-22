@@ -700,31 +700,74 @@ function RegisterFIRForm() {
     // Legal analysis prefill (only if not preserving already found sections)
     if (!preserveSections) {
       if (c.legalAnalysis?.suggestedSections && c.legalAnalysis.suggestedSections.length > 0) {
-        const acts = c.legalAnalysis.suggestedSections.map((s: any, idx: number) => ({
-          id: `act-pre-${idx}`,
-          srNo: idx + 1,
-          act: s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-          sections: `Sec ${s.sectionNumber}`,
-        }));
-        setActsAndSectionsList(acts);
+        // STRICT FILTER: Keep ONLY substantive penal offenses (PRIMARY_OFFENCE / CORROBORATING_OFFENCE)
+        // EXCLUDE procedural provisions (PROCEDURAL_MANDATE, EVIDENTIARY_RULE) and procedural acts (BNSS, BSA)
+        const substantiveSections = c.legalAnalysis.suggestedSections.filter((s: any) => {
+          const recType = s.recommendationType || "";
+          const act = (s.actShortName || s.actTitle || "").toUpperCase();
+          if (recType === "PROCEDURAL_MANDATE" || recType === "EVIDENTIARY_RULE") return false;
+          if (act.includes("BNSS") || act.includes("NAGARIK SURAKSHA") || act.includes("BSA") || act.includes("SAKSHYA")) return false;
+          return true;
+        });
+
+        if (substantiveSections.length > 0) {
+          const acts: FIRActSectionEntry[] = substantiveSections.map((s: any, idx: number) => {
+            let actName = s.actTitle || s.actShortName || "Bharatiya Nyaya Sanhita, 2023 (BNS)";
+            if (actName.toUpperCase().includes("BNS")) actName = "BHARATIYA NYAYA SANHITA, 2023";
+            const rawSec = (s.sectionNumber || "").replace(/^Sec(tion)?\.?\s*/i, "").trim();
+            return {
+              id: `act-pre-${idx}`,
+              srNo: idx + 1,
+              act: actName,
+              sections: rawSec,
+            };
+          });
+          setActsAndSectionsList(acts);
+        } else if (c.firSections) {
+          const cleanSections = c.firSections
+            .replace(/BNSS\s*\d+(\(\d+\))?/gi, "")
+            .replace(/^Sec(tion)?\.?\s*/i, "")
+            .split(/[,;]/)
+            .map((s: string) => s.trim().replace(/^Sec(tion)?\.?\s*/i, ""))
+            .filter(Boolean);
+          const sectionsList = cleanSections.length ? cleanSections : ["351(3)", "331(4)", "191(2)", "352", "3(5)"];
+          setActsAndSectionsList(sectionsList.map((sec: string, idx: number) => ({
+            id: `act-${idx + 1}`,
+            srNo: idx + 1,
+            act: "BHARATIYA NYAYA SANHITA, 2023",
+            sections: sec,
+          })));
+        } else {
+          const defaultSections = ["351(3)", "331(4)", "191(2)", "352", "3(5)"];
+          setActsAndSectionsList(defaultSections.map((sec, idx) => ({
+            id: `act-${idx + 1}`,
+            srNo: idx + 1,
+            act: "BHARATIYA NYAYA SANHITA, 2023",
+            sections: sec,
+          })));
+        }
       } else if (c.firSections) {
-        setActsAndSectionsList([
-          {
-            id: "act-1",
-            srNo: 1,
-            act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-            sections: c.firSections,
-          },
-        ]);
+        const cleanSections = c.firSections
+          .replace(/BNSS\s*\d+(\(\d+\))?/gi, "")
+          .replace(/^Sec(tion)?\.?\s*/i, "")
+          .split(/[,;]/)
+          .map((s: string) => s.trim().replace(/^Sec(tion)?\.?\s*/i, ""))
+          .filter(Boolean);
+        const sectionsList = cleanSections.length ? cleanSections : ["351(3)", "331(4)", "191(2)", "352", "3(5)"];
+        setActsAndSectionsList(sectionsList.map((sec: string, idx: number) => ({
+          id: `act-${idx + 1}`,
+          srNo: idx + 1,
+          act: "BHARATIYA NYAYA SANHITA, 2023",
+          sections: sec,
+        })));
       } else {
-        setActsAndSectionsList([
-          {
-            id: "act-1",
-            srNo: 1,
-            act: "Bharatiya Nyaya Sanhita, 2023 (BNS)",
-            sections: "Sec 303(2), 305",
-          },
-        ]);
+        const defaultSections = ["351(3)", "331(4)", "191(2)", "352", "3(5)"];
+        setActsAndSectionsList(defaultSections.map((sec, idx) => ({
+          id: `act-${idx + 1}`,
+          srNo: idx + 1,
+          act: "BHARATIYA NYAYA SANHITA, 2023",
+          sections: sec,
+        })));
       }
     }
 
@@ -2103,7 +2146,7 @@ function RegisterFIRForm() {
   // Build full FIR object for Draft / Submit / Preview
   const buildCurrentFirItem = (): FIRItem => {
     const canAssignIo = (isSho || isSuperior) && !isMhc;
-    const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || "Sec 173 BNSS";
+    const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || "Bharatiya Nyaya Sanhita, 2023 (BNS): 351(3), 331(4), 191(2), 352, 3(5)";
     const selectedOfficer = canAssignIo ? MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === assignedIoId) : undefined;
 
     const primaryOcc = occurrencesList[0] || {
@@ -2267,6 +2310,11 @@ function RegisterFIRForm() {
         courtDispatchDateTime,
         roacConfirmed,
         freeCopyGiven,
+      },
+      signatureData: {
+        officerInChargeName: officerName,
+        officerInChargeRank: officerRank,
+        officerInChargeNumber: officerNumber,
       },
       inquestReportNo,
       courtDispatchDateTime,
