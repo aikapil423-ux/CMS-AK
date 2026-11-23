@@ -1,0 +1,30 @@
+# HTTPS entrypoint for the CMS test deployment.
+#
+# Browsers only expose microphone APIs (getUserMedia / Web Speech) in a secure
+# context, so voice dictation cannot work over http://112.196.123.220:18091.
+# This listener terminates TLS with Caddy's internal CA and proxies to the app.
+#
+# Public mapping: 112.196.123.220:18092 -> VM :8092 (already present in the
+# Proxmox NAT table).
+#
+# Clients must trust Caddy's local root CA, otherwise the browser warns and
+# microphone access stays blocked. Export it with:
+#   docker cp 18k-cms-tls:/data/caddy/pki/authorities/local/root.crt .
+# then import it into "Trusted Root Certification Authorities".
+
+https://112.196.123.220:8092 {
+	tls internal
+	encode zstd gzip
+	reverse_proxy cms:8091 {
+		header_up X-Forwarded-Proto https
+	}
+}
+
+# Same app on the VM's internal address, useful for health checks.
+https://10.10.10.3:8092 {
+	tls internal
+	encode zstd gzip
+	reverse_proxy cms:8091 {
+		header_up X-Forwarded-Proto https
+	}
+}

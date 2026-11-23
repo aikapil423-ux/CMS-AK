@@ -15,6 +15,22 @@ services:
     volumes:
       - 18k-cms-db:/app/prisma
 
+  # HTTPS front door: browsers only grant microphone access inside a secure
+  # context, so voice dictation needs this even on an internal test box.
+  # Public URL: https://112.196.123.220:18092  (NAT 18092 -> VM 8092)
+  tls:
+    image: caddy:2
+    container_name: 18k-cms-tls
+    restart: unless-stopped
+    depends_on:
+      - cms
+    ports:
+      - "8092:8092"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - 18k-cms-caddy:/data
+
 volumes:
   18k-cms-db:
     external: true
+  18k-cms-caddy:
