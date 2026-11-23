@@ -90,7 +90,12 @@ async function transcribeWithGemini(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const model = process.env.CMS_EVIDENCE_MODEL?.trim() || "gemini-3.5-flash-lite";
+  // `gemini-3.5-flash-lite` was never a published model id, so every dictation
+  // call 404'd and fell through to the (often unavailable) local Whisper.
+  const model =
+    process.env.CMS_DICTATION_MODEL?.trim() ||
+    process.env.CMS_EVIDENCE_MODEL?.trim() ||
+    "gemini-flash-latest";
   const mimeType = rawMime.includes("wav")
     ? "audio/wav"
     : rawMime.includes("mp4")
