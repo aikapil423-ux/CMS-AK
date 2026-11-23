@@ -90,12 +90,12 @@ async function transcribeWithGemini(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  // `gemini-3.5-flash-lite` was never a published model id, so every dictation
-  // call 404'd and fell through to the (often unavailable) local Whisper.
+  // gemini-3.5-flash-lite is the current published id (2.5-* are closed to new
+  // keys). Keep it overridable so a model rotation never needs a rebuild.
   const model =
     process.env.CMS_DICTATION_MODEL?.trim() ||
     process.env.CMS_EVIDENCE_MODEL?.trim() ||
-    "gemini-flash-latest";
+    "gemini-3.5-flash-lite";
   const mimeType = rawMime.includes("wav")
     ? "audio/wav"
     : rawMime.includes("mp4")
