@@ -33,7 +33,7 @@ export function ActionsDropdown({ children, label = "Report actions" }: { childr
 
   return <>
     <button ref={trigger} type="button" aria-expanded={!!position} aria-label={label}
-      className="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+      className="inline-flex items-center gap-1.5 border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 dark:bg-[#172747] dark:text-slate-100 dark:border-[#273b63] dark:hover:bg-[#233760] rounded-md"
       onClick={() => {
         if (position) { setPosition(null); return; }
         const rect = trigger.current!.getBoundingClientRect();
@@ -42,7 +42,7 @@ export function ActionsDropdown({ children, label = "Report actions" }: { childr
       Actions <ChevronDown className="h-3.5 w-3.5" />
     </button>
     {position && createPortal(<div ref={panel} role="group" aria-label={label}
-      className="cms-report-actions fixed z-[160] flex w-[180px] max-h-[220px] overflow-y-auto flex-col gap-1 border border-slate-300 bg-white p-1.5 shadow-lg"
+      className="cms-report-actions fixed z-[160] flex w-[180px] max-h-[220px] overflow-y-auto flex-col gap-1 border border-slate-300 bg-white p-1.5 shadow-lg dark:bg-[#101e38] dark:border-[#273b63] dark:text-slate-100 rounded-lg"
       style={position}
       onClick={event => { if ((event.target as Element).closest("button, a")) setPosition(null); }}>
       {children}

@@ -138,6 +138,8 @@ interface ComplainantFormItem {
   presentCity: string;
   presentDistrict: string;
   presentState: string;
+  countryChoice?: "India" | "Other";
+  otherCountry?: string;
   presentCountry: string;
   isPermanentSameAsPresent: boolean;
   permanentAddress: string;
@@ -388,6 +390,8 @@ export default function RegisterComplaintPage() {
       presentCity: "Panipat",
       presentDistrict: "Panipat",
       presentState: "Haryana",
+      countryChoice: "India",
+      otherCountry: "",
       presentCountry: "India",
       isPermanentSameAsPresent: true,
       permanentAddress: "",
@@ -901,6 +905,8 @@ export default function RegisterComplaintPage() {
         presentCity: "Panipat",
         presentDistrict: currentUser.district || "Panipat",
         presentState: "Haryana",
+        countryChoice: "India",
+        otherCountry: "",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
         permanentAddress: "",
@@ -1001,6 +1007,8 @@ export default function RegisterComplaintPage() {
         presentCity: "Panipat",
         presentDistrict: "Panipat",
         presentState: "Haryana",
+        countryChoice: "India",
+        otherCountry: "",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
         permanentAddress: "",
@@ -1029,6 +1037,8 @@ export default function RegisterComplaintPage() {
           item.nationality = "Indian";
           item.otherNationality = "";
           item.countryCode = "+91";
+          item.countryChoice = "India";
+          item.otherCountry = "";
           item.presentCountry = "India";
           if (item.isPermanentSameAsPresent) {
             item.permanentCountry = "India";
@@ -1036,6 +1046,8 @@ export default function RegisterComplaintPage() {
           item.mobile = item.mobile.replace(/\D/g, "").slice(0, 10);
         } else {
           item.nationality = item.otherNationality || "";
+          item.countryChoice = "Other";
+          item.otherCountry = "";
           item.presentCountry = "";
           if (item.isPermanentSameAsPresent) {
             item.permanentCountry = "";
@@ -1044,6 +1056,26 @@ export default function RegisterComplaintPage() {
       } else if (field === "otherNationality") {
         item.otherNationality = value;
         item.nationality = value;
+      } else if (field === "countryChoice") {
+        item.countryChoice = value;
+        if (value === "India") {
+          item.presentCountry = "India";
+          item.otherCountry = "";
+          if (item.isPermanentSameAsPresent) {
+            item.permanentCountry = "India";
+          }
+        } else {
+          item.presentCountry = item.otherCountry || "";
+          if (item.isPermanentSameAsPresent) {
+            item.permanentCountry = item.otherCountry || "";
+          }
+        }
+      } else if (field === "otherCountry") {
+        item.otherCountry = value;
+        item.presentCountry = value;
+        if (item.isPermanentSameAsPresent) {
+          item.permanentCountry = value;
+        }
       } else if (field === "mobile") {
         if (item.nationalityChoice === "Indian") {
           item.mobile = String(value).replace(/\D/g, "").slice(0, 10);
@@ -1081,6 +1113,15 @@ export default function RegisterComplaintPage() {
       setValidationErrors((prev) => {
         const next = { ...prev };
         delete next[errorKey];
+        return next;
+      });
+    }
+    if (field === "countryChoice" || field === "otherCountry") {
+      setValidationErrors((prev) => {
+        const next = { ...prev };
+        delete next[`comp_${index}_countryChoice`];
+        delete next[`comp_${index}_otherCountry`];
+        delete next[`comp_${index}_presentCountry`];
         return next;
       });
     }
@@ -1417,6 +1458,8 @@ export default function RegisterComplaintPage() {
           presentCity: extractedCity, // Never default to "Kurukshetra"! If not in document, leave empty!
           presentDistrict: extractedDistrict, // Never default to "Kurukshetra"! If not in document, leave empty!
           presentState: extractedState, // Never default to "Haryana"! If not in document, leave empty!
+          countryChoice: "India",
+          otherCountry: "",
           presentCountry: "India",
           isPermanentSameAsPresent: true,
           permanentAddress: extractedAddress,
@@ -1832,6 +1875,8 @@ export default function RegisterComplaintPage() {
         presentCity: "",
         presentDistrict: "",
         presentState: "",
+        countryChoice: "India",
+        otherCountry: "",
         presentCountry: "India",
         isPermanentSameAsPresent: true,
         permanentAddress: extractedAddr,
@@ -2060,6 +2105,9 @@ export default function RegisterComplaintPage() {
       }
       if (!comp.presentState.trim()) {
         errors[`comp_${idx}_presentState`] = `Complainant ${idx + 1}: State is required`;
+      }
+      if (comp.countryChoice === "Other" && !comp.otherCountry?.trim()) {
+        errors[`comp_${idx}_otherCountry`] = `Complainant ${idx + 1}: Please specify country`;
       }
       if (!comp.presentCountry.trim()) {
         errors[`comp_${idx}_presentCountry`] = `Complainant ${idx + 1}: Country is required`;
@@ -3488,35 +3536,49 @@ export default function RegisterComplaintPage() {
                         )}
                       </div>
 
-                      {/* Country (By default India if nationality is Indian) */}
+                      {/* Country Dropdown (India / Other) */}
                       <div className="sm:col-span-3">
                         <div className="flex items-center justify-between h-5 mb-1">
                           <label className="block text-xs font-semibold text-slate-700 leading-none">
                             Country *
                           </label>
                         </div>
-                        <input
-                          type="text"
-                          value={comp.presentCountry}
-                          onChange={(e) => handleComplainantChange(idx, "presentCountry", e.target.value)}
-                          placeholder="e.g. India"
-                          readOnly={comp.nationalityChoice === "Indian"}
-                          className={`w-full h-10 px-3 py-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
-                            comp.nationalityChoice === "Indian"
-                              ? "bg-slate-100 text-slate-700 cursor-not-allowed font-medium"
-                              : "bg-slate-50"
-                          } ${
-                            validationErrors[`comp_${idx}_presentCountry`]
-                              ? "border-red-500 bg-red-50"
-                              : "border-slate-300"
-                          }`}
-                        />
-                        {validationErrors[`comp_${idx}_presentCountry`] && (
-                          <p className="text-[11px] text-red-600 mt-0.5">
-                            {validationErrors[`comp_${idx}_presentCountry`]}
-                          </p>
-                        )}
+                        <select
+                          value={comp.countryChoice || (comp.presentCountry === "India" || !comp.presentCountry ? "India" : "Other")}
+                          onChange={(e: any) => handleComplainantChange(idx, "countryChoice", e.target.value)}
+                          className="w-full h-10 px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#0b192c] font-semibold text-slate-800"
+                        >
+                          <option value="India">India</option>
+                          <option value="Other">Other</option>
+                        </select>
                       </div>
+
+                      {/* If Other, column for Country fill opens */}
+                      {(comp.countryChoice === "Other" || (comp.countryChoice !== "India" && comp.presentCountry && comp.presentCountry !== "India")) && (
+                        <div className="sm:col-span-3 animate-in fade-in-50">
+                          <div className="flex items-center justify-between h-5 mb-1">
+                            <label className="block text-xs font-semibold text-slate-700 leading-none">
+                              Specify Country *
+                            </label>
+                          </div>
+                          <input
+                            type="text"
+                            value={comp.otherCountry || (comp.presentCountry !== "India" ? comp.presentCountry : "")}
+                            onChange={(e) => handleComplainantChange(idx, "otherCountry", e.target.value)}
+                            placeholder="e.g. United Kingdom / Canada"
+                            className={`w-full h-10 px-3 py-2 text-xs sm:text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-[#0b192c] ${
+                              validationErrors[`comp_${idx}_otherCountry`] || validationErrors[`comp_${idx}_presentCountry`]
+                                ? "border-red-500 bg-red-50"
+                                : "border-slate-300"
+                            }`}
+                          />
+                          {(validationErrors[`comp_${idx}_otherCountry`] || validationErrors[`comp_${idx}_presentCountry`]) && (
+                            <p className="text-[11px] text-red-600 mt-0.5">
+                              {validationErrors[`comp_${idx}_otherCountry`] || validationErrors[`comp_${idx}_presentCountry`]}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Mobile No. showing Country Code: Default +91 and 10 digits if Indian, editable if other */}
@@ -5164,8 +5226,8 @@ export default function RegisterComplaintPage() {
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     {isSho && shouldAssignEoNow
-                      ? "Confirm, Register & Assign EO (PPR Rule 22.48)"
-                      : "Confirm & Register Complaint (PPR Rule 22.48)"}
+                      ? "Confirm, Register & Assign EO"
+                      : "Confirm & Register Complaint"}
                   </Button>
                 </div>
               </div>

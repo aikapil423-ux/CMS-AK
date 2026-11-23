@@ -761,20 +761,14 @@ function GeneralDiaryContent() {
       case "narrative":
         return (
           <td key="narrative" className="py-3.5 px-3.5 align-top min-w-[300px]">
-            <div
-              onClick={() => openBriefModal(rec)}
-              className="cursor-pointer group p-1 -m-1 rounded-md hover:bg-blue-50/70 transition-colors"
-              title="Click to view full description dialog (पूरा विवरण देखें)"
-            >
-              <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
-                {cleanGdNarrative(rec.narrative)}
-              </p>
-              {rec.narrative && (
-                <span className="text-[10px] font-bold text-blue-600 group-hover:text-blue-800 mt-1 inline-block">
-                  Click to view full description
-                </span>
-              )}
-            </div>
+            <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">
+              {cleanGdNarrative(rec.narrative)}
+            </p>
+            {rec.narrative && (
+              <span className="text-[10px] font-bold text-blue-600 mt-1 inline-block">
+                Click to view full preview
+              </span>
+            )}
           </td>
         );
 
@@ -792,15 +786,64 @@ function GeneralDiaryContent() {
   };
 
   return (
-    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-4">
       {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-[#0b192c] tracking-tight">
-              General Diary
-            </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#0b192c] tracking-tight">
+            General Diary
+          </h1>
+
+          {/* Tabs Navigation next to Title */}
+          <div className="flex items-center text-xs sm:text-sm font-semibold gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("REGISTER");
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === "REGISTER"
+                  ? "bg-white text-blue-950 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              }`}
+            >
+              <span>General Diary Register</span>
+              <span className="text-[11px] font-mono bg-blue-100 text-blue-900 px-2 py-0.2 rounded-full font-bold">
+                {paginatedData.todayCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("SUGGESTIONS_DRAFTS");
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === "SUGGESTIONS_DRAFTS"
+                  ? "bg-white text-purple-950 font-bold shadow-xs border border-slate-200/60"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+              }`}
+            >
+              <span>Auto-Suggestions &amp; Drafts</span>
+              {(paginatedData.suggestedCount > 0 || paginatedData.draftCount > 0) && (
+                <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.2 rounded-full font-bold">
+                  {paginatedData.suggestedCount + paginatedData.draftCount}
+                </span>
+              )}
+            </button>
           </div>
+
+          {/* Record Transfers Link (where red tick was) */}
+          {currentUser?.unitId && ["SHO", "SP_DISTRICT", "SUPER_ADMIN"].includes(currentUser.role) && (
+            <Link
+              href="/record-transfers"
+              className="text-xs sm:text-sm font-semibold text-blue-800 underline hover:text-blue-950 transition-colors"
+            >
+              Record transfers
+            </Link>
+          )}
         </div>
 
         {/* Top Action Buttons */}
@@ -841,49 +884,6 @@ function GeneralDiaryContent() {
         </div>
       )}
 
-      {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 text-xs sm:text-sm font-semibold gap-1">
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("REGISTER");
-            setPage(1);
-          }}
-          className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "REGISTER"
-              ? "border-blue-700 text-blue-950 font-black bg-blue-50/40"
-              : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-          }`}
-        >
-          <BookOpen className="w-4 h-4 text-blue-600" />
-          <span>General Diary Register</span>
-          <span className="text-[11px] font-mono bg-blue-100 text-blue-900 px-2 py-0.2 rounded-full font-bold">
-            {paginatedData.todayCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab("SUGGESTIONS_DRAFTS");
-            setPage(1);
-          }}
-          className={`px-4 py-2.5 border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === "SUGGESTIONS_DRAFTS"
-              ? "border-purple-700 text-purple-950 font-black bg-purple-50/40"
-              : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-          }`}
-        >
-          <Sparkles className="w-4 h-4 text-purple-600" />
-          <span>Auto-Suggestions &amp; Drafts</span>
-          {(paginatedData.suggestedCount > 0 || paginatedData.draftCount > 0) && (
-            <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.2 rounded-full font-bold">
-              {paginatedData.suggestedCount + paginatedData.draftCount}
-            </span>
-          )}
-        </button>
-      </div>
-
       {/* 24-Hour Auto-Purge Policy Notice for Auto-Suggestions & Drafts */}
       {activeTab === "SUGGESTIONS_DRAFTS" && (
         <div className="bg-gradient-to-r from-purple-50 via-purple-50/80 to-amber-50/50 border border-purple-200/80 rounded-xl p-3 flex items-start gap-3 text-xs text-purple-950 shadow-2xs">
@@ -898,98 +898,90 @@ function GeneralDiaryContent() {
         </div>
       )}
 
-      {/* Friendly Search & Filter Bar */}
-      <Card className="border-slate-200 shadow-2xs bg-white">
-        <CardContent className="p-3.5 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-            {/* 1. Keyword Search */}
-            <div className="sm:col-span-6 space-y-1">
-              <label className="text-[11px] font-bold text-slate-700">Search</label>
-              <div className="relative flex items-center gap-1.5">
-                <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={keyword}
-                    onChange={(e) => {
-                      setKeyword(e.target.value);
-                      setPage(1);
-                    }}
-                    placeholder="Search GD by officer, subject, keyword, GD no..."
-                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-[#0b192c]"
-                  />
-                </div>
-                <VoiceInputButton
-                  onTranscript={(text) => {
-                    setKeyword((prev) => (prev ? `${prev} ${text}` : text));
-                    setPage(1);
-                  }}
-                  fieldLabel="GD Search"
-                  preferredLang="hi-IN"
-                  iconOnly={true}
-                />
-              </div>
-            </div>
-
-            {/* 2. Type Filter */}
-            <div className="sm:col-span-3 space-y-1">
-              <label className="text-[11px] font-bold text-slate-700">GD Type</label>
-              <select
-                value={typeFilter}
+      {/* Friendly Search & Filter Bar (No outer card/border) */}
+      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        {/* 1. Keyword Search */}
+        <div className="sm:col-span-5">
+          <div className="relative flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={keyword}
                 onChange={(e) => {
-                  setTypeFilter(e.target.value);
+                  setKeyword(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold"
-              >
-                <option value="ALL">All Types</option>
-                {types.map((t) => (
-                  <option key={t.code} value={t.code}>
-                    {t.nameEn}
-                  </option>
-                ))}
-              </select>
+                placeholder="Search GD by officer, subject, keyword, GD no..."
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-[#0b192c]"
+              />
             </div>
-
-            {/* 3. Entry Date — Small Compact Box */}
-            <div className="sm:col-span-3 space-y-1 sm:justify-self-end w-full sm:w-auto">
-              <div className="flex items-center justify-between sm:justify-start gap-2">
-                <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                  <CalendarDays className="w-3 h-3 text-blue-600" />
-                  <span>Date</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDate("");
-                    setPage(1);
-                  }}
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer ${
-                    !selectedDate
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
-                  title="Show entries from all dates"
-                >
-                  All
-                </button>
-              </div>
-              <div className="w-full sm:w-[150px]">
-                <DatePickerDDMMYYYY
-                  value={selectedDate}
-                  max={todayISO}
-                  size="sm"
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setPage(1);
-                  }}
-                  title="Filter entries by date (DD/MM/YYYY)"
-                />
-              </div>
-            </div>
+            <VoiceInputButton
+              onTranscript={(text) => {
+                setKeyword((prev) => (prev ? `${prev} ${text}` : text));
+                setPage(1);
+              }}
+              fieldLabel="GD Search"
+              preferredLang="hi-IN"
+              iconOnly={true}
+            />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* 2. Type Filter */}
+        <div className="sm:col-span-3">
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setPage(1);
+            }}
+            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold"
+          >
+            <option value="ALL">All GD Types</option>
+            {types.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.nameEn}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 3. Entry Date — Small Compact Box */}
+        <div className="sm:col-span-4 flex items-center gap-2 sm:justify-self-end w-full sm:w-auto">
+          <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
+            <CalendarDays className="w-3.5 h-3.5 text-blue-600" />
+            <span>Date</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDate("");
+              setPage(1);
+            }}
+            className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer shrink-0 ${
+              !selectedDate
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+            title="Show entries from all dates"
+          >
+            All
+          </button>
+          <div className="w-full sm:w-[145px]">
+            <DatePickerDDMMYYYY
+              value={selectedDate}
+              max={todayISO}
+              size="sm"
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setPage(1);
+              }}
+              title="Filter entries by date (DD/MM/YYYY)"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Main Smart GD Register Table View */}
       {loading ? (
@@ -1084,9 +1076,16 @@ function GeneralDiaryContent() {
                   return (
                     <tr
                       key={rec.id}
-                      className={`hover:bg-slate-50/80 transition-colors ${
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest("button, a, input, select")) return;
+                        setSelectedRecord(rec);
+                        setInspectAutoPrint(false);
+                        setInspectModalOpen(true);
+                      }}
+                      className={`cursor-pointer hover:bg-blue-50/50 transition-colors ${
                         isSuggested ? "bg-purple-50/30" : isDraft ? "bg-amber-50/30" : ""
                       }`}
+                      title="Click anywhere on row to preview"
                     >
                       {columnOrder.map((col) => renderGDCell(col, rec))}
 

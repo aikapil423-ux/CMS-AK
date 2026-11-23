@@ -223,7 +223,7 @@
     background-color: white;
     color: #26334a;
     min-height: 40px;
-    font-size: 14px;
+    font-size: 15px;
     box-shadow: none;
   }
   .cms-court-theme :where(input, select, textarea):focus-visible {
@@ -242,16 +242,13 @@
   .cms-court-theme :where(input, textarea).cms-ghost-active::placeholder { color: transparent; }
   .cms-court-theme :where(input[type="radio"], input[type="checkbox"]) { accent-color: #203c88; }
   
-  .cms-court-theme :where(label.block):not(.a4-sheet *, [id^="printable-"] *) {
-    background: #eef1ff;
-    color: #26334a;
-    padding: 8px 12px;
+  .cms-court-theme :where(label, label.block):not(.a4-sheet *, [id^="printable-"] *) {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
     font-weight: 600;
     text-transform: none;
     letter-spacing: normal;
-    font-size: 13px;
-    border: 1px solid #b7c1d4;
-    border-bottom: 0;
   }
 
   /* Hallmark Tab Systems */

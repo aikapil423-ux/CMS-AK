@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { getGDSuggestions, type GDChainState, type GDSuggestion } from "@/lib/gdSuggestions";
 import { autoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { suggestionStore } from "@/lib/suggestionStore";
+import { useLanguage } from "@/context/LanguageContext";
 
 export interface AutoSuggestFieldProps {
   value: string;
@@ -62,6 +63,7 @@ export function AutoSuggestField({
   style,
   "data-testid": dataTestId,
 }: AutoSuggestFieldProps) {
+  const { isHindi } = useLanguage();
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const controlRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const lastAcceptTimeRef = useRef<number>(0);
@@ -327,9 +329,9 @@ export function AutoSuggestField({
           }}
           onTouchEnd={handleBadgeClick}
           className="no-print absolute right-2.5 bottom-2.5 z-20 flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-950 active:scale-95 text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow cursor-pointer select-none transition-all animate-in fade-in border border-slate-700/60"
-          title="Press Tab, → or click here to complete"
+          title={isHindi ? "सुझाव स्वीकारने के लिए Tab, → दबाएँ या यहाँ क्लिक करें" : "Press Tab, → or click here to complete"}
         >
-          <span className="text-slate-300">सुझाव</span>
+          <span className="text-slate-300">{isHindi ? "सुझाव" : "Suggestion"}</span>
           <kbd className="px-1 py-0.2 bg-slate-800 rounded text-[9px] font-mono border border-slate-600 text-amber-300">Tab ⇥</kbd>
         </button>
       )}
@@ -339,10 +341,18 @@ export function AutoSuggestField({
 
 /** Small helper so a page can advertise the TAB hint next to a field. */
 export function SuggestionHint({ className }: { className?: string }) {
+  const { isHindi } = useLanguage();
   return (
     <span className={cn("hidden sm:inline text-[10px] font-medium text-slate-400", className)}>
-      Tip: press <kbd className="px-1 rounded border border-slate-300 bg-white font-mono">Tab</kbd>{" "}
-      to accept a suggestion
+      {isHindi ? (
+        <>
+          सुझाव स्वीकारने के लिए <kbd className="px-1 rounded border border-slate-300 bg-white font-mono">Tab</kbd> दबाएँ
+        </>
+      ) : (
+        <>
+          Tip: press <kbd className="px-1 rounded border border-slate-300 bg-white font-mono">Tab</kbd> to accept a suggestion
+        </>
+      )}
     </span>
   );
 }

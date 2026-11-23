@@ -9,13 +9,13 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({ className, variant = "default", size = "sm", children, ...props }: BadgeProps) {
   const variantStyles = {
-    default: "bg-slate-100 text-slate-700 border-slate-200/80",
-    success: "bg-emerald-50 text-emerald-800 border-emerald-200/60",
-    warning: "bg-amber-50 text-amber-800 border-amber-200/60",
-    danger: "bg-rose-50 text-rose-800 border-rose-200/60",
-    info: "bg-slate-100 text-slate-700 border-slate-200/80",
-    neutral: "bg-slate-50 text-slate-600 border-slate-200/70",
-    gold: "bg-slate-100 text-slate-800 border-slate-300/80 font-medium",
+    default: "bg-slate-100 text-slate-700 border-slate-200/80 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
+    success: "bg-emerald-50 text-emerald-800 border-emerald-200/60 dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-800/80",
+    warning: "bg-amber-50 text-amber-800 border-amber-200/60 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800/80",
+    danger: "bg-rose-50 text-rose-800 border-rose-200/60 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-800/80",
+    info: "bg-slate-100 text-slate-700 border-slate-200/80 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
+    neutral: "bg-slate-50 text-slate-600 border-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+    gold: "bg-slate-100 text-slate-800 border-slate-300/80 font-medium dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800/70",
   };
 
   const sizeStyles = {
@@ -52,7 +52,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800/80",
           className
         )}
       >
@@ -67,7 +67,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-50/80 text-purple-900 border border-purple-200/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-purple-50/80 text-purple-900 border border-purple-200/70 dark:bg-purple-950/70 dark:text-purple-200 dark:border-purple-800/80",
           className
         )}
       >
@@ -82,7 +82,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-950 border border-amber-300/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-950 border border-amber-300/70 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800/80",
           className
         )}
       >
@@ -97,7 +97,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-50/80 text-rose-800 border border-rose-200/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-rose-50/80 text-rose-800 border border-rose-200/70 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-800/80",
           className
         )}
       >
@@ -112,7 +112,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50/80 text-amber-900 border border-amber-200/70 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800/80",
           className
         )}
       >
@@ -134,7 +134,7 @@ export function StatusBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50/80 text-emerald-800 border border-emerald-200/70",
+          "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-50/80 text-emerald-800 border border-emerald-200/70 dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-800/80",
           className
         )}
       >
@@ -148,7 +148,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700",
         className
       )}
     >

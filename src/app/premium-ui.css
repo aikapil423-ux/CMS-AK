@@ -28,7 +28,7 @@
 .cms-court-theme .cms-sidebar-brand-text h1 {color:#fff!important;font-size:25px;font-weight:750;line-height:1.15;letter-spacing:0}
 .cms-court-theme .cms-sidebar-brand-text p {color:#fff!important;font-size:16px;line-height:1.5;margin:0}
 .cms-court-theme .cms-shell {background:#f5f7fb;color:#243247}
-.cms-court-theme .cms-topbar {background:#fff!important;color:#34445d!important;border-bottom:1px solid #e6eaf1!important;min-height:76px;box-shadow:none;gap:16px}
+.cms-court-theme .cms-topbar {background:#fff!important;color:#34445d!important;border-bottom:1px solid #e6eaf1!important;min-height:56px;box-shadow:none;gap:16px}
 .cms-court-theme .cms-topbar > div > div:first-child {color:#34445d}
 .cms-court-theme .cms-topbar nav :is(span,a) {color:#64748b;background:transparent;border:0}
 .cms-court-theme .cms-topbar nav span.font-bold {color:#172b4d}
@@ -41,7 +41,7 @@
 .cms-court-theme .cms-page-heading a[href='/complaints/register'] button:hover {background:#b91c1c!important;border-color:#b91c1c!important}
 .cms-court-theme .cms-topbar a[href='/fir/register'] button,.cms-court-theme a.cms-register-fir-action {background:#dc2626!important;border:1px solid #dc2626;color:#fff!important;border-radius:8px;text-decoration:none}
 .cms-court-theme .cms-topbar a[href='/fir/register'] button:hover,.cms-court-theme a.cms-register-fir-action:hover {background:#b91c1c!important;border-color:#b91c1c}
-.cms-court-theme .cms-main {padding:28px}
+.cms-court-theme .cms-main {padding:14px 24px 24px}
 .cms-court-theme .cms-main > .cms-complaints {max-width:1560px;margin-inline:auto}
 .cms-court-theme .cms-complaints > .cms-page-heading h1 {font-size:28px;font-weight:700;color:#172b4d;letter-spacing:-.035em}
 .cms-court-theme .cms-page-heading > div > p {font-size:13px;color:#718096;margin-top:6px}
@@ -66,6 +66,437 @@
 .cms-court-theme .cms-page-heading button {border-radius:8px!important;min-height:40px}
 .cms-court-theme .cms-register-table a.cms-open-case {display:inline-flex;align-items:center;gap:8px;color:#203c88;font-weight:600;padding:7px 11px;border:1px solid #dce5f4;border-radius:7px;text-decoration:none}
 .cms-court-theme .cms-register-table .animate-pulse {animation:none}
+
+/* Global Form Typography Enhancement (Complaint, FIR, GD, Registrations, Modals) */
+.cms-court-theme :where(main, [role="dialog"], form) label:not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, thead *) {
+  font-size: 13.5px !important;
+  line-height: 1.4 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.cms-court-theme :where(main, [role="dialog"], form) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+}
+.cms-court-theme :where(main, [role="dialog"], form) select option {
+  font-size: 14.5px !important;
+}
+.cms-court-theme :where(main, [role="dialog"], form) :where(input, textarea)::placeholder {
+  font-size: 13.5px !important;
+}
+.cms-court-theme :where(main, [role="dialog"], form) :where(label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+  font-size: 14px !important;
+}
+.cms-court-theme :where(main, [role="dialog"], form) :where(.text-\[10px\], .text-\[11px\], p[class*="text-red-"]):not(.a4-sheet *, [id^="printable-"] *, table *) {
+  font-size: 12.5px !important;
+}
+
 @media(max-width:1023px){.cms-court-theme .cms-main {padding:16px}}
 @media(prefers-reduced-motion:reduce){.cms-shell *,.cms-shell *::before,.cms-shell *::after {animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* =========================================================================
+   COMPREHENSIVE HIGH-CONTRAST DARK THEME STYLING
+   ========================================================================= */
+html.dark,
+html.dark body,
+html.dark .cms-shell {
+  background-color: #0b1424 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark,
+html.dark .cms-court-theme {
+  --color-paper: #0b1424;
+  --color-paper-2: #0f1c34;
+  --color-paper-3: #172747;
+  --color-ink: #f1f5f9;
+  --color-ink-2: #e2e8f0;
+  --color-muted: #94a3b8;
+  --color-rule: #223456;
+  --color-rule-subtle: #1e2c48;
+}
+
+html.dark .cms-main {
+  background-color: #0b1424 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Hallmark CSS Variable Overrides in Dark Mode */
+html.dark .cms-court-theme :where(main, [role="dialog"], form, .cms-card, .rounded-xl, .rounded-2xl, .rounded-lg, .rounded-3xl) {
+  --color-slate-900: #f8fafc;
+  --color-slate-800: #f1f5f9;
+  --color-slate-700: #e2e8f0;
+  --color-slate-600: #cbd5e1;
+  --color-slate-500: #94a3b8;
+  --color-slate-400: #64748b;
+  --color-slate-200: #223456;
+  --color-slate-100: #172747;
+  --color-slate-50: #0f1c34;
+  --color-blue-600: #60a5fa;
+  --color-indigo-600: #818cf8;
+}
+
+/* Headings & Page Titles */
+html.dark .cms-court-theme :where(h1, h2, h3, h4, h5, h6) {
+  color: #f8fafc !important;
+}
+html.dark .cms-court-theme .cms-complaints > .cms-page-heading h1 {
+  color: #f8fafc !important;
+}
+html.dark .cms-court-theme .cms-page-heading > div > p {
+  color: #94a3b8 !important;
+}
+
+/* Dark text classes overridden to bright readable colors */
+html.dark .cms-court-theme :is(
+  [class*="text-[#0b192c]"],
+  [class*="text-[#172b4d]"],
+  [class*="text-[#203c88]"],
+  [class*="text-[#26334a]"],
+  [class*="text-[#1e3a8a]"],
+  [class*="text-[#1e293b]"],
+  [class*="text-[#0f172a]"],
+  [class*="text-[#020617]"],
+  [class*="text-[#111827]"],
+  .text-black,
+  .text-slate-950,
+  .text-slate-900,
+  .text-slate-800,
+  .text-slate-700,
+  .text-gray-900,
+  .text-gray-800,
+  .text-gray-700,
+  .text-zinc-900,
+  .text-zinc-800
+):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  color: #f1f5f9 !important;
+}
+
+/* Secondary & Muted text */
+html.dark .cms-court-theme :is(
+  .text-slate-600,
+  .text-slate-500,
+  .text-slate-400,
+  .text-gray-600,
+  .text-gray-500,
+  .text-gray-400,
+  .text-zinc-500,
+  .text-zinc-400,
+  .text-muted-foreground
+):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  color: #94a3b8 !important;
+}
+
+html.dark .cms-court-theme label:not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  color: #e2e8f0 !important;
+}
+
+/* Topbar in Dark Mode */
+html.dark .cms-court-theme .cms-topbar,
+html.dark .cms-shell header.lg\:hidden {
+  background-color: #0f1c34 !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid #1e2c48 !important;
+}
+html.dark .cms-court-theme .cms-topbar > div > div:first-child,
+html.dark .cms-shell header.lg\:hidden :where(h2, span) {
+  color: #f1f5f9 !important;
+}
+html.dark .cms-court-theme .cms-topbar span[style],
+html.dark .cms-shell header.lg\:hidden span[style] {
+  color: #93c5fd !important;
+  background-color: #1a2d52 !important;
+  border-color: #2f497a !important;
+}
+html.dark .cms-court-theme .cms-topbar button:not(.absolute *),
+html.dark .cms-shell header.lg\:hidden button:not(.absolute *) {
+  background-color: #172747 !important;
+  color: #f1f5f9 !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .cms-topbar button:not(.absolute *):hover,
+html.dark .cms-shell header.lg\:hidden button:not(.absolute *):hover {
+  background-color: #233760 !important;
+  color: #ffffff !important;
+}
+
+/* Cards, Panels & Filters */
+html.dark .cms-court-theme :is(.bg-white, [class*="bg-white/"]):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  background-color: #101e38 !important;
+  color: #f1f5f9 !important;
+}
+html.dark .cms-court-theme :is(.bg-slate-50, .bg-slate-100, .bg-slate-50\/80, .bg-slate-50\/90):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  background-color: #0d182e !important;
+  color: #e2e8f0 !important;
+}
+html.dark .cms-court-theme :is(.border-slate-200, .border-slate-300, .border-slate-100, .border-slate-200\/80, .border-slate-200\/90) {
+  border-color: #223456 !important;
+}
+html.dark .cms-court-theme .cms-complaints > .cms-filter-panel {
+  background-color: #101e38 !important;
+  border-color: #223456 !important;
+}
+
+/* Tables (Registers) */
+html.dark .cms-court-theme .cms-register-table {
+  border-color: #223456 !important;
+  background-color: #101e38 !important;
+}
+html.dark .cms-court-theme .cms-register-table table {
+  background-color: #101e38 !important;
+  color: #f1f5f9 !important;
+}
+html.dark .cms-court-theme .cms-register-table :is(thead, thead tr, thead th) {
+  background: #0d182e !important;
+  color: #94a3b8 !important;
+  border-color: #223456 !important;
+}
+/* Table Headers in Dark Mode */
+html.dark .cms-court-theme .cms-register-table :is(thead, thead tr, thead th),
+html.dark .cms-court-theme .cms-register-table thead :is(button, span, svg, div) {
+  background-color: #0d182e !important;
+  color: #cbd5e1 !important;
+  border-color: #223456 !important;
+}
+html.dark .cms-court-theme .cms-register-table tbody tr {
+  border-color: #1a2944 !important;
+  background-color: transparent !important;
+}
+html.dark .cms-court-theme .cms-register-table tbody tr:hover {
+  background: #172747 !important;
+}
+html.dark .cms-court-theme .cms-register-table td {
+  color: #e2e8f0 !important;
+  border-color: #1a2944 !important;
+}
+html.dark .cms-court-theme .cms-register-table td :is(p, span, div):not([class*="bg-"]):not([class*="badge"]) {
+  color: inherit;
+}
+html.dark .cms-court-theme .cms-register-table td :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: #94a3b8 !important;
+}
+html.dark .cms-court-theme .cms-register-table td svg {
+  color: #94a3b8 !important;
+}
+html.dark .cms-court-theme .cms-register-table a:not(.cms-open-case) {
+  color: #f1f5f9 !important;
+}
+html.dark .cms-court-theme .cms-register-table a:not(.cms-open-case):hover {
+  color: #60a5fa !important;
+}
+html.dark .cms-court-theme .cms-register-table a.cms-open-case {
+  background-color: #172747 !important;
+  color: #93c5fd !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .cms-register-table a.cms-open-case:hover {
+  background-color: #233760 !important;
+  color: #ffffff !important;
+  border-color: #3b5284 !important;
+}
+html.dark .cms-court-theme .cms-register-table button[aria-label="Complaint actions"],
+html.dark .cms-court-theme .cms-register-table button:has(svg.lucide-chevron-down) {
+  background-color: #172747 !important;
+  color: #f1f5f9 !important;
+  border-color: #273b63 !important;
+}
+
+/* Pagination in Dark Mode (High-contrast Previous & Next) */
+html.dark .cms-court-theme .cms-pagination {
+  background-color: #0d182e !important;
+  border-color: #223456 !important;
+  color: #cbd5e1 !important;
+}
+html.dark .cms-court-theme .cms-pagination span {
+  color: #cbd5e1 !important;
+}
+html.dark .cms-court-theme .cms-pagination button:disabled {
+  opacity: 1 !important;
+  color: #64748b !important;
+  background-color: #101c33 !important;
+  border: 1px solid #1e2c48 !important;
+  cursor: not-allowed !important;
+}
+html.dark .cms-court-theme .cms-pagination button:not(:disabled) {
+  opacity: 1 !important;
+  color: #ffffff !important;
+  background-color: #1e3a8a !important;
+  border: 1px solid #3b82f6 !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+html.dark .cms-court-theme .cms-pagination button:not(:disabled):hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Form Controls (Inputs, Selects, Textareas) */
+html.dark .cms-court-theme :where(main, [role="dialog"], form) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+  background-color: #0d182e !important;
+  color: #f8fafc !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme :where(main, [role="dialog"], form) select option {
+  background-color: #101e38 !important;
+  color: #f8fafc !important;
+}
+html.dark .cms-court-theme input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+/* Status Badges in Dark Mode (FIR Registered, Complete, Assigned, etc.) */
+html.dark .cms-court-theme :is([class*="bg-rose-50"], [class*="bg-red-50"]) {
+  background-color: #3b1219 !important;
+  border-color: #881337 !important;
+  color: #fecdd3 !important;
+}
+html.dark .cms-court-theme :is([class*="bg-rose-50"], [class*="bg-red-50"]) span {
+  color: #fecdd3 !important;
+}
+html.dark .cms-court-theme :is([class*="bg-rose-50"], [class*="bg-red-50"]) .bg-rose-600,
+html.dark .cms-court-theme :is([class*="bg-rose-50"], [class*="bg-red-50"]) .bg-red-600 {
+  background-color: #f43f5e !important;
+}
+
+html.dark .cms-court-theme :is([class*="bg-emerald-50"], [class*="bg-green-50"]) {
+  background-color: #062e24 !important;
+  border-color: #065f46 !important;
+  color: #a7f3d0 !important;
+}
+html.dark .cms-court-theme :is([class*="bg-emerald-50"], [class*="bg-green-50"]) span {
+  color: #a7f3d0 !important;
+}
+html.dark .cms-court-theme :is([class*="bg-emerald-50"], [class*="bg-green-50"]) .bg-emerald-600 {
+  background-color: #10b981 !important;
+}
+
+html.dark .cms-court-theme :is([class*="bg-amber-50"], [class*="bg-yellow-50"]) {
+  background-color: #382106 !important;
+  border-color: #78350f !important;
+  color: #fde68a !important;
+}
+html.dark .cms-court-theme :is([class*="bg-amber-50"], [class*="bg-yellow-50"]) span {
+  color: #fde68a !important;
+}
+html.dark .cms-court-theme :is([class*="bg-amber-50"], [class*="bg-yellow-50"]) .bg-amber-500,
+html.dark .cms-court-theme :is([class*="bg-amber-50"], [class*="bg-yellow-50"]) .bg-amber-600 {
+  background-color: #f59e0b !important;
+}
+
+html.dark .cms-court-theme :is([class*="bg-purple-50"], [class*="bg-purple-100"]) {
+  background-color: #2b113f !important;
+  border-color: #581c87 !important;
+  color: #e9d5ff !important;
+}
+html.dark .cms-court-theme :is([class*="bg-purple-50"], [class*="bg-purple-100"]) span {
+  color: #e9d5ff !important;
+}
+html.dark .cms-court-theme :is([class*="bg-purple-50"], [class*="bg-purple-100"]) .bg-purple-600 {
+  background-color: #a855f7 !important;
+}
+
+html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) {
+  background-color: #0e244d !important;
+  border-color: #1e40af !important;
+  color: #bfdbfe !important;
+}
+html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) span {
+  color: #bfdbfe !important;
+}
+html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) .bg-blue-600 {
+  background-color: #3b82f6 !important;
+}
+
+html.dark .cms-court-theme .bg-slate-100,
+html.dark .cms-court-theme [class*="bg-slate-100"] {
+  background-color: #172747 !important;
+  color: #cbd5e1 !important;
+  border-color: #223456 !important;
+}
+
+/* Subtitles & Descriptions in Dark Mode */
+html.dark .cms-court-theme .cms-page-heading p,
+html.dark .cms-court-theme .cms-page-heading span:not(.font-bold),
+html.dark .cms-court-theme .cms-complaints > span,
+html.dark .cms-court-theme .cms-complaints > div > span:not(.font-bold) {
+  color: #94a3b8 !important;
+}
+
+/* Dropdowns, Popovers & Modals */
+html.dark .cms-court-theme .absolute,
+html.dark .cms-court-theme .cms-report-actions,
+html.dark .cms-court-theme [role="dialog"] > div {
+  background-color: #101e38 !important;
+  color: #f1f5f9 !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .cms-report-actions button {
+  background-color: #101e38 !important;
+  color: #f1f5f9 !important;
+}
+html.dark .cms-court-theme .cms-report-actions button:hover {
+  background-color: #172747 !important;
+  color: #ffffff !important;
+}
+html.dark .cms-court-theme [role="dialog"] header,
+html.dark .cms-court-theme [role="dialog"] footer {
+  background-color: #0d1930 !important;
+  color: #f1f5f9 !important;
+  border-color: #223456 !important;
+}
+html.dark .cms-court-theme [role="dialog"] header :where(h2, h3, button) {
+  color: #ffffff !important;
+}
+
+/* Sidebar */
+html.dark .cms-court-theme .cms-shell > aside {
+  background-color: #0d1930 !important;
+  border-color: #1e2c48 !important;
+}
+html.dark .cms-court-theme .cms-shell > aside nav a,
+html.dark .cms-court-theme .cms-shell > aside nav button {
+  color: #cbd5e1 !important;
+}
+html.dark .cms-court-theme .cms-shell > aside nav a:hover,
+html.dark .cms-court-theme .cms-shell > aside nav button:hover {
+  background-color: #172747 !important;
+  color: #ffffff !important;
+}
+
+/* Specific Fix: Topbar District Badge in Dark Mode (High Contrast Pure White Text) */
+html.dark .cms-court-theme .cms-topbar .cms-topbar-district-badge,
+html.dark .cms-topbar .cms-topbar-district-badge,
+html.dark .cms-court-theme .cms-topbar span[class*="text-[#203c88]"],
+html.dark .cms-court-theme .cms-topbar span.bg-\[\#eef1ff\],
+html.dark .cms-topbar span.bg-\[\#eef1ff\],
+html.dark .cms-shell header.lg\:hidden span[class*="text-[#203c88]"],
+html.dark .cms-shell header.lg\:hidden span.bg-\[\#eef1ff\] {
+  background-color: #1e3a8a !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Specific Fix: Register Complaint & Register FIR Buttons in Dark Mode */
+html.dark .cms-court-theme a[href="/complaints/register"] button,
+html.dark .cms-court-theme a[href="/complaints/register"] button *,
+html.dark .cms-court-theme a[href="/fir/register"] button,
+html.dark .cms-court-theme a[href="/fir/register"] button *,
+html.dark .cms-court-theme a.cms-register-fir-action,
+html.dark .cms-court-theme a.cms-register-fir-action * {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+html.dark .cms-court-theme a[href="/complaints/register"] button:hover,
+html.dark .cms-court-theme a[href="/fir/register"] button:hover,
+html.dark .cms-court-theme a.cms-register-fir-action:hover {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
 }

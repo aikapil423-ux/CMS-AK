@@ -7,6 +7,7 @@ import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowL
 import { useAuth } from "@/context/AuthContext";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
+import { TopBarThemeToggle } from "./TopBarThemeToggle";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { TopBarPersonaSwitcher } from "./TopBarPersonaSwitcher";
@@ -49,8 +50,7 @@ export function MobileHeader() {
                   {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : isProsecution ? t("Prosecution") : "HP CMS"}
                 </span>
                 <span
-                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] px-1.5 py-0.2 rounded border border-[#6d85bd]/60 font-mono font-bold"
-                  style={{ color: "#203c88", backgroundColor: "#eef1ff" }}
+                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.2 rounded border border-[#6d85bd]/60 font-mono font-bold"
                 >
                   {currentUser.rank.slice(0, 3)}
                 </span>
@@ -68,6 +68,9 @@ export function MobileHeader() {
 
             {/* Switch Module Icon for Mobile */}
             <TopBarModuleSwitcher isMobile={true} />
+
+            {/* Theme Toggle (Sun/Moon) */}
+            <TopBarThemeToggle />
 
             {/* Universal Dictation for Mobile */}
             <TopBarDictation isMobile={true} />

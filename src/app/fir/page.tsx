@@ -95,6 +95,7 @@ function FIRRegisterPageContent() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(ALL_FIR_STATUS_KEYS);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [showAdvanceFilters, setShowAdvanceFilters] = useState(false);
 
   const [statusCounts, setStatusCounts] = useState({
     all: 0,
@@ -896,11 +897,30 @@ function FIRRegisterPageContent() {
             <div className="w-9 h-9 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center text-red-700">
               <Scale className="w-5 h-5" />
             </div>
-            <div>
+            <div className="flex items-center gap-3">
               <h1 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                FIR Register (First Information Report)
+                FIR Register
               </h1>
-
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvanceFilters((prev) => !prev)}
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all border ${
+                  showAdvanceFilters
+                    ? "bg-slate-100 border-slate-400 text-slate-800 shadow-inner"
+                    : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50 shadow-2xs"
+                }`}
+                title="Toggle Advance Filters"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
+                <span>Advance Filters</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                    showAdvanceFilters ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
             </div>
           </div>
         </div>
@@ -936,283 +956,280 @@ function FIRRegisterPageContent() {
         </div>
       </div>
 
-
-
-      {/* BNSS Section 193: 60/90 Day Statutory Challan Countdown Tracker */}
-      <BnssChallanCountdown firs={firs} />
-
-      {/* Search & Table Filter Controls */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        {/* Left: Search Bar & Date Range Search */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search FIR No., Complainant, Accused, Section, Place, IO..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-2xs"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                title="Clear Search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Date Range Search: From - To */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
-              <div className="w-[128px]">
-                <DatePickerDDMMYYYY
-                  size="sm"
-                  value={dateFrom}
-                  max={dateTo || new Date().toISOString().split("T")[0]}
-                  onValueChange={(val) => setDateFrom(val)}
-                  title="Date From (DD/MM/YYYY)"
-                  className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
-                />
-              </div>
+      {/* Search & Table Filter Controls (Toggleable via Advance Filters) */}
+      {showAdvanceFilters && (
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 animate-in fade-in-50 duration-200">
+          {/* Left: Search Bar & Date Range Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search FIR No., Complainant, Accused, Section, Place, IO..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title="Clear Search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            <span className="text-slate-300 font-light">|</span>
-
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
-              <div className="w-[128px]">
-                <DatePickerDDMMYYYY
-                  size="sm"
-                  value={dateTo}
-                  min={dateFrom || undefined}
-                  max={new Date().toISOString().split("T")[0]}
-                  onValueChange={(val) => setDateTo(val)}
-                  title="Date To (DD/MM/YYYY)"
-                  className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
-                />
-              </div>
-            </div>
-
-            {(dateFrom || dateTo) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Right Tools: Master FIR Category Dropdown, Status Dropdown, Columns Dropdown, Refresh */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Master Stage / Category Filter Dropdown */}
-          <div className="relative">
-            <div className="relative flex items-center">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 pointer-events-none" />
-              <select
-                value={masterFilterTab}
-                onChange={(e) => handleMasterTabChange(e.target.value)}
-                className="pl-8 pr-7 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:outline-hidden transition-colors shadow-2xs cursor-pointer appearance-none"
-                title="Filter by Stage / Category"
-              >
-                <option value="ALL">All FIRs ({statusCounts.all})</option>
-                <option value="UNDER_INVESTIGATION">Under Investigation ({statusCounts.underInvestigation})</option>
-                <option value="CHARGESHEET">Chargesheet Filed ({statusCounts.chargesheetFiled})</option>
-                <option value="CLOSURE">Closure Filed ({statusCounts.closureFiled})</option>
-                <option value="UNTRACED_CANCELLED">Untraced / Cancelled ({statusCounts.untracedCancelled})</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Status Multi-select */}
-          <div className="relative" ref={statusDropdownRef}>
-            <button
-              onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-              <Filter className="w-3.5 h-3.5 text-slate-500" />
-              <span>Status Filter</span>
-              <span className="w-5 h-5 rounded-full bg-slate-100 text-[10px] flex items-center justify-center font-bold">
-                {selectedStatuses.length}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {statusDropdownOpen && (
-              <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 text-xs animate-in fade-in-50">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
-                  <span className="font-bold text-slate-800">Filter by Status</span>
-                  <button
-                    onClick={() =>
-                      setSelectedStatuses(
-                        isAllSelected ? [] : ALL_FIR_STATUS_KEYS
-                      )
-                    }
-                    className="text-[11px] text-red-600 hover:underline font-medium"
-                  >
-                    {isAllSelected ? "Deselect All" : "Select All"}
-                  </button>
-                </div>
-                <div className="space-y-1 py-1 max-h-56 overflow-y-auto">
-                  {FIR_STATUS_OPTIONS.map((opt) => {
-                    const isChecked = selectedStatuses.includes(opt.key);
-                    return (
-                      <label
-                        key={opt.key}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-slate-700 select-none"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {
-                            if (isChecked) {
-                              setSelectedStatuses(selectedStatuses.filter((k) => k !== opt.key));
-                            } else {
-                              setSelectedStatuses([...selectedStatuses, opt.key]);
-                            }
-                          }}
-                          className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 border-slate-300"
-                        />
-                        <span>{opt.label}</span>
-                      </label>
-                    );
-                  })}
+            {/* Date Range Search: From - To */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">From:</span>
+                <div className="w-[128px]">
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    value={dateFrom}
+                    max={dateTo || new Date().toISOString().split("T")[0]}
+                    onValueChange={(val) => setDateFrom(val)}
+                    title="Date From (DD/MM/YYYY)"
+                    className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
+                  />
                 </div>
               </div>
-            )}
+
+              <span className="text-slate-300 font-light">|</span>
+
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">To:</span>
+                <div className="w-[128px]">
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    max={new Date().toISOString().split("T")[0]}
+                    onValueChange={(val) => setDateTo(val)}
+                    title="Date To (DD/MM/YYYY)"
+                    className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
+                  />
+                </div>
+              </div>
+
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                  title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Columns Selector */}
-          <div className="relative" ref={columnDropdownRef}>
-            <button
-              onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
-              title="Configure Table Columns"
-            >
-              <Columns3 className="w-3.5 h-3.5 text-slate-500" />
-              <span>Columns</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
+          {/* Right Tools: Master FIR Category Dropdown, Status Dropdown, Columns Dropdown, Refresh */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Master Stage / Category Filter Dropdown */}
+            <div className="relative">
+              <div className="relative flex items-center">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 pointer-events-none" />
+                <select
+                  value={masterFilterTab}
+                  onChange={(e) => handleMasterTabChange(e.target.value)}
+                  className="pl-8 pr-7 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 focus:outline-hidden transition-colors shadow-2xs cursor-pointer appearance-none"
+                  title="Filter by Stage / Category"
+                >
+                  <option value="ALL">All FIRs ({statusCounts.all})</option>
+                  <option value="UNDER_INVESTIGATION">Under Investigation ({statusCounts.underInvestigation})</option>
+                  <option value="CHARGESHEET">Chargesheet Filed ({statusCounts.chargesheetFiled})</option>
+                  <option value="CLOSURE">Closure Filed ({statusCounts.closureFiled})</option>
+                  <option value="UNTRACED_CANCELLED">Untraced / Cancelled ({statusCounts.untracedCancelled})</option>
+                </select>
+                <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 pointer-events-none" />
+              </div>
+            </div>
 
-            {columnDropdownOpen && (
-              <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 text-xs animate-in fade-in-50">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
-                  <span className="font-bold text-slate-800">Toggle Columns</span>
-                  <div className="flex items-center gap-2">
+            {/* Status Multi-select */}
+            <div className="relative" ref={statusDropdownRef}>
+              <button
+                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
+              >
+                <Filter className="w-3.5 h-3.5 text-slate-500" />
+                <span>Status Filter</span>
+                <span className="w-5 h-5 rounded-full bg-slate-100 text-[10px] flex items-center justify-center font-bold">
+                  {selectedStatuses.length}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {statusDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 text-xs animate-in fade-in-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
+                    <span className="font-bold text-slate-800">Filter by Status</span>
                     <button
-                      onClick={resetColumnOrder}
-                      className="text-[11px] text-slate-600 hover:text-slate-900 hover:underline font-medium cursor-pointer"
-                      title="कॉलम क्रम रीसेट करें"
+                      onClick={() =>
+                        setSelectedStatuses(
+                          isAllSelected ? [] : ALL_FIR_STATUS_KEYS
+                        )
+                      }
+                      className="text-[11px] text-red-600 hover:underline font-medium"
                     >
-                      Reset Order
-                    </button>
-                    <button
-                      onClick={resetColumns}
-                      className="text-[11px] text-red-600 hover:underline font-medium cursor-pointer"
-                    >
-                      Reset All
+                      {isAllSelected ? "Deselect All" : "Select All"}
                     </button>
                   </div>
+                  <div className="space-y-1 py-1 max-h-56 overflow-y-auto">
+                    {FIR_STATUS_OPTIONS.map((opt) => {
+                      const isChecked = selectedStatuses.includes(opt.key);
+                      return (
+                        <label
+                          key={opt.key}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-slate-700 select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setSelectedStatuses(selectedStatuses.filter((k) => k !== opt.key));
+                              } else {
+                                setSelectedStatuses([...selectedStatuses, opt.key]);
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="space-y-1 py-1">
-                  {Object.entries({
-                    firNumber: "FIR Number",
-                    dateTime: "Date & Time",
-                    complainant: "Complainant",
-                    actsPlace: "Acts & Occurrence",
-                    status: "Status",
-                    assignedIo: "Investigating Officer",
-                    daysPending: "Days in Progress",
-                    action: "Actions",
-                  }).map(([key, label]) => {
-                    const isChecked = visibleColumns[key as keyof typeof visibleColumns];
-                    return (
-                      <label
-                        key={key}
-                        className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 cursor-pointer text-slate-700 select-none"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => toggleColumn(key as keyof typeof visibleColumns)}
-                          className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 border-slate-300"
-                        />
-                        <span>{label}</span>
-                      </label>
-                    );
-                  })}
+              )}
+            </div>
 
-                  {customCols.length > 0 && (
-                    <div className="pt-2 border-t border-slate-100">
-                      <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
-                        Custom Columns (Table Manager)
-                      </span>
-                      <div className="space-y-1 mt-1">
-                        {customCols.map((c) => {
-                          const isChecked = visibleColumns[c.key] ?? c.isActive;
-                          return (
-                            <label
-                              key={c.key}
-                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleColumn(c.key)}
-                                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                              />
-                              <span className="truncate">{c.label}</span>
-                              <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
-                                Custom
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
+            {/* Columns Selector */}
+            <div className="relative" ref={columnDropdownRef}>
+              <button
+                onClick={() => setColumnDropdownOpen(!columnDropdownOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-2xs"
+                title="Configure Table Columns"
+              >
+                <Columns3 className="w-3.5 h-3.5 text-slate-500" />
+                <span>Columns</span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
+              </button>
+
+              {columnDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 text-xs animate-in fade-in-50">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 px-1">
+                    <span className="font-bold text-slate-800">Toggle Columns</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={resetColumnOrder}
+                        className="text-[11px] text-slate-600 hover:text-slate-900 hover:underline font-medium cursor-pointer"
+                        title="कॉलम क्रम रीसेट करें"
+                      >
+                        Reset Order
+                      </button>
+                      <button
+                        onClick={resetColumns}
+                        className="text-[11px] text-red-600 hover:underline font-medium cursor-pointer"
+                      >
+                        Reset All
+                      </button>
                     </div>
-                  )}
-                </div>
-                <div className="pt-2 border-t border-slate-100 space-y-1 px-1">
-                  <div className="text-[10px] text-slate-500">
-                    💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
                   </div>
-                  <Link
-                    href="/settings?tab=table-manager"
-                    className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
-                  >
-                    <span>+ Add/Manage Columns</span>
-                    <span>&rarr;</span>
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
+                  <div className="space-y-1 py-1">
+                    {Object.entries({
+                      firNumber: "FIR Number",
+                      dateTime: "Date & Time",
+                      complainant: "Complainant",
+                      actsPlace: "Acts & Occurrence",
+                      status: "Status",
+                      assignedIo: "Investigating Officer",
+                      daysPending: "Days in Progress",
+                      action: "Actions",
+                    }).map(([key, label]) => {
+                      const isChecked = visibleColumns[key as keyof typeof visibleColumns];
+                      return (
+                        <label
+                          key={key}
+                          className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 cursor-pointer text-slate-700 select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleColumn(key as keyof typeof visibleColumns)}
+                            className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                          />
+                          <span>{label}</span>
+                        </label>
+                      );
+                    })}
 
-          {/* Refresh Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchFirs}
-            className="border-slate-200 text-slate-700 shadow-2xs"
-            title="Refresh FIR Register"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+                    {customCols.length > 0 && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
+                          Custom Columns (Table Manager)
+                        </span>
+                        <div className="space-y-1 mt-1">
+                          {customCols.map((c) => {
+                            const isChecked = visibleColumns[c.key] ?? c.isActive;
+                            return (
+                              <label
+                                key={c.key}
+                                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleColumn(c.key)}
+                                  className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                />
+                                <span className="truncate">{c.label}</span>
+                                <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
+                                  Custom
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 space-y-1 px-1">
+                    <div className="text-[10px] text-slate-500">
+                      💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                    </div>
+                    <Link
+                      href="/settings?tab=table-manager"
+                      className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
+                    >
+                      <span>+ Add/Manage Columns</span>
+                      <span>&rarr;</span>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchFirs}
+              className="border-slate-200 text-slate-700 shadow-2xs"
+              title="Refresh FIR Register"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main FIR Table */}
       <Card className="border-slate-200 shadow-xs overflow-hidden bg-white">

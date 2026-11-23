@@ -1231,13 +1231,40 @@ function ComplaintListContent() {
     <div className="cms-complaints space-y-6 animate-in fade-in-50">
       {/* Top Header */}
       <div className="cms-page-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Complaints
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Track enquiries, reports and approvals in your authorized scope.
-          </p>
+          {/* Advance Filters Toggle Button */}
+          <button
+            type="button"
+            aria-expanded={advancedFilters}
+            onClick={() => setAdvancedFilters(!advancedFilters)}
+            className={`h-8 px-3 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+              advancedFilters
+                ? "bg-slate-100 border-slate-400 text-slate-800 shadow-inner"
+                : "bg-white border-slate-300 hover:bg-slate-50 text-slate-700"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
+            <span>Advanced filters{(dateFrom || dateTo || categoryFilter !== 'ALL' || (!isAllSelected && selectedStatuses.length > 0) || searchQuery) ? ' •' : ''}</span>
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                advancedFilters ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {/* Quick Refresh Button */}
+          <button
+            type="button"
+            onClick={fetchComplaints}
+            className="h-8 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs hover:text-slate-900 transition-colors cursor-pointer"
+            title="Refresh Complaints Register"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Refresh</span>
+          </button>
         </div>
 
         {/* Top Right Actions: Single High-Contrast Primary Button + Plain Secondary Buttons */}
@@ -1341,528 +1368,517 @@ function ComplaintListContent() {
         </div>
       )}
 
-      {/* Filter and Search Controls */}
-      <Card className="cms-filter-panel border-slate-200 !overflow-visible relative z-30 shadow-xs">
-        <CardContent className="p-2 sm:p-2.5 space-y-2 !overflow-visible">
-          {/* Main Controls: Single Row Space-Optimized Flex Bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Status Dropdown Button with Checkboxes */}
-            <div className="relative z-40 shrink-0 w-full sm:w-auto sm:min-w-[150px]" ref={statusDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                className={`w-full h-8.5 px-2.5 text-xs font-semibold rounded-lg border flex items-center justify-between gap-2 transition-all shadow-2xs cursor-pointer ${
-                  statusDropdownOpen
-                    ? "border-blue-600 ring-2 ring-blue-100 bg-white text-blue-900"
-                    : !isAllSelected && selectedStatuses.length > 0
-                    ? "border-blue-300 bg-blue-50/70 text-blue-900"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800"
-                }`}
-              >
-                <div className="flex items-center gap-1.5 truncate">
-                  <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="truncate">{getStatusButtonLabel()}</span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {selectedStatuses.length > 0 && selectedStatuses.length < ALL_STATUS_KEYS.length && (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
-                      {selectedStatuses.length}
-                    </span>
-                  )}
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${
-                      statusDropdownOpen ? "rotate-180" : ""
-                    }`}
+      {/* Filter and Search Controls (Toggleable via Advanced filters) */}
+      {advancedFilters && (
+        <Card className="cms-filter-panel border-slate-200 !overflow-visible relative z-30 shadow-xs animate-in fade-in-50 duration-200">
+          <CardContent className="p-2 sm:p-2.5 space-y-2 !overflow-visible">
+            {/* Main Controls: Single Row Space-Optimized Flex Bar */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* 1. Search Bar (Starting item from Red Box) */}
+                <div className="cms-search relative flex-1 min-w-[240px]">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search complaint no, complainant, phone, accused, station..."
+                    className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none placeholder:text-slate-400"
                   />
-                </div>
-              </button>
-
-              {/* Status Dropdown Menu with Checkboxes */}
-              {statusDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1.5 w-72 z-50 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 animate-in fade-in-50 zoom-in-95 ring-1 ring-slate-900/10">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Filter by Status
-                    </span>
+                  {searchQuery && (
                     <button
                       type="button"
-                      onClick={handleToggleAll}
-                      className="text-[11px] font-bold text-blue-700 hover:text-blue-900 transition-colors cursor-pointer"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-xs font-bold"
+                      title="Clear Search"
                     >
-                      {isAllSelected ? "Deselect All" : "Select All"}
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="space-y-1">
-                    {/* All Complaints Option with Checkbox */}
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={handleToggleAll}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleAll(); }}
-                      className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors border select-none ${
-                        isAllSelected
-                          ? "bg-blue-50 border-blue-200 text-blue-950 font-bold"
-                          : "hover:bg-slate-50 border-transparent text-slate-800"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={isAllSelected}
-                          onChange={() => {}}
-                          className="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
-                        />
-                        <span className="text-xs">All Complaints</span>
-                      </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                        {statusCounts.all}
-                      </span>
+                {/* 2. Status Dropdown Button with Checkboxes (Starting item from Red Box) */}
+                <div className="relative z-40 shrink-0 w-full sm:w-auto sm:min-w-[150px]" ref={statusDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setStatusDropdownOpen((prev) => !prev)}
+                    className={`w-full h-8.5 px-2.5 text-xs font-semibold rounded-lg border flex items-center justify-between gap-2 transition-all shadow-2xs cursor-pointer ${
+                      statusDropdownOpen
+                        ? "border-blue-600 ring-2 ring-blue-100 bg-white text-blue-900"
+                        : !isAllSelected && selectedStatuses.length > 0
+                        ? "border-blue-300 bg-blue-50/70 text-blue-900"
+                        : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Filter className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span className="truncate">{getStatusButtonLabel()}</span>
                     </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {selectedStatuses.length > 0 && selectedStatuses.length < ALL_STATUS_KEYS.length && (
+                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                          {selectedStatuses.length}
+                        </span>
+                      )}
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${
+                          statusDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                  </button>
 
-                    {/* Specific Status Options with Checkboxes */}
-                    {STATUS_OPTIONS.map((opt) => {
-                      const isChecked = selectedStatuses.includes(opt.key);
-                      const count =
-                        opt.key === "NOT_ASSIGNED"
-                          ? statusCounts.notAssigned
-                          : opt.key === "PENDING"
-                          ? statusCounts.pending
-                          : opt.key === "COMPLETE"
-                          ? statusCounts.complete
-                          : opt.key === "FIR_REGISTER"
-                          ? statusCounts.firRegister
-                          : opt.key === "FIR_REGISTERED"
-                          ? statusCounts.firRegistered
-                          : statusCounts.correctionRequired;
+                  {/* Status Dropdown Menu with Checkboxes */}
+                  {statusDropdownOpen && (
+                    <div className="absolute left-0 top-full mt-1.5 w-72 z-50 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 animate-in fade-in-50 zoom-in-95 ring-1 ring-slate-900/10">
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Filter by Status
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleToggleAll}
+                          className="text-[11px] font-bold text-blue-700 hover:text-blue-900 transition-colors cursor-pointer"
+                        >
+                          {isAllSelected ? "Deselect All" : "Select All"}
+                        </button>
+                      </div>
 
-                      return (
+                      <div className="space-y-1">
+                        {/* All Complaints Option with Checkbox */}
                         <div
-                          key={opt.key}
                           role="button"
                           tabIndex={0}
-                          onClick={() => handleToggleStatus(opt.key)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleStatus(opt.key); }}
-                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors select-none ${
-                            isChecked
-                              ? "bg-slate-100 text-slate-900 font-semibold"
-                              : "hover:bg-slate-50 text-slate-700"
+                          onClick={handleToggleAll}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleAll(); }}
+                          className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors border select-none ${
+                            isAllSelected
+                              ? "bg-blue-50 border-blue-200 text-blue-950 font-bold"
+                              : "hover:bg-slate-50 border-transparent text-slate-800"
                           }`}
                         >
                           <div className="flex items-center gap-2">
                             <input
                               type="checkbox"
-                              checked={isChecked}
+                              checked={isAllSelected}
                               onChange={() => {}}
                               className="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
                             />
-                            <span className="text-xs">{opt.label}</span>
+                            <span className="text-xs">All Complaints</span>
                           </div>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isChecked
-                                ? "bg-white border border-slate-200 text-slate-800"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {count}
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                            {statusCounts.all}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
 
-                  {/* Dropdown Footer */}
-                  <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedStatuses([...ALL_STATUS_KEYS])}
-                      className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                    >
-                      Reset Filter
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStatusDropdownOpen(false)}
-                      className="px-3 py-1 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-md transition-colors shadow-2xs cursor-pointer"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+                        {/* Specific Status Options with Checkboxes */}
+                        {STATUS_OPTIONS.map((opt) => {
+                          const isChecked = selectedStatuses.includes(opt.key);
+                          const count =
+                            opt.key === "NOT_ASSIGNED"
+                              ? statusCounts.notAssigned
+                              : opt.key === "PENDING"
+                              ? statusCounts.pending
+                              : opt.key === "COMPLETE"
+                              ? statusCounts.complete
+                              : opt.key === "FIR_REGISTER"
+                              ? statusCounts.firRegister
+                              : opt.key === "FIR_REGISTERED"
+                              ? statusCounts.firRegistered
+                              : statusCounts.correctionRequired;
 
-            {/* Search Bar (flex-1 expands to fill space) */}
-            <div className="cms-search relative flex-1 min-w-[240px]">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search complaint no, complainant, phone, accused, station..."
-                className="w-full h-8.5 pl-8 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none placeholder:text-slate-400"
-              />
-            </div>
-
-            <button type="button" aria-expanded={advancedFilters} onClick={()=>setAdvancedFilters(!advancedFilters)} className="border border-slate-200 px-3 py-2 text-sm flex items-center gap-2"><SlidersHorizontal className="w-4 h-4"/>Advanced filters{(dateFrom||dateTo||categoryFilter!=='ALL')?' •':''}</button>
-            {advancedFilters && <>
-            {/* Category Filter */}
-            <div className="shrink-0">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium cursor-pointer"
-              >
-                <option value="ALL">All Categories</option>
-                <option value="NCR">NCR</option>
-                <option value="FIR_RECOMMEND">FIR Recommend</option>
-                <option value="CLOSURE">Closure</option>
-              </select>
-            </div>
-
-            {/* Compact Date Range Filter (Inline) */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
-              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
-              <input
-                type="date"
-                max={new Date().toISOString().split("T")[0]}
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
-                title="Date from"
-              />
-              <span className="text-slate-300 text-xs shrink-0">-</span>
-              <span className="text-[11px] font-semibold text-slate-500 shrink-0">To:</span>
-              <input
-                type="date"
-                max={new Date().toISOString().split("T")[0]}
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
-                title="Date to"
-              />
-              {(dateFrom || dateTo) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDateFrom("");
-                    setDateTo("");
-                  }}
-                  className="p-0.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
-                  title="Clear dates"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Quick Date Presets: Segmented Pill */}
-            <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80 shrink-0 h-8.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const today = new Date().toISOString().split("T")[0];
-                  setDateFrom(today);
-                  setDateTo(today);
-                }}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                  dateFrom && dateTo && dateFrom === dateTo && dateFrom === new Date().toISOString().split("T")[0]
-                    ? "bg-white text-blue-700 shadow-2xs font-bold"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Today's complaints"
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const to = new Date().toISOString().split("T")[0];
-                  const d = new Date();
-                  d.setDate(d.getDate() - 7);
-                  const from = d.toISOString().split("T")[0];
-                  setDateFrom(from);
-                  setDateTo(to);
-                }}
-                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                  dateFrom && dateTo && dateTo === new Date().toISOString().split("T")[0] && dateFrom !== dateTo
-                    ? "bg-white text-blue-700 shadow-2xs font-bold"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-                title="Last 7 days"
-              >
-                7 Days
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const now = new Date();
-                  const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-                  const to = new Date().toISOString().split("T")[0];
-                  setDateFrom(from);
-                  setDateTo(to);
-                }}
-                className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
-                title="This month"
-              >
-                Month
-              </button>
-            </div>
-            </>}
-          </div>
-
-          {/* Active Status & Date Badges / Filter Summary */}
-          {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo) && (
-            <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filters:</span>
-              {/* Date Filter Badge */}
-              {(dateFrom || dateTo) && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
-                  <Calendar className="w-3 h-3 text-amber-700" />
-                  <span>
-                    {dateFrom && dateTo
-                      ? `${dateFrom} to ${dateTo}`
-                      : dateFrom
-                      ? `From: ${dateFrom}`
-                      : `To: ${dateTo}`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDateFrom("");
-                      setDateTo("");
-                    }}
-                    className="hover:text-amber-950 font-bold ml-0.5 cursor-pointer"
-                    title="Remove date filter"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              {!isAllSelected && selectedStatuses.map((k) => {
-                const opt = STATUS_OPTIONS.find((o) => o.key === k);
-                return (
-                  <span
-                    key={k}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-[11px] font-medium"
-                  >
-                    <span>{opt?.label}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(k)}
-                      className="hover:text-blue-950 font-bold ml-0.5 cursor-pointer"
-                      title="Remove status filter"
-                    >
-                      ×
-                    </button>
-                  </span>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedStatuses([...ALL_STATUS_KEYS]);
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-                className="text-[11px] text-blue-700 hover:text-blue-900 underline font-semibold ml-1 cursor-pointer"
-              >
-                Clear All
-              </button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Results Count, Column Visibility Popover & Quick Refresh */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 px-1">
-        <div className="flex items-center gap-3">
-          <span>
-            Showing <strong className="text-slate-800">{sortedComplaints.length}</strong> {isEo ? "complaint(s) assigned to your docket" : "complaints in register"}
-          </span>
-          <span className="text-slate-300">|</span>
-          <span className="text-[11px] text-slate-500">
-            Use Columns to show more details
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          {/* Column Visibility Customizer Button & Dropdown (Requirement 9) */}
-          <div className="relative" ref={columnDropdownRef}>
-            <button
-              type="button"
-              onClick={() => setColumnDropdownOpen((prev) => !prev)}
-              className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
-              title="Select which columns are visible in the register table"
-            >
-              <Columns3 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Columns</span>
-              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${columnDropdownOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {columnDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-60 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-3 animate-in fade-in-50 zoom-in-95 ring-1 ring-slate-900/10">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Visible Columns
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={resetColumnOrder}
-                      className="text-[10px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                      title="कॉलम क्रम रीसेट करें"
-                    >
-                      Reset Order
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetColumns}
-                      className="text-[10px] font-bold text-blue-700 hover:text-blue-900 cursor-pointer"
-                    >
-                      Reset All
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1.5 text-xs text-slate-700">
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.srNo}
-                      onChange={() => toggleColumn("srNo")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Sr No.</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.complaintId}
-                      onChange={() => toggleColumn("complaintId")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Complaint ID</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.dateTime}
-                      onChange={() => toggleColumn("dateTime")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Date &amp; Time</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.complainant}
-                      onChange={() => toggleColumn("complainant")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Complainant</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.categoryLocation}
-                      onChange={() => toggleColumn("categoryLocation")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Category &amp; Location</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.status}
-                      onChange={() => toggleColumn("status")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Enquiry Status</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.assignedEo}
-                      onChange={() => toggleColumn("assignedEo")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Enquiry Officer</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.daysPending}
-                      onChange={() => toggleColumn("daysPending")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Days Registered</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns.action}
-                      onChange={() => toggleColumn("action")}
-                      className="w-3.5 h-3.5 rounded text-blue-600"
-                    />
-                    <span>Action</span>
-                  </label>
-
-                  {customCols.length > 0 && (
-                    <div className="pt-2 border-t border-slate-100">
-                      <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
-                        Custom Columns (Table Manager)
-                      </span>
-                      <div className="space-y-1 mt-1">
-                        {customCols.map((c) => {
-                          const isChecked = visibleColumns[c.key] ?? c.isActive;
                           return (
-                            <label
-                              key={c.key}
-                              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
+                            <div
+                              key={opt.key}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleToggleStatus(opt.key)}
+                              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleToggleStatus(opt.key); }}
+                              className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors select-none ${
+                                isChecked
+                                  ? "bg-slate-100 text-slate-900 font-semibold"
+                                  : "hover:bg-slate-50 text-slate-700"
+                              }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleColumn(c.key)}
-                                className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                              />
-                              <span className="truncate">{c.label}</span>
-                              <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
-                                Custom
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {}}
+                                  className="w-3.5 h-3.5 rounded text-blue-600 border-slate-300 focus:ring-blue-500 pointer-events-none"
+                                />
+                                <span className="text-xs">{opt.label}</span>
+                              </div>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  isChecked
+                                    ? "bg-white border border-slate-200 text-slate-800"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {count}
                               </span>
-                            </label>
+                            </div>
                           );
                         })}
+                      </div>
+
+                      {/* Dropdown Footer */}
+                      <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStatuses([...ALL_STATUS_KEYS])}
+                          className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+                        >
+                          Reset Filter
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStatusDropdownOpen(false)}
+                          className="px-3 py-1 text-xs font-bold bg-[#0b192c] hover:bg-slate-800 text-white rounded-md transition-colors shadow-2xs cursor-pointer"
+                        >
+                          Apply
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="pt-2 mt-2 border-t border-slate-100 space-y-1">
-                  <div className="text-[10px] text-slate-500">
-                    💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
-                  </div>
-                  <Link
-                    href="/settings?tab=table-manager"
-                    className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
+
+                {/* 3. Category Filter */}
+                <div className="shrink-0">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-8.5 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#0b192c] focus:outline-none font-medium cursor-pointer"
                   >
-                    <span>+ Add/Manage Columns</span>
-                    <span>&rarr;</span>
-                  </Link>
+                    <option value="ALL">All Categories</option>
+                    <option value="NCR">NCR</option>
+                    <option value="FIR_RECOMMEND">FIR Recommend</option>
+                    <option value="CLOSURE">Closure</option>
+                  </select>
                 </div>
+
+                {/* 4. Compact Date Range Filter (Inline) */}
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
+                  <input
+                    type="date"
+                    max={new Date().toISOString().split("T")[0]}
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                    title="Date from"
+                  />
+                  <span className="text-slate-300 text-xs shrink-0">-</span>
+                  <span className="text-[11px] font-semibold text-slate-500 shrink-0">To:</span>
+                  <input
+                    type="date"
+                    max={new Date().toISOString().split("T")[0]}
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                    title="Date to"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateFrom("");
+                        setDateTo("");
+                      }}
+                      className="p-0.5 text-slate-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                      title="Clear dates"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* 5. Quick Date Presets: Segmented Pill */}
+                <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200/80 shrink-0 h-8.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date().toISOString().split("T")[0];
+                      setDateFrom(today);
+                      setDateTo(today);
+                    }}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                      dateFrom && dateTo && dateFrom === dateTo && dateFrom === new Date().toISOString().split("T")[0]
+                        ? "bg-white text-blue-700 shadow-2xs font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Today's complaints"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const to = new Date().toISOString().split("T")[0];
+                      const d = new Date();
+                      d.setDate(d.getDate() - 7);
+                      const from = d.toISOString().split("T")[0];
+                      setDateFrom(from);
+                      setDateTo(to);
+                    }}
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                      dateFrom && dateTo && dateTo === new Date().toISOString().split("T")[0] && dateFrom !== dateTo
+                        ? "bg-white text-blue-700 shadow-2xs font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                    title="Last 7 days"
+                  >
+                    7 Days
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+                      const to = new Date().toISOString().split("T")[0];
+                      setDateFrom(from);
+                      setDateTo(to);
+                    }}
+                    className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                    title="This month"
+                  >
+                    Month
+                  </button>
+                </div>
+
+                {/* 6. Column Visibility Dropdown (Last item from Green Box) */}
+                <div className="relative shrink-0" ref={columnDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setColumnDropdownOpen((prev) => !prev)}
+                    className="h-8.5 px-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                    title="Select which columns are visible in the register table"
+                  >
+                    <Columns3 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Columns</span>
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${columnDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {columnDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-60 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-3 animate-in fade-in-50 zoom-in-95 ring-1 ring-slate-900/10">
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                          Visible Columns
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={resetColumnOrder}
+                            className="text-[10px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                            title="कॉलम क्रम रीसेट करें"
+                          >
+                            Reset Order
+                          </button>
+                          <button
+                            type="button"
+                            onClick={resetColumns}
+                            className="text-[10px] font-bold text-blue-700 hover:text-blue-900 cursor-pointer"
+                          >
+                            Reset All
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-slate-700 max-h-72 overflow-y-auto">
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.srNo}
+                            onChange={() => toggleColumn("srNo")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Sr No.</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.complaintId}
+                            onChange={() => toggleColumn("complaintId")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Complaint ID</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.dateTime}
+                            onChange={() => toggleColumn("dateTime")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Date &amp; Time</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.complainant}
+                            onChange={() => toggleColumn("complainant")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Complainant</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.categoryLocation}
+                            onChange={() => toggleColumn("categoryLocation")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Category &amp; Location</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.status}
+                            onChange={() => toggleColumn("status")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Enquiry Status</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.assignedEo}
+                            onChange={() => toggleColumn("assignedEo")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Enquiry Officer</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.daysPending}
+                            onChange={() => toggleColumn("daysPending")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Days Registered</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={visibleColumns.action}
+                            onChange={() => toggleColumn("action")}
+                            className="w-3.5 h-3.5 rounded text-blue-600"
+                          />
+                          <span>Action</span>
+                        </label>
+
+                        {customCols.length > 0 && (
+                          <div className="pt-2 border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-indigo-700 uppercase px-1">
+                              Custom Columns (Table Manager)
+                            </span>
+                            <div className="space-y-1 mt-1">
+                              {customCols.map((c) => {
+                                const isChecked = visibleColumns[c.key] ?? c.isActive;
+                                return (
+                                  <label
+                                    key={c.key}
+                                    className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-slate-700 select-none text-[11px]"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={() => toggleColumn(c.key)}
+                                      className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                    />
+                                    <span className="truncate">{c.label}</span>
+                                    <span className="text-[9px] font-semibold bg-indigo-100 text-indigo-700 px-1 rounded ml-auto">
+                                      Custom
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="pt-2 mt-2 border-t border-slate-100 space-y-1">
+                        <div className="text-[10px] text-slate-500">
+                          💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                        </div>
+                        <Link
+                          href="/settings?tab=table-manager"
+                          className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
+                        >
+                          <span>+ Add/Manage Columns</span>
+                          <span>&rarr;</span>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+            </div>
+
+            {/* Active Status & Date Badges / Filter Summary */}
+            {((!isAllSelected && selectedStatuses.length > 0) || dateFrom || dateTo) && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Filters:</span>
+                {/* Date Filter Badge */}
+                {(dateFrom || dateTo) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-md text-[11px] font-medium">
+                    <Calendar className="w-3 h-3 text-amber-700" />
+                    <span>
+                      {dateFrom && dateTo
+                        ? `${dateFrom} to ${dateTo}`
+                        : dateFrom
+                        ? `From: ${dateFrom}`
+                        : `To: ${dateTo}`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateFrom("");
+                        setDateTo("");
+                      }}
+                      className="hover:text-amber-950 font-bold ml-0.5 cursor-pointer"
+                      title="Remove date filter"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {!isAllSelected && selectedStatuses.map((k) => {
+                  const opt = STATUS_OPTIONS.find((o) => o.key === k);
+                  return (
+                    <span
+                      key={k}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-[11px] font-medium"
+                    >
+                      <span>{opt?.label}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(k)}
+                        className="hover:text-blue-950 font-bold ml-0.5 cursor-pointer"
+                        title="Remove status filter"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatuses([...ALL_STATUS_KEYS]);
+                    setDateFrom("");
+                    setDateTo("");
+                  }}
+                  className="text-[11px] text-blue-700 hover:text-blue-900 underline font-semibold ml-1 cursor-pointer"
+                >
+                  Clear All
+                </button>
               </div>
             )}
-          </div>
+          </CardContent>
+        </Card>
+      )}
 
-          <button
-            onClick={fetchComplaints}
-            className="px-2.5 py-1 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-2xs hover:text-slate-900 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="w-3 h-3 text-slate-500" /> Refresh
-          </button>
-        </div>
-      </div>
+
 
       {/* Main Content: Table on Desktop, Cards on Mobile */}
       {loading ? (

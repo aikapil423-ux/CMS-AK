@@ -8,6 +8,7 @@ import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
+import { TopBarThemeToggle } from "./TopBarThemeToggle";
 import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { TopBarPersonaSwitcher } from "./TopBarPersonaSwitcher";
@@ -79,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileHeader />
 
         {/* Desktop Top Header Bar - Minimalist, clean backdrop-blur */}
-        <header className="cms-topbar hidden lg:flex items-center justify-between min-h-16 px-6 bg-[#203c88] text-white border-b border-[#203c88] sticky top-0 z-45">
+        <header className="cms-topbar hidden lg:flex items-center justify-between min-h-14 px-6 bg-[#203c88] text-white border-b border-[#203c88] sticky top-0 z-45">
           {/* Left: Station & Active Module Indicator */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700">
@@ -88,8 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {currentUser.stationName}
               </span>
               <span
-                className="text-[10px] bg-[#eef1ff] !text-[#203c88] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-medium"
-                style={{ color: "#203c88", backgroundColor: "#eef1ff" }}
+                className="text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-semibold shadow-xs"
               >
                 {currentUser.district}
               </span>
@@ -99,7 +99,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Switch Module Dropdown with LayoutGrid Icon */}
             <TopBarModuleSwitcher />
 
-
+            {/* Light / Dark Theme Toggle (Sun / Moon) */}
+            <TopBarThemeToggle />
           </div>
 
           {/* Right Header Controls */}
@@ -138,8 +139,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {currentUser.unitId && ['SHO','SP_DISTRICT','SUPER_ADMIN'].includes(currentUser.role) &&
-          <div className="px-4 pt-2"><Link href="/record-transfers" className="text-sm font-semibold text-blue-800 underline">Record transfers</Link></div>}
         {/* Dynamic Page Content */}
         <main className="cms-main flex-1 p-3 sm:p-6 w-full mx-auto min-w-0">{children}</main>
 
