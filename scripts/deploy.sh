@@ -17,9 +17,13 @@ if [ "$1" != "--no-pull" ]; then
   git log --oneline -1
 fi
 
-echo "== prune stale recreate leftovers"
+echo "== remove current container"
+# Removing it by name is safe: all state lives in the 18k-cms-db volume. Compose's
+# rename-then-create step is what produces the "<hash>_18k-cms" leftovers, so we
+# clear the field before asking compose to create the new container.
+sudo docker rm -f 18k-cms >/dev/null 2>&1 || true
 for n in $(sudo docker ps -a --format '{{.Names}}' | grep -E '_18k-cms$' || true); do
-  echo "   removing $n"
+  echo "   removing leftover $n"
   sudo docker rm -f "$n" >/dev/null
 done
 
@@ -27,7 +31,7 @@ echo "== build"
 sudo docker compose build cms 2>&1 | tail -3
 
 echo "== restart"
-sudo docker compose up -d --force-recreate cms 2>&1 | tail -3
+sudo docker compose up -d cms 2>&1 | tail -3
 
 echo "== wait for health"
 i=0
