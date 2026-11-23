@@ -48,6 +48,16 @@
 .cms-court-theme .cms-complaints > .cms-filter-panel {border:1px solid #e6eaf1;border-radius:12px!important;box-shadow:none}
 .cms-court-theme .cms-filter-panel > div {padding:16px}
 .cms-court-theme .cms-filter-panel :is(input,select,button) {min-height:38px;border-radius:7px!important;font-size:13px}
+.cms-court-theme .cms-date-range-container input[type="date"],
+.cms-date-range-container input[type="date"] {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  min-height: auto !important;
+  height: 28px !important;
+  padding: 0 4px !important;
+}
 .cms-court-theme .cms-filter-panel .cms-search {order:-1}
 .cms-court-theme .cms-filter-panel .cms-search input {background:#fff}
 .cms-court-theme .cms-complaints .cms-register-table {border:1px solid #e6eaf1;border-radius:12px!important;box-shadow:0 2px 6px #172b4d03;max-height:70vh}
@@ -469,13 +479,16 @@ html.dark .cms-court-theme .cms-shell > aside nav button:hover {
 /* Specific Fix: Topbar District Badge in Dark Mode (High Contrast Pure White Text) */
 html.dark .cms-court-theme .cms-topbar .cms-topbar-district-badge,
 html.dark .cms-topbar .cms-topbar-district-badge,
+html.dark .cms-topbar .cms-topbar-district-badge *,
 html.dark .cms-court-theme .cms-topbar span[class*="text-[#203c88]"],
 html.dark .cms-court-theme .cms-topbar span.bg-\[\#eef1ff\],
 html.dark .cms-topbar span.bg-\[\#eef1ff\],
 html.dark .cms-shell header.lg\:hidden span[class*="text-[#203c88]"],
-html.dark .cms-shell header.lg\:hidden span.bg-\[\#eef1ff\] {
+html.dark .cms-shell header.lg\:hidden span.bg-\[\#eef1ff\],
+html.dark .cms-shell header.lg\:hidden .cms-topbar-district-badge {
   background-color: #1e3a8a !important;
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   border-color: #3b82f6 !important;
   opacity: 1 !important;
   visibility: visible !important;

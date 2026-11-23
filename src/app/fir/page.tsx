@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   Search,
   Filter,
@@ -77,6 +78,7 @@ const FIR_STATUS_OPTIONS = [
 const ALL_FIR_STATUS_KEYS = FIR_STATUS_OPTIONS.map((o) => o.key);
 
 function FIRRegisterPageContent() {
+  const router = useRouter();
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
 
@@ -1318,7 +1320,14 @@ function FIRRegisterPageContent() {
                   return (
                     <tr
                       key={fir.id}
-                      className="hover:bg-slate-50/80 transition-colors group"
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement | null;
+                        if (target?.closest("a, button, input, select, textarea, [role='button']")) {
+                          return;
+                        }
+                        router.push(`/fir/${fir.id}`);
+                      }}
+                      className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                     >
                       {columnOrder.map((col) => {
                         if (!visibleColumns[col]) return null;
@@ -1327,7 +1336,10 @@ function FIRRegisterPageContent() {
 
                       {/* Actions */}
                       {visibleColumns.action && (
-                        <td className="py-3 px-3 align-top text-right">
+                        <td
+                          className="py-3 px-3 align-top text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="flex items-center justify-end gap-1.5">
                             {/* View Profile */}
                             <Link href={`/fir/${fir.id}`}>

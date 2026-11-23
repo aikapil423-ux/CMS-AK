@@ -1558,7 +1558,7 @@ function ComplaintListContent() {
                 </div>
 
                 {/* 4. Compact Date Range Filter (Inline) */}
-                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
+                <div className="cms-date-range-container flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
                   <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
                   <input
@@ -1566,7 +1566,7 @@ function ComplaintListContent() {
                     max={new Date().toISOString().split("T")[0]}
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                    className="bg-transparent text-xs text-slate-800 font-medium border-0 !border-none !shadow-none focus:outline-none focus:ring-0 cursor-pointer w-[112px] !min-h-0 h-7"
                     title="Date from"
                   />
                   <span className="text-slate-300 text-xs shrink-0">-</span>
@@ -1576,7 +1576,7 @@ function ComplaintListContent() {
                     max={new Date().toISOString().split("T")[0]}
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="bg-transparent text-xs text-slate-800 font-medium focus:outline-none cursor-pointer w-[112px]"
+                    className="bg-transparent text-xs text-slate-800 font-medium border-0 !border-none !shadow-none focus:outline-none focus:ring-0 cursor-pointer w-[112px] !min-h-0 h-7"
                     title="Date to"
                   />
                   {(dateFrom || dateTo) && (
@@ -1968,14 +1968,27 @@ function ComplaintListContent() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {pageComplaints.map((c, idx) => (
-                    <tr key={c.id} className="hover:bg-slate-50/90 transition-colors">
+                    <tr
+                      key={c.id}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement | null;
+                        if (target?.closest("a, button, input, select, textarea, [role='button']")) {
+                          return;
+                        }
+                        router.push(`/complaints/${c.id}`);
+                      }}
+                      className="hover:bg-slate-50/90 transition-colors cursor-pointer"
+                    >
                       {columnOrder.map((col) => {
                         if (!visibleColumns[col]) return null;
                         return renderComplaintCell(col, c, (page-1)*20+idx);
                       })}
 
                       {visibleColumns.action && (
-                        <td className="py-2.5 px-4 text-right align-middle">
+                        <td
+                          className="py-2.5 px-4 text-right align-middle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="flex flex-col items-end gap-1.5 min-w-[130px]">
 <Link href={`/complaints/${c.id}`} className="cms-open-case">Open case <Eye className="w-3.5 h-3.5"/></Link>
 {isSho && !isMhc && !c.isFirRegistered && (c.directSendToFir || c.status === "FIR_REGISTER" || c.workflowState === "FIR_REGISTER") && (

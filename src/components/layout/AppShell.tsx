@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {currentUser.stationName}
               </span>
               <span
-                className="text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-semibold shadow-xs"
+                className="cms-topbar-district-badge text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-semibold shadow-xs"
               >
                 {currentUser.district}
               </span>
