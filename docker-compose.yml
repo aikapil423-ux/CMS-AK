@@ -6,6 +6,12 @@ services:
     restart: unless-stopped
     ports:
       - "8091:8091"
+    # Server-side secrets (GEMINI_API_KEY for voice dictation, etc.).
+    # The file itself is git-ignored and excluded from the image; keep it on
+    # the host so `docker compose up -d` can read it without rebuilding.
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - 18k-cms-db:/app/prisma
 
