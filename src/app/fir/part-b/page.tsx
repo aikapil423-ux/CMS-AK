@@ -256,148 +256,132 @@ function FIRPartBContent() {
 
   return (
     <div className="space-y-6 pb-16 max-w-[1600px] mx-auto px-3 sm:px-6">
-      <FinalReportCheckingBoard station={currentUser.stationName} district={["SP", "SP_DISTRICT", "DSP_SUBDIV"].includes(currentUser.role) ? currentUser.district : undefined} userId={currentUser.id} />
       {/* Page Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#0b192c] text-white flex items-center justify-center font-bold text-sm shadow-xs">
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Left Side: Heading + Tabs + Search Bar (Red Tick) */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[#0b192c] text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
                 <FileCheck2 className="w-4 h-4 text-blue-400" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900">FIR Part B</h1>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 whitespace-nowrap">FIR Part B</h1>
+            </div>
 
-              </div>
+            {/* 3 Tabs: Partial | Under checking | Re-open */}
+            <div className="inline-flex items-center p-0.5 sm:p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 gap-1 overflow-x-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => handleTabChange("PARTIAL")}
+                className={`px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === "PARTIAL"
+                    ? "bg-white text-blue-800 shadow-2xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                }`}
+              >
+                <span>{TAB_CONFIGS.PARTIAL.title}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    activeTab === "PARTIAL"
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {counts.partial}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTabChange("UNDER_CHECKING")}
+                className={`px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === "UNDER_CHECKING"
+                    ? "bg-white text-amber-900 shadow-2xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                }`}
+              >
+                <span>{TAB_CONFIGS.UNDER_CHECKING.title}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    activeTab === "UNDER_CHECKING"
+                      ? "bg-amber-600 text-white"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {counts.underChecking}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTabChange("REOPEN")}
+                className={`px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === "REOPEN"
+                    ? "bg-white text-purple-900 shadow-2xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                }`}
+              >
+                <span>{TAB_CONFIGS.REOPEN.title}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    activeTab === "REOPEN"
+                      ? "bg-purple-600 text-white"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {counts.reopen}
+                </span>
+              </button>
+            </div>
+
+            {/* Search Input (Moved to Red Tick: next to Tabs) */}
+            <div className="relative flex-1 min-w-[170px] max-w-[260px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Part B FIRs..."
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-800"
+              />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Right Side: Police Station Filter (Green Tick) + View Complete Cases */}
+          <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto shrink-0">
+            {/* Police Station Dropdown & Refresh Button (Moved to Green Tick) */}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={selectedStation}
+                onChange={(e) => setSelectedStation(e.target.value)}
+                aria-label="Filter by Police Station"
+                className="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none max-w-[170px]"
+              >
+                <option value="ALL">All Police Stations</option>
+                {policeStations.map((ps) => (
+                  <option key={ps} value={ps}>
+                    {ps}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={fetchFirs}
+                className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                title="Refresh list"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             <Link
               href="/fir/complete-cases"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-colors whitespace-nowrap"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>View Complete cases &rarr;</span>
             </Link>
-          </div>
-        </div>
-
-        {/* 3 Tabs: Partial | Under checking | Re-open */}
-        <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
-          <button
-            type="button"
-            onClick={() => handleTabChange("PARTIAL")}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
-              activeTab === "PARTIAL"
-                ? "border-blue-600 text-blue-800 bg-blue-50/70"
-                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <span>{TAB_CONFIGS.PARTIAL.title}</span>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                activeTab === "PARTIAL"
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-200 text-slate-700"
-              }`}
-            >
-              {counts.partial}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTabChange("UNDER_CHECKING")}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
-              activeTab === "UNDER_CHECKING"
-                ? "border-amber-600 text-amber-900 bg-amber-50/70"
-                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <span>{TAB_CONFIGS.UNDER_CHECKING.title}</span>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                activeTab === "UNDER_CHECKING"
-                  ? "bg-amber-600 text-white"
-                  : "bg-slate-200 text-slate-700"
-              }`}
-            >
-              {counts.underChecking}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTabChange("REOPEN")}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer border-b-2 ${
-              activeTab === "REOPEN"
-                ? "border-purple-600 text-purple-900 bg-purple-50/70"
-                : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <span>{TAB_CONFIGS.REOPEN.title}</span>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                activeTab === "REOPEN"
-                  ? "bg-purple-600 text-white"
-                  : "bg-slate-200 text-slate-700"
-              }`}
-            >
-              {counts.reopen}
-            </span>
-          </button>
-        </div>
-
-        {/* Tab Guidance Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 font-bold text-slate-900">
-              <span>{currentConfig.hindiTitle}</span>
-              <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold border ${currentConfig.badgeColor}`}>
-                {currentConfig.badge}
-              </span>
-            </div>
-            <p className="text-slate-600 text-[11px]">{currentConfig.desc}</p>
-          </div>
-        </div>
-
-        {/* Search & Filters */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between pt-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="FIR No, Accused, Complainant, Challan No..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-800"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedStation}
-              onChange={(e) => setSelectedStation(e.target.value)}
-              aria-label="Filter by Police Station"
-              className="text-xs bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none"
-            >
-              <option value="ALL">All Police Stations</option>
-              {policeStations.map((ps) => (
-                <option key={ps} value={ps}>
-                  {ps}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={fetchFirs}
-              className="p-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
-              title="Refresh list"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>

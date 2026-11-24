@@ -134,6 +134,7 @@ export function Sidebar() {
   const isReportsPath = pathname.startsWith("/reports");
   const isProsecutionPath = pathname.startsWith("/prosecution");
   const isTelecomPath = pathname.startsWith("/telecom");
+  const isAuditsPath = pathname.startsWith("/audits");
   const isManagementPath = pathname.startsWith("/settings");
   const isLocationsPath = pathname.startsWith("/admin/locations");
   const isAccountsPath = pathname.startsWith("/admin/accounts");
@@ -899,18 +900,20 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* AUDITS & INSPECTION LINK */}
-        <Link
-          href="/audits"
-          title="Audits & Inspection"
-          className={cn(
-            'flex items-center gap-2 p-2 rounded text-xs transition-colors',
-            pathname.startsWith('/audits') ? 'bg-blue-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-          )}
-        >
-          <Pencil className="w-4 h-4 shrink-0" />
-          {isExpanded && <span>Audits & Inspection</span>}
-        </Link>
+        {/* AUDITS & INSPECTION LINK (Shown only when in Audits & Inspection module) */}
+        {isAuditsPath && (
+          <Link
+            href="/audits"
+            title="Audits & Inspection"
+            className={cn(
+              'flex items-center gap-2 p-2 rounded text-xs transition-colors',
+              pathname.startsWith('/audits') ? 'bg-blue-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+            )}
+          >
+            <Pencil className="w-4 h-4 shrink-0" />
+            {isExpanded && <span>Audits & Inspection</span>}
+          </Link>
+        )}
 
         {/* DEVELOPER ONLY: LOCATION & ORGANIZATION MANAGEMENT */}
         {isDeveloperAdmin && (

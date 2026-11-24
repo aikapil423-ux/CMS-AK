@@ -208,80 +208,72 @@ function CompleteCasesContent() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white px-4 py-3 rounded-2xl border border-slate-700">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 shrink-0 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" />
+      {/* Page Header with Integrated Search & Filters in One Clean Row */}
+      <div className="bg-[#203c88] text-white p-3 sm:p-3.5 rounded-2xl border border-blue-900 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Title */}
+          <h1 className="cms-complete-cases-title text-lg sm:text-xl font-bold tracking-tight text-white whitespace-nowrap shrink-0">
+            {t("Complete cases", "Complete cases")}
+          </h1>
+
+          {/* Search Box & Filters in Same Row next to Title */}
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0 justify-end">
+            {/* Search Box */}
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t(
+                  "FIR नं, CCTNS, वादी, धाराएं, IO खोजें...",
+                  "Search FIR No, CCTNS, Complainant, Acts, IO..."
+                )}
+                className="w-full pl-9 pr-8 py-1.5 text-xs bg-white text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <h1 className="cms-complete-cases-title text-xl sm:text-2xl font-black tracking-tight text-white">
-              Complete cases (अंतिम रूप से निस्तारित वाद)
-            </h1>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="bg-white/10 border border-white/15 px-3 py-1.5 rounded-xl flex items-center gap-2.5">
-            <span className="text-xs font-bold text-white">कुल निस्तारित वाद</span>
-            <span className="text-lg leading-none font-bold text-emerald-400 font-mono">{completedFirs.length}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters & Search */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-          {/* Search Box */}
-          <div className="sm:col-span-6 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="FIR नं, CCTNS, वादी का नाम, धाराएं, IO या निस्तारण कारण खोजें..."
-              className="w-full pl-9 pr-8 py-2 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            {/* Station Filter */}
+            <div className="shrink-0">
+              <select
+                value={selectedStation}
+                onChange={(e) => setSelectedStation(e.target.value)}
+                aria-label="Filter by Police Station"
+                className="py-1.5 px-2.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer max-w-[180px]"
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+                <option value="ALL">{t("सभी थाने", "All Police Stations")}</option>
+                {policeStations.map((ps) => (
+                  <option key={ps} value={ps}>
+                    {ps}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Station Filter */}
-          <div className="sm:col-span-3">
-            <select
-              value={selectedStation}
-              onChange={(e) => setSelectedStation(e.target.value)}
-              className="w-full py-2 px-3 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 bg-white"
-            >
-              <option value="ALL">सभी थाने (All Police Stations)</option>
-              {policeStations.map((ps) => (
-                <option key={ps} value={ps}>
-                  {ps}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Year Filter */}
-          <div className="sm:col-span-3">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full py-2 px-3 text-xs border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500 bg-white font-mono"
-            >
-              <option value="ALL">सभी वर्ष (All Years)</option>
-              {availableYears.map((yr) => (
-                <option key={yr} value={yr}>
-                  वर्ष {yr}
-                </option>
-              ))}
-            </select>
+            {/* Year Filter */}
+            <div className="shrink-0">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                aria-label="Filter by Year"
+                className="py-1.5 px-2.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer font-mono"
+              >
+                <option value="ALL">{t("सभी वर्ष", "All Years")}</option>
+                {availableYears.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {t(`वर्ष ${yr}`, `Year ${yr}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </div>
