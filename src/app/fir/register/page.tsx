@@ -198,6 +198,8 @@ function RegisterFIRForm() {
   const [submitting, setSubmitting] = useState(false);
   const [registeredFir, setRegisteredFir] = useState<FIRItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  // Distinguishes the read-only Preview (IIF-I) from the post-registration receipt.
+  const [receiptMode, setReceiptMode] = useState<"preview" | "registered" | null>(null);
   const draftKey = useMemo(() => {
     if (complaintIdParam) return `complaint_${complaintIdParam}`;
     if (gdNumberParam) return `gd_${gdNumberParam}`;
@@ -2541,6 +2543,7 @@ function RegisterFIRForm() {
       setDraftRestoredNotice(null);
       setLastSavedTime(null);
       setRegisteredFir(created);
+      setReceiptMode("registered");
       setShowReceiptModal(true);
     } catch (err: any) {
       console.error("Failed to register FIR:", err);
@@ -5844,6 +5847,7 @@ function RegisterFIRForm() {
                 size="sm"
                 onClick={() => {
                   setRegisteredFir(buildCurrentFirItem());
+                  setReceiptMode("preview");
                   setShowReceiptModal(true);
                 }}
                 className="text-xs text-slate-700 flex items-center gap-1.5"
@@ -5902,9 +5906,14 @@ function RegisterFIRForm() {
           isOpen={showReceiptModal}
           onClose={() => {
             setShowReceiptModal(false);
-            if (registeredFir && registeredFir.id && !registeredFir.id.startsWith("fir-temp-")) {
+            setRegisteredFir(null);
+            if (receiptMode === "registered") {
+              setReceiptMode(null);
               router.push("/fir");
+              return;
             }
+            // Preview (IIF-I): stay on the registration form with all data intact.
+            setReceiptMode(null);
           }}
         />
       )}
