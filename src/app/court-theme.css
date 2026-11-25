@@ -114,7 +114,7 @@
   }
   .cms-court-theme .cms-shell header .cms-persona-badge { color: #ffffff; }
   .cms-court-theme .cms-shell header .cms-language-badge { color: #ffffff; }
-  .cms-topbar :where(.absolute button:hover) { background: #eef1ff; }
+  .cms-topbar :where(.absolute button:hover) { background-color: var(--color-paper-3); }
   .cms-court-theme .cms-module-menu-header,
   .cms-court-theme .cms-module-menu-header :where(h4, button, svg) {
     color: #ffffff;
@@ -213,7 +213,7 @@
     border-bottom: 1px solid #cbd3e3;
   }
   .cms-court-theme :where(tbody tr:hover):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
-    background-color: #f7f9fc;
+    background-color: var(--cms-table-row-hover, #f7f9fc);
   }
 
   /* Hallmark Input & Form Controls */

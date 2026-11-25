@@ -121,6 +121,7 @@ html.dark .cms-court-theme {
   --color-paper: #0b1424;
   --color-paper-2: #0f1c34;
   --color-paper-3: #172747;
+  --cms-table-row-hover: var(--color-paper-3);
   --color-ink: #f1f5f9;
   --color-ink-2: #e2e8f0;
   --color-muted: #94a3b8;

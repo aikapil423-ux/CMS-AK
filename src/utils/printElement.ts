@@ -569,7 +569,8 @@ export function getZimniPagedHtml(el: HTMLElement): string {
  */
 export function printHtmlContent(
   htmlContent: string,
-  documentTitle?: string
+  documentTitle?: string,
+  { standalone = false } = {}
 ): void {
   if (typeof window === "undefined") return;
 
@@ -594,14 +595,16 @@ export function printHtmlContent(
   }
 
   let stylesHtml = "";
-  document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
-    stylesHtml += node.outerHTML;
-  });
+  if (!standalone) {
+    document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
+      stylesHtml += node.outerHTML;
+    });
+  }
 
   const title = documentTitle || "Police Legal Document";
 
   iframeDoc.open();
-  iframeDoc.write(`
+  iframeDoc.write(standalone ? htmlContent : `
     <!DOCTYPE html>
     <html lang="hi">
     <head>
@@ -812,7 +815,11 @@ export function downloadA4DocumentAsHtml(
 </body>
 </html>`;
 
-  const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
+  downloadHtmlContent(fullHtml, filename);
+}
+
+export function downloadHtmlContent(htmlContent: string, filename: string): void {
+  const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

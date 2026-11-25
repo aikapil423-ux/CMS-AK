@@ -97,11 +97,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-xs cursor-pointer",
                 pathname === "/"
                   ? "bg-[#203c88] !text-white border-[#203c88] shadow-xs hover:bg-[#1a3170]"
-                  : "bg-slate-50 hover:bg-slate-100 !text-slate-700 hover:!text-[#203c88] border-slate-200"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-[#203c88] border-slate-200"
               )}
             >
-              <Home className={cn("w-3.5 h-3.5 shrink-0", pathname === "/" ? "!text-white" : "!text-slate-600")} />
-              <span className={pathname === "/" ? "!text-white font-bold" : "!text-slate-700 font-bold"}>
+              <Home className={cn("w-3.5 h-3.5 shrink-0", pathname === "/" ? "!text-white" : "text-slate-600")} />
+              <span className={pathname === "/" ? "!text-white font-bold" : "font-bold"}>
                 {t("HOME") || "HOME"}
               </span>
             </Link>
@@ -109,8 +109,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="h-4 w-px bg-slate-300"></div>
 
             <div className="flex items-center gap-2 text-slate-800">
-              <Building className="w-3.5 h-3.5 !text-slate-600 shrink-0" />
-              <span className="font-semibold text-xs !text-slate-800 tracking-tight whitespace-nowrap">
+              <Building className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <span className="font-semibold text-xs text-slate-800 tracking-tight whitespace-nowrap">
                 {currentUser.stationName}
               </span>
               <span

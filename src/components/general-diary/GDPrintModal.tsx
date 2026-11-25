@@ -17,7 +17,7 @@ import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
-import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { printHtmlContent, downloadHtmlContent } from "@/utils/printElement";
 
 interface GDPrintModalProps {
   isOpen: boolean;
@@ -43,6 +43,10 @@ function formatHeaderDate(iso: string): string {
   } catch {
     return toDDMMYYYY(iso);
   }
+}
+
+function escapeHtml(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 // Print & Download friendly General Diary Register (All Days, Latest to Oldest, Date Wise Filter)
@@ -143,8 +147,8 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   if (!isOpen) return null;
 
   const generateRegisterHtml = () => {
-    const policeStation = records[0]?.policeStation || "PS City Panipat";
-    const district = records[0]?.district || "Panipat";
+    const policeStation = escapeHtml(records[0]?.policeStation || "PS City Panipat");
+    const district = escapeHtml(records[0]?.district || "Panipat");
     const dateRangeLabel =
       startDate && endDate
         ? `${toDDMMYYYY(startDate)} to ${toDDMMYYYY(endDate)}`
@@ -170,36 +174,35 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           <tr>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold; font-family: monospace; text-align: center;">
               ${rec.sequencePerDay || 1}
-              <div style="font-size: 9px; color: #64748b; font-weight: normal;">${rec.gdNumber}</div>
+              <div style="font-size: 9px; color: #64748b; font-weight: normal;">${escapeHtml(rec.gdNumber)}</div>
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-family: monospace; white-space: nowrap;">
-              ${timePart}
+              ${escapeHtml(timePart)}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: 600;">
-              ${rec.typeDisplay}
+              ${escapeHtml(rec.typeDisplay)}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px;">
-              <strong>${rec.entryForOfficer.name}</strong>
-              <div style="font-size: 10px; color: #475569;">${rec.entryForOfficer.rank} • ${rec.entryForOfficer.beltNumber || "Station Staff"}</div>
+              <strong>${escapeHtml(rec.entryForOfficer.name)}</strong>
+              <div style="font-size: 10px; color: #475569;">${escapeHtml(rec.entryForOfficer.rank)} • ${escapeHtml(rec.entryForOfficer.beltNumber || "Station Staff")}</div>
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold;">
-              ${rec.subject}
+              ${escapeHtml(rec.subject)}
             </td>
-            <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45;">
-              ${cleanGdNarrative(rec.narrative)}
-            </td>
+            <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45;"><div style="white-space: pre-wrap;">${escapeHtml(cleanGdNarrative(rec.narrative))}</div></td>
           </tr>
         `;
       });
 
       sectionsHtml += `
-        <div style="margin-top: 24px; page-break-inside: avoid;">
-          <div style="background-color: #0b192c; color: white; padding: 6px 12px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between;">
-            <span>📅 तारीख / Date: ${headerDateStr}</span>
-            <span>कुल प्रविष्टियां: ${dayRecords.length}</span>
-          </div>
+        <div style="margin-top: 24px;">
           <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px;">
             <thead>
+              <tr>
+                <th colspan="6" style="background-color: #0b192c; color: white; padding: 6px 12px; text-align: left; font-size: 13px;">
+                  तारीख / Date: ${escapeHtml(headerDateStr)} • कुल प्रविष्टियां: ${dayRecords.length}
+                </th>
+              </tr>
               <tr style="background-color: #f1f5f9; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">
                 <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 65px;">GD No.</th>
                 <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 75px;">Time</th>
@@ -230,9 +233,10 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
     .header h2 { margin: 4px 0; font-size: 14px; font-weight: normal; color: #334155; }
     .header p { margin: 2px 0; font-size: 11px; color: #64748b; font-family: monospace; }
     .footer-signatures { margin-top: 35px; padding-top: 15px; border-top: 1px solid #94a3b8; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; }
+    td { overflow-wrap: anywhere; }
     @media print {
-      body { padding: 0; }
-      .noprint { display: none !important; }
+      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr, .footer-signatures { break-inside: avoid; }
     }
   </style>
 </head>
@@ -240,7 +244,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   <div class="header">
     <h1>HARYANA POLICE • GENERAL DIARY REGISTER NO. II</h1>
     <h2>${policeStation}, District ${district} • Punjab Police Rules (PPR) 1934 Rule 22.48</h2>
-    <p>Range: ${dateRangeLabel} • Total Entries: ${filteredRecords.length} • Generated on: ${new Date().toLocaleString("en-IN")}</p>
+    <p>Range: ${escapeHtml(dateRangeLabel)} • Total Entries: ${filteredRecords.length} • Generated on: ${new Date().toLocaleString("en-IN")}</p>
   </div>
   ${sectionsHtml}
   <div class="footer-signatures">
@@ -251,22 +255,19 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 </body>
 </html>`;
 
-    return { fullHtml, policeStation, dateRangeLabel };
+    return fullHtml;
   };
 
   const handlePrint = () => {
-    const { fullHtml } = generateRegisterHtml();
-    printHtmlContent(fullHtml, "Roznamcha_General_Diary_Register");
+    printHtmlContent(generateRegisterHtml(), undefined, { standalone: true });
   };
 
   const handleDownload = () => {
-    const { fullHtml } = generateRegisterHtml();
     const safeStart = startDate ? startDate.replace(/[^0-9-]/g, "") : "all";
     const safeEnd = endDate ? endDate.replace(/[^0-9-]/g, "") : "latest";
-    downloadA4DocumentAsHtml(
-      fullHtml,
-      `GD_Register_${safeStart}_to_${safeEnd}.html`,
-      "Roznamcha General Diary Register"
+    downloadHtmlContent(
+      generateRegisterHtml(),
+      `GD_Register_${safeStart}_to_${safeEnd}.html`
     );
   };
 

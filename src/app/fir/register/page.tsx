@@ -3247,7 +3247,11 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card className="border-slate-200 overflow-visible relative z-20">
+            <Card
+              className={`border-slate-200 overflow-visible relative ${
+                isActDropdownOpen || isSectionDropdownOpen ? "z-30" : "z-20"
+              }`}
+            >
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
