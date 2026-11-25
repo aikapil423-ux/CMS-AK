@@ -60,10 +60,13 @@ interface NavItem {
 const prosecutionNavItems: (NavItem & { tab: string })[] = [
   { name: "Challan Scrutiny", tab: "challan_scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2, badge: "Scrutiny", badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200" },
   { name: "Courts", tab: "courts", href: "/prosecution?tab=courts&subtab=bail_reply", icon: Scale },
+  { name: "IIF-VI", tab: "iif_vi", href: "/prosecution/iif-vi", icon: ClipboardList },
 ];
 
 function ProsecutionNav({ isExpanded, isProsecutionPath }: { isExpanded: boolean; isProsecutionPath: boolean }) {
-  const activeTab = useSearchParams().get("tab") === "courts" ? "courts" : "challan_scrutiny";
+  const pathname = usePathname();
+  const tab = useSearchParams().get("tab");
+  const activeTab = pathname === "/prosecution/iif-vi" ? "iif_vi" : tab === "courts" ? "courts" : "challan_scrutiny";
   return (
     <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
       {prosecutionNavItems.map((item) => {

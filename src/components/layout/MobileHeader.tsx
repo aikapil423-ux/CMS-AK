@@ -356,6 +356,14 @@ export function MobileHeader() {
                   >
                     {t("Courts")}
                   </Link>
+                  <Link
+                    href="/prosecution/iif-vi"
+                    aria-current={pathname === "/prosecution/iif-vi" ? "page" : undefined}
+                    onClick={() => setDrawerOpen(false)}
+                    className="block rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 aria-[current=page]:bg-[#203c88] aria-[current=page]:text-white"
+                  >
+                    IIF-VI
+                  </Link>
                 </>
               ) : (
                 <>
