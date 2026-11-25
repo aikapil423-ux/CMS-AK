@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { DataTable, inputStyle, buttonStyle, primaryStyle, displayDate, message, request } from "./CourtFormControls";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { ClipboardList, FileCheck2, ListFilter, Save, Scale, Search } from "lucide-react";
 import { formGroups, requiredField, uploadFields, visibleField, type Attachment, type Entry, type Field, type Group, type IifViRecord, type IifViStage, type Values } from "@/lib/iifVi";
 
@@ -24,40 +25,6 @@ const panels = [
   { id: "final", label: "Final Form", icon: FileCheck2 },
   { id: "register", label: "Register", icon: ListFilter },
 ] as const;
-const inputStyle = "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700";
-const buttonStyle = "rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50";
-const primaryStyle = "inline-flex items-center gap-2 rounded-md bg-[#203c88] px-4 py-2 text-sm font-semibold text-white hover:bg-[#182f70] disabled:opacity-50";
-const dateFormat = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "Asia/Kolkata" });
-const displayDate = (value: string) => value && Number.isFinite(Date.parse(value)) ? dateFormat.format(new Date(value)) : value || "—";
-const message = (error: unknown) => error instanceof Error ? error.message : "Something went wrong.";
-
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, { cache: "no-store", ...options });
-  const data = await response.json().catch(() => null);
-  if (!response.ok || !data) throw new Error(data?.error || "IIF-VI request failed.");
-  return data;
-}
-
-function DataTable({ columns, rows, empty }: { columns: string[]; rows: ReactNode[][]; empty: string }) {
-  if (!rows.length) return <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">{empty}</p>;
-  return (
-    <div className="overflow-x-auto rounded-md border border-slate-200">
-      <table className="w-full text-left text-sm">
-        <thead className="bg-[#203c88] text-white">
-          <tr>{columns.map(column => <th key={column} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">{column}</th>)}</tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {rows.map((row, index) => (
-            <tr key={index} className="align-top odd:bg-white even:bg-slate-50">
-              {row.map((value, cell) => <td key={cell} className="min-w-fit px-3 py-2">{value || "—"}</td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function FieldList({ fields, values, fir, onChange }: { fields: Field[]; values: Values; fir: FirDetail; onChange: (label: string, value: string) => void }) {
   const prefix = useId();
   return (

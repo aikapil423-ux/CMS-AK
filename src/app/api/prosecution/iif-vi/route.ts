@@ -1,10 +1,11 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { apiAccess } from "@/lib/apiSecurity";
 import { isFirVisibleToUser } from "@/lib/firIntegrity";
 import { formGroups, iifViStages, requiredField, uploadFields, visibleField, type Entry, type Field, type IifViRecord, type StageRecord, type Values } from "@/lib/iifVi";
+import { iifViRecordPath as storePath, readIifViRecord as readRecord } from "@/services/iifViRepository";
 import { readFirRecords } from "@/services/firRepository";
 import type { FIRItem } from "@/types";
 
@@ -25,20 +26,6 @@ const inputSchema = z.object({
   })).min(1).max(100),
   attachments: z.record(z.string().max(120), attachmentSchema.nullable()),
 });
-
-const storePath = (id: string) => path.join(
-  process.env.CMS_IIF_VI_STORE_DIR || path.join(process.cwd(), "prisma", "iif-vi"),
-  createHash("sha256").update(id).digest("hex") + ".json",
-);
-
-async function readRecord(file: string): Promise<IifViRecord | null> {
-  try {
-    return JSON.parse(await fs.readFile(/* turbopackIgnore: true */ file, "utf8"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw error;
-  }
-}
 
 function caseSummary(fir: FIRItem) {
   return {
