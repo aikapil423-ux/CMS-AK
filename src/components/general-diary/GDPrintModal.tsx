@@ -332,7 +332,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* From - To Date Pickers */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>From:</span>
@@ -341,14 +341,14 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                   <DatePickerDDMMYYYY
                     value={startDate}
                     size="sm"
-                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
+                    className="text-xs"
                     onChange={(e) => setStartDate(e.target.value)}
                     title="Filter entries from this date (DD/MM/YYYY)"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
+              <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>To:</span>
@@ -357,7 +357,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                   <DatePickerDDMMYYYY
                     value={endDate}
                     size="sm"
-                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
+                    className="text-xs"
                     onChange={(e) => setEndDate(e.target.value)}
                     title="Filter entries up to this date (DD/MM/YYYY)"
                   />

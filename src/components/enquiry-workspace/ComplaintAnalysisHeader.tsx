@@ -8,12 +8,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
-  FileText,
   ChevronDown,
   ChevronUp,
   Loader2,
   Shield,
-  Info,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -35,6 +33,8 @@ interface ComplaintAnalysisHeaderProps {
   onPersonSelect?: (person: IdentifiedPerson | null) => void;
   selectedComplaintId?: string | null;
   selectedPersonId?: string | null;
+  selectionControls?: React.ReactNode;
+  actions?: React.ReactNode;
   className?: string;
 }
 
@@ -46,6 +46,8 @@ export function ComplaintAnalysisHeader({
   onPersonSelect,
   selectedComplaintId,
   selectedPersonId,
+  selectionControls,
+  actions,
   className = "",
 }: ComplaintAnalysisHeaderProps) {
   const { currentUser } = useAuth();
@@ -168,15 +170,15 @@ export function ComplaintAnalysisHeader({
   return (
     <div className={`bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3.5 ${className}`}>
       {/* Top Header Row with Selection Dropdowns */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className={`flex flex-col justify-between gap-3 lg:flex-row ${selectionControls ? "lg:items-end" : "lg:items-center"}`}>
+        <div className={`grid min-w-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 ${selectionControls ? "md:items-end" : ""}`}>
           {/* 1. Required Complaint Dropdown */}
           <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+            <label className={`mb-1 flex flex-wrap items-center gap-1.5 font-bold text-slate-800 ${selectionControls ? "text-sm" : "text-xs"}`}>
               <Folder className="w-3.5 h-3.5 text-blue-600" />
               <span>Select Complaint</span>
               <span className="text-red-500 font-black text-xs">*</span>
-              <span className="text-[10px] font-normal text-slate-500 ml-auto">
+              <span className={`ml-auto font-normal text-slate-500 ${selectionControls ? "text-xs" : "text-[10px]"}`}>
                 (Logged-in Register: {currentUser.role})
               </span>
             </label>
@@ -201,7 +203,7 @@ export function ComplaintAnalysisHeader({
               <select
                 value={currentComplaintId}
                 onChange={(e) => { if (!beforeSelectionChange || beforeSelectionChange()) handleComplaintChange(e.target.value); }}
-                className={`w-full text-xs font-medium rounded-lg px-3 py-2 border outline-none transition-all cursor-pointer ${
+                className={`w-full font-medium rounded-lg px-3 py-2 border outline-none transition-all cursor-pointer ${selectionControls ? "h-10 text-sm" : "text-xs"} ${
                   currentComplaintId
                     ? "bg-blue-50/50 border-blue-400 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500"
                     : "bg-white border-amber-300 text-slate-600 focus:ring-2 focus:ring-amber-500"
@@ -258,19 +260,13 @@ export function ComplaintAnalysisHeader({
               )}
             </div>
           )}
+          {selectionControls}
         </div>
 
-        {/* Right Status Badge */}
+        {/* Analysis Dossier Toggle */}
         {currentComplaintId && selectedComplaintObj && (
-          <div className="shrink-0 flex items-center gap-2">
-            <div className="text-right">
-              <div className="text-[11px] font-mono font-bold text-slate-900">
-                {selectedComplaintObj.complaintNumber}
-              </div>
-              <div className="text-[10px] text-slate-500">
-                Station: {selectedComplaintObj.policeStation || "Local PS"}
-              </div>
-            </div>
+          <div className={`flex shrink-0 flex-wrap items-center gap-2 ${selectionControls ? "[&>button]:h-10 [&>button]:text-sm" : ""}`}>
+            {actions}
             <button
               type="button"
               onClick={() => setShowAnalysisDetails((v) => !v)}
@@ -310,34 +306,6 @@ export function ComplaintAnalysisHeader({
       {/* Document Analysis & Fact Verification Accordion */}
       {analysisReport && !isAnalyzing && (
         <div className="space-y-2">
-          {/* Summary Pills Bar */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 text-[11px] font-medium">
-              <User className="w-3 h-3 text-slate-500" />
-              <span>{analysisReport.identifiedPersons.length} Persons Extracted</span>
-            </span>
-
-            <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200 text-[11px] font-medium">
-              <FileText className="w-3 h-3 text-slate-500" />
-              <span>{analysisReport.extractedDocuments.filter((d) => d.isReadable).length} Readable Documents</span>
-            </span>
-
-            {analysisReport.unreadableDocuments.length > 0 && (
-              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-300 text-[11px] font-bold">
-                <AlertTriangle className="w-3 h-3 text-amber-600" />
-                <span>{analysisReport.unreadableDocuments.length} Unreadable File(s) Omitted</span>
-              </span>
-            )}
-
-            {analysisReport.missingInformationFlags.length > 0 && (
-              <span className="inline-flex items-center gap-1 bg-red-50 text-red-800 px-2 py-0.5 rounded border border-red-200 text-[11px] font-bold">
-                <Info className="w-3 h-3 text-red-600" />
-                <span>{analysisReport.missingInformationFlags.length} Fact Review Flags</span>
-              </span>
-            )}
-          </div>
-
-          {/* Unreadable Documents Explicit Alert */}
           {analysisReport.aiAnalysis && (
             <details className="rounded border border-slate-200 p-3 text-xs">
               <summary className="cursor-pointer font-semibold">AI analysis of saved case records</summary>
@@ -355,29 +323,6 @@ export function ComplaintAnalysisHeader({
                 {analysisReport.unreadableDocuments.map((ud, idx) => (
                   <li key={idx}>
                     <span className="font-semibold text-slate-900">&ldquo;{ud.fileName}&rdquo;</span> — {ud.reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Missing Information / Conflicting Flags Alert */}
-          {(analysisReport.missingInformationFlags.length > 0 ||
-            analysisReport.conflictingInformationFlags.length > 0) && (
-            <div className="bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-slate-900">
-                <Info className="w-3.5 h-3.5 text-blue-600" />
-                <span>Information Verification &amp; Missing Details (No Facts Were Invented):</span>
-              </div>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-700 pl-1">
-                {analysisReport.missingInformationFlags.map((flag, idx) => (
-                  <li key={`mis_${idx}`} className="text-amber-900">
-                    <span className="font-semibold">Missing:</span> {flag}
-                  </li>
-                ))}
-                {analysisReport.conflictingInformationFlags.map((conflict, idx) => (
-                  <li key={`cnf_${idx}`} className="text-red-700 font-semibold">
-                    <span>Conflict Flag:</span> {conflict}
                   </li>
                 ))}
               </ul>

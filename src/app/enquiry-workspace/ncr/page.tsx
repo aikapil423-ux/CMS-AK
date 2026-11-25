@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
+import { ActionsDropdown } from "@/components/ui/actions-dropdown";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
@@ -303,6 +304,101 @@ function NcrWorkspaceContent() {
     URL.revokeObjectURL(url);
   };
 
+  const referenceControls = selectedComplaint ? (
+    <div className="flex min-w-0 flex-wrap items-end gap-2.5 text-sm">
+      <label className="grid min-w-32 flex-[1_1_8rem] gap-1 font-semibold text-slate-800">
+        <span className="flex items-center gap-1.5">
+          <BadgeAlert className="h-4 w-4 text-emerald-600" />
+          NCR Reference
+        </span>
+        <input
+          type="text"
+          value={ncrNumber}
+          onChange={(e) => setNcrNumber(e.target.value)}
+          className="h-10 w-full min-w-0 rounded border border-emerald-300 bg-emerald-50 px-2.5 font-mono text-sm font-bold text-emerald-800 focus:ring-1 focus:ring-emerald-500"
+        />
+      </label>
+
+      <label className="grid min-w-40 flex-[2_1_10rem] gap-1 font-semibold text-slate-800">
+        <span>GD Rapat</span>
+        <input
+          type="text"
+          value={gdEntryNumber}
+          onChange={(e) => setGdEntryNumber(e.target.value)}
+          className="h-10 w-full min-w-0 rounded border border-slate-300 bg-slate-50 px-2.5 text-sm font-normal text-slate-700 focus:ring-1 focus:ring-blue-500"
+          placeholder="GD Roznamcha Entry"
+        />
+      </label>
+
+      {/* Reset to Original Analysis */}
+      <button
+        type="button"
+        onClick={handleReset}
+        className="flex h-10 items-center gap-1.5 whitespace-nowrap rounded border border-slate-200 px-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+        title="Discard edits and reload from complaint docket"
+      >
+        <RotateCcw className="w-3 h-3 text-slate-500" />
+        <span>Re-Analyze Docket</span>
+      </button>
+    </div>
+  ) : null;
+
+  const reportActions = selectedComplaint ? (
+    <ActionsDropdown label="NCR actions">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handlePrint}
+        className="text-xs font-bold gap-1 border-slate-300 cursor-pointer"
+      >
+        <Printer className="w-3.5 h-3.5" />
+        <span>Print</span>
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleDownloadWord}
+        className="text-xs font-bold gap-1 border-slate-300 text-blue-700 hover:bg-blue-50 cursor-pointer"
+      >
+        <Download className="w-3.5 h-3.5" />
+        <span>Export Word (.doc)</span>
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleCopyReport}
+        className="text-xs font-bold gap-1 border-slate-300 cursor-pointer"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+        <span>{copied ? "Copied!" : "Copy"}</span>
+      </Button>
+
+      <Button
+        type="button"
+        onClick={handleSaveToComplaint}
+        disabled={saveLoading}
+        className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs cursor-pointer"
+      >
+        {saveSuccess ? (
+          <>
+            <CheckCircle2 className="w-4 h-4 text-white" />
+            <span>NCR Saved to Docket!</span>
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4" />
+            <span>{saveLoading ? "Saving..." : "Save to Complaint"}</span>
+          </>
+        )}
+      </Button>
+    </ActionsDropdown>
+  ) : null;
+
   return (
     <div className="space-y-4 animate-in fade-in-50 pb-20">
       {/* 4-Tab Navigation */}
@@ -314,6 +410,8 @@ function NcrWorkspaceContent() {
         showPersonDropdown={false}
         onComplaintSelect={handleComplaintSelected}
         selectedComplaintId={selectedComplaint?.id}
+        selectionControls={referenceControls}
+        actions={reportActions}
       />
 
       {/* 2. IF NO COMPLAINT SELECTED: EMPTY STATE */}
@@ -332,95 +430,6 @@ function NcrWorkspaceContent() {
       ) : (
         /* 3. WORKSPACE TOOLBAR & EDITABLE PREVIEW */
         <div className="space-y-4">
-          {/* Top Control Bar */}
-          <div className="no-print bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                <BadgeAlert className="w-4 h-4 text-emerald-600" />
-                <span>NCR Reference:</span>
-              </span>
-              <input
-                type="text"
-                value={ncrNumber}
-                onChange={(e) => setNcrNumber(e.target.value)}
-                className="font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-
-              <input
-                type="text"
-                value={gdEntryNumber}
-                onChange={(e) => setGdEntryNumber(e.target.value)}
-                className="text-xs text-slate-700 bg-slate-50 border border-slate-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="GD Roznamcha Entry"
-              />
-
-              {/* Reset to Original Analysis */}
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-2 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded text-xs font-semibold flex items-center gap-1 border border-slate-200 cursor-pointer"
-                title="Discard edits and reload from complaint docket"
-              >
-                <RotateCcw className="w-3 h-3 text-slate-500" />
-                <span>Re-Analyze Docket</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                className="text-xs font-bold gap-1 border-slate-300 cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadWord}
-                className="text-xs font-bold gap-1 border-slate-300 text-blue-700 hover:bg-blue-50 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export Word (.doc)</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleCopyReport}
-                className="text-xs font-bold gap-1 border-slate-300 cursor-pointer"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? "Copied!" : "Copy"}</span>
-              </Button>
-
-              <Button
-                type="button"
-                onClick={handleSaveToComplaint}
-                disabled={saveLoading}
-                className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs cursor-pointer"
-              >
-                {saveSuccess ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>NCR Saved to Docket!</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span>{saveLoading ? "Saving..." : "Save to Complaint"}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
           {/* Saved Notification */}
           {saveSuccess && (
             <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-xs text-emerald-900 animate-in fade-in-50">
@@ -440,57 +449,54 @@ function NcrWorkspaceContent() {
           )}
 
           {/* Styling Toolbar */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold text-slate-700 flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-blue-600" />
-                Proforma Formatting:
-              </span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border border-slate-200 bg-slate-50 px-2 py-1 text-xs">
+            <span className="font-bold text-slate-700 flex items-center gap-1">
+              <Sliders className="w-3.5 h-3.5 text-blue-600" />
+              Proforma Formatting:
+            </span>
 
-              <div className="flex items-center gap-1 bg-white border border-slate-200 rounded px-2 py-1">
-                <span className="text-[11px] text-slate-500 font-medium">Border:</span>
-                <select
-                  value={borderStyle}
-                  onChange={(e) => setBorderStyle(e.target.value as any)}
-                  className="text-[11px] font-bold bg-transparent border-0 outline-none cursor-pointer text-slate-900"
-                >
-                  <option value="solid">Solid Black (Official)</option>
-                  <option value="double">Double Border</option>
-                  <option value="light">Light Gray</option>
-                  <option value="none">No Border</option>
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowHeader(!showHeader)}
-                className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
-                  showHeader ? "bg-blue-50 text-blue-800 border-blue-200" : "bg-white text-slate-500 border-slate-200"
-                }`}
+            <label className="inline-flex items-center gap-1.5">
+              <span className="text-[11px] text-slate-500 font-medium">Border:</span>
+              <select
+                value={borderStyle}
+                onChange={(e) => setBorderStyle(e.target.value as typeof borderStyle)}
+                className="h-7 min-h-7! border border-slate-300 bg-white px-1.5 text-xs! font-semibold cursor-pointer text-slate-900"
               >
-                {showHeader ? "✓ Header: Active" : "✕ Header: Hidden"}
-              </button>
+                <option value="solid">Solid Black (Official)</option>
+                <option value="double">Double Border</option>
+                <option value="light">Light Gray</option>
+                <option value="none">No Border</option>
+              </select>
+            </label>
 
-              <button
-                type="button"
-                onClick={() => setShowSignatures(!showSignatures)}
-                className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
-                  showSignatures ? "bg-blue-50 text-blue-800 border-blue-200" : "bg-white text-slate-500 border-slate-200"
-                }`}
-              >
-                {showSignatures ? "✓ Signatures: Active" : "✕ Signatures: Hidden"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowHeader(!showHeader)}
+              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
+                showHeader ? "bg-blue-50 text-blue-800 border-blue-200" : "bg-white text-slate-500 border-slate-200"
+              }`}
+            >
+              {showHeader ? "✓ Header: Active" : "✕ Header: Hidden"}
+            </button>
 
+            <button
+              type="button"
+              onClick={() => setShowSignatures(!showSignatures)}
+              className={`px-2.5 py-1 rounded border text-[11px] font-bold transition-all cursor-pointer ${
+                showSignatures ? "bg-blue-50 text-blue-800 border-blue-200" : "bg-white text-slate-500 border-slate-200"
+              }`}
+            >
+              {showSignatures ? "✓ Signatures: Active" : "✕ Signatures: Hidden"}
+            </button>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={handleAddRow}
-              className="text-xs bg-white hover:bg-slate-100 text-emerald-700 font-bold border-emerald-300 gap-1 cursor-pointer"
+              className="ml-auto h-7 min-h-7 px-2 text-xs bg-white hover:bg-slate-100 text-emerald-700 font-bold border-emerald-300 gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
-              <span>+ Add Row</span>
+              <span>Add Row</span>
             </Button>
           </div>
 

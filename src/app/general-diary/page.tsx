@@ -882,20 +882,6 @@ function GeneralDiaryContent() {
         </div>
       )}
 
-      {/* 24-Hour Auto-Purge Policy Notice for Auto-Suggestions & Drafts */}
-      {activeTab === "SUGGESTIONS_DRAFTS" && (
-        <div className="bg-gradient-to-r from-purple-50 via-purple-50/80 to-amber-50/50 border border-purple-200/80 rounded-xl p-3 flex items-start gap-3 text-xs text-purple-950 shadow-2xs">
-          <Clock className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-slate-900">
-                24-Hour Auto-Purge Rule - Any suggested or draft General Diary entry on which no action is taken for 24 hours is automatically removed.
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Friendly Search & Filter Bar (No outer card/border) */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
         {/* 1. Keyword Search */}

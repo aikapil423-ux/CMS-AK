@@ -578,16 +578,17 @@ function ActsAndSectionsContent() {
 
       {/* Minimal Search & Filters Bar */}
       <div className="space-y-3">
-        <form onSubmit={handleTriggerSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <form onSubmit={handleTriggerSearch} className="grid grid-cols-2 items-stretch gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
           {/* Search Input */}
-          <div className="relative flex-1">
+          <div className="relative col-span-2 min-w-0 md:col-span-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by Act name, section number (e.g. 103, 173, 25), offence, or keyword..."
-              className="w-full text-xs rounded-lg border border-slate-200 pl-9 pr-8 py-2 text-slate-800 bg-white focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-300 transition-all placeholder:text-slate-400"
+              aria-label="Search acts and sections"
+              className="h-10 w-full text-sm rounded-lg border border-slate-200 pl-9 pr-8 py-2 text-slate-800 bg-white focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-300 transition-all placeholder:text-slate-400"
             />
             {searchInput && (
               <button
@@ -604,18 +605,19 @@ function ActsAndSectionsContent() {
           <Button
             type="submit"
             size="sm"
-            className="bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs gap-1.5 px-4 h-8.5 rounded-lg shrink-0 cursor-pointer transition-colors"
+            className="bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm gap-1.5 px-4 h-10 rounded-lg shrink-0 cursor-pointer transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
             <span>Search</span>
           </Button>
 
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="min-w-0">
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
-              className="text-xs font-medium rounded-lg border border-slate-200 px-3 h-8.5 text-slate-700 bg-white focus:outline-none focus:border-slate-400 cursor-pointer"
+              aria-label="Sort acts"
+              className="h-10 w-full text-sm font-medium rounded-lg border border-slate-200 px-3 text-slate-700 bg-white focus:outline-none focus:border-slate-400 cursor-pointer"
             >
               <option value="A_TO_Z">Sort: A to Z</option>
               <option value="Z_TO_A">Sort: Z to A</option>
@@ -625,11 +627,11 @@ function ActsAndSectionsContent() {
           </div>
 
           {/* View Mode Minimal Toggle */}
-          <div className="flex items-center rounded-lg border border-slate-200 p-0.5 bg-slate-50 shrink-0 h-8.5">
+          <div className="col-span-2 inline-flex h-10 w-fit items-stretch rounded-lg border border-slate-200 bg-slate-50 p-0.5 md:col-span-1">
             <button
               type="button"
               onClick={() => setViewMode("TABLE")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded text-sm font-medium transition-all cursor-pointer ${
                 viewMode === "TABLE"
                   ? "bg-white text-slate-900 shadow-2xs font-semibold"
                   : "text-slate-500 hover:text-slate-800"
@@ -642,7 +644,7 @@ function ActsAndSectionsContent() {
             <button
               type="button"
               onClick={() => setViewMode("CARDS")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded text-sm font-medium transition-all cursor-pointer ${
                 viewMode === "CARDS"
                   ? "bg-white text-slate-900 shadow-2xs font-semibold"
                   : "text-slate-500 hover:text-slate-800"
@@ -669,7 +671,7 @@ function ActsAndSectionsContent() {
               key={cat.key}
               type="button"
               onClick={() => setSelectedCategory(cat.key)}
-              className={`text-[11px] px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+              className={`text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer ${
                 selectedCategory === cat.key
                   ? "bg-slate-900 text-white font-medium"
                   : "text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70"
@@ -716,15 +718,15 @@ function ActsAndSectionsContent() {
         </div>
       ) : viewMode === "TABLE" ? (
         <div className="overflow-x-auto border border-slate-200/80 rounded-xl bg-white shadow-2xs">
-          <table className="w-full text-xs text-left border-collapse min-w-[1000px]">
-            <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80 text-[11px] uppercase tracking-wider">
+          <table className="w-full min-w-[1200px] table-fixed border-collapse text-left text-sm">
+            <thead className="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-200/80 text-[13px]">
               <tr>
-                <th className="py-3 px-3 text-center w-10 text-slate-400 font-normal">#</th>
-                <th className="py-3 px-4 min-w-[280px]">कानून / Act</th>
-                <th className="py-3 px-4 w-40">अधिनियम व वर्ष / Act No.</th>
-                <th className="py-3 px-3 w-28 text-center">धाराएं / Provisions</th>
-                <th className="py-3 px-4 min-w-[220px]">मुख्य धाराएं / Key Sections</th>
-                <th className="py-3 px-4 text-right w-56">कार्रवाई / Actions</th>
+                <th scope="col" className="py-3 px-3 text-center w-11 text-slate-400 font-normal">#</th>
+                <th scope="col" className="py-3 px-4">कानून / Act</th>
+                <th scope="col" className="py-3 px-4 w-44">अधिनियम व वर्ष / Act No.</th>
+                <th scope="col" className="py-3 px-3 w-28 text-center">धाराएं / Provisions</th>
+                <th scope="col" className="py-3 px-4 w-[27%]">मुख्य धाराएं / Key Sections</th>
+                <th scope="col" className="py-3 px-4 text-right w-[304px]">कार्रवाई / Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -732,21 +734,21 @@ function ActsAndSectionsContent() {
                 return (
                   <tr key={act.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* 1. Sr. No. */}
-                    <td className="py-3 px-3 text-center text-slate-400 font-mono text-[11px] align-top">
+                    <td className="py-3 px-3 text-center text-slate-400 font-mono text-xs align-middle">
                       {index + 1}
                     </td>
 
                     {/* 2. Act Title & Details */}
-                    <td className="py-3 px-4 space-y-1 align-top">
+                    <td className="py-3 px-4 space-y-1 align-middle">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
                           {act.fileFormat}
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-xs text-slate-400">
                           {act.categoryLabel}
                         </span>
                         {act.isCustomUpload && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Custom
                           </span>
                         )}
@@ -756,37 +758,37 @@ function ActsAndSectionsContent() {
                           setActiveActModal(act);
                           setModalActiveTab("VERBATIM");
                         }}
-                        className="font-semibold text-slate-900 text-xs sm:text-[13px] hover:text-blue-600 cursor-pointer transition-colors"
+                        className="font-semibold text-slate-900 text-[15px] leading-snug hover:text-blue-600 cursor-pointer transition-colors"
                       >
                         {act.title}
                       </h3>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 leading-normal font-sans">
+                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-sans">
                         {act.description}
                       </p>
                     </td>
 
                     {/* 3. Act Number & Dates */}
-                    <td className="py-3 px-4 font-mono text-[11px] align-top space-y-0.5">
+                    <td className="py-3 px-4 font-mono text-xs align-middle space-y-0.5">
                       <div className="font-semibold text-slate-700">{act.actNumber}</div>
-                      <div className="text-slate-400 text-[10px]">
+                      <div className="text-slate-400 text-xs">
                         Enacted: {act.enactmentDate || "—"}
                       </div>
                     </td>
 
                     {/* 4. Sections & Chapters */}
-                    <td className="py-3 px-3 text-center align-top">
+                    <td className="py-3 px-3 text-center align-middle">
                       <div className="inline-flex flex-col items-center">
                         <span className="font-semibold text-slate-800 font-mono text-xs">
                           {act.totalSections}
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-xs text-slate-400">
                           {act.totalChapters} chapters
                         </span>
                       </div>
                     </td>
 
                     {/* 5. Key Sections */}
-                    <td className="py-3 px-4 align-top">
+                    <td className="py-3 px-4 align-middle">
                       {act.keySections && act.keySections.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {act.keySections.slice(0, 4).map((sec) => (
@@ -798,11 +800,11 @@ function ActsAndSectionsContent() {
                                 setModalActiveTab("VERBATIM");
                                 setVerbatimSearchQuery(sec.sectionNumber);
                               }}
-                              className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                              className="inline-flex min-w-0 max-w-full items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                               title={`${sec.title}: ${sec.description}`}
                             >
-                              <span className="font-medium font-mono text-slate-900">Sec {sec.sectionNumber}</span>
-                              <span className="truncate max-w-[80px] text-slate-500">{sec.title}</span>
+                              <span className="shrink-0 font-medium font-mono text-slate-900">Sec {sec.sectionNumber}</span>
+                              <span className="min-w-0 max-w-[7rem] truncate text-slate-500">{sec.title}</span>
                             </button>
                           ))}
                           {act.keySections.length > 4 && (
@@ -813,20 +815,20 @@ function ActsAndSectionsContent() {
                                 setModalActiveTab("SECTIONS");
                                 setSectionFilterQuery("");
                               }}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer"
+                              className="text-xs px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer"
                             >
                               +{act.keySections.length - 4}
                             </button>
                           )}
                         </div>
                       ) : (
-                        <span className="text-slate-300 italic text-[11px]">—</span>
+                        <span className="text-slate-300 italic text-xs">—</span>
                       )}
                     </td>
 
                     {/* 6. Minimal Actions */}
-                    <td className="py-3 px-4 text-right align-top">
-                      <div className="inline-flex items-center gap-1 justify-end">
+                    <td className="py-3 px-4 text-right align-middle">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
@@ -834,7 +836,7 @@ function ActsAndSectionsContent() {
                             setModalActiveTab("VERBATIM");
                             setVerbatimSearchQuery("");
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50/70 border border-slate-200 hover:border-amber-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                          className="inline-flex items-center min-h-8 gap-1 px-2 py-1 text-xs font-medium text-slate-700 hover:text-amber-900 bg-white hover:bg-amber-50/70 border border-slate-200 hover:border-amber-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
                           title="शब्द-ब-शब्द (Verbatim Text)"
                         >
                           <FileText className="w-3 h-3 text-amber-600" />
@@ -847,7 +849,7 @@ function ActsAndSectionsContent() {
                             setActiveActModal(act);
                             setModalActiveTab("DOCUMENT");
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-blue-900 bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                          className="inline-flex items-center min-h-8 gap-1 px-2 py-1 text-xs font-medium text-slate-700 hover:text-blue-900 bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
                           title="Original PDF Preview"
                         >
                           <Eye className="w-3 h-3 text-blue-600" />
@@ -861,7 +863,7 @@ function ActsAndSectionsContent() {
                             setModalActiveTab("SECTIONS");
                             setSectionFilterQuery("");
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                          className="inline-flex items-center min-h-8 gap-1 px-2 py-1 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
                           title="Browse All Sections"
                         >
                           <BookOpen className="w-3 h-3 text-slate-500" />
