@@ -5,28 +5,23 @@ import {
   Printer,
   X,
   Shield,
-  Lock,
   FileCheck2,
-  Clock,
   User,
-  Car,
-  FileText,
-  BadgeCheck,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
   Layers,
-  History,
   Paperclip,
-  Image as ImageIcon,
   FileDown,
   Scale,
+  Lock,
+  Sparkles,
+  FileText,
+  History,
+  Loader2,
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { cleanGdNarrative } from "@/services/generalDiaryService";
-import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { printA4Element, downloadA4ElementAsPdf } from "@/utils/printElement";
 import { stationStaffService } from "@/services/stationStaffService";
 import { DEMO_USERS } from "@/lib/mockData";
 
@@ -48,36 +43,18 @@ export function GDRecordModal({
   autoPrint = false,
 }: GDRecordModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (isOpen && autoPrint && record) {
-      const timer = setTimeout(() => {
-        handlePrint();
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, autoPrint, record]);
-
-  if (!isOpen || !record) return null;
-
-  const handlePrint = () => {
-    printA4Element("printable-gd-record", `GD_${record.gdNumber || "Record"}`);
-  };
-
-  const handleDownload = () => {
-    downloadA4DocumentAsHtml(
-      "printable-gd-record",
-      `GD_${record.gdNumber || "Record"}`,
-      `General Diary Record - ${record.gdNumber}`
-    );
-  };
-
-  const isLocked = record.isLocked;
-  const isSuggested = record.status === "SUGGESTED";
-  const isDraft = record.status === "DRAFT";
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
   // Resolve Station Moharrir Head Constable (MHC / मुंशी)
   const stationMhc = React.useMemo(() => {
+    if (!record) {
+      return {
+        name: "HC Devinder Kumar",
+        rank: "Head Constable (MHC)",
+        beltNumber: "334/PNP",
+        pno: "HR-05192834",
+      };
+    }
     try {
       const staffList = stationStaffService.getStaffForStation(record.policeStation);
       const mhcStaff = staffList.find(
@@ -103,7 +80,42 @@ export function GDRecordModal({
       beltNumber: demoMhc?.pno || "334/PNP",
       pno: demoMhc?.pno || "HR-05192834",
     };
-  }, [record.policeStation]);
+  }, [record]);
+
+  const handlePrint = React.useCallback(() => {
+    if (!record) return;
+    printA4Element("printable-gd-record", `GD_${record.gdNumber || "Record"}`);
+  }, [record]);
+
+  const handleDownload = React.useCallback(async () => {
+    if (!record || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadA4ElementAsPdf(
+        "printable-gd-record",
+        `GD_${record.gdNumber || "Record"}`
+      );
+    } catch (e) {
+      console.error("PDF download failed:", e);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [record, isDownloading]);
+
+  React.useEffect(() => {
+    if (isOpen && autoPrint && record) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, autoPrint, record, handlePrint]);
+
+  if (!isOpen || !record) return null;
+
+  const isLocked = record.isLocked;
+  const isSuggested = record.status === "SUGGESTED";
+  const isDraft = record.status === "DRAFT";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
@@ -137,7 +149,7 @@ export function GDRecordModal({
                 )}
               </div>
               <p className="text-[11px] text-slate-300">
-                PPR 1934 Rule 22.48 • {record.policeStation}
+                {record.policeStation}
               </p>
             </div>
           </div>
@@ -158,11 +170,16 @@ export function GDRecordModal({
               variant="outline"
               size="sm"
               onClick={handleDownload}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-              title="Download clean A4 HTML document"
+              disabled={isDownloading}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              title="Download PDF document"
             >
-              <FileDown className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Download A4</span>
+              {isDownloading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-300" />
+              ) : (
+                <FileDown className="w-3.5 h-3.5 text-emerald-300" />
+              )}
+              <span>{isDownloading ? "Downloading..." : "Download"}</span>
             </Button>
             <button
               type="button"
@@ -180,7 +197,7 @@ export function GDRecordModal({
           <div
             id="printable-gd-record"
             ref={printRef}
-            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative my-3 min-h-[750px] h-auto"
+            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-10 text-slate-950 space-y-5 font-serif shadow-sm relative my-3 min-h-[750px] h-auto"
             style={{ lineHeight: "1.6" }}
           >
             {/* Haryana Police Official Header */}
@@ -200,14 +217,14 @@ export function GDRecordModal({
             </div>
 
             {/* GD Number & Timestamp Bar */}
-            <div className="border border-slate-400 p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm font-sans">
+            <div className="border border-slate-400 p-3 bg-white flex flex-row items-center justify-between gap-2 text-xs sm:text-sm font-sans">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-slate-900">रपट नंबर (GD No):</span>
                 <span className="font-mono font-bold text-slate-950 border border-slate-400 px-2 py-0.5 bg-slate-50">
                   {record.gdNumber}
                 </span>
               </div>
-              <div className="flex flex-col sm:items-end text-[11px] sm:text-xs">
+              <div className="flex flex-col items-end text-[11px] sm:text-xs text-right">
                 <div>
                   <span className="font-bold text-slate-800">कार्यवाही समय: </span>
                   <span className="font-mono text-slate-950 font-semibold">
@@ -225,7 +242,7 @@ export function GDRecordModal({
 
             {/* Classification & Subject */}
             <div className="border border-slate-400 p-3 bg-white space-y-2 text-xs sm:text-sm font-sans">
-              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+              <div className="flex flex-row items-center gap-2">
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0">
                   इंद्राज का प्रकार (Type):
                 </span>
@@ -236,7 +253,7 @@ export function GDRecordModal({
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2 pt-2 border-t border-slate-300">
+              <div className="flex flex-row items-start gap-2 pt-2 border-t border-slate-300">
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0 uppercase tracking-wide">
                   विषय (SUBJECT):
                 </span>
@@ -247,7 +264,7 @@ export function GDRecordModal({
             </div>
 
             {/* Officer Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-sans">
+            <div className="grid grid-cols-2 gap-3 font-sans">
               {/* Entry-For Officer */}
               <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
                 <div className="flex items-center gap-1.5 pb-1 border-b border-slate-300">
@@ -322,7 +339,7 @@ export function GDRecordModal({
                     BNSS Sec 173 / BNS
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                <div className="grid grid-cols-2 gap-3 pt-0.5">
                   <div className="p-2 bg-white rounded border border-red-200">
                     <span className="text-slate-600 block text-[10px] font-semibold uppercase">1. Case Type (केस प्रकार):</span>
                     <strong className="text-red-950 text-xs tracking-wide">
@@ -349,7 +366,7 @@ export function GDRecordModal({
                   <Layers className="w-3.5 h-3.5 text-slate-700" />
                   <span>संबंधित रिकॉर्ड्स व क्रॉस रेफरेंस (Linked Records):</span>
                 </h5>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                <div className="grid grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
                   {record.relatedRecords.complaintNumber && (
                     <div className="p-1.5 border border-slate-300">
                       <span className="text-slate-600 block text-[9px] font-sans">Complaint No:</span>
@@ -408,41 +425,38 @@ export function GDRecordModal({
                     <Paperclip className="w-3.5 h-3.5 text-slate-700" />
                     <span>संलग्न दस्तावेज / Uploaded Documents ({docs.length}):</span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {docs.map((doc, idx) => {
-                      const isImg = doc.type?.startsWith("image/");
-                      return (
-                        <div
-                          key={doc.id || idx}
-                          className="border border-slate-300 p-2.5 flex items-center justify-between text-xs"
-                        >
-                          <div className="truncate mr-2">
-                            <p className="font-semibold text-slate-900 truncate" title={doc.name}>
-                              {doc.name}
-                            </p>
-                            <p className="text-[10px] text-slate-500">
-                              {(doc.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                          {doc.dataUrl && (
-                            <a
-                              href={doc.dataUrl}
-                              download={doc.name}
-                              className="text-[11px] font-bold text-blue-700 hover:underline shrink-0"
-                            >
-                              Download
-                            </a>
-                          )}
+                  <div className="grid grid-cols-2 gap-2">
+                    {docs.map((doc, idx) => (
+                      <div
+                        key={doc.id || idx}
+                        className="border border-slate-300 p-2.5 flex items-center justify-between text-xs"
+                      >
+                        <div className="truncate mr-2">
+                          <p className="font-semibold text-slate-900 truncate" title={doc.name}>
+                            {doc.name}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {(doc.size / 1024).toFixed(1)} KB
+                          </p>
                         </div>
-                      );
-                    })}
+                        {doc.dataUrl && (
+                          <a
+                            href={doc.dataUrl}
+                            download={doc.name}
+                            className="text-[11px] font-bold text-blue-700 hover:underline shrink-0"
+                          >
+                            Download
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
             })()}
 
             {/* Signatures & Seal Footer */}
-            <div className="pt-4 border-t-2 border-slate-900 flex items-end justify-between text-xs font-sans">
+            <div className="pt-4 border-t-2 border-slate-900 flex flex-row items-end justify-between text-xs font-sans">
               <div className="text-center w-36">
                 <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
                   Station Seal

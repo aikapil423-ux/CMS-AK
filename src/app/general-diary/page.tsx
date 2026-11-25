@@ -1,8 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
-
-import React, { useState, useEffect, useMemo, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
@@ -25,7 +24,6 @@ import {
   ArrowDown,
   GripVertical,
   Trash2,
-  CalendarDays,
   X,
   Copy,
   Check,
@@ -67,10 +65,17 @@ function GeneralDiaryContent() {
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "ALL";
   const tabParam = searchParams.get("tab") as ActiveTab | null;
-  const initialTab = tabParam === "SUGGESTIONS_DRAFTS" ? "SUGGESTIONS_DRAFTS" : "REGISTER";
-
-  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
+  const activeTab: ActiveTab = tabParam === "SUGGESTIONS_DRAFTS" ? "SUGGESTIONS_DRAFTS" : "REGISTER";
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
+
+  // Reset pagination to page 1 when switching tabs
+  const prevTabRef = useRef(activeTab);
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      prevTabRef.current = activeTab;
+      setPage(1);
+    }
+  }, [activeTab]);
 
   // Dates helpers (Today & Yesterday)
   const todayISO = useMemo(() => {
@@ -802,8 +807,8 @@ function GeneralDiaryContent() {
             <button
               type="button"
               onClick={() => {
-                setActiveTab("REGISTER");
                 setPage(1);
+                router.push("/general-diary");
               }}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === "REGISTER"
@@ -820,8 +825,8 @@ function GeneralDiaryContent() {
             <button
               type="button"
               onClick={() => {
-                setActiveTab("SUGGESTIONS_DRAFTS");
                 setPage(1);
+                router.push("/general-diary?tab=SUGGESTIONS_DRAFTS");
               }}
               className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
                 activeTab === "SUGGESTIONS_DRAFTS"
@@ -837,16 +842,6 @@ function GeneralDiaryContent() {
               )}
             </button>
           </div>
-
-          {/* Record Transfers Link (where red tick was) */}
-          {currentUser?.unitId && ["SHO", "SP_DISTRICT", "SUPER_ADMIN"].includes(currentUser.role) && (
-            <Link
-              href="/record-transfers"
-              className="text-xs sm:text-sm font-semibold text-blue-800 underline hover:text-blue-950 transition-colors"
-            >
-              Record transfers
-            </Link>
-          )}
         </div>
 
         {/* Top Action Buttons */}
@@ -952,10 +947,6 @@ function GeneralDiaryContent() {
 
         {/* 3. Entry Date — Small Compact Box */}
         <div className="sm:col-span-4 flex items-center gap-2 sm:justify-self-end w-full sm:w-auto">
-          <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
-            <CalendarDays className="w-3.5 h-3.5 text-blue-600" />
-            <span>Date</span>
-          </label>
           <button
             type="button"
             onClick={() => {

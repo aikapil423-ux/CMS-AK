@@ -147,12 +147,13 @@ export function printA4Element(
     iframe = document.createElement("iframe");
     iframe.id = "cms-print-iframe";
     iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "0";
+    iframe.style.width = "794px"; // Standard A4 width in pixels at 96 DPI
+    iframe.style.height = "1123px";
     iframe.style.border = "0";
-    iframe.style.visibility = "hidden";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
     document.body.appendChild(iframe);
   }
 
@@ -233,6 +234,92 @@ export function printA4Element(
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
+        /* Specialized A4 styling for General Diary Record (#printable-gd-record) to match preview 100% */
+        #printable-gd-record {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-height: auto !important;
+          margin: 0 !important;
+          padding: 24px 28px !important;
+          border: 1.5px solid #1e293b !important;
+          box-shadow: none !important;
+          background: #ffffff !important;
+          font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+          font-size: 11pt !important;
+          line-height: 1.6 !important;
+          box-sizing: border-box !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        #printable-gd-record h1 {
+          font-size: 18pt !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.05em !important;
+        }
+        #printable-gd-record h4, #printable-gd-record h5 {
+          font-weight: 700 !important;
+        }
+        #printable-gd-record .font-serif {
+          font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+        }
+        #printable-gd-record .font-sans {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
+        #printable-gd-record .font-mono {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+        }
+        #printable-gd-record .border-slate-400 {
+          border-color: #64748b !important;
+        }
+        #printable-gd-record .border-slate-300 {
+          border-color: #cbd5e1 !important;
+        }
+        #printable-gd-record .border-slate-900 {
+          border-color: #0f172a !important;
+        }
+        #printable-gd-record .bg-slate-50 {
+          background-color: #f8fafc !important;
+        }
+        #printable-gd-record .bg-white {
+          background-color: #ffffff !important;
+        }
+        #printable-gd-record .grid-cols-2,
+        #printable-gd-record .md\:grid-cols-2,
+        #printable-gd-record .sm\:grid-cols-2 {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          gap: 12px !important;
+        }
+        #printable-gd-record .grid-cols-4,
+        #printable-gd-record .sm\:grid-cols-4 {
+          display: grid !important;
+          grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          gap: 8px !important;
+        }
+        #printable-gd-record .flex-row,
+        #printable-gd-record .sm\:flex-row {
+          display: flex !important;
+          flex-direction: row !important;
+        }
+        #printable-gd-record .items-center,
+        #printable-gd-record .sm\:items-center {
+          align-items: center !important;
+        }
+        #printable-gd-record .items-start,
+        #printable-gd-record .sm\:items-start {
+          align-items: flex-start !important;
+        }
+        #printable-gd-record .items-end,
+        #printable-gd-record .sm\:items-end {
+          align-items: flex-end !important;
+        }
+        #printable-gd-record .justify-between {
+          justify-content: space-between !important;
+        }
+        #printable-gd-record * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         .no-print, button, input[type="button"], [data-no-print] {
           display: none !important;
           visibility: hidden !important;
@@ -248,6 +335,7 @@ export function printA4Element(
         .justify-center { justify-content: center !important; }
         .grid { display: grid !important; }
         .grid-cols-2 { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        .grid-cols-4 { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
         .gap-1 { gap: 0.25rem !important; }
         .gap-1\.5 { gap: 0.375rem !important; }
         .gap-2 { gap: 0.5rem !important; }
@@ -661,6 +749,53 @@ export function downloadA4DocumentAsHtml(
         display: none !important;
       }
     }
+    #printable-gd-record {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: auto !important;
+      margin: 0 auto !important;
+      padding: 8mm 10mm !important;
+      border: 1.5px solid #1e293b !important;
+      box-shadow: none !important;
+      background: #ffffff !important;
+      font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+      font-size: 11pt !important;
+      line-height: 1.6 !important;
+      box-sizing: border-box !important;
+    }
+    #printable-gd-record h1 {
+      font-size: 18pt !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.05em !important;
+    }
+    #printable-gd-record .font-serif {
+      font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+    }
+    #printable-gd-record .font-sans {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    }
+    #printable-gd-record .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    }
+    #printable-gd-record .border-slate-400 {
+      border-color: #64748b !important;
+    }
+    #printable-gd-record .border-slate-300 {
+      border-color: #cbd5e1 !important;
+    }
+    #printable-gd-record .border-slate-900 {
+      border-color: #0f172a !important;
+    }
+    #printable-gd-record .bg-slate-50 {
+      background-color: #f8fafc !important;
+    }
+    #printable-gd-record .bg-white {
+      background-color: #ffffff !important;
+    }
+    #printable-gd-record * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     table {
       border-collapse: collapse !important;
       width: 100% !important;
@@ -686,6 +821,80 @@ export function downloadA4DocumentAsHtml(
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Downloads the given element directly as a clean A4 PDF file using jsPDF and html2canvas.
+ */
+export async function downloadA4ElementAsPdf(
+  elementOrId: HTMLElement | string,
+  filename: string
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const el =
+    typeof elementOrId === "string"
+      ? document.getElementById(elementOrId)
+      : elementOrId;
+
+  if (!el) {
+    console.warn("Target element not found for PDF download:", elementOrId);
+    return;
+  }
+
+  // Remove any stale html2pdf overlay if one exists
+  document.querySelectorAll(".html2pdf__overlay").forEach((n) => n.remove());
+
+  try {
+    const html2canvasModule = (await import("html2canvas-pro")) as { default?: (el: HTMLElement, opt?: Record<string, unknown>) => Promise<HTMLCanvasElement> };
+    const html2canvas = (html2canvasModule.default || html2canvasModule) as (el: HTMLElement, opt?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+    const { jsPDF } = await import("jspdf");
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      windowWidth: 1024,
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+    });
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 8;
+    const printWidth = pageWidth - margin * 2;
+    const imgHeight = (canvas.height * printWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    // First page
+    pdf.addImage(imgData, "JPEG", margin, position, printWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+
+    // Additional pages if content exceeds 1 page
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + margin;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", margin, position, printWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
+
+    const cleanFilename = filename.replace(/\.pdf$/i, "");
+    pdf.save(`${cleanFilename}.pdf`);
+  } catch (err) {
+    console.error("Direct canvas/jsPDF download failed, falling back to print utility:", err);
+    printA4Element(el, filename);
+  } finally {
+    document.querySelectorAll(".html2pdf__overlay").forEach((n) => n.remove());
+  }
 }
 
 /**
@@ -771,6 +980,53 @@ export function getA4DocumentHtml(
       .no-print, [data-no-print] {
         display: none !important;
       }
+    }
+    #printable-gd-record {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: auto !important;
+      margin: 0 auto !important;
+      padding: 8mm 10mm !important;
+      border: 1.5px solid #1e293b !important;
+      box-shadow: none !important;
+      background: #ffffff !important;
+      font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+      font-size: 11pt !important;
+      line-height: 1.6 !important;
+      box-sizing: border-box !important;
+    }
+    #printable-gd-record h1 {
+      font-size: 18pt !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.05em !important;
+    }
+    #printable-gd-record .font-serif {
+      font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, "Noto Serif Devanagari", serif !important;
+    }
+    #printable-gd-record .font-sans {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    }
+    #printable-gd-record .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    }
+    #printable-gd-record .border-slate-400 {
+      border-color: #64748b !important;
+    }
+    #printable-gd-record .border-slate-300 {
+      border-color: #cbd5e1 !important;
+    }
+    #printable-gd-record .border-slate-900 {
+      border-color: #0f172a !important;
+    }
+    #printable-gd-record .bg-slate-50 {
+      background-color: #f8fafc !important;
+    }
+    #printable-gd-record .bg-white {
+      background-color: #ffffff !important;
+    }
+    #printable-gd-record * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
     table {
       border-collapse: collapse !important;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -14,12 +14,10 @@ import {
   ChevronRight,
   ChevronDown,
   CheckCircle2,
-  Flame,
-  LayoutGrid,
   Pin,
   PinOff,
-  ScrollText,
   FileCheck2,
+  FilePenLine,
   Sparkles,
   Settings,
   ListFilter,
@@ -30,7 +28,6 @@ import {
   ClipboardList,
   FileBarChart,
   Radio,
-  BookmarkCheck,
   Pencil,
   MapPin,
   UserPlus,
@@ -57,63 +54,21 @@ interface NavItem {
   badgeColor?: string;
 }
 
-const prosecutionNavItems: (NavItem & { tab: string })[] = [
-  { name: "Challan Scrutiny", tab: "challan_scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2, badge: "Scrutiny", badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  { name: "Courts", tab: "courts", href: "/prosecution?tab=courts&subtab=bail_reply", icon: Scale },
-  { name: "IIF-VI", tab: "iif_vi", href: "/prosecution/iif-vi", icon: ClipboardList },
-  { name: "IIF-VII", tab: "iif_vii", href: "/prosecution/iif-vii", icon: ClipboardList },
+const prosecutionNavItems: NavItem[] = [
+  { name: "Challan Scrutiny", href: "/prosecution?tab=challan_scrutiny&subtab=scrutiny_perform", icon: FileCheck2 },
+  { name: "Courts & Bail", href: "/prosecution?tab=courts&subtab=bail_reply", icon: Landmark },
+  { name: "IIF-VI", href: "/prosecution/iif-vi", icon: ClipboardList },
+  { name: "IIF-VII", href: "/prosecution/iif-vii", icon: ClipboardList },
+  { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale },
 ];
 
-function ProsecutionNav({ isExpanded, isProsecutionPath }: { isExpanded: boolean; isProsecutionPath: boolean }) {
-  const pathname = usePathname();
-  const tab = useSearchParams().get("tab");
-  const activeTab = pathname === "/prosecution/iif-vii" ? "iif_vii" : pathname === "/prosecution/iif-vi" ? "iif_vi" : tab === "courts" ? "courts" : "challan_scrutiny";
-  return (
-    <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-      {prosecutionNavItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = isProsecutionPath && activeTab === item.tab;
-        return (
-          <Link
-            key={item.name}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            title={!isExpanded ? item.name : undefined}
-            className={cn(
-              "flex items-center rounded-md text-xs font-medium transition-all group",
-              isExpanded
-                ? "justify-between px-2.5 py-1.5"
-                : "justify-center p-2",
-              isActive
-                ? "bg-[#203c88] text-white font-semibold"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            )}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Icon
-                className={cn(
-                  "w-3.5 h-3.5 shrink-0",
-                  isActive ? "text-white" : "text-slate-400 group-hover:text-slate-700"
-                )}
-              />
-              {isExpanded && <span className="truncate">{item.name}</span>}
-            </div>
-            {isExpanded && item.badge && (
-              <span
-                className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                  item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                )}
-              >
-                {item.badge}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
+const auditsNavItems: NavItem[] = [
+  { name: "Audits Overview", href: "/audits", icon: Pencil },
+  { name: "Complaint Audit", href: "/audits?tab=Complaint%20Audit", icon: FileText },
+  { name: "FIR Audit", href: "/audits?tab=FIR%20Audit", icon: Scale },
+  { name: "Court Audit", href: "/audits?tab=Court%20Audit", icon: Landmark },
+  { name: "Pendency Analysis", href: "/audits?tab=Pendency%20Analysis", icon: Clock },
+];
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -136,136 +91,229 @@ export function Sidebar() {
   const isComplaintsPath = !isFirPath && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
   const isRegistrationsPath = pathname.startsWith("/registrations");
   const isReportsPath = pathname.startsWith("/reports");
-  const isProsecutionPath = pathname.startsWith("/prosecution");
+  const isProsecutionPath = pathname.startsWith("/prosecution") || pathname.startsWith("/acts-sections");
   const isTelecomPath = pathname.startsWith("/telecom");
   const isAuditsPath = pathname.startsWith("/audits");
-  const isManagementPath = pathname.startsWith("/settings");
+  const isManagementPath = pathname.startsWith("/settings") || pathname.startsWith("/tada");
   const isLocationsPath = pathname.startsWith("/admin/locations");
   const isAccountsPath = pathname.startsWith("/admin/accounts");
 
-  // Toggle slide bar states: Modules above Management are open by default (true). Management and Station Info default closed (false).
-  const [roznamchaOpen, setRoznamchaOpen] = useState(true);
-  const [complaintsOpen, setComplaintsOpen] = useState(true);
-  const [firOpen, setFirOpen] = useState(true);
-  const [registrationsOpen, setRegistrationsOpen] = useState(true);
-  const [reportsOpen, setReportsOpen] = useState(true);
-  const [prosecutionOpen, setProsecutionOpen] = useState(true);
-  const [telecomOpen, setTelecomOpen] = useState(true);
-  const [managementOpen, setManagementOpen] = useState(false);
-  const [stationInfoOpen, setStationInfoOpen] = useState(false);
+  // User manual toggle overrides for module accordions
+  const [toggledModules, setToggledModules] = useState<Record<string, boolean>>({});
+
+  const isModuleOpen = (id: string, isPathActive: boolean) => {
+    if (toggledModules[id] !== undefined) {
+      return toggledModules[id];
+    }
+    return isPathActive;
+  };
+
+  const toggleModule = (id: string, isPathActive: boolean) => {
+    setToggledModules((prev) => ({
+      ...prev,
+      [id]: !(prev[id] !== undefined ? prev[id] : isPathActive),
+    }));
+  };
+
+  const openModule = (id: string) => {
+    setToggledModules((prev) => ({
+      ...prev,
+      [id]: true,
+    }));
+  };
+
+  const [managementOpen, setManagementOpen] = useState(isManagementPath);
+  const [stationInfoOpen, setStationInfoOpen] = useState(pathname === "/station-profile" || pathname === "/users");
   const [locationsOpen, setLocationsOpen] = useState(isLocationsPath);
   const [accountsOpen, setAccountsOpen] = useState(isAccountsPath);
 
-  // Keep track of the last active module so when user is on /station-profile or /users,
-  // ONLY the module that was currently open remains visible.
-  const [activeModule, setActiveModule] = useState<"ROZNAMCHA" | "COMPLAINTS" | "FIR" | "REGISTRATIONS" | "REPORTS" | "PROSECUTION" | "TELECOM">("COMPLAINTS");
+  // Helper to render nested sub-items
+  const renderSubItem = (item: NavItem) => {
+    const Icon = item.icon;
+    let isActive = false;
+    if (item.href.includes("?")) {
+      const [itemPath, itemQuery] = item.href.split("?");
+      const params = new URLSearchParams(itemQuery);
+      const itemTab = params.get("tab");
+      const itemSubtab = params.get("subtab");
+      const currentTab = searchParams.get("tab");
+      const currentSubtab = searchParams.get("subtab");
 
-  useEffect(() => {
-    if (isRoznamchaPath) {
-      setActiveModule("ROZNAMCHA");
-      try {
-        window.localStorage.setItem("cms_active_module", "ROZNAMCHA");
-      } catch {}
-    } else if (isFirPath) {
-      setActiveModule("FIR");
-      try {
-        window.localStorage.setItem("cms_active_module", "FIR");
-      } catch {}
-    } else if (isComplaintsPath) {
-      setActiveModule("COMPLAINTS");
-      try {
-        window.localStorage.setItem("cms_active_module", "COMPLAINTS");
-      } catch {}
-    } else if (isRegistrationsPath) {
-      setActiveModule("REGISTRATIONS");
-      try {
-        window.localStorage.setItem("cms_active_module", "REGISTRATIONS");
-      } catch {}
-    } else if (isReportsPath) {
-      setActiveModule("REPORTS");
-      try {
-        window.localStorage.setItem("cms_active_module", "REPORTS");
-      } catch {}
-    } else if (isProsecutionPath) {
-      setActiveModule("PROSECUTION");
-      try {
-        window.localStorage.setItem("cms_active_module", "PROSECUTION");
-      } catch {}
-    } else if (isTelecomPath) {
-      setActiveModule("TELECOM");
-      try {
-        window.localStorage.setItem("cms_active_module", "TELECOM");
-      } catch {}
-    } else {
-      try {
-        const saved = window.localStorage.getItem("cms_active_module");
-        if (saved === "ROZNAMCHA" || saved === "COMPLAINTS" || saved === "FIR" || saved === "REGISTRATIONS" || saved === "REPORTS" || saved === "PROSECUTION" || saved === "TELECOM") {
-          setActiveModule(saved);
+      if (pathname === itemPath) {
+        if (itemSubtab) {
+          isActive = currentTab === itemTab && currentSubtab === itemSubtab;
+        } else if (itemTab) {
+          isActive = currentTab === itemTab;
         }
-      } catch {}
+      }
+    } else {
+      if (pathname === item.href) {
+        if (
+          item.href === "/prosecution" ||
+          item.href === "/reports" ||
+          item.href === "/general-diary" ||
+          item.href === "/audits"
+        ) {
+          isActive = !searchParams.get("tab");
+        } else {
+          isActive = true;
+        }
+      }
     }
-  }, [pathname, isRoznamchaPath, isComplaintsPath, isFirPath, isRegistrationsPath, isReportsPath, isProsecutionPath, isTelecomPath]);
 
-  // Check if user is on portal home page (Select Operational Module)
-  const isPortalHome = pathname === "/" || pathname.startsWith('/audits');
+    return (
+      <Link
+        key={item.name + item.href}
+        href={item.href}
+        aria-current={isActive ? "page" : undefined}
+        title={!isExpanded ? t(item.name) : undefined}
+        className={cn(
+          "flex items-center rounded-md text-xs font-medium transition-all group",
+          isExpanded ? "justify-between px-2.5 py-1.5" : "justify-center p-2",
+          isActive
+            ? "bg-[#203c88] text-white font-semibold shadow-2xs"
+            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon
+            className={cn(
+              "w-3.5 h-3.5 shrink-0 transition-colors",
+              isActive ? "text-white" : "text-slate-400 group-hover:text-slate-700"
+            )}
+          />
+          {isExpanded && <span className="truncate">{t(item.name)}</span>}
+        </div>
+        {isExpanded && item.badge && (
+          <span
+            className={cn(
+              "text-[9.5px] px-1.5 py-0.2 rounded font-mono shrink-0 border ml-1",
+              isActive
+                ? "bg-white/20 text-white border-white/30"
+                : item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
+            )}
+          >
+            {t(item.badge)}
+          </span>
+        )}
+      </Link>
+    );
+  };
 
-  // Determine which module to display in the toggle slide bar (on portal home, only Management & Settings is shown)
-  const showRoznamcha = !isPortalHome && !isTelecomPath && (isRoznamchaPath || (!isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "ROZNAMCHA"));
-  const showComplaints = !isPortalHome && !isTelecomPath && (isComplaintsPath || (!isRoznamchaPath && !isFirPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "COMPLAINTS"));
-  const showFir = !isPortalHome && !isTelecomPath && (isFirPath || (!isRoznamchaPath && !isComplaintsPath && !isRegistrationsPath && !isReportsPath && !isProsecutionPath && activeModule === "FIR"));
-  const showRegistrations = !isPortalHome && !isTelecomPath && (isRegistrationsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isReportsPath && !isProsecutionPath && activeModule === "REGISTRATIONS"));
-  const showReports = !isPortalHome && !isTelecomPath && (isReportsPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isProsecutionPath && activeModule === "REPORTS"));
-  const showTelecom = !isPortalHome && (isTelecomPath || activeModule === "TELECOM");
-  const showProsecution = !isPortalHome && !isTelecomPath && (isProsecutionPath || (!isRoznamchaPath && !isComplaintsPath && !isFirPath && !isRegistrationsPath && !isReportsPath && activeModule === "PROSECUTION"));
+  // Helper to render module section accordion
+  const renderModuleSection = ({
+    id,
+    name,
+    href,
+    icon: Icon,
+    isPathActive,
+    items,
+  }: {
+    id: string;
+    name: string;
+    href: string;
+    icon: React.ElementType;
+    isPathActive: boolean;
+    items?: NavItem[];
+  }) => {
+    const hasItems = !!(items && items.length > 0);
+    const isOpen = hasItems && isModuleOpen(id, isPathActive);
+    return (
+      <div key={id} className="space-y-0.5">
+        <div
+          className={cn(
+            "w-full flex items-center rounded-lg transition-colors text-left group",
+            isExpanded ? "justify-between px-2 py-1.5" : "justify-center p-2",
+            isPathActive
+              ? "bg-slate-100/90 font-semibold text-slate-900"
+              : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+          )}
+        >
+          <Link
+            href={href}
+            onClick={() => {
+              if (hasItems) openModule(id);
+              if (!isExpanded) setIsPinned(true);
+            }}
+            title={!isExpanded ? t(name) : undefined}
+            className={cn(
+              "flex items-center gap-2.5 min-w-0",
+              isExpanded ? "flex-1 py-0.5" : "justify-center"
+            )}
+          >
+            <Icon
+              className={cn(
+                "w-4 h-4 shrink-0 transition-colors",
+                isPathActive ? "text-[#203c88]" : "text-slate-500 group-hover:text-slate-800"
+              )}
+            />
+            {isExpanded && (
+              <span className="text-xs font-semibold truncate tracking-tight">
+                {t(name)}
+              </span>
+            )}
+          </Link>
+          {isExpanded && hasItems && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleModule(id, isPathActive);
+              }}
+              className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
+              title={isOpen ? "Collapse" : "Expand"}
+            >
+              {isOpen ? (
+                <ChevronDown className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+        </div>
 
-  // TELECOM NAVIGATION ITEMS
-  const telecomNavItems: NavItem[] = [
-    { name: "Overview & Dashboard", href: "/telecom", icon: Radio, badge: "Live", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-  ];
+        {isOpen && isExpanded && hasItems && (
+          <div className="ml-3 pl-2.5 border-l-2 border-slate-200/90 space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
+            {items.map(renderSubItem)}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // ROZNAMCHA GD NAVIGATION ITEMS (Smart General Diary - English Only)
   const roznamchaNavItems: NavItem[] = [
-    { name: "Smart General Diary", href: "/general-diary", icon: BookOpen, badge: "PPR 22.48", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles, badge: "AI Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "Smart General Diary", href: "/general-diary", icon: BookOpen },
+    { name: "Auto-Suggestions & Drafts", href: "/general-diary?tab=SUGGESTIONS_DRAFTS", icon: Sparkles },
   ];
 
   // COMPLAINTS NAVIGATION ITEMS
   const complaintNavItems: NavItem[] = [
-    { name: "Complaints Register", href: "/complaints", icon: FileText, badge: "Active", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
+    { name: "Complaints Register", href: "/complaints", icon: FileText },
+    { name: "Register Complaint", href: "/complaints/register", icon: FileText, badge: "New", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
     { name: "Field Enquiry Workspace", href: "/enquiry-workspace", icon: UserCheck },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
   // FIR NAVIGATION ITEMS (Complete Parity with Complaints module)
   const firNavItems: NavItem[] = [
     { name: "FIR Register", href: "/fir", icon: Scale, badge: "Part A", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "FIR Part B", href: "/fir/part-b", icon: FileCheck2, badge: "Part B", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "Complete cases", href: "/fir/complete-cases", icon: CheckCircle2, badge: "Complete", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { name: "Register FIR", href: "/fir/register", icon: FilePenLine, badge: "New", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { name: "FIR Part B", href: "/fir/part-b", icon: FileCheck2 },
+    { name: "Complete cases", href: "/fir/complete-cases", icon: CheckCircle2 },
     { name: "Investigation Workspace", href: "/fir-workspace", icon: UserCheck },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
   ];
 
   // REGISTRATIONS NAVIGATION ITEMS (Clean slide bar: category tabs managed inside the module)
   const registrationsNavItems: NavItem[] = [
-    { name: "Registrations Register", href: "/registrations", icon: ClipboardList, badge: "CCTNS", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-    { name: "ACT and SECTIONs", href: "/acts-sections", icon: Scale, badge: "Bare Acts", badgeColor: "bg-slate-100 text-slate-600 border-slate-200/60" },
-  ];
-
-  // REPORTS NAVIGATION ITEMS (Exact sub-tabs as requested)
-  const reportsNavItems: NavItem[] = [
-    { name: "CrimeSITREP_District", href: "/reports?tab=crime_sitrep", icon: FileBarChart, badge: "SP SITREP", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
-    { name: "WEEKLY CRIME DIARY", href: "/reports?tab=weekly_crime_diary", icon: BookOpen, badge: "PPR", badgeColor: "bg-amber-50 text-amber-800 border-amber-200" },
-    { name: "IGP Meeting Presentation", href: "/reports?tab=igp_presentation", icon: FileText, badge: "Review", badgeColor: "bg-purple-50 text-purple-700 border-purple-200" },
-    { name: "Saved Reports", href: "/reports?tab=saved_reports", icon: BookmarkCheck, badge: "Saved", badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { name: "Registrations Register", href: "/registrations", icon: ClipboardList },
   ];
 
   // MANAGEMENT NAVIGATION ITEMS (Settings & Dropdown Manager in Slide Bar)
   const managementNavItems: NavItem[] = [
-    { name: "TA DA Form", href: "/tada", icon: ReceiptText, badge: "Bill", badgeColor: "bg-amber-100 text-amber-800 border-amber-200" },
-    { name: "Storage Optimization", href: "/settings?tab=storage-optimization", icon: HardDrive, badge: "Lossless", badgeColor: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-    { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter, badge: "Master", badgeColor: "bg-blue-100 text-blue-700 border-blue-200" },
+    { name: "TA DA Form", href: "/tada", icon: ReceiptText },
+    { name: "Storage Optimization", href: "/settings?tab=storage-optimization", icon: HardDrive },
+    { name: "Dropdown Manager", href: "/settings?tab=dropdowns", icon: ListFilter },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
@@ -340,584 +388,97 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* PORTAL SWITCHER - ALWAYS VISIBLE */}
-      <div className="p-2 bg-slate-50/60 border-b border-slate-200/80 overflow-hidden">
-        <Link
-          href="/"
-          title={t("Modules Portal")}
-          className={cn(
-            "flex items-center rounded-md bg-white hover:bg-slate-100/80 text-slate-700 hover:text-slate-900 border border-slate-200/70 transition-colors",
-            isExpanded ? "justify-between px-2.5 py-1.5 text-xs font-medium" : "justify-center p-2"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-            {isExpanded && <span className="truncate">{t("Modules Portal")}</span>}
-          </div>
-          {isExpanded && <span className="text-[10px] text-slate-400 shrink-0">&larr; {t("Switch")}</span>}
-        </Link>
-      </div>
-
-
-
       {/* Navigation Links: Module specific isolation */}
       <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
-        {/* 1. ROZNAMCHA GD TOGGLE SLIDE BAR (Only visible if Roznamcha is open/active) */}
-        {showRoznamcha && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setRoznamchaOpen(!roznamchaOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isRoznamchaPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Roznamcha GD Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <BookOpen className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("Roznamcha GD")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {roznamchaOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
+        {/* OPERATIONAL MODULES (All 8 Modules permanently listed with expandable nested sub-tabs) */}
+        <div className="space-y-1">
+          {isExpanded && (
+            <div className="px-2 pt-1 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
+              <span>{t("Operational Modules") || "OPERATIONAL MODULES"}</span>
+              <span className="text-[9px] bg-slate-100 text-slate-500 font-mono px-1.5 py-0.2 rounded border border-slate-200/70">8</span>
+            </div>
+          )}
 
-            {roznamchaOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {roznamchaNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? t(item.name) : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {t(item.badge)}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
+          {/* 1. Roznamcha GD */}
+          {renderModuleSection({
+            id: "roznamcha",
+            name: "Roznamcha GD",
+            href: "/general-diary",
+            icon: BookOpen,
+            isPathActive: isRoznamchaPath,
+            items: roznamchaNavItems,
+          })}
 
-        {/* 2. COMPLAINTS TOGGLE SLIDE BAR (Only visible if Complaints is open/active) */}
-        {showComplaints && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setComplaintsOpen(!complaintsOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isComplaintsPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Complaints Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("Complaints")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {complaintsOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
+          {/* 2. Complaints */}
+          {renderModuleSection({
+            id: "complaints",
+            name: "Complaints",
+            href: "/complaints",
+            icon: FileText,
+            isPathActive: isComplaintsPath,
+            items: complaintNavItems,
+          })}
 
-            {complaintsOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {complaintNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? t(item.name) : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {t(item.badge)}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
+          {/* 3. FIR Register */}
+          {renderModuleSection({
+            id: "fir",
+            name: "FIR Register",
+            href: "/fir",
+            icon: Scale,
+            isPathActive: isFirPath,
+            items: firNavItems,
+          })}
 
-        {/* 2.5. FIR TOGGLE SLIDE BAR (Only visible if FIR is open/active) */}
-        {showFir && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setFirOpen(!firOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isFirPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle FIR Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Scale className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("FIR")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {firOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
+          {/* 4. Registrations */}
+          {renderModuleSection({
+            id: "registrations",
+            name: "Registrations",
+            href: "/registrations",
+            icon: ClipboardList,
+            isPathActive: isRegistrationsPath,
+            items: registrationsNavItems,
+          })}
 
-            {firOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {firNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? t(item.name) : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {t(item.badge)}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
+          {/* 5. Reports & Audit */}
+          {renderModuleSection({
+            id: "reports",
+            name: "Reports & Audit",
+            href: "/reports",
+            icon: FileBarChart,
+            isPathActive: isReportsPath,
+            items: [],
+          })}
 
-        {/* 2.8. REGISTRATIONS TOGGLE SLIDE BAR (Only visible if Registrations is open/active) */}
-        {showRegistrations && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setRegistrationsOpen(!registrationsOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isRegistrationsPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Registrations Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <ClipboardList className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("Registrations")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {registrationsOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
+          {/* 6. Telecom Evidence Analysis */}
+          {renderModuleSection({
+            id: "telecom",
+            name: "Telecom Evidence Analysis",
+            href: "/telecom",
+            icon: Radio,
+            isPathActive: isTelecomPath,
+            items: [],
+          })}
 
-            {registrationsOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {registrationsNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? t(item.name) : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{t(item.name)}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {t(item.badge)}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
+          {/* 7. Prosecution & Courts */}
+          {renderModuleSection({
+            id: "prosecution",
+            name: "Prosecution & Courts",
+            href: "/prosecution",
+            icon: Landmark,
+            isPathActive: isProsecutionPath,
+            items: prosecutionNavItems,
+          })}
 
-        {/* 2.9. REPORTS TOGGLE SLIDE BAR (Only visible if Reports is open/active) */}
-        {showReports && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setReportsOpen(!reportsOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isReportsPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Reports Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileBarChart className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("Reports")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {reportsOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
-
-            {reportsOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {reportsNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? item.name : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-100 text-slate-900 font-semibold"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-3.5 h-3.5 shrink-0",
-                            isActive ? "text-slate-900" : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && <span className="truncate">{item.name}</span>}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0 border",
-                            item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
-                          )}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
-
-        {/* TELECOM EVIDENCE ANALYSIS TOGGLE SLIDE BAR */}
-        {showTelecom && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setTelecomOpen(!telecomOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isTelecomPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Telecom Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Radio className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    Telecom Evidence
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {telecomOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
-
-            {telecomOpen && (
-              <nav className="space-y-0.5 pt-0.5 animate-in fade-in-50 duration-150">
-                {telecomNavItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = pathname === item.href || (pathname.startsWith("/telecom") && item.href.includes(pathname));
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      title={!isExpanded ? item.name : undefined}
-                      className={cn(
-                        "flex items-center rounded-md text-xs font-medium transition-all group",
-                        isExpanded
-                          ? "justify-between px-2.5 py-1.5"
-                          : "justify-center p-2",
-                        isActive
-                          ? "bg-slate-900 text-white font-semibold shadow-xs"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-4 h-4 shrink-0 transition-colors",
-                            isActive
-                              ? "text-white"
-                              : "text-slate-400 group-hover:text-slate-700"
-                          )}
-                        />
-                        {isExpanded && (
-                          <span className="truncate">{item.name}</span>
-                        )}
-                      </div>
-                      {isExpanded && item.badge && (
-                        <span
-                          className={cn(
-                            "text-[9px] font-bold px-1.5 py-0.2 rounded border font-mono shrink-0 ml-1.5",
-                            isActive
-                              ? "bg-white/20 text-white border-white/30"
-                              : item.badgeColor ||
-                                  "bg-slate-100 text-slate-500 border-slate-200"
-                          )}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        )}
-
-        {/* 2.95. PROSECUTION TOGGLE SLIDE BAR (Only visible if Prosecution is open/active) */}
-        {showProsecution && (
-          <div className="space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isExpanded) setIsPinned(true);
-                setProsecutionOpen(!prosecutionOpen);
-              }}
-              className={cn(
-                "w-full flex items-center rounded-lg px-2 py-1.5 transition-colors text-left cursor-pointer",
-                isExpanded ? "justify-between hover:bg-slate-100/70" : "justify-center hover:bg-slate-100/70",
-                isProsecutionPath ? "bg-slate-100/50" : ""
-              )}
-              title="Toggle Prosecution Menu"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <Scale className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-                {isExpanded && (
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
-                    {t("Prosecution")}
-                  </span>
-                )}
-              </div>
-              {isExpanded && (
-                <span className="text-slate-400">
-                  {prosecutionOpen ? (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  )}
-                </span>
-              )}
-            </button>
-
-            {prosecutionOpen && (
-              <Suspense fallback={null}>
-                <ProsecutionNav isExpanded={isExpanded} isProsecutionPath={isProsecutionPath} />
-              </Suspense>
-            )}
-          </div>
-        )}
-
-        {/* AUDITS & INSPECTION LINK (Shown only when in Audits & Inspection module) */}
-        {isAuditsPath && (
-          <Link
-            href="/audits"
-            title="Audits & Inspection"
-            className={cn(
-              'flex items-center gap-2 p-2 rounded text-xs transition-colors',
-              pathname.startsWith('/audits') ? 'bg-blue-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-            )}
-          >
-            <Pencil className="w-4 h-4 shrink-0" />
-            {isExpanded && <span>Audits & Inspection</span>}
-          </Link>
-        )}
+          {/* 8. Audits & Inspection */}
+          {renderModuleSection({
+            id: "audits",
+            name: "Audits & Inspection",
+            href: "/audits",
+            icon: Pencil,
+            isPathActive: isAuditsPath,
+            items: auditsNavItems,
+          })}
+        </div>
 
         {/* DEVELOPER ONLY: LOCATION & ORGANIZATION MANAGEMENT */}
         {isDeveloperAdmin && (

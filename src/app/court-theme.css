@@ -88,15 +88,15 @@
   .cms-main .cms-complete-cases-title { color: #ffffff; }
   .cms-main :where(h1) { font-size: clamp(1.3rem, 2vw, 1.8rem); }
 
-  /* Hallmark Topbar: Precision Navy Block */
+  /* Hallmark Topbar */
   .cms-topbar {
-    background-color: #203c88 !important;
-    border-bottom: 1px solid #172e70 !important;
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e6eaf1 !important;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   .cms-topbar :where(span, svg, button) { color: inherit; }
-  .cms-topbar > div > div:first-child { color: white; }
-  .cms-topbar :where(button:hover) { background-color: #3153a6; }
+  .cms-topbar > div > div:first-child { color: #34445d; }
+  .cms-topbar :where(button:hover) { background-color: #f1f5f9; }
   :not(html.dark) .cms-topbar :where(.bg-slate-100),
   :not(html.dark) .cms-shell header.lg\:hidden :where(.bg-slate-100) {
     background: #eef1ff !important;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { ReportTab, CrimeSitrepData } from "@/types/reports";
@@ -22,7 +22,7 @@ function ReportsContent() {
   const { currentUser } = useAuth();
 
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState<ReportTab>(() => {
+  const activeTab: ReportTab = useMemo((): ReportTab => {
     if (tabParam === "weekly_crime_diary" || tabParam === "WEEKLY CRIME DIARY") {
       return "WEEKLY CRIME DIARY";
     }
@@ -32,8 +32,11 @@ function ReportsContent() {
     if (tabParam === "saved_reports" || tabParam === "Saved Reports") {
       return "Saved Reports";
     }
+    if (tabParam === "wysiwyg_a4_canvas" || tabParam === "WYSIWYG_A4_CANVAS") {
+      return "WYSIWYG_A4_CANVAS";
+    }
     return "CrimeSITREP_District";
-  });
+  }, [tabParam]);
 
   const [sitrepData, setSitrepData] = useState<CrimeSitrepData | null>(null);
   const [igpData, setIgpData] = useState<IgpBriefing | null>(null);
@@ -100,12 +103,10 @@ function ReportsContent() {
 
   const handleLoadSavedSitrep = (savedData: CrimeSitrepData) => {
     setSitrepData(savedData);
-    setActiveTab("CrimeSITREP_District");
     router.replace(`/reports?tab=crime_sitrep`);
   };
 
   const handleTabChange = (tab: ReportTab) => {
-    setActiveTab(tab);
     const paramVal =
       tab === "WEEKLY CRIME DIARY"
         ? "weekly_crime_diary"

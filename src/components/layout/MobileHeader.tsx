@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid, PlusCircle, Scale, ClipboardList, FileBarChart, FileCheck2, BookmarkCheck, ReceiptText } from "lucide-react";
+import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid, PlusCircle, Scale, ClipboardList, FileBarChart, FileCheck2, BookmarkCheck, ReceiptText, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
@@ -63,6 +63,18 @@ export function MobileHeader() {
 
           {/* Action Controls */}
           <div className="flex items-center gap-1.5">
+            {/* Direct Home Link */}
+            <Link
+              href="/"
+              title="Home"
+              className={cn(
+                "p-1.5 rounded-md border transition-colors",
+                pathname === "/" ? "bg-[#203c88] text-white border-[#203c88]" : "text-slate-700 hover:bg-slate-100 border-slate-200"
+              )}
+            >
+              <Home className="w-3.5 h-3.5" />
+            </Link>
+
             {/* Officer Notifications Bell */}
             <TopBarNotifications isMobile={true} />
 
@@ -187,13 +199,6 @@ export function MobileHeader() {
                   >
                     {t("Patrol & Night Domination")}
                   </Link>
-                  <Link
-                    href="/acts-sections"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("ACT and SECTIONs")}
-                  </Link>
                 </>
               ) : isComplaints ? (
                 <>
@@ -223,13 +228,6 @@ export function MobileHeader() {
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("Field Enquiry Workspace")}
-                  </Link>
-                  <Link
-                    href="/acts-sections"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : isFir ? (
@@ -275,13 +273,6 @@ export function MobileHeader() {
                   >
                     {t("Investigation Workspace")}
                   </Link>
-                  <Link
-                    href="/acts-sections"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("ACT and SECTIONs")}
-                  </Link>
                 </>
               ) : isRegistrations ? (
                 <>
@@ -295,13 +286,6 @@ export function MobileHeader() {
                   >
                     {t("Registrations Register")}
                   </Link>
-                  <Link
-                    href="/acts-sections"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("ACT and SECTIONs")}
-                  </Link>
                 </>
               ) : isReports ? (
                 <>
@@ -309,32 +293,11 @@ export function MobileHeader() {
                     {t("Reports")}
                   </div>
                   <Link
-                    href="/reports?tab=crime_sitrep"
+                    href="/reports"
                     onClick={() => setDrawerOpen(false)}
                     className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
-                    {t("CrimeSITREP_District")}
-                  </Link>
-                  <Link
-                    href="/reports?tab=weekly_crime_diary"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("WEEKLY CRIME DIARY")}
-                  </Link>
-                  <Link
-                    href="/reports?tab=igp_presentation"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("IGP Meeting Presentation")}
-                  </Link>
-                  <Link
-                    href="/reports?tab=saved_reports"
-                    onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    {t("Saved Reports")}
+                    {t("Crime SITREP & Judicial Audit Console")}
                   </Link>
                 </>
               ) : isProsecution ? (
@@ -371,6 +334,13 @@ export function MobileHeader() {
                     className="block rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 aria-[current=page]:bg-[#203c88] aria-[current=page]:text-white"
                   >
                     IIF-VII
+                  </Link>
+                  <Link
+                    href="/acts-sections"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("ACT and SECTIONs")}
                   </Link>
                 </>
               ) : (

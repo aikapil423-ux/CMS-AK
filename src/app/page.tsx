@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Users,
   Scale,
+  Landmark,
   ClipboardList,
   FileBarChart,
   Radio,
@@ -343,7 +344,7 @@ export default function PostLoginPortalPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-lg shrink-0 bg-slate-100 text-slate-800 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-colors border border-slate-200/60">
-                <Scale className="w-4 h-4" />
+                <Landmark className="w-4 h-4" />
               </div>
               <h3 className="min-w-0 flex-1 whitespace-nowrap text-sm font-semibold text-slate-900 leading-snug group-hover:text-indigo-900 transition-colors">
                 Prosecution & Courts

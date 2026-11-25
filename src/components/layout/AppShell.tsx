@@ -22,6 +22,7 @@ import {
   FileText,
   LayoutGrid,
   Scale,
+  Home,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import { DraggableAgentButton } from "@/components/agent/DraggableAgentButton";
 import { GlobalUploadCameraModal } from "@/components/ui/camera-capture-button";
 import { FirPersistenceStatus } from "@/components/fir/FirPersistenceStatus";
 import { ViewAsBanner } from "./ViewAsBanner";
+import { cn } from "@/lib/utils";
 
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -84,12 +86,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <MobileHeader />
 
         {/* Desktop Top Header Bar - Minimalist, clean backdrop-blur */}
-        <header className="cms-topbar hidden lg:flex items-center justify-between min-h-14 px-6 bg-[#203c88] text-white border-b border-[#203c88] sticky top-0 z-45">
-          {/* Left: Station & Active Module Indicator */}
+        <header className="cms-topbar hidden lg:flex items-center justify-between min-h-14 px-6 bg-white text-slate-800 border-b border-slate-200/90 sticky top-0 z-45">
+          {/* Left: Home Button + Station & Active Module Indicator */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-slate-700">
-              <Building className="w-3.5 h-3.5 text-slate-500" />
-              <span className="font-semibold text-xs text-slate-900 tracking-tight">
+            {/* Direct HOME button to navigate to Modules Portal view */}
+            <Link
+              href="/"
+              title="Modules Portal (Home)"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shadow-xs cursor-pointer",
+                pathname === "/"
+                  ? "bg-[#203c88] !text-white border-[#203c88] shadow-xs hover:bg-[#1a3170]"
+                  : "bg-slate-50 hover:bg-slate-100 !text-slate-700 hover:!text-[#203c88] border-slate-200"
+              )}
+            >
+              <Home className={cn("w-3.5 h-3.5 shrink-0", pathname === "/" ? "!text-white" : "!text-slate-600")} />
+              <span className={pathname === "/" ? "!text-white font-bold" : "!text-slate-700 font-bold"}>
+                {t("HOME") || "HOME"}
+              </span>
+            </Link>
+
+            <div className="h-4 w-px bg-slate-300"></div>
+
+            <div className="flex items-center gap-2 text-slate-800">
+              <Building className="w-3.5 h-3.5 !text-slate-600 shrink-0" />
+              <span className="font-semibold text-xs !text-slate-800 tracking-tight whitespace-nowrap">
                 {currentUser.stationName}
               </span>
               <span
@@ -98,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {currentUser.district}
               </span>
             </div>
-            <div className="h-3 w-px bg-slate-200/80"></div>
+            <div className="h-4 w-px bg-slate-300"></div>
 
             {/* Switch Module Dropdown with LayoutGrid Icon */}
             <TopBarModuleSwitcher />
