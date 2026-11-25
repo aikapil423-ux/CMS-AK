@@ -640,6 +640,9 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                     <th className="border-r border-black p-1.5 font-bold w-36">
                       Property Type (सम्पत्ति के प्रकार)
                     </th>
+                    <th className="border-r border-black p-1.5 font-bold w-40">
+                      Nature of Property (सम्पत्ति की प्रकृति)
+                    </th>
                     <th className="border-r border-black p-1.5 font-bold">
                       Description (विवरण)
                     </th>
@@ -662,6 +665,9 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                           {p.propertyType}
                         </td>
                         <td className="border-r border-black p-1.5">
+                          {p.natureOfProperty || ""}
+                        </td>
+                        <td className="border-r border-black p-1.5">
                           {p.description}
                         </td>
                         <td className="p-1.5 text-right font-mono">
@@ -674,6 +680,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                       <td className="border-r border-black p-1.5 text-center">1</td>
                       <td className="border-r border-black p-1.5">OTHERS</td>
                       <td className="border-r border-black p-1.5">MISC</td>
+                      <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5">{fir.stolenPropertyDetails}</td>
                       <td className="p-1.5 text-right font-mono">
                         {totalPropVal ? `${Number(totalPropVal).toFixed(2)}` : ""}
@@ -682,6 +689,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   ) : (
                     <tr>
                       <td className="border-r border-black p-1.5 text-center h-6"></td>
+                      <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5"></td>

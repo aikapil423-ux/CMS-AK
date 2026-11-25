@@ -107,6 +107,7 @@ import {
   ACTION_TAKEN_OPTIONS,
   PROPERTY_CATEGORIES,
   PROPERTY_TYPES_BY_CATEGORY,
+  NATURE_OF_PROPERTY_OPTIONS,
   getDynamicSourceOfComplaint,
   getDynamicDirectionFromPs,
   getDynamicActionTakenOptions,
@@ -621,6 +622,7 @@ function RegisterFIRForm() {
   const [showAddPropertyForm, setShowAddPropertyForm] = useState(false);
   const [tempPropCategory, setTempPropCategory] = useState<string>(PROPERTY_CATEGORIES[0]);
   const [tempPropType, setTempPropType] = useState<string>(PROPERTY_TYPES_BY_CATEGORY[PROPERTY_CATEGORIES[0]][0]);
+  const [tempPropNature, setTempPropNature] = useState<string>(NATURE_OF_PROPERTY_OPTIONS[0]);
   const [tempPropDescription, setTempPropDescription] = useState("");
   const [tempPropValue, setTempPropValue] = useState("");
 
@@ -2136,10 +2138,12 @@ function RegisterFIRForm() {
       srNo: propertiesList.length + 1,
       propertyCategory: tempPropCategory,
       propertyType: tempPropType || "Miscellaneous",
+      natureOfProperty: tempPropNature === "select" ? "" : tempPropNature,
       description: tempPropDescription.trim(),
       estimatedValue: tempPropValue ? Number(tempPropValue) : 0,
     };
     setPropertiesList([...propertiesList, newProp]);
+    setTempPropNature(NATURE_OF_PROPERTY_OPTIONS[0]);
     setTempPropDescription("");
     setTempPropValue("");
     setShowAddPropertyForm(false);
@@ -5356,7 +5360,7 @@ function RegisterFIRForm() {
                 </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4 text-xs">
-                {/* Properties Table - Without Nature of Property Column */}
+                {/* Properties Table - with Nature of Property column */}
                 {propertiesList.length > 0 ? (
                   <div className="overflow-x-auto border border-slate-200 rounded-lg">
                     <table className="w-full text-left text-xs">
@@ -5365,6 +5369,7 @@ function RegisterFIRForm() {
                           <th className="p-2.5 w-12">S.No.</th>
                           <th className="p-2.5">Category</th>
                           <th className="p-2.5">Type</th>
+                          <th className="p-2.5">Nature of Property</th>
                           <th className="p-2.5">Description</th>
                           <th className="p-2.5 text-right">Est. Value (₹)</th>
                           <th className="p-2.5 w-16 text-center">Action</th>
@@ -5376,6 +5381,7 @@ function RegisterFIRForm() {
                             <td className="p-2.5 font-bold text-slate-500">{prop.srNo || idx + 1}</td>
                             <td className="p-2.5 font-semibold text-slate-900">{prop.propertyCategory}</td>
                             <td className="p-2.5 font-medium text-slate-700">{prop.propertyType}</td>
+                            <td className="p-2.5 font-medium text-slate-700">{prop.natureOfProperty || ""}</td>
                             <td className="p-2.5 text-slate-700">{prop.description}</td>
                             <td className="p-2.5 text-right font-mono font-bold text-red-900">
                               ₹{Number(prop.estimatedValue || 0).toLocaleString("en-IN")}
@@ -5440,6 +5446,7 @@ function RegisterFIRForm() {
                         size="sm"
                         onClick={() => {
                           setShowAddPropertyForm(false);
+                          setTempPropNature(NATURE_OF_PROPERTY_OPTIONS[0]);
                           setTempPropDescription("");
                           setTempPropValue("");
                         }}
@@ -5449,7 +5456,7 @@ function RegisterFIRForm() {
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       <div>
                         <span className="text-[10px] text-slate-500 block mb-0.5">Property Category</span>
                         <select
@@ -5481,6 +5488,21 @@ function RegisterFIRForm() {
                       </div>
 
                       <div>
+                        <span className="text-[10px] text-slate-500 block mb-0.5">Nature of Property</span>
+                        <select
+                          value={tempPropNature}
+                          onChange={(e) => setTempPropNature(e.target.value)}
+                          className="w-full p-2 rounded border border-slate-300 bg-white font-medium text-xs"
+                        >
+                          {NATURE_OF_PROPERTY_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
                         <span className="text-[10px] text-slate-500 block mb-0.5">Estimated Value (₹)</span>
                         <input
                           type="number"
@@ -5491,7 +5513,7 @@ function RegisterFIRForm() {
                         />
                       </div>
 
-                      <div className="md:col-span-2">
+                      <div className="md:col-span-3">
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-[10px] text-slate-500 block">
                             Description (Make, Model, Serial, Specs, Registration)
