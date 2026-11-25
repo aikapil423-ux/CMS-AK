@@ -198,6 +198,8 @@ function RegisterFIRForm() {
   const [submitting, setSubmitting] = useState(false);
   const [registeredFir, setRegisteredFir] = useState<FIRItem | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  // Distinguishes the read-only Preview (IIF-I) from the post-registration receipt.
+  const [receiptMode, setReceiptMode] = useState<"preview" | "registered" | null>(null);
   const draftKey = useMemo(() => {
     if (complaintIdParam) return `complaint_${complaintIdParam}`;
     if (gdNumberParam) return `gd_${gdNumberParam}`;
@@ -2482,16 +2484,6 @@ function RegisterFIRForm() {
     return tabErrors;
   };
 
-  // Validate a specific tab and set errors if any
-  const validateTab = (tabKey: MainTabKey): boolean => {
-    const tabErrors = getTabValidationErrors(tabKey);
-    if (Object.keys(tabErrors).length > 0) {
-      setErrors((prev) => ({ ...prev, ...tabErrors }));
-      return false;
-    }
-    return true;
-  };
-
   // Full form validator (checks all tabs)
   const validateForm = (): boolean => {
     const combinedErrors: Record<string, string> = {};
@@ -2551,6 +2543,7 @@ function RegisterFIRForm() {
       setDraftRestoredNotice(null);
       setLastSavedTime(null);
       setRegisteredFir(created);
+      setReceiptMode("registered");
       setShowReceiptModal(true);
     } catch (err: any) {
       console.error("Failed to register FIR:", err);
@@ -2563,11 +2556,13 @@ function RegisterFIRForm() {
   // Tab Navigation Helpers
   const currentTabIndex = TAB_CONFIG.findIndex((t) => t.key === activeTab);
 
-  // Strict Next Tab: does NOT allow navigation if current panel's mandatory fields are not filled
+  // Registration is allowed only when every panel's mandatory fields are complete.
+  const allMandatoryFieldsFilled = TAB_CONFIG.every(
+    (tab) => Object.keys(getTabValidationErrors(tab.key)).length === 0
+  );
+
+  // Tab navigation is always free; mandatory fields are enforced only by the Register FIR button.
   const handleNextTab = () => {
-    if (!validateTab(activeTab)) {
-      return;
-    }
     if (currentTabIndex < TAB_CONFIG.length - 1) {
       setActiveTab(TAB_CONFIG[currentTabIndex + 1].key);
     }
@@ -2579,20 +2574,8 @@ function RegisterFIRForm() {
     }
   };
 
-  // Tab click in header: strictly prevents jumping forward if preceding tabs have unfilled mandatory fields
+  // Any panel can be opened directly without completing earlier panels.
   const handleTabClick = (targetTabKey: MainTabKey) => {
-    const targetIndex = TAB_CONFIG.findIndex((t) => t.key === targetTabKey);
-    if (targetIndex <= currentTabIndex) {
-      setActiveTab(targetTabKey);
-      return;
-    }
-    for (let i = 0; i < targetIndex; i++) {
-      const tabToValidate = TAB_CONFIG[i].key;
-      if (!validateTab(tabToValidate)) {
-        setActiveTab(tabToValidate);
-        return;
-      }
-    }
     setActiveTab(targetTabKey);
   };
 
@@ -5868,6 +5851,7 @@ function RegisterFIRForm() {
                 size="sm"
                 onClick={() => {
                   setRegisteredFir(buildCurrentFirItem());
+                  setReceiptMode("preview");
                   setShowReceiptModal(true);
                 }}
                 className="text-xs text-slate-700 flex items-center gap-1.5"
@@ -5881,8 +5865,9 @@ function RegisterFIRForm() {
             {currentTabIndex === TAB_CONFIG.length - 1 && (
               <Button
                 type="submit"
-                disabled={submitting}
-                className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md px-5 py-2 transition-colors cursor-pointer"
+                disabled={submitting || !allMandatoryFieldsFilled}
+                title={!allMandatoryFieldsFilled ? "Please fill all mandatory fields (*) in every panel before registering the FIR." : undefined}
+                className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md px-5 py-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Scale className="w-4 h-4" />
                 {submitting ? "Registering..." : "Register FIR"}
@@ -5925,9 +5910,14 @@ function RegisterFIRForm() {
           isOpen={showReceiptModal}
           onClose={() => {
             setShowReceiptModal(false);
-            if (registeredFir && registeredFir.id && !registeredFir.id.startsWith("fir-temp-")) {
+            setRegisteredFir(null);
+            if (receiptMode === "registered") {
+              setReceiptMode(null);
               router.push("/fir");
+              return;
             }
+            // Preview (IIF-I): stay on the registration form with all data intact.
+            setReceiptMode(null);
           }}
         />
       )}
