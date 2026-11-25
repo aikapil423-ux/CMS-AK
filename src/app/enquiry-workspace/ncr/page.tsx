@@ -38,6 +38,7 @@ import { ComplaintItem } from "@/types";
 import { EnquiryWorkspaceNav } from "@/components/enquiry-workspace/EnquiryWorkspaceNav";
 import { ComplaintAnalysisHeader } from "@/components/enquiry-workspace/ComplaintAnalysisHeader";
 import { ComplaintAnalysisReport } from "@/services/complaintDocumentAnalysisService";
+import styles from "./ncr-document.module.css";
 import {
   generateHaryanaPoliceProformaHtml,
   HaryanaPoliceProformaData,
@@ -501,11 +502,11 @@ function NcrWorkspaceContent() {
           </div>
 
           {/* EDITABLE DOCUMENT PREVIEW */}
-          <div className="bg-white rounded-xl border border-slate-300 shadow-sm p-8 min-h-[700px]" ref={documentRef}>
+          <div className={`${styles.document} border border-slate-300 bg-white p-4 text-slate-900 sm:p-8`} ref={documentRef}>
             {/* Header */}
             {showHeader && (
               <div className="text-center space-y-1 mb-6 border-b pb-4 border-slate-300">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <div className="flex items-center justify-between gap-4 pb-3 text-xs font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center gap-1 w-1/2">
                     <input
                       type="text"
@@ -533,7 +534,7 @@ function NcrWorkspaceContent() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-1 text-base">
                   <input
                     type="text"
                     value={title}
@@ -546,7 +547,7 @@ function NcrWorkspaceContent() {
                     iconOnly={true}
                   />
                 </div>
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-1 text-xs text-slate-600">
                   <input
                     type="text"
                     value={subTitle}
@@ -567,7 +568,7 @@ function NcrWorkspaceContent() {
               <table
                 className={`w-full text-xs border-collapse ${
                   borderStyle === "solid"
-                    ? "border-2 border-black"
+                    ? "border border-black"
                     : borderStyle === "double"
                     ? "border-4 border-double border-black"
                     : borderStyle === "light"
@@ -576,30 +577,28 @@ function NcrWorkspaceContent() {
                 }`}
               >
                 <tbody>
-                  {rows.map((row, idx) => (
+                  {rows.map((row) => (
                     <tr
                       key={row.id}
-                      className={`group ${
-                        borderStyle !== "none" ? "border-b border-black" : "border-b border-slate-200"
-                      }`}
+                      className="group border-b border-slate-200 last:border-b-0"
                     >
                       {/* Row Label (Left Column) */}
                       <td
-                        className={`w-1/4 p-3 font-bold align-top bg-slate-50/70 ${
-                          borderStyle !== "none" ? "border-r border-black" : "border-r border-slate-200"
+                        className={`w-[36%] p-2 font-bold align-top sm:w-1/4 sm:px-3 ${
+                          borderStyle !== "none" ? "border-r border-slate-200" : ""
                         }`}
                       >
                         <div className="flex items-start justify-between gap-1">
                           <textarea
                             value={row.label}
                             onChange={(e) => handleUpdateRowLabel(row.id, e.target.value)}
-                            rows={2}
-                            className="w-full font-bold bg-transparent border-0 outline-none resize-none text-slate-900 text-xs"
+                            rows={Math.max(1, row.label.split("\n").length)}
+                            className="w-full font-bold"
                           />
                           <button
                             type="button"
                             onClick={() => handleDeleteRow(row.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-700 transition-opacity cursor-pointer shrink-0"
+                            className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-1 text-slate-400 hover:text-red-700 transition-opacity cursor-pointer shrink-0 print:hidden"
                             title="Delete Row"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -608,15 +607,15 @@ function NcrWorkspaceContent() {
                       </td>
 
                       {/* Row Content (Right Column) */}
-                      <td className="w-3/4 p-3 align-top relative">
+                      <td className="p-2 align-top sm:px-3">
                         <div className="relative">
                           <textarea
                             value={row.cells[0] || ""}
                             onChange={(e) => handleUpdateCell(row.id, 0, e.target.value)}
-                            rows={Math.max(3, (row.cells[0] || "").split("\n").length)}
-                            className="w-full bg-transparent border-0 outline-none resize-y text-slate-800 text-xs leading-relaxed focus:bg-blue-50/20 rounded p-1 pr-7"
+                            rows={Math.max(1, (row.cells[0] || "").split("\n").length)}
+                            className="w-full pr-7"
                           />
-                          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity print:hidden">
                             <VoiceInputButton
                               onTranscript={(val) => handleUpdateCell(row.id, 0, val)}
                               currentValue={row.cells[0] || ""}
@@ -654,8 +653,7 @@ function NcrWorkspaceContent() {
             {/* Signatures & Seal */}
             {showSignatures && (
               <div className="mt-8 pt-6 flex justify-end">
-                <div className="w-72 text-right space-y-1 text-xs text-slate-900">
-                  <div className="h-10"></div>
+                <div className="w-72 max-w-full border-t border-slate-400 pt-2 text-right space-y-1 text-xs text-slate-900">
                   <div className="flex items-center justify-end gap-1 group">
                     <input
                       type="text"

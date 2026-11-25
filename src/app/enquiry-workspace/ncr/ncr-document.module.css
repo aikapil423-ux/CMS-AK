@@ -1,0 +1,32 @@
+.document table {
+  table-layout: fixed;
+}
+
+.document tbody tr {
+  background-color: transparent;
+}
+
+.document :is(input, textarea) {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background-color: transparent;
+  color: inherit;
+  font-size: inherit;
+  box-shadow: none;
+}
+
+.document textarea {
+  field-sizing: content;
+  padding-block: 0;
+  resize: none;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.document textarea:focus,
+.document input:focus {
+  outline: 2px solid #5276a1;
+  outline-offset: 2px;
+}
