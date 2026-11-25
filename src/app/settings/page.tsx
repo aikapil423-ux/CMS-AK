@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -58,6 +60,7 @@ const COLOR_OPTIONS = [
 ];
 
 function SettingsPageContent() {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as SettingsTab) || "station";
   const { currentUser } = useAuth();
@@ -746,13 +749,13 @@ function SettingsPageContent() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900">Website Dropdown Manager</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{t("वेबसाइट विकल्प प्रबंधक", "Website Dropdown Manager")}</h3>
                   <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full border border-blue-200">
-                    10 Modules Configurable
+                    {t("10 मॉड्यूल उपलब्ध", "10 modules configurable")}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  Manage all dropdown options across the portal (Complaint Categories, GD Types, Enquiry Officers, Ranks, Relation Types, Source Channels). Add new options, edit labels, or delete options with instant live synchronization.
+                  {t("शिकायत श्रेणियों, रोजनामचा प्रकारों, जाँच अधिकारियों, पदों, संबंधों और सूचना स्रोतों के विकल्प जोड़ें, बदलें या हटाएँ। बदलाव तुरंत लागू होंगे।", "Manage complaint categories, diary types, enquiry officers, ranks, relationships, and source channels. Changes apply immediately.")}
                 </p>
               </div>
             </div>
@@ -775,13 +778,13 @@ function SettingsPageContent() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900">Table Column Manager</h3>
+                  <h3 className="text-sm font-bold text-slate-900">{t("टेबल कॉलम प्रबंधक", "Table Column Manager")}</h3>
                   <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full border border-indigo-200">
-                    Custom Columns CRUD
+                    {t("कस्टम कॉलम प्रबंधन", "Custom column management")}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  FIR, Complaints, और General Diary टेबल्स में नए कस्टम कॉलम्स जोड़ें, एडिट करें या डिलीट करें। सिस्टम के डिफ़ॉल्ट कॉलम्स सुरक्षित (Read-only) रहते हैं।
+                  {t("एफआईआर, शिकायत और रोजनामचा रजिस्टर में अपने कॉलम जोड़ें, बदलें या हटाएँ। सिस्टम के मूल कॉलम केवल पढ़ने के लिए हैं।", "Add, edit, or delete custom columns in the FIR, Complaints, and General Diary registers. Default columns are read-only.")}
                 </p>
               </div>
             </div>

@@ -24,7 +24,7 @@ let observer: MutationObserver | null = null;
 let currentLanguage: "hi" | "en" = "en";
 let isTranslating = false;
 
-// Tags that should NEVER be translated (inputs, forms, scripts, raw code, canvases)
+// Tags whose content is protected. Control labels are handled separately.
 const EXCLUDED_TAGS = new Set([
   "SCRIPT",
   "STYLE",
@@ -44,11 +44,15 @@ const EXCLUDED_TAGS = new Set([
  * Check if a node or any of its parents has opted out of translation.
  * Strictly preserves auto-filled data, processed case text, user content, official CCTNS sheets, and print documents.
  */
-function isExcluded(node: Node): boolean {
+function isExcluded(node: Node, attribute = false): boolean {
   let el: Element | null =
     node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  const control = attribute && el && ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) ? el : null;
+  const option = el?.tagName === "OPTION" ? el : null;
+  // Without a value attribute, the visible option text is also the submitted value.
+  if (option && !option.hasAttribute("value")) return true;
   while (el) {
-    if (EXCLUDED_TAGS.has(el.tagName)) return true;
+    if (EXCLUDED_TAGS.has(el.tagName) && el !== control && !(option && el.tagName === "SELECT")) return true;
     if (
       el.getAttribute("data-no-translate") === "true" ||
       el.getAttribute("data-processed") === "true" ||
@@ -276,7 +280,7 @@ function translateNode(node: Text, toLang: "hi" | "en") {
  * Translate attribute values (placeholder, title, aria-label, alt)
  */
 function translateAttributes(el: Element, toLang: "hi" | "en") {
-  if (isExcluded(el)) return;
+  if (isExcluded(el, true)) return;
 
   const attrs = ["placeholder", "title", "aria-label", "alt"];
   for (const attr of attrs) {

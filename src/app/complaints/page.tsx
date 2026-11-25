@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -136,6 +138,7 @@ const DIRECTION_TEMPLATES = [
 ];
 
 function ComplaintListContent() {
+  const { t } = useLanguage();
   const { currentUser } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1247,7 +1250,7 @@ function ComplaintListContent() {
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
-            <span>Advanced filters{(dateFrom || dateTo || categoryFilter !== 'ALL' || (!isAllSelected && selectedStatuses.length > 0) || searchQuery) ? ' •' : ''}</span>
+            <span>{t("उन्नत फ़िल्टर", "Advanced filters")}{(dateFrom || dateTo || categoryFilter !== 'ALL' || (!isAllSelected && selectedStatuses.length > 0) || searchQuery) ? ' •' : ''}</span>
             <ChevronDown
               className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
                 advancedFilters ? "rotate-180" : ""
@@ -1361,7 +1364,7 @@ function ComplaintListContent() {
                 Complaint #{unassignedComplaintNo} Registered — Awaiting EO Assignment
               </p>
               <p className="text-amber-800 leading-relaxed">
-                यह शिकायत केंद्रीय रजिस्टर में दर्ज होकर सीधे SHO ID में प्राप्त हुई है। कृपया नीचे दिए गए <strong>&ldquo;Assign EO&rdquo;</strong> विकल्प पर क्लिक करके जांच अधिकारी (EO) नियुक्त करें। नियुक्त होते ही <strong>Receipt of registered complaints</strong> रसीद तुरंत जनरेट हो जाएगी।
+                {t("यह शिकायत केंद्रीय रजिस्टर से सीधे थाना प्रभारी को मिली है। जाँच अधिकारी नियुक्त करें। नियुक्ति के बाद शिकायत की रसीद बन जाएगी।", "The central register sent this complaint directly to the SHO. Assign an enquiry officer to generate the complaint receipt.")}
               </p>
             </div>
           </div>
@@ -1671,7 +1674,7 @@ function ComplaintListContent() {
                             type="button"
                             onClick={resetColumnOrder}
                             className="text-[10px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
-                            title="कॉलम क्रम रीसेट करें"
+                            title={t("कॉलम का क्रम रीसेट करें", "Reset column order")}
                           >
                             Reset Order
                           </button>
@@ -1799,13 +1802,13 @@ function ComplaintListContent() {
                       </div>
                       <div className="pt-2 mt-2 border-t border-slate-100 space-y-1">
                         <div className="text-[10px] text-slate-500">
-                          💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                          💡 <em>{t("कॉलम का क्रम बदलने के लिए उसका शीर्षक खींचें।", "Drag column headers to reorder them.")}</em>
                         </div>
                         <Link
                           href="/settings?tab=table-manager"
                           className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
                         >
-                          <span>+ Add/Manage Columns</span>
+                          <span>{t("+ कॉलम जोड़ें या प्रबंधित करें", "+ Add/Manage Columns")}</span>
                           <span>&rarr;</span>
                         </Link>
                       </div>

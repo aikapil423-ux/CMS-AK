@@ -38,7 +38,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
   const [complaintSaveError,setComplaintSaveError]=useState('');
-  React.useEffect(()=>{const failure=(e:Event)=>setComplaintSaveError(String((e as CustomEvent).detail));window.addEventListener('complaints_save_error',failure);window.addEventListener('complaints_cache_warning',failure);return()=>{window.removeEventListener('complaints_save_error',failure);window.removeEventListener('complaints_cache_warning',failure);};},[]);
+  React.useEffect(() => {
+    const showSaveError = (event: Event) => setComplaintSaveError(String((event as CustomEvent).detail));
+    window.addEventListener("complaints_save_error", showSaveError);
+    return () => window.removeEventListener("complaints_save_error", showSaveError);
+  }, []);
 
 
   // If unauthenticated and not on /login, redirect to /login — unless a persona/view-as

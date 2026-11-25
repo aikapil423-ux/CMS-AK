@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Languages, Globe } from "lucide-react";
+import { Languages } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface TopBarLanguageSwitcherProps {
@@ -9,7 +9,7 @@ interface TopBarLanguageSwitcherProps {
 }
 
 export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitcherProps) {
-  const { language, toggleLanguage, isHindi } = useLanguage();
+  const { toggleLanguage, isHindi } = useLanguage();
   const [justToggled, setJustToggled] = useState(false);
 
   const handleClick = (e: React.MouseEvent) => {
@@ -21,8 +21,8 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
   };
 
   const titleText = isHindi
-    ? "भाषा: हिन्दी (English में बदलने के लिए क्लिक करें)"
-    : "Language: English (Click to switch to हिन्दी)";
+    ? "भाषा: हिन्दी (अंग्रेज़ी में बदलने के लिए क्लिक करें)"
+    : "Language: English (Click to switch to Hindi)";
 
   if (isMobile) {
     return (

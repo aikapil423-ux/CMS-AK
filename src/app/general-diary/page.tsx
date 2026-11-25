@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -59,6 +61,7 @@ import { toDDMMYYYY, parseGDActivityDateTimeToMs, getGdRecordRemainingTime, isGd
 type ActiveTab = "REGISTER" | "SUGGESTIONS_DRAFTS";
 
 function GeneralDiaryContent() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
@@ -532,7 +535,7 @@ function GeneralDiaryContent() {
           <div className="flex items-center gap-1 min-w-0">
             <span
               className="text-slate-400 hover:text-white cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
-              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+              title={t("कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)", "Drag the column header to reorder it")}
             >
               <GripVertical className="w-3 h-3" />
             </span>
@@ -544,7 +547,7 @@ function GeneralDiaryContent() {
                 e.stopPropagation();
                 setActiveSearchCol(isSearching ? null : field);
               }}
-              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              title={t("कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)", "Search this column")}
               className="flex items-center gap-1 font-bold text-white hover:text-cyan-200 transition-colors text-left uppercase text-[11px] tracking-wider cursor-pointer group truncate"
             >
               <span className="truncate">{label}</span>
@@ -563,7 +566,7 @@ function GeneralDiaryContent() {
               e.stopPropagation();
               handleSort(field);
             }}
-            title={`सॉर्ट करें (Sort by ${label})`}
+            title={t(`${t(label)} के अनुसार क्रम लगाएँ`, `Sort by ${label}`)}
             className={`p-1 rounded hover:bg-white/10 transition-colors cursor-pointer shrink-0 ${
               isSorted ? "text-cyan-300 bg-white/15" : "text-slate-400 hover:text-white"
             }`}
@@ -599,7 +602,7 @@ function GeneralDiaryContent() {
                     setActiveSearchCol(null);
                   }
                 }}
-                placeholder={`${label} खोजें...`}
+                placeholder={t(`${t(label)} खोजें…`, `Search ${label}…`)}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-cyan-400 rounded focus:outline-none focus:ring-1 focus:ring-cyan-500 font-normal pr-5 text-slate-900 shadow-2xs normal-case"
               />
               <VoiceInputButton
@@ -716,12 +719,12 @@ function GeneralDiaryContent() {
               </span>
               {caseTypeVal && (
                 <div className="text-[10px] text-red-700 font-bold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
-                  केस: {caseTypeVal}
+                  {t("प्रकरण:", "Case:")} {caseTypeVal}
                 </div>
               )}
               {actsVal && (
                 <div className="text-[10px] text-slate-700 font-mono line-clamp-1" title={actsVal}>
-                  धारा: {actsVal}
+                  {t("धारा:", "Section:")} {actsVal}
                 </div>
               )}
             </div>
@@ -869,7 +872,7 @@ function GeneralDiaryContent() {
               setPrintDailyRegisterOpen(true);
             }}
             className="text-xs font-bold gap-1.5 border-slate-300 bg-white hover:bg-slate-50 cursor-pointer shadow-2xs"
-            title="View, Search, Print & Download Roznamcha General Diary Register (सभी दिनों की प्रविष्टियाँ - नवीनतम से पूर्व)"
+            title={t("View, Search, Print & Download Roznamcha General Diary Register (सभी दिनों की प्रविष्टियाँ - नवीनतम से पूर्व)", "View, search, print and download General Diary entries, newest first")}
           >
             <BookOpen className="w-3.5 h-3.5 text-blue-700" />
             <span>Register</span>
@@ -1053,7 +1056,7 @@ function GeneralDiaryContent() {
                     <td colSpan={7} className="text-center py-10 text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Filter className="w-7 h-7 text-slate-300" />
-                        <p className="font-semibold text-slate-700">कोई रिकॉर्ड नहीं मिला (No records match the column filter)</p>
+                        <p className="font-semibold text-slate-700">{t("कोई रिकॉर्ड नहीं मिला (No records match the column filter)", "No records match the column filter")}</p>
                         <button
                           type="button"
                           onClick={() => {
@@ -1241,7 +1244,7 @@ function GeneralDiaryContent() {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-300">
-                    Brief Description • सम्पूर्ण विवरण
+                    {t("Brief Description • सम्पूर्ण विवरण", "Brief description")}
                   </p>
                 </div>
               </div>
@@ -1291,7 +1294,7 @@ function GeneralDiaryContent() {
             {/* Narrative Body */}
             <div className="p-5 overflow-y-auto max-h-[50vh] flex-1">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Complete Narrative (दर्ज विवरण):
+                {t("Complete Narrative (दर्ज विवरण):", "Complete narrative:")}
               </div>
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-sans select-text">
                 {cleanGdNarrative(briefModalRecord.narrative) || "(No description recorded)"}
@@ -1326,7 +1329,7 @@ function GeneralDiaryContent() {
                 onClick={closeBriefModal}
                 className="bg-[#0b192c] hover:bg-slate-900 text-white text-xs px-4 cursor-pointer"
               >
-                Close (बंद करें)
+                {t("Close (बंद करें)", "Close")}
               </Button>
             </div>
           </div>
@@ -1471,7 +1474,7 @@ function GeneralDiaryContent() {
                 onClick={() => setDocModalRecord(null)}
                 className="text-xs px-4 cursor-pointer"
               >
-                Close (बंद करें)
+                {t("Close (बंद करें)", "Close")}
               </Button>
             </div>
           </div>

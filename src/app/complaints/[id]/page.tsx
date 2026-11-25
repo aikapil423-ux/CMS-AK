@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { writeCaseDraft } from "@/lib/caseWritingClient";
 import { useParams, useSearchParams } from "next/navigation";
@@ -262,6 +264,7 @@ function VoiceInputButton(_props: {
 }
 
 export default function ComplaintProfilePage() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -2632,7 +2635,7 @@ export default function ComplaintProfilePage() {
                     </div>
                     <div>
                       <span className="text-slate-500 block">Father / Spouse Name:</span>
-                      <strong data-no-translate="true" className="text-slate-800 user-data">{complaint.complainantFatherSpouse || "Not specified"}</strong>
+                      <strong data-no-translate="true" className="text-slate-800 user-data">{complaint.complainantFatherSpouse || t("उल्लेख नहीं है", "Not specified")}</strong>
                     </div>
                     <div>
                       <span className="text-slate-500 block">Contact Phone:</span>
@@ -2674,7 +2677,7 @@ export default function ComplaintProfilePage() {
                     )}
                     <div className="flex flex-wrap items-center gap-4 text-slate-600">
                       <span>
-                        <strong>Date:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentDate || "Not recorded"}</span>
+                        <strong>Date:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentDate || t("दर्ज नहीं है", "Not recorded")}</span>
                       </span>
                       <span>
                         <strong>Occurrence Place:</strong> <span data-no-translate="true" className="user-data">{complaint.incidentPlace}</span>

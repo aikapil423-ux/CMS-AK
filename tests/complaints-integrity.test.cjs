@@ -2,7 +2,7 @@ const {test,after}=require('node:test');
 const assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'cms-complaints-'));fs.mkdirSync(path.join(temp,'prisma'));fs.writeFileSync(path.join(temp,'prisma','complaints-store.json'),'[]');
 const modules=new Map(),storage=new Map(),events=[];let actor='usr_mhc_1',quota=false,failSave=false;let route, alternatePosting;
-const window={localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>{if(quota)throw new Error('Quota');storage.set(k,v);}},dispatchEvent:e=>events.push(e),addEventListener:()=>{}};
+const window={localStorage:{getItem:k=>storage.get(k)??null,removeItem:k=>storage.delete(k),setItem:(k,v)=>{if(quota)throw new Error('Quota');storage.set(k,v);}},dispatchEvent:e=>events.push(e),addEventListener:()=>{}};
 class CustomEvent{constructor(type,options){this.type=type;this.detail=options?.detail;}}
 const process_={...process,cwd:()=>temp,env:{...process.env,NODE_ENV:'test',CMS_SESSION_SECRET:'test-secret-'.repeat(4)}};
 function load(file){if(modules.has(file))return modules.get(file);const exports={};modules.set(file,exports);const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
@@ -60,11 +60,14 @@ test('closed age freezes even after later edits, direct FIR queue remains pendin
  assert.equal(integrity.computeDaysPending({createdAt:'2026-10-01',status:'FIR_REGISTER'},new Date('2026-10-20T10:00:00Z')),19);
 });
 test('registration is durable and storage quota cannot trim any complaints',async()=>{
- storage.set('haryana_police_cms_user',actor);quota=true;
+ storage.set('haryana_police_cms_user',actor);
+ const legacyKey='haryana_police_cms_complaints_v1';storage.set(legacyKey,'[]');quota=true;
  saved=await s.createComplaint(payload,'Test MHC','PS City Panipat','Panipat');
  assert.equal(saved.persistenceVersion,1);assert.ok(saved.complaintNumber.includes('-PNP-'));
  const actual=JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json')));assert.equal(actual.length,1);assert.equal(actual[0].id,saved.id);
- assert.ok(events.some(e=>e.type==='complaints_cache_warning'));quota=false;
+ assert.equal(storage.has(legacyKey),false);
+ assert.equal(storage.get('haryana_police_cms_user'),actor);
+ assert.equal(events.some(e=>e.type==='complaints_cache_warning'),false);quota=false;
 });
 test('MHC can attach the permanent intake docket before EO assignment',async()=>{
  const record=await s.addDocument(saved.id,{fileName:'Registered_Complaint_QA.pdf',fileCategory:'REGISTERED COMPLAINT DOCKET',uploadedBy:'Test MHC',fileSize:'1 KB',dataUrl:'data:application/pdf;base64,JVBERg==',isPermanentRegistrationDoc:true});

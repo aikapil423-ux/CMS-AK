@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
 import { ClipboardList, FileCheck2, ListFilter, Save, Search } from "lucide-react";
 import {
@@ -15,22 +17,24 @@ const compensationColumns = ["Payable By", "Payable To", "Amount (₹)"];
 const actColumns = ["Act", "Sections"];
 type Details = { fir: AppealCase; appeals: Appeal[] };
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, children, required }: { title: string; children: ReactNode; required?: boolean }) {
+  const { t } = useLanguage();
   return (
     <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
-      <h2 className="font-semibold text-slate-900">{title}</h2>
+      <h2 className="font-semibold text-slate-900">{t(title)}{required && <span className="ml-1 text-red-700">*</span>}</h2>
       {children}
     </section>
   );
 }
 
 function Fields({ schema, values, change }: { schema: AppealField[]; values: Values; change: (label: string, value: string) => void }) {
+  const { t } = useLanguage();
   const prefix = useId();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {schema.map(({ label, required, kind, options, custom }, i) => {
         const id = `${prefix}-${i}`;
-        const title = <>{label}{required && <span className="ml-1 text-red-700">*</span>}</>;
+        const title = <>{t(label)}{required && <span className="ml-1 text-red-700">*</span>}</>;
         const value = values[label] || "";
         const props = { id, value, className: inputStyle, "aria-required": required };
         if (kind === "radio") return (
@@ -38,7 +42,7 @@ function Fields({ schema, values, change }: { schema: AppealField[]; values: Val
             <legend>{title}</legend>
             <div className="flex flex-wrap gap-4">
               {options?.map(option => <label key={option} className="flex items-center gap-2">
-                <input type="radio" name={id} value={option} checked={value === option} onChange={() => change(label, option)} />{option}
+                <input type="radio" name={id} value={option} checked={value === option} onChange={() => change(label, option)} />{t(option)}
               </label>)}
             </div>
           </fieldset>
@@ -47,7 +51,7 @@ function Fields({ schema, values, change }: { schema: AppealField[]; values: Val
           <label key={label} htmlFor={id} className={`block space-y-1 text-sm font-medium text-slate-700 ${kind === "area" ? "sm:col-span-2" : ""}`}>
             <span>{title}</span>
             {options && !custom ? <select {...props} onChange={event => change(label, event.target.value)}>
-              <option value="">Select</option>{options.map(option => <option key={option}>{option}</option>)}
+              <option value="">{t("Select")}</option>{options.map(option => <option key={option} value={option}>{t(option)}</option>)}
             </select> : kind === "area" ? <textarea {...props} rows={3} maxLength={4000} onChange={event => change(label, event.target.value)} /> : <>
               <input {...props} type={kind || "text"} maxLength={kind ? undefined : 4000}
                 min={kind === "number" ? 0 : undefined} step={label.endsWith("(₹)") ? "0.01" : undefined}
@@ -123,7 +127,7 @@ function Attachments({ files, change, firId, appealId }: {
   }
 
   return (
-    <Section title="File Upload *">
+    <Section title="File Upload" required>
       <button type="button" className={buttonStyle} onClick={() => setVisible(!visible)} disabled={adding}>{visible ? "Close upload" : "Upload file"}</button>
       {visible && <fieldset disabled={adding} className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
         <p className="text-sm text-slate-600">200 KB per file. 1,024 KB total.</p>
@@ -222,6 +226,7 @@ function AppealEditor({ fir, initial, dirty, busy, saved }: {
   fir: AppealCase; initial?: Appeal; dirty: (dirty: boolean) => void;
   busy: (saving: boolean) => void; saved: (appeal: Appeal) => void;
 }) {
+  const { t } = useLanguage();
   const [record, setRecord] = useState(initial);
   const [values, setValues] = useState<Values>(() => initial?.values || {
     "Court Case No.": fir.caseNo, "Court Name": fir.court, "Court Type": fir.courtType, "Appellant Party": "State",
@@ -279,13 +284,14 @@ function AppealEditor({ fir, initial, dirty, busy, saved }: {
         <Attachments firId={fir.id} appealId={record?.id} files={attachments} change={files => { setAttachments(files); dirty(true); }} />
         <AccusedDetails fir={fir} outcomes={accused} change={rows => { setAccused(rows); dirty(true); }} />
         {error && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-        <button type="submit" className={primaryStyle}><Save size={16} />{saving ? "Saving…" : "Save IIF-VII"}</button>
+        <button type="submit" className={primaryStyle}><Save size={16} />{t(saving ? "Saving…" : "Save IIF-VII")}</button>
       </fieldset>
     </form>
   );
 }
 
 export function IifViiWorkspace() {
+  const { t } = useLanguage();
   const [panel, setPanel] = useState<"form" | "register">("form");
   const [firs, setFirs] = useState<AppealableFir[]>([]);
   const [register, setRegister] = useState<AppealRegisterRow[]>([]);
@@ -375,14 +381,14 @@ export function IifViiWorkspace() {
         <button type="button" aria-pressed={panel === "form"} disabled={opening || saving}
           className={panel === "form" ? primaryStyle : buttonStyle} onClick={() => switchPanel("form")}><FileCheck2 size={16} className="mr-1 inline" />IIF-VII</button>
         <button type="button" aria-pressed={panel === "register"} disabled={opening || saving}
-          className={panel === "register" ? primaryStyle : buttonStyle} onClick={() => switchPanel("register")}><ListFilter size={16} className="mr-1 inline" />Register</button>
+          className={panel === "register" ? primaryStyle : buttonStyle} onClick={() => switchPanel("register")}><ListFilter size={16} className="mr-1 inline" />{t("Register")}</button>
       </nav>
       <Section title={panel === "register" ? "Court Appeal Register" : "Find FIR"}>
         <div className="flex flex-wrap items-end gap-3">
           <label className="min-w-48 flex-1 space-y-1 text-sm font-medium">
-            <span className="flex items-center gap-2"><Search size={15} />{panel === "register" ? "Search register" : "Search FIR"}</span>
+            <span className="flex items-center gap-2"><Search size={15} />{t(panel === "register" ? "Search register" : "Search FIR")}</span>
             <input className={inputStyle} value={query} onChange={event => setQuery(event.target.value)}
-              placeholder={panel === "register" ? "FIR, appeal number, or court" : "FIR number, court case number, or police station"} />
+              placeholder={t(panel === "register" ? "FIR, appeal number, or court" : "FIR number, court case number, or police station")} />
           </label>
           <label className="space-y-1 text-sm font-medium">FIR Date From<input className={inputStyle} type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
           <label className="space-y-1 text-sm font-medium">FIR Date To<input className={inputStyle} type="date" min={from || undefined} value={to} onChange={event => setTo(event.target.value)} /></label>
@@ -401,7 +407,7 @@ export function IifViiWorkspace() {
             empty="No FIRs match the filters."
             rows={firs.filter(row => matches(row)).map((row, index) => [
               index + 1, row.number, row.caseNo, displayDate(row.date), row.caseType, row.station,
-              <button key="open" type="button" className={buttonStyle} disabled={opening || saving} onClick={() => void open(row.id)}>Open FIR</button>,
+              <button key="open" type="button" className={buttonStyle} disabled={opening || saving} onClick={() => void open(row.id)}>{t("Open FIR")}</button>,
             ])} />
         )}
       </Section>
@@ -412,9 +418,9 @@ export function IifViiWorkspace() {
       {notice && <p role="status" className="rounded-md bg-green-50 p-3 text-sm text-green-900">{notice}</p>}
       {panel === "form" && details && (
         <fieldset disabled={opening || saving} className="space-y-4">
-          <label className="block max-w-xl space-y-1 text-sm font-medium">Appeal for {details.fir.number}
+          <label className="block max-w-xl space-y-1 text-sm font-medium">{t(`${details.fir.number} की अपील`, `Appeal for ${details.fir.number}`)}
             <select className={inputStyle} value={appeal?.id || ""} onChange={event => selectSaved(details.appeals.find(row => row.id === event.target.value))}>
-              <option value="">New appeal</option>
+              <option value="">{t("New appeal")}</option>
               {details.appeals.map(row => <option key={row.id} value={row.id}>{row.values["Appeal No."]} · {displayDate(row.values["Appeal Date"])}</option>)}
             </select>
           </label>

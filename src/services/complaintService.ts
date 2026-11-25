@@ -54,70 +54,35 @@ import { complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
 
-// In-memory store initialized with localStorage if available, or fallback to MOCK_COMPLAINTS
-const COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
+const LEGACY_COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
 const NOTIFICATIONS_STORAGE_KEY = "haryana_police_cms_notifications_v1";
 
-// In-memory cache for large base64 data URLs so localStorage never hits quota
+// Evidence previews can look up large files by ID or filename.
 const globalDataUrlCache = new Map<string, string>();
 
-function sanitizeComplaintForStorage(item: ComplaintItem): ComplaintItem {
-  return {
-    ...item,
-    attachments: item.attachments?.map((att) => {
-      if (att.dataUrl && att.dataUrl.length > 30000) {
-        globalDataUrlCache.set(`att_${att.id}`, att.dataUrl);
-        globalDataUrlCache.set(`${item.id}_${att.name}`, att.dataUrl);
-        globalDataUrlCache.set(att.name, att.dataUrl);
-        if (typeof window !== "undefined") {
-          evidenceBlobStore.put(`att_${att.id}`, att.dataUrl, { fileName: att.name });
-          evidenceBlobStore.put(`${item.id}_${att.name}`, att.dataUrl, { fileName: att.name });
-          evidenceBlobStore.put(att.name, att.dataUrl, { fileName: att.name });
-        }
-        return { ...att, dataUrl: "" };
-      }
-      return att;
-    }),
-    documents: item.documents?.map((doc) => {
-      const url = doc.dataUrl || doc.fileUrl;
-      if (url && url.length > 30000) {
-        globalDataUrlCache.set(doc.id, url);
-        globalDataUrlCache.set(`${item.id}_${doc.fileName}`, url);
-        globalDataUrlCache.set(doc.fileName, url);
-        if (doc.originalName) {
-          globalDataUrlCache.set(doc.originalName, url);
-          globalDataUrlCache.set(`${item.id}_${doc.originalName}`, url);
-        }
-        if (typeof window !== "undefined") {
-          evidenceBlobStore.put(doc.id, url, { fileName: doc.fileName });
-          evidenceBlobStore.put(`${item.id}_${doc.fileName}`, url, { fileName: doc.fileName });
-          evidenceBlobStore.put(doc.fileName, url, { fileName: doc.fileName });
-          if (doc.originalName) {
-            evidenceBlobStore.put(doc.originalName, url, { fileName: doc.originalName });
-            evidenceBlobStore.put(`${item.id}_${doc.originalName}`, url, { fileName: doc.originalName });
-          }
-        }
-        return {
-          ...doc,
-          dataUrl: "",
-          fileUrl: "",
-          contentHtml: doc.contentHtml && doc.contentHtml.length > 30000 ? doc.contentHtml.slice(0, 30000) : doc.contentHtml,
-        };
-      }
-      return doc;
-    }),
-    reports: item.reports?.map((rep) => {
-      const url = rep.dataUrl || rep.fileUrl;
-      if (url && url.length > 30000) {
-        globalDataUrlCache.set(rep.id, url);
-        if (typeof window !== "undefined") {
-          evidenceBlobStore.put(rep.id, url, { fileName: rep.fileName || rep.title });
-        }
-        return { ...rep, dataUrl: "", fileUrl: "" };
-      }
-      return rep;
-    }),
-  };
+function cacheComplaintEvidence(items: ComplaintItem[]) {
+  function remember(url: string, fileName: string, keys: string[]) {
+    if (url.length <= 30000) return;
+    for (const key of keys) {
+      globalDataUrlCache.set(key, url);
+      void evidenceBlobStore.put(key, url, { fileName });
+    }
+  }
+
+  for (const item of items) {
+    for (const attachment of item.attachments ?? []) {
+      remember(attachment.dataUrl || "", attachment.name,
+        [`att_${attachment.id}`, `${item.id}_${attachment.name}`, attachment.name]);
+    }
+    for (const document of item.documents ?? []) {
+      const keys = [document.id, `${item.id}_${document.fileName}`, document.fileName];
+      if (document.originalName) keys.push(document.originalName, `${item.id}_${document.originalName}`);
+      remember(document.dataUrl || document.fileUrl || "", document.fileName, keys);
+    }
+    for (const report of item.reports ?? []) {
+      remember(report.dataUrl || report.fileUrl || "", report.fileName || report.title, [report.id]);
+    }
+  }
 }
 
 function restoreDataUrlsForComplaint(item: ComplaintItem): ComplaintItem {
@@ -159,11 +124,17 @@ function loadComplaintsFromStorage():ComplaintItem[]{
  if(typeof window==='undefined')return complaintsStore.length?complaintsStore:MOCK_COMPLAINTS.map(c=>stabilizeComplaint(c));
  return complaintsStore;
 }
-function cacheComplaints(items:ComplaintItem[]){
- if(typeof window==='undefined')return;
- try{window.localStorage.setItem(COMPLAINTS_STORAGE_KEY,JSON.stringify(items.map(sanitizeComplaintForStorage)));}
- catch{window.dispatchEvent(new CustomEvent('complaints_cache_warning',{detail:'Backend saved successfully. Browser cache is full; records will be reloaded from backend.'}));}
+let legacyCacheRemoved = false;
+function removeLegacyComplaintCache() {
+  if (legacyCacheRemoved) return;
+  try {
+    window.localStorage.removeItem(LEGACY_COMPLAINTS_STORAGE_KEY);
+    legacyCacheRemoved = true;
+  } catch {
+    // Complaint records are already loaded from the backend.
+  }
 }
+
 function saveComplaintsToStorage(items:ComplaintItem[]){
  complaintsStore=items.map(c=>stabilizeComplaint(c,serverSnapshot.get(c.id)));
  // The backend is authoritative. Never trim records to fit browser storage.
@@ -173,7 +144,9 @@ async function hydrateComplaints(){
  if(hydration)return hydration;
  hydration=(async()=>{const response=await fetch('/api/complaints',{cache:'no-store'});const body=await response.json();if(!response.ok)throw new Error(body.error||'Complaints could not be loaded. Sign in and retry.');
  complaintsStore=body.complaints.map((c:ComplaintItem)=>restoreDataUrlsForComplaint(stabilizeComplaint(c)));
- serverSnapshot=new Map(complaintsStore.map(c=>[c.id,structuredClone(c)]));hydrated=true;cacheComplaints(complaintsStore);
+ serverSnapshot=new Map(complaintsStore.map(c=>[c.id,structuredClone(c)]));hydrated=true;
+ removeLegacyComplaintCache();
+ cacheComplaintEvidence(complaintsStore);
  })();try{await hydration;}finally{hydration=undefined;}
 }
 function comparable(c:ComplaintItem){const value:Partial<ComplaintItem>={...c};delete value.daysPending;return JSON.stringify(value);}
@@ -184,7 +157,7 @@ async function persistComplaints(operation:string){
  const response=await fetch('/api/complaints',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({operation,changes})});
  const body=await response.json();if(!response.ok)throw new Error(body.error||'Complaint could not be saved. Please retry.');
  for(const saved of body.complaints as ComplaintItem[]){const index=complaintsStore.findIndex(c=>c.id===saved.id);if(index>=0)complaintsStore[index]=saved;serverSnapshot.set(saved.id,structuredClone(saved));}
- cacheComplaints(complaintsStore);
+ cacheComplaintEvidence(complaintsStore);
 }
 function loadNotificationsFromStorage(): OfficerNotification[] {
   if (typeof window !== "undefined" && window.localStorage) {

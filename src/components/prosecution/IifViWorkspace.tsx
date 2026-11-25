@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import { DataTable, inputStyle, buttonStyle, primaryStyle, displayDate, message, request } from "./CourtFormControls";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { ClipboardList, FileCheck2, ListFilter, Save, Scale, Search } from "lucide-react";
@@ -26,6 +28,7 @@ const panels = [
   { id: "register", label: "Register", icon: ListFilter },
 ] as const;
 function FieldList({ fields, values, fir, onChange }: { fields: Field[]; values: Values; fir: FirDetail; onChange: (label: string, value: string) => void }) {
+  const { t } = useLanguage();
   const prefix = useId();
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -39,9 +42,9 @@ function FieldList({ fields, values, fir, onChange }: { fields: Field[]; values:
         };
         return (
           <label key={label} htmlFor={id} className={`block space-y-1 text-sm font-medium text-slate-700 ${kind === "area" ? "sm:col-span-2" : ""}`}>
-            <span>{label}{requiredField(field, values) && <span className="ml-1 text-red-700">*</span>}</span>
+            <span>{t(label)}{requiredField(field, values) && <span className="ml-1 text-red-700">*</span>}</span>
             {options && !custom ? (
-              <select {...props}><option value="">Select</option>{options.map(option => <option key={option}>{option}</option>)}</select>
+              <select {...props}><option value="">{t("Select")}</option>{options.map(option => <option key={option} value={option}>{t(option)}</option>)}</select>
             ) : kind === "area" ? <textarea {...props} rows={3} maxLength={4000} /> : (
               <>
                 <input {...props} type={kind || "text"} min={kind === "number" ? 0 : undefined}
@@ -134,6 +137,7 @@ function Editor({ stage, details, onSave, setDirty, saving, setSaving }: {
   stage: IifViStage; details: Details; onSave: (record: IifViRecord, label: string) => void;
   setDirty: (dirty: boolean) => void; saving: boolean; setSaving: (saving: boolean) => void;
 }) {
+  const { t } = useLanguage();
   const { fir, record } = details;
   const saved = record?.[stage];
   const [entries, setEntries] = useState<Entry[]>(() => saved?.entries || [newEntry(stage, fir)]);
@@ -212,7 +216,7 @@ function Editor({ stage, details, onSave, setDirty, saving, setSaving }: {
                 onChange={rows => updateEntry({ ...entry, tables: { ...entry.tables, [group.table!]: rows } })} />
             ) : (
               <section key={group.title} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-                <h3 className="font-semibold">{group.title}</h3>
+                <h3 className="font-semibold">{t(group.title)}</h3>
                 <FieldList fields={group.fields} fir={fir} values={entry.values}
                   onChange={(label, value) => updateEntry({ ...entry, values: { ...entry.values, [label]: value } })} />
               </section>
@@ -224,7 +228,7 @@ function Editor({ stage, details, onSave, setDirty, saving, setSaving }: {
                   return (
                     <div key={label} className="space-y-2">
                       <label className="block space-y-1 text-sm font-medium">
-                        <span>{label}{label === "Court Disposal Form" && <span className="ml-1 text-red-700">*</span>}</span>
+                        <span>{t(label)}{label === "Court Disposal Form" && <span className="ml-1 text-red-700">*</span>}</span>
                         <input key={saved?.updatedAt || "new"} className={inputStyle} type="file" onChange={event => {
                           const file = event.target.files?.[0];
                           if (!file) return;
@@ -259,6 +263,7 @@ function Editor({ stage, details, onSave, setDirty, saving, setSaving }: {
 }
 
 export function IifViWorkspace() {
+  const { t } = useLanguage();
   const [panel, setPanel] = useState<Panel>("assign");
   const [firs, setFirs] = useState<FirSummary[]>([]);
   const [register, setRegister] = useState<RegisterRow[]>([]);
@@ -339,14 +344,14 @@ export function IifViWorkspace() {
         {panels.map(({ id, label, icon: Icon }) => (
           <button type="button" key={id} aria-pressed={panel === id} disabled={opening || saving}
             className={panel === id ? primaryStyle : `inline-flex items-center gap-2 ${buttonStyle}`} onClick={() => selectPanel(id)}>
-            <Icon size={16} />{label}
+            <Icon size={16} />{t(label)}
           </button>
         ))}
       </nav>
       <section aria-label={panel === "register" ? "Filter register" : "Find FIR"} className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-end gap-3">
           <label className="min-w-48 flex-1 space-y-1 text-sm font-medium">
-            <span className="flex items-center gap-2"><Search size={15} />{panel === "register" ? "Search register" : "Search FIR"}</span>
+            <span className="flex items-center gap-2"><Search size={15} />{t(panel === "register" ? "Search register" : "Search FIR")}</span>
             <input className={inputStyle} value={query} onChange={event => setQuery(event.target.value)} placeholder={panel === "register" ? "FIR number, court, or police station" : "FIR number or police station"} />
           </label>
           <label className="space-y-1 text-sm font-medium">FIR date from<input className={inputStyle} type="date" value={from} onChange={event => setFrom(event.target.value)} /></label>
@@ -363,10 +368,10 @@ export function IifViWorkspace() {
             ])} />
         ) : (
           <div className="flex flex-wrap items-end gap-3">
-            <label className="block min-w-48 flex-1 space-y-1 text-sm font-medium">Select FIR
+            <label className="block min-w-48 flex-1 space-y-1 text-sm font-medium">{t("Select FIR")}
               <select className={inputStyle} value={filtered.some(row => row.id === details?.fir.id) ? details?.fir.id : ""} disabled={opening || saving}
                 onChange={event => { if (event.target.value) void openFir(event.target.value); }}>
-                <option value="" disabled>{filtered.length ? "Select a FIR" : "No matching FIRs"}</option>
+                <option value="" disabled>{t(filtered.length ? "Select a FIR" : "No matching FIRs")}</option>
                 {filtered.map(row => <option key={row.id} value={row.id}>{row.number} · {row.station} · {row.district}</option>)}
               </select>
             </label>

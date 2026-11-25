@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
@@ -39,17 +41,18 @@ import {
 
 const DATA_TYPE_BADGES: Record<
   ColumnDataType,
-  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+  { label: string; labelHi: string; icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
-  text: { label: "Text", icon: Type, color: "bg-slate-100 text-slate-800 border-slate-200" },
-  number: { label: "Number", icon: Hash, color: "bg-blue-100 text-blue-800 border-blue-200" },
-  date: { label: "Date / Time", icon: Calendar, color: "bg-amber-100 text-amber-800 border-amber-200" },
-  badge: { label: "Status Badge", icon: BadgeAlert, color: "bg-purple-100 text-purple-800 border-purple-200" },
-  select: { label: "Dropdown Select", icon: ListFilter, color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-  boolean: { label: "Yes / No (Boolean)", icon: ToggleRight, color: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  text: { label: "Text", labelHi: "टेक्स्ट", icon: Type, color: "bg-slate-100 text-slate-800 border-slate-200" },
+  number: { label: "Number", labelHi: "संख्या", icon: Hash, color: "bg-blue-100 text-blue-800 border-blue-200" },
+  date: { label: "Date / Time", labelHi: "दिनांक और समय", icon: Calendar, color: "bg-amber-100 text-amber-800 border-amber-200" },
+  badge: { label: "Status Badge", labelHi: "स्थिति बैज", icon: BadgeAlert, color: "bg-purple-100 text-purple-800 border-purple-200" },
+  select: { label: "Dropdown Select", labelHi: "विकल्प सूची", icon: ListFilter, color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  boolean: { label: "Yes / No (Boolean)", labelHi: "हाँ या नहीं", icon: ToggleRight, color: "bg-cyan-100 text-cyan-800 border-cyan-200" },
 };
 
 export default function TableManagerTab() {
+  const { t, isHindi } = useLanguage();
   const {currentUser}=useAuth();
   const tableConfigs = useMemo(() => TableManagerService.getTableConfigs(), []);
   const [selectedTableId, setSelectedTableId] = useState<TableIdentifier>("fir");
@@ -78,6 +81,15 @@ export default function TableManagerTab() {
     () => tableConfigs.find((t) => t.id === selectedTableId) || tableConfigs[0],
     [tableConfigs, selectedTableId]
   );
+
+  const tableName = t(currentTable.nameHi, currentTable.name);
+  const columnName = (column: ManagedColumn) => {
+    if (!isHindi) return column.label;
+    if (column.labelHi && (!column.isDefault || /[\u0900-\u097F]/.test(column.labelHi))) {
+      return column.isDefault ? t(column.labelHi, column.label) : column.labelHi;
+    }
+    return column.isDefault ? t(column.label) : column.label;
+  };
 
   const loadColumns = () => {
     const list = TableManagerService.getAllColumns(selectedTableId);
@@ -145,7 +157,7 @@ export default function TableManagerTab() {
     setFormError(null);
 
     if (!formLabel.trim()) {
-      setFormError("कृपया कॉलम का नाम (Label) भरें।");
+      setFormError(t("कृपया कॉलम का नाम (Label) भरें।", "Enter a column label."));
       return;
     }
 
@@ -169,19 +181,19 @@ export default function TableManagerTab() {
     });
 
     if (!res.success) {
-      setFormError(res.error || "कॉलम जोड़ने में विफल।");
+      setFormError(res.error || t("कॉलम जोड़ने में विफल।", "Could not add the column."));
       return;
     }
 
     setAddModalOpen(false);
     loadColumns();
-    showToast(`नया कॉलम "${formLabel}" सफलतापूर्वक जोड़ा गया!`);
+    showToast(t(`नया कॉलम "${formLabel}" सफलतापूर्वक जोड़ा गया!`, `Column "${formLabel}" added.`));
   };
 
   // Open Edit Modal (Custom columns ONLY)
   const handleOpenEdit = (col: ManagedColumn) => {
     if (col.isDefault) {
-      alert("डिफ़ॉल्ट सिस्टम कॉलम को एडिट नहीं किया जा सकता।");
+      alert(t("डिफ़ॉल्ट सिस्टम कॉलम को एडिट नहीं किया जा सकता।", "Default columns cannot be edited."));
       return;
     }
     setActiveColumn(col);
@@ -205,7 +217,7 @@ export default function TableManagerTab() {
     setFormError(null);
 
     if (!formLabel.trim()) {
-      setFormError("कृपया कॉलम का नाम (Label) भरें।");
+      setFormError(t("कृपया कॉलम का नाम (Label) भरें।", "Enter a column label."));
       return;
     }
 
@@ -228,20 +240,20 @@ export default function TableManagerTab() {
     });
 
     if (!res.success) {
-      setFormError(res.error || "कॉलम अपडेट करने में विफल।");
+      setFormError(res.error || t("कॉलम अपडेट करने में विफल।", "Could not update the column."));
       return;
     }
 
     setEditModalOpen(false);
     setActiveColumn(null);
     loadColumns();
-    showToast(`कॉलम "${formLabel}" सफलतापूर्वक अपडेट हो गया!`);
+    showToast(t(`कॉलम "${formLabel}" सफलतापूर्वक अपडेट हो गया!`, `Column "${formLabel}" updated.`));
   };
 
   // Open Delete Modal (Custom columns ONLY)
   const handleOpenDelete = (col: ManagedColumn) => {
     if (col.isDefault) {
-      alert("डिफ़ॉल्ट सिस्टम कॉलम को डिलीट नहीं किया जा सकता।");
+      alert(t("डिफ़ॉल्ट सिस्टम कॉलम को डिलीट नहीं किया जा सकता।", "Default columns cannot be deleted."));
       return;
     }
     setActiveColumn(col);
@@ -254,13 +266,13 @@ export default function TableManagerTab() {
     if (!activeColumn) return;
     const res = TableManagerService.deleteCustomColumn(selectedTableId, activeColumn.id);
     if (!res.success) {
-      alert(res.error || "कॉलम हटाने में विफल।");
+      alert(res.error || t("कॉलम हटाने में विफल।", "Could not remove the column."));
       return;
     }
     setDeleteModalOpen(false);
     setActiveColumn(null);
     loadColumns();
-    showToast(`कॉलम "${activeColumn.label}" हटा दिया गया!`);
+    showToast(t(`कॉलम "${columnName(activeColumn)}" हटा दिया गया!`, `Column "${columnName(activeColumn)}" removed.`));
   };
 
   // Toggle Active State
@@ -269,7 +281,7 @@ export default function TableManagerTab() {
     if (col.isDefault) return;
     TableManagerService.toggleCustomColumnActive(selectedTableId, col.id);
     loadColumns();
-    showToast(`कॉलम "${col.label}" स्थिति बदल दी गई!`);
+    showToast(t(`कॉलम "${columnName(col)}" स्थिति बदल दी गई!`, `Status updated for "${columnName(col)}".`));
   };
 
   return (
@@ -288,16 +300,16 @@ export default function TableManagerTab() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                Database Schema & Column Customizer
+                {t("डेटाबेस और कॉलम विन्यास", "Database Schema & Column Customizer")}
               </span>
             </div>
             <h2 className="text-xl font-black tracking-tight text-white flex items-center gap-2.5">
               <Table className="w-5 h-5 text-indigo-400" />
-              <span>Table Manager (टेबल कॉलम व्यवस्थापक)</span>
+              <span>{t("टेबल कॉलम प्रबंधक", "Table Column Manager")}</span>
             </h2>
             <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              CMS के रजिस्टर्स (FIR, Complaints, General Diary) में आवश्यकतानुसार नए कॉलम्स जोड़ें।
-              सिस्टम के <strong>डिफ़ॉल्ट कॉलम्स सुरक्षित (Read-only)</strong> हैं, जबकि जोड़े गए <strong>कस्टम कॉलम्स को कभी भी एडिट या डिलीट</strong> किया जा सकता है।
+              {t("एफआईआर, शिकायत और रोजनामचा रजिस्टर में अपनी जरूरत के अनुसार कॉलम जोड़ें।", "Add custom columns to the FIR, Complaints, and General Diary registers.")}{" "}
+              {t("मूल कॉलम केवल पढ़ने के लिए हैं। अपने जोड़े गए कॉलम बदल या हटा सकते हैं।", "Default columns are read-only. You can edit or delete custom columns.")}
             </p>
           </div>
 
@@ -308,7 +320,7 @@ export default function TableManagerTab() {
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 cursor-pointer transition-all hover:scale-102"
             >
               <Plus className="w-4 h-4" />
-              <span>+ नया कॉलम जोड़ें (Add Column)</span>
+              <span>{t("+ नया कॉलम जोड़ें", "+ Add Column")}</span>
             </Button>
           </div>
         </div>
@@ -338,21 +350,20 @@ export default function TableManagerTab() {
                     <FileSpreadsheet
                       className={`w-4 h-4 ${isSelected ? "text-indigo-600" : "text-slate-400"}`}
                     />
-                    <h3 className="text-sm font-bold text-slate-900">{tbl.name}</h3>
+                    <h3 className="text-sm font-bold text-slate-900">{t(tbl.nameHi, tbl.name)}</h3>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{tbl.nameHi}</p>
                 </div>
                 <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
-                  {allCols.length} Cols
+                  {t(`${allCols.length} कॉलम`, `${allCols.length} columns`)}
                 </span>
               </div>
 
               <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
                 <span className="text-slate-500">
-                  {tbl.defaultColumns.length} Default
+                  {t(`${tbl.defaultColumns.length} मूल`, `${tbl.defaultColumns.length} default`)}
                   {customCount > 0 && (
                     <span className="text-indigo-600 font-bold ml-1">
-                      + {customCount} Custom
+                      {t(`+ ${customCount} कस्टम`, `+ ${customCount} custom`)}
                     </span>
                   )}
                 </span>
@@ -377,19 +388,19 @@ export default function TableManagerTab() {
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-slate-900">
-                {currentTable.name} — Columns Roster
+                {t(`${tableName} के कॉलम`, `${tableName} — Columns`)}
               </h3>
               <Link
                 href={currentTable.routePath}
                 target="_blank"
                 className="text-[11px] text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-semibold ml-1"
-                title="टेबल को नए टैब में खोलें"
+                title={t("टेबल को नए टैब में खोलें", "Open table in a new tab")}
               >
                 <span>Live View</span>
                 <ExternalLink className="w-3 h-3" />
               </Link>
             </div>
-            <p className="text-xs text-slate-500">{currentTable.description}</p>
+            <p className="text-xs text-slate-500">{t(currentTable.description)}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -398,7 +409,7 @@ export default function TableManagerTab() {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="कॉलम नाम या कोड खोजें..."
+                placeholder={t("कॉलम नाम या कोड खोजें...", "Search by column name or key…")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-xs pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
@@ -429,15 +440,15 @@ export default function TableManagerTab() {
         {/* Stats Pill Bar */}
         <div className="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200 flex flex-wrap items-center gap-4 text-xs">
           <span className="text-slate-600 font-medium">
-            Total Columns: <strong className="text-slate-900">{stats.total}</strong>
+            {t("कुल कॉलम:", "Total Columns:")} <strong className="text-slate-900">{stats.total}</strong>
           </span>
           <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
             <Lock className="w-3 h-3 text-slate-500" />
-            System Default (Protected): <strong className="text-slate-900">{stats.system}</strong>
+            {t("मूल कॉलम (सुरक्षित):", "System Default (Protected):")} <strong className="text-slate-900">{stats.system}</strong>
           </span>
           <span className="inline-flex items-center gap-1 text-indigo-700 font-medium">
             <Sparkles className="w-3 h-3 text-indigo-600" />
-            User Custom (Editable): <strong className="text-indigo-900">{stats.custom}</strong>
+            {t("कस्टम कॉलम (संपादन योग्य):", "User Custom (Editable):")} <strong className="text-indigo-900">{stats.custom}</strong>
           </span>
         </div>
 
@@ -459,9 +470,9 @@ export default function TableManagerTab() {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     <Table className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                    <p className="font-semibold text-slate-600">कोई कॉलम नहीं मिला</p>
+                    <p className="font-semibold text-slate-600">{t("कोई कॉलम नहीं मिला", "No columns found")}</p>
                     <p className="text-xs text-slate-400 mt-1">
-                      खोज का शब्द बदलें या "+ नया कॉलम जोड़ें" पर क्लिक करें।
+                      {t("खोज बदलें या नया कॉलम जोड़ें।", "Try another search or add a column.")}
                     </p>
                   </td>
                 </tr>
@@ -485,16 +496,11 @@ export default function TableManagerTab() {
                       {/* Label & Key */}
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-900 text-xs">{col.label}</span>
-                            {col.labelHi && (
-                              <span className="text-[11px] text-slate-500 font-normal">
-                                ({col.labelHi})
-                              </span>
-                            )}
-                          </div>
+                          <span data-no-translate="true" className="font-bold text-slate-900 text-xs">
+                            {columnName(col)}
+                          </span>
                           <p className="font-mono text-[10px] text-slate-400">
-                            Key: <code>{col.key}</code>
+                            {t("कुंजी:", "Key:")} <code>{col.key}</code>
                           </p>
                         </div>
                       </td>
@@ -505,11 +511,11 @@ export default function TableManagerTab() {
                           className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${typeMeta.color}`}
                         >
                           <TypeIcon className="w-3 h-3 shrink-0" />
-                          <span>{typeMeta.label}</span>
+                          <span>{t(typeMeta.labelHi, typeMeta.label)}</span>
                         </span>
                         {col.dataType === "select" && col.options && col.options.length > 0 && (
                           <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[140px]" title={col.options.join(", ")}>
-                            Options: {col.options.join(", ")}
+                            {t("विकल्प:", "Options:")} <span data-no-translate="true">{col.options.join(", ")}</span>
                           </p>
                         )}
                       </td>
@@ -532,13 +538,13 @@ export default function TableManagerTab() {
                       {/* Description */}
                       <td className="py-3.5 px-4 text-slate-600 text-xs">
                         <p className="line-clamp-2 leading-relaxed">
-                          {col.description || (
-                            <span className="text-slate-400 italic">कोई विवरण नहीं</span>
+                          {(col.isDefault && col.description ? t(col.description) : col.description) || (
+                            <span className="text-slate-400 italic">{t("कोई विवरण नहीं", "No description")}</span>
                           )}
                         </p>
                         {col.defaultValue && (
                           <span className="text-[10px] text-slate-500 font-mono block mt-0.5">
-                            Default: &quot;{col.defaultValue}&quot;
+                            {t("मूल मान:", "Default:")} <span data-no-translate="true">&quot;{col.defaultValue}&quot;</span>
                           </span>
                         )}
                       </td>
@@ -546,9 +552,9 @@ export default function TableManagerTab() {
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right">
                         {col.isDefault ? (
-                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200 cursor-not-allowed" title="डिफ़ॉल्ट सिस्टम कॉलम को सुरक्षित रखा गया है — इसे एडिट या डिलीट नहीं किया जा सकता">
+                          <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 bg-slate-100/90 px-2.5 py-1 rounded-lg border border-slate-200 cursor-not-allowed" title={t("डिफ़ॉल्ट सिस्टम कॉलम को सुरक्षित रखा गया है — इसे एडिट या डिलीट नहीं किया जा सकता", "Default columns are protected from edits and deletion")}>
                             <Lock className="w-3 h-3 text-slate-400" />
-                            <span>Protected (सुरक्षित)</span>
+                            <span>{t("सुरक्षित", "Protected")}</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
@@ -556,7 +562,7 @@ export default function TableManagerTab() {
                             <button
                               type="button"
                               onClick={() => handleToggleActive(col)}
-                              title={col.isActive ? "कॉलम निष्क्रिय करें" : "कॉलम सक्रिय करें"}
+                              title={col.isActive ? t("कॉलम निष्क्रिय करें", "Disable column") : t("कॉलम सक्रिय करें", "Enable column")}
                               className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                                 col.isActive
                                   ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
@@ -576,7 +582,7 @@ export default function TableManagerTab() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenEdit(col)}
-                              title="कॉलम एडिट करें"
+                              title={t("कॉलम एडिट करें", "Edit column")}
                               className="h-7 px-2 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-900 font-semibold gap-1 cursor-pointer"
                             >
                               <Pencil className="w-3 h-3" />
@@ -589,7 +595,7 @@ export default function TableManagerTab() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenDelete(col)}
-                              title="कॉलम डिलीट करें"
+                              title={t("कॉलम डिलीट करें", "Delete column")}
                               className="h-7 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold gap-1 cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -611,7 +617,7 @@ export default function TableManagerTab() {
           <div className="flex items-center gap-2">
             <Info className="w-4 h-4 text-indigo-500 shrink-0" />
             <span>
-              जोड़े गए कस्टम कॉलम्स सीधे <strong>{currentTable.name}</strong> में विजिबल होते हैं और ड्रैग-एंड-ड्रॉप के साथ आसानी से रीऑर्डर किए जा सकते हैं।
+              {t(`नए कॉलम ${tableName} में दिखेंगे। क्रम बदलने के लिए उन्हें खींचें।`, `Custom columns appear in ${tableName}. Drag them to change their order.`)}
             </span>
           </div>
           <span className="font-mono text-[10px] text-slate-400">
@@ -630,7 +636,7 @@ export default function TableManagerTab() {
               <div className="flex items-center gap-2">
                 <Plus className="w-4 h-4 text-indigo-400" />
                 <h3 className="text-sm font-bold">
-                  {currentTable.name} में नया कॉलम जोड़ें
+                  {t(`${tableName} में नया कॉलम जोड़ें`, `Add column to ${tableName}`)}
                 </h3>
               </div>
               <button
@@ -653,11 +659,11 @@ export default function TableManagerTab() {
               {/* Column Label */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  कॉलम का नाम (Column Label) <span className="text-red-500">*</span>
+                  {t("कॉलम का नाम", "Column label")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="उदा. Court Hearing Date, Case Diary Priority"
+                  placeholder={t("उदा. Court Hearing Date, Case Diary Priority", "e.g. Court Hearing Date, Case Diary Priority")}
                   value={formLabel}
                   onChange={(e) => {
                     setFormLabel(e.target.value);
@@ -680,11 +686,11 @@ export default function TableManagerTab() {
               {/* Hindi Label */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  हिंदी शीर्षक (Hindi Label - Optional)
+                  {t("हिंदी शीर्षक (वैकल्पिक)", "Hindi label (optional)")}
                 </label>
                 <input
                   type="text"
-                  placeholder="उदा. पेशी तारीख, केस डायरी स्थिति"
+                  placeholder={t("उदा. पेशी तारीख, केस डायरी स्थिति", "e.g. Hearing Date, Case Diary Status")}
                   value={formLabelHi}
                   onChange={(e) => setFormLabelHi(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
@@ -694,7 +700,7 @@ export default function TableManagerTab() {
               {/* System Key */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  कॉलम पहचान कोड (Field Key)
+                  {t("कॉलम पहचान कोड", "Field key")}
                 </label>
                 <input
                   type="text"
@@ -705,29 +711,29 @@ export default function TableManagerTab() {
                     )
                   }
                   className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-slate-50"
-                  placeholder="उदा. col_court_hearing_date"
+                  placeholder={t("उदा. col_court_hearing_date", "e.g. col_court_hearing_date")}
                 />
                 <span className="text-[10px] text-slate-400">
-                  डेटाबेस और एक्सपोर्ट हेतु मशीन कुंजी (Auto-generated)
+                  {t("डेटाबेस और निर्यात के लिए अपने आप बनी कुंजी", "Automatically generated key for database and exports")}
                 </span>
               </div>
 
               {/* Data Type */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  डेटा का प्रकार (Data Type) <span className="text-red-500">*</span>
+                  {t("डेटा का प्रकार", "Data type")} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formDataType}
                   onChange={(e) => setFormDataType(e.target.value as ColumnDataType)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white"
                 >
-                  <option value="text">Text (साधारण टेक्स्ट / टिप्पणी)</option>
-                  <option value="number">Number (संख्या / अंक)</option>
-                  <option value="date">Date / Time (दिनांक एवं समय)</option>
-                  <option value="badge">Status Badge (रंगीन स्थिति बैज)</option>
-                  <option value="select">Dropdown Select (विकल्प सूची)</option>
-                  <option value="boolean">Yes / No Boolean (हाँ / नहीं)</option>
+                  <option value="text">{t("टेक्स्ट", "Text")}</option>
+                  <option value="number">{t("संख्या", "Number")}</option>
+                  <option value="date">{t("दिनांक और समय", "Date / Time")}</option>
+                  <option value="badge">{t("स्थिति बैज", "Status badge")}</option>
+                  <option value="select">{t("विकल्प सूची", "Dropdown")}</option>
+                  <option value="boolean">{t("हाँ / नहीं", "Yes / No")}</option>
                 </select>
               </div>
 
@@ -735,7 +741,7 @@ export default function TableManagerTab() {
               {formDataType === "select" && (
                 <div className="space-y-1 animate-in fade-in-50">
                   <label className="text-xs font-bold text-slate-700">
-                    ड्रॉपडाउन विकल्प (Comma separated options)
+                    {t("विकल्प सूची", "Dropdown options")}
                   </label>
                   <input
                     type="text"
@@ -745,7 +751,7 @@ export default function TableManagerTab() {
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
                   />
                   <span className="text-[10px] text-slate-400">
-                    विकल्पों को कॉमा (,) से अलग करके लिखें।
+                    {t("विकल्पों को अल्पविराम से अलग करें।", "Separate options with commas.")}
                   </span>
                 </div>
               )}
@@ -753,11 +759,11 @@ export default function TableManagerTab() {
               {/* Description */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  कॉलम का विवरण एवं उपयोग (Description / Notes)
+                  {t("कॉलम का विवरण और उपयोग", "Description / Notes")}
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="इस कॉलम के उद्देश्य का संक्षिप्त विवरण लिखें..."
+                  placeholder={t("इस कॉलम के उद्देश्य का संक्षिप्त विवरण लिखें...", "Describe the purpose of this column…")}
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
@@ -767,11 +773,11 @@ export default function TableManagerTab() {
               {/* Default Value */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  डिफ़ॉल्ट मान (Default Value - Optional)
+                  {t("मूल मान (वैकल्पिक)", "Default value (optional)")}
                 </label>
                 <input
                   type="text"
-                  placeholder="उदा. N/A या None"
+                  placeholder={t("उदा. N/A या None", "e.g. N/A or None")}
                   value={formDefaultValue}
                   onChange={(e) => setFormDefaultValue(e.target.value)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
@@ -782,7 +788,7 @@ export default function TableManagerTab() {
               <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-start gap-2 text-[11px] text-indigo-900">
                 <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <span>
-                  यह कॉलम तुरंत <strong>{currentTable.name}</strong> में जुड़ जाएगा। आप इसे कभी भी इसी टेबल मैनेजर से एडिट या डिलीट कर सकते हैं।
+                  {t(`कॉलम तुरंत ${tableName} में जुड़ जाएगा। इसे यहाँ से बदल या हटा सकते हैं।`, `The column is added to ${tableName} immediately. You can edit or delete it here.`)}
                 </span>
               </div>
 
@@ -793,14 +799,14 @@ export default function TableManagerTab() {
                   size="sm"
                   onClick={() => setAddModalOpen(false)}
                 >
-                  रद्द करें (Cancel)
+                  {t("रद्द करें", "Cancel")}
                 </Button>
                 <Button
                   type="submit"
                   size="sm"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                 >
-                  कॉलम सेव करें (Save Column)
+                  {t("कॉलम सहेजें", "Save column")}
                 </Button>
               </div>
             </form>
@@ -818,7 +824,7 @@ export default function TableManagerTab() {
               <div className="flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold">
-                  कॉलम एडिट करें: {activeColumn.label}
+                  {t(`कॉलम बदलें: ${columnName(activeColumn)}`, `Edit column: ${columnName(activeColumn)}`)}
                 </h3>
               </div>
               <button
@@ -841,7 +847,7 @@ export default function TableManagerTab() {
               {/* Column Label */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  कॉलम का नाम (Column Label) <span className="text-red-500">*</span>
+                  {t("कॉलम का नाम", "Column label")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -855,7 +861,7 @@ export default function TableManagerTab() {
               {/* Hindi Label */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  हिंदी शीर्षक (Hindi Label)
+                  {t("हिंदी शीर्षक", "Hindi label")}
                 </label>
                 <input
                   type="text"
@@ -881,26 +887,26 @@ export default function TableManagerTab() {
               {/* Data Type */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700">
-                  डेटा प्रकार (Data Type)
+                  {t("डेटा का प्रकार", "Data type")}
                 </label>
                 <select
                   value={formDataType}
                   onChange={(e) => setFormDataType(e.target.value as ColumnDataType)}
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white"
                 >
-                  <option value="text">Text (साधारण टेक्स्ट)</option>
-                  <option value="number">Number (संख्या)</option>
-                  <option value="date">Date / Time (दिनांक एवं समय)</option>
-                  <option value="badge">Status Badge (स्थिति बैज)</option>
-                  <option value="select">Dropdown Select (विकल्प सूची)</option>
-                  <option value="boolean">Yes / No Boolean (हाँ / नहीं)</option>
+                  <option value="text">{t("टेक्स्ट", "Text")}</option>
+                  <option value="number">{t("संख्या", "Number")}</option>
+                  <option value="date">{t("दिनांक और समय", "Date / Time")}</option>
+                  <option value="badge">{t("स्थिति बैज", "Status badge")}</option>
+                  <option value="select">{t("विकल्प सूची", "Dropdown")}</option>
+                  <option value="boolean">{t("हाँ / नहीं", "Yes / No")}</option>
                 </select>
               </div>
 
               {formDataType === "select" && (
                 <div className="space-y-1 animate-in fade-in-50">
                   <label className="text-xs font-bold text-slate-700">
-                    ड्रॉपडाउन विकल्प (Comma separated options)
+                    {t("विकल्प सूची", "Dropdown options")}
                   </label>
                   <input
                     type="text"
@@ -913,7 +919,7 @@ export default function TableManagerTab() {
 
               {/* Description */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">विवरण (Description)</label>
+                <label className="text-xs font-bold text-slate-700">{t("विवरण", "Description")}</label>
                 <textarea
                   rows={2}
                   value={formDescription}
@@ -924,7 +930,7 @@ export default function TableManagerTab() {
 
               {/* Default Value */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700">डिफ़ॉल्ट मान (Default Value)</label>
+                <label className="text-xs font-bold text-slate-700">{t("मूल मान", "Default value")}</label>
                 <input
                   type="text"
                   value={formDefaultValue}
@@ -940,14 +946,14 @@ export default function TableManagerTab() {
                   size="sm"
                   onClick={() => setEditModalOpen(false)}
                 >
-                  रद्द करें
+                  {t("रद्द करें", "Cancel")}
                 </Button>
                 <Button
                   type="submit"
                   size="sm"
                   className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                 >
-                  अपडेट सहेजें (Update Column)
+                  {t("बदलाव सहेजें", "Update column")}
                 </Button>
               </div>
             </form>
@@ -966,14 +972,13 @@ export default function TableManagerTab() {
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">कॉलम हटाएं? (Delete Column)</h3>
-                <p className="text-xs text-slate-500">{currentTable.name} से कॉलम हटाया जाएगा</p>
+                <h3 className="font-bold text-slate-900 text-sm">{t("कॉलम हटाएँ?", "Delete column?")}</h3>
+                <p className="text-xs text-slate-500">{t(`${tableName} से कॉलम हटाया जाएगा`, `This removes the column from ${tableName}.`)}</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-700 leading-relaxed">
-              क्या आप वाकई कस्टम कॉलम <strong>&ldquo;{activeColumn.label}&rdquo;</strong> (
-              <code>{activeColumn.key}</code>) को हटाना चाहते हैं?
+              {t(`क्या आप “${columnName(activeColumn)}” (${activeColumn.key}) कॉलम हटाना चाहते हैं?`, `Delete the custom column “${columnName(activeColumn)}” (${activeColumn.key})?`)}
             </p>
 
             <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
@@ -983,7 +988,7 @@ export default function TableManagerTab() {
                 size="sm"
                 onClick={() => setDeleteModalOpen(false)}
               >
-                रद्द करें
+                {t("रद्द करें", "Cancel")}
               </Button>
               <Button
                 type="button"
@@ -991,7 +996,7 @@ export default function TableManagerTab() {
                 onClick={handleConfirmDelete}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold"
               >
-                हाँ, हटाएं (Yes, Delete)
+                {t("हाँ, हटाएँ", "Yes, delete")}
               </Button>
             </div>
           </div>

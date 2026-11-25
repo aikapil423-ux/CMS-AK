@@ -1,4 +1,6 @@
 "use client";
+
+import { useLanguage } from "@/context/LanguageContext";
 import { useUnsavedDocument } from "@/hooks/useUnsavedDocument";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
@@ -484,6 +486,7 @@ export function resolveFIRPlaceholders(content: string, fir?: FIRItem | null, cu
 }
 
 function FIRTemplateBuilderContent() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUser } = useAuth();
@@ -1799,7 +1802,7 @@ function FIRTemplateBuilderContent() {
                 type="text"
                 value={templateSearch}
                 onChange={(e) => setTemplateSearch(e.target.value)}
-                placeholder="टेम्पलेट नाम, धारा या विवरण से खोजें..."
+                placeholder={t("टेम्पलेट नाम, धारा या विवरण से खोजें...", "Search by template name, section, or description")}
                 className="w-full text-xs font-medium border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

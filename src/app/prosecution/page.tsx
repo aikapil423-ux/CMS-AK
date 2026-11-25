@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
@@ -23,6 +25,7 @@ import { StatusReportView } from "@/components/prosecution/StatusReportView";
 import { OtherCourtDocsView } from "@/components/prosecution/OtherCourtDocsView";
 
 function ProsecutionContent() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -84,7 +87,7 @@ function ProsecutionContent() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                Prosecution & Court Liaison
+                {t("अभियोजन और न्यायालय समन्वय", "Prosecution & Court Liaison")}
               </h1>
 
             </div>
@@ -111,7 +114,7 @@ function ProsecutionContent() {
               }`}
             >
               <ClipboardCheck className="w-3.5 h-3.5" />
-              <span>Scrutiny Perform</span>
+              <span>{t("चालान की जाँच", "Scrutiny Perform")}</span>
             </button>
             <button
               key="subtab-btn-common-malpractices"
@@ -124,7 +127,7 @@ function ProsecutionContent() {
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>Common Malpractices</span>
+              <span>{t("सामान्य अनियमितताएँ", "Common Malpractices")}</span>
             </button>
           </div>
         ) : (
@@ -140,7 +143,7 @@ function ProsecutionContent() {
               }`}
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Bail Reply</span>
+              <span>{t("जमानत का जवाब", "Bail Reply")}</span>
             </button>
             <button
               key="subtab-btn-status-report"
@@ -153,7 +156,7 @@ function ProsecutionContent() {
               }`}
             >
               <FileCheck2 className="w-3.5 h-3.5" />
-              <span>Status Report</span>
+              <span>{t("स्थिति रिपोर्ट", "Status Report")}</span>
             </button>
             <button
               key="subtab-btn-court-other"
@@ -166,7 +169,7 @@ function ProsecutionContent() {
               }`}
             >
               <FolderMinus className="w-3.5 h-3.5" />
-              <span>Other</span>
+              <span>{t("अन्य", "Other")}</span>
             </button>
           </div>
         )}

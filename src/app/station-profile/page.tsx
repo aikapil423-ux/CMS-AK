@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
@@ -68,14 +70,15 @@ const SHIFT_OPTIONS = [
   "General Duty (09:00 - 18:00)",
 ];
 
-const STATUS_OPTIONS: { value: StationStaffMember["status"]; label: string; color: string }[] = [
-  { value: "ON_DUTY", label: "On Duty (हाजिर ड्यूटी)", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  { value: "ACTIVE", label: "Active (तैनात)", color: "bg-blue-100 text-blue-800 border-blue-300" },
-  { value: "ON_LEAVE", label: "On Leave (अवकाश पर)", color: "bg-amber-100 text-amber-800 border-amber-300" },
-  { value: "TRAINING", label: "Training (प्रशिक्षण)", color: "bg-purple-100 text-purple-800 border-purple-300" },
+const STATUS_OPTIONS: { value: StationStaffMember["status"]; label: string; labelHi: string; color: string }[] = [
+  { value: "ON_DUTY", label: "On Duty", labelHi: "ड्यूटी पर", color: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  { value: "ACTIVE", label: "Active", labelHi: "तैनात", color: "bg-blue-100 text-blue-800 border-blue-300" },
+  { value: "ON_LEAVE", label: "On Leave", labelHi: "अवकाश पर", color: "bg-amber-100 text-amber-800 border-amber-300" },
+  { value: "TRAINING", label: "Training", labelHi: "प्रशिक्षण में", color: "bg-purple-100 text-purple-800 border-purple-300" },
 ];
 
 export default function StationProfilePage() {
+  const { t } = useLanguage();
   const { currentUser } = useAuth();
 
   // Active top-level tab
@@ -358,7 +361,7 @@ export default function StationProfilePage() {
               <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-[#0b192c]">
                   <Building2 className="w-4 h-4 text-[#0b192c]" />
-                  Police Station Particulars (थाना विवरण)
+                  {t("थाना विवरण", "Police Station Particulars")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs sm:text-sm pt-4">
@@ -393,7 +396,7 @@ export default function StationProfilePage() {
               <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-3">
                 <CardTitle className="text-sm sm:text-base flex items-center gap-2 text-[#0b192c]">
                   <Radio className="w-4 h-4 text-emerald-600" />
-                  Operational Strength & Status (कार्यबल स्थिति)
+                  {t("कार्यबल की स्थिति", "Operational Strength & Status")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs sm:text-sm pt-4">
@@ -501,7 +504,7 @@ export default function StationProfilePage() {
             <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2.5">
               <div className="text-xs font-bold uppercase tracking-wide text-slate-600 flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-[#b8001f]" />
-                Staff Categories / वर्ग चयन
+                {t("कर्मचारी श्रेणियाँ", "Staff Categories")}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -540,7 +543,7 @@ export default function StationProfilePage() {
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    <span>{tab.label}</span>
+                    <span>{t(tab.labelHi, tab.label)}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                         isSelected ? "bg-amber-400 text-slate-900" : "bg-slate-200 text-slate-700"
@@ -582,10 +585,10 @@ export default function StationProfilePage() {
                   className="px-2.5 py-2 text-xs border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#0b192c]"
                 >
                   <option value="ALL">All Statuses</option>
-                  <option value="ON_DUTY">On Duty (हाजिर)</option>
-                  <option value="ACTIVE">Active (तैनात)</option>
-                  <option value="ON_LEAVE">On Leave (अवकाश)</option>
-                  <option value="TRAINING">Training (प्रशिक्षण)</option>
+                  <option value="ON_DUTY">{t("ड्यूटी पर", "On Duty")}</option>
+                  <option value="ACTIVE">{t("तैनात", "Active")}</option>
+                  <option value="ON_LEAVE">{t("अवकाश पर", "On Leave")}</option>
+                  <option value="TRAINING">{t("प्रशिक्षण में", "Training")}</option>
                 </select>
               </div>
             </div>
@@ -700,7 +703,7 @@ export default function StationProfilePage() {
                       <span
                         className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${statusObj.color}`}
                       >
-                        {statusObj.label}
+                        {t(statusObj.labelHi, statusObj.label)}
                       </span>
 
                       <div className="flex items-center gap-1">
@@ -931,7 +934,7 @@ export default function StationProfilePage() {
                   >
                     {STATUS_OPTIONS.map((st) => (
                       <option key={st.value} value={st.value}>
-                        {st.label}
+                        {t(st.labelHi, st.label)}
                       </option>
                     ))}
                   </select>

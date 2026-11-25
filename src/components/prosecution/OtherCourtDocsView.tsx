@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect } from "react";
 import { CourtMiscApplicationRecord } from "@/types/prosecution";
 import { ProsecutionService } from "@/services/prosecutionService";
@@ -62,6 +64,7 @@ const COURT_OPTIONS = [
 ];
 
 export function OtherCourtDocsView() {
+  const { t } = useLanguage();
   const [apps, setApps] = useState<CourtMiscApplicationRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
@@ -153,7 +156,7 @@ export function OtherCourtDocsView() {
         <div>
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
-            Court Applications & Warrants (अन्य अदालती प्रार्थना पत्र)
+            {t("अदालती आवेदन और वारंट", "Court Applications & Warrants")}
           </h2>
 
         </div>

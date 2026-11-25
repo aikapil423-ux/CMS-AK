@@ -38,7 +38,7 @@ export default function EnquiryWorkspacePage() {
         <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs shrink-0 self-start sm:self-auto">
           <span className="text-[11px] font-bold text-slate-600 px-2 flex items-center gap-1.5">
             <Languages className="w-3.5 h-3.5 text-blue-700" />
-            <span>{isHindi ? "भाषा / Lang:" : "Lang / भाषा:"}</span>
+            <span>{isHindi ? "भाषा:" : "Language:"}</span>
           </span>
           <button
             type="button"
@@ -136,7 +136,7 @@ export default function EnquiryWorkspacePage() {
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                     {isHindi
                       ? "हरियाणा पुलिस उपस्थिति सूचना-पत्र (धारा 173(3) BNSS के अंतर्गत गवाह/पक्ष को सम्मन)।"
-                      : "Haryana Police Appearance Notice (सूचना-पत्र u/s 173(3) BNSS)."}
+                      : "Haryana Police Appearance Notice under section 173(3) BNSS."}
                   </p>
                 </div>
               </div>

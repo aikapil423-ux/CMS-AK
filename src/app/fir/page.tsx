@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -78,6 +80,7 @@ const FIR_STATUS_OPTIONS = [
 const ALL_FIR_STATUS_KEYS = FIR_STATUS_OPTIONS.map((o) => o.key);
 
 function FIRRegisterPageContent() {
+  const { t } = useLanguage();
   const router = useRouter();
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
@@ -566,7 +569,7 @@ function FIRRegisterPageContent() {
           <div className="flex items-center gap-1 min-w-0">
             <span
               className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-0.5 rounded shrink-0 transition-colors"
-              title="कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)"
+              title={t("कॉलम पकड़कर इधर-उधर खींचें (Grab & drag to reorder position)", "Drag the column header to reorder it")}
             >
               <GripVertical className="w-3 h-3" />
             </span>
@@ -578,7 +581,7 @@ function FIRRegisterPageContent() {
                 e.stopPropagation();
                 setActiveSearchCol(isSearching ? null : field);
               }}
-              title="कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)"
+              title={t("कॉलम में खोजने हेतु क्लिक करें (Click to Search Column)", "Search this column")}
               className="flex items-center gap-1 font-bold text-slate-700 hover:text-blue-700 transition-colors text-left uppercase text-[11px] tracking-wider group cursor-pointer truncate"
             >
               <span className="truncate">{label}</span>
@@ -597,7 +600,7 @@ function FIRRegisterPageContent() {
               e.stopPropagation();
               handleSort(field);
             }}
-            title={`सॉर्ट करें (Sort by ${label})`}
+            title={t(`${t(label)} के अनुसार क्रम लगाएँ`, `Sort by ${label}`)}
             className={`p-1 rounded hover:bg-slate-200/70 transition-colors cursor-pointer shrink-0 ${
               isSorted ? "text-blue-700 bg-blue-50" : "text-slate-400 hover:text-slate-700"
             }`}
@@ -633,7 +636,7 @@ function FIRRegisterPageContent() {
                     setActiveSearchCol(null);
                   }
                 }}
-                placeholder={`${label} खोजें...`}
+                placeholder={t(`${t(label)} खोजें…`, `Search ${label}…`)}
                 className="w-full text-[11px] px-2 py-1 bg-white border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600 font-normal pr-5 text-slate-800 shadow-2xs normal-case"
               />
               {filterValue && (
@@ -1024,7 +1027,7 @@ function FIRRegisterPageContent() {
                     setDateFrom("");
                     setDateTo("");
                   }}
-                  title="Clear Date Filter (दिनांक फ़िल्टर हटाएं)"
+                  title={t("Clear Date Filter (दिनांक फ़िल्टर हटाएं)", "Clear date filter")}
                   className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1133,7 +1136,7 @@ function FIRRegisterPageContent() {
                       <button
                         onClick={resetColumnOrder}
                         className="text-[11px] text-slate-600 hover:text-slate-900 hover:underline font-medium cursor-pointer"
-                        title="कॉलम क्रम रीसेट करें"
+                        title={t("कॉलम क्रम रीसेट करें", "Reset column order")}
                       >
                         Reset Order
                       </button>
@@ -1205,13 +1208,13 @@ function FIRRegisterPageContent() {
                   </div>
                   <div className="pt-2 border-t border-slate-100 space-y-1 px-1">
                     <div className="text-[10px] text-slate-500">
-                      💡 <em>कॉलम हेडर को पकड़कर (Grab) आगे-पीछे सेट कर सकते हैं।</em>
+                      💡 <em>{t("कॉलम का क्रम बदलने के लिए उसका शीर्षक खींचें।", "Drag column headers to reorder them.")}</em>
                     </div>
                     <Link
                       href="/settings?tab=table-manager"
                       className="flex items-center justify-between text-[11px] font-bold text-indigo-600 hover:text-indigo-800 pt-1"
                     >
-                      <span>+ Add/Manage Columns</span>
+                      <span>{t("+ कॉलम जोड़ें या प्रबंधित करें", "+ Add/Manage Columns")}</span>
                       <span>&rarr;</span>
                     </Link>
                   </div>

@@ -1,3 +1,4 @@
+import { useLanguage } from "@/context/LanguageContext";
 import type { ReactNode } from "react";
 
 export const inputStyle = "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-700";
@@ -15,12 +16,13 @@ export async function request<T>(url: string, options?: RequestInit): Promise<T>
 }
 
 export function DataTable({ columns, rows, empty }: { columns: string[]; rows: ReactNode[][]; empty: string }) {
-  if (!rows.length) return <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">{empty}</p>;
+  const { t } = useLanguage();
+  if (!rows.length) return <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">{t(empty)}</p>;
   return (
     <div className="overflow-x-auto rounded-md border border-slate-200">
       <table className="w-full text-left text-sm">
         <thead className="bg-[#203c88] text-white">
-          <tr>{columns.map(column => <th key={column} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">{column}</th>)}</tr>
+          <tr>{columns.map(column => <th key={column} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">{t(column)}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
           {rows.map((row, index) => (

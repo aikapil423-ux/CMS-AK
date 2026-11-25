@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { supportsWhisperDictation, WhisperRecognition } from "@/lib/whisperRecognition";
@@ -12,11 +14,13 @@ interface TopBarDictationProps {
 }
 
 export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
+  const { t } = useLanguage();
   const [selectedLang, setSelectedLang] = useState<DictationLanguage>("hi-IN");
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [error, setErrorMessage] = useState<{ hi: string; en: string } | null>(null);
+  const errorMessage = error ? t(error.hi, error.en) : "";
   const [activeFieldName, setActiveFieldName] = useState<string>("");
 
   const recognitionRef = useRef<any>(null);
@@ -270,7 +274,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       // with a generic "mic permission" message, so state the real cause.
       if (typeof window !== "undefined" && !window.isSecureContext) {
         setErrorMessage(
-          "वॉइस डिक्टेशन केवल HTTPS (सुरक्षित) पते पर काम करता है। यह पेज http:// पर खुला है, इसलिए माइक उपलब्ध नहीं है। IT से HTTPS चालू करवाएं।"
+          { hi: "वॉइस डिक्टेशन केवल HTTPS (सुरक्षित) पते पर काम करता है। यह पेज http:// पर खुला है, इसलिए माइक उपलब्ध नहीं है। IT से HTTPS चालू करवाएं।", en: "Voice dictation requires HTTPS. The microphone is unavailable on this HTTP page. Ask IT to enable HTTPS." }
         );
         return;
       }
@@ -313,7 +317,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
 
             const el = getActiveTarget();
             if (!el) {
-              setErrorMessage("कृपया किसी फ़ील्ड पर क्लिक करें");
+              setErrorMessage({ hi: "कृपया किसी फ़ील्ड पर क्लिक करें", en: "Click a field to start dictating." });
               return;
             } else {
               setErrorMessage(null);
@@ -336,13 +340,13 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
               return;
             }
             if (err === "not-allowed") {
-              setErrorMessage("माइक अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।");
+              setErrorMessage({ hi: "माइक अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।", en: "Microphone permission was denied. Allow microphone access in your browser settings." });
               setIsListening(false);
               isListeningRef.current = false;
             } else if (err === "network") {
-              setErrorMessage("नेटवर्क त्रुटि: इंटरनेट जांचें।");
+              setErrorMessage({ hi: "नेटवर्क त्रुटि: इंटरनेट जांचें।", en: "Network error. Check your internet connection." });
             } else {
-              setErrorMessage(`माइक त्रुटि: ${err}`);
+              setErrorMessage({ hi: `माइक्रोफ़ोन त्रुटि: ${err}`, en: `Microphone error: ${err}` });
             }
           };
 
@@ -376,7 +380,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
 
       // 2. Secondary fallback: Local Whisper STT
       if (!supportsWhisperDictation()) {
-        setErrorMessage("वॉइस डिक्टेशन के लिए माइक्रोफ़ोन समर्थित ब्राउज़र की आवश्यकता है।");
+        setErrorMessage({ hi: "वॉइस डिक्टेशन के लिए माइक्रोफ़ोन समर्थित ब्राउज़र की आवश्यकता है।", en: "Voice dictation requires a browser with microphone support." });
         return;
       }
 
@@ -400,7 +404,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             writeTranscript(el, text.trim(), true);
             setErrorMessage(null);
           } else {
-            setErrorMessage("कृपया किसी फ़ील्ड पर क्लिक करें");
+            setErrorMessage({ hi: "कृपया किसी फ़ील्ड पर क्लिक करें", en: "Click a field to start dictating." });
           }
         }
       };
@@ -408,8 +412,8 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       recognition.onerror = ({ error }) => {
         setErrorMessage(
           error === "not-allowed"
-            ? "माइक अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।"
-            : error
+            ? { hi: "माइक अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग्स में माइक्रोफ़ोन की अनुमति दें।", en: "Microphone permission was denied. Allow microphone access in your browser settings." }
+            : { hi: `माइक्रोफ़ोन त्रुटि: ${error}`, en: `Microphone error: ${error}` }
         );
       };
 
@@ -486,10 +490,10 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
         }`}
         title={
           isListening
-            ? "डिक्टेशन चालू है (Stop Dictation) — जिस फ़ील्ड में कर्सर है उसमें बोलते-बोलते टाइप होगा"
-            : `वॉइस डिक्टेशन चालू करें (${selectedLang === "hi-IN" ? "हिंदी" : "English"})`
+            ? t("डिक्टेशन रोकें", "Stop dictation")
+            : t("वॉइस डिक्टेशन चालू करें", "Start voice dictation")
         }
-        aria-label="Voice Dictation"
+        aria-label={t("वॉइस डिक्टेशन", "Voice Dictation")}
         aria-expanded={isPanelOpen}
       >
         {isListening ? (
@@ -507,7 +511,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
               className="cms-dictation-language-badge absolute -bottom-1 -right-1 text-[10px] font-bold px-0.5 leading-none rounded border border-slate-300 bg-white text-slate-900 shadow-2xs"
               style={{ backgroundColor: "#ffffff", color: "#172b4d" }}
             >
-              {selectedLang === "hi-IN" ? "हिं" : "EN"}
+              {selectedLang === "hi-IN" ? t("हिं", "HI") : t("अं", "EN")}
             </span>
           </>
         )}
@@ -516,25 +520,25 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       {isPanelOpen && (
         <div
           role="dialog"
-          aria-label="Voice dictation"
+          aria-label={t("वॉइस डिक्टेशन", "Voice dictation")}
           className="cms-dictation-panel absolute right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-xl shadow-xl p-1.5 flex flex-wrap items-center gap-1.5 max-w-[340px] animate-in fade-in-50"
         >
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            title="हिंदी डिक्टेशन"
-            aria-label="Hindi dictation"
+            title={t("हिंदी डिक्टेशन", "Hindi dictation")}
+            aria-label={t("हिंदी डिक्टेशन", "Hindi dictation")}
             aria-pressed={selectedLang === "hi-IN"}
             onClick={() => handleSelectLang("hi-IN")}
             className={selectedLang === "hi-IN" ? "cms-dictation-selected" : ""}
           >
-            <span aria-hidden="true">अ</span>
+            <span aria-hidden="true">{t("अ", "HI")}</span>
           </button>
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            title="English dictation"
-            aria-label="English dictation"
+            title={t("अंग्रेज़ी डिक्टेशन", "English dictation")}
+            aria-label={t("अंग्रेज़ी डिक्टेशन", "English dictation")}
             aria-pressed={selectedLang === "en-IN"}
             onClick={() => handleSelectLang("en-IN")}
             className={selectedLang === "en-IN" ? "cms-dictation-selected" : ""}
@@ -546,7 +550,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
             onMouseDown={(e) => e.preventDefault()}
             onClick={handleToggleListening}
             aria-label={isListening ? "Stop dictation" : "Start dictation"}
-            title={errorMessage || (isListening ? "रोकें (Stop)" : "शुरू करें (Start)")}
+            title={errorMessage || (isListening ? t("रोकें", "Stop") : t("शुरू करें", "Start"))}
             className={`cms-dictation-start ${isListening ? "!bg-rose-600 !text-white" : ""}`}
           >
             {isListening ? (
@@ -560,9 +564,9 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
           {activeFieldName && (
             <span
               className="text-[11px] font-medium text-slate-600 max-w-[140px] truncate px-1 border-l border-slate-200 pl-1.5 select-none"
-              title={`सक्रिय फ़ील्ड: ${activeFieldName}`}
+              title={t(`सक्रिय फ़ील्ड: ${activeFieldName}`, `Active field: ${activeFieldName}`)}
             >
-              {isListening ? `बोलें... (${activeFieldName})` : activeFieldName}
+              {isListening ? t(`बोलें… (${activeFieldName})`, `Speak… (${activeFieldName})`) : activeFieldName}
             </span>
           )}
 

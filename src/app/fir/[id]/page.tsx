@@ -1,4 +1,6 @@
 "use client";
+
+import { useLanguage } from "@/context/LanguageContext";
 import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
@@ -173,6 +175,7 @@ const FIR_REPORT_OPTIONS = [
 import { BailDetailsModal } from '@/components/fir/BailDetailsModal';
 
 export default function FIRProfilePage() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const firId = params?.id as string;
@@ -1978,12 +1981,12 @@ export default function FIRProfilePage() {
                   <span className="text-slate-500 font-semibold">Name:</span>{" "}
                   <strong data-no-translate="true" className="text-slate-900 user-data">{fir.complainantName}</strong>
                   {fir.complainantFatherSpouse && (
-                    <span data-no-translate="true" className="text-slate-600 user-data"> (S/o, W/o {fir.complainantFatherSpouse})</span>
+                    <span data-no-translate="true" className="text-slate-600 user-data"> ({t("पुत्र या पत्नी", "S/o, W/o")} {fir.complainantFatherSpouse})</span>
                   )}
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Gender / Age:</span>{" "}
-                  <span data-no-translate="true" className="user-data">{fir.complainantGender} / {fir.complainantAge || "Adult"} yrs</span>
+                  <span data-no-translate="true" className="user-data">{t(fir.complainantGender)} / {fir.complainantAge ? t(`${fir.complainantAge} वर्ष`, `${fir.complainantAge} yrs`) : t("वयस्क", "Adult")}</span>
                 </div>
                 <div>
                   <span className="text-slate-500 font-semibold">Contact:</span>{" "}
