@@ -34,20 +34,20 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   };
 
   // Safe strings
-  const firNumberDisplay = fir.firNumber?.replace(/^FIR\//i, "")?.replace(/\/\d{4}$/, "") || fir.firNumber || "0027";
-  const firDateDMY = formatDateDMY(fir.firDate);
-  const firTimeHrs = fir.firTime ? `${fir.firTime} hrs` : "18:00 hrs";
-  const gdDateDMY = formatDateDMY(fir.gdDate || fir.firDate);
-  const gdTimeHrs = fir.gdTime ? `${fir.gdTime} hrs` : (fir.firTime ? `${fir.firTime} hrs` : "18:04 hrs");
+  const firNumberDisplay = fir.firNumber?.replace(/^FIR\//i, "")?.replace(/\/\d{4}$/, "") || fir.firNumber || "";
+  const firDateDMY = formatDateDMY(fir.firDate || "");
+  const firTimeHrs = fir.firTime ? `${fir.firTime} hrs` : "";
+  const gdDateDMY = formatDateDMY(fir.gdDate || fir.firDate || "");
+  const gdTimeHrs = fir.gdTime ? `${fir.gdTime} hrs` : (fir.firTime ? `${fir.firTime} hrs` : "");
   const occDateFromDMY = formatDateDMY(fir.incidentDateFrom);
   const occDateToDMY = formatDateDMY(fir.incidentDateTo || fir.incidentDateFrom);
 
-  const ioName = fir.assignedIoName || fir.actionTakenData?.directedIoName || "Pending Assignment";
-  const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "HC (Head Constable)";
-  const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "132";
+  const ioName = fir.assignedIoName || fir.actionTakenData?.directedIoName || "";
+  const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "";
+  const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "";
 
   const { currentUser } = useAuth();
-  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "Vedpal";
+  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "";
   const matchedUser = DEMO_USERS.find((u) =>
     u.name.toLowerCase().trim() === registeredName.toLowerCase().trim() ||
     registeredName.toLowerCase().includes(u.name.toLowerCase().split(",")[0].trim()) ||
@@ -60,11 +60,11 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
     fir.registeredBy?.match(/\((.*?)\)/)?.[1] ||
     matchedUser?.rankDisplay ||
     matchedUser?.roleDisplay ||
-    "Inspector (SHO)";
+    "";
   const officerNoDisplay =
     fir.signatureData?.officerInChargeNumber ||
     matchedUser?.pno ||
-    "HR-POLICE";
+    "";
 
   // Total Property value
   const totalPropVal = fir.totalPropertyEstimatedValue ?? (
@@ -80,8 +80,8 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
     fir.complainantPresentColony || fir.complainantColony,
     fir.complainantPresentVillageCity || fir.complainantCity || fir.complainantAddress,
     fir.complainantPresentDistrict || fir.complainantDistrict,
-    fir.complainantPresentState || fir.complainantState || "HARYANA",
-    "INDIA"
+    fir.complainantPresentState || fir.complainantState || "",
+    ""
   ].filter(Boolean).join(", ");
 
   const permanentAddressStr = [
@@ -90,8 +90,8 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
     fir.complainantPermanentColony || fir.complainantColony,
     fir.complainantPermanentVillageCity || fir.complainantCity,
     fir.complainantPermanentDistrict || fir.complainantDistrict,
-    fir.complainantPermanentState || fir.complainantState || "HARYANA",
-    "INDIA"
+    fir.complainantPermanentState || fir.complainantState || "",
+    ""
   ].filter(Boolean).join(", ");
 
   const handlePrint = () => {
@@ -185,13 +185,13 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             <div className="space-y-1.5 text-[13px]">
               <div className="grid grid-cols-12 gap-2">
                 <div className="col-span-4">
-                  <strong>1. District (जिला):</strong> {fir.district || "PANIPAT"}
+                  <strong>1. District (जिला):</strong> {fir.district || ""}
                 </div>
                 <div className="col-span-4">
-                  <strong>P.S. (थाना):</strong> {fir.policeStation || "SANOLI"}
+                  <strong>P.S. (थाना):</strong> {fir.policeStation || ""}
                 </div>
                 <div className="col-span-4 text-right">
-                  <strong>Year (वर्ष):</strong> {fir.firYear || 2026}
+                  <strong>Year (वर्ष):</strong> {fir.firYear || ""}
                 </div>
               </div>
 
@@ -255,7 +255,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                             for (const sec of rawSections) {
                               if (sec.includes("173(3)") && !sec.includes("303") && !sec.includes("351")) continue;
                               expandedRows.push({
-                                act: act || "BHARATIYA NYAYA SANHITA, 2023",
+                                act: act,
                                 section: sec,
                               });
                             }
@@ -267,11 +267,11 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                           const actName =
                             fir.majorAct && !fir.majorAct.toUpperCase().includes("BNSS")
                               ? fir.majorAct
-                              : "BHARATIYA NYAYA SANHITA, 2023";
+                              : "";
 
                           const sourceSections = fir.bnsSections?.length
                             ? fir.bnsSections
-                            : (fir.actsAndSections || "351(3), 331(4), 191(2), 352, 3(5)")
+                            : (fir.actsAndSections || "")
                                 .replace(/BNSS.*?(\;|$)/gi, "")
                                 .replace(/;\s*$/, "")
                                 .split(/[,;]/)
@@ -318,27 +318,27 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   <div className="pl-4 space-y-1.5">
                     <div className="grid grid-cols-12 gap-2">
                       <div className="col-span-4">
-                        <strong>1 Day (दिन):</strong> {fir.incidentDay || "Thursday"}
+                        <strong>1 Day (दिन):</strong> {fir.incidentDay || ""}
                       </div>
                       <div className="col-span-4">
                         <strong>Date from (दिनांक से):</strong>
-                        <div>{occDateFromDMY || "29/01/2026"}</div>
+                        <div>{occDateFromDMY || ""}</div>
                       </div>
                       <div className="col-span-4">
                         <strong>Date To (दिनांक तक):</strong>
-                        <div>{occDateToDMY || "29/01/2026"}</div>
+                        <div>{occDateToDMY || ""}</div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-12 gap-2 pt-1">
                       <div className="col-span-4">
-                        <strong>Time Period (समय अवधि):</strong> {fir.incidentTimePeriod || "Pahar 6"}
+                        <strong>Time Period (समय अवधि):</strong> {fir.incidentTimePeriod || ""}
                       </div>
                       <div className="col-span-4">
-                        <strong>Time From (समय से):</strong> {fir.incidentTimeFrom ? `${fir.incidentTimeFrom} hrs` : "17:30 hrs"}
+                        <strong>Time From (समय से):</strong> {fir.incidentTimeFrom ? `${fir.incidentTimeFrom} hrs` : ""}
                       </div>
                       <div className="col-span-4">
-                        <strong>Time To (समय तक):</strong> {fir.incidentTimeTo ? `${fir.incidentTimeTo} hrs` : "17:30 hrs"}
+                        <strong>Time To (समय तक):</strong> {fir.incidentTimeTo ? `${fir.incidentTimeTo} hrs` : ""}
                       </div>
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                         <strong>(c) General Diary Reference (रोजनामचा संदर्भ):</strong>
                       </div>
                       <div className="col-span-3">
-                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || "025"}
+                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || ""}
                       </div>
                       <div className="col-span-4">
                         <strong>Date and Time (दिनांक और समय):</strong>
@@ -380,7 +380,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
               <strong className="w-5 shrink-0">4.</strong>
               <div>
                 <strong>Type of Information (सूचना का प्रकार):</strong>{" "}
-                {fir.typeOfInformation === "ORAL" ? "Oral" : "Written"}
+                {fir.typeOfInformation ? (fir.typeOfInformation === "ORAL" ? "Oral" : "Written") : ""}
               </div>
             </div>
 
@@ -395,7 +395,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-8">
                       <strong>1. (a) Direction and distance from P.S. (थाना से दूरी और दिशा):</strong>{" "}
-                      {fir.distanceFromPs || "WEST, 2 Km(s)"}
+                      {fir.distanceFromPs || ""}
                     </div>
                     <div className="col-span-4">
                       <strong>Beat No. (बीट सं.):</strong> {fir.beatNumber || ""}
@@ -403,7 +403,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                   </div>
 
                   <div>
-                    <strong>(b) Address (पता):</strong> {fir.incidentPlace || "थाना सनौली पानीपत के सामने NH7,"}
+                    <strong>(b) Address (पता):</strong> {fir.incidentPlace || ""}
                   </div>
 
                   <div>
@@ -429,7 +429,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
 
                 <div className="pl-4 space-y-1.5">
                   <div>
-                    <strong>(a) Name (नाम):</strong> {fir.complainantName || "HC डिम्पी 133PPT"}
+                    <strong>(a) Name (नाम):</strong> {fir.complainantName || ""}
                   </div>
 
                   <div>
@@ -438,10 +438,10 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
 
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-6">
-                      <strong>(c) Date/Year of Birth (जन्म तिथि / वर्ष):</strong> {fir.complainantDob ? formatDateDMY(fir.complainantDob) : (fir.complainantYearOfBirth || "1984")}
+                      <strong>(c) Date/Year of Birth (जन्म तिथि / वर्ष):</strong> {fir.complainantDob ? formatDateDMY(fir.complainantDob) : (fir.complainantYearOfBirth || "")}
                     </div>
                     <div className="col-span-6">
-                      <strong>(d) Nationality (राष्ट्रीयता):</strong> {fir.complainantNationality || "INDIA"}
+                      <strong>(d) Nationality (राष्ट्रीयता):</strong> {fir.complainantNationality || ""}
                     </div>
                   </div>
 
@@ -527,14 +527,14 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                             <td className="border-r border-black p-1 text-center">1</td>
                             <td className="border-r border-black p-1 font-medium">Present Address</td>
                             <td className="p-1">
-                              {presentAddressStr || "थाना सनौली पानीपत, SANOLI, PANIPAT, HARYANA, INDIA"}
+                              {presentAddressStr || ""}
                             </td>
                           </tr>
                           <tr>
                             <td className="border-r border-black p-1 text-center">2</td>
                             <td className="border-r border-black p-1 font-medium">Permanent Address</td>
                             <td className="p-1">
-                              {permanentAddressStr || "थाना सनौली पानीपत, SANOLI, PANIPAT, HARYANA, INDIA"}
+                              {permanentAddressStr || ""}
                             </td>
                           </tr>
                         </tbody>
@@ -547,7 +547,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                       <strong>(j) Phone number (दूरभाष सं.):</strong> {fir.complainantLandline || fir.complainantAltPhone || ""}
                     </div>
                     <div className="col-span-6">
-                      <strong>Mobile (मोबाइल सं.):</strong> {fir.complainantMobile ? (fir.complainantMobile.startsWith("91-") ? fir.complainantMobile : `91-${fir.complainantMobile}`) : "91-9729999845"}
+                      <strong>Mobile (मोबाइल सं.):</strong> {fir.complainantMobile ? (fir.complainantMobile.startsWith("91-") ? fir.complainantMobile : `91-${fir.complainantMobile}`) : ""}
                     </div>
                   </div>
                 </div>
@@ -602,11 +602,11 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                     ))
                   ) : (
                     <tr>
-                      <td className="border-r border-black p-1.5 text-center">1</td>
-                      <td className="border-r border-black p-1.5 font-medium">अज्ञात अभियुक्त (Accused is not known)</td>
+                      <td className="border-r border-black p-1.5 text-center h-6"></td>
                       <td className="border-r border-black p-1.5"></td>
                       <td className="border-r border-black p-1.5"></td>
-                      <td className="p-1.5">पहचान अनुसंधान के दौरान की जाएगी</td>
+                      <td className="border-r border-black p-1.5"></td>
+                      <td className="p-1.5"></td>
                     </tr>
                   )}
                 </tbody>
@@ -665,7 +665,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                           {p.description}
                         </td>
                         <td className="p-1.5 text-right font-mono">
-                          {p.estimatedValue ? `${Number(p.estimatedValue).toFixed(2)}` : ".00"}
+                          {p.estimatedValue ? `${Number(p.estimatedValue).toFixed(2)}` : ""}
                         </td>
                       </tr>
                     ))
@@ -676,16 +676,16 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                       <td className="border-r border-black p-1.5">MISC</td>
                       <td className="border-r border-black p-1.5">{fir.stolenPropertyDetails}</td>
                       <td className="p-1.5 text-right font-mono">
-                        {totalPropVal ? `${Number(totalPropVal).toFixed(2)}` : ".00"}
+                        {totalPropVal ? `${Number(totalPropVal).toFixed(2)}` : ""}
                       </td>
                     </tr>
                   ) : (
                     <tr>
-                      <td className="border-r border-black p-1.5 text-center">-</td>
-                      <td className="border-r border-black p-1.5 text-center">-</td>
-                      <td className="border-r border-black p-1.5 text-center">-</td>
-                      <td className="border-r border-black p-1.5 text-center">-</td>
-                      <td className="p-1.5 text-center font-mono">-</td>
+                      <td className="border-r border-black p-1.5 text-center h-6"></td>
+                      <td className="border-r border-black p-1.5"></td>
+                      <td className="border-r border-black p-1.5"></td>
+                      <td className="border-r border-black p-1.5"></td>
+                      <td className="p-1.5 text-center font-mono"></td>
                     </tr>
                   )}
                 </tbody>
@@ -696,7 +696,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             <div className="text-[13px]">
               <strong>10. Total value of property (In Rs/-) (सम्पत्ति का कुल मूल्य(रु में)):</strong>{" "}
               <span className="font-mono">
-                {totalPropVal && Number(totalPropVal) > 0 ? `${Number(totalPropVal).toFixed(2)}` : "-"}
+                {totalPropVal && Number(totalPropVal) > 0 ? `${Number(totalPropVal).toFixed(2)}` : ""}
               </span>
             </div>
 
@@ -743,7 +743,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                 <strong>12. First Information contents (प्रथम सूचना तथ्य):</strong>
               </div>
               <div className="pl-4 pr-2 text-justify whitespace-pre-wrap leading-relaxed">
-                {fir.firContentText || fir.incidentDetails || `सेवा मे प्रबन्धक अफसर थाना सनौली पानीपत जय हिन्द आज मै मुख्य सिपाही डिम्पी मय मुख्य सिपाही रामनिवास नं 45 मय HGH सोनु 2104 हाजिर थाना हैं कि थाना मे सूचना प्राप्त हुई कि गाडी नम्बर UP13BY-8884 मार्का टाटा हैरियर वारंग काला मे अवैध रूप से शराब तस्करी करके पानीपत से कैराना यू.पी की ओर जा रहे हैं नाकाबन्दी की जाए तो मौका पर गाडी शराब सहित काबु आ सकते हैं जो सूचना पाकर मै अपने साथी कर्मचारी उपरोक्त की मदद से NH709AD पर थाना के सामने पानीपत से शामली रोड पर नाकाबन्दी मे मशरूफ हुआ मौका पर आने जाने वाले वाहनगिरों को सूचना बारे अवगत करवाकर शामिल जांच होने बारे अनुरोध किया जिनमे से एक लडका जिसने अपना नामपता सौरभ पुत्र दलेल निवासी गांव शहरमालपुर जिला पानीपत बतलाया शामिल जांच होने को तैयार हुआ जो थोडी देर के बाद एक काले रंग की टाटा हैरियर गाडी पानीपत की तरफ से आती दिखाई दी जिसको मैने रुकने का ईशारा करके रुकवाया जो देखने पर गाडी का नम्बर UP13BY-8884 मिला और मैने अपने मोबाईल फोन से ई-साक्ष्य पर विडियो बनानी शुरू की जो गाडी के ड्राईवर सीट पर बैठे व्यक्ति ने मेरे द्वारा पुछने पर अपना नामपता निरंजन सिंह पुत्र विक्रम सिंह निवासी 187 अमन विहार कृष्ण नगर रुड़की रोड मेरठ यू.पी तथा गाडी के अगली सीट पर बैठे व्यक्ति ने अपना नामपता नवीन कुमार पुत्र जितेन्द्र पाल सिंह निवासी प्रेम नगर बुलन्दशहर यू.पी, गाडी मे ड्राईवर सीट के पीछे बैठे व्यक्ति ने अपना नामपता विकास पुत्र धर्मपाल निवासी गांव किंगस्पार्क कालोनी कंकरखेडा मेरठ तथा कन्डैक्टर साईड पीछली सीट पर बैठे व्यक्ति ने अपना नामपता अभिषेक पुत्र कृष्णपाल निवासी हसनपुर गढ रोड मेरठ यू.पी बतलाया जो चैक करने गाडी पिछली सीट पर विकास व अभिषेक के पैरों के नीचे एक-एक शराब पव्वा पेटी मार्का रोयल स्टैग रखी मिली जो गाडी की डिग्गी को चैक करने पर गाडी की डिग्गी मे कुल 12 पेटियां शराब मार्का ब्लैन्डर प्राईड रखी मिली जो मेरे द्वारा मांगने पर उपरोक्त चारों व्यक्ति बरामद शराब पेटियों बारे कोई भी लाईसैन्स परमीट पेश नही कर सके जो बरामद उपरोक्त 12 ब्लैन्डर प्राईड शराब पेटियों मे से प्रत्येक पेटी से एक-एक बोतल बतौर नमूना अलग निकालकर सर्व मोहर ML/1 से सर्व मोहर किया गया तथा बरामद दोनों पव्वा शराब पेटी मार्का रोयल स्टैग से एक-एक पव्वा बतौर नमूना निकालकर सर्व मोहर ML/1 से सर्व मोहर किया गया तथा सैम्पल शील तैयार की गई बरामद उपरोक्त 14 पेटियां शराब को 7 कट्टों प्लास्टिक का प्रबन्ध करके शराब पेटियों को डालकर पलन्दा बनाकर पलन्दा को मोहर ML/1 से सर्व मोहर किया गया जो बरामद उपरोक्त 7 पलन्दे कट्टे शराब तथा 14 नमूनाजात मय सैम्पल शील सर्व मोहर ML/1 शुदा तथा गाडी नम्बर UP13BY-8884 उपरोक्त को साक्ष्य के तौर पर सम्पति तलाशी एंव जप्ति फार्म द्वारा अधिकार पुलिस मे लिया गया है जो सम्पति तलाशी एंव जप्ति फार्म पर मौका साक्षी सौरभ सिंह, मुख्य सिपाही रामनिवास तथा आरोपियान उपरोक्त ने अपने-2 हस्ताक्षर किए। चूंकि आरोपियान उपरोक्त ने बिना लाईसैन्स परमीट के 14 पेटी शराब उपरोक्त रखकर जुर्म जेर धारा 61-4-2020 EX. ACT का किया है इसलिए तहरीर हजा बराए कायमी मुकदमा बदस्त मुख्य सिपाही रामनिवास 45/PPT के थाना भेजी जा रही है अभियोग दर्ज रजिस्टर करके नम्बर पर्चा से सूचित किया जाए मै मौका पर अनुसंधान मे व्यस्त होता हूं। स्थान-थाना सनौली पानीपत के सामने NH709AD SD- HC डिम्पी 133/PPT थाना सनौली पानीपत दिनांक 29.01.26 AT-05.30 PM अज थाना-हस्ब आमद तहरीर उपरोक्त बदस्त HC रामनिवास 45 के थाना मे प्राप्त होने पर मुकदमा न0-27 दि0-29.01.26 धारा 61-4-20 EX. ACT थाना सनौली पानीपत दर्ज रजि0 किया जाकर FIR की कम्पयूटर प्रतियां तैयार की गई। नकल मिशल पुलिस मय असल तहरीर आगामी कार्यवाही हेतू बदस्त आरिन्दा HC के निम्ज अनुसंधांनकर्ता बर मौका भेजी जा रही है। बकाया नकुलात FIR बजरिया डाक अफसरान बाला की सेवा मे भेजी जायेगी। प्रथम सूचना रिपोर्ट SI दिलबाग की हाजरी मे दर्ज रजि0 की गई।`}
+                {fir.firContentText || fir.incidentDetails || ""}
               </div>
             </div>
 
@@ -820,7 +820,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             <div className="pt-6 space-y-1 text-[13px]">
               <div>
                 <strong>15. Date and time of dispatch to the court (अदालत में प्रेषण की दिनांक और समय):</strong>{" "}
-                <span>{fir.courtDispatchDateTime ? `${formatDateDMY(fir.courtDispatchDateTime.split("T")[0])} ${fir.courtDispatchDateTime.split("T")[1] || "10:00"} hrs` : ""}</span>
+                <span>{fir.courtDispatchDateTime ? `${formatDateDMY(fir.courtDispatchDateTime.split("T")[0])}${fir.courtDispatchDateTime.split("T")[1] ? ` ${fir.courtDispatchDateTime.split("T")[1]} hrs` : ""}` : ""}</span>
               </div>
             </div>
           </div>

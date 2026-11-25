@@ -2146,24 +2146,38 @@ function RegisterFIRForm() {
   };
 
   // Build full FIR object for Draft / Submit / Preview
-  const buildCurrentFirItem = (): FIRItem => {
+  const buildCurrentFirItem = (forPreview = false): FIRItem => {
     const canAssignIo = (isSho || isSuperior) && !isMhc;
-    const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || "Bharatiya Nyaya Sanhita, 2023 (BNS): 351(3), 331(4), 191(2), 352, 3(5)";
+    const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || (forPreview ? "" : "Bharatiya Nyaya Sanhita, 2023 (BNS): 351(3), 331(4), 191(2), 352, 3(5)");
     const selectedOfficer = canAssignIo ? MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === assignedIoId) : undefined;
 
-    const primaryOcc = occurrencesList[0] || {
-      dateFrom: firDate,
-      dateTo: firDate,
-      timeFrom: "10:00",
-      timeTo: "12:00",
-      day: "Monday",
-      timePeriod: "Morning / Pahar 1",
-      directionFromPs: "",
-      distanceKm: "",
-      area: "Area of incident",
-      city: district,
-      beatNo: "",
-    };
+    const primaryOcc = occurrencesList[0] || (forPreview
+      ? {
+          dateFrom: "",
+          dateTo: "",
+          timeFrom: "",
+          timeTo: "",
+          day: "",
+          timePeriod: "",
+          directionFromPs: "",
+          distanceKm: "",
+          area: "",
+          city: district,
+          beatNo: "",
+        }
+      : {
+          dateFrom: firDate,
+          dateTo: firDate,
+          timeFrom: "10:00",
+          timeTo: "12:00",
+          day: "Monday",
+          timePeriod: "Morning / Pahar 1",
+          directionFromPs: "",
+          distanceKm: "",
+          area: "Area of incident",
+          city: district,
+          beatNo: "",
+        });
 
     return {
       id: `fir-${autoFirNumber.firNumber.replace(/\//g, "-")}`,
@@ -2177,7 +2191,7 @@ function RegisterFIRForm() {
       sourceComplaintId: linkedComplaint?.id,
       sourceComplaintNumber: linkedComplaint?.complaintNumber || complaintNumber,
       category: "GENERAL",
-      categoryDisplay: majorMinorHeadsList[0]?.majorHead || "Cognizable Offence",
+      categoryDisplay: majorMinorHeadsList[0]?.majorHead || (forPreview ? "" : "Cognizable Offence"),
       priority: isHeinousCrime ? "URGENT" : isSensitiveFIR ? "HIGH" : "NORMAL",
       status: "UNDER_INVESTIGATION",
       mainStatus: "Under Investigation",
@@ -2212,10 +2226,10 @@ function RegisterFIRForm() {
       distanceFromPs: primaryOcc.distanceKm
         ? `${primaryOcc.distanceKm} KM ${primaryOcc.directionFromPs || ""}`.trim()
         : (primaryOcc.directionFromPs || ""),
-      incidentPlace: primaryOcc.area || "Area of incident",
+      incidentPlace: primaryOcc.area || (forPreview ? "" : "Area of incident"),
       incidentLandmark: primaryOcc.landmark,
       beatNumber: primaryOcc.beatNo,
-      complainantName: `${complainantFirstName} ${complainantLastName}`.trim() || "Complainant",
+      complainantName: `${complainantFirstName} ${complainantLastName}`.trim() || (forPreview ? "" : "Complainant"),
       complainantFatherSpouse: complainantRelativeName,
       complainantRelationType,
       complainantDob,
@@ -2228,7 +2242,7 @@ function RegisterFIRForm() {
       complainantEmail,
       complainantAddress: permHouseNo
         ? `${permHouseNo}, ${permStreet ? permStreet + ", " : ""}${permColony ? permColony + ", " : ""}${permCity}`
-        : "Address on file",
+        : (forPreview ? "" : "Address on file"),
       complainantCity: permCity,
       complainantDistrict: permDistrict,
       complainantState: permState,
@@ -2240,15 +2254,17 @@ function RegisterFIRForm() {
       accusedList:
         accusedList.length > 0
           ? accusedList
-          : [
-              {
-                id: "acc-un",
-                name: isAccusedKnown ? "Identified Suspect" : "Accused is not known",
-                isIdentified: isAccusedKnown,
-                isKnown: isAccusedKnown,
-                physicalDescription: "Under investigation",
-              },
-            ],
+          : (forPreview
+              ? []
+              : [
+                  {
+                    id: "acc-un",
+                    name: isAccusedKnown ? "Identified Suspect" : "Accused is not known",
+                    isIdentified: isAccusedKnown,
+                    isKnown: isAccusedKnown,
+                    physicalDescription: "Under investigation",
+                  },
+                ]),
       victimsList,
       propertiesList,
       totalPropertyEstimatedValue: propertiesList.reduce(
@@ -5850,7 +5866,7 @@ function RegisterFIRForm() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setRegisteredFir(buildCurrentFirItem());
+                  setRegisteredFir(buildCurrentFirItem(true));
                   setReceiptMode("preview");
                   setShowReceiptModal(true);
                 }}
