@@ -393,9 +393,8 @@ export function Sidebar() {
         {/* OPERATIONAL MODULES (All 8 Modules permanently listed with expandable nested sub-tabs) */}
         <div className="space-y-1">
           {isExpanded && (
-            <div className="px-2 pt-1 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
+            <div className="px-2 pt-1 pb-1 text-[10.5px] font-bold tracking-wider text-slate-400 uppercase">
               <span>{t("Operational Modules") || "OPERATIONAL MODULES"}</span>
-              <span className="text-[9px] bg-slate-100 text-slate-500 font-mono px-1.5 py-0.2 rounded border border-slate-200/70">8</span>
             </div>
           )}
 

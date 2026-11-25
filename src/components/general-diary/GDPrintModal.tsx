@@ -17,7 +17,7 @@ import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
-import { printHtmlContent, downloadHtmlContent } from "@/utils/printElement";
+import { printHtmlContent, downloadHtmlAsPdf } from "@/utils/printElement";
 
 interface GDPrintModalProps {
   isOpen: boolean;
@@ -35,18 +35,13 @@ function formatHeaderDate(iso: string): string {
       const d = parseInt(parts[2], 10);
       const dt = new Date(y, m, d);
       const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const hindiDays = ["रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"];
       const dayIdx = dt.getDay();
-      return `${toDDMMYYYY(iso)} (${dayNames[dayIdx]} / ${hindiDays[dayIdx]})`;
+      return `${toDDMMYYYY(iso)} (${dayNames[dayIdx]})`;
     }
     return toDDMMYYYY(iso);
   } catch {
     return toDDMMYYYY(iso);
   }
-}
-
-function escapeHtml(value: string): string {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 // Print & Download friendly General Diary Register (All Days, Latest to Oldest, Date Wise Filter)
@@ -57,6 +52,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   const [searchFilter, setSearchFilter] = useState<string>("");
   const [records, setRecords] = useState<GeneralDiaryRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   // Sync initial date only when modal opens and if initialDate is explicitly provided
   useEffect(() => {
@@ -147,8 +143,8 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   if (!isOpen) return null;
 
   const generateRegisterHtml = () => {
-    const policeStation = escapeHtml(records[0]?.policeStation || "PS City Panipat");
-    const district = escapeHtml(records[0]?.district || "Panipat");
+    const policeStation = records[0]?.policeStation || "PS City Panipat";
+    const district = records[0]?.district || "Panipat";
     const dateRangeLabel =
       startDate && endDate
         ? `${toDDMMYYYY(startDate)} to ${toDDMMYYYY(endDate)}`
@@ -174,41 +170,50 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           <tr>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold; font-family: monospace; text-align: center;">
               ${rec.sequencePerDay || 1}
-              <div style="font-size: 9px; color: #64748b; font-weight: normal;">${escapeHtml(rec.gdNumber)}</div>
+              <div style="font-size: 9px; color: #64748b; font-weight: normal;">${rec.gdNumber}</div>
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-family: monospace; white-space: nowrap;">
-              ${escapeHtml(timePart)}
+              ${timePart}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: 600;">
-              ${escapeHtml(rec.typeDisplay)}
+              ${rec.typeDisplay}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px;">
-              <strong>${escapeHtml(rec.entryForOfficer.name)}</strong>
-              <div style="font-size: 10px; color: #475569;">${escapeHtml(rec.entryForOfficer.rank)} • ${escapeHtml(rec.entryForOfficer.beltNumber || "Station Staff")}</div>
+              <strong>${rec.entryForOfficer?.name || "Station Staff"}</strong>
+              <div style="font-size: 10px; color: #475569;">${rec.entryForOfficer?.rank || "Officer"} • ${rec.entryForOfficer?.beltNumber || "Station Staff"}</div>
             </td>
-            <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold;">
-              ${escapeHtml(rec.subject)}
+            <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; word-wrap: break-word;">
+              ${rec.subject}
             </td>
-            <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45;"><div style="white-space: pre-wrap;">${escapeHtml(cleanGdNarrative(rec.narrative))}</div></td>
+            <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45; word-break: break-word; overflow-wrap: anywhere; word-wrap: break-word;">
+              ${cleanGdNarrative(rec.narrative)}
+            </td>
           </tr>
         `;
       });
 
       sectionsHtml += `
-        <div style="margin-top: 24px;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px;">
+        <div class="gd-day-section" style="margin-top: 24px; page-break-inside: avoid;">
+          <div style="background-color: #f1f5f9; color: #0f172a; border: 1.5px solid #475569; border-bottom: 2px solid #0f172a; padding: 7px 12px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Date: <strong style="color: #1e3a8a; font-family: monospace; font-size: 13px; margin-left: 4px;">${headerDateStr}</strong></span>
+            <span style="color: #334155; font-size: 11.5px; font-weight: 600;">Entries: ${dayRecords.length}</span>
+          </div>
+          <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; margin-top: 0px;">
+            <colgroup>
+              <col style="width: 7%;" />
+              <col style="width: 9%;" />
+              <col style="width: 15%;" />
+              <col style="width: 17%;" />
+              <col style="width: 18%;" />
+              <col style="width: 34%;" />
+            </colgroup>
             <thead>
-              <tr>
-                <th colspan="6" style="background-color: #0b192c; color: white; padding: 6px 12px; text-align: left; font-size: 13px;">
-                  तारीख / Date: ${escapeHtml(headerDateStr)} • कुल प्रविष्टियां: ${dayRecords.length}
-                </th>
-              </tr>
               <tr style="background-color: #f1f5f9; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">
-                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 65px;">GD No.</th>
-                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 75px;">Time</th>
-                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 120px;">Type</th>
-                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 140px;">Officer</th>
-                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left; width: 150px;">Subject</th>
+                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: center;">GD No.</th>
+                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left;">Time</th>
+                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left;">Type</th>
+                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left;">Officer</th>
+                <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left;">Subject</th>
                 <th style="border: 1px solid #475569; padding: 6px 8px; text-align: left;">Brief Description</th>
               </tr>
             </thead>
@@ -224,30 +229,29 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>General Diary Register - ${policeStation}</title>
+  <title></title>
   <style>
-    @page { size: A4 portrait; margin: 12mm; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 15px; background: #fff; }
-    .header { text-align: center; border-bottom: 2px solid #0b192c; padding-bottom: 10px; margin-bottom: 15px; }
-    .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .header h2 { margin: 4px 0; font-size: 14px; font-weight: normal; color: #334155; }
-    .header p { margin: 2px 0; font-size: 11px; color: #64748b; font-family: monospace; }
-    .footer-signatures { margin-top: 35px; padding-top: 15px; border-top: 1px solid #94a3b8; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; }
-    td { overflow-wrap: anywhere; }
+    @page { size: A4 portrait; margin: 8mm 10mm; }
+    html { margin: 0; padding: 0; width: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #0f172a; margin: 0; padding: 0; width: 100%; background: #fff; }
+    .header { text-align: center; border-bottom: 2px solid #0b192c; padding-bottom: 10px; margin-bottom: 15px; width: 100%; }
+    .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold; color: #0b192c; }
+    .header h2 { margin: 4px 0; font-size: 14px; font-weight: 600; color: #0f172a; }
+    .header p { margin: 2px 0; font-size: 11px; color: #475569; font-family: monospace; }
+    .footer-signatures { margin-top: 35px; padding-top: 15px; border-top: 1px solid #94a3b8; display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; width: 100%; }
     @media print {
-      body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      tr, .footer-signatures { break-inside: avoid; }
+      .noprint { display: none !important; }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>HARYANA POLICE • GENERAL DIARY REGISTER NO. II</h1>
-    <h2>${policeStation}, District ${district} • Punjab Police Rules (PPR) 1934 Rule 22.48</h2>
-    <p>Range: ${escapeHtml(dateRangeLabel)} • Total Entries: ${filteredRecords.length} • Generated on: ${new Date().toLocaleString("en-IN")}</p>
+    <h1>GENERAL DIARY REGISTER NO. II</h1>
+    <h2>${policeStation}, District ${district}</h2>
+    <p>Range: ${dateRangeLabel} • Total Entries: ${filteredRecords.length} • Generated on: ${new Date().toLocaleString("en-IN")}</p>
   </div>
   ${sectionsHtml}
-  <div class="footer-signatures">
+  <div class="footer-signatures gd-day-section">
     <div>Prepared by (MHC / DO): ____________________</div>
     <div style="text-align: center;">Checked by (SI / Reader): ____________________</div>
     <div style="text-align: right;">SHO / In-Charge: ____________________</div>
@@ -255,75 +259,67 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 </body>
 </html>`;
 
-    return fullHtml;
+    return { fullHtml, policeStation, dateRangeLabel };
   };
 
   const handlePrint = () => {
-    printHtmlContent(generateRegisterHtml(), undefined, { standalone: true });
+    const { fullHtml } = generateRegisterHtml();
+    printHtmlContent(fullHtml, "");
   };
 
-  const handleDownload = () => {
-    const safeStart = startDate ? startDate.replace(/[^0-9-]/g, "") : "all";
-    const safeEnd = endDate ? endDate.replace(/[^0-9-]/g, "") : "latest";
-    downloadHtmlContent(
-      generateRegisterHtml(),
-      `GD_Register_${safeStart}_to_${safeEnd}.html`
-    );
+  const handleDownload = async () => {
+    if (downloading) return;
+    try {
+      setDownloading(true);
+      const { fullHtml } = generateRegisterHtml();
+      const safeStart = startDate ? startDate.replace(/[^0-9-]/g, "") : "all";
+      const safeEnd = endDate ? endDate.replace(/[^0-9-]/g, "") : "latest";
+      await downloadHtmlAsPdf(
+        fullHtml,
+        `GD_Register_${safeStart}_to_${safeEnd}.pdf`
+      );
+    } catch (err) {
+      console.error("GD Register PDF download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/65 backdrop-blur-xs print:bg-white print:p-0">
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          .gd-print-area, .gd-print-area * { visibility: visible; }
-          .gd-print-area {
-            position: absolute;
-            left: 0; top: 0;
-            width: 100%;
-            max-height: none;
-            overflow: visible;
-            box-shadow: none;
-            border-radius: 0;
-            padding: 0;
-          }
-          .gd-print-noprint { display: none !important; }
-          @page { size: A4 portrait; margin: 12mm; }
-        }
-      `}</style>
-
-      <div className="gd-print-area bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden print:max-h-none print:overflow-visible print:border-0 print:rounded-none">
+      <div className="gd-print-area bg-[#0b192c] rounded-2xl shadow-2xl border border-[#0b192c] max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden print:max-h-none print:overflow-visible print:border-0 print:rounded-none">
         {/* Modal Top Header (Shows in Print as Official Header) */}
-        <div className="bg-[#0b192c] text-white p-4 sm:p-5 flex items-start justify-between gap-3 rounded-t-2xl shrink-0 print:bg-white print:text-black print:rounded-none print:border-b-2 print:border-black print:p-0 print:pb-3">
-          <div>
+        <div className="bg-[#0b192c] text-white px-4 py-2.5 sm:px-5 sm:py-3 flex items-center justify-between gap-3 shrink-0 print:bg-white print:text-black print:rounded-none print:border-b-2 print:border-black print:p-0 print:pb-2">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-blue-300 print:hidden" />
-              <h3 className="font-bold text-base sm:text-lg tracking-tight">
-                General Diary Register (रोज़नामचा आम रजिस्टर)
+              <BookOpen className="w-4 h-4 text-blue-300 shrink-0 print:hidden" />
+              <h3 className="font-bold text-sm sm:text-base tracking-tight truncate">
+                General Diary Register
               </h3>
             </div>
-            <p className="text-[11px] text-blue-200/90 print:text-slate-800 mt-0.5">
-              PS City Panipat, Panipat • Register No. II • Punjab Police Rules (PPR) 1934 Rule 22.48
-            </p>
-            <p className="text-[11px] text-blue-200/80 print:text-slate-600 font-mono mt-0.5">
-              {startDate && endDate
-                ? `Range: ${toDDMMYYYY(startDate)} to ${toDDMMYYYY(endDate)}`
-                : startDate
-                ? `From: ${toDDMMYYYY(startDate)}`
-                : endDate
-                ? `Until: ${toDDMMYYYY(endDate)}`
-                : "All Registered Days (सभी दर्ज दिवस — नवीनतम से पूर्व)"}
-              {" • "}
-              Total Entries: {filteredRecords.length}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-blue-200/90 print:text-slate-700 mt-0.5">
+              <span>{records[0]?.policeStation || "PS City Panipat"}, {records[0]?.district || "Panipat"}</span>
+              <span className="text-blue-300/60 print:text-slate-400">•</span>
+              <span>
+                {startDate && endDate
+                  ? `Range: ${toDDMMYYYY(startDate)} to ${toDDMMYYYY(endDate)}`
+                  : startDate
+                  ? `From: ${toDDMMYYYY(startDate)}`
+                  : endDate
+                  ? `Until: ${toDDMMYYYY(endDate)}`
+                  : "All Registered Days"}
+              </span>
+              <span className="text-blue-300/60 print:text-slate-400">•</span>
+              <span className="font-semibold text-white print:text-black">Total Entries: {filteredRecords.length}</span>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="gd-print-noprint p-1 text-white hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+            className="gd-print-noprint p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer shrink-0"
             aria-label="Close register modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -332,7 +328,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* From - To Date Pickers */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>From:</span>
@@ -341,14 +337,14 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                   <DatePickerDDMMYYYY
                     value={startDate}
                     size="sm"
-                    className="text-xs"
+                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
                     onChange={(e) => setStartDate(e.target.value)}
                     title="Filter entries from this date (DD/MM/YYYY)"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-lg px-2.5 py-1 shadow-2xs">
                 <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-blue-600" />
                   <span>To:</span>
@@ -357,7 +353,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                   <DatePickerDDMMYYYY
                     value={endDate}
                     size="sm"
-                    className="text-xs"
+                    className="border-0 bg-transparent px-1 py-0 h-6 text-xs shadow-none focus:ring-0"
                     onChange={(e) => setEndDate(e.target.value)}
                     title="Filter entries up to this date (DD/MM/YYYY)"
                   />
@@ -450,12 +446,12 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                 variant="outline"
                 size="sm"
                 onClick={handleDownload}
-                disabled={loading || filteredRecords.length === 0}
+                disabled={loading || downloading || filteredRecords.length === 0}
                 className="bg-white hover:bg-slate-50 border-slate-300 text-slate-800 font-bold gap-1.5 text-xs cursor-pointer shadow-2xs"
-                title="Download full register as offline HTML / Printable document"
+                title="Download full register as PDF"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Download</span>
+                <Download className={`w-3.5 h-3.5 text-emerald-600 ${downloading ? "animate-pulse" : ""}`} />
+                <span>{downloading ? "Downloading..." : "Download"}</span>
               </Button>
 
               {/* Print Register Button */}
@@ -472,22 +468,10 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
               </Button>
             </div>
           </div>
-
-          {/* Quick Info bar */}
-          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-            <span className="flex items-center gap-1.5">
-              <Lock className="w-3 h-3 text-emerald-600" />
-              <span>
-                Showing <strong>{filteredRecords.length}</strong> locked entries across{" "}
-                <strong>{groupedData.sortedDateKeys.length}</strong> date(s) (ordered latest day on top)
-              </span>
-            </span>
-            <span>PPR 22.48 • Official Haryana Police Daily Diary</span>
-          </div>
         </div>
 
         {/* Register Entries Scrollable Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 print:overflow-visible print:p-0 print:space-y-4">
+        <div className="bg-white p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 print:overflow-visible print:p-0 print:space-y-4">
           {loading ? (
             <div className="py-16 text-center space-y-2">
               <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -530,43 +514,81 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
               return (
                 <div
                   key={dateKey}
-                  className="rounded-xl border border-slate-300 overflow-hidden shadow-2xs print:border-black print:rounded-none print:shadow-none print:break-inside-avoid"
+                  className="bg-white rounded-xl border border-slate-300 overflow-hidden shadow-2xs print:border-black print:rounded-none print:shadow-none print:break-inside-avoid"
                 >
                   {/* Day Header Banner */}
-                  <div className="bg-[#0b192c] text-white px-4 py-2.5 flex items-center justify-between text-xs font-bold print:bg-slate-200 print:text-black print:border-b print:border-black">
+                  <div className="bg-slate-100 text-slate-900 border-b-2 border-slate-900 px-4 py-2.5 flex items-center justify-between text-xs font-bold">
                     <div className="flex items-center gap-2">
-                      <span>📅 तारीख / Date:</span>
-                      <span className="font-mono text-sm tracking-wide text-cyan-200 print:text-black">
+                      <span className="text-slate-700">Date:</span>
+                      <span className="font-mono text-sm tracking-wide text-blue-900 font-bold">
                         {headerDateStr}
                       </span>
                     </div>
-                    <div className="text-[11px] font-semibold text-blue-200 print:text-slate-800">
-                      कुल प्रविष्टियां (Entries): {dayRecords.length}
+                    <div className="text-[11px] font-semibold text-slate-600">
+                      Entries: {dayRecords.length}
                     </div>
                   </div>
 
                   {/* Day Register Table */}
+                  <style>{`
+                    .gd-register-table {
+                      width: 100%;
+                      table-layout: fixed;
+                      border-collapse: collapse;
+                      font-size: 11px;
+                    }
+                    .gd-register-table thead tr {
+                      background-color: #f1f5f9 !important;
+                    }
+                    .gd-register-table th {
+                      background-color: #f1f5f9 !important;
+                      color: #1e293b !important;
+                      padding: 6px 8px !important;
+                      font-size: 10px !important;
+                      font-weight: 700 !important;
+                      text-transform: uppercase !important;
+                      letter-spacing: 0.5px !important;
+                      border: 1px solid #cbd5e1 !important;
+                      white-space: nowrap !important;
+                    }
+                    .gd-register-table td {
+                      padding: 6px 8px !important;
+                      border: 1px solid #e2e8f0 !important;
+                      font-size: 11px !important;
+                      color: #0f172a !important;
+                      word-break: break-word !important;
+                      overflow-wrap: anywhere !important;
+                    }
+                  `}</style>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse print:text-[10px]">
+                    <table className="gd-register-table w-full text-left text-xs border-collapse print:text-[10px]">
+                      <colgroup>
+                        <col style={{ width: "7%" }} />
+                        <col style={{ width: "9%" }} />
+                        <col style={{ width: "15%" }} />
+                        <col style={{ width: "17%" }} />
+                        <col style={{ width: "18%" }} />
+                        <col style={{ width: "34%" }} />
+                      </colgroup>
                       <thead>
                         <tr className="bg-slate-100 text-slate-800 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-300 print:bg-slate-100 print:border-black">
-                          <th className="py-2.5 px-3 border-r border-slate-300 w-16 text-center print:border-black">
+                          <th className="py-1.5 px-2.5 border-r border-slate-300 text-center print:border-black">
                             GD No.
                           </th>
-                          <th className="py-2.5 px-3 border-r border-slate-300 w-24 print:border-black">
+                          <th className="py-1.5 px-2.5 border-r border-slate-300 print:border-black">
                             Time
                           </th>
-                          <th className="py-2.5 px-3 border-r border-slate-300 w-32 print:border-black">
+                          <th className="py-1.5 px-2.5 border-r border-slate-300 print:border-black">
                             GD Type
                           </th>
-                          <th className="py-2.5 px-3 border-r border-slate-300 w-40 print:border-black">
+                          <th className="py-1.5 px-2.5 border-r border-slate-300 print:border-black">
                             Entry for Officer
                           </th>
-                          <th className="py-2.5 px-3 border-r border-slate-300 w-44 print:border-black">
+                          <th className="py-1.5 px-2.5 border-r border-slate-300 print:border-black">
                             Subject
                           </th>
-                          <th className="py-2.5 px-3 print:border-black">
-                            Brief Description (विवरण)
+                          <th className="py-1.5 px-2.5 print:border-black">
+                            Brief Description
                           </th>
                         </tr>
                       </thead>
@@ -582,7 +604,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                               className="hover:bg-slate-50/70 transition-colors align-top print:border-b print:border-slate-400"
                             >
                               {/* 1. GD No */}
-                              <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-black text-sm text-blue-950 print:border-black print:text-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 text-center font-mono font-black text-sm text-blue-950 print:border-black print:text-black">
                                 {rec.sequencePerDay || 1}
                                 <span className="block text-[9px] text-slate-500 font-normal">
                                   {rec.gdNumber}
@@ -590,19 +612,19 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                               </td>
 
                               {/* 2. Time */}
-                              <td className="py-2.5 px-3 border-r border-slate-200 font-mono text-xs font-bold text-slate-800 whitespace-nowrap print:border-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 font-mono text-xs font-bold text-slate-800 whitespace-nowrap print:border-black">
                                 {timePart}
                               </td>
 
                               {/* 3. GD Type */}
-                              <td className="py-2.5 px-3 border-r border-slate-200 print:border-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 print:border-black">
                                 <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200 print:border-0 print:p-0">
                                   {rec.typeDisplay}
                                 </span>
                               </td>
 
                               {/* 4. Entry for Officer */}
-                              <td className="py-2.5 px-3 border-r border-slate-200 print:border-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 print:border-black">
                                 <p className="font-bold text-slate-900 text-xs">
                                   {rec.entryForOfficer.name}
                                 </p>
@@ -616,12 +638,12 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                               </td>
 
                               {/* 5. Subject */}
-                              <td className="py-2.5 px-3 border-r border-slate-200 font-bold text-slate-950 text-xs leading-snug break-words print:border-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 font-bold text-slate-950 text-xs leading-snug break-all print:border-black">
                                 {rec.subject}
                               </td>
 
                               {/* 6. Brief Description */}
-                              <td className="py-2.5 px-3 text-slate-700 text-xs leading-relaxed break-words print:border-black">
+                              <td className="py-2 px-2.5 text-slate-700 text-xs leading-relaxed break-all print:border-black">
                                 {cleanGdNarrative(rec.narrative)}
                               </td>
                             </tr>

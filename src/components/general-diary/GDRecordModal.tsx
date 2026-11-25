@@ -257,7 +257,7 @@ export function GDRecordModal({
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0 uppercase tracking-wide">
                   विषय (SUBJECT):
                 </span>
-                <span className="font-bold text-slate-950 flex-1 leading-snug">
+                <span className="font-bold text-slate-950 flex-1 min-w-0 leading-snug break-all break-words">
                   {record.subject}
                 </span>
               </div>
@@ -406,7 +406,7 @@ export function GDRecordModal({
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wide border-b border-slate-400 pb-1">
                 इंद्राज का विस्तृत विवरण :
               </h4>
-              <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap">
+              <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap break-all break-words">
                 {cleanGdNarrative(record.narrative)}
               </div>
             </div>

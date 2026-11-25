@@ -2439,8 +2439,8 @@ function RegisterFIRForm() {
 
     if (tabKey === "fir_content") {
       if (!firContentText.trim() && !briefFacts.trim()) {
-        tabErrors.fir_content = "FIR Contents / Tehreer text is mandatory.";
-        tabErrors.firContentText = "FIR Contents / Tehreer text is mandatory.";
+        tabErrors.fir_content = "FIR Contents text is mandatory.";
+        tabErrors.firContentText = "FIR Contents text is mandatory.";
       }
       if (!actionType || !actionType.trim()) {
         tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
@@ -3247,11 +3247,7 @@ function RegisterFIRForm() {
             </Card>
 
             {/* Acts and Sections Repeatable Panel */}
-            <Card
-              className={`border-slate-200 overflow-visible relative ${
-                isActDropdownOpen || isSectionDropdownOpen ? "z-30" : "z-20"
-              }`}
-            >
+            <Card className="border-slate-200 overflow-visible relative z-20">
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <Scale className="w-4 h-4 text-red-600" />
@@ -4963,7 +4959,7 @@ function RegisterFIRForm() {
               <CardHeader className="py-2.5 px-4 bg-slate-50 border-b border-slate-200 flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-600" />
-                  FIR Contents / Tehreer (तहरीर) <span className="text-red-600">*</span>
+                  FIR Contents <span className="text-red-600">*</span>
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <VoiceInputButton
@@ -4971,7 +4967,7 @@ function RegisterFIRForm() {
                       setFirContentText((prev) => (prev ? prev + " " + t : t))
                     }
                     currentValue={firContentText}
-                    fieldLabel="FIR Contents / Tehreer"
+                    fieldLabel="FIR Contents"
                   />
                   <span
                     className={`text-[11px] font-mono font-bold ${
@@ -5002,6 +4998,8 @@ function RegisterFIRForm() {
                     value={firContentText}
                     onChange={(val) => setFirContentText(val)}
                     inputClassName={`font-serif leading-relaxed text-xs focus:ring-2 focus:ring-blue-500 ${getFieldHighlightClass("firContentText")}`}
+                    enableGhost={false}
+                    showAcceptBadge={false}
                     required
                   />
                   {errors.fir_content && (
@@ -5038,6 +5036,8 @@ function RegisterFIRForm() {
                     value={briefFacts}
                     onChange={(val) => setBriefFacts(val)}
                     inputClassName={`text-xs ${getFieldHighlightClass("briefFacts")}`}
+                    enableGhost={false}
+                    showAcceptBadge={false}
                   />
                 </div>
 
@@ -5063,6 +5063,8 @@ function RegisterFIRForm() {
                     value={reasonsForDelay}
                     onChange={(val) => setReasonsForDelay(val)}
                     inputClassName="text-xs"
+                    enableGhost={false}
+                    showAcceptBadge={false}
                   />
                 </div>
               </CardContent>
@@ -5626,6 +5628,8 @@ function RegisterFIRForm() {
                       value={injuryDescription}
                       onChange={(val) => setInjuryDescription(val)}
                       inputClassName="w-full p-2.5 rounded border border-slate-300 text-xs overflow-hidden transition-[height] duration-75"
+                      enableGhost={false}
+                      showAcceptBadge={false}
                     />
                   </div>
                   <div className="space-y-3">

@@ -147,14 +147,27 @@ export function printA4Element(
     iframe = document.createElement("iframe");
     iframe.id = "cms-print-iframe";
     iframe.style.position = "fixed";
-    iframe.style.left = "-9999px";
+    iframe.style.left = "0";
     iframe.style.top = "0";
-    iframe.style.width = "794px"; // Standard A4 width in pixels at 96 DPI
-    iframe.style.height = "1123px";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
     iframe.style.border = "0";
-    iframe.style.opacity = "0";
+    iframe.style.zIndex = "-99999";
+    iframe.style.opacity = "1";
     iframe.style.pointerEvents = "none";
+    iframe.style.visibility = "visible";
     document.body.appendChild(iframe);
+  } else {
+    iframe.style.position = "fixed";
+    iframe.style.left = "0";
+    iframe.style.top = "0";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "0";
+    iframe.style.zIndex = "-99999";
+    iframe.style.opacity = "1";
+    iframe.style.pointerEvents = "none";
+    iframe.style.visibility = "visible";
   }
 
   const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -569,8 +582,7 @@ export function getZimniPagedHtml(el: HTMLElement): string {
  */
 export function printHtmlContent(
   htmlContent: string,
-  documentTitle?: string,
-  { standalone = false } = {}
+  documentTitle?: string
 ): void {
   if (typeof window === "undefined") return;
 
@@ -579,13 +591,27 @@ export function printHtmlContent(
     iframe = document.createElement("iframe");
     iframe.id = "cms-print-iframe";
     iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
+    iframe.style.left = "0";
+    iframe.style.top = "0";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
     iframe.style.border = "0";
-    iframe.style.visibility = "hidden";
+    iframe.style.zIndex = "-99999";
+    iframe.style.opacity = "1";
+    iframe.style.pointerEvents = "none";
+    iframe.style.visibility = "visible";
     document.body.appendChild(iframe);
+  } else {
+    iframe.style.position = "fixed";
+    iframe.style.left = "0";
+    iframe.style.top = "0";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "0";
+    iframe.style.zIndex = "-99999";
+    iframe.style.opacity = "1";
+    iframe.style.pointerEvents = "none";
+    iframe.style.visibility = "visible";
   }
 
   const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -594,66 +620,81 @@ export function printHtmlContent(
     return;
   }
 
-  let stylesHtml = "";
-  if (!standalone) {
-    document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
-      stylesHtml += node.outerHTML;
-    });
+  const title = documentTitle || "";
+  const printCss = `
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm;
+      }
+      * {
+        box-sizing: border-box !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        visibility: visible !important;
+      }
+      html {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        visibility: visible !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        font-size: 11pt;
+        line-height: 1.4;
+      }
+      .no-print, button, input[type="button"], [data-no-print] {
+        display: none !important;
+      }
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+        page-break-inside: auto;
+      }
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+    </style>
+  `;
+
+  const isFullDoc = /<html[^>]*>/i.test(htmlContent);
+  let finalDocumentHtml = "";
+
+  if (isFullDoc) {
+    if (/<head[^>]*>/i.test(htmlContent)) {
+      finalDocumentHtml = htmlContent.replace(/<\/head>/i, () => `${printCss}</head>`);
+    } else {
+      finalDocumentHtml = htmlContent.replace(/<html[^>]*>/i, () => `<html><head><meta charset="utf-8"/><title>${title}</title>${printCss}</head>`);
+    }
+  } else {
+    finalDocumentHtml = `
+      <!DOCTYPE html>
+      <html lang="hi">
+      <head>
+        <meta charset="utf-8" />
+        <title>${title}</title>
+        ${printCss}
+      </head>
+      <body>
+        <div class="print-container" style="width: 100%; max-width: 100%; margin: 0 auto; visibility: visible !important;">
+          ${htmlContent}
+        </div>
+      </body>
+      </html>
+    `;
   }
 
-  const title = documentTitle || "Police Legal Document";
-
   iframeDoc.open();
-  iframeDoc.write(standalone ? htmlContent : `
-    <!DOCTYPE html>
-    <html lang="hi">
-    <head>
-      <meta charset="utf-8" />
-      <title>${title}</title>
-      ${stylesHtml}
-      <style>
-        @page {
-          size: A4 portrait;
-          margin: 12mm 15mm 15mm 15mm;
-        }
-        * {
-          box-sizing: border-box;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        html, body {
-          background: #ffffff !important;
-          color: #000000 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          font-size: 11pt;
-          line-height: 1.6;
-        }
-        .no-print, button, input[type="button"], [data-no-print] {
-          display: none !important;
-        }
-        table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-          page-break-inside: auto;
-        }
-        tr {
-          page-break-inside: avoid;
-          page-break-after: auto;
-        }
-        th, td {
-          border-color: #000000 !important;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="print-container" style="width: 100%; max-width: 100%; margin: 0 auto;">
-        ${htmlContent}
-      </div>
-    </body>
-    </html>
-  `);
+  iframeDoc.write(finalDocumentHtml);
   iframeDoc.close();
 
   setTimeout(() => {
@@ -663,7 +704,7 @@ export function printHtmlContent(
     } catch (e) {
       console.warn("Iframe print failed", e);
     }
-  }, 350);
+  }, 400);
 }
 
 /**
@@ -815,11 +856,7 @@ export function downloadA4DocumentAsHtml(
 </body>
 </html>`;
 
-  downloadHtmlContent(fullHtml, filename);
-}
-
-export function downloadHtmlContent(htmlContent: string, filename: string): void {
-  const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+  const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -831,6 +868,129 @@ export function downloadHtmlContent(htmlContent: string, filename: string): void
 }
 
 /**
+ * Converts a raw standalone HTML string directly into an A4 PDF using html2canvas-pro and jsPDF.
+ */
+export async function downloadHtmlAsPdf(
+  htmlContent: string,
+  filename: string
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  // Extract head styles and body content
+  const styleMatch = htmlContent.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const styleContent = styleMatch ? styleMatch[1] : "";
+  const bodyContent = bodyMatch ? bodyMatch[1] : htmlContent;
+
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-99999px";
+  container.style.top = "0";
+  container.style.width = "960px";
+  container.style.backgroundColor = "#ffffff";
+  container.style.color = "#0f172a";
+  container.style.padding = "20px";
+  container.style.boxSizing = "border-box";
+  container.style.zIndex = "-9999";
+  container.innerHTML = `<style>${styleContent}</style>${bodyContent}`;
+
+  document.body.appendChild(container);
+
+  try {
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 8;
+    const printWidth = pageWidth - margin * 2;
+    const printHeight = pageHeight - margin * 2;
+
+    // A4 printable height in container px
+    const containerWidth = container.offsetWidth || 960;
+    const pageInnerHeightPx = (containerWidth * printHeight) / printWidth;
+
+    // Smart section-aware pagination: prevent splitting .gd-day-section across page cuts
+    const sections = Array.from(container.querySelectorAll<HTMLElement>(".gd-day-section"));
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const sectionTop = rect.top - containerRect.top;
+      const sectionHeight = rect.height;
+
+      const pageIndex = Math.floor(sectionTop / pageInnerHeightPx);
+      const pageBottom = (pageIndex + 1) * pageInnerHeightPx;
+
+      // If section crosses the bottom of the current page and fits on a fresh page, push it cleanly
+      if (sectionTop + sectionHeight > pageBottom && sectionHeight <= pageInnerHeightPx) {
+        const neededSpace = Math.ceil(pageBottom - sectionTop) + 2;
+        const spacer = document.createElement("div");
+        spacer.style.height = `${neededSpace}px`;
+        spacer.style.width = "100%";
+        spacer.style.display = "block";
+        section.parentNode?.insertBefore(spacer, section);
+      }
+    }
+
+    const html2canvasModule = (await import("html2canvas-pro")) as {
+      default?: (el: HTMLElement, opt?: Record<string, unknown>) => Promise<HTMLCanvasElement>;
+    };
+    const html2canvas = (html2canvasModule.default || html2canvasModule) as (
+      el: HTMLElement,
+      opt?: Record<string, unknown>
+    ) => Promise<HTMLCanvasElement>;
+    const { jsPDF } = await import("jspdf");
+
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      windowWidth: 1024,
+    });
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+      compress: true,
+    });
+
+    const totalHeight = canvas.height;
+    const pageCanvasHeight = Math.round(pageInnerHeightPx * 2);
+    const totalPdfPages = Math.max(1, Math.ceil(totalHeight / pageCanvasHeight));
+
+    for (let pageIdx = 0; pageIdx < totalPdfPages; pageIdx++) {
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = pageCanvasHeight;
+      const pctx = pageCanvas.getContext("2d");
+      if (pctx) {
+        pctx.fillStyle = "#ffffff";
+        pctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        const sy = pageIdx * pageCanvasHeight;
+        const sh = Math.min(pageCanvasHeight, totalHeight - sy);
+        if (sh > 0) {
+          pctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, pageCanvas.width, sh);
+        }
+      }
+      const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.98);
+      if (pageIdx > 0) {
+        pdf.addPage();
+      }
+      pdf.addImage(pageImgData, "JPEG", margin, margin, printWidth, printHeight);
+    }
+
+    const cleanFilename = filename.replace(/\.pdf$/i, "");
+    pdf.save(`${cleanFilename}.pdf`);
+  } catch (err) {
+    console.error("Direct HTML to PDF download failed:", err);
+    printHtmlContent(htmlContent, filename);
+  } finally {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
+  }
+}
+
+/**
  * Downloads the given element directly as a clean A4 PDF file using jsPDF and html2canvas.
  */
 export async function downloadA4ElementAsPdf(
@@ -838,6 +998,10 @@ export async function downloadA4ElementAsPdf(
   filename: string
 ): Promise<void> {
   if (typeof window === "undefined") return;
+
+  if (typeof elementOrId === "string" && elementOrId.trim().startsWith("<")) {
+    return downloadHtmlAsPdf(elementOrId, filename);
+  }
 
   const el =
     typeof elementOrId === "string"

@@ -114,7 +114,7 @@
   }
   .cms-court-theme .cms-shell header .cms-persona-badge { color: #ffffff; }
   .cms-court-theme .cms-shell header .cms-language-badge { color: #ffffff; }
-  .cms-topbar :where(.absolute button:hover) { background-color: var(--color-paper-3); }
+  .cms-topbar :where(.absolute button:hover) { background: #eef1ff; }
   .cms-court-theme .cms-module-menu-header,
   .cms-court-theme .cms-module-menu-header :where(h4, button, svg) {
     color: #ffffff;
@@ -187,12 +187,12 @@
   }
 
   /* Hallmark Tabular System: Precision High-Contrast Court Tables */
-  .cms-court-theme :where(table):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(table):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     border-collapse: collapse;
     border: 1px solid #536584;
     width: 100%;
   }
-  .cms-court-theme :where(thead, thead tr, thead th):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(thead, thead tr, thead th):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     background: #203c88;
     color: white;
     border-color: #203c88;
@@ -200,20 +200,20 @@
     letter-spacing: normal;
     font-weight: 700;
   }
-  .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(thead button, thead span, thead svg):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     color: #ffffff;
   }
-  .cms-court-theme :where(thead button.bg-blue-50):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(thead button.bg-blue-50):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     background-color: rgb(255 255 255 / 18%);
   }
-  .cms-court-theme :where(th, td):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(th, td):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     padding: 12px 14px;
   }
-  .cms-court-theme :where(tbody tr):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
+  .cms-court-theme :where(tbody tr):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
     border-bottom: 1px solid #cbd3e3;
   }
-  .cms-court-theme :where(tbody tr:hover):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
-    background-color: var(--cms-table-row-hover, #f7f9fc);
+  .cms-court-theme :where(tbody tr:hover):not(.a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *, .gd-print-area *, .gd-register-table *) {
+    background-color: #f7f9fc;
   }
 
   /* Hallmark Input & Form Controls */

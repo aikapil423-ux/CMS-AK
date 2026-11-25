@@ -152,9 +152,9 @@ function GeneralDiaryContent() {
     gdNumber: "w-24 min-w-[85px]",
     officer: "w-48 min-w-[180px]",
     gdType: "w-36 min-w-[140px]",
-    subject: "w-60 min-w-[220px]",
+    subject: "w-56 min-w-[180px] max-w-[220px]",
     activityDateTime: "w-40 min-w-[145px]",
-    narrative: "min-w-[300px]",
+    narrative: "min-w-[260px]",
   };
 
   const [columnOrder, setColumnOrder] = useState<GDColKey[]>(() => {
@@ -739,8 +739,8 @@ function GeneralDiaryContent() {
 
       case "subject":
         return (
-          <td key="subject" className="py-3.5 px-3.5 align-top w-60 min-w-[220px]">
-            <p className="font-bold text-slate-950 text-xs break-words whitespace-normal leading-relaxed">
+          <td key="subject" className="py-3.5 px-3.5 align-top w-56 min-w-[180px] max-w-[220px]">
+            <p className="font-bold text-slate-950 text-xs break-all whitespace-normal leading-relaxed">
               {rec.subject}
             </p>
           </td>
@@ -879,6 +879,20 @@ function GeneralDiaryContent() {
       {successFlash && (
         <div className="p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl flex items-center gap-2.5 text-xs sm:text-sm font-semibold animate-in fade-in-50">
           <span>{successFlash}</span>
+        </div>
+      )}
+
+      {/* 24-Hour Auto-Purge Policy Notice for Auto-Suggestions & Drafts */}
+      {activeTab === "SUGGESTIONS_DRAFTS" && (
+        <div className="bg-gradient-to-r from-purple-50 via-purple-50/80 to-amber-50/50 border border-purple-200/80 rounded-xl p-3 flex items-start gap-3 text-xs text-purple-950 shadow-2xs">
+          <Clock className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-900">
+                24-Hour Auto-Purge Rule - Any suggested or draft General Diary entry on which no action is taken for 24 hours is automatically removed.
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1024,13 +1038,15 @@ function GeneralDiaryContent() {
                       </th>
                     );
                   })}
-                  <th className="py-3 px-2.5 w-24 min-w-[88px] text-right align-top pt-3.5 whitespace-nowrap">Actions</th>
+                  {activeTab === "SUGGESTIONS_DRAFTS" && (
+                    <th className="py-3 px-2.5 w-24 min-w-[88px] text-right align-top pt-3.5 whitespace-nowrap">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {displayedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-500">
+                    <td colSpan={columnOrder.length + (activeTab === "SUGGESTIONS_DRAFTS" ? 1 : 0)} className="text-center py-10 text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Filter className="w-7 h-7 text-slate-300" />
                         <p className="font-semibold text-slate-700">{t("कोई रिकॉर्ड नहीं मिला (No records match the column filter)", "No records match the column filter")}</p>
@@ -1069,9 +1085,9 @@ function GeneralDiaryContent() {
                     >
                       {columnOrder.map((col) => renderGDCell(col, rec))}
 
-                      {/* 7. Actions */}
-                      <td className="py-3.5 px-2.5 align-top text-right w-24 min-w-[88px]">
-                        {isSuggested || isDraft ? (
+                      {/* Actions (Only on Suggestions & Drafts for edit/delete; on Register, clicking any row opens full preview) */}
+                      {activeTab === "SUGGESTIONS_DRAFTS" && (
+                        <td className="py-3.5 px-2.5 align-top text-right w-24 min-w-[88px]">
                           <div className="flex items-center justify-end gap-1.5">
                             <Link href={`/general-diary/new?editDraft=${rec.id}`}>
                               <button
@@ -1092,22 +1108,8 @@ function GeneralDiaryContent() {
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedRecord(rec);
-                              setInspectAutoPrint(false);
-                              setInspectModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-blue-50/80 text-slate-700 hover:text-blue-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer whitespace-nowrap"
-                            title="Preview Roznamcha Record"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                            <span>Preview</span>
-                          </button>
-                        )}
-                      </td>
+                        </td>
+                      )}
                     </tr>
                   );
                 }))}
