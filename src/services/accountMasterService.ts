@@ -9,6 +9,7 @@ import type {
   SpecialStationAllocation,
   AccountAuditLog,
 } from '../types/adminMaster';
+import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from "../lib/officerRoles";
 import { DEMO_USERS } from '../lib/mockData';
 import { readMasterLocationReferences } from './masterLocationReferences';
 
@@ -50,10 +51,6 @@ function getInitialAccounts(): MasterAccount[] {
       assignedUnitType = 'MHC_STORE';
       jurisdictionType = 'SINGLE_STATION';
       roleVal = 'MHC_GD_INCHARGE';
-    } else if (u.role === 'DUTY_OFFICER') {
-      assignedUnitType = 'POLICE_STATION';
-      jurisdictionType = 'SINGLE_STATION';
-      roleVal = 'DUTY_OFFICER';
     } else if (u.role === 'ENQUIRY_OFFICER') {
       assignedUnitType = 'POLICE_STATION';
       jurisdictionType = 'SINGLE_STATION';
@@ -113,12 +110,23 @@ async function withStoreLock<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+function normalizeAccountRole(account: MasterAccount): MasterAccount {
+  if (!isRetiredDutyOfficerRole(account.role)) return account;
+  return {
+    ...account,
+    role: 'ENQUIRY_OFFICER',
+    designation: INVESTIGATING_OFFICER_LABEL,
+    rankDisplay: account.rankDisplay?.replace(/\s*\(Duty Officer[^)]*\)/i, '') || account.rank,
+    roleDisplay: INVESTIGATING_OFFICER_LABEL,
+  };
+}
+
 async function mapAccountLocationReferences(data: AccountsStoreData, direction: 'id' | 'name'): Promise<AccountsStoreData> {
   const locations = await readMasterLocationReferences();
   return {
     ...data,
     accounts: data.accounts.map(account => ({
-      ...locations.location(account, direction),
+      ...locations.location(normalizeAccountRole(account), direction),
       state: locations.state(account.state, direction),
       range: locations.range(account.range, direction),
       authorizedDistricts: account.authorizedDistricts?.map(value => locations.district(value, direction)),
@@ -255,7 +263,7 @@ export async function createAccount(
   }
 
   const now = new Date().toISOString();
-  const newAccount: MasterAccount = {
+  const newAccount = normalizeAccountRole({
     id: 'usr_' + randomUUID().slice(0, 8),
     username: normalizedPno,
     pno: normalizedPno,
@@ -285,7 +293,7 @@ export async function createAccount(
     plainPinSample: input.pin, // Available in dev/demo mode
     createdAt: now,
     updatedAt: now,
-  };
+  });
 
   store.accounts.unshift(newAccount);
   await writeAccountsStore(store);
@@ -315,11 +323,11 @@ export async function updateAccount(
   if (idx === -1) throw new Error('Account not found.');
 
   const previous = { ...store.accounts[idx] };
-  const updated: MasterAccount = {
+  const updated = normalizeAccountRole({
     ...store.accounts[idx],
     ...updates,
     updatedAt: new Date().toISOString(),
-  };
+  });
 
   store.accounts[idx] = updated;
   await writeAccountsStore(store);

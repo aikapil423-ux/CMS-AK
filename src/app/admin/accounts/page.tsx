@@ -854,11 +854,6 @@ export default function AccountManagementPage() {
       roleDisplay = "MHC (Specialized Unit Records & Store)";
       unitType = "SPECIALIZED_UNIT";
       jurisdiction = "UNIT_BOUND";
-    } else if (newRole === "SPECIAL_UNIT_DUTY_OFFICER") {
-      designation = "Duty Officer (Counter Intake)";
-      roleDisplay = "Duty Officer (Specialized Unit Reception)";
-      unitType = "SPECIALIZED_UNIT";
-      jurisdiction = "UNIT_BOUND";
     } else if (newRole === "SPECIAL_UNIT_HC") {
       designation = "Head Constable";
       roleDisplay = "Head Constable (Specialized Unit)";
@@ -926,11 +921,6 @@ export default function AccountManagementPage() {
       designation = "Moharrir Head Constable (MHC)";
       roleDisplay = "Moharrir Head Constable (MHC Store & GD)";
       unitType = "MHC_STORE";
-      jurisdiction = "SINGLE_STATION";
-    } else if (newRole === "DUTY_OFFICER") {
-      designation = "Duty Officer (Counter)";
-      roleDisplay = "Duty Officer (Intake Counter)";
-      unitType = "POLICE_STATION";
       jurisdiction = "SINGLE_STATION";
     } else if (newRole === "HEAD_CONSTABLE") {
       designation = "Head Constable";
@@ -1868,7 +1858,7 @@ export default function AccountManagementPage() {
                 <option value="SHO">SHO (Inspector)</option>
                 <option value="ENQUIRY_OFFICER">Investigating Officer (IO)</option>
                 <option value="MHC_GD_INCHARGE">MHC (Store & GD)</option>
-                <option value="DUTY_OFFICER">Duty Officer</option>
+
               </select>
 
               <select
@@ -2212,7 +2202,7 @@ export default function AccountManagementPage() {
                       <option value="SPECIAL_UNIT_ASI">Assistant Sub-Inspector (ASI)</option>
                       <option value="SPECIAL_UNIT_IO">Investigating Officer (IO)</option>
                       <option value="SPECIAL_UNIT_MHC">MHC (Moharrir Head Constable)</option>
-                      <option value="SPECIAL_UNIT_DUTY_OFFICER">Duty Officer (Counter Intake)</option>
+
                       <option value="SPECIAL_UNIT_HC">Head Constable</option>
                       <option value="SPECIAL_UNIT_CONSTABLE">Constable</option>
                       <option value="SPECIAL_UNIT_STAFF">Station Staff</option>
@@ -2229,7 +2219,7 @@ export default function AccountManagementPage() {
                       <option value="ASI">Assistant Sub-Inspector (ASI)</option>
                       <option value="ENQUIRY_OFFICER">Investigating Officer (IO)</option>
                       <option value="MHC_GD_INCHARGE">MHC (Moharrir Head Constable)</option>
-                      <option value="DUTY_OFFICER">Duty Officer (Counter Intake)</option>
+
                       <option value="HEAD_CONSTABLE">Head Constable</option>
                       <option value="CONSTABLE">Constable</option>
                       <option value="STATION_STAFF">Station Staff</option>
@@ -2670,7 +2660,7 @@ export default function AccountManagementPage() {
                   {formData.role === "SHO" && `Single station command: Authorized for registration, FIR approval and investigation review at ${formData.policeStation || "selected police station"}.`}
                   {formData.role === "MHC_GD_INCHARGE" && `Dedicated MHC Malkhana & General Diary control for ${formData.policeStation || "selected station"}.`}
                   {formData.role === "ENQUIRY_OFFICER" && `Investigating officer assigned to cases in ${formData.policeStation || "selected unit/station"}${formData.district ? `, ${formData.district}` : ""}.`}
-                  {formData.role === "DUTY_OFFICER" && `Intake counter & citizen complaint registration authority at ${formData.policeStation || "selected station"}.`}
+
                 </p>
               </div>
             </div>
@@ -3208,16 +3198,6 @@ export default function AccountManagementPage() {
                     policy: "Station Malkhana & GD",
                     scope: "Assigned Station Malkhana Vault & General Diary",
                     actions: "General Diary Logging, Evidence Tagging, Malkhana Deposit, Case Property Safe Custody",
-                  },
-                  {
-                    category: "DISTRICT",
-                    wing: "District Police",
-                    wingBadge: "bg-slate-100 text-slate-800 border-slate-200",
-                    role: "Duty Officer (ASI / HC)",
-                    rank: "ASI / Head Constable",
-                    policy: "Counter Scope",
-                    scope: "Station Citizen Intake Desk",
-                    actions: "Complaint Receiving, Daily Diary (GD) Entry, NC Report Registration, Visitor Guidance",
                   },
                   {
                     category: "DISTRICT",

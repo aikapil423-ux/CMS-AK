@@ -616,7 +616,7 @@ export async function getSmartVerifiedSuggestions(): Promise<GeneralDiaryRecord[
       district: "Panipat",
       entryForOfficer: {
         name: "ASI Surender Pal",
-        rank: "ASI (Duty Officer)",
+        rank: "ASI",
         beltNumber: "419/KKR",
         pno: "09384712",
       },

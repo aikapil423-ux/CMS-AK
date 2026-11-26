@@ -91,7 +91,7 @@ export const FirSummaryService = {
       title: "प्राथमिकी का वैधानिक पंजीकरण (Statutory FIR Registration)",
       status: "COMPLETED",
       completedAt: fir.firDate,
-      actor: fir.registeredBy || "Duty Officer",
+      actor: fir.registeredBy || "Registering Officer",
       detail: `धारा 173 बी.एन.एस.एस. (BNSS) के तहत एफ.आई.आर. संख्या ${fir.firNumber} पंजीकृत कर प्रविष्टि की गई।`,
     });
 

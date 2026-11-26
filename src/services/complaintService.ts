@@ -234,7 +234,7 @@ export const ComplaintService = {
     if(typeof window!=='undefined')list=list.filter(c=>viewer&&canViewComplaint(viewer,c).allowed);
 
     // 0. Station-level isolation:
-    // SHO, MHC, Duty Officer, and IO/EO see ONLY complaints of their police station.
+    // SHO, MHC, and IO/EO see ONLY complaints of their police station.
     // Superior district officers (DSP, SP, ASP, Super Admin) see across the district.
     const isSuperiorRole =
       filter?.viewerRole === "DSP_SUBDIV" ||

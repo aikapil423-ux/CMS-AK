@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const fir = (await readFirRecords()).find(row => row.id === body.firId);
     if (!fir || !isFirVisibleToUser(user, fir)) return forbidden();
     if (!(await firReportAccusedSources(fir, user)).some(person => person.accusedId === body.accused.accusedId)) return Response.json({ error: 'This accused is not linked to this FIR or its processed evidence.' }, { status: 400 });
-    if (!['SHO', 'MHC_GD_INCHARGE', 'DUTY_OFFICER', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV', 'ENQUIRY_OFFICER'].includes(user.role)) return forbidden();
+    if (!['SHO', 'MHC_GD_INCHARGE', 'SUPER_ADMIN', 'SP_DISTRICT', 'DSP_SUBDIV', 'ENQUIRY_OFFICER'].includes(user.role)) return forbidden();
     const old = fir.accusedChargesheetDrafts?.[body.accused.accusedId];
     if ((old?.revision || 0) !== body.expectedRevision) return Response.json({ error: 'Accused details changed. Close and reopen the form before editing.' }, { status: 409 });
     const draft = { ...body.accused, revision: body.expectedRevision + 1, updatedAt: new Date().toISOString(), savedBy: user.id };

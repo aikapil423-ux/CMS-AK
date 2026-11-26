@@ -68,7 +68,6 @@ export function isFirVisibleToUser(
   if (fir.custodyUnit && user.unitId !== fir.custodyUnit.id) return false;
 
   // Station-level personnel: SHO and MHC see every record of their station.
-  // The Duty Officer is deliberately NOT station-wide: they see only their assignments below.
   const isStationStaff =
     role === "SHO" ||
     role === "MHC_GD_INCHARGE" ||

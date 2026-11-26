@@ -723,7 +723,7 @@ export default function ComplaintProfilePage() {
   }, [selectedEoId]);
 
   // Role & Permission Computations
-  const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
+  const isMhc = currentUser.role === "MHC_GD_INCHARGE";
   const isSuperior = isSuperiorToSho(currentUser.role);
   const isShoOrSuper = isShoOrSuperior(currentUser.role);
   const isSho = (currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc;
@@ -1354,7 +1354,7 @@ export default function ComplaintProfilePage() {
       return;
     }
 
-    if (!isSho && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "DUTY_OFFICER") {
+    if (!isSho && currentUser.role !== "SUPER_ADMIN") {
       alert("Access Denied: Only SHO or authorized officers can register FIR.");
       return;
     }

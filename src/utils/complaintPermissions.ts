@@ -104,12 +104,10 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
   if(complaint.custodyUnit && user.unitId !== complaint.custodyUnit.id)return {allowed:false,reason:'Complaint is outside your unit.'};
   if(['SHO','MHC_GD_INCHARGE'].includes(user.role||'')){
     // Station staff see every complaint of their own station — and nothing outside it.
-    // The Duty Officer is deliberately NOT station-wide: like the IO/EO, they only see
-    // what is assigned to them (checked below), never the whole station list.
     if(!norm(user.stationName)||norm(user.stationName)!==norm(jurisdiction.policeStation))return {allowed:false,reason:'Complaint is outside your police station.'};
     return {allowed:true};
   }
-  // Enquiry / Investigating Officers, Duty Officers and other readers: ONLY the
+  // Enquiry / Investigating Officers and other readers: ONLY the
   // complaints assigned to them — never another officer's complaint and never the
   // whole station list. Assignment is the permission itself, so an assigned complaint
   // stays visible even when it belongs to another police station.
@@ -123,7 +121,7 @@ export function canViewComplaint(user: AuthUserContext, complaint: ComplaintItem
  */
 export function canCreateDocument(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
-  if (isShoOrSuperior(user.role) || user.role === "DUTY_OFFICER" || user.role === "MHC_GD_INCHARGE") {
+  if (isShoOrSuperior(user.role) || user.role === "MHC_GD_INCHARGE") {
     return { allowed: true };
   }
   if (isComplaintAssignedToEo(complaint)) {
@@ -261,7 +259,7 @@ export function canDeleteDocument(
  */
 export function canReassignEO(user: AuthUserContext, complaint: ComplaintItem): PermissionResult {
   const scope=canViewComplaint(user,complaint);if(!scope.allowed)return scope;
-  const isMhc = user.role === "MHC_GD_INCHARGE" || user.role === "DUTY_OFFICER";
+  const isMhc = user.role === "MHC_GD_INCHARGE";
   if (isMhc || user.role === "ENQUIRY_OFFICER") {
     return {
       allowed: false,

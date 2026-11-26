@@ -88,7 +88,7 @@ export function RoleAdaptiveWorkspace({
     }
     if (
       role === "MHC_GD_INCHARGE" ||
-      role === "DUTY_OFFICER" ||
+
       role === "COMMISSIONERATE_MHC" ||
       role === "STATION_STAFF" ||
       role === "COMMISSIONERATE_STAFF" ||
@@ -97,7 +97,7 @@ export function RoleAdaptiveWorkspace({
       role === "COMMISSIONERATE_HC" ||
       role === "COMMISSIONERATE_CONSTABLE" ||
       role === "SPECIAL_UNIT_MHC" ||
-      role === "SPECIAL_UNIT_DUTY_OFFICER" ||
+
       role === "SPECIAL_UNIT_HC" ||
       role === "SPECIAL_UNIT_CONSTABLE" ||
       role === "SPECIAL_UNIT_STAFF" ||
@@ -141,7 +141,7 @@ export function RoleAdaptiveWorkspace({
               ? "Investigating / Enquiry Officer (जाँच अधिकारी)"
               : activeRole === "SP"
               ? "Supervisory Oversight (पुलिस अधीक्षक / डीएसपी)"
-              : "Duty Officer / Station Clerk (मुंशी / संतरी)"}
+              : "Station Clerk (मुंशी)"}
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
             {currentUser.name} • {currentUser.roleDisplay} ({currentUser.stationName})
@@ -433,7 +433,7 @@ export function RoleAdaptiveWorkspace({
           </div>
         )}
 
-        {/* 3. MUNSHI / DUTY OFFICER VIEW */}
+        {/* 3. MUNSHI VIEW */}
         {activeRole === "MUNSHI" && (
           <div className="space-y-4 animate-in fade-in-50 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">

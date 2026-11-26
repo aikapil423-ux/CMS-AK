@@ -406,7 +406,7 @@ export const lostPropertyService = {
       Date: ${record.dateOfPropertyMissing || "—"}
     </div>
     <div class="sign-box">
-      <strong>Signature of Enquiry Officer / Duty Officer</strong><br/>
+      <strong>Signature of the Officer</strong><br/>
       Name: ${record.nameOfEo.split("-")[0] || "Officer"}<br/>
       PS ${record.policeStation}
     </div>

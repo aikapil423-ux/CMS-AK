@@ -258,7 +258,7 @@ export const MANAGED_TABLES: ManagedTableConfig[] = [
         label: "Entry for officer",
         labelHi: "अधिकारी का विवरण",
         dataType: "text",
-        description: "Duty officer or official reporting the matter.",
+        description: "Officer or official reporting the matter.",
         isDefault: true,
         isActive: true,
         width: "w-44",

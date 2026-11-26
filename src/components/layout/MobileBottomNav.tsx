@@ -46,7 +46,7 @@ export function MobileBottomNav() {
   const isActs = pathname.startsWith("/acts-sections");
 
   // Only MHC, SHO, and Superior officers can register complaints / FIR
-  const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
+  const isMhc = currentUser?.role === "MHC_GD_INCHARGE";
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;

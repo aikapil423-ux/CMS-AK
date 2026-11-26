@@ -367,7 +367,7 @@ export function ComplaintReceiptModal({
                   {mhcName} ({mhcRank})
                 </p>
                 <p className="text-slate-700 text-[11px]">
-                  Moharrir Head Constable / Duty Officer
+                  Receiving Officer
                 </p>
                 <p className="text-slate-600 font-mono text-[11px]">
                   Belt No: {mhcBeltNumber} • {complaint.policeStation || "PS City Panipat"}

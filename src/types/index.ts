@@ -21,7 +21,6 @@ export type SystemRole =
   | 'SI'
   | 'ASI'
   | 'MHC_GD_INCHARGE'
-  | 'DUTY_OFFICER'
   | 'ENQUIRY_OFFICER'
   | 'READER_TO_SHO'
   | 'HEAD_CONSTABLE'

@@ -112,7 +112,7 @@ export async function loadAuditRows(user: UserSession) {
     for(const g of records.map(g => locations.location(g, 'name')).filter(g=>scopeAllowed(user,g))) {
       const author=JSON.parse(g.actualAuthorJson||'{}');
       // EO/IO audits do not broaden existing assignment access to station-wide diary contents.
-      if(!auditSupervisor(user)&&!['MHC_GD_INCHARGE','DUTY_OFFICER'].includes(user.role)&&author.id!==user.id&&author.pno!==user.pno)continue;
+      if(!auditSupervisor(user)&&!['MHC_GD_INCHARGE'].includes(user.role)&&author.id!==user.id&&author.pno!==user.pno)continue;
       rows.push({id:'gd:'+g.id,source:'gd',caseId:'',reference:g.gdNumber,href:'/general-diary',district:g.district,station:g.policeStation,officer:author.name||'',category:g.typeDisplay,status:g.status,title:g.subject,
         registered:auditDate(g.entryDateTime),updated:auditDate(g.updatedAt),assigned:'',submitted:'',age:auditAge(g.entryDateTime),pending:null,findings:[]});
     }

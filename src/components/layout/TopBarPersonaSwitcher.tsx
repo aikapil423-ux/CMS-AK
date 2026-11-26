@@ -28,9 +28,6 @@ function getRoleBadge(user: UserSession): { badge: string; colorClass: string } 
   if (user.role === "MHC_GD_INCHARGE") {
     return { badge: "MHC", colorClass: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
-  if (user.role === "DUTY_OFFICER") {
-    return { badge: "Duty", colorClass: "bg-amber-50 text-amber-700 border-amber-200" };
-  }
   if (user.role === "ENQUIRY_OFFICER") {
     if (user.rank === "INSPECTOR") {
       return { badge: "IO-Insp", colorClass: "bg-blue-50 text-blue-700 border-blue-200" };

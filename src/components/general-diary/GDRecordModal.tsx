@@ -305,7 +305,7 @@ export function GDRecordModal({
                 </div>
               </div>
 
-              {/* Actual Author (MHC / Duty Officer) */}
+              {/* Actual Author */}
               <div className="border border-slate-400 p-3 bg-white space-y-1.5 text-xs">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-300">
                   <div className="flex items-center gap-1.5">

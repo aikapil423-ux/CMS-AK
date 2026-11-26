@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, timingSafeEqual, scryptSync } from 'node:crypto';
+import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from '@/lib/officerRoles';
 import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
 
@@ -38,10 +39,11 @@ async function officerSession(user: { id: string; pno: string; fullName: string;
   for (let pass = 0; pass < units.length; pass++) {
     for (const unit of units) if (unit.parentId && scope.has(unit.parentId)) scope.add(unit.id);
   }
+  const role = isRetiredDutyOfficerRole(user.role) ? 'ENQUIRY_OFFICER' : user.role;
   return {
     id: user.id, pno: user.pno, name: user.fullName,
     rank: user.rank as UserSession['rank'], rankDisplay: user.rank,
-    role: user.role as UserSession['role'], roleDisplay: user.role,
+    role: role as UserSession['role'], roleDisplay: role === 'ENQUIRY_OFFICER' ? INVESTIGATING_OFFICER_LABEL : role,
     stationName: user.unit.name, stationCode: user.unit.code, district: user.unit.district,
     unitId: user.unit.id, jurisdictionUnits: units.filter(unit => scope.has(unit.id)).map(unit => unit.name),
   };

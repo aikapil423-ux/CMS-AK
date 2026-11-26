@@ -17,6 +17,7 @@ function load(file){
       }},
       policeUnit:{findMany:async()=>[]},
     }};
+    if(n==='@/services/accountMasterService')return {getAccountById:async()=>null,getAccountByUsername:async()=>null};
     if(n==='@/lib/mockData')return load('src/lib/mockData.ts');
     if(n==='./mockData')return load('src/lib/mockData.ts');
     if(n.startsWith('@/')){const f='src/'+n.slice(2);return load(fs.existsSync(f+'.ts')?f+'.ts':f+'/index.ts');}
@@ -41,6 +42,20 @@ test('demo login returns before touching the database, so an unseeded or unreach
   dbUnavailable=false;
   assert.equal(await validLogin(demo.pno,'999999'),null);
   assert.equal(dbQueries,before+1);
+});
+
+test('retired officer roles resolve to Investigating Officer without changing the officer ID',async()=>{
+  const demo=DEMO_USERS.find(user=>user.id==='usr_duty_1');
+  assert.ok(demo);
+  assert.equal((await validLogin(demo.pno,'123456')).role,'ENQUIRY_OFFICER');
+  for(const retiredRole of ['DUTY_OFFICER','SPECIAL_UNIT_DUTY_OFFICER']){
+    dbUser={...officer('QA-IO','test-pin'),role:retiredRole};
+    const session=await sessionUser(new Request('http://local',{headers:{cookie:'cms_session='+issueSession(dbUser.id)}}));
+    assert.equal(session.id,dbUser.id);
+    assert.equal(session.role,'ENQUIRY_OFFICER');
+    assert.equal(session.roleDisplay,'Investigating Officer (IO)');
+  }
+  dbUser=null;
 });
 
 test('demo PIN wins over a database password for the same PNO and the real password still works',async()=>{

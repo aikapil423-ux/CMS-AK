@@ -303,7 +303,7 @@ export default function RegisterComplaintPage() {
   const [voiceLang, setVoiceLang] = useState<"hi-IN" | "en-IN">("hi-IN");
 
   // Permissions: Only MHC, SHO, and Superior officers can register complaints
-  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER") : false;
+  const isMhc = currentUser ? (currentUser.role === "MHC_GD_INCHARGE") : false;
   const isSuperior = currentUser ? (currentUser.role === "DSP_SUBDIV" || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN") : false;
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
   const canRegisterComplaint = isMhc || isSho || isSuperior;
@@ -2635,7 +2635,7 @@ export default function RegisterComplaintPage() {
         subject: subjectStr,
         narrative: narrativeStr,
         officer: {
-          name: createdComplaint.assignedEoName || currentUser.name || "Duty Officer",
+          name: createdComplaint.assignedEoName || currentUser.name || "Officer",
           rank: createdComplaint.assignedEoRank || currentUser.rankDisplay || "Sub-Inspector",
           beltNumber: (createdComplaint as any).assignedEoBeltNumber || (currentUser as any).beltNumber || "Station Staff",
           pno: createdComplaint.assignedEoPno || currentUser.pno || "00000000",

@@ -66,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isComplaints = !isFir && (pathname.startsWith("/complaints") || pathname.startsWith("/enquiry-workspace"));
 
   // Only MHC, SHO, and Superior officers can register complaints/FIR (EOs cannot register complaints or FIR)
-  const isMhc = currentUser?.role === "MHC_GD_INCHARGE" || currentUser?.role === "DUTY_OFFICER";
+  const isMhc = currentUser?.role === "MHC_GD_INCHARGE";
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
   const isSuperior = currentUser?.role === "DSP_SUBDIV" || currentUser?.role === "SP_DISTRICT" || currentUser?.role === "SUPER_ADMIN";
   const canRegisterComplaint = isMhc || isSho || isSuperior;

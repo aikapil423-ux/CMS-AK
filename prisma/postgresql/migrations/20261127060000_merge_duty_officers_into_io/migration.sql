@@ -1,0 +1,3 @@
+UPDATE "User"
+SET "role" = 'ENQUIRY_OFFICER'
+WHERE "role" = 'DUTY_OFFICER';

@@ -267,7 +267,7 @@ const WORD_BANK: string[] = [
   "Assistant Sub-Inspector",
   "Head Constable",
   "Constable",
-  "Duty Officer",
+  "Investigating Officer",
   "Station House Officer",
   "SHO",
   "Enquiry Officer",

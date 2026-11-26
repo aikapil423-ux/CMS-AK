@@ -106,7 +106,7 @@ const DEFAULT_STATION_OFFICERS = [
   {
     id: "usr_duty_1",
     name: "ASI Surender Pal",
-    rank: "ASI (Duty Officer)",
+    rank: "ASI",
     beltNumber: "419/PNP",
     pno: "09384712",
   },
@@ -855,7 +855,7 @@ function NewGDEntryContent() {
       case "NAKABANDI":
         setSubject("Nakabandi - Check Point Establishment");
         setNarrative(
-          `At this time, nakabandi was established at a strategic point under the supervision of the duty officer. Vehicles and suspects were checked, identities verified against records, and the operation concluded without untoward incident.`
+          `At this time, nakabandi was established at a strategic point under the supervision of the officer on duty. Vehicles and suspects were checked, identities verified against records, and the operation concluded without untoward incident.`
         );
         break;
 

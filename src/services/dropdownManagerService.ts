@@ -402,7 +402,7 @@ export const DROPDOWN_CATEGORIES: DropdownCategory[] = [
     defaultItems: [
       { code: "INSPECTOR", label: "Inspector / SHO", description: "Station House Officer / Inspector of Police", isActive: true },
       { code: "SUB_INSPECTOR", label: "Sub-Inspector (SI)", description: "Enquiry Officer / IO", isActive: true },
-      { code: "ASSISTANT_SUB_INSPECTOR", label: "Assistant Sub-Inspector (ASI)", description: "Duty Officer / Inquiry Officer", isActive: true },
+      { code: "ASSISTANT_SUB_INSPECTOR", label: "Assistant Sub-Inspector (ASI)", description: "Investigating Officer", isActive: true },
       { code: "HEAD_CONSTABLE", label: "Head Constable (HC / MHC)", description: "Moharrir Head Constable / Section Incharge", isActive: true },
       { code: "CONSTABLE", label: "Constable", description: "Executive Staff / Sentry / Patrol Staff", isActive: true },
       { code: "DEPUTY_SP", label: "Deputy Superintendent of Police (DSP)", description: "Gazetted Supervisory Officer", isActive: true },
