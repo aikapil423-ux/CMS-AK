@@ -51,10 +51,17 @@ import { ComplaintService } from "@/services/complaintService";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useAuth } from "@/context/AuthContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST } from "@/lib/utils";
 
 type ActiveTab = "templates" | "create" | "drafts" | "prepared" | "manager";
 
 function KalandraWorkspaceContent() {
+  const { currentUser } = useAuth();
+  const defaultDistrict = currentUser?.district || "Panipat";
+  const defaultPs = currentUser?.stationName || "PS City Panipat";
   const searchParams = useSearchParams();
   const linkedFirId = searchParams.get("firId");
 
@@ -71,11 +78,11 @@ function KalandraWorkspaceContent() {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<KalandraRecord>>({
     kalandraNumber: "",
-    policeStation: "PS City Panipat",
-    district: "Panipat",
+    policeStation: defaultPs,
+    district: defaultDistrict,
     caseType: "DIRECT",
-    magistrateCourt: "Court of Sub-Divisional Magistrate (SDM), Gurugram",
-    incidentDate: new Date().toISOString().split("T")[0],
+    magistrateCourt: `Court of Sub-Divisional Magistrate (SDM), ${defaultDistrict}`,
+    incidentDate: getTodayIsoIST(),
     incidentTime: "11:00",
     incidentPlace: "",
     respondentName: "",
@@ -133,6 +140,8 @@ function KalandraWorkspaceContent() {
 
   // Manager New Template State
   const [customTemplateModal, setCustomTemplateModal] = useState(false);
+  useEscapeKey(Boolean(viewingPackage), () => setViewingPackage(null));
+  useEscapeKey(customTemplateModal, () => setCustomTemplateModal(false));
   const [newTemplate, setNewTemplate] = useState<Partial<KalandraTemplate>>({
     code: "CUSTOM_" + Date.now(),
     titleEn: "",
@@ -242,7 +251,7 @@ function KalandraWorkspaceContent() {
         ? "विपक्षी को नियमानुसार पाबंद/संज्ञान लेकर आवश्यक वैधानिक कार्रवाई अमल में लाई जावे।"
         : "Necessary statutory action and preventive binding down be ordered as per law.",
       witnesses: [
-        { id: "w-1", name: "ASI Rakesh Kumar", fatherName: "Sh. Ram Niwas", address: "PS Sector 29, Gurugram", mobile: "" },
+        { id: "w-1", name: "ASI Rakesh Kumar", fatherName: "Sh. Ram Niwas", address: `${defaultPs}, ${defaultDistrict}`, mobile: "" },
         { id: "w-2", name: "", fatherName: "", address: "", mobile: "" }
       ],
       supportingDocuments: defaultDocs,
@@ -987,7 +996,7 @@ function KalandraWorkspaceContent() {
                     value={formData.magistrateCourt || ""}
                     onChange={(e) => setFormData({ ...formData, magistrateCourt: e.target.value })}
                     className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
-                    placeholder="e.g. Court of Sub-Divisional Magistrate (SDM), Gurugram"
+                    placeholder={`e.g. Court of Sub-Divisional Magistrate (SDM), ${defaultDistrict}`}
                   />
                 </div>
                 <div>
@@ -1134,12 +1143,13 @@ function KalandraWorkspaceContent() {
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                     {isHi ? "घटना दिनांक" : "Incident Date"} *
                   </label>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    max={getTodayIsoIST()}
                     value={formData.incidentDate || ""}
-                    onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
-                    className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all cursor-pointer"
+                    onValueChange={(val) => setFormData({ ...formData, incidentDate: val })}
+                    placeholder="DD/MM/YYYY"
+                    className="w-full"
                   />
                 </div>
                 <div>
@@ -1162,7 +1172,7 @@ function KalandraWorkspaceContent() {
                     value={formData.incidentPlace || ""}
                     onChange={(e) => setFormData({ ...formData, incidentPlace: e.target.value })}
                     className="w-full h-8.5 px-2.5 text-xs bg-slate-50/70 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium transition-all"
-                    placeholder="e.g. Main Market Chowk, Sector 29, Gurugram"
+                    placeholder={`e.g. Main Market Chowk, ${defaultDistrict}`}
                   />
                 </div>
 
@@ -1680,7 +1690,7 @@ function KalandraWorkspaceContent() {
             if (e.target === e.currentTarget) setViewingPackage(null);
           }}
         >
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[94vh] sm:h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-xl shadow-2xl max-w-4xl w-full h-[94vh] sm:h-[88vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
             {/* Modal Header */}
             <div className="bg-[#0b192c] text-white p-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
               <div className="flex items-center gap-2">
@@ -1721,7 +1731,7 @@ function KalandraWorkspaceContent() {
             >
               <div
                 id="kalandra-complete-dossier-print"
-                className="max-w-4xl mx-auto space-y-6"
+                className="cms-paper-sheet max-w-4xl mx-auto space-y-6"
               >
                 {/* 1. Main Kalandra */}
                 <div className="bg-white rounded-xl shadow-xs border border-slate-300 p-6 sm:p-8">

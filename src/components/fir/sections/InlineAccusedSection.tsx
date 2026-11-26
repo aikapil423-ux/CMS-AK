@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
 import {
   GENDER_OPTIONS,
   MARITAL_STATUS_OPTIONS,
@@ -134,6 +135,8 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   hasValidationErrors,
   validationErrorMsg,
 }) => {
+  const { currentUser } = useAuth();
+  const defaultDistrict = currentUser?.district || "Panipat";
   const [editingId, setEditingId] = useState<string | null>(null);
   const hasUserResetRef = useRef(false);
   const [accusedType, setAccusedType] = useState<"Known" | "Unknown-Seen">(
@@ -173,8 +176,8 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
   const [colony, setColony] = useState("");
-  const [city, setCity] = useState("Gurugram");
-  const [district, setDistrict] = useState("Gurugram");
+  const [city, setCity] = useState(defaultDistrict);
+  const [district, setDistrict] = useState(defaultDistrict);
   const [state, setState] = useState("Haryana");
   const [country, setCountry] = useState("India");
   const [addressesList, setAddressesList] = useState<
@@ -292,8 +295,8 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     setHouseNo("");
     setStreetName("");
     setColony("");
-    setCity("Gurugram");
-    setDistrict("Gurugram");
+    setCity(defaultDistrict);
+    setDistrict(defaultDistrict);
     setState("Haryana");
     setCountry("India");
     setAddressesList([]);
@@ -374,16 +377,16 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       setHouseNo(firstAddr.houseNo || "");
       setStreetName(firstAddr.streetName || "");
       setColony(firstAddr.colony || "");
-      setCity(firstAddr.city || acc.city || "Gurugram");
-      setDistrict(firstAddr.district || acc.district || "Gurugram");
+      setCity(firstAddr.city || acc.city || defaultDistrict);
+      setDistrict(firstAddr.district || acc.district || defaultDistrict);
       setState(firstAddr.state || acc.state || "Haryana");
       setCountry(firstAddr.country || acc.country || "India");
     } else {
       if (acc.address) {
         setColony(acc.address);
       }
-      setCity(acc.city || "Gurugram");
-      setDistrict(acc.district || "Gurugram");
+      setCity(acc.city || defaultDistrict);
+      setDistrict(acc.district || defaultDistrict);
       setState(acc.state || "Haryana");
       setCountry(acc.country || "India");
     }
@@ -416,11 +419,14 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
     window.scrollTo({ top: 300, behavior: "smooth" });
   };
 
+  // Auto-open first accused only once when external data pre-populates an empty form
+  const hasAutoEditedRef = React.useRef(false);
   useEffect(() => {
-    if (accusedList.length > 0 && !editingId && !firstName && !lastName && !hasUserResetRef.current) {
+    if (accusedList.length > 0 && !hasAutoEditedRef.current && !editingId && !firstName && !lastName && !hasUserResetRef.current) {
+      hasAutoEditedRef.current = true;
       handleEdit(accusedList[0]);
     }
-  }, [accusedList, editingId, firstName, lastName]);
+  }, [accusedList]);
 
   const handleYearChange = (yearStr: string) => {
     const cleanYear = yearStr.replace(/\D/g, "").slice(0, 4);
@@ -498,8 +504,8 @@ export const InlineAccusedSection: React.FC<InlineAccusedSectionProps> = ({
       houseNo: houseNo.trim() || undefined,
       streetName: streetName.trim() || undefined,
       colony: colony.trim() || undefined,
-      city: city.trim() || "Gurugram",
-      district: district.trim() || "Gurugram",
+      city: city.trim() || defaultDistrict,
+      district: district.trim() || defaultDistrict,
       state: state.trim() || "Haryana",
       country: country.trim() || "India",
     };

@@ -4,6 +4,7 @@ import React from "react";
 import { UserCheck, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { DEMO_USERS } from "@/lib/mockData";
 import { UserSession } from "@/types";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ export function RoleSwitcherModal({ isOpen, onClose }: RoleSwitcherModalProps) {
   const { currentUser, sessionUser, isViewAs, enterViewAs, exitViewAs } = useAuth();
   const { isHindi } = useLanguage();
   const [pendingId, setPendingId] = React.useState<string | null>(null);
+
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen || sessionUser.id !== 'cms_developer_admin') return null;
 
@@ -39,7 +42,7 @@ export function RoleSwitcherModal({ isOpen, onClose }: RoleSwitcherModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={isHindi ? "अधिकारी ID में जाएँ" : "Enter Officer ID"}>
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onClick={onClose} />
 

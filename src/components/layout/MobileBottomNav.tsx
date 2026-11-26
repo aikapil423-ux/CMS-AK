@@ -153,7 +153,7 @@ export function MobileBottomNav() {
       : "grid-cols-5";
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t border-slate-200/80 shadow-lg pb-safe">
+    <nav className="print:hidden lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d1930]/95 backdrop-blur-sm border-t border-slate-200/80 dark:border-[#1e2c48] shadow-lg pb-safe">
       <div className={cn("grid h-15 max-w-lg mx-auto items-center px-1", gridColsClass)}>
         {currentNav.map((item) => {
           const Icon = item.icon;

@@ -17,6 +17,8 @@ import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { DIRECTION_FROM_PS_OPTIONS, getDynamicDirectionFromPs } from "@/components/fir/firDropdownConstants";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { useAuth } from "@/context/AuthContext";
+import { getTodayIsoIST } from "@/lib/utils";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   isDateKnown?: boolean;
@@ -45,16 +47,22 @@ export interface InlineOccurrenceSectionProps {
 }
 
 function getNowLocal() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return {
-    date: `${year}-${month}-${day}`,
-    time: `${hours}:${minutes}`,
-  };
+  const date = getTodayIsoIST();
+  try {
+    const time = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
+    return { date, time };
+  } catch {
+    const d = new Date();
+    return {
+      date,
+      time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+    };
+  }
 }
 
 export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = ({
@@ -66,6 +74,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   hasValidationErrors,
   validationErrorMsg,
 }) => {
+  const { currentUser } = useAuth();
+  const defaultDistrict = currentUser?.district || "Panipat";
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Dynamic real-time clock state for maximum allowable limits
@@ -187,8 +197,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
   const [area, setArea] = useState("");
-  const [city, setCity] = useState("Gurugram");
-  const [tehsil, setTehsil] = useState("Gurugram");
+  const [city, setCity] = useState(defaultDistrict);
+  const [tehsil, setTehsil] = useState(defaultDistrict);
   const [pincode, setPincode] = useState("");
 
   // Outside-Limit Details
@@ -224,8 +234,8 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     setHouseNo("");
     setStreetName("");
     setArea("");
-    setCity("Gurugram");
-    setTehsil("Gurugram");
+    setCity(defaultDistrict);
+    setTehsil(defaultDistrict);
     setPincode("");
     setOutsidePs(false);
     setOutsideState("");
@@ -247,16 +257,16 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     setDateTo(occ.dateTo || "");
     setTimeTo(occ.timeTo || "");
     setDay(occ.day || "Monday");
-    setInfoReceivedDate(occ.infoReceivedDate || new Date().toISOString().split("T")[0]);
-    setInfoReceivedTime(occ.infoReceivedTime || new Date().toTimeString().slice(0, 5));
+    setInfoReceivedDate(occ.infoReceivedDate || getTodayIsoIST());
+    setInfoReceivedTime(occ.infoReceivedTime || getNowLocal().time);
     setIsForestPlace(occ.isForestPlace || false);
     setDelayInRegistrationByPolice(occ.delayInRegistrationByPolice || "");
     setDelayInReportingByComplainant(occ.delayInReportingByComplainant || occ.reasonsForDelay || "");
     setHouseNo(occ.houseNo || "");
     setStreetName(occ.streetName || "");
     setArea(occ.area || "");
-    setCity(occ.city || "Gurugram");
-    setTehsil(occ.tehsil || "Gurugram");
+    setCity(occ.city || defaultDistrict);
+    setTehsil(occ.tehsil || defaultDistrict);
     setPincode(occ.pincode || "");
     setOutsidePs(occ.outsidePs || false);
     setOutsideState(occ.outsideState || "");
@@ -274,16 +284,14 @@ export const InlineOccurrenceSection: React.FC<InlineOccurrenceSectionProps> = (
     if (formEl) formEl.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Synchronize first occurrence from autofill/prefill into the form inputs
-  const prevOccListRef = React.useRef(occurrencesList);
+  // Auto-open first occurrence only once when external data pre-populates an empty form
+  const hasAutoEditedRef = React.useRef(false);
   useEffect(() => {
-    if (occurrencesList && occurrencesList.length > 0 && (occurrencesList !== prevOccListRef.current || !editingId)) {
-      prevOccListRef.current = occurrencesList;
-      if (!editingId) {
-        handleEditClick(occurrencesList[0]);
-      }
+    if (occurrencesList && occurrencesList.length > 0 && !hasAutoEditedRef.current && !editingId) {
+      hasAutoEditedRef.current = true;
+      handleEditClick(occurrencesList[0]);
     }
-  }, [occurrencesList, editingId]);
+  }, [occurrencesList]);
 
   const isFieldMissing = (fieldName: string) => {
     if (!hasValidationErrors && !validationErrorMsg && !errorMsg) return false;

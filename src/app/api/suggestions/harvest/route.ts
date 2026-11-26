@@ -1,4 +1,5 @@
 import { apiAccess } from "@/lib/apiSecurity";
+import { canReadCaseEvidence } from "@/services/evidenceCaseAccess";
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -18,10 +19,17 @@ export async function GET(req: Request) {
       records = JSON.parse(data);
     }
 
+    const visibleRecords: UniversalEvidenceRecord[] = [];
+    for (const r of records) {
+      if (await canReadCaseEvidence(apiUser, r)) {
+        visibleRecords.push(r);
+      }
+    }
+
     const aggregatedWords = new Set<string>();
     const aggregatedPhrases = new Set<string>();
 
-    for (const r of records) {
+    for (const r of visibleRecords) {
       // 1. Raw extracted text from PDF/Doc/OCR
       if (r.extractedText) {
         const res = extractVocabulary(r.extractedText);
@@ -84,7 +92,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      totalDocumentsScanned: records.length,
+      totalDocumentsScanned: visibleRecords.length,
       words: Array.from(aggregatedWords).slice(0, 2000),
       phrases: Array.from(aggregatedPhrases).slice(0, 800),
     });

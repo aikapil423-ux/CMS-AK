@@ -1,6 +1,8 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST, getDateDaysAgoIsoIST } from "@/lib/utils";
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -64,6 +66,7 @@ function GeneralDiaryContent() {
   const { currentUser } = useAuth();
   const searchParams = useSearchParams();
   const initialType = searchParams.get("type") || "ALL";
+  const initialSearch = searchParams.get("search") || "";
   const tabParam = searchParams.get("tab") as ActiveTab | null;
   const activeTab: ActiveTab = tabParam === "SUGGESTIONS_DRAFTS" ? "SUGGESTIONS_DRAFTS" : "REGISTER";
   const [types, setTypes] = useState<GDEntryTypeConfig[]>([]);
@@ -77,29 +80,49 @@ function GeneralDiaryContent() {
     }
   }, [activeTab]);
 
-  // Dates helpers (Today & Yesterday)
-  const todayISO = useMemo(() => {
-    const d = new Date();
-    const yyyy = String(d.getFullYear()).padStart(4, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }, []);
-
-  const yesterdayISO = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const yyyy = String(d.getFullYear()).padStart(4, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  }, []);
+  // Dates helpers (IST Today & Yesterday)
+  const todayISO = useMemo(() => getTodayIsoIST(), []);
+  const yesterdayISO = useMemo(() => getDateDaysAgoIsoIST(1), []);
 
   // Search & Filter State — defaults strictly to TODAY so only current date entries show by default
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(initialSearch);
+  const [debouncedKeyword, setDebouncedKeyword] = useState(initialSearch);
   const [typeFilter, setTypeFilter] = useState(initialType);
   const [selectedDate, setSelectedDate] = useState<string>(todayISO);
   const [officerQuery, setOfficerQuery] = useState("");
+  const [debouncedOfficerQuery, setDebouncedOfficerQuery] = useState("");
+
+  useEffect(() => {
+    const tType = searchParams.get("type");
+    const tSearch = searchParams.get("search");
+    if (tType !== null) {
+      setTypeFilter(tType || "ALL");
+      setPage(1);
+    }
+    if (tSearch !== null) {
+      setKeyword(tSearch);
+      setDebouncedKeyword(tSearch);
+      setPage(1);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!keyword.trim()) {
+      setDebouncedKeyword("");
+      return;
+    }
+    const timer = window.setTimeout(() => setDebouncedKeyword(keyword), 250);
+    return () => window.clearTimeout(timer);
+  }, [keyword]);
+
+  useEffect(() => {
+    if (!officerQuery.trim()) {
+      setDebouncedOfficerQuery("");
+      return;
+    }
+    const timer = window.setTimeout(() => setDebouncedOfficerQuery(officerQuery), 250);
+    return () => window.clearTimeout(timer);
+  }, [officerQuery]);
 
   // Column Sort & Column Search State
   type GDSortField = string;
@@ -149,7 +172,7 @@ function GeneralDiaryContent() {
   };
 
   const GD_COLUMN_WIDTHS: Record<string, string> = {
-    gdNumber: "w-24 min-w-[85px]",
+    gdNumber: "w-40 min-w-[155px]",
     officer: "w-48 min-w-[180px]",
     gdType: "w-36 min-w-[140px]",
     subject: "w-56 min-w-[180px] max-w-[220px]",
@@ -239,6 +262,7 @@ function GeneralDiaryContent() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Modals State
   const [selectedRecord, setSelectedRecord] = useState<GeneralDiaryRecord | null>(null);
@@ -251,6 +275,8 @@ function GeneralDiaryContent() {
   const [docModalRecord, setDocModalRecord] = useState<GeneralDiaryRecord | null>(null);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
+  useEscapeKey(Boolean(docModalRecord), () => setDocModalRecord(null));
+
   // Draft/Suggestion row actions state
   const [addingRecordId, setAddingRecordId] = useState<string | null>(null);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
@@ -262,16 +288,23 @@ function GeneralDiaryContent() {
     setTypes(loadedTypes);
   }, []);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Fetch entries (strictly filters by selectedDate for the Register)
   const fetchEntries = async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
+    setFetchError(null);
 
     const filter: GDSearchFilter = {
-      keyword: keyword.trim() || undefined,
+      keyword: debouncedKeyword.trim() || undefined,
       typeCode: typeFilter !== "ALL" ? typeFilter : undefined,
       startDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
       endDate: activeTab === "REGISTER" ? (selectedDate || undefined) : undefined,
-      officerQuery: officerQuery.trim() || undefined,
+      officerQuery: debouncedOfficerQuery.trim() || undefined,
       policeStation: (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'SP_DISTRICT' || currentUser?.role === 'DSP_SUBDIV') ? undefined : (currentUser?.stationName || undefined),
     };
 
@@ -283,18 +316,23 @@ function GeneralDiaryContent() {
     }
 
     try {
-      const res = await GeneralDiaryService.getPaginatedEntries(filter, page, pageSize);
+      const res = await GeneralDiaryService.getPaginatedEntries(filter, page, pageSize, controller.signal);
       setPaginatedData(res);
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
       console.error(e);
+      setFetchError(e?.message || "Failed to load General Diary entries. Please retry.");
     } finally {
-      setLoading(false);
+      if (abortControllerRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     fetchEntries();
-  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab, currentUser?.stationName]);
+    return () => abortControllerRef.current?.abort();
+  }, [page, pageSize, typeFilter, selectedDate, debouncedKeyword, debouncedOfficerQuery, activeTab, currentUser?.stationName]);
 
   useEffect(() => {
     const handleGdUpdated = () => {
@@ -302,7 +340,7 @@ function GeneralDiaryContent() {
     };
     window.addEventListener("cms-gd-updated", handleGdUpdated);
     return () => window.removeEventListener("cms-gd-updated", handleGdUpdated);
-  }, [page, pageSize, typeFilter, selectedDate, keyword, officerQuery, activeTab, currentUser?.stationName]);
+  }, [page, pageSize, typeFilter, selectedDate, debouncedKeyword, debouncedOfficerQuery, activeTab, currentUser?.stationName]);
 
   // Brief description dialog modal state (opens popup dialog on click)
   const [briefModalRecord, setBriefModalRecord] = useState<GeneralDiaryRecord | null>(null);
@@ -663,16 +701,16 @@ function GeneralDiaryContent() {
       case "gdNumber": {
         const remTime = !rec.isLocked ? getGdRecordRemainingTime(rec) : null;
         return (
-          <td key="gdNumber" className="py-3 px-2.5 align-top w-24 min-w-[85px]">
+          <td key="gdNumber" className="py-3 px-2.5 align-top w-40 min-w-[155px]">
             <div className="flex flex-col gap-0.5 font-mono text-left leading-tight">
               {/* Daily GD Rapat Sequence */}
-              <span className="font-black text-xs text-blue-950 block">
+              <span className="font-black text-xs text-blue-950 block whitespace-nowrap">
                 {rec.isLocked ? `GD #${rec.sequencePerDay}` : "—"}
               </span>
 
               {/* Unique GD Number */}
               <span
-                className="text-[9px] text-slate-600 font-semibold block truncate max-w-[85px]"
+                className="text-[10px] text-slate-600 font-semibold block whitespace-nowrap"
                 title={rec.isLocked ? rec.gdNumber : "No GD No. (not added)"}
               >
                 {rec.isLocked ? rec.gdNumber : "No GD"}
@@ -740,7 +778,7 @@ function GeneralDiaryContent() {
       case "subject":
         return (
           <td key="subject" className="py-3.5 px-3.5 align-top w-56 min-w-[180px] max-w-[220px]">
-            <p className="font-bold text-slate-950 text-xs break-all whitespace-normal leading-relaxed">
+            <p className="font-bold text-slate-950 text-xs break-words [overflow-wrap:anywhere] whitespace-normal leading-relaxed">
               {rec.subject}
             </p>
           </td>
@@ -794,31 +832,61 @@ function GeneralDiaryContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
-      {/* Top Banner Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-[#0b192c] tracking-tight">
+    <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+      {/* Top Banner Header (compact stack on <640px mobile per UI-01) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-200 pb-2.5 sm:pb-4">
+        <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2 sm:gap-6">
+          <h1 className="text-lg sm:text-2xl font-bold text-[#0b192c] tracking-tight">
             General Diary
           </h1>
 
+          {/* Compact mobile primary CTA bar aligned with title (<640px only) */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <Link href="/general-diary/new">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="min-h-[40px] text-xs font-bold gap-1 px-2.5 cursor-pointer"
+                title="Create a new General Diary entry"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>New GD</span>
+              </Button>
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedPrintDate("");
+                setPrintDailyRegisterOpen(true);
+              }}
+              className="min-h-[40px] text-xs font-bold gap-1 border-slate-300 bg-white px-2.5 cursor-pointer"
+              title="Register Print & PDF"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-700" />
+              <span>Print</span>
+            </Button>
+          </div>
+
           {/* Tabs Navigation next to Title */}
-          <div className="flex items-center text-xs sm:text-sm font-semibold gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
+          <div className="w-full sm:w-auto flex items-center text-xs sm:text-sm font-semibold gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200 overflow-x-auto">
             <button
               type="button"
               onClick={() => {
                 setPage(1);
                 router.push("/general-diary");
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+              className={`min-h-[40px] sm:min-h-0 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap ${
                 activeTab === "REGISTER"
                   ? "bg-white text-blue-950 font-bold shadow-xs border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
               }`}
             >
               <span>General Diary Register</span>
-              <span className="text-[11px] font-mono bg-blue-100 text-blue-900 px-2 py-0.2 rounded-full font-bold">
-                {paginatedData.todayCount}
+              <span className="text-[11px] font-mono bg-blue-100 text-blue-900 px-2 py-0.5 rounded-full font-bold">
+                {activeTab === "REGISTER" ? paginatedData.total : paginatedData.lockedCount}
               </span>
             </button>
 
@@ -828,7 +896,7 @@ function GeneralDiaryContent() {
                 setPage(1);
                 router.push("/general-diary?tab=SUGGESTIONS_DRAFTS");
               }}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 cursor-pointer ${
+              className={`min-h-[40px] sm:min-h-0 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap ${
                 activeTab === "SUGGESTIONS_DRAFTS"
                   ? "bg-white text-purple-950 font-bold shadow-xs border border-slate-200/60"
                   : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
@@ -836,7 +904,7 @@ function GeneralDiaryContent() {
             >
               <span>Auto-Suggestions &amp; Drafts</span>
               {(paginatedData.suggestedCount > 0 || paginatedData.draftCount > 0) && (
-                <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.2 rounded-full font-bold">
+                <span className="text-[11px] font-mono bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-bold">
                   {paginatedData.suggestedCount + paginatedData.draftCount}
                 </span>
               )}
@@ -844,8 +912,8 @@ function GeneralDiaryContent() {
           </div>
         </div>
 
-        {/* Top Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Desktop/Tablet Action Buttons (kept unchanged on sm+) */}
+        <div className="hidden sm:flex flex-wrap items-center gap-2.5">
           <Link href="/general-diary/new">
             <Button
               type="button"
@@ -978,7 +1046,21 @@ function GeneralDiaryContent() {
       </div>
 
       {/* Main Smart GD Register Table View */}
-      {loading ? (
+      {fetchError ? (
+        <div role="alert" className="p-6 bg-red-50 border border-red-200 rounded-xl text-center space-y-3">
+          <p className="text-sm font-bold text-red-800">{fetchError}</p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fetchEntries()}
+            className="gap-1.5 text-xs font-bold cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retry Loading GD Register</span>
+          </Button>
+        </div>
+      ) : loading ? (
         <LoadingSkeleton count={5} />
       ) : displayedRecords.length === 0 ? (
         <EmptyState
@@ -1317,8 +1399,17 @@ function GeneralDiaryContent() {
 
       {/* Uploaded Documents Modal */}
       {docModalRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Uploaded Documents"
+          onClick={() => setDocModalRecord(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-3.5 bg-[#0b192c] text-white">
               <div className="flex items-center gap-2.5">
@@ -1397,21 +1488,23 @@ function GeneralDiaryContent() {
                               <span>Download</span>
                             </a>
                           )}
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            disabled={deletingDocId === doc.id}
-                            onClick={() => handleDeleteAttachment(docModalRecord.id, doc.id)}
-                            className="text-[11px] font-bold text-red-700 border-red-300 hover:bg-red-50 px-2.5 py-1 h-auto cursor-pointer gap-1"
-                          >
-                            {deletingDocId === doc.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
-                            )}
-                            <span>{deletingDocId === doc.id ? "Deleting…" : "Delete"}</span>
-                          </Button>
+                          {!docModalRecord.isLocked && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={deletingDocId === doc.id}
+                              onClick={() => handleDeleteAttachment(docModalRecord.id, doc.id)}
+                              className="text-[11px] font-bold text-red-700 border-red-300 hover:bg-red-50 px-2.5 py-1 h-auto cursor-pointer gap-1"
+                            >
+                              {deletingDocId === doc.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                              <span>{deletingDocId === doc.id ? "Deleting…" : "Delete"}</span>
+                            </Button>
+                          )}
                         </div>
                       </div>
 

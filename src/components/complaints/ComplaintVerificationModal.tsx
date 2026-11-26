@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 export interface ComplaintPreviewData {
   sourceChannel: string;
@@ -102,6 +103,8 @@ export function ComplaintVerificationModal({
     }
   }, [isOpen]);
 
+  useEscapeKey(isOpen, onEdit);
+
   if (!isOpen || !previewData) return null;
 
   const handlePrint = () => {
@@ -118,6 +121,8 @@ export function ComplaintVerificationModal({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-hidden animate-in fade-in-50"
       onClick={onEdit}
     >
@@ -134,7 +139,7 @@ export function ComplaintVerificationModal({
             <div>
               <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-2">
                 <span>Complaint Preview</span>
-                <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.2 rounded uppercase">
+                <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded uppercase">
                   Draft Preview
                 </span>
               </h3>
@@ -185,7 +190,7 @@ export function ComplaintVerificationModal({
           <div
             id="printable-complaint-preview"
             ref={printRef}
-            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative my-3 min-h-[800px] h-auto"
+            className="cms-paper-sheet w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-12 text-slate-950 space-y-5 font-serif shadow-sm print:shadow-none print:border-none print:p-0 relative my-3 min-h-[800px] h-auto"
             style={{ lineHeight: "1.6" }}
           >
             {/* Seal & Department Title */}

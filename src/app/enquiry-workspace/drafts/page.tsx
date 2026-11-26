@@ -47,7 +47,9 @@ import {
 import { useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { useAuth } from "@/context/AuthContext";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
@@ -300,7 +302,8 @@ function generateRow4Findings(
   found: ComplaintItem,
   classification: string,
   legalReport: LegalAnalysisReport,
-  districtName: string
+  districtName: string,
+  defaultReviewFindings?: string
 ): string {
   const compNo = found.complaintNumber;
   const complainantName = found.complainantName;
@@ -473,7 +476,14 @@ IV. FINAL RECOMMENDATION & ACTION TAKEN:
 Preventive Kalandra under Section 126/170 BNSS, 2023 is submitted before the Learned Executive Magistrate for binding down both parties with sureties to maintain good behavior and public peace. Complaint file may be consigned to record room.`;
   }
 
-  // Default: Razinama / Mutual Accord
+  if (!isRazinama) {
+    return (
+      defaultReviewFindings ||
+      `Complaint ${compNo} — DRAFT FOR OFFICER REVIEW\nRecorded allegations: ${found.subject || found.complaintDescription || found.incidentDetails || "Not provided"}\n\nVerified enquiry findings, witness statements, evidence verification, applicable statutory provisions, and recommended action must be entered by the Enquiry Officer after examining witnesses and records.`
+    );
+  }
+
+  // Razinama / Mutual Accord
   return `FINAL ENQUIRY REPORT & PROCEEDINGS (MUTUAL ACCORD & RAJINAMA)
 
 Respected Sir,
@@ -535,6 +545,11 @@ function EnquiryDraftsContent() {
   const [selectComplaintModalOpen, setSelectComplaintModalOpen] = useState(false);
   const [complaintSearchQuery, setComplaintSearchQuery] = useState("");
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [builtItemsError, setBuiltItemsError] = useState<string | null>(null);
+
+  useEscapeKey(proformaDropdownOpen, () => setProformaDropdownOpen(false));
+  useEscapeKey(previewModalOpen, () => setPreviewModalOpen(false));
+  useEscapeKey(selectComplaintModalOpen, () => setSelectComplaintModalOpen(false));
 
   // Load custom drafts from localStorage on mount
   useEffect(() => {
@@ -558,6 +573,7 @@ function EnquiryDraftsContent() {
   const [builtTemplates, setBuiltTemplates] = useState<BuilderTemplateItem[]>([]);
 
   const fetchBuiltItems = useCallback(async () => {
+    setBuiltItemsError(null);
     try {
       const [dList, tList] = await Promise.all([
         BuilderService.getDrafts(),
@@ -567,6 +583,7 @@ function EnquiryDraftsContent() {
       setBuiltTemplates(tList);
     } catch (e) {
       console.error("Failed to load built drafts/templates:", e);
+      setBuiltItemsError("Saved drafts and templates could not be loaded.");
     }
   }, []);
 
@@ -763,7 +780,13 @@ function EnquiryDraftsContent() {
 
     // Build Row 4: Findings & Action Taken
     // Process Overview + Documents + Acts & Sections!
-    const row4Content = generateRow4Findings(found, activeClass, legalReport, districtName);
+    const row4Content = generateRow4Findings(
+      found,
+      activeClass,
+      legalReport,
+      districtName,
+      analysis.proformaFindingsText.standard_4row
+    );
 
     if (fmtKey === "standard_4row") {
       setColumns([]);
@@ -888,7 +911,7 @@ function EnquiryDraftsContent() {
             TEMPLATE_PRESETS[activeFormat as EnquiryProformaType]?.name ||
             "Enquiry Report",
       dispatchNo: title,
-      generatedDate: new Date().toISOString().split("T")[0],
+      generatedDate: getTodayIsoIST(),
       officerName: officerName || currentUser.name || "Enquiry Officer",
       officerRank: officerRank || currentUser.rankDisplay || "Assistant Superintendent of Police",
       officerPno: currentUser.pno || "PNO-23841",
@@ -1308,6 +1331,10 @@ function EnquiryDraftsContent() {
   };
 
   const handlePrint = () => {
+    if (documentRef.current) {
+      printA4Element(documentRef.current, title || "Enquiry_Report");
+      return;
+    }
     window.print();
   };
 
@@ -1803,6 +1830,15 @@ function EnquiryDraftsContent() {
           </div>
         </div>
 
+        {builtItemsError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between gap-3 text-xs text-red-800">
+            <span>{builtItemsError}</span>
+            <button type="button" onClick={() => void fetchBuiltItems()} className="font-bold underline cursor-pointer shrink-0">
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* ================= INTELLIGENCE ANALYSIS & LEGAL CLASSIFICATION BANNER ================= */}
         {complaint && analysisResult && (
           <div className={`p-4 rounded-xl border ${analysisResult.badgeColor.border} ${analysisResult.badgeColor.bg} space-y-2.5 transition-all shadow-2xs`}>
@@ -1810,27 +1846,28 @@ function EnquiryDraftsContent() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider bg-[#0b192c] text-white px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>AI Legal Analysis (मामला कानूनी विश्लेषण)</span>
+                  <span>Legal Classification &amp; Drafting Aid</span>
                 </span>
                 <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${analysisResult.badgeColor.border} bg-white ${analysisResult.badgeColor.text} shadow-2xs flex items-center gap-1`}>
-                  {analysisResult.titleHindi} ({analysisResult.titleEnglish})
+                  {analysisResult.titleEnglish}
                 </span>
               </div>
 
               {/* Recommendation Override Selector */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[11px] font-bold text-slate-700">जांच निष्कर्ष / Recommendation:</span>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-700">Recommendation:</span>
                 <select
                   value={selectedClassification || analysisResult.classification}
                   onChange={(e) => handleChangeClassification(e.target.value as EnquiryClassificationType)}
                   className="text-xs font-bold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer"
                 >
-                  <option value="GAMINI">1. Gamini (Land &amp; Boundary Dispute / राजस्व ज़मीनी विवाद)</option>
-                  <option value="DIWANI">2. Diwani (Civil &amp; Monetary Dispute / दीवानी लेन-देन)</option>
-                  <option value="NCR">3. NCR (Non-Cognizable Report u/s 174 BNSS / असंज्ञेय रिपोर्ट)</option>
-                  <option value="FIR">4. FIR (Cognizable Offence - Regular FIR / संज्ञेय अपराध)</option>
-                  <option value="NIVARAN">5. Nivaran (Preventive Action u/s 126/170 BNSS / निवारक निस्तारण)</option>
-                  <option value="RAZINAMA">6. Razinama (Mutual Compromise &amp; Accord / राजीनामा)</option>
+                  <option value="REVIEW_REQUIRED">Officer Review Required (Blank / Custom)</option>
+                  <option value="GAMINI">1. Gamini (Land &amp; Boundary Dispute)</option>
+                  <option value="DIWANI">2. Diwani (Civil &amp; Monetary Dispute)</option>
+                  <option value="NCR">3. NCR (Non-Cognizable Report u/s 174 BNSS)</option>
+                  <option value="FIR_RECOMMENDED">4. FIR Recommend (Cognizable Offence)</option>
+                  <option value="NIVARAN">5. Nivaran (Preventive Action u/s 126/170 BNSS)</option>
+                  <option value="RAZINAMA">6. Razinama (Mutual Compromise &amp; Accord)</option>
                 </select>
               </div>
             </div>
@@ -1838,14 +1875,14 @@ function EnquiryDraftsContent() {
             {/* Analysis Rationale & Inspected Evidence */}
             <div className="text-xs space-y-1.5 text-slate-800">
               <p className="leading-relaxed">
-                <strong>कानूनी विश्लेषण व आधार: </strong>
-                {analysisResult.rationaleHindi}
+                <strong>Rationale &amp; Scope: </strong>
+                {analysisResult.rationaleEnglish || analysisResult.rationaleHindi}
               </p>
               {analysisResult.analyzedDocuments && analysisResult.analyzedDocuments.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px] text-slate-600">
-                  <span className="font-semibold text-slate-700">प्रोफाइल व साक्ष्य दस्तावेज विश्लेषित:</span>
+                  <span className="font-semibold text-slate-700">Analysed Docket Documents:</span>
                   {analysisResult.analyzedDocuments.map((docName, idx) => (
-                    <span key={idx} className="bg-white/90 border border-slate-200 px-2 py-0.2 rounded font-mono text-slate-800 shadow-2xs">
+                    <span key={idx} className="bg-white/90 border border-slate-200 px-2 py-0.5 rounded font-mono text-slate-800 shadow-2xs">
                       📄 {docName}
                     </span>
                   ))}
@@ -1854,12 +1891,12 @@ function EnquiryDraftsContent() {
             </div>
 
             {/* If FIR is recommended: Prompt to Send to SHO - strictly only assigned EO */}
-            {isAssignedEo && !complaint.isSentToSho && ((selectedClassification || analysisResult.classification) === "FIR_RECOMMENDED" || isSavedAndFirRecommended) && (
+            {isAssignedEo && !complaint.isSentToSho && ((selectedClassification || analysisResult.classification) === "FIR_RECOMMENDED" || (selectedClassification || analysisResult.classification) === "FIR" || isSavedAndFirRecommended) && (
               <div className="pt-2 border-t border-red-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs bg-red-100/50 p-2.5 rounded-lg">
                 <div className="flex items-center gap-2 text-red-950 font-semibold">
                   <Scale className="w-4 h-4 text-red-600 shrink-0" />
                   <span>
-                    इस मामले में संज्ञेय अपराध प्रमाणित हुआ है। रिपोर्ट सेव करें व <strong>"Send to SHO ID"</strong> दबाकर SHO को एफआईआर दर्ज करने हेतु अग्रेषित करें।
+                    Cognizable offence noted. Save the report and click <strong>&ldquo;Send to SHO&rdquo;</strong> to forward it for FIR registration.
                   </span>
                 </div>
                 <Button
@@ -2020,7 +2057,7 @@ function EnquiryDraftsContent() {
               className="text-xs bg-white hover:bg-slate-100 text-emerald-700 font-bold border-emerald-200 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>+ Add Row</span>
+              <span>Add Row</span>
             </Button>
           </div>
         </div>
@@ -2030,7 +2067,7 @@ function EnquiryDraftsContent() {
       <div className="w-full max-w-4xl mx-auto space-y-4">
         <div
           ref={documentRef}
-          className="bg-white border-2 border-slate-300 rounded-2xl p-6 sm:p-14 shadow-lg text-black font-sans transition-all space-y-4"
+          className="cms-paper-sheet bg-white border-2 border-slate-300 rounded-2xl p-6 sm:p-14 shadow-lg text-black font-sans transition-all space-y-4"
           style={{
             minHeight: "1050px",
             lineHeight: "1.65",
@@ -2644,7 +2681,7 @@ function EnquiryDraftsContent() {
 
         {/* ================= PREVIEW REPORT MODAL ================= */}
         {previewModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
               <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
@@ -2733,7 +2770,7 @@ function EnquiryDraftsContent() {
 
         {/* ================= SELECT COMPLAINT MODAL (IF NO COMPLAINT LINKED YET) ================= */}
         {selectComplaintModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
               <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">

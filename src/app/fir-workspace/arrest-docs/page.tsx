@@ -48,8 +48,9 @@ import {
 } from "@/components/fir-workspace/ArrestMemoForm268";
 import { FIRItem, NoticeFormData, FIRDocumentItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import {
   useTableResize,
   TableColResizer,
@@ -1423,6 +1424,9 @@ function ArrestDocsContent() {
   } | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
   const [previewHtml, setPreviewHtml] = useState<string>("");
+
+  useEscapeKey(Boolean(saveSuccessInfo), () => setSaveSuccessInfo(null));
+  useEscapeKey(isPreviewModalOpen && !saveSuccessInfo, () => setIsPreviewModalOpen(false));
 
   const witnessTableResize = useTableResize({
     initialColWidths: { 0: 44, 1: 220, 2: 240, 3: 150, 4: 44 },
@@ -3251,7 +3255,7 @@ function ArrestDocsContent() {
       <div className="flex justify-center">
         <div
           id="arrest-printable-doc"
-          className={`w-full max-w-4xl transition-all ${
+          className={`cms-paper-sheet w-full max-w-4xl transition-all ${
             selectedTemplate === "arrest_memo"
               ? "bg-transparent p-0 border-none shadow-none"
               : `bg-white border border-slate-400 p-6 sm:p-12 text-slate-950 font-serif ${
@@ -3781,7 +3785,7 @@ function ArrestDocsContent() {
       {isPreviewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-xs" onClick={() => setIsPreviewModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 overflow-hidden animate-in fade-in-0 zoom-in-95">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-300 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 overflow-hidden animate-in fade-in-0 zoom-in-95">
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-bold bg-rose-600/30 text-rose-300 px-2 py-0.5 rounded border border-rose-500/40">
@@ -3824,7 +3828,7 @@ function ArrestDocsContent() {
       {saveSuccessInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSaveSuccessInfo(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 max-w-lg w-full p-6 space-y-4 z-10 animate-in fade-in-0 zoom-in-95 text-center">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-emerald-200 max-w-lg w-full p-6 space-y-4 z-10 animate-in fade-in-0 zoom-in-95 text-center">
             <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>

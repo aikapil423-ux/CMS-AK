@@ -80,6 +80,8 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST, toIsoDateString, parseTimeTo24Hour, parseGdActivityDateTime } from "@/lib/utils";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
 import { MOCK_ENQUIRY_OFFICERS, MOCK_GD_ENTRIES } from "@/lib/mockData";
@@ -157,16 +159,22 @@ const MINOR_HEADS: Record<string, string[]> = {
 };
 
 function getNowLocal() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  return {
-    date: `${y}-${m}-${d}`,
-    time: `${hh}:${mm}`,
-  };
+  const date = getTodayIsoIST();
+  try {
+    const time = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
+    return { date, time };
+  } catch {
+    const now = new Date();
+    return {
+      date,
+      time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
+    };
+  }
 }
 
 function RegisterFIRForm() {
@@ -181,6 +189,7 @@ function RegisterFIRForm() {
   const isSho = currentUser ? ((currentUser.role === "SHO" || currentUser.id === "usr_sho_1" || isSuperior) && !isMhc) : false;
 
   const [activeTab, setActiveTab] = useState<MainTabKey>("act_section");
+  const [visitedTabs, setVisitedTabs] = useState<MainTabKey[]>([]);
 
   // Dynamic real-time clock state for maximum allowable limits
   const [currentNow, setCurrentNow] = useState(() => getNowLocal());
@@ -213,7 +222,7 @@ function RegisterFIRForm() {
 
   // Jurisdiction & Header
   const [state, setState] = useState("Haryana");
-  const [district, setDistrict] = useState("Panipat");
+  const [district, setDistrict] = useState(() => currentUser?.district || "Panipat");
   const [policeStation, setPoliceStation] = useState(() => currentUser?.stationName || "PS City Panipat");
 
   // Auto-populate latest local date & time
@@ -902,8 +911,9 @@ function RegisterFIRForm() {
           return;
         }
         setGdEntryNumber(mockFound.gdNumber);
-        if (mockFound.entryDate) setGdDate(mockFound.entryDate);
-        if (mockFound.entryTime) setGdTime(mockFound.entryTime);
+        const parsedMock = parseGdActivityDateTime(`${mockFound.entryDate || ""} ${mockFound.entryTime || ""}`);
+        if (parsedMock.dateIso) setGdDate(parsedMock.dateIso);
+        if (parsedMock.time24) setGdTime(parsedMock.time24);
         if (mockFound.subject) {
           setActRemarks((prev) => (prev ? `${prev}; GD Ref: ${mockFound.subject}` : `GD Ref: ${mockFound.subject}`));
         }
@@ -912,9 +922,9 @@ function RegisterFIRForm() {
 
       // Found in General Diary
       setGdEntryNumber(found.gdNumber);
-      const dtParts = (found.activityDateTime || "").split(" ");
-      if (dtParts[0]) setGdDate(dtParts[0]);
-      if (dtParts[1]) setGdTime(dtParts[1]);
+      const parsedGd = parseGdActivityDateTime(found.activityDateTime);
+      if (parsedGd.dateIso) setGdDate(parsedGd.dateIso);
+      if (parsedGd.time24) setGdTime(parsedGd.time24);
 
       const foundCaseType = found.caseType || found.relatedRecords?.caseType;
       if (foundCaseType) {
@@ -1623,7 +1633,7 @@ function RegisterFIRForm() {
     setConfirmConfig({
       isOpen: true,
       title: "Clear All FIR Data?",
-      description: "This will reset all 10 tabs and erase all entered acts, occurrences, complainant details, and facts. This action cannot be reversed.",
+      description: `This will reset all ${TAB_CONFIG.length} tabs and erase all entered acts, occurrences, complainant details, and facts. This action cannot be reversed.`,
       variant: "danger",
       confirmLabel: "Yes, Clear All Fields",
       onConfirm: () => {
@@ -2160,13 +2170,18 @@ function RegisterFIRForm() {
       timePeriod: "Morning / Pahar 1",
       directionFromPs: "",
       distanceKm: "",
-      area: "Area of incident",
+      area: "",
       city: district,
       beatNo: "",
     };
 
+    const unitSlug = `${district || "haryana"}-${policeStation || "station"}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
     return {
-      id: `fir-${autoFirNumber.firNumber.replace(/\//g, "-")}`,
+      id: `fir-${unitSlug}-${autoFirNumber.firNumber.replace(/\//g, "-")}`,
       firNumber: autoFirNumber.firNumber,
       firYear: autoFirNumber.firYear,
       firDate,
@@ -2212,7 +2227,7 @@ function RegisterFIRForm() {
       distanceFromPs: primaryOcc.distanceKm
         ? `${primaryOcc.distanceKm} KM ${primaryOcc.directionFromPs || ""}`.trim()
         : (primaryOcc.directionFromPs || ""),
-      incidentPlace: primaryOcc.area || "Area of incident",
+      incidentPlace: primaryOcc.area || primaryOcc.city || "",
       incidentLandmark: primaryOcc.landmark,
       beatNumber: primaryOcc.beatNo,
       complainantName: `${complainantFirstName} ${complainantLastName}`.trim() || "Complainant",
@@ -2562,20 +2577,29 @@ function RegisterFIRForm() {
   );
 
   // Tab navigation is always free; mandatory fields are enforced only by the Register FIR button.
+  const markTabVisited = (tabKey: MainTabKey) => {
+    setVisitedTabs((prev) => (prev.includes(tabKey) ? prev : [...prev, tabKey]));
+  };
+
   const handleNextTab = () => {
     if (currentTabIndex < TAB_CONFIG.length - 1) {
+      markTabVisited(activeTab);
       setActiveTab(TAB_CONFIG[currentTabIndex + 1].key);
     }
   };
 
   const handlePrevTab = () => {
     if (currentTabIndex > 0) {
+      markTabVisited(activeTab);
       setActiveTab(TAB_CONFIG[currentTabIndex - 1].key);
     }
   };
 
   // Any panel can be opened directly without completing earlier panels.
   const handleTabClick = (targetTabKey: MainTabKey) => {
+    if (targetTabKey !== activeTab) {
+      markTabVisited(activeTab);
+    }
     setActiveTab(targetTabKey);
   };
 
@@ -2723,8 +2747,8 @@ function RegisterFIRForm() {
 
       {/* A. FIR HEADER / BASIC DETAILS PANEL */}
       <Card className="border-slate-200 shadow-xs bg-white">
-        <CardContent className="p-4 grid grid-cols-2 sm:grid-cols-6 gap-3 text-xs bg-slate-50/70 border-b border-slate-200">
-          <div>
+        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 text-xs bg-slate-50/70 border-b border-slate-200">
+          <div className="lg:col-span-2">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">State</label>
             <select
               value={state}
@@ -2738,7 +2762,7 @@ function RegisterFIRForm() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="lg:col-span-2">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">District</label>
             <select
               value={district}
@@ -2755,7 +2779,7 @@ function RegisterFIRForm() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="lg:col-span-3">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Police Station</label>
             <select
               value={policeStation}
@@ -2772,7 +2796,7 @@ function RegisterFIRForm() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="lg:col-span-2">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">FIR Number</label>
             <input
               type="text"
@@ -2781,7 +2805,7 @@ function RegisterFIRForm() {
               className="w-full mt-0.5 p-1.5 rounded border border-slate-200 bg-slate-100 font-mono font-bold text-red-900 text-xs"
             />
           </div>
-          <div className="col-span-2 sm:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-3">
             <label className="text-[10px] uppercase font-bold text-slate-500 block">Reg. Date &amp; Time</label>
             <div className="flex gap-1.5 mt-0.5">
               <div className="flex-1">
@@ -2832,20 +2856,30 @@ function RegisterFIRForm() {
             const isActive = activeTab === tab.key;
             const tabErrors = getTabValidationErrors(tab.key);
             const hasError = Object.keys(tabErrors).length > 0 && Object.keys(errors).some((k) => k in tabErrors);
+            const hasVisitedIncomplete = !isActive && !hasError && visitedTabs.includes(tab.key) && Object.keys(tabErrors).length > 0;
             return (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => handleTabClick(tab.key)}
+                title={
+                  hasVisitedIncomplete
+                    ? `Missing required field(s): ${Object.values(tabErrors).slice(0, 2).join(" • ")}`
+                    : undefined
+                }
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? "bg-[#0b192c] text-white shadow-xs font-bold"
                     : "text-slate-600 hover:text-slate-950 hover:bg-slate-100"
-                } ${hasError ? "ring-2 ring-red-500" : ""}`}
+                } ${hasError ? "ring-2 ring-red-500" : hasVisitedIncomplete ? "ring-1 ring-amber-400 bg-amber-50/60" : ""}`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? "text-red-400" : "text-slate-400"}`} />
                 <span>{tab.label}</span>
-                {hasError && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                {hasError ? (
+                  <span className="w-2 h-2 rounded-full bg-red-500" title="Validation error" />
+                ) : hasVisitedIncomplete ? (
+                  <span className="w-2 h-2 rounded-full bg-amber-500" title="Required fields pending" />
+                ) : null}
               </button>
             );
           })}
@@ -2853,7 +2887,18 @@ function RegisterFIRForm() {
       </div>
 
       {/* FORM BODY */}
-      <form onSubmit={handleInitiateSubmit} className="space-y-6">
+      <form
+        onSubmit={handleInitiateSubmit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.target as HTMLElement)?.tagName === "INPUT") {
+            const inputType = (e.target as HTMLInputElement).type;
+            if (inputType !== "submit" && inputType !== "button") {
+              e.preventDefault();
+            }
+          }
+        }}
+        className="space-y-6"
+      >
         {/* ========================================================================= */}
         {/* TAB 1: ACT & SECTION */}
         {/* ========================================================================= */}
@@ -3099,32 +3144,40 @@ function RegisterFIRForm() {
 
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Original Date &amp; Time (Offence/Info)</label>
-                  <input
-                    type="datetime-local"
-                    value={originalDateTime}
-                    max={`${currentNow.date}T${currentNow.time}`}
-                    onChange={(e) => handleOriginalDateTimeChange(e.target.value, e.target)}
-                    onInput={(e) => {
-                      const now = getNowLocal();
-                      const maxVal = `${now.date}T${now.time}`;
-                      if (e.currentTarget.value && e.currentTarget.value > maxVal) {
-                        e.currentTarget.value = maxVal;
-                        setOriginalDateTime(maxVal);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const now = getNowLocal();
-                      const maxVal = `${now.date}T${now.time}`;
-                      if (e.currentTarget.value && e.currentTarget.value > maxVal) {
-                        e.currentTarget.value = maxVal;
-                        setOriginalDateTime(maxVal);
-                      }
-                    }}
-                    className={`w-full p-2 rounded-lg border text-xs font-mono ${
-                      errors.originalDateTime ? "border-red-500 bg-red-50/40" : "border-slate-300"
-                    }`}
-                    title={`Latest allowed date & time: ${currentNow.date} ${currentNow.time}`}
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1/2">
+                      <DatePickerDDMMYYYY
+                        value={toIsoDateString(originalDateTime.split("T")[0] || "")}
+                        max={currentNow.date}
+                        onValueChange={(newDate) => {
+                          if (!newDate) {
+                            handleOriginalDateTimeChange("");
+                            return;
+                          }
+                          const existingTime = parseTimeTo24Hour(originalDateTime.split("T")[1] || "") || currentNow.time;
+                          const clampedTime = newDate >= currentNow.date && existingTime > currentNow.time ? currentNow.time : existingTime;
+                          handleOriginalDateTimeChange(`${newDate}T${clampedTime}`);
+                        }}
+                        placeholder="DD/MM/YYYY"
+                        size="sm"
+                        className={errors.originalDateTime ? "border-red-500 bg-red-50/40" : ""}
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={parseTimeTo24Hour(originalDateTime.split("T")[1] || "") || (originalDateTime.split("T")[1] || "").slice(0, 5)}
+                      max={originalDateTime.split("T")[0] >= currentNow.date ? currentNow.time : undefined}
+                      onChange={(e) => {
+                        const datePart = toIsoDateString(originalDateTime.split("T")[0] || "") || currentNow.date;
+                        const timeVal = e.target.value || "00:00";
+                        handleOriginalDateTimeChange(`${datePart}T${timeVal}`, e.target);
+                      }}
+                      className={`w-1/2 p-2 rounded-lg border text-xs font-mono ${
+                        errors.originalDateTime ? "border-red-500 bg-red-50/40" : "border-slate-300"
+                      }`}
+                      title={`Latest allowed date & time: ${currentNow.date} ${currentNow.time}`}
+                    />
+                  </div>
                   {errors.originalDateTime && (
                     <p className="text-[11px] text-red-600 font-semibold mt-1">{errors.originalDateTime}</p>
                   )}
@@ -5468,9 +5521,14 @@ function RegisterFIRForm() {
                         <span className="text-[10px] text-slate-500 block mb-0.5">Estimated Value (₹)</span>
                         <input
                           type="number"
+                          min="0"
+                          step="1"
                           placeholder="e.g. 45000"
                           value={tempPropValue}
-                          onChange={(e) => setTempPropValue(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "" || Number(val) >= 0) setTempPropValue(val);
+                          }}
                           className="w-full p-2 rounded border border-slate-300 bg-white font-mono text-xs"
                         />
                       </div>

@@ -24,6 +24,7 @@ const LS_KEY = "haryana_police_cms_suggest_v1";
 const NGRAM_CACHE_KEY = "haryana_police_cms_ngram_v1";
 const NGRAM_URL = "/suggestions/ngrams.json";
 const USER_KEY = "haryana_police_cms_user";
+const REMOTE_SUGGESTIONS_ENABLED = process.env.NEXT_PUBLIC_SUGGESTIONS_REMOTE === "true";
 
 const MAX_TELEMETRY = 4000;
 const MAX_PHRASES = 200;
@@ -186,27 +187,30 @@ export const suggestionStore = {
 
       installLifecycleHooks();
 
-      // Background refresh + sync.
-      try {
-        const res = await fetch(NGRAM_URL, { cache: "no-cache" });
-        if (res.ok) {
-          const fresh = (await res.json()) as NgramModel;
-          model = fresh;
-          modelLoaded = true;
-          try {
-            window.localStorage.setItem(NGRAM_CACHE_KEY, JSON.stringify(fresh));
-          } catch {
-            // cache is best-effort (it can be large)
+      if (REMOTE_SUGGESTIONS_ENABLED) {
+        // Background refresh + sync (only when optional remote endpoints/assets are enabled).
+        try {
+          const res = await fetch(NGRAM_URL, { cache: "no-cache" });
+          if (res.ok) {
+            const fresh = (await res.json()) as NgramModel;
+            model = fresh;
+            modelLoaded = true;
+            try {
+              window.localStorage.setItem(NGRAM_CACHE_KEY, JSON.stringify(fresh));
+            } catch {
+              // cache is best-effort (it can be large)
+            }
+            notify();
           }
-          notify();
+        } catch {
+          // offline: keep serving the cached model
         }
-      } catch {
-        // offline: keep serving the cached model
+
+        void suggestionStore.syncPhrases();
+        void suggestionStore.flushOutbox();
       }
 
-      void suggestionStore.syncPhrases();
       void suggestionStore.syncHarvestedVocabulary();
-      void suggestionStore.flushOutbox();
     })();
 
     return loadPromise;

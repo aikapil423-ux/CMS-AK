@@ -7,6 +7,8 @@ import { MOCK_GD_ENTRIES } from "@/lib/mockData";
 import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST, toIsoDateString, formatDate, parseTimeTo24Hour, parseGdActivityDateTime } from "@/lib/utils";
 
 export interface GDLookupResult {
   diaryNumber: string;
@@ -55,12 +57,12 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
       .then((liveGd) => {
         if (!alive) return;
         const mappedLive = liveGd.map((e) => {
-          const parts = (e.activityDateTime || "").split(" ");
+          const parsed = parseGdActivityDateTime(e.activityDateTime);
           return {
             id: e.id,
             gdNumber: e.gdNumber,
-            entryDate: parts[0] || "",
-            entryTime: parts.slice(1).join(" ") || "",
+            entryDate: parsed.dateIso,
+            entryTime: parsed.time24,
             subject: e.subject,
             narrative: e.narrative,
             entryType: e.typeCode,
@@ -93,9 +95,14 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
     };
   }, [isOpen]);
 
+  useEscapeKey(isOpen, onClose);
+
   if (!isOpen) return null;
 
-  // Filter records based on search criteria
+  // Filter records based on normalized IST dates & search criteria
+  const fromIsoFilter = dateFrom ? toIsoDateString(dateFrom) : "";
+  const toIsoFilter = dateTo ? toIsoDateString(dateTo) : "";
+
   const filteredRecords = allEntries.filter((gd) => {
     if (diaryNumberQuery.trim()) {
       if (!gd.gdNumber.toLowerCase().includes(diaryNumberQuery.toLowerCase().trim())) {
@@ -105,11 +112,13 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
     if (diaryType !== "ALL") {
       if (gd.entryType !== diaryType) return false;
     }
-    if (dateFrom && gd.entryDate) {
-      if (gd.entryDate < dateFrom) return false;
+    if (fromIsoFilter && gd.entryDate) {
+      const entryIso = toIsoDateString(gd.entryDate);
+      if (entryIso && entryIso < fromIsoFilter) return false;
     }
-    if (dateTo && gd.entryDate) {
-      if (gd.entryDate > dateTo) return false;
+    if (toIsoFilter && gd.entryDate) {
+      const entryIso = toIsoDateString(gd.entryDate);
+      if (entryIso && entryIso > toIsoFilter) return false;
     }
     if (officerQuery.trim() && gd.loggedByOfficer) {
       if (!gd.loggedByOfficer.toLowerCase().includes(officerQuery.toLowerCase().trim())) {
@@ -141,13 +150,15 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
     }
     const found = allEntries.find((g) => g.id === selectedGdId);
     if (found) {
+      const normalizedDate = toIsoDateString(found.entryDate) || found.entryDate || "";
+      const normalizedTime = parseTimeTo24Hour(found.entryTime) || found.entryTime || "";
       const result: GDLookupResult = {
         diaryNumber: found.gdNumber,
         gdNumber: found.gdNumber,
-        entryDate: found.entryDate || "",
-        gdDate: found.entryDate || "",
-        entryTime: found.entryTime || "",
-        gdTime: found.entryTime || "",
+        entryDate: normalizedDate,
+        gdDate: normalizedDate,
+        entryTime: normalizedTime,
+        gdTime: normalizedTime,
         subject: found.subject,
         brief: found.narrative,
         entryType: found.entryTypeDisplay || found.entryType,
@@ -164,7 +175,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in-50">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in-50">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-800">
         {/* Header */}
         <div className="px-5 py-3.5 bg-[#0b192c] text-white flex items-center justify-between">
@@ -235,7 +246,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
                 <div className="w-1/2">
                   <DatePickerDDMMYYYY
                     value={dateFrom}
-                    max={new Date().toISOString().split("T")[0]}
+                    max={getTodayIsoIST()}
                     onChange={(e) => setDateFrom(e.target.value)}
                     placeholder="DD/MM/YYYY"
                     size="sm"
@@ -245,7 +256,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
                 <div className="w-1/2">
                   <DatePickerDDMMYYYY
                     value={dateTo}
-                    max={new Date().toISOString().split("T")[0]}
+                    max={getTodayIsoIST()}
                     onChange={(e) => setDateTo(e.target.value)}
                     placeholder="DD/MM/YYYY"
                     size="sm"
@@ -331,7 +342,7 @@ export const GDLookupDialog: React.FC<GDLookupDialogProps> = ({
                           </span>
                         </td>
                         <td className="p-2.5 font-mono text-slate-600">
-                          {rec.entryDate} {rec.entryTime}
+                          {formatDate(rec.entryDate)} {rec.entryTime}
                         </td>
                         <td className="p-2.5 text-slate-800">{rec.loggedByOfficer}</td>
                         <td className="p-2.5 font-semibold text-slate-900 max-w-[180px] truncate">

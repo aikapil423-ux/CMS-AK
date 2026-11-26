@@ -55,8 +55,9 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, getTodayIsoIST, getDateDaysAgoIsoIST, getMonthStartIsoIST, toIsoDateString } from "@/lib/utils";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { ActionsDropdown } from "@/components/ui/actions-dropdown";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { EoSendingToShoModal, EOCategoryOption } from "@/components/complaints/EoSendingToShoModal";
@@ -78,6 +79,7 @@ const STATUS_OPTIONS = [
   { key: "NOT_ASSIGNED", label: "Not Assigned" },
   { key: "PENDING", label: "Pending" },
   { key: "COMPLETE", label: "Complete" },
+  { key: "FIR_RECOMMEND", label: "FIR Recommend" },
   { key: "FIR_REGISTER", label: "Direct FIR (FIR Register)" },
   { key: "FIR_REGISTERED", label: "FIR Registered" },
   { key: "CORRECTION_REQUIRED", label: "Correction Required" },
@@ -87,6 +89,7 @@ const ALL_STATUS_KEYS = [
   "NOT_ASSIGNED",
   "PENDING",
   "COMPLETE",
+  "FIR_RECOMMEND",
   "FIR_REGISTER",
   "FIR_REGISTERED",
   "CORRECTION_REQUIRED",
@@ -143,18 +146,27 @@ function ComplaintListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialPriority = searchParams.get("priority") || "ALL";
+  const initialStatusParam = searchParams.get("status");
+  const initialSearchParam = searchParams.get("search") || "";
   const unassignedComplaintNo = searchParams.get("unassigned");
 
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const fetchRequestIdRef = useRef(0);
   const [advancedFilters,setAdvancedFilters]=useState(false);
   const [registerPage,setRegisterPage]=useState({key:"",page:1});
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchParam);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearchParam);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   // Status Filter with Dropdown and Checkboxes
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(ALL_STATUS_KEYS);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
+    if (!initialStatusParam || initialStatusParam.toUpperCase() === "ALL") return ALL_STATUS_KEYS;
+    const normalized = initialStatusParam.trim().toUpperCase().replace(/\s+/g, "_");
+    return ALL_STATUS_KEYS.includes(normalized) ? [normalized] : ALL_STATUS_KEYS;
+  });
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const statusDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -164,6 +176,7 @@ function ComplaintListContent() {
     pending: 0,
     complete: 0,
     firRegister: 0,
+    firRecommend: 0,
     firRegistered: 0,
     correctionRequired: 0,
     unassigned: 0,
@@ -697,6 +710,15 @@ function ComplaintListContent() {
     };
   }, []);
 
+  useEscapeKey(statusDropdownOpen, () => setStatusDropdownOpen(false));
+  useEscapeKey(columnDropdownOpen, () => setColumnDropdownOpen(false));
+  useEscapeKey(Boolean(activeSearchCol), () => setActiveSearchCol(null));
+  useEscapeKey(Boolean(assignDropdownComplaintId), () => setAssignDropdownComplaintId(null));
+  useEscapeKey(Boolean(selectedComplaint && !assignDropdownComplaintId), () => setSelectedComplaint(null));
+  useEscapeKey(Boolean(shoReEnquiryModalComplaint), () => setShoReEnquiryModalComplaint(null));
+  useEscapeKey(Boolean(shoRejectModalComplaint), () => setShoRejectModalComplaint(null));
+  useEscapeKey(Boolean(firRegisterModalComplaint), () => setFirRegisterModalComplaint(null));
+
   const handleToggleAll = () => {
     if (isAllSelected) {
       setSelectedStatuses([]);
@@ -744,12 +766,19 @@ function ComplaintListContent() {
     return `${selectedStatuses.length} Statuses Selected`;
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const fetchComplaints = async () => {
+    const reqId = ++fetchRequestIdRef.current;
     setLoading(true);
+    setFetchError(null);
     try {
     const [data, counts] = await Promise.all([
       ComplaintService.getComplaints({
-        search: searchQuery,
+        search: debouncedSearch,
         statuses: selectedStatuses.length === 0 ? ["NONE_MATCHING"] : (isAllSelected ? undefined : selectedStatuses),
         priority: priorityFilter,
         category: categoryFilter,
@@ -761,10 +790,17 @@ function ComplaintListContent() {
       }),
       ComplaintService.getStatusCounts(eoFilterParam, currentUser.stationName, currentUser.role),
     ]);
+    if (reqId !== fetchRequestIdRef.current) return;
     setComplaints(data);
     setStatusCounts(counts);
-    } catch(error) {setAssignToast(error instanceof Error?error.message:"Complaints could not be loaded.");}
-    finally {setLoading(false);}
+    } catch(error) {
+      if (reqId !== fetchRequestIdRef.current) return;
+      const msg = error instanceof Error ? error.message : "Complaints could not be loaded.";
+      setFetchError(msg);
+      setAssignToast(msg);
+    } finally {
+      if (reqId === fetchRequestIdRef.current) setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -779,15 +815,31 @@ function ComplaintListContent() {
       window.removeEventListener("complaints_updated", handleUpdate);
       window.removeEventListener("complaints_save_error",handleFailure);
     };
-  }, [searchQuery, selectedStatuses, priorityFilter, categoryFilter, dateFrom, dateTo, currentUser]);
+  }, [debouncedSearch, selectedStatuses, priorityFilter, categoryFilter, dateFrom, dateTo, currentUser]);
 
-  // Check if deep linked via query param
+  // Keep filter state aligned with URL deep-link changes
   useEffect(() => {
     const urlId = searchParams.get("id");
     if (urlId) {
       ComplaintService.getComplaintById(urlId).then((found) => {
         if (found) setSelectedComplaint(found);
       });
+    }
+    const statusParam = searchParams.get("status");
+    if (statusParam) {
+      const normalized = statusParam.trim().toUpperCase().replace(/\s+/g, "_");
+      if (normalized === "ALL") {
+        setSelectedStatuses([...ALL_STATUS_KEYS]);
+      } else if (ALL_STATUS_KEYS.includes(normalized)) {
+        setSelectedStatuses([normalized]);
+      }
+    }
+    const prioParam = searchParams.get("priority");
+    if (prioParam) setPriorityFilter(prioParam);
+    const searchParam = searchParams.get("search");
+    if (searchParam !== null) {
+      setSearchQuery(searchParam);
+      setDebouncedSearch(searchParam);
     }
   }, [searchParams]);
 
@@ -839,25 +891,21 @@ function ComplaintListContent() {
 
     // Date Range filtering (From & To)
     if (dateFrom) {
-      const fromTime = new Date(`${dateFrom}T00:00:00`).getTime();
-      if (!isNaN(fromTime)) {
+      const fromIso = toIsoDateString(dateFrom);
+      if (fromIso) {
         list = list.filter((c) => {
-          const raw = c.createdAt || c.incidentDate;
-          if (!raw) return true;
-          const t = new Date(raw).getTime();
-          return !isNaN(t) && t >= fromTime;
+          const rawIso = toIsoDateString(c.createdAt || c.incidentDate);
+          return !rawIso || rawIso >= fromIso;
         });
       }
     }
 
     if (dateTo) {
-      const toTime = new Date(`${dateTo}T23:59:59.999`).getTime();
-      if (!isNaN(toTime)) {
+      const toIso = toIsoDateString(dateTo);
+      if (toIso) {
         list = list.filter((c) => {
-          const raw = c.createdAt || c.incidentDate;
-          if (!raw) return true;
-          const t = new Date(raw).getTime();
-          return !isNaN(t) && t <= toTime;
+          const rawIso = toIsoDateString(c.createdAt || c.incidentDate);
+          return !rawIso || rawIso <= toIso;
         });
       }
     }
@@ -892,7 +940,7 @@ function ComplaintListContent() {
   const renderComplaintColumnHeader = (colKey: ComplaintColKey) => {
     if (colKey === "srNo") {
       return (
-        <span className="inline-flex items-center justify-center font-bold text-white text-center whitespace-nowrap text-xs">
+        <span className="inline-flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-center whitespace-nowrap text-xs">
           Sr No.
         </span>
       );
@@ -1418,7 +1466,7 @@ function ComplaintListContent() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {selectedStatuses.length > 0 && selectedStatuses.length < ALL_STATUS_KEYS.length && (
-                        <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
                           {selectedStatuses.length}
                         </span>
                       )}
@@ -1483,6 +1531,8 @@ function ComplaintListContent() {
                               ? statusCounts.pending
                               : opt.key === "COMPLETE"
                               ? statusCounts.complete
+                              : opt.key === "FIR_RECOMMEND"
+                              ? statusCounts.firRecommend
                               : opt.key === "FIR_REGISTER"
                               ? statusCounts.firRegister
                               : opt.key === "FIR_REGISTERED"
@@ -1561,26 +1611,29 @@ function ComplaintListContent() {
                 </div>
 
                 {/* 4. Compact Date Range Filter (Inline) */}
-                <div className="cms-date-range-container flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 h-8.5 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
+                <div className="cms-date-range-container flex flex-wrap items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 shrink-0 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0b192c] transition-all">
                   <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span className="text-[11px] font-semibold text-slate-500 shrink-0">From:</span>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    max={getTodayIsoIST()}
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="bg-transparent text-xs text-slate-800 font-medium border-0 !border-none !shadow-none focus:outline-none focus:ring-0 cursor-pointer w-[112px] !min-h-0 h-7"
-                    title="Date from"
+                    onValueChange={setDateFrom}
+                    placeholder="DD/MM/YYYY"
+                    title="Date from (DD/MM/YYYY)"
+                    className="w-[126px]"
                   />
                   <span className="text-slate-300 text-xs shrink-0">-</span>
                   <span className="text-[11px] font-semibold text-slate-500 shrink-0">To:</span>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    min={dateFrom || undefined}
+                    max={getTodayIsoIST()}
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="bg-transparent text-xs text-slate-800 font-medium border-0 !border-none !shadow-none focus:outline-none focus:ring-0 cursor-pointer w-[112px] !min-h-0 h-7"
-                    title="Date to"
+                    onValueChange={setDateTo}
+                    placeholder="DD/MM/YYYY"
+                    title="Date to (DD/MM/YYYY)"
+                    className="w-[126px]"
                   />
                   {(dateFrom || dateTo) && (
                     <button
@@ -1602,12 +1655,12 @@ function ComplaintListContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      const today = new Date().toISOString().split("T")[0];
+                      const today = getTodayIsoIST();
                       setDateFrom(today);
                       setDateTo(today);
                     }}
                     className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                      dateFrom && dateTo && dateFrom === dateTo && dateFrom === new Date().toISOString().split("T")[0]
+                      dateFrom && dateTo && dateFrom === dateTo && dateFrom === getTodayIsoIST()
                         ? "bg-white text-blue-700 shadow-2xs font-bold"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
@@ -1618,15 +1671,11 @@ function ComplaintListContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      const to = new Date().toISOString().split("T")[0];
-                      const d = new Date();
-                      d.setDate(d.getDate() - 7);
-                      const from = d.toISOString().split("T")[0];
-                      setDateFrom(from);
-                      setDateTo(to);
+                      setDateFrom(getDateDaysAgoIsoIST(7));
+                      setDateTo(getTodayIsoIST());
                     }}
                     className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
-                      dateFrom && dateTo && dateTo === new Date().toISOString().split("T")[0] && dateFrom !== dateTo
+                      dateFrom === getDateDaysAgoIsoIST(7) && dateTo === getTodayIsoIST()
                         ? "bg-white text-blue-700 shadow-2xs font-bold"
                         : "text-slate-600 hover:text-slate-900"
                     }`}
@@ -1637,13 +1686,14 @@ function ComplaintListContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      const now = new Date();
-                      const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-                      const to = new Date().toISOString().split("T")[0];
-                      setDateFrom(from);
-                      setDateTo(to);
+                      setDateFrom(getMonthStartIsoIST());
+                      setDateTo(getTodayIsoIST());
                     }}
-                    className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                    className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                      dateFrom === getMonthStartIsoIST() && dateTo === getTodayIsoIST()
+                        ? "bg-white text-blue-700 shadow-2xs font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                     title="This month"
                   >
                     Month
@@ -1827,10 +1877,10 @@ function ComplaintListContent() {
                     <Calendar className="w-3 h-3 text-amber-700" />
                     <span>
                       {dateFrom && dateTo
-                        ? `${dateFrom} to ${dateTo}`
+                        ? `${formatDate(dateFrom)} to ${formatDate(dateTo)}`
                         : dateFrom
-                        ? `From: ${dateFrom}`
-                        : `To: ${dateTo}`}
+                        ? `From: ${formatDate(dateFrom)}`
+                        : `To: ${formatDate(dateTo)}`}
                     </span>
                     <button
                       type="button"
@@ -1886,6 +1936,21 @@ function ComplaintListContent() {
       {/* Main Content: Table on Desktop, Cards on Mobile */}
       {loading ? (
         <LoadingSkeleton count={4} />
+      ) : fetchError ? (
+        <Card className="border-red-200 bg-red-50/70">
+          <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-red-950">Failed to load complaints register</h3>
+                <p className="text-xs text-red-800 mt-1">{fetchError}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={fetchComplaints} className="border-red-300 bg-white text-red-900 hover:bg-red-100 shrink-0 cursor-pointer">
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Retry
+            </Button>
+          </CardContent>
+        </Card>
       ) : sortedComplaints.length === 0 ? (
         <EmptyState
           title={isEo ? `No complaints assigned to ${currentUser.name}` : "No complaints found"}
@@ -2402,7 +2467,7 @@ function ComplaintListContent() {
 
       {/* Complaint Detail Inspection Modal / Drawer */}
       {selectedComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
             onClick={() => setSelectedComplaint(null)}
@@ -2526,7 +2591,7 @@ function ComplaintListContent() {
                   <div>
                     <span className="text-slate-500">Gender / Age:</span>{" "}
                     <span className="font-medium text-slate-800">
-                      {selectedComplaint.complainantGender} • {selectedComplaint.complainantAge || "Adult"} Yrs
+                      {selectedComplaint.complainantGender} • {selectedComplaint.complainantAge ? `${selectedComplaint.complainantAge} Yrs` : "Age not specified"}
                     </span>
                   </div>
                   <div className="sm:col-span-2">
@@ -2745,7 +2810,7 @@ function ComplaintListContent() {
 
       {/* SHO Re-Enquiry Modal */}
       {shoReEnquiryModalComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
             <div className="p-4 bg-amber-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -2799,7 +2864,7 @@ function ComplaintListContent() {
 
       {/* SHO Reject Report Modal */}
       {shoRejectModalComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
             <div className="p-4 bg-rose-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -2854,7 +2919,7 @@ function ComplaintListContent() {
 
       {/* SHO Register FIR Modal: Roznamcha Criminal Case GD Entry */}
       {firRegisterModalComplaint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
             <div className="p-4 bg-red-600 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">

@@ -244,8 +244,8 @@ export function printA4Element(
           box-shadow: none !important;
           border: 1.5px solid #94a3b8 !important;
           padding: 22px 26px !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+          page-break-inside: auto !important;
+          break-inside: auto !important;
         }
         /* Specialized A4 styling for General Diary Record (#printable-gd-record) to match preview 100% */
         #printable-gd-record {
@@ -261,8 +261,8 @@ export function printA4Element(
           font-size: 11pt !important;
           line-height: 1.6 !important;
           box-sizing: border-box !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+          page-break-inside: auto !important;
+          break-inside: auto !important;
         }
         #printable-gd-record h1 {
           font-size: 18pt !important;

@@ -31,20 +31,36 @@ function isoToDdmmyyyy(iso: string): string {
   return toDDMMYYYY(iso);
 }
 
-// Convert DD/MM/YYYY to YYYY-MM-DD
+// Convert DD/MM/YYYY to YYYY-MM-DD (rejects impossible calendar dates like 31/02/2026)
 function ddmmyyyyToIso(dmy: string): string {
   if (!dmy) return "";
   const parts = dmy.trim().split(/[-/.]/);
   if (parts.length === 3) {
-    const dd = parts[0].padStart(2, "0");
-    const mm = parts[1].padStart(2, "0");
-    const yyyy = parts[2];
-    if (yyyy.length === 4 && Number(mm) >= 1 && Number(mm) <= 12 && Number(dd) >= 1 && Number(dd) <= 31) {
-      return `${yyyy}-${mm}-${dd}`;
+    const ddStr = parts[0].padStart(2, "0");
+    const mmStr = parts[1].padStart(2, "0");
+    const yyyyStr = parts[2];
+    if (yyyyStr.length === 4) {
+      const dd = Number(ddStr);
+      const mm = Number(mmStr);
+      const yyyy = Number(yyyyStr);
+      if (yyyy >= 1900 && yyyy <= 2100 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+        const dt = new Date(yyyy, mm - 1, dd);
+        if (dt.getFullYear() === yyyy && dt.getMonth() === mm - 1 && dt.getDate() === dd) {
+          return `${yyyyStr}-${mmStr}-${ddStr}`;
+        }
+      }
     }
+    return "";
   }
   if (/^\d{4}-\d{2}-\d{2}/.test(dmy)) {
-    return dmy.slice(0, 10);
+    const [yyyyStr, mmStr, ddStr] = dmy.slice(0, 10).split("-");
+    const yyyy = Number(yyyyStr);
+    const mm = Number(mmStr);
+    const dd = Number(ddStr);
+    const dt = new Date(yyyy, mm - 1, dd);
+    if (dt.getFullYear() === yyyy && dt.getMonth() === mm - 1 && dt.getDate() === dd) {
+      return dmy.slice(0, 10);
+    }
   }
   return "";
 }
@@ -110,12 +126,15 @@ export function DatePickerDDMMYYYY({
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value.replace(/[^0-9/]/g, "");
+    const isDeleting = e.target.value.length < displayText.length;
 
-    // Automatically format typing: e.g. "10" -> "10/", "10/10" -> "10/10/"
-    if (raw.length === 2 && !raw.includes("/")) {
-      raw = raw + "/";
-    } else if (raw.length === 5 && raw.split("/").length === 2) {
-      raw = raw + "/";
+    // Auto-insert '/' only while typing forward so Backspace across '/' never traps the user
+    if (!isDeleting) {
+      if (raw.length === 2 && !raw.includes("/")) {
+        raw = raw + "/";
+      } else if (raw.length === 5 && raw.split("/").length === 2) {
+        raw = raw + "/";
+      }
     }
     if (raw.length > 10) {
       raw = raw.slice(0, 10);
@@ -168,21 +187,27 @@ export function DatePickerDDMMYYYY({
   };
 
   const openPicker = () => {
-    if (disabled) return;
+    if (disabled || !hiddenDateRef.current) return;
     try {
-      hiddenDateRef.current?.showPicker();
+      hiddenDateRef.current.showPicker();
     } catch {
-      hiddenDateRef.current?.focus();
+      try {
+        hiddenDateRef.current.focus();
+        hiddenDateRef.current.click();
+      } catch {
+        // ignore
+      }
     }
   };
 
   const currentIso = ddmmyyyyToIso(displayText) || (value ? (value.includes("/") ? ddmmyyyyToIso(value) : value) : "");
+  const isInvalidComplete = displayText.trim().length >= 8 && !ddmmyyyyToIso(displayText);
 
   const heightClass = size === "sm" ? "h-8 text-xs py-1" : size === "lg" ? "h-11 text-base py-2.5" : "h-9 text-xs sm:text-sm py-1.5";
 
   return (
     <div className={`relative inline-flex items-center w-full ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}>
-      {/* Hidden native input for calendar pop-up */}
+      {/* Anchored native input for calendar pop-up (avoids clipping behind sticky headers) */}
       <input
         ref={hiddenDateRef}
         type="date"
@@ -208,7 +233,7 @@ export function DatePickerDDMMYYYY({
             triggerChange("");
           }
         }}
-        className="sr-only pointer-events-none"
+        className="opacity-0 pointer-events-none absolute right-2 top-full mt-1 w-1 h-1 z-[70]"
       />
 
       {/* Visible Input strictly showing DD/MM/YYYY */}
@@ -217,6 +242,7 @@ export function DatePickerDDMMYYYY({
         name={name}
         type="text"
         inputMode="numeric"
+        aria-invalid={isInvalidComplete || undefined}
         placeholder={placeholder}
         value={displayText}
         onChange={handleTextChange}
@@ -224,16 +250,15 @@ export function DatePickerDDMMYYYY({
         disabled={disabled}
         required={required}
         title={title || "Enter date in DD/MM/YYYY format or pick from calendar"}
-        className={`w-full pl-3 pr-8 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b192c] focus:border-transparent transition-all placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 ${heightClass} ${className}`}
+        className={`w-full pl-3 pr-9 bg-slate-50 border ${isInvalidComplete ? "border-red-500 ring-1 ring-red-400" : "border-slate-300"} rounded-lg font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0b192c] focus:border-transparent transition-all placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 ${heightClass} ${className}`}
       />
 
-      {/* Calendar Button */}
+      {/* Keyboard-accessible Calendar Button */}
       <button
         type="button"
-        tabIndex={-1}
         onClick={openPicker}
         disabled={disabled}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-500 hover:text-blue-700 hover:bg-slate-200/60 rounded transition-colors cursor-pointer"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 min-w-[28px] min-h-[28px] p-1 flex items-center justify-center text-slate-500 hover:text-blue-700 hover:bg-slate-200/60 rounded transition-colors cursor-pointer"
         title="Open calendar picker"
         aria-label="Open calendar"
       >

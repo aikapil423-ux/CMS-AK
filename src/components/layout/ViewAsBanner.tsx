@@ -19,7 +19,7 @@ export function ViewAsBanner() {
   if (!isViewAs) return null;
 
   return (
-    <div className="px-3 sm:px-6 pt-2" role="status" data-cms-view-as="active">
+    <div className="print:hidden px-3 sm:px-6 pt-2" role="status" data-cms-view-as="active">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950 shadow-xs">
         <span className="flex items-center gap-2 font-semibold min-w-0">
           <Eye className="w-3.5 h-3.5 shrink-0" />

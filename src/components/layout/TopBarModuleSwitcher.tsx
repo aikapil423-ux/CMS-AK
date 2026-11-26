@@ -173,7 +173,9 @@ export function TopBarModuleSwitcher({ isMobile = false }: TopBarModuleSwitcherP
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
+        className={`rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none ${
+          isMobile ? "min-w-[44px] min-h-[44px] sm:w-8 sm:h-8 sm:min-w-8 sm:min-h-8" : "w-8 h-8"
+        } ${
           isOpen
             ? "bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-900/20"
             : "bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200/90 hover:border-slate-300 shadow-2xs"

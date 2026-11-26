@@ -698,7 +698,7 @@ export function ComplaintLegalAssistant({
                 >
                   <span>{act.shortName}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                       selectedActFilter === act.actId
                         ? "bg-indigo-800 text-white"
                         : "bg-slate-200 text-slate-700"
@@ -814,7 +814,7 @@ export function ComplaintLegalAssistant({
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-mono font-bold text-slate-900 text-sm">
-                                    {isHindi ? "धारा" : "Section"} {sec.sectionNumber}
+                                    {isHindi ? "धारा " : "Section "}{sec.sectionNumber.replace(/^(?:Section|Sec\.?|धारा)\s+/i, "")}
                                   </span>
                                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60">
                                     {sec.actShortName}

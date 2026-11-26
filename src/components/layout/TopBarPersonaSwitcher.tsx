@@ -127,7 +127,7 @@ export function TopBarPersonaSwitcher({ isMobile = false }: TopBarPersonaSwitche
         className={cn(
           "relative rounded-lg border transition-all cursor-pointer flex items-center justify-center group active:scale-95",
           isMobile
-            ? "p-1.5 bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700"
+            ? "min-w-[44px] min-h-[44px] p-2 sm:min-w-8 sm:min-h-8 sm:p-1.5 bg-slate-100 hover:bg-slate-200/80 border-slate-200 text-slate-700"
             : "p-2 bg-white hover:bg-slate-50 border-slate-200/80 text-slate-700 hover:text-slate-950 shadow-2xs",
           isOpen && "ring-2 ring-[#0b192c]/20 bg-slate-100",
           isViewAs && !isOpen && "ring-2 ring-amber-400"

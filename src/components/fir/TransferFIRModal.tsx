@@ -19,7 +19,9 @@ import {
 import { FIRItem, FIRTransferRecord } from "@/types";
 import { persistentFirService as firService } from "@/services/persistentFirService";
 import { useAuth } from "@/context/AuthContext";
-import { formatDate } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
 
 interface TransferFIRModalProps {
   isOpen: boolean;
@@ -101,8 +103,8 @@ export function TransferFIRModal({
   // Transfer metadata
   const [ground, setGround] = useState(STATUTORY_GROUNDS[0]);
   const [orderNumber, setOrderNumber] = useState("");
-  const [dispatchDate, setDispatchDate] = useState(new Date().toISOString().split("T")[0]);
-  const [transferredBy, setTransferredBy] = useState(currentUser?.name || "Inspector Rajesh Kumar (SHO)");
+  const [dispatchDate, setDispatchDate] = useState(() => getTodayIsoIST());
+  const [transferredBy, setTransferredBy] = useState(currentUser?.name || "Station House Officer (SHO)");
 
   // History & toast
   const [historyList, setHistoryList] = useState<FIRTransferRecord[]>([]);
@@ -130,9 +132,15 @@ export function TransferFIRModal({
   useEffect(() => {
     if (!orderNumber) {
       const rnd = Math.floor(100 + Math.random() * 900);
-      setOrderNumber(`SP/GGM/TRF/2026/${rnd}`);
+      const distCode = (currentUser?.district || "HYP")
+        .replace(/[^A-Za-z]/g, "")
+        .slice(0, 3)
+        .toUpperCase() || "HYP";
+      setOrderNumber(`SP/${distCode}/TRF/2026/${rnd}`);
     }
-  }, [orderNumber]);
+  }, [orderNumber, currentUser?.district]);
+
+  useEscapeKey(isOpen, onClose);
 
   // Load history
   const loadHistory = () => {
@@ -282,7 +290,7 @@ export function TransferFIRModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in-50">
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
         {/* Minimalist Header */}
         <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2">
@@ -582,12 +590,13 @@ export function TransferFIRModal({
                 </div>
                 <div>
                   <span className="text-[10px] text-slate-500 block mb-0.5 font-semibold">Dispatch Date:</span>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <DatePickerDDMMYYYY
                     value={dispatchDate}
-                    onChange={(e) => setDispatchDate(e.target.value)}
-                    className="w-full p-1.5 bg-white border border-slate-300 rounded-md text-xs"
+                    max={getTodayIsoIST()}
+                    onValueChange={setDispatchDate}
+                    size="sm"
+                    placeholder="DD/MM/YYYY"
+                    className="w-full"
                   />
                 </div>
               </div>

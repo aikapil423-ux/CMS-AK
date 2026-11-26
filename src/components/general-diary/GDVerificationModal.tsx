@@ -14,6 +14,7 @@ import {
 import { GeneralDiaryRecord, GDOfficerParticulars } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface GDVerificationModalProps {
   record: GeneralDiaryRecord | null;
@@ -34,6 +35,8 @@ export function GDVerificationModal({
   const [isLocking, setIsLocking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEscapeKey(isOpen && Boolean(record), onClose);
+
   if (!isOpen || !record) return null;
 
   const handleConfirm = async () => {
@@ -50,7 +53,11 @@ export function GDVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50"
+    >
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto">
         {/* Header */}
         <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between border-b border-slate-700">

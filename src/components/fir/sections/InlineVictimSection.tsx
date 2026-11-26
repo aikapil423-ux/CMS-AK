@@ -16,6 +16,8 @@ import {
   UserCheck,
 } from "lucide-react";
 import { FIRAliasEntry, FIRIdentificationEntry } from "@/types";
+import { useAuth } from "@/context/AuthContext";
+import { getTodayIsoIST } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -116,6 +118,11 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   autofillComplainantData,
   autofillTrigger,
 }) => {
+  const { currentUser } = useAuth();
+  const defaultDistrict = currentUser?.district || "Panipat";
+  const defaultCity = currentUser?.district || "Panipat";
+  const defaultTehsil = currentUser?.district || "Panipat";
+  const defaultPs = currentUser?.stationName || "PS City Panipat";
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Personal Info
@@ -154,22 +161,22 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
   const [permHouseNo, setPermHouseNo] = useState("");
   const [permStreet, setPermStreet] = useState("");
   const [permColony, setPermColony] = useState("");
-  const [permCity, setPermCity] = useState("Gurugram");
-  const [permTehsil, setPermTehsil] = useState("Gurugram");
+  const [permCity, setPermCity] = useState(defaultCity);
+  const [permTehsil, setPermTehsil] = useState(defaultTehsil);
   const [permCountry, setPermCountry] = useState("India");
   const [permState, setPermState] = useState("Haryana");
-  const [permDistrict, setPermDistrict] = useState("Gurugram");
-  const [permPs, setPermPs] = useState("PS Sector 29 Gurugram");
+  const [permDistrict, setPermDistrict] = useState(defaultDistrict);
+  const [permPs, setPermPs] = useState(defaultPs);
   const [permPincode, setPermPincode] = useState("");
   const [presentSameAsPerm, setPresentSameAsPerm] = useState(true);
 
   const [presHouseNo, setPresHouseNo] = useState("");
   const [presStreet, setPresStreet] = useState("");
   const [presColony, setPresColony] = useState("");
-  const [presCity, setPresCity] = useState("Gurugram");
-  const [presTehsil, setPresTehsil] = useState("Gurugram");
-  const [presPs, setPresPs] = useState("PS Sector 29 Gurugram");
-  const [presDistrict, setPresDistrict] = useState("Gurugram");
+  const [presCity, setPresCity] = useState(defaultCity);
+  const [presTehsil, setPresTehsil] = useState(defaultTehsil);
+  const [presPs, setPresPs] = useState(defaultPs);
+  const [presDistrict, setPresDistrict] = useState(defaultDistrict);
   const [presState, setPresState] = useState("Haryana");
   const [presPincode, setPresPincode] = useState("");
 
@@ -291,19 +298,19 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setPermHouseNo("");
     setPermStreet("");
     setPermColony("");
-    setPermCity("Gurugram");
-    setPermTehsil("Gurugram");
+    setPermCity(defaultCity);
+    setPermTehsil(defaultTehsil);
     setPermCountry("India");
     setPermState("Haryana");
-    setPermDistrict("Gurugram");
-    setPermPs("PS Sector 29 Gurugram");
+    setPermDistrict(defaultDistrict);
+    setPermPs(defaultPs);
     setPermPincode("");
     setPresentSameAsPerm(true);
     setPresHouseNo("");
     setPresStreet("");
     setPresColony("");
-    setPresCity("Gurugram");
-    setPresDistrict("Gurugram");
+    setPresCity(defaultCity);
+    setPresDistrict(defaultDistrict);
     setPresState("Haryana");
     setPresPincode("");
     setOccupation("Private Job");
@@ -344,19 +351,19 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
     setPermHouseNo(vic.permHouseNo || "");
     setPermStreet(vic.permStreet || "");
     setPermColony(vic.permColony || "");
-    setPermCity(vic.permCity || "Gurugram");
-    setPermTehsil(vic.permTehsil || "Gurugram");
+    setPermCity(vic.permCity || defaultCity);
+    setPermTehsil(vic.permTehsil || defaultTehsil);
     setPermCountry(vic.permCountry || "India");
     setPermState(vic.permState || "Haryana");
-    setPermDistrict(vic.permDistrict || "Gurugram");
-    setPermPs(vic.permPs || "PS Sector 29 Gurugram");
+    setPermDistrict(vic.permDistrict || defaultDistrict);
+    setPermPs(vic.permPs || defaultPs);
     setPermPincode(vic.permPincode || "");
     setPresentSameAsPerm(vic.presentSameAsPerm ?? true);
     setPresHouseNo(vic.presHouseNo || "");
     setPresStreet(vic.presStreet || "");
     setPresColony(vic.presColony || "");
-    setPresCity(vic.presCity || "Gurugram");
-    setPresDistrict(vic.presDistrict || "Gurugram");
+    setPresCity(vic.presCity || defaultCity);
+    setPresDistrict(vic.presDistrict || defaultDistrict);
     setPresState(vic.presState || "Haryana");
     setPresPincode(vic.presPincode || "");
     setOccupation(vic.occupation || "Private Job");
@@ -1046,7 +1053,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     </div>
                     <DatePickerDDMMYYYY
                       value={dob}
-                      max={new Date().toISOString().split("T")[0]}
+                      max={getTodayIsoIST()}
                       onChange={(e) => handleDobChange(e.target.value)}
                       placeholder="DD/MM/YYYY"
                       size="sm"
@@ -1394,7 +1401,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <label className="font-semibold text-slate-700">Police Station</label>
                       <VoiceInputButton
-                        onTranscript={(text) => setPermPs((prev) => (prev ? `${prev} ${text}` : text))}
+                        onTranscript={(text) => setPermPs((prev: string) => (prev ? `${prev} ${text}` : text))}
                         iconOnly={true}
                       />
                     </div>
@@ -1531,7 +1538,7 @@ export const InlineVictimSection: React.FC<InlineVictimSectionProps> = ({
                       <div className="flex items-center justify-between mb-1">
                         <label className="font-semibold text-slate-700">Police Station</label>
                         <VoiceInputButton
-                          onTranscript={(text) => setPresPs((prev) => (prev ? `${prev} ${text}` : text))}
+                          onTranscript={(text) => setPresPs((prev: string) => (prev ? `${prev} ${text}` : text))}
                           iconOnly={true}
                         />
                       </div>

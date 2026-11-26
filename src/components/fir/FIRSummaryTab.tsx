@@ -34,6 +34,7 @@ import { persistentFirService as firService } from "@/services/persistentFirServ
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
 
 interface FIRSummaryTabProps {
   fir: FIRItem;
@@ -221,7 +222,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
   };
 
   const handlePrintSummary = () => {
-    window.print();
+    printA4Element("fir-investigation-summary-sheet", `FIR_Summary_${fir.firNumber}`);
   };
 
   const pendingList = summary ? summary.pendingActionItems || summary.pendingActions || [] : [];
@@ -384,7 +385,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
 
       {/* Summary Content Body */}
       {summary && !isProcessing && (
-        <div className="space-y-6 animate-in fade-in-50">
+        <div id="fir-investigation-summary-sheet" className="cms-paper-sheet space-y-6 animate-in fade-in-50">
           {/* Executive Standing & Synopsis */}
           <Card className="border-slate-200 shadow-xs bg-white">
             <CardContent className="p-5 space-y-4 text-xs">

@@ -49,7 +49,8 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
-import { formatDate, formatDateTime } from "@/lib/utils";
+import { formatDate, formatDateTime, getTodayIsoIST } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import { TransferFIRModal } from "@/components/fir/TransferFIRModal";
 import { LinkDuplicateFIRModal } from "@/components/fir/LinkDuplicateFIRModal";
@@ -87,6 +88,7 @@ function FIRRegisterPageContent() {
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   // Date Range Search Filter (From - To)
   const [dateFrom, setDateFrom] = useState<string>(
@@ -349,6 +351,11 @@ function FIRRegisterPageContent() {
   const [isLinkDuplicateModalOpen, setIsLinkDuplicateModalOpen] = useState(false);
   const [selectedFirForAction, setSelectedFirForAction] = useState<string | undefined>(undefined);
 
+  useEscapeKey(isAssignModalOpen, () => setIsAssignModalOpen(false));
+  useEscapeKey(statusDropdownOpen, () => setStatusDropdownOpen(false));
+  useEscapeKey(columnDropdownOpen, () => setColumnDropdownOpen(false));
+  useEscapeKey(Boolean(activeSearchCol), () => setActiveSearchCol(null));
+
   // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -366,6 +373,7 @@ function FIRRegisterPageContent() {
   // Fetch FIRs
   const fetchFirs = () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = firService.getAllFirs();
       setFirs(data);
@@ -392,6 +400,7 @@ function FIRRegisterPageContent() {
       });
     } catch (err) {
       console.error("Failed to load FIRs:", err);
+      setLoadError(err instanceof Error ? err.message : "Failed to load FIR records.");
     } finally {
       setLoading(false);
     }
@@ -683,7 +692,7 @@ function FIRRegisterPageContent() {
     switch (colKey) {
       case "firNumber":
         return (
-          <td key="firNumber" className="py-3 px-3.5 align-top">
+          <td key="firNumber" className="py-2.5 px-2.5 align-top">
             <div className="space-y-1">
               <Link
                 href={`/fir/${fir.id}`}
@@ -693,7 +702,7 @@ function FIRRegisterPageContent() {
               </Link>
 
               <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
-                <span className="px-1.5 py-0.2 bg-slate-100 border border-slate-200 rounded">
+                <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded">
                   {fir.cctnsFirNumber || "LOCAL"}
                 </span>
                 {fir.cctnsSyncStatus === "SYNCED" && (
@@ -758,7 +767,7 @@ function FIRRegisterPageContent() {
 
       case "dateTime":
         return (
-          <td key="dateTime" className="py-3 px-3 align-top whitespace-nowrap">
+          <td key="dateTime" className="py-2.5 px-2.5 align-top whitespace-nowrap">
             <div className="text-slate-800 font-semibold">{formatDate(fir.firDate)}</div>
             <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3 text-slate-400" />
@@ -769,7 +778,7 @@ function FIRRegisterPageContent() {
 
       case "complainant":
         return (
-          <td key="complainant" className="py-3 px-3 align-top">
+          <td key="complainant" className="py-2.5 px-2.5 align-top max-w-[165px]">
             <div className="font-bold text-slate-900">{fir.complainantName}</div>
             {fir.complainantFatherSpouse && (
               <div className="text-[10px] text-slate-500">
@@ -785,7 +794,7 @@ function FIRRegisterPageContent() {
 
       case "actsPlace":
         return (
-          <td key="actsPlace" className="py-3 px-3 align-top max-w-xs">
+          <td key="actsPlace" className="py-2.5 px-2.5 align-top max-w-[210px]">
             <div className="font-bold text-slate-800 text-xs">
               <LawSectionTooltip sectionText={fir.actsAndSections} />
             </div>
@@ -798,7 +807,7 @@ function FIRRegisterPageContent() {
 
       case "status":
         return (
-          <td key="status" className="py-3 px-3 align-top whitespace-nowrap">
+          <td key="status" className="py-2.5 px-2 align-top whitespace-nowrap">
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
                 fir.status === "UNDER_INVESTIGATION"
@@ -817,7 +826,7 @@ function FIRRegisterPageContent() {
 
       case "assignedIo":
         return (
-          <td key="assignedIo" className="py-3 px-3 align-top">
+          <td key="assignedIo" className="py-2.5 px-2.5 align-top max-w-[160px]">
             {fir.assignedIoName ? (
               <div>
                 <div className="font-bold text-slate-800 flex items-center gap-1">
@@ -995,7 +1004,7 @@ function FIRRegisterPageContent() {
                   <DatePickerDDMMYYYY
                     size="sm"
                     value={dateFrom}
-                    max={dateTo || new Date().toISOString().split("T")[0]}
+                    max={dateTo || getTodayIsoIST()}
                     onValueChange={(val) => setDateFrom(val)}
                     title="Date From (DD/MM/YYYY)"
                     className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
@@ -1012,7 +1021,7 @@ function FIRRegisterPageContent() {
                     size="sm"
                     value={dateTo}
                     min={dateFrom || undefined}
-                    max={new Date().toISOString().split("T")[0]}
+                    max={getTodayIsoIST()}
                     onValueChange={(val) => setDateTo(val)}
                     title="Date To (DD/MM/YYYY)"
                     className="bg-white border-slate-200 shadow-2xs hover:border-slate-300"
@@ -1239,13 +1248,31 @@ function FIRRegisterPageContent() {
       {/* Main FIR Table */}
       <Card className="border-slate-200 shadow-xs overflow-hidden bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className={`w-full text-left border-collapse text-xs ${customCols.filter((c) => c.isActive).length === 0 ? "lg:table-fixed" : ""}`}>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
                 {columnOrder.map((col) => {
                   if (!visibleColumns[col]) return null;
                   const isDragging = draggedCol === col;
                   const isOver = dragOverCol === col;
+                  const widthClass =
+                    customCols.filter((c) => c.isActive).length === 0
+                      ? col === "firNumber"
+                        ? "lg:w-[13%]"
+                        : col === "dateTime"
+                        ? "lg:w-[11%]"
+                        : col === "complainant"
+                        ? "lg:w-[15%]"
+                        : col === "actsPlace"
+                        ? "lg:w-[20%]"
+                        : col === "status"
+                        ? "lg:w-[13%]"
+                        : col === "assignedIo"
+                        ? "lg:w-[13%]"
+                        : col === "daysPending"
+                        ? "lg:w-[7%]"
+                        : ""
+                      : "";
 
                   return (
                     <th
@@ -1277,7 +1304,7 @@ function FIRRegisterPageContent() {
                         setDraggedCol(null);
                         setDragOverCol(null);
                       }}
-                      className={`py-2.5 px-3 transition-all select-none cursor-grab active:cursor-grabbing ${
+                      className={`py-2.5 px-2 transition-all select-none cursor-grab active:cursor-grabbing ${widthClass} ${
                         col === "daysPending" ? "text-center" : ""
                       } ${
                         isDragging ? "opacity-30 bg-slate-200" : ""
@@ -1291,7 +1318,7 @@ function FIRRegisterPageContent() {
                 })}
 
                 {visibleColumns.action && (
-                  <th className="py-2.5 px-3 text-right align-top pt-3">Actions</th>
+                  <th className="py-2.5 px-2 text-right align-top pt-3 lg:w-[8%]">Actions</th>
                 )}
               </tr>
             </thead>
@@ -1301,6 +1328,18 @@ function FIRRegisterPageContent() {
                 <tr>
                   <td colSpan={8} className="py-12 text-center">
                     <LoadingSkeleton count={3} />
+                  </td>
+                </tr>
+              ) : loadError ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center">
+                    <div className="inline-flex flex-col items-center gap-2 p-6 bg-red-50/70 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl">
+                      <AlertCircle className="w-6 h-6 text-red-600" />
+                      <p className="text-xs font-semibold text-red-800 dark:text-red-300">{loadError}</p>
+                      <Button size="sm" variant="outline" onClick={fetchFirs} className="text-xs">
+                        Retry
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ) : sortedFirs.length === 0 ? (
@@ -1340,10 +1379,10 @@ function FIRRegisterPageContent() {
                       {/* Actions */}
                       {visibleColumns.action && (
                         <td
-                          className="py-3 px-3 align-top text-right"
+                          className="py-2.5 px-2 align-top text-right"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex flex-wrap items-center justify-end gap-1">
                             {/* View Profile */}
                             <Link href={`/fir/${fir.id}`}>
                               <Button
@@ -1410,7 +1449,7 @@ function FIRRegisterPageContent() {
       {/* Assign IO Modal */}
       {isAssignModalOpen && selectedFirForAssign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in-50">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full overflow-hidden">
             <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-amber-400" />

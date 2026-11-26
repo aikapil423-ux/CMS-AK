@@ -73,6 +73,8 @@ import {
   ComplaintPreviewData,
 } from "@/components/complaints/ComplaintVerificationModal";
 import { generateComplaintIntakeHtml } from "@/utils/complaintIntakeHtmlGenerator";
+import { getTodayIsoIST, formatDate } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import {
   DropdownManagerService,
   DropdownItem,
@@ -362,16 +364,30 @@ export default function RegisterComplaintPage() {
   const [sourceOffice, setSourceOffice] = useState<string>("SP Office Panipat");
   const [autoStationComplaintNo, setAutoStationComplaintNo] = useState<string>("");
 
-  // Auto-generate Station Complaint Number on load or station change
+  // Auto-generate Station Complaint Number after hydrating authoritative backend complaints
   useEffect(() => {
-    try {
-      const ps = currentUser?.stationName || "PS City Panipat";
-      const nextNo = ComplaintService.generateNextComplaintNumber(ps);
-      setAutoStationComplaintNo(nextNo);
-    } catch (e) {
-      console.warn("Could not compute next complaint number:", e);
-    }
-  }, [currentUser?.stationName]);
+    let active = true;
+    const computeNext = async () => {
+      try {
+        const ps = currentUser?.stationName || "PS City Panipat";
+        await ComplaintService.getComplaints({ viewerRole: currentUser?.role, viewerStation: ps });
+        if (!active) return;
+        const nextNo = ComplaintService.generateNextComplaintNumber(ps, undefined, currentUser?.district);
+        setAutoStationComplaintNo(nextNo);
+      } catch (e) {
+        console.warn("Could not compute next complaint number:", e);
+      }
+    };
+    void computeNext();
+    const handleRefresh = () => {
+      void computeNext();
+    };
+    window.addEventListener("complaints_updated", handleRefresh);
+    return () => {
+      active = false;
+      window.removeEventListener("complaints_updated", handleRefresh);
+    };
+  }, [currentUser?.stationName, currentUser?.district, currentUser?.role]);
 
   // 1. Complainant Details (Supports multiple complainants)
   const [complainants, setComplainants] = useState<ComplainantFormItem[]>([
@@ -420,7 +436,7 @@ export default function RegisterComplaintPage() {
   const [incidentPlace, setIncidentPlace] = useState("");
   const [incidentLandmark, setIncidentLandmark] = useState("");
   const [isDateTimeKnown, setIsDateTimeKnown] = useState<boolean>(true);
-  const [incidentDate, setIncidentDate] = useState(new Date().toISOString().split("T")[0]);
+  const [incidentDate, setIncidentDate] = useState(() => getTodayIsoIST());
   const [incidentTime, setIncidentTime] = useState("11:30");
   const [incidentApproxPeriod, setIncidentApproxPeriod] = useState("");
   const [incidentCategory, setIncidentCategory] = useState<
@@ -472,6 +488,10 @@ export default function RegisterComplaintPage() {
     size?: number | string;
   } | null>(null);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+
+  useEscapeKey(intelDropdownOpen, () => setIntelDropdownOpen(false));
+  useEscapeKey(showIntelModal, () => setShowIntelModal(false));
+  useEscapeKey(Boolean(previewModalFile), () => setPreviewModalFile(null));
 
   // Dynamic Dropdown Options from Dropdown Manager
   const [dynamicCategories, setDynamicCategories] = useState<DropdownItem[]>([]);
@@ -935,7 +955,7 @@ export default function RegisterComplaintPage() {
     setIncidentPlace("");
     setIncidentLandmark("");
     setIsDateTimeKnown(true);
-    setIncidentDate(new Date().toISOString().split("T")[0]);
+    setIncidentDate(getTodayIsoIST());
     setIncidentTime("11:30");
     setIncidentApproxPeriod("");
     setIncidentCategory("FINANCIAL_FRAUD_CHEATING");
@@ -962,29 +982,23 @@ export default function RegisterComplaintPage() {
     setGdSuggestionSent(false);
     setIsSendingGdSuggestion(false);
 
-    // 6. Clear active draft session from localStorage, but preserve backup!
+    // 6. Clear all draft & backup keys from localStorage so refresh keeps the form blank
     setAutofilledFieldKeys(new Set());
     setDraftBannerDismissed(true);
     try {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(FORM_DRAFT_KEY);
+        window.localStorage.removeItem(FORM_LAST_DRAFT_BACKUP_KEY);
+        window.localStorage.removeItem(FORM_MANUAL_DRAFT_KEY);
+        window.localStorage.removeItem(FORM_LAST_SUBMITTED_KEY);
       }
     } catch (e) {
       console.warn("Could not clear form draft from localStorage:", e);
     }
 
-    const availableBackup = getStoredDraftObject();
-    if (availableBackup) {
-      setHasStoredDraft(true);
-      if (availableBackup.draft.savedAt) {
-        setDraftSavedAt(availableBackup.draft.savedAt);
-      }
-      setDraftToast("Form cleared. Click 'Restore Last Draft' anytime to recover your cleared entries.");
-    } else {
-      setHasStoredDraft(false);
-      setDraftSavedAt(null);
-      setDraftToast("Form cleared.");
-    }
+    setHasStoredDraft(false);
+    setDraftSavedAt(null);
+    setDraftToast("Form cleared.");
     setTimeout(() => setDraftToast(null), 4000);
   };
 
@@ -2088,8 +2102,8 @@ export default function RegisterComplaintPage() {
       if (!comp.name.trim()) {
         errors[`comp_${idx}_name`] = `Complainant ${idx + 1}: Name is required`;
       }
-      if (comp.age && String(comp.age).trim() && (isNaN(Number(comp.age)) || Number(comp.age) < 1 || Number(comp.age) > 120)) {
-        errors[`comp_${idx}_age`] = `Complainant ${idx + 1}: Valid age (1-120 years) is required`;
+      if (comp.age && String(comp.age).trim() && (isNaN(Number(comp.age)) || Number(comp.age) < 10 || Number(comp.age) > 120)) {
+        errors[`comp_${idx}_age`] = `Complainant ${idx + 1}: Valid age (10-120 years) is required`;
       }
       if (comp.nationalityChoice === "Other" && !comp.otherNationality.trim()) {
         errors[`comp_${idx}_otherNationality`] = `Complainant ${idx + 1}: Please specify nationality`;
@@ -2160,7 +2174,7 @@ export default function RegisterComplaintPage() {
     if (!incidentPlace.trim()) {
       errors["incidentPlace"] = "Place of incident is required";
     }
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = getTodayIsoIST();
     if (isDateTimeKnown && (!incidentDate.trim() || incidentDate > todayStr)) {
       errors["incidentDate"] = !incidentDate.trim() ? "Date of incident is required" : "Date of incident cannot be in the future";
     }
@@ -2892,7 +2906,7 @@ export default function RegisterComplaintPage() {
               <FileCheck className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-[#0b192c]">Register Citizen Complaint</h1>
+              <h1 className="text-xl font-black text-[#0b192c] dark:text-slate-100">Register Citizen Complaint</h1>
 
             </div>
           {/* Station auto-computed complaint number preview badge */}
@@ -2950,7 +2964,7 @@ export default function RegisterComplaintPage() {
                 )}
               </div>
               <span className="font-bold text-slate-800 truncate max-w-xs">{processingFileInfo.name}</span>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                 {processingFileInfo.typeLabel}
               </span>
             </div>
@@ -3083,20 +3097,31 @@ export default function RegisterComplaintPage() {
 
       <Card className="border-slate-200 shadow-xs">
         <CardContent className="p-5 sm:p-7">
-          <form onSubmit={handleInitiateRegister} className="space-y-8">
+          <form
+            onSubmit={handleInitiateRegister}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.target as HTMLElement)?.tagName === "INPUT") {
+                const inputType = (e.target as HTMLInputElement).type;
+                if (inputType !== "submit" && inputType !== "button") {
+                  e.preventDefault();
+                }
+              }
+            }}
+            className="space-y-8"
+          >
 
             {/* =========================================================================
                 1. COMPLAINANT DETAILS
                ========================================================================= */}
-            <div id="sec-complainant" className="space-y-4 p-4 sm:p-6 bg-sky-50/60 border border-sky-200 rounded-2xl shadow-2xs">
-              <div className="border-b border-sky-200/80 pb-3 flex items-center justify-between">
+            <div id="sec-complainant" className="space-y-4 p-4 sm:p-6 bg-sky-50/60 dark:bg-slate-900/60 border border-sky-200 dark:border-slate-700 rounded-2xl shadow-2xs">
+              <div className="border-b border-sky-200/80 dark:border-slate-700 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-600" />
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     <span>1. Complainant Details</span>
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => autofillFileInputRef.current?.click()}
@@ -3278,7 +3303,7 @@ export default function RegisterComplaintPage() {
                       </div>
                       <input
                         type="number"
-                        min="1"
+                        min="10"
                         max="120"
                         value={comp.age || ""}
                         onChange={(e) => {
@@ -3825,7 +3850,7 @@ export default function RegisterComplaintPage() {
             <div id="sec-accused" className="space-y-4 p-4 sm:p-6 bg-amber-50/60 border border-amber-200 rounded-2xl shadow-2xs">
               <div className="border-b border-amber-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                     <Users className="w-4 h-4 text-amber-600" />
                     <span>2. Accused / Suspect Details</span>
                   </h2>
@@ -4073,7 +4098,7 @@ export default function RegisterComplaintPage() {
             <div id="sec-incident" className="space-y-5 p-4 sm:p-6 bg-indigo-50/50 border border-indigo-200 rounded-2xl shadow-2xs">
               <div className="border-b border-indigo-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
                     <span>3. Incident &amp; Complaint Details</span>
                   </h2>
@@ -4661,7 +4686,7 @@ export default function RegisterComplaintPage() {
             <div id="sec-evidence-upload" className="space-y-4 p-4 sm:p-6 bg-emerald-50/50 border border-emerald-200 rounded-2xl shadow-2xs">
               <div className="border-b border-emerald-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                     <Paperclip className="w-4 h-4 text-emerald-700" />
                     <span>4. Evidence &amp; Digital Attachments</span>
                   </h2>
@@ -4825,7 +4850,7 @@ export default function RegisterComplaintPage() {
                                 <span>•</span>
                                 <span>{formatFileSize(file.size)}</span>
                                 {file.size > 20 * 1024 * 1024 ? (
-                                  <span className="text-red-600 font-bold bg-red-50 px-1.5 py-0.2 rounded border border-red-200">
+                                  <span className="text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
                                     Exceeds 20 MB Limit
                                   </span>
                                 ) : (
@@ -4908,7 +4933,7 @@ export default function RegisterComplaintPage() {
             <div id="sec-intel" className="space-y-4 p-4 sm:p-6 bg-purple-50/50 border border-purple-200 rounded-2xl shadow-2xs">
               <div className="border-b border-purple-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                     <Search className="w-4 h-4 text-purple-600" />
                     <span>5. Run Intelligence Check</span>
                   </h2>
@@ -5019,7 +5044,7 @@ export default function RegisterComplaintPage() {
                     >
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase">
                         <span>Cross-Cases</span>
-                        <span className={`px-1.5 py-0.2 rounded-full ${intelResult.crossComplaints.length > 0 ? "bg-red-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                        <span className={`px-1.5 py-0.5 rounded-full ${intelResult.crossComplaints.length > 0 ? "bg-red-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                           {intelResult.crossComplaints.length}
                         </span>
                       </div>
@@ -5042,7 +5067,7 @@ export default function RegisterComplaintPage() {
                     >
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase">
                         <span>Repeat Files</span>
-                        <span className={`px-1.5 py-0.2 rounded-full ${intelResult.repeatHistory.totalPreviousComplaints > 0 ? "bg-amber-600 text-white" : "bg-slate-200 text-slate-600"}`}>
+                        <span className={`px-1.5 py-0.5 rounded-full ${intelResult.repeatHistory.totalPreviousComplaints > 0 ? "bg-amber-600 text-white" : "bg-slate-200 text-slate-600"}`}>
                           {intelResult.repeatHistory.totalPreviousComplaints}
                         </span>
                       </div>
@@ -5061,7 +5086,7 @@ export default function RegisterComplaintPage() {
                     >
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase">
                         <span>Linked</span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-600">
+                        <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-600">
                           {intelResult.linkedComplaints.length}
                         </span>
                       </div>
@@ -5111,7 +5136,7 @@ export default function RegisterComplaintPage() {
                 <div className="border-b border-teal-200/80 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm sm:text-base font-bold text-[#0b192c] uppercase tracking-wide flex items-center gap-2">
+                      <h2 className="text-sm sm:text-base font-bold text-[#0b192c] dark:text-slate-100 uppercase tracking-wide flex items-center gap-2">
                         <UserCheck className="w-4 h-4 text-teal-700" />
                         <span>6. Assign EO</span>
                       </h2>
@@ -5238,7 +5263,7 @@ export default function RegisterComplaintPage() {
 
       {/* Central Database Intelligence Check Modal */}
       {showIntelModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs animate-in fade-in-50">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs animate-in fade-in-50">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-300 overflow-hidden">
             {/* Modal Header */}
             <div className="px-5 py-4 bg-[#0b192c] text-white flex items-center justify-between">
@@ -5252,7 +5277,7 @@ export default function RegisterComplaintPage() {
                       Police Database Intelligence Scan
                     </span>
                     {intelResult?.hasAlerts && (
-                      <span className="px-1.5 py-0.2 text-[10px] font-bold bg-red-600 text-white rounded">
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">
                         ALERTS FOUND
                       </span>
                     )}
@@ -5294,7 +5319,7 @@ export default function RegisterComplaintPage() {
                 onClick={() => setActiveIntelTab("all")}
                 className={`pb-2.5 px-3 text-xs font-bold border-b-2 flex items-center gap-1.5 whitespace-nowrap transition-colors ${
                   activeIntelTab === "all"
-                    ? "border-[#0b192c] text-[#0b192c]"
+                    ? "border-[#0b192c] dark:border-amber-400 text-[#0b192c] dark:text-slate-100"
                     : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
@@ -5315,7 +5340,7 @@ export default function RegisterComplaintPage() {
                 <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
                 <span>Cross Complaints</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     (intelResult?.crossComplaints.length || 0) > 0
                       ? "bg-red-600 text-white"
                       : "bg-slate-200 text-slate-700"
@@ -5337,7 +5362,7 @@ export default function RegisterComplaintPage() {
                 <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
                 <span>Repeat History</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     (intelResult?.repeatHistory.totalPreviousComplaints || 0) > 0
                       ? "bg-amber-600 text-white"
                       : "bg-slate-200 text-slate-700"
@@ -5359,7 +5384,7 @@ export default function RegisterComplaintPage() {
                 <Link2 className="w-3.5 h-3.5 text-blue-600" />
                 <span>Linked Cases</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     (intelResult?.linkedComplaints.length || 0) > 0
                       ? "bg-blue-600 text-white"
                       : "bg-slate-200 text-slate-700"
@@ -5381,7 +5406,7 @@ export default function RegisterComplaintPage() {
                 <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Prior FIRs</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     (intelResult?.priorFirs.length || 0) > 0
                       ? "bg-purple-600 text-white"
                       : "bg-slate-200 text-slate-700"
@@ -5499,6 +5524,124 @@ export default function RegisterComplaintPage() {
                   )}
                 </div>
               )}
+
+              {/* LINKED COMPLAINTS VIEW */}
+              {(activeIntelTab === "linked" || activeIntelTab === "all") && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-blue-950 dark:text-blue-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <Link2 className="w-4 h-4 text-blue-600" />
+                      <span>Linked / Related Complaints</span>
+                    </h4>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {intelResult?.linkedComplaints.length || 0} found
+                    </span>
+                  </div>
+
+                  {intelResult && intelResult.linkedComplaints.length > 0 ? (
+                    <div className="space-y-2">
+                      {intelResult.linkedComplaints.map((match) => (
+                        <div
+                          key={match.existingComplaint.id}
+                          className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2 text-xs"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-mono font-bold text-blue-900">
+                              {match.existingComplaint.complaintNumber}
+                            </span>
+                            <span className="text-[10px] bg-blue-200 text-blue-900 px-2 py-0.5 rounded font-bold">
+                              Similarity: {match.similarityScore}%
+                            </span>
+                          </div>
+                          <p className="text-slate-700 text-[11px] leading-relaxed">
+                            <strong>Complainant:</strong> {match.existingComplaint.complainantName} (
+                            {formatDate(match.existingComplaint.createdAt)})
+                            <br />
+                            <strong>Summary:</strong> {match.summary || match.existingComplaint.incidentDetails}
+                            {match.matchedOn?.length > 0 && (
+                              <>
+                                <br />
+                                <strong>Matched On:</strong> {match.matchedOn.join(", ")}
+                              </>
+                            )}
+                          </p>
+                          <div className="flex items-center justify-between pt-1 border-t border-blue-200/60">
+                            <span className="text-[10px] text-slate-500">
+                              Status: <strong>{match.existingComplaint.status}</strong> • PS:{" "}
+                              {match.existingComplaint.policeStation}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLinkedComplaintNo(match.existingComplaint.complaintNumber);
+                                setShowIntelModal(false);
+                              }}
+                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                              Link This Case
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs text-center">
+                      No similar or related complaints matched by location, accused, or allegation keywords.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PRIOR FIRS VIEW */}
+              {(activeIntelTab === "fir" || activeIntelTab === "all") && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-purple-950 dark:text-purple-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileCheck2 className="w-4 h-4 text-purple-600" />
+                      <span>Prior / Historical FIR Records</span>
+                    </h4>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {intelResult?.priorFirs.length || 0} found
+                    </span>
+                  </div>
+
+                  {intelResult && intelResult.priorFirs.length > 0 ? (
+                    <div className="space-y-2">
+                      {intelResult.priorFirs.map((match) => (
+                        <div
+                          key={`${match.fir.id}-${match.partyRole}`}
+                          className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-1.5 text-xs"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-mono font-bold text-purple-950">
+                              FIR {match.fir.firNumber} ({match.fir.policeStation})
+                            </span>
+                            <span className="text-[10px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded font-bold">
+                              {match.partyRole.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          <p className="text-slate-700 text-[11px] leading-relaxed">
+                            <strong>Sections:</strong> {match.fir.sectionsOfLaw} •{" "}
+                            <strong>Date:</strong> {formatDate(match.fir.registrationDate)}
+                            <br />
+                            <strong>Match Reason:</strong> {match.reason}
+                            <br />
+                            <strong>Brief:</strong> {match.fir.incidentBrief}
+                          </p>
+                          <div className="flex items-center justify-between pt-1 border-t border-purple-200/60 text-[10px] text-slate-600">
+                            <span>Status: <strong>{match.fir.status}</strong></span>
+                            <span>District: {match.fir.district}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-xs text-center">
+                      No matching prior FIR history found in central crime archives.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -5517,6 +5660,8 @@ export default function RegisterComplaintPage() {
       {/* INSTANT DOCUMENT & MEDIA PREVIEW MODAL (BINA DOWNLOAD KRE) */}
       {previewModalFile && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in-50"
           onClick={() => setPreviewModalFile(null)}
         >
@@ -5535,7 +5680,7 @@ export default function RegisterComplaintPage() {
                     {previewModalFile.name}
                   </h3>
                   <div className="flex items-center gap-2 text-[10px] text-slate-300">
-                    <span className="uppercase font-semibold px-1.5 py-0.2 rounded bg-slate-800 text-amber-300">
+                    <span className="uppercase font-semibold px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">
                       {previewModalFile.category}
                     </span>
                     <span>• Instant Preview (No Download Required)</span>

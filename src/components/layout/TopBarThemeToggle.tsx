@@ -20,22 +20,27 @@ export function TopBarThemeToggle() {
   }, []);
 
   const toggleTheme = () => {
+    const root = document.documentElement;
+    root.classList.add("cms-theme-switching");
     if (theme === "light") {
       setTheme("dark");
-      document.documentElement.classList.add("dark");
+      root.classList.add("dark");
       localStorage.setItem("cms-theme", "dark");
     } else {
       setTheme("light");
-      document.documentElement.classList.remove("dark");
+      root.classList.remove("dark");
       localStorage.setItem("cms-theme", "light");
     }
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => root.classList.remove("cms-theme-switching"), 60);
+    });
   };
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer border select-none bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200/90 hover:border-slate-300 shadow-2xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
+      className="min-w-[44px] min-h-[44px] lg:min-w-8 lg:min-h-8 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer border select-none bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border-slate-200/90 hover:border-slate-300 shadow-2xs dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
       title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
       aria-label="Toggle theme"
     >

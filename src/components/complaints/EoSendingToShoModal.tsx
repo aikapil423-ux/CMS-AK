@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Send, X, AlertCircle, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComplaintItem } from "@/types";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 export type EOCategoryOption = "NCR" | "FIR_RECOMMEND" | "CLOSURE";
 
@@ -62,6 +63,8 @@ export function EoSendingToShoModal({
 
   const [remarks, setRemarks] = useState("");
 
+  useEscapeKey(isOpen && Boolean(complaint), onClose);
+
   if (!isOpen || !complaint) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -100,7 +103,11 @@ export function EoSendingToShoModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">

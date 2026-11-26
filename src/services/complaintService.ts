@@ -53,6 +53,7 @@ import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { complaintAutoFillService } from "./complaintAutoFillService";
 import { universalEvidenceService } from "./universalEvidenceService";
 import { evidenceBlobStore } from "./evidenceBlobStore";
+import { getTodayIsoIST, toIsoDateString } from "@/lib/utils";
 
 const LEGACY_COMPLAINTS_STORAGE_KEY = "haryana_police_cms_complaints_v1";
 const NOTIFICATIONS_STORAGE_KEY = "haryana_police_cms_notifications_v1";
@@ -304,6 +305,9 @@ export const ComplaintService = {
           if (sUpper === "FIR_REGISTER" || sUpper === "FIR REGISTER") {
             return main === "FIR Register";
           }
+          if (sUpper === "FIR_RECOMMEND" || sUpper === "FIR RECOMMEND" || sUpper === "FIR_RECOMMENDED") {
+            return main === "FIR Recommend";
+          }
           if (sUpper === "FIR_REGISTERED" || sUpper === "FIR REGISTERED") {
             return main === "FIR Registered";
           }
@@ -336,6 +340,8 @@ export const ComplaintService = {
         list = list.filter((c) => getMainComplaintStatus(c) === "Complete");
       } else if (sUpper === "FIR_REGISTER" || sUpper === "FIR REGISTER") {
         list = list.filter((c) => getMainComplaintStatus(c) === "FIR Register");
+      } else if (sUpper === "FIR_RECOMMEND" || sUpper === "FIR RECOMMEND" || sUpper === "FIR_RECOMMENDED") {
+        list = list.filter((c) => getMainComplaintStatus(c) === "FIR Recommend");
       } else if (sUpper === "FIR_REGISTERED" || sUpper === "FIR REGISTERED") {
         list = list.filter((c) => getMainComplaintStatus(c) === "FIR Registered");
       } else if (sUpper === "CORRECTION_REQUIRED" || sUpper === "CORRECTION REQUIRED") {
@@ -406,25 +412,21 @@ export const ComplaintService = {
       );
     }
     if (filter?.dateFrom) {
-      const fromTime = new Date(`${filter.dateFrom}T00:00:00`).getTime();
-      if (!isNaN(fromTime)) {
+      const fromIso = toIsoDateString(filter.dateFrom);
+      if (fromIso) {
         list = list.filter((c) => {
-          const raw = c.createdAt || c.incidentDate;
-          if (!raw) return true;
-          const t = new Date(raw).getTime();
-          return !isNaN(t) && t >= fromTime;
+          const rawIso = toIsoDateString(c.createdAt || c.incidentDate);
+          return !rawIso || rawIso >= fromIso;
         });
       }
     }
 
     if (filter?.dateTo) {
-      const toTime = new Date(`${filter.dateTo}T23:59:59.999`).getTime();
-      if (!isNaN(toTime)) {
+      const toIso = toIsoDateString(filter.dateTo);
+      if (toIso) {
         list = list.filter((c) => {
-          const raw = c.createdAt || c.incidentDate;
-          if (!raw) return true;
-          const t = new Date(raw).getTime();
-          return !isNaN(t) && t <= toTime;
+          const rawIso = toIsoDateString(c.createdAt || c.incidentDate);
+          return !rawIso || rawIso <= toIso;
         });
       }
     }
@@ -510,6 +512,7 @@ export const ComplaintService = {
     pending: number;
     complete: number;
     firRegister: number;
+    firRecommend: number;
     firRegistered: number;
     correctionRequired: number;
   }> {
@@ -568,6 +571,7 @@ export const ComplaintService = {
     let pending = 0;
     let complete = 0;
     let firRegister = 0;
+    let firRecommend = 0;
     let firRegistered = 0;
     let correctionRequired = 0;
 
@@ -577,6 +581,7 @@ export const ComplaintService = {
       else if (main === "Pending") pending++;
       else if (main === "Complete") complete++;
       else if (main === "FIR Register") firRegister++;
+      else if (main === "FIR Recommend") firRecommend++;
       else if (main === "FIR Registered") firRegistered++;
       else if (main === "Correction Required") correctionRequired++;
 
@@ -599,7 +604,7 @@ export const ComplaintService = {
       }
     }
 
-    return { all, unassigned, underEnquiry, underReview, disposed, notAssigned, pending, complete, firRegister, firRegistered, correctionRequired };
+    return { all, unassigned, underEnquiry, underReview, disposed, notAssigned, pending, complete, firRegister, firRecommend, firRegistered, correctionRequired };
   },
 
   async createComplaint(
@@ -1420,15 +1425,15 @@ export const ComplaintService = {
       complaintNumber: complaint.complaintNumber,
       complainantName: complaint.complainantName,
       transferType: payload.transferType,
-      sourcePoliceStation: complaint.policeStation || "PS Civil Lines",
-      sourceDistrict: complaint.district || "Gurugram",
+      sourcePoliceStation: complaint.policeStation || "Station Intake",
+      sourceDistrict: complaint.district || "Haryana",
       targetState: payload.targetState,
       targetDistrict: payload.targetDistrict,
       targetPoliceStation: payload.targetPoliceStation,
       transferReason: payload.transferReason,
       orderNumber: payload.orderNumber || "",
-      dispatchDate: payload.dispatchDate || new Date().toISOString().split("T")[0],
-      dispatchTime: payload.dispatchTime || new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      dispatchDate: payload.dispatchDate || getTodayIsoIST(),
+      dispatchTime: payload.dispatchTime || new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }),
       transferredBy: payload.transferredBy,
       transferredByRank: payload.transferredByRank || "Inspector / SHO",
       remarks: payload.remarks,
@@ -1471,10 +1476,13 @@ export const ComplaintService = {
   saveGlobalTransferRecord(record: ComplaintTransferRecord): void {
     if (typeof window === "undefined") return;
     try {
-      const existingStr = localStorage.getItem("cms_complaint_transfers_log_v1");
+      const viewer = currentComplaintUser();
+      const scope = (viewer?.stationName || viewer?.id || "global").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      const storageKey = `cms_complaint_transfers_log_v1_${scope}`;
+      const existingStr = localStorage.getItem(storageKey);
       const list: ComplaintTransferRecord[] = existingStr ? JSON.parse(existingStr) : [];
       list.unshift(record);
-      localStorage.setItem("cms_complaint_transfers_log_v1", JSON.stringify(list));
+      localStorage.setItem(storageKey, JSON.stringify(list.slice(0, 100)));
     } catch (e) {
       console.warn("Could not save global transfer log", e);
     }
@@ -1482,9 +1490,11 @@ export const ComplaintService = {
 
   getTransferHistory(): ComplaintTransferRecord[] {
     const listMap = new Map<string, ComplaintTransferRecord>();
+    const viewer = typeof window !== "undefined" ? currentComplaintUser() : undefined;
 
-    // 1. From complaintsStore in-memory
+    // 1. From complaintsStore in-memory (already scoped to authorized complaints for viewer)
     complaintsStore.forEach((c) => {
+      if (viewer && !canViewComplaint(viewer, c).allowed) return;
       if (c.transferHistory && c.transferHistory.length > 0) {
         c.transferHistory.forEach((tr) => listMap.set(tr.id, tr));
       } else if (c.isTransferred && c.transferredToPoliceStation) {
@@ -1496,15 +1506,15 @@ export const ComplaintService = {
             complaintNumber: c.complaintNumber,
             complainantName: c.complainantName,
             transferType: c.transferType || "OTHER_STATION",
-            sourcePoliceStation: c.policeStation || "PS Civil Lines",
-            sourceDistrict: c.district || "Gurugram",
+            sourcePoliceStation: c.policeStation || "Station Intake",
+            sourceDistrict: c.district || "Haryana",
             targetState: c.transferredToState || "Haryana",
-            targetDistrict: c.transferredToDistrict || "Gurugram",
+            targetDistrict: c.transferredToDistrict || c.district || "Haryana",
             targetPoliceStation: c.transferredToPoliceStation || "Other Station",
             transferReason: c.transferReason || "Jurisdictional transfer",
-            orderNumber: c.transferOrderNumber || "DCP/TRF/2026/01",
-            dispatchDate: c.transferredAt ? c.transferredAt.split("T")[0] : new Date().toISOString().split("T")[0],
-            dispatchTime: "10:30 AM",
+            orderNumber: c.transferOrderNumber || "TRF/2026/01",
+            dispatchDate: (c.transferredAt && toIsoDateString(c.transferredAt)) || getTodayIsoIST(),
+            dispatchTime: "10:30",
             transferredBy: c.transferredBy || "SHO In-charge",
             transferredByRank: "Inspector",
             timestamp: c.transferredAt || new Date().toISOString(),
@@ -1513,13 +1523,17 @@ export const ComplaintService = {
       }
     });
 
-    // 2. From localStorage
-    if (typeof window !== "undefined") {
+    // 2. From station-scoped localStorage (never leaking across personas/stations)
+    if (typeof window !== "undefined" && viewer) {
       try {
-        const existingStr = localStorage.getItem("cms_complaint_transfers_log_v1");
+        const scope = (viewer.stationName || viewer.id || "global").toLowerCase().replace(/[^a-z0-9]+/g, "_");
+        const storageKey = `cms_complaint_transfers_log_v1_${scope}`;
+        const existingStr = localStorage.getItem(storageKey);
         if (existingStr) {
           const storedList: ComplaintTransferRecord[] = JSON.parse(existingStr);
-          storedList.forEach((r) => listMap.set(r.id, r));
+          storedList.forEach((r) => {
+            if (!listMap.has(r.id)) listMap.set(r.id, r);
+          });
         }
       } catch (e) {
         console.warn("Could not parse transfer history from localStorage", e);

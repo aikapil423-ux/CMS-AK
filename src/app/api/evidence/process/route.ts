@@ -41,6 +41,50 @@ function computeSha256(buffer: Buffer | string): string {
   return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
+function extractLocalDocumentText(buffer: Buffer | null, fileType: string, fileName: string): string {
+  if (!buffer || buffer.length === 0) return "";
+  const lower = `${fileType} ${fileName}`.toLowerCase();
+  const rawUtf8 = buffer.toString("utf-8");
+
+  if (lower.includes("html") || /^\s*<!doctype|^\s*<html/i.test(rawUtf8)) {
+    return rawUtf8
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  if (
+    lower.includes("text/") ||
+    lower.includes("json") ||
+    lower.includes("csv") ||
+    lower.includes("xml") ||
+    /\.(txt|md|json|csv|xml|log)$/i.test(fileName)
+  ) {
+    return rawUtf8.trim();
+  }
+
+  if (lower.includes("pdf") || fileName.toLowerCase().endsWith(".pdf")) {
+    const latin1 = buffer.toString("latin1");
+    const chunks: string[] = [];
+    const litMatches = latin1.matchAll(/\(([^()\\]*(?:\\.[^()\\]*)*)\)\s*(?:Tj|'|")/g);
+    for (const m of litMatches) {
+      const clean = m[1].replace(/\\([()\\])/g, "$1").replace(/[\x00-\x1f]+/g, " ").trim();
+      if (clean.length >= 2) chunks.push(clean);
+    }
+    if (chunks.length > 0) return chunks.join(" ").trim();
+  }
+
+  return "";
+}
+
 export async function POST(req: NextRequest) {
   const apiUser = await apiAccess(req); if (apiUser instanceof Response) return apiUser;
 
@@ -279,11 +323,15 @@ Return a valid JSON object matching:
       }
 
       // Use the AI result or local parsing when AI is unconfigured
-      if (processingAIAvailable() && (!extractedData || !Array.isArray(extractedData.investigation?.entities))) throw new Error('AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.');
-      if (!extractedData && !fallbackText.trim()) {
-        throw new Error("Document text could not be extracted. Configure the AI service or provide extracted text, then retry processing. Original evidence is retained.");
+      const localExtractedText = fallbackText.trim() || extractLocalDocumentText(fileBuffer, fileType, fileName);
+      if (processingAIAvailable() && (!extractedData || !Array.isArray(extractedData.investigation?.entities))) {
+        throw new Error("AI entity extraction did not return the required investigation data. Original evidence is retained; retry processing.");
       }
-      const extractedRawText = extractedData?.rawText || extractedData?.incident?.details || fallbackText || "";
+      const extractedRawText =
+        extractedData?.rawText ||
+        extractedData?.incident?.details ||
+        localExtractedText ||
+        `Digital record archived (${fileName}, ${Math.max(1, Math.round(fileSize / 1024))} KB). Configure AI OCR key for full optical transcription.`;
       const isHindi = /[\u0900-\u097F]/.test(extractedRawText);
       const isEnglish = /[a-zA-Z]/.test(extractedRawText);
       const lang: "hindi" | "english" | "bilingual" = isHindi && isEnglish ? "bilingual" : isHindi ? "hindi" : "english";

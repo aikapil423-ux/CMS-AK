@@ -15,6 +15,7 @@ import { ComplaintItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface ComplaintReceiptModalProps {
   complaint: ComplaintItem | null;
@@ -35,6 +36,8 @@ export function ComplaintReceiptModal({
       scrollContainerRef.current.scrollTop = 0;
     }
   }, [isOpen]);
+
+  useEscapeKey(isOpen && Boolean(complaint), onClose);
 
   if (!isOpen || !complaint) return null;
 
@@ -73,20 +76,20 @@ export function ComplaintReceiptModal({
   const ioRank = complaint.assignedEoRank || "Sub-Inspector";
   const ioName = complaint.assignedEoName || "";
   const ioBeltNumber = complaint.assignedEoBeltNumber || complaint.assignedEoPno || "—";
-  const ioMobile = complaint.assignedEoPhone || "9812034567";
+  const ioMobile = complaint.assignedEoPhone || "—";
 
   // Station SHO Details (displayed when IO is not assigned)
   const shoRank = "Inspector (SHO)";
-  const shoName = complaint.policeStation ? `SHO In-charge (${complaint.policeStation})` : "Inspector Surender Pal (SHO)";
-  const shoBeltNumber = "SHO/892";
-  const shoMobile = "9812033001";
+  const shoName = complaint.policeStation ? `SHO In-charge (${complaint.policeStation})` : "Station House Officer";
+  const shoBeltNumber = "SHO";
+  const shoMobile = "—";
 
-  // MHC details fallback (auto-picked) - Station MHC is HC Devinder Kumar
-  const isMhcInvalid = !complaint.mhcName || complaint.mhcName.includes("Rajesh") || complaint.mhcName.includes("Inspector");
+  // MHC details fallback (station-neutral, avoid cross-district KKR leak)
+  const isMhcInvalid = !complaint.mhcName || complaint.mhcName.includes("Inspector");
   const mhcRank = "Head Constable (MHC)";
-  const mhcName = isMhcInvalid ? "HC Devinder Kumar" : complaint.mhcName;
-  const mhcBeltNumber = isMhcInvalid || complaint.mhcBeltNumber === "882/KKR" ? "889/KKR" : (complaint.mhcBeltNumber || "889/KKR");
-  const mhcMobile = isMhcInvalid ? "9813098765" : (complaint.mhcPhone || "9813098765");
+  const mhcName = isMhcInvalid ? `Station MHC (${complaint.policeStation || "Duty Desk"})` : complaint.mhcName;
+  const mhcBeltNumber = !complaint.mhcBeltNumber || complaint.mhcBeltNumber === "882/KKR" ? "MHC-Desk" : complaint.mhcBeltNumber;
+  const mhcMobile = isMhcInvalid ? "—" : (complaint.mhcPhone || "—");
 
   // Complainant Details
   const complainantFullName = complaint.complainantName
@@ -108,6 +111,8 @@ export function ComplaintReceiptModal({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-sm overflow-hidden animate-in fade-in-50"
       onClick={onClose}
     >
@@ -171,7 +176,7 @@ export function ComplaintReceiptModal({
           <div
             id="printable-receipt"
             ref={receiptRef}
-            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-6 sm:p-8 text-slate-950 space-y-4 font-sans shadow-md relative my-3 min-h-[750px] h-auto"
+            className="cms-paper-sheet w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-6 sm:p-8 text-slate-950 space-y-4 font-sans shadow-md relative my-3 min-h-[750px] h-auto"
             style={{ lineHeight: "1.5" }}
           >
             {/* Header Title */}
@@ -264,7 +269,7 @@ export function ComplaintReceiptModal({
                       {isEoAssigned ? "Assigned IO Details" : "Station SHO In-Charge"}
                     </h4>
                   </div>
-                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2 bg-slate-50">
+                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.5 bg-slate-50">
                     {isEoAssigned ? "EO Assigned" : "IO Not Assigned"}
                   </span>
                 </div>
@@ -305,7 +310,7 @@ export function ComplaintReceiptModal({
                       MHC Desk
                     </h4>
                   </div>
-                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.2 bg-slate-50">
+                  <span className="text-[10px] text-slate-700 border border-slate-300 px-1 py-0.5 bg-slate-50">
                     Station Staff
                   </span>
                 </div>

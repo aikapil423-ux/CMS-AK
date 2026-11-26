@@ -44,6 +44,8 @@ import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem, NoticeFormData, DynamicDocumentSection } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { generateNoticeDocumentHtml } from "@/utils/documentHtmlGenerators";
 import { parseUploadedDocument } from "@/utils/universalDocumentParser";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
@@ -511,6 +513,9 @@ function NoticeTemplatesContent() {
   const [complaintSearchQuery, setComplaintSearchQuery] = useState("");
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
+  useEscapeKey(previewModalOpen, () => setPreviewModalOpen(false));
+  useEscapeKey(selectComplaintModalOpen, () => setSelectComplaintModalOpen(false));
+
   const [selectedPerson, setSelectedPerson] = useState<IdentifiedPerson | null>(null);
 
   const documentRef = useRef<HTMLDivElement>(null);
@@ -919,6 +924,10 @@ function NoticeTemplatesContent() {
 
   const handlePrint = () => {
     if (!validateNotice()) return;
+    if (documentRef.current) {
+      printA4Element(documentRef.current, `${activeTemplate || "Notice"}_Document`);
+      return;
+    }
     window.print();
   };
 
@@ -1776,7 +1785,7 @@ function NoticeTemplatesContent() {
             className="text-xs bg-white hover:bg-slate-100 text-purple-700 font-bold border-purple-300 gap-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-purple-600" />
-            <span>+ Add Custom Section</span>
+            <span>Add Custom Section</span>
           </Button>
         </div>
       </div>
@@ -1785,7 +1794,7 @@ function NoticeTemplatesContent() {
       <div className="w-full max-w-5xl mx-auto space-y-4">
         <div
           ref={documentRef}
-          className={`bg-white rounded-2xl p-6 sm:p-12 text-slate-900 font-sans transition-all space-y-6 ${
+          className={`cms-paper-sheet bg-white rounded-2xl p-6 sm:p-12 text-slate-900 font-sans transition-all space-y-6 ${
             borderStyle === "solid"
               ? "border-2 border-slate-900 shadow-md"
               : borderStyle === "double"
@@ -4563,7 +4572,7 @@ function NoticeTemplatesContent() {
 
         {/* ================= PREVIEW NOTICE MODAL ================= */}
         {previewModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in-50">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 animate-in fade-in-50">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
               <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
@@ -4652,7 +4661,7 @@ function NoticeTemplatesContent() {
 
         {/* ================= SELECT COMPLAINT MODAL ================= */}
         {selectComplaintModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-50">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
               <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">

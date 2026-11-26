@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Clock, AlertTriangle, ShieldCheck, FileCheck, ChevronRight, Scale } from "lucide-react";
 import { FIRItem } from "@/types";
+import { parseFlexibleDate } from "@/lib/utils";
 
 interface BnssChallanCountdownProps {
   firs: FIRItem[];
@@ -19,11 +20,12 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
       return status === "UNDER_INVESTIGATION" || status === "INVESTIGATION" || status === "PENDING_SUPERVISORY_REVIEW";
     })
     .map((f) => {
-      // Date of FIR or arrest
-      const regDate = f.firDate ? new Date(f.firDate) : new Date(f.createdAt || Date.now());
+      // Date of FIR or arrest (IST/local safe parsing)
+      const regDate = parseFlexibleDate(f.firDate) || parseFlexibleDate(f.createdAt) || new Date();
       const now = new Date();
-      const diffMs = now.getTime() - regDate.getTime();
-      const daysElapsed = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      const regMidnight = new Date(regDate.getFullYear(), regDate.getMonth(), regDate.getDate()).getTime();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const daysElapsed = Math.max(0, Math.floor((todayMidnight - regMidnight) / 86400000));
       
       // Heinous crime (>10 years punishment) gets 90 days, others 60 days
       const isHeinous = /302|304|307|376|103|109|311/.test(f.actsAndSections || "");
@@ -50,7 +52,7 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
   if (activeCasesWithCountdown.length === 0) return null;
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden transition-all">
       {/* Banner Header */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -72,7 +74,7 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
               )}
             </div>
             <p className="text-[11px] text-slate-300">
-              गिरफ़्तारी से 60/90 दिन में चालान दाखिल करने की कानूनी समय-सीमा • डिफॉल्ट ज़मानत रोकथाम ट्रैकर
+              Statutory 60/90-day charge-sheet filing window from arrest • Default bail prevention tracker
             </p>
           </div>
         </div>
@@ -87,7 +89,7 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
 
       {/* Expanded Cases List */}
       {isExpanded && (
-        <div className="p-3.5 space-y-3 bg-slate-50/60 divide-y divide-slate-100">
+        <div className="p-3.5 space-y-3 bg-slate-50/60 dark:bg-slate-900/50 divide-y divide-slate-100 dark:divide-slate-800">
           {activeCasesWithCountdown.slice(0, 3).map((item) => {
             const f = item.fir;
             return (
@@ -97,11 +99,11 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/fir/${f.id}`}
-                        className="font-mono font-bold text-xs text-blue-900 hover:underline"
+                        className="font-mono font-bold text-xs text-blue-900 dark:text-blue-300 hover:underline"
                       >
                         {f.firNumber}
                       </Link>
-                      <span className="text-[11px] text-slate-600 truncate">
+                      <span className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
                         {f.actsAndSections}
                       </span>
                       <span className="text-[10px] text-slate-400">
@@ -114,10 +116,10 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
                     <span
                       className={`text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border ${
                         item.isCritical
-                          ? "bg-rose-50 text-rose-700 border-rose-300 animate-pulse"
+                          ? "bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700 animate-pulse"
                           : item.isWarning
-                          ? "bg-amber-50 text-amber-700 border-amber-300"
-                          : "bg-blue-50 text-blue-800 border-blue-200"
+                          ? "bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700"
+                          : "bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800"
                       }`}
                     >
                       <Clock className="w-3.5 h-3.5" />
@@ -127,7 +129,7 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
                     </span>
                     <Link
                       href={`/fir/${f.id}`}
-                      className="text-xs font-semibold text-blue-900 hover:text-blue-950 flex items-center gap-0.5"
+                      className="text-xs font-semibold text-blue-900 dark:text-blue-300 hover:text-blue-950 dark:hover:text-blue-200 flex items-center gap-0.5"
                     >
                       <span>Draft Challan</span>
                       <ChevronRight className="w-3 h-3" />
@@ -137,7 +139,7 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
 
                 {/* Progress Bar */}
                 <div className="space-y-1">
-                  <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden flex">
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden flex">
                     <div
                       className={`h-full transition-all duration-300 rounded-l-full ${
                         item.isCritical
@@ -153,11 +155,11 @@ export function BnssChallanCountdown({ firs }: BnssChallanCountdownProps) {
                     )}
                   </div>
 
-                  <div className="flex justify-between text-[10px] text-slate-500">
+                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span>
                       Day {item.daysElapsed} elapsed since registration
                     </span>
-                    <span className={item.isCritical ? "font-bold text-rose-700" : ""}>
+                    <span className={item.isCritical ? "font-bold text-rose-700 dark:text-rose-400" : ""}>
                       {item.isCritical
                         ? "⚠️ Default Bail Alert: Less than 10 days to file Final Report!"
                         : `${item.percentage}% of statutory window elapsed`}

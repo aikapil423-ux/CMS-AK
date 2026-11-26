@@ -28,7 +28,9 @@ import {
 } from "lucide-react";
 import { persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, FIRCompletionEvent } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
@@ -47,6 +49,7 @@ function CompleteCasesContent() {
 
   // Re-open Action Modal State
   const [reopenModalOpen, setReopenModalOpen] = useState<boolean>(false);
+  useEscapeKey(reopenModalOpen, () => setReopenModalOpen(false));
   const [selectedFirForReopen, setSelectedFirForReopen] = useState<FIRItem | null>(null);
   const [reopenReason, setReopenReason] = useState<string>("");
   const [reopenCourtName, setReopenCourtName] = useState<string>("");
@@ -155,7 +158,7 @@ function CompleteCasesContent() {
     setReopenReason("");
     setReopenCourtName("Chief Judicial Magistrate (CJM), Panipat");
     setReopenOrderNumber("");
-    setReopenOrderDate(new Date().toISOString().split("T")[0]);
+    setReopenOrderDate(getTodayIsoIST());
     setReopenAssignedIoId(fir.assignedIoId || "");
     setReopenConfirmed(false);
     setReopenModalOpen(true);
@@ -167,12 +170,12 @@ function CompleteCasesContent() {
     if (!selectedFirForReopen) return;
 
     if (!reopenReason.trim()) {
-      alert("⚠️ वैधानिक आवश्यकता: केस पुनः खोलने का स्पष्ट कारण (Reason for Reopening) दर्ज करना अनिवार्य है।");
+      alert("Statutory Requirement: Reason for reopening the case is mandatory.");
       return;
     }
 
     if (!reopenConfirmed) {
-      alert("⚠️ कृपया घोषणा की पुष्टि करें (Please confirm the reopening declaration).");
+      alert("Please confirm the statutory reopening declaration before proceeding.");
       return;
     }
 
@@ -195,7 +198,7 @@ function CompleteCasesContent() {
       if (updated) {
         setReopenModalOpen(false);
         loadFirs();
-        alert(`✅ केस ${updated.firNumber} सफलतापूर्वक 'FIR Part B → Re-open' कार्यक्षेत्र में स्थानांतरित कर दिया गया है।`);
+        alert(`Case ${updated.firNumber} moved to 'FIR Part B → Re-open' workspace.`);
         // Navigate to Part B Re-open tab
         router.push("/fir/part-b?tab=REOPEN");
       }
@@ -229,7 +232,7 @@ function CompleteCasesContent() {
                   "FIR नं, CCTNS, वादी, धाराएं, IO खोजें...",
                   "Search FIR No, CCTNS, Complainant, Acts, IO..."
                 )}
-                className="w-full pl-9 pr-8 py-1.5 text-xs bg-white text-slate-800 placeholder:text-slate-400 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs"
+                className="w-full pl-9 pr-8 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs"
               />
               {searchQuery && (
                 <button
@@ -247,7 +250,7 @@ function CompleteCasesContent() {
                 value={selectedStation}
                 onChange={(e) => setSelectedStation(e.target.value)}
                 aria-label="Filter by Police Station"
-                className="py-1.5 px-2.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer max-w-[180px]"
+                className="py-1.5 px-2.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer max-w-[180px]"
               >
                 <option value="ALL">{t("सभी थाने", "All Police Stations")}</option>
                 {policeStations.map((ps) => (
@@ -264,7 +267,7 @@ function CompleteCasesContent() {
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
                 aria-label="Filter by Year"
-                className="py-1.5 px-2.5 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer font-mono"
+                className="py-1.5 px-2.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-400 shadow-2xs cursor-pointer font-mono"
               >
                 <option value="ALL">{t("सभी वर्ष", "All Years")}</option>
                 {availableYears.map((yr) => (
@@ -280,16 +283,16 @@ function CompleteCasesContent() {
 
       {/* Case List Table / Cards */}
       {loading ? (
-        <div className="p-12 text-center bg-white rounded-xl border border-slate-200 text-slate-400">
+        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
-          <p className="text-xs">निस्तारित केस लोड हो रहे हैं...</p>
+          <p className="text-xs">Loading completed cases...</p>
         </div>
       ) : completedFirs.length === 0 ? (
-        <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-300 text-slate-500 space-y-2">
+        <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 space-y-2">
           <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">कोई निस्तारित केस नहीं मिला</h3>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Completed Cases Found</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            वर्तमान चयन एवं खोज मानदंडों के अनुसार 'Complete cases' में कोई रिकॉर्ड उपलब्ध नहीं है।
+            No completed FIR records match the selected station, year, or search filters.
           </p>
         </div>
       ) : (
@@ -302,7 +305,7 @@ function CompleteCasesContent() {
             return (
               <div
                 key={fir.id}
-                className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 p-4 shadow-xs transition-all hover:shadow-md"
+                className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 p-4 shadow-xs transition-all hover:shadow-md"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   {/* Left Column: FIR Numbers, Complainant, Station, Acts */}
@@ -335,34 +338,34 @@ function CompleteCasesContent() {
                     </div>
 
                     <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="font-semibold text-slate-800">वादी: {fir.complainantName}</span>
+                      <span className="font-semibold text-slate-800">Complainant: {fir.complainantName}</span>
                       <span className="text-slate-300">•</span>
                       <span className="text-slate-600">{fir.policeStation}, {fir.district}</span>
                       <span className="text-slate-300">•</span>
-                      <span className="font-medium text-slate-700">विवेचक (IO): {fir.assignedIoName || "—"}</span>
+                      <span className="font-medium text-slate-700">Investigating Officer: {fir.assignedIoName || "—"}</span>
                     </div>
 
                     <div className="text-[11px] text-slate-500 font-mono">
-                      धाराएं: <span className="font-sans font-bold text-slate-700">{fir.actsAndSections || "—"}</span>
+                      Acts &amp; Sections: <span className="font-sans font-bold text-slate-700">{fir.actsAndSections || "—"}</span>
                     </div>
 
                     {/* Completion Details Banner */}
                     <div className="mt-2 p-2.5 bg-emerald-50/60 rounded-lg border border-emerald-200/80 text-xs text-emerald-950 flex flex-wrap items-center gap-x-4 gap-y-1">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-emerald-800 block">निस्तारण आधार:</span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 block">Disposal Basis:</span>
                         <span className="font-black text-emerald-900">
                           {latestCompletion?.reason || fir.completionReason || fir.finalFormType || "Complete Court Submission"}
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-emerald-800 block">निस्तारण दिनांक:</span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 block">Completion Date:</span>
                         <span className="font-semibold font-mono text-emerald-900">
                           {formatDate(latestCompletion?.completedAt || fir.finalFormDate || fir.updatedAt)}
                         </span>
                       </div>
                       {(latestCompletion?.courtName || fir.courtName) && (
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-emerald-800 block">संबद्ध न्यायालय:</span>
+                          <span className="text-[10px] uppercase font-bold text-emerald-800 block">Concerned Court:</span>
                           <span className="font-semibold text-emerald-900">
                             {latestCompletion?.courtName || fir.courtName}
                           </span>
@@ -411,7 +414,7 @@ function CompleteCasesContent() {
       {/* RE-OPEN ACTION MODAL */}
       {reopenModalOpen && selectedFirForReopen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+          <div role="dialog" aria-modal="true" className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900 text-white p-5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -420,7 +423,7 @@ function CompleteCasesContent() {
                 </div>
                 <div>
                   <h3 className="text-sm font-black tracking-tight">
-                    Re-open Completed FIR (केस पुनः खोलने की वैधानिक प्रक्रिया)
+                    Re-open Completed FIR (Statutory Further Investigation)
                   </h3>
                   <p className="text-[11px] text-purple-200 font-mono">
                     {selectedFirForReopen.firNumber} • {selectedFirForReopen.policeStation}
@@ -438,75 +441,76 @@ function CompleteCasesContent() {
 
             {/* Modal Form */}
             <form onSubmit={handleConfirmReopen} className="p-5 space-y-4 text-xs">
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                <p className="text-[11px] font-bold text-purple-950 flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                  <span>वैधानिक नियम (BNSS Section 193(9)):</span>
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl space-y-1">
+                <p className="text-[11px] font-bold text-purple-950 dark:text-purple-200 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span>Statutory Rule (BNSS Section 193(9)):</span>
                 </p>
-                <p className="text-[11px] text-purple-900 leading-relaxed">
-                  केस पुनः खोलने पर कोई नई प्राथमिकी या डुप्लीकेट केस नहीं बनेगा। यही केस <strong>FIR Part B → Re-open</strong> कार्यक्षेत्र में सक्रिय हो जाएगा और नया चालान तैयार होने पर सीधे <strong>Under checking</strong> में चला जाएगा।
+                <p className="text-[11px] text-purple-900 dark:text-purple-300 leading-relaxed">
+                  Reopening a completed case will not create a duplicate FIR. This record becomes active in the <strong>FIR Part B → Re-open</strong> workspace and moves directly to <strong>Under checking</strong> once a supplementary challan is prepared.
                 </p>
               </div>
 
               {/* Reopen Reason (Required) */}
               <div className="space-y-1">
-                <label className="font-bold text-slate-800 flex items-center justify-between">
-                  <span>केस पुनः खोलने का ठोस आधार व कारण (Reason for Reopening) *</span>
-                  <span className="text-[10px] text-red-600 font-semibold">अनिवार्य</span>
+                <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                  <span>Reason for Reopening *</span>
+                  <span className="text-[10px] text-red-600 dark:text-red-400 font-semibold">Required</span>
                 </label>
                 <textarea
                   required
                   rows={3}
                   value={reopenReason}
                   onChange={(e) => setReopenReason(e.target.value)}
-                  placeholder="उदा. नए साक्ष्य/सह-अभियुक्त का पता चलने पर अग्रिम विवेचना हेतु अथवा सक्षम न्यायालय के आदेशानुसार..."
-                  className="w-full p-2.5 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="e.g., Further investigation ordered on discovery of fresh evidence / arrest of co-accused per Court direction..."
+                  className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
               {/* Order Number & Court Details */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">संबद्ध न्यायालय / सक्षम प्राधिकारी</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Court / Competent Authority</label>
                   <input
                     type="text"
                     value={reopenCourtName}
                     onChange={(e) => setReopenCourtName(e.target.value)}
-                    placeholder="उदा. CJM Court Panipat"
-                    className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                    placeholder={`e.g., CJM Court ${selectedFirForReopen.district || "Panipat"}`}
+                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">आदेश / संदर्भ संख्या (Order/Ref No.)</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Order / Reference No.</label>
                   <input
                     type="text"
                     value={reopenOrderNumber}
                     onChange={(e) => setReopenOrderNumber(e.target.value)}
-                    placeholder="उदा. CRT-ORD/2026/881"
-                    className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                    placeholder="e.g., CRT-ORD/2026/881"
+                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">आदेश दिनांक (Order Date)</label>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Order Date</label>
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    max={getTodayIsoIST()}
                     value={reopenOrderDate}
-                    onChange={(e) => setReopenOrderDate(e.target.value)}
-                    className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                    onValueChange={setReopenOrderDate}
+                    placeholder="DD/MM/YYYY"
+                    className="w-full"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-bold text-slate-700">अग्रिम जांच हेतु विवेचक (Assigned IO)</label>
+                  <label className="font-bold text-slate-700 dark:text-slate-300">Assigned IO for Further Investigation</label>
                   <select
                     value={reopenAssignedIoId}
                     onChange={(e) => setReopenAssignedIoId(e.target.value)}
-                    className="w-full p-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500 bg-white"
+                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="">-- पूर्व विवेचक यथावत रखें ({selectedFirForReopen.assignedIoName || "None"}) --</option>
+                    <option value="">-- Retain Previous IO ({selectedFirForReopen.assignedIoName || "None"}) --</option>
                     {MOCK_ENQUIRY_OFFICERS.map((io) => (
                       <option key={io.id} value={io.id}>
                         {io.name} ({io.rank})
@@ -517,7 +521,7 @@ function CompleteCasesContent() {
               </div>
 
               {/* Explicit Confirmation Checkbox */}
-              <div className="pt-2 border-t border-slate-200">
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                 <label className="flex items-start gap-2.5 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -525,21 +529,21 @@ function CompleteCasesContent() {
                     onChange={(e) => setReopenConfirmed(e.target.checked)}
                     className="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer"
                   />
-                  <span className="text-[11px] text-slate-700 leading-normal">
-                    मैं प्रमाणित करता हूँ कि सक्षम न्यायालय अथवा पुलिस अधीक्षक/वरिष्ठ अधिकारी के निर्देशानुसार इस केस में वैधानिक अग्रिम विवेचना (Further Investigation) हेतु पुनः खोलने की अनुमति प्रदान की गई है।
+                  <span className="text-[11px] text-slate-700 dark:text-slate-300 leading-normal">
+                    I certify that permission has been granted by the competent Court or Superintendent of Police / Senior Officer for statutory further investigation (BNSS 193(9)) in this case.
                   </span>
                 </label>
               </div>
 
               {/* Modal Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setReopenModalOpen(false)}
                   disabled={isSubmittingReopen}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                 >
-                  रद्द करें (Cancel)
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -547,11 +551,11 @@ function CompleteCasesContent() {
                   className={`px-4 py-2 text-xs font-bold text-white rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer ${
                     reopenConfirmed && !isSubmittingReopen
                       ? "bg-purple-700 hover:bg-purple-800 shadow-purple-200"
-                      : "bg-slate-300 cursor-not-allowed"
+                      : "bg-slate-300 dark:bg-slate-700 cursor-not-allowed"
                   }`}
                 >
                   <RotateCcw className={`w-3.5 h-3.5 ${isSubmittingReopen ? "animate-spin" : ""}`} />
-                  <span>{isSubmittingReopen ? "पुनः खुल रहा है..." : "Re-open Case (स्वीकृत करें)"}</span>
+                  <span>{isSubmittingReopen ? "Re-opening..." : "Approve & Re-open Case"}</span>
                 </button>
               </div>
             </form>

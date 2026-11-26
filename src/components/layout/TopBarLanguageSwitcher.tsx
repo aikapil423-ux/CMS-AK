@@ -29,7 +29,7 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
       <button
         type="button"
         onClick={handleClick}
-        className={`relative p-1.5 rounded-md border transition-all active:scale-95 flex items-center justify-center ${
+        className={`relative min-w-[44px] min-h-[44px] p-2 rounded-md border transition-all active:scale-95 flex items-center justify-center ${
           isHindi
             ? "bg-amber-50/80 border-amber-300 text-amber-900 hover:bg-amber-100"
             : "bg-blue-50/80 border-blue-300 text-blue-900 hover:bg-blue-100"
@@ -39,7 +39,7 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
       >
         <Languages className="w-4 h-4" />
         <span
-          className={`cms-language-badge absolute -bottom-1 -right-1 text-[8px] font-black px-1 leading-none rounded shadow-2xs border ${
+          className={`cms-language-badge absolute -bottom-1 -right-1 text-[8px] font-black px-1 py-0.5 leading-none rounded shadow-2xs border ${
             isHindi
               ? "bg-amber-600 text-white border-amber-700"
               : "bg-blue-600 text-white border-blue-700"
@@ -69,7 +69,7 @@ export function TopBarLanguageSwitcher({ isMobile = false }: TopBarLanguageSwitc
         } ${isHindi ? "text-amber-800" : "text-blue-800"}`}
       />
       <span
-        className={`cms-language-badge absolute -top-1 -right-1 text-[9px] font-black px-1 py-0.2 rounded-full border shadow-2xs tracking-tighter ${
+        className={`cms-language-badge absolute -top-1 -right-1 text-[9px] font-black px-1 py-0.5 rounded-full border shadow-2xs tracking-tighter ${
           isHindi
             ? "bg-amber-600 text-white border-amber-700"
             : "bg-blue-600 text-white border-blue-700"

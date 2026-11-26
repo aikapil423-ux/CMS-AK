@@ -62,10 +62,10 @@ export function FIRCaseAnalysisPanel({ firId, mode }: { firId: string; mode: 'gr
   const conflicts = analysis?.conflicts.filter(c => (severity === 'ALL' || c.severity === severity) &&
     `${c.title} ${c.explanation} ${c.oldValue} ${c.newValue}`.toLowerCase().includes(query.toLowerCase())) || [];
 
-  return <section className="space-y-4" aria-label={mode === 'graph' ? 'Knowledge Graph' : 'Case contradictions'}>
+  return <section className="space-y-4" aria-label={mode === 'graph' ? 'Knowledge Graph' : 'Case Contradictions'}>
     <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5">
-      <div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">{mode === 'graph' ? <Network size={22} /> : <AlertTriangle size={22} />}{mode === 'graph' ? 'Knowledge Graph' : 'Case contradictions'}</h2>
-        <p className="mt-1 text-sm text-slate-600">{mode === 'graph' ? 'Saved case facts, people and evidence sources. Select a node to inspect its connections.' : 'पुराने processed data और नए evidence में अंतर — source देखकर verify करें।'}</p>
+      <div><h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">{mode === 'graph' ? <Network size={22} /> : <AlertTriangle size={22} />}{mode === 'graph' ? 'Knowledge Graph' : 'Case Contradictions'}</h2>
+        <p className="mt-1 text-sm text-slate-600">{mode === 'graph' ? 'Saved case facts, people and evidence sources. Select a node to inspect its connections.' : 'Discrepancies between earlier processed data and newly uploaded evidence — verify each item against its source.'}</p>
         {analysis && <p className="mt-2 text-xs text-slate-500">{analysis.sources.length} sources / revisions • Saved {new Date(analysis.analyzedAt).toLocaleString()} • {analysis.aiStatus === 'COMPLETED' ? 'AI comparison completed' : 'AI comparison incomplete'}</p>}
         {analysis?.aiProgress && <p className="mt-1 text-xs font-semibold text-blue-700">AI batches: {analysis.aiProgress.completed} / {analysis.aiProgress.total}</p>}
       </div>

@@ -1,14 +1,18 @@
 // Document generator for complaint intake verification proforma
 import { ComplaintPreviewData } from "@/components/complaints/ComplaintVerificationModal";
+import { escapeHtml } from "@/lib/utils";
 
 export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complaintNo: string): string {
+  const e = escapeHtml;
   const primaryComp = data.complainants[0];
   const dateFormatted = new Date().toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
   const timeFormatted = new Date().toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -19,17 +23,17 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
       (c, idx) => `
     <div style="margin-bottom: 12px; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
       <div style="font-weight: bold; font-size: 13px; color: #0f172a;">
-        #${idx + 1} ${c.name} ${c.relativeName ? `(${c.relationType || "S/o"} ${c.relativeName})` : ""}
+        #${idx + 1} ${e(c.name)} ${c.relativeName ? `(${e(c.relationType || "S/o")} ${e(c.relativeName)})` : ""}
         <span style="float: right; font-family: monospace; color: #1e3a8a; background: #dbeafe; padding: 2px 6px; border-radius: 4px;">
-          Mob: +91 ${c.mobile}
+          Mob: +91 ${e(c.mobile)}
         </span>
       </div>
       <div style="font-size: 11px; color: #334155; margin-top: 6px;">
-        <strong>Gender/Age:</strong> ${c.gender || "—"} / ${c.age ? `${c.age} Yrs` : "—"} |
-        <strong>Nationality:</strong> ${c.nationalityChoice || "Indian"}
+        <strong>Gender/Age:</strong> ${e(c.gender || "—")} / ${c.age ? `${e(c.age)} Yrs` : "—"} |
+        <strong>Nationality:</strong> ${e(c.nationalityChoice || "Indian")}
       </div>
       <div style="font-size: 11px; color: #334155; margin-top: 4px;">
-        <strong>Present Address:</strong> ${c.presentAddress}, ${c.presentCity}, ${c.presentDistrict}, ${c.presentState}
+        <strong>Present Address:</strong> ${e(c.presentAddress)}, ${e(c.presentCity)}, ${e(c.presentDistrict)}, ${e(c.presentState)}
       </div>
     </div>
   `
@@ -42,11 +46,11 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
           .map(
             (a, idx) => `
       <div style="margin-bottom: 8px; padding: 8px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; font-size: 12px;">
-        <strong>#${idx + 1} ${a.name} ${a.alias ? `(Alias: ${a.alias})` : ""}</strong>
-        ${a.phone ? `<span style="float: right; font-family: monospace;">Mob: ${a.phone}</span>` : ""}
+        <strong>#${idx + 1} ${e(a.name)} ${a.alias ? `(Alias: ${e(a.alias)})` : ""}</strong>
+        ${a.phone ? `<span style="float: right; font-family: monospace;">Mob: ${e(a.phone)}</span>` : ""}
         <div style="font-size: 11px; color: #4b5563; margin-top: 3px;">
-          <strong>Address:</strong> ${a.address || "Not specified"}
-          ${a.relationWithComplainant ? ` | <strong>Relation:</strong> ${a.relationWithComplainant}` : ""}
+          <strong>Address:</strong> ${e(a.address || "Not specified")}
+          ${a.relationWithComplainant ? ` | <strong>Relation:</strong> ${e(a.relationWithComplainant)}` : ""}
         </div>
       </div>
     `
@@ -60,7 +64,7 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Complaint Intake Verification Proforma - ${complaintNo}</title>
+  <title>Complaint Intake Verification Proforma - ${e(complaintNo)}</title>
   <style>
     @page { size: A4; margin: 15mm; }
     body {
@@ -145,17 +149,17 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
     <div class="header">
       <div class="seal">HARYANA POLICE</div>
       <h1>Citizen Complaint Intake Verification Proforma</h1>
-      <div class="subline">${data.policeStation}, District ${data.district}</div>
+      <div class="subline">${e(data.policeStation)}, District ${e(data.district)}</div>
       <div style="font-size: 11px; color: #64748b; font-style: italic; margin-top: 2px;">
         (Under PPR Rule 22.48 &amp; Section 173(3) of Bharatiya Nagarik Suraksha Sanhita, 2023)
       </div>
     </div>
 
     <div class="badge-bar">
-      <div><strong>Complaint No:</strong> <span style="font-family: monospace; color: #1e3a8a; font-weight: bold;">${complaintNo}</span></div>
-      <div><strong>Date/Time:</strong> ${dateFormatted} ${timeFormatted}</div>
-      <div><strong>Channel:</strong> ${data.sourceChannel}</div>
-      <div><strong>Priority:</strong> ${data.priorityLevel}</div>
+      <div><strong>Complaint No:</strong> <span style="font-family: monospace; color: #1e3a8a; font-weight: bold;">${e(complaintNo)}</span></div>
+      <div><strong>Date/Time:</strong> ${e(dateFormatted)} ${e(timeFormatted)}</div>
+      <div><strong>Channel:</strong> ${e(data.sourceChannel)}</div>
+      <div><strong>Priority:</strong> ${e(data.priorityLevel)}</div>
     </div>
 
     <div class="sec-title">1. Complainant Particulars</div>
@@ -167,16 +171,16 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
     <div class="sec-title">3. Occurrence &amp; Allegation Particulars</div>
     <div class="box">
       <div style="margin-bottom: 6px;">
-        <strong>Place of Incident:</strong> ${data.incidentPlace} ${data.incidentLandmark ? `(Landmark: ${data.incidentLandmark})` : ""} |
-        <strong>Date/Time:</strong> ${data.isDateTimeKnown ? `${data.incidentDate} ${data.incidentTime || ""}` : data.incidentApproxPeriod || "Undated"}
+        <strong>Place of Incident:</strong> ${e(data.incidentPlace)} ${data.incidentLandmark ? `(Landmark: ${e(data.incidentLandmark)})` : ""} |
+        <strong>Date/Time:</strong> ${data.isDateTimeKnown ? `${e(data.incidentDate)} ${e(data.incidentTime || "")}` : e(data.incidentApproxPeriod || "Undated")}
       </div>
       <div style="margin-bottom: 8px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
         <strong style="text-transform: uppercase; color: #0f172a;">Subject / विषय:</strong>
-        <div style="font-weight: bold; font-size: 13px; color: #000; margin-top: 2px;">${data.complaintSubject}</div>
+        <div style="font-weight: bold; font-size: 13px; color: #000; margin-top: 2px;">${e(data.complaintSubject)}</div>
       </div>
       <div style="padding-top: 6px; border-top: 1px solid #e2e8f0;">
         <strong style="text-transform: uppercase; color: #0f172a;">Brief Synopsis / विवरण:</strong>
-        <div style="color: #1e293b; margin-top: 2px; white-space: pre-wrap;">${data.complaintDescription}</div>
+        <div style="color: #1e293b; margin-top: 2px; white-space: pre-wrap;">${e(data.complaintDescription)}</div>
       </div>
     </div>
 
@@ -185,10 +189,10 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
         ? `
       <div class="sec-title">4. Immediate Enquiry Officer (EO) Allocation</div>
       <div style="padding: 10px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 6px; font-size: 12px;">
-        <strong>Assigned Officer:</strong> ${data.selectedEoName} (${data.selectedEoRank || "EO"}) |
-        <strong>PNO:</strong> ${data.selectedEoPno || "—"} |
-        <strong>Target:</strong> ${data.targetDays || 14} Days
-        ${data.assignedDirections ? `<div style="font-style: italic; color: #581c87; margin-top: 4px;">&ldquo;${data.assignedDirections}&rdquo;</div>` : ""}
+        <strong>Assigned Officer:</strong> ${e(data.selectedEoName)} (${e(data.selectedEoRank || "EO")}) |
+        <strong>PNO:</strong> ${e(data.selectedEoPno || "—")} |
+        <strong>Target:</strong> ${e(String(data.targetDays || 14))} Days
+        ${data.assignedDirections ? `<div style="font-style: italic; color: #581c87; margin-top: 4px;">&ldquo;${e(data.assignedDirections)}&rdquo;</div>` : ""}
       </div>
     `
         : ""
@@ -204,9 +208,9 @@ export function generateComplaintIntakeHtml(data: ComplaintPreviewData, complain
 
       <div style="text-align: right;">
         <div>______________________________________</div>
-        <div style="font-weight: bold; font-size: 13px; color: #0f172a; margin-top: 4px;">${data.registeredBy}</div>
+        <div style="font-weight: bold; font-size: 13px; color: #0f172a; margin-top: 4px;">${e(data.registeredBy)}</div>
         <div style="color: #475569; font-size: 11px;">Intake Officer / Duty Clerk</div>
-        <div style="color: #64748b; font-size: 10px; font-family: monospace;">${data.policeStation}, District ${data.district}</div>
+        <div style="color: #64748b; font-size: 10px; font-family: monospace;">${e(data.policeStation)}, District ${e(data.district)}</div>
       </div>
     </div>
   </div>

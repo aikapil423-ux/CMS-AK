@@ -24,6 +24,7 @@ import { getUnifiedActsCatalog, UnifiedActOption } from "@/lib/cctnsActsData";
 import { ActsService } from "@/services/actsService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface ModifyActsModalProps {
   isOpen: boolean;
@@ -344,11 +345,12 @@ export function ModifyActsModal({
     }
   };
 
+  useEscapeKey(isOpen, onClose);
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in-50">
-      <div className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
         {/* Modal Header */}
         <div className="px-5 py-3.5 bg-[#203c88] text-white flex items-center justify-between border-b border-[#203c88]">
           <div className="flex items-center gap-2.5">

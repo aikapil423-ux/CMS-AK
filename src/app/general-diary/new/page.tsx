@@ -25,6 +25,7 @@ import {
   Scale,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import {
@@ -71,8 +72,8 @@ const DEFAULT_STATION_OFFICERS = [
     id: "usr_sho_1",
     name: "Inspector Rajesh Kumar",
     rank: "Inspector / SHO",
-    beltNumber: "04291882",
-    pno: "04291882",
+    beltNumber: "HR-04291882",
+    pno: "HR-04291882",
   },
   {
     id: "usr_si_malkeet",
@@ -551,6 +552,14 @@ function NewGDEntryContent() {
   const [previewDoc, setPreviewDoc] = useState<GDUploadedDocument | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEscapeKey(Boolean(previewDoc), () => setPreviewDoc(null));
+  useEscapeKey(isActDropdownOpen && !previewDoc, () => setIsActDropdownOpen(false));
+  useEscapeKey(isSectionDropdownOpen && !previewDoc, () => setIsSectionDropdownOpen(false));
+  useEscapeKey(officerDropdownOpen && !previewDoc, () => setOfficerDropdownOpen(false));
+
+  const loadedDraftIdRef = useRef<string | null>(null);
+  const loadedDraftNarrativeRef = useRef<string | null>(null);
+
   // Status
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -867,15 +876,23 @@ function NewGDEntryContent() {
   // By default, Subject and GD Brief remain blank for the officer to enter.
   // The optional applyTemplateForType helper is retained for on-demand use if requested.
 
-  // Load draft if requested (from the server register, local fallback)
+  // Load draft ONCE per editDraftId (never overwrite unsaved edits when stationOfficers loads/updates)
   useEffect(() => {
-    if (!editDraftId) return;
+    if (!editDraftId) {
+      loadedDraftIdRef.current = null;
+      loadedDraftNarrativeRef.current = null;
+      return;
+    }
+    if (loadedDraftIdRef.current === editDraftId) return;
+    loadedDraftIdRef.current = editDraftId;
     let alive = true;
     GeneralDiaryService.getDraftByIdAsync(editDraftId).then((draft) => {
       if (!alive || !draft) return;
+      const cleanNarr = cleanGdNarrative(draft.narrative);
+      loadedDraftNarrativeRef.current = cleanNarr;
       setSelectedType(draft.typeCode);
       setSubject(draft.subject);
-      setNarrative(cleanGdNarrative(draft.narrative));
+      setNarrative(cleanNarr);
       // Restore the draft's stored activity date/time into the pickers
       const dt = parseGDActivityDateTime(draft.activityDateTime || "");
       setActivityDate(dt.dateISO);
@@ -884,10 +901,12 @@ function NewGDEntryContent() {
       setMinuteSel(tp.minute);
       setAmpmSel(tp.ampm);
       if (draft.entryForOfficer?.name) {
-        const match = stationOfficers.find((o) => o.name === draft.entryForOfficer.name);
-        if (match) {
-          setSelectedOfficerId(match.id);
-        } else {
+        setStationOfficers((prev) => {
+          const match = prev.find((o) => o.name === draft.entryForOfficer.name);
+          if (match) {
+            setSelectedOfficerId(match.id);
+            return prev;
+          }
           const off = {
             id: `off_draft_${Date.now()}`,
             name: draft.entryForOfficer.name,
@@ -895,9 +914,9 @@ function NewGDEntryContent() {
             beltNumber: draft.entryForOfficer.beltNumber || "Station Staff",
             pno: draft.entryForOfficer.pno || "00000000",
           };
-          setStationOfficers((prev) => sortOfficersList([...prev, off]));
           setSelectedOfficerId(off.id);
-        }
+          return sortOfficersList([...prev, off]);
+        });
       }
       if (draft.attachments && Array.isArray(draft.attachments)) {
         setAttachments(draft.attachments);
@@ -930,7 +949,7 @@ function NewGDEntryContent() {
     return () => {
       alive = false;
     };
-  }, [editDraftId, stationOfficers]);
+  }, [editDraftId]);
 
   // Submit and Lock GD Entry
   const handleSaveAndLock = async () => {
@@ -969,10 +988,10 @@ function NewGDEntryContent() {
       };
 
       const authorData: GDOfficerParticulars = {
-        name: currentUser.name || "HC Devinder Kumar",
-        rank: currentUser.rankDisplay || "Head Constable (MHC)",
-        beltNumber: "889/PNP",
-        pno: currentUser.pno || "05192834",
+        name: currentUser.name || "Station Writer",
+        rank: currentUser.rankDisplay || "Officer",
+        beltNumber: (currentUser as any).beltNumber || currentUser.pno || "—",
+        pno: currentUser.pno || "—",
       };
 
       // Save directly as locked entry — back-dated date/time allowed; the server
@@ -1066,7 +1085,7 @@ function NewGDEntryContent() {
         router.push("/general-diary?tab=SUGGESTIONS_DRAFTS");
       }, 1000);
     } catch (err: any) {
-      setError("Failed to save draft.");
+      setError(err?.message || "Failed to save draft.");
     }
   };
 
@@ -1261,7 +1280,9 @@ function NewGDEntryContent() {
               <BookOpen className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Add New GD Entry</h2>
+              <h2 className="text-base font-bold text-white">
+                {editDraftId ? "Edit GD Draft / Suggestion" : "Add New GD Entry"}
+              </h2>
             </div>
           </div>
         </div>
@@ -1514,11 +1535,7 @@ function NewGDEntryContent() {
                     }
                   } else if (e.key === "Tab" && !e.shiftKey) {
                     if (typeDropdownOpen && filteredTypes.length > 0 && !selectedType) {
-                      e.preventDefault();
                       handleSelectType(filteredTypes[0].code);
-                    } else {
-                      e.preventDefault();
-                      subjectInputRef.current?.focus();
                     }
                   }
                 }}
@@ -1578,7 +1595,7 @@ function NewGDEntryContent() {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || (e.key === "Tab" && !e.shiftKey)) {
+                if (e.key === "Enter") {
                   e.preventDefault();
                   if (narrativeTextareaRef.current) {
                     narrativeTextareaRef.current.focus();
@@ -1651,6 +1668,24 @@ function NewGDEntryContent() {
                       </div>
 
                       <div
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isActDropdownOpen}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setIsActDropdownOpen((prev) => {
+                              const nextState = !prev;
+                              if (nextState) {
+                                setIsSectionDropdownOpen(false);
+                                setTimeout(() => actSearchInputRef.current?.focus(), 50);
+                              }
+                              return nextState;
+                            });
+                          } else if (e.key === "Escape") {
+                            setIsActDropdownOpen(false);
+                          }
+                        }}
                         onClick={() => {
                           setIsActDropdownOpen((prev) => {
                             const nextState = !prev;
@@ -1661,7 +1696,7 @@ function NewGDEntryContent() {
                             return nextState;
                           });
                         }}
-                        className="w-full min-h-[38px] p-2 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
+                        className="w-full min-h-[38px] p-2 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#203c88]"
                       >
                         <div className="flex items-center gap-1.5 flex-1 min-w-0">
                           {(() => {
@@ -1822,13 +1857,27 @@ function NewGDEntryContent() {
                       </div>
 
                       <div
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isSectionDropdownOpen}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setIsSectionDropdownOpen((prev) => {
+                              if (!prev) setIsActDropdownOpen(false);
+                              return !prev;
+                            });
+                          } else if (e.key === "Escape") {
+                            setIsSectionDropdownOpen(false);
+                          }
+                        }}
                         onClick={() => {
                           setIsSectionDropdownOpen((prev) => {
                             if (!prev) setIsActDropdownOpen(false);
                             return !prev;
                           });
                         }}
-                        className="w-full min-h-[38px] p-1.5 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus-within:ring-2 focus-within:ring-[#0b192c]"
+                        className="w-full min-h-[38px] p-1.5 rounded-lg border border-slate-300 bg-white text-xs cursor-pointer flex items-center justify-between gap-1 shadow-2xs hover:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#203c88]"
                       >
                         <div className="flex flex-wrap gap-1 items-center flex-1 min-w-0">
                           {selectedSections.length > 0 ? (
@@ -2062,7 +2111,7 @@ function NewGDEntryContent() {
                   size="sm"
                   disabled={isExtracting}
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 text-xs font-bold gap-1.5 h-8 px-2.5 transition-all shadow-2xs"
+                  className="bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 dark:bg-indigo-950/70 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-900/80 text-xs font-bold gap-1.5 h-8 px-2.5 transition-all shadow-2xs"
                   title="Upload multiple documents/images to auto-extract text into GD Brief description"
                 >
                   {isExtracting ? (
@@ -2152,6 +2201,7 @@ function NewGDEntryContent() {
               value={narrative}
               onChange={(val) => setNarrative(val)}
               entryType={selectedType || "MISCELLANEOUS_EVENT"}
+              enableGhost={!editDraftId || narrative !== loadedDraftNarrativeRef.current}
               placeholder="Enter brief description of the police station activity..."
               inputClassName="px-3.5 py-3 text-xs sm:text-sm leading-relaxed text-slate-900 focus:ring-2 focus:ring-[#0b192c] min-h-[130px]"
             />
@@ -2200,8 +2250,17 @@ function NewGDEntryContent() {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          aria-label={previewDoc.name}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-4 py-3 bg-[#0b192c] text-white">
               <div className="flex items-center gap-2 truncate">
                 <Paperclip className="w-4 h-4 text-amber-400 shrink-0" />

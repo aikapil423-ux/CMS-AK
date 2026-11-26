@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CheckCircle, X, AlertCircle, Scale, ShieldCheck, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComplaintItem } from "@/types";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 export type SHOCategoryOption = "NCR" | "FIR_RECOMMEND" | "CLOSURE";
 
@@ -41,6 +42,8 @@ export function ShoApproveCategoryModal({
   });
 
   const [remarks, setRemarks] = useState("");
+
+  useEscapeKey(isOpen && Boolean(complaint), onClose);
 
   if (!isOpen || !complaint) return null;
 
@@ -99,7 +102,11 @@ export function ShoApproveCategoryModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in-50"
+    >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="p-4 bg-emerald-700 text-white flex items-center justify-between shrink-0">

@@ -91,8 +91,9 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
-import { formatDate, formatDateTime } from "@/lib/utils";
-import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { formatDate, formatDateTime, getTodayIsoIST, escapeHtml } from "@/lib/utils";
+import { printHtmlContent, printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { ComplaintReceiptModal } from "@/components/complaints/ComplaintReceiptModal";
 import { ComplaintLegalAssistant } from "@/components/complaints/ComplaintLegalAssistant";
 import { ComplaintSummaryTab } from "@/components/complaints/ComplaintSummaryTab";
@@ -117,6 +118,26 @@ import {
 } from "@/utils/complaintPermissions";
 
 type ActiveTab = "overview" | "documents" | "legal_assistant" | "summary" | "links" | "reports" | "history" | "confidential_dossier";
+
+const VALID_COMPLAINT_TABS: readonly ActiveTab[] = [
+  "overview",
+  "documents",
+  "legal_assistant",
+  "summary",
+  "links",
+  "reports",
+  "history",
+  "confidential_dossier",
+];
+
+function normalizeComplaintTab(rawTab: string | null | undefined): ActiveTab | null {
+  if (!rawTab) return null;
+  const cleaned = rawTab.trim().toLowerCase();
+  if (cleaned === "analytics") return "summary";
+  if (cleaned === "dossier") return "confidential_dossier";
+  if (cleaned === "evidence") return "documents";
+  return (VALID_COMPLAINT_TABS as readonly string[]).includes(cleaned) ? (cleaned as ActiveTab) : null;
+}
 
 const DIRECTION_TEMPLATES = [
   {
@@ -273,14 +294,22 @@ export default function ComplaintProfilePage() {
 
   const [complaint, setComplaint] = useState<ComplaintItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => normalizeComplaintTab(searchParams?.get("tab")) || "overview");
 
   useEffect(() => {
-    const tabParam = searchParams?.get("tab");
-    if (tabParam && ["overview", "documents", "reports", "evidence", "history", "analytics", "dossier", "notices", "summons"].includes(tabParam)) {
-      setActiveTab(tabParam as ActiveTab);
+    const resolved = normalizeComplaintTab(searchParams?.get("tab"));
+    if (resolved) {
+      setActiveTab(resolved);
     }
   }, [searchParams]);
+
+  const handleTabSelect = (nextTab: ActiveTab) => {
+    setActiveTab(nextTab);
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    params.set("tab", nextTab);
+    router.replace(`/complaints/${complaintId}?${params.toString()}`, { scroll: false });
+  };
 
   const [historySortOrder, setHistorySortOrder] = useState<"asc" | "desc">("asc");
 
@@ -496,6 +525,27 @@ export default function ComplaintProfilePage() {
   const [eoSendToShoModalOpen, setEoSendToShoModalOpen] = useState(false);
   const [selectedReportForSho, setSelectedReportForSho] = useState<ComplaintReportItem | undefined>(undefined);
 
+  useEscapeKey(moreActionsOpen, () => setMoreActionsOpen(false));
+  useEscapeKey(generateDocDropdownOpen, () => setGenerateDocDropdownOpen(false));
+  useEscapeKey(generateReportDropdownOpen, () => setGenerateReportDropdownOpen(false));
+  useEscapeKey(assignEoDropdownOpen, () => setAssignEoDropdownOpen(false));
+  useEscapeKey(assignModalOpen, () => setAssignModalOpen(false));
+  useEscapeKey(enquiryNoteModalOpen, () => setEnquiryNoteModalOpen(false));
+  useEscapeKey(evidenceModalOpen, () => setEvidenceModalOpen(false));
+  useEscapeKey(documentModalOpen, () => setDocumentModalOpen(false));
+  useEscapeKey(transferModalOpen, () => setTransferModalOpen(false));
+  useEscapeKey(linkModalOpen, () => setLinkModalOpen(false));
+  useEscapeKey(ncrModalOpen, () => setNcrModalOpen(false));
+  useEscapeKey(firModalOpen, () => setFirModalOpen(false));
+  useEscapeKey(aiReportModalOpen, () => setAiReportModalOpen(false));
+  useEscapeKey(progressModalOpen, () => setProgressModalOpen(false));
+  useEscapeKey(dossierModalOpen && !isSavingDossier, () => setDossierModalOpen(false));
+  useEscapeKey(uploadReportModalOpen, () => setUploadReportModalOpen(false));
+  useEscapeKey(Boolean(reportPreviewItem), () => setReportPreviewItem(null));
+  useEscapeKey(Boolean(previewModalFile), () => setPreviewModalFile(null));
+  useEscapeKey(shoReEnquiryModalOpen, () => setShoReEnquiryModalOpen(false));
+  useEscapeKey(shoRejectModalOpen, () => setShoRejectModalOpen(false));
+
   const handleUploadReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -530,8 +580,8 @@ export default function ComplaintProfilePage() {
           title: uploadReportTitle || uploadReportFileName || "Official Enquiry Report",
           reportType: uploadReportCategory.toLowerCase().replace(/[^a-z0-9]/g, "_"),
           reportTypeLabel: uploadReportCategory,
-          dispatchNo: uploadReportDispatchNo || `HP/KKR/CT/${new Date().getFullYear()}/REP-${Date.now().toString().slice(-4)}`,
-          generatedDate: new Date().toISOString().split("T")[0],
+          dispatchNo: uploadReportDispatchNo || `HP/${(currentUser.district || "HRY").slice(0, 3).toUpperCase()}/REP-${Date.now().toString().slice(-4)}`,
+          generatedDate: getTodayIsoIST(),
           officerName: uploadReportOfficer || currentUser.name || "Enquiry Officer",
           officerRank: uploadReportRank || currentUser.rankDisplay || "Sub-Inspector",
           officerPno: currentUser.pno || "PNO-23841",
@@ -595,6 +645,7 @@ export default function ComplaintProfilePage() {
   const loadComplaint = async () => {
     if (!complaintId) return;
     setLoading(true);
+    setLoadError(null);
     setComplaint(null);
     try {
       const data = await ComplaintService.getComplaintById(complaintId);
@@ -603,6 +654,7 @@ export default function ComplaintProfilePage() {
       } else {setComplaint(null);}
     } catch (err) {
       console.error(err);
+      setLoadError(err instanceof Error ? err.message : "Could not load complaint record.");
     } finally {
       setLoading(false);
     }
@@ -620,9 +672,9 @@ export default function ComplaintProfilePage() {
     if (typeof window === "undefined" || !complaint) return;
     const params = new URLSearchParams(window.location.search);
     const shouldAutoView = params.get("autoView") === "true";
-    const requestedTab = params.get("tab");
-    if (requestedTab === "reports") {
-      setActiveTab("reports");
+    const requestedTab = normalizeComplaintTab(params.get("tab"));
+    if (requestedTab) {
+      setActiveTab(requestedTab);
     }
     if (shouldAutoView && complaint.reports && complaint.reports.length > 0) {
       const targetReport =
@@ -700,6 +752,7 @@ export default function ComplaintProfilePage() {
 
   const isAssignedEo = complaint ? isUserAssignedEo(currentUser, complaint) : false;
   const isEoPersona = currentUser.role === "ENQUIRY_OFFICER" || isAssignedEo;
+  const canViewConfidentialDossier = isEoPersona || currentUser.role === "SP_DISTRICT" || currentUser.role === "SUPER_ADMIN";
   const isDirectFirCase = Boolean(complaint?.directSendToFir || complaint?.status === "FIR_REGISTER" || complaint?.workflowState === "FIR_REGISTER");
   const isUnassigned = (!complaint?.assignedEoName || complaint?.status === "REGISTERED") && !isDirectFirCase;
 
@@ -2187,6 +2240,24 @@ export default function ComplaintProfilePage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
+        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+        <h2 className="text-xl font-bold text-slate-900">Unable to Load Complaint Record</h2>
+        <p className="text-sm text-slate-600">{loadError}</p>
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="primary" onClick={() => void loadComplaint()} className="cursor-pointer">
+            Retry
+          </Button>
+          <Link href="/complaints">
+            <Button variant="outline">Return to Complaints Register</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!complaint || !canViewComplaint(currentUser,complaint).allowed) {
     return (
       <div className="p-6 max-w-2xl mx-auto text-center space-y-4">
@@ -2533,7 +2604,7 @@ export default function ComplaintProfilePage() {
             { key: "links", label: "Links", icon: Link2, count: complaint.isCrossComplaint || complaint.linkedComplaintNumber ? 1 : 0 },
             { key: "reports", label: "Reports", icon: FileCheck2, count: complaint.reports?.length || 0 },
             { key: "history", label: "History", icon: HistoryIcon, count: combinedHistory.length },
-            ...(isEoPersona
+            ...(canViewConfidentialDossier
               ? [
                   {
                     key: "confidential_dossier",
@@ -2549,7 +2620,7 @@ export default function ComplaintProfilePage() {
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as ActiveTab)}
+                onClick={() => handleTabSelect(tab.key as ActiveTab)}
                 className={`flex items-center gap-1.5 py-3 px-3 border-b-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                   isActive
                     ? "border-blue-600 text-blue-600"
@@ -2560,7 +2631,7 @@ export default function ComplaintProfilePage() {
                 <span>{tab.label}</span>
                 {tab.count !== null && tab.count > 0 && (
                   <span
-                    className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] ${
+                    className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] ${
                       isActive ? "bg-blue-100 text-blue-800" : "bg-slate-100 text-slate-600"
                     }`}
                   >
@@ -2644,7 +2715,7 @@ export default function ComplaintProfilePage() {
                     <div>
                       <span className="text-slate-500 block">Gender & Age:</span>
                       <strong data-no-translate="true" className="text-slate-800 user-data">
-                        {complaint.complainantGender} • {complaint.complainantAge || "Adult"} Years
+                        {complaint.complainantGender} • {complaint.complainantAge ? `${complaint.complainantAge} Years` : "Age not specified"}
                       </strong>
                     </div>
                     <div className="sm:col-span-2">
@@ -4257,8 +4328,8 @@ export default function ComplaintProfilePage() {
           </div>
         )}
 
-        {/* TAB 7: CONFIDENTIAL DOSSIER (Strictly Restricted to Enquiry Officer ID - Isolated from Complaint File) */}
-        {activeTab === "confidential_dossier" && isEoPersona && (
+        {/* TAB 7: CONFIDENTIAL DOSSIER (Accessible to Assigned EO + SP/Super Admin read-only) */}
+        {activeTab === "confidential_dossier" && canViewConfidentialDossier && (
           <div className="space-y-5 animate-in fade-in-0 duration-200">
             <section aria-labelledby="confidential-dossier-title" className="flex flex-col justify-between gap-4 border border-slate-200 border-l-4 border-l-[#203c88] bg-white p-4 sm:p-5 xl:flex-row xl:items-center">
               <div className="flex min-w-0 items-start gap-3">
@@ -4271,25 +4342,27 @@ export default function ComplaintProfilePage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 xl:shrink-0">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleOpenUploadDossier}
-                  className="flex-1 whitespace-nowrap sm:flex-none"
-                >
-                  <UploadCloud aria-hidden="true" className="size-4 shrink-0" />
-                  <span>Upload Dossier File</span>
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleOpenNoteDossier}
-                  className="flex-1 whitespace-nowrap sm:flex-none"
-                >
-                  <Plus aria-hidden="true" className="size-4 shrink-0" />
-                  <span>New Memory Note</span>
-                </Button>
-              </div>
+              {isEoPersona && (
+                <div className="flex flex-wrap items-center gap-2 xl:shrink-0">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleOpenUploadDossier}
+                    className="flex-1 whitespace-nowrap sm:flex-none"
+                  >
+                    <UploadCloud aria-hidden="true" className="size-4 shrink-0" />
+                    <span>Upload Dossier File</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleOpenNoteDossier}
+                    className="flex-1 whitespace-nowrap sm:flex-none"
+                  >
+                    <Plus aria-hidden="true" className="size-4 shrink-0" />
+                    <span>New Memory Note</span>
+                  </Button>
+                </div>
+              )}
             </section>
 
             {/* Filter and Search Bar */}
@@ -4352,26 +4425,28 @@ export default function ComplaintProfilePage() {
                       : "Keep personal notes, confidential audio/call recordings, videos, PDFs, Word documents, or photos strictly for your own investigation diary. Nothing added here is attached to the complaint or shared outside."}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={handleOpenUploadDossier}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                  >
-                    <UploadCloud className="w-4 h-4" />
-                    <span>Upload Audio, Video, PDF, Word or Doc</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleOpenNoteDossier}
-                    className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Write Note</span>
-                  </Button>
-                </div>
+                {isEoPersona && (
+                  <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={handleOpenUploadDossier}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                      <span>Upload Audio, Video, PDF, Word or Doc</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleOpenNoteDossier}
+                      className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Write Note</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
@@ -4420,14 +4495,16 @@ export default function ComplaintProfilePage() {
                               <span>{formatDateTime(entry.createdAt)}</span>
                             </span>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDossier(entry.id)}
-                              className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
-                              title="Delete Confidential Entry"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {isEoPersona && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteDossier(entry.id)}
+                                className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
+                                title="Delete Confidential Entry"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -5473,7 +5550,7 @@ export default function ComplaintProfilePage() {
                     {previewModalFile.name}
                   </h3>
                   <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                    <span className="uppercase font-semibold tracking-wider px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded text-[10px]">
+                    <span className="uppercase font-semibold tracking-wider px-1.5 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px]">
                       {previewModalFile.category || "ATTACHMENT"}
                     </span>
                     {previewModalFile.size && (
@@ -5490,11 +5567,14 @@ export default function ComplaintProfilePage() {
                   onClick={() => {
                     if (previewModalFile.dataUrl) {
                       if (previewModalFile.dataUrl.startsWith("data:image/") || /\.(png|jpe?g|webp|gif|svg|bmp)$/i.test(previewModalFile.name)) {
-                        printHtmlContent(`<div style="text-align:center; padding: 20px;"><img src="${previewModalFile.dataUrl}" style="max-width: 100%; height: auto;" /></div>`, previewModalFile.name);
+                        printHtmlContent(`<div style="text-align:center; padding: 20px;"><img src="${escapeHtml(previewModalFile.dataUrl)}" style="max-width: 100%; height: auto;" /></div>`, previewModalFile.name);
                         return;
                       }
                     }
-                    window.print();
+                    printHtmlContent(
+                      `<div style="padding:20px;font-family:sans-serif;"><h2>${escapeHtml(previewModalFile.name)}</h2><p>Complaint No: ${escapeHtml(complaint?.complaintNumber || "N/A")}</p><p>Category: ${escapeHtml(previewModalFile.category || "Attachment")}</p></div>`,
+                      previewModalFile.name
+                    );
                   }}
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
                   title="Print document"
@@ -6193,11 +6273,16 @@ export default function ComplaintProfilePage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (reportIframeRef.current?.contentWindow) {
+                    if (reportPreviewItem.contentHtml) {
+                      printHtmlContent(reportPreviewItem.contentHtml, reportPreviewItem.title || "Enquiry_Report");
+                    } else if (reportIframeRef.current?.contentWindow) {
                       reportIframeRef.current.contentWindow.focus();
                       reportIframeRef.current.contentWindow.print();
                     } else {
-                      window.print();
+                      printHtmlContent(
+                        `<div style="padding:24px;font-family:sans-serif;white-space:pre-wrap;"><h2>${escapeHtml(reportPreviewItem.title || "Enquiry Report")}</h2><p>${escapeHtml(reportPreviewItem.content || reportPreviewItem.conclusionSummary || "")}</p></div>`,
+                        reportPreviewItem.title || "Enquiry_Report"
+                      );
                     }
                   }}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer shadow-2xs transition-colors"

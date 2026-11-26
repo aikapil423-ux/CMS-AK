@@ -1,4 +1,15 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.cms-theme-switching *,
+html.cms-theme-switching *::before,
+html.cms-theme-switching *::after {
+  transition: none !important;
+}
 
 :root {
   --background: #fafafb;
@@ -86,12 +97,12 @@ body {
     height: auto !important;
     max-height: none !important;
   }
-  /* Hide all buttons, navigation, headers, footers, toolbars during print */
-  .no-print, [data-no-print], header, nav, aside, [data-assign-dropdown], button:not(.printable-content button) {
+  /* Hide all buttons, navigation, app headers, footers, toolbars during print (keep headers inside printable sheets!) */
+  .no-print, .gd-print-noprint, [data-no-print], [data-cms-agent-ui], [data-cms-view-as], aside, nav:not(.printable-content nav):not(.a4-sheet nav):not(.cms-paper-sheet nav), header:not(.a4-sheet *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *):not(.cms-paper-sheet *):not(.printable-content *), [data-assign-dropdown], button:not(.printable-content button):not(.a4-sheet button):not(.cms-paper-sheet button) {
     display: none !important;
   }
   /* A4 Document sheets */
-  .a4-sheet, [id^="printable-"], #cctns-printable-fir, #printable-receipt, #printable-gd-record, #zimni-printable-canvas {
+  .a4-sheet, .cms-paper-sheet, [id^="printable-"], #cctns-printable-fir, #printable-receipt, #printable-gd-record, #zimni-printable-canvas {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -162,8 +173,9 @@ textarea.\!border-red-500:focus {
 }
 
 /* =========================================================================
-   DARK THEME SYSTEM
+   DARK THEME SYSTEM (Screen-only: never bleed dark colors into Printouts!)
    ========================================================================= */
+@media screen {
 html.dark {
   color-scheme: dark;
 }
@@ -192,13 +204,15 @@ html.dark header.lg\:hidden {
   border-bottom-color: #1e2c48 !important;
 }
 
-html.dark .cms-topbar button:not(.absolute *) {
+html.dark .cms-topbar button:not(.absolute *),
+html.dark header.lg\:hidden button:not(.absolute *) {
   background: #172747 !important;
   color: #f1f5f9 !important;
   border-color: #273b63 !important;
 }
 
-html.dark .cms-topbar button:not(.absolute *):hover {
+html.dark .cms-topbar button:not(.absolute *):hover,
+html.dark header.lg\:hidden button:not(.absolute *):hover {
   background: #233760 !important;
   color: #ffffff !important;
 }
@@ -233,42 +247,116 @@ html.dark aside a:hover {
   color: #ffffff !important;
 }
 
-html.dark .bg-white {
+html.dark .bg-white:not(.cms-paper-sheet):not(.cms-paper-sheet *):not(.a4-sheet):not(.a4-sheet *):not(.printable-content):not(.printable-content *):not([id^="printable-"]):not([id^="printable-"] *):not(#cctns-printable-fir):not(#cctns-printable-fir *):not(#zimni-printable-canvas):not(#zimni-printable-canvas *) {
   background-color: #101e38 !important;
   color: #f1f5f9 !important;
 }
 
-html.dark .bg-slate-50,
-html.dark .bg-slate-100 {
+html.dark .bg-slate-50:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *),
+html.dark .bg-slate-100:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *) {
   background-color: #0d182e !important;
   color: #e2e8f0 !important;
 }
 
-html.dark .border-slate-200,
-html.dark .border-slate-300,
-html.dark .border-slate-100,
-html.dark .border-slate-200\/80,
-html.dark .border-slate-200\/90 {
+html.dark .border-slate-200:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark .border-slate-300:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark .border-slate-100:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark .border-slate-200\/80:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark .border-slate-200\/90:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *) {
   border-color: #223456 !important;
 }
 
-html.dark .text-slate-900,
-html.dark .text-slate-800,
-html.dark .text-slate-700 {
+html.dark .text-slate-950:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *),
+html.dark .text-slate-900:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *),
+html.dark .text-slate-800:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *),
+html.dark .text-slate-700:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *),
+html.dark .text-blue-950:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *) {
   color: #f1f5f9 !important;
 }
 
-html.dark .text-slate-600,
-html.dark .text-slate-500 {
+html.dark .text-slate-600:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark .text-slate-500:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *) {
   color: #94a3b8 !important;
 }
 
-html.dark input,
-html.dark select,
-html.dark textarea {
+html.dark input:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark select:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *),
+html.dark textarea:not(.cms-paper-sheet *):not(.a4-sheet *):not(.printable-content *):not([id^="printable-"] *) {
   background-color: #0d182e !important;
   color: #f8fafc !important;
   border-color: #273b63 !important;
+}
+
+/* Official white-paper printable proforma sheets ALWAYS retain pure white paper & black ink */
+html.dark .cms-paper-sheet,
+html.dark .cms-paper-sheet :where(.rounded-xl, .rounded-2xl, .rounded-lg, form),
+html.dark .a4-sheet,
+html.dark .printable-content,
+html.dark [id^="printable-"],
+html.dark #cctns-printable-fir,
+html.dark #zimni-printable-canvas {
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-500: #475569;
+  --color-slate-400: #64748b;
+  --color-slate-300: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.dark .cms-paper-sheet :where(input, textarea, select),
+html.dark #zimni-printable-canvas :where(input, textarea, select) {
+  background-color: transparent !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.dark .cms-paper-sheet :where(.text-slate-600, .text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500, .text-gray-400),
+html.dark #zimni-printable-canvas :where(.text-slate-600, .text-slate-500, .text-slate-400) {
+  color: #475569 !important;
+}
+
+html.dark .cms-paper-sheet :where(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-black),
+html.dark #zimni-printable-canvas :where(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-black) {
+  color: #0f172a !important;
+}
+
+html.dark .cms-paper-sheet .bg-white,
+html.dark .a4-sheet .bg-white,
+html.dark .printable-content .bg-white,
+html.dark [id^="printable-"] .bg-white,
+html.dark #cctns-printable-fir .bg-white {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.dark .cms-paper-sheet .bg-slate-50,
+html.dark .cms-paper-sheet .bg-slate-100,
+html.dark .a4-sheet .bg-slate-50,
+html.dark .a4-sheet .bg-slate-100,
+html.dark .printable-content .bg-slate-50,
+html.dark .printable-content .bg-slate-100,
+html.dark [id^="printable-"] .bg-slate-50,
+html.dark [id^="printable-"] .bg-slate-100,
+html.dark #cctns-printable-fir .bg-slate-50,
+html.dark #cctns-printable-fir .bg-slate-100 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.dark .cms-paper-sheet :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label),
+html.dark .a4-sheet :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label),
+html.dark .printable-content :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label),
+html.dark [id^="printable-"] :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label),
+html.dark #cctns-printable-fir :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label),
+html.dark #zimni-printable-canvas :where(h1, h2, h3, h4, h5, h6, p, span, strong, td, th, div, label) {
+  border-color: inherit;
 }
 
 html.dark .cms-register-table {
@@ -313,5 +401,6 @@ html.dark [role="dialog"] {
 html.dark [role="dialog"] footer {
   background-color: #0d182e !important;
   border-color: #223456 !important;
+}
 }
 

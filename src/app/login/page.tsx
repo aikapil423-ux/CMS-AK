@@ -182,7 +182,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* District Selector Chips */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2.5 text-[11px]">
+                <div className="flex flex-wrap items-center gap-1.5 pb-2 mb-2.5 text-[11px]">
                   {districts.map((dist) => (
                     <button
                       key={dist}
@@ -241,11 +241,11 @@ export default function LoginPage() {
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white">Developer Admin</p>
-                    <p className="text-[10px] text-slate-300 mt-0.5">
+                    <p className="text-[10px] text-slate-200 mt-0.5">
                       PNO: <span className="font-mono text-amber-300">DEV-ADMIN</span> • 1-Click Login • Enter any officer ID view
                     </p>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-200 group-hover:text-white shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function LoginPage() {
         </div>
 
         {/* Security Notice */}
-        <p className="text-center text-[11px] text-slate-500 mt-6 max-w-sm mx-auto">
+        <p className="text-center text-[11px] text-slate-200 mt-6 max-w-sm mx-auto">
           Authorized Haryana Police Personnel Only. Unauthorized access is punishable under IT Act 2000.
         </p>
       </div>

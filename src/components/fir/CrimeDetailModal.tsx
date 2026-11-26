@@ -35,6 +35,8 @@ import { GeneralDiaryService } from "@/services/generalDiaryService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { printA4Element } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST, formatDate } from "@/lib/utils";
 
 export interface CrimeDetailModalProps {
   fir: FIRItem;
@@ -80,7 +82,7 @@ export function CrimeDetailModal({
   const [longitude, setLongitude] = useState(savedCrimeData?.placeOfOccurrence?.longitude || "76.8485° E");
   const [latitude, setLatitude] = useState(savedCrimeData?.placeOfOccurrence?.latitude || "30.7046° N");
   const [visitDateTime, setVisitDateTime] = useState(
-    savedCrimeData?.placeOfOccurrence?.visitDateTime || new Date().toISOString().slice(0, 16)
+    savedCrimeData?.placeOfOccurrence?.visitDateTime || `${getTodayIsoIST()}T10:00`
   );
   const [beatNo, setBeatNo] = useState(savedCrimeData?.placeOfOccurrence?.beatNo || fir.beatNumber || "Beat No. 1");
   const [majorPlaceType, setMajorPlaceType] = useState(
@@ -294,6 +296,10 @@ export function CrimeDetailModal({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
+
+  useEscapeKey(Boolean(isOpen && isSavedSuccess), () => setIsSavedSuccess(false));
+  useEscapeKey(Boolean(isOpen && showPdfPreview && !isSavedSuccess), () => setShowPdfPreview(false));
+  useEscapeKey(Boolean(isOpen && !isPageMode && !showPdfPreview && !isSavedSuccess && onClose), () => onClose?.());
 
   // Split acts and sections for Table 2 matching official IIF-II proforma
   const actsAndSectionsList = React.useMemo(() => {
@@ -1826,7 +1832,7 @@ export function CrimeDetailModal({
                 data-no-translate="true"
                 data-processed="true"
                 data-autofill="true"
-                className="bg-white text-black p-8 sm:p-14 shadow-2xl rounded-sm max-w-4xl w-full font-serif border border-slate-400 space-y-6 page-sheet no-translate user-data"
+                className="cms-paper-sheet bg-white text-black p-8 sm:p-14 shadow-2xl rounded-sm max-w-4xl w-full font-serif border border-slate-400 space-y-6 page-sheet no-translate user-data"
                 style={{ minHeight: "1100px", lineHeight: "1.4" }}
               >
                 {/* Page 1 */}
@@ -1848,10 +1854,10 @@ export function CrimeDetailModal({
                   <div className="space-y-1.5 text-xs font-serif mb-3">
                     <div className="grid grid-cols-3 gap-2">
                       <div>
-                        <strong>1. District (जिला):</strong> {fir.district || "Gurugram"}
+                        <strong>1. District (जिला):</strong> {fir.district || "-"}
                       </div>
                       <div>
-                        <strong>P.S. (थाना):</strong> {fir.policeStation || "Sector 29"}
+                        <strong>P.S. (थाना):</strong> {fir.policeStation || "-"}
                       </div>
                       <div>
                         <strong>Year (वर्ष):</strong> {fir.firYear || new Date().getFullYear()}
@@ -2411,7 +2417,7 @@ export function CrimeDetailModal({
                       <p><strong>निरीक्षणकर्ता अधिकारी:</strong> {currentUserName}</p>
                       <p><strong>पद / बेल्ट सं.:</strong> Sub-Inspector / Investigating Officer</p>
                       <p><strong>थाना:</strong> {fir.policeStation}, {fir.district}</p>
-                      <p className="text-[10px] text-slate-500 font-mono">Date: {visitDateTime ? visitDateTime.slice(0, 10) : new Date().toISOString().slice(0, 10)}</p>
+                      <p className="text-[10px] text-slate-500 font-mono">Date: {visitDateTime ? formatDate(visitDateTime.slice(0, 10)) : formatDate(getTodayIsoIST())}</p>
                     </div>
 
                     <div className="text-center space-y-12">

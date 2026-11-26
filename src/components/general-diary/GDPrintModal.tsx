@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { escapeHtml, getTodayIsoIST, getDateDaysAgoIsoIST } from "@/lib/utils";
 import { GeneralDiaryService, cleanGdNarrative } from "@/services/generalDiaryService";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { toDDMMYYYY, parseGDActivityDateTime } from "@/lib/gdDateTime";
@@ -52,7 +54,11 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   const [searchFilter, setSearchFilter] = useState<string>("");
   const [records, setRecords] = useState<GeneralDiaryRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
   const [downloading, setDownloading] = useState(false);
+
+  useEscapeKey(isOpen, onClose);
 
   // Sync initial date only when modal opens and if initialDate is explicitly provided
   useEffect(() => {
@@ -73,6 +79,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
     if (!isOpen) return;
     let alive = true;
     setLoading(true);
+    setLoadError(null);
 
     GeneralDiaryService.getPaginatedEntries(
       {
@@ -87,8 +94,11 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
         if (!alive) return;
         setRecords(res.records || []);
       })
-      .catch(() => {
-        if (alive) setRecords([]);
+      .catch((err) => {
+        if (alive) {
+          setRecords([]);
+          setLoadError(err?.message || "Failed to load General Diary register entries.");
+        }
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -97,7 +107,7 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
     return () => {
       alive = false;
     };
-  }, [isOpen, startDate, endDate]);
+  }, [isOpen, startDate, endDate, reloadTick]);
 
   // Filter records by keyword search if user typed anything
   const filteredRecords = useMemo(() => {
@@ -169,24 +179,24 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
         rowsHtml += `
           <tr>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold; font-family: monospace; text-align: center;">
-              ${rec.sequencePerDay || 1}
-              <div style="font-size: 9px; color: #64748b; font-weight: normal;">${rec.gdNumber}</div>
+              ${escapeHtml(rec.sequencePerDay || 1)}
+              <div style="font-size: 9px; color: #64748b; font-weight: normal; white-space: nowrap;">${escapeHtml(rec.gdNumber)}</div>
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-family: monospace; white-space: nowrap;">
-              ${timePart}
+              ${escapeHtml(timePart)}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: 600;">
-              ${rec.typeDisplay}
+              ${escapeHtml(rec.typeDisplay)}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px;">
-              <strong>${rec.entryForOfficer?.name || "Station Staff"}</strong>
-              <div style="font-size: 10px; color: #475569;">${rec.entryForOfficer?.rank || "Officer"} • ${rec.entryForOfficer?.beltNumber || "Station Staff"}</div>
+              <strong>${escapeHtml(rec.entryForOfficer?.name || "Station Staff")}</strong>
+              <div style="font-size: 10px; color: #475569;">${escapeHtml(rec.entryForOfficer?.rank || "Officer")} • ${escapeHtml(rec.entryForOfficer?.beltNumber || "Station Staff")}</div>
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; font-weight: bold; word-break: break-word; overflow-wrap: anywhere; word-wrap: break-word;">
-              ${rec.subject}
+              ${escapeHtml(rec.subject)}
             </td>
             <td style="border: 1px solid #475569; padding: 6px 8px; line-height: 1.45; word-break: break-word; overflow-wrap: anywhere; word-wrap: break-word;">
-              ${cleanGdNarrative(rec.narrative)}
+              ${escapeHtml(cleanGdNarrative(rec.narrative))}
             </td>
           </tr>
         `;
@@ -195,17 +205,17 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
       sectionsHtml += `
         <div class="gd-day-section" style="margin-top: 24px; page-break-inside: avoid;">
           <div style="background-color: #f1f5f9; color: #0f172a; border: 1.5px solid #475569; border-bottom: 2px solid #0f172a; padding: 7px 12px; font-weight: bold; font-size: 13px; display: flex; justify-content: space-between; align-items: center;">
-            <span>Date: <strong style="color: #1e3a8a; font-family: monospace; font-size: 13px; margin-left: 4px;">${headerDateStr}</strong></span>
+            <span>Date: <strong style="color: #1e3a8a; font-family: monospace; font-size: 13px; margin-left: 4px;">${escapeHtml(headerDateStr)}</strong></span>
             <span style="color: #334155; font-size: 11.5px; font-weight: 600;">Entries: ${dayRecords.length}</span>
           </div>
           <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 11px; margin-top: 0px;">
             <colgroup>
-              <col style="width: 7%;" />
+              <col style="width: 12%;" />
               <col style="width: 9%;" />
-              <col style="width: 15%;" />
+              <col style="width: 14%;" />
+              <col style="width: 16%;" />
               <col style="width: 17%;" />
-              <col style="width: 18%;" />
-              <col style="width: 34%;" />
+              <col style="width: 32%;" />
             </colgroup>
             <thead>
               <tr style="background-color: #f1f5f9; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;">
@@ -247,8 +257,8 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
 <body>
   <div class="header">
     <h1>GENERAL DIARY REGISTER NO. II</h1>
-    <h2>${policeStation}, District ${district}</h2>
-    <p>Range: ${dateRangeLabel} • Total Entries: ${filteredRecords.length} • Generated on: ${new Date().toLocaleString("en-IN")}</p>
+    <h2>${escapeHtml(policeStation)}, District ${escapeHtml(district)}</h2>
+    <p>Range: ${escapeHtml(dateRangeLabel)} • Total Entries: ${filteredRecords.length} • Generated on: ${escapeHtml(new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }))}</p>
   </div>
   ${sectionsHtml}
   <div class="footer-signatures gd-day-section">
@@ -286,8 +296,17 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/65 backdrop-blur-xs print:bg-white print:p-0">
-      <div className="gd-print-area bg-[#0b192c] rounded-2xl shadow-2xl border border-[#0b192c] max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden print:max-h-none print:overflow-visible print:border-0 print:rounded-none">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/65 backdrop-blur-xs print:bg-white print:p-0"
+      role="dialog"
+      aria-modal="true"
+      aria-label="General Diary Register Print Preview"
+      onClick={onClose}
+    >
+      <div
+        className="gd-print-area bg-[#0b192c] rounded-2xl shadow-2xl border border-[#0b192c] max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden print:max-h-none print:overflow-visible print:border-0 print:rounded-none"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Top Header (Shows in Print as Official Header) */}
         <div className="bg-[#0b192c] text-white px-4 py-2.5 sm:px-5 sm:py-3 flex items-center justify-between gap-3 shrink-0 print:bg-white print:text-black print:rounded-none print:border-b-2 print:border-black print:p-0 print:pb-2">
           <div className="min-w-0">
@@ -381,12 +400,12 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                 <button
                   type="button"
                   onClick={() => {
-                    const todayStr = new Date().toISOString().split("T")[0];
+                    const todayStr = getTodayIsoIST();
                     setStartDate(todayStr);
                     setEndDate(todayStr);
                   }}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer shadow-2xs ${
-                    startDate && startDate === endDate && startDate === new Date().toISOString().split("T")[0]
+                    startDate && startDate === endDate && startDate === getTodayIsoIST()
                       ? "bg-blue-600 text-white"
                       : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
@@ -398,12 +417,8 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                 <button
                   type="button"
                   onClick={() => {
-                    const now = new Date();
-                    const endStr = now.toISOString().split("T")[0];
-                    const past = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    const startStr = past.toISOString().split("T")[0];
-                    setStartDate(startStr);
-                    setEndDate(endStr);
+                    setStartDate(getDateDaysAgoIsoIST(7));
+                    setEndDate(getTodayIsoIST());
                   }}
                   className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shadow-2xs"
                   title="Show entries from past 7 days (पिछले 7 दिन)"
@@ -470,12 +485,26 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
           </div>
         </div>
 
-        {/* Register Entries Scrollable Body */}
-        <div className="bg-white p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 print:overflow-visible print:p-0 print:space-y-4">
+        {/* Register Entries Scrollable Body (Retains clean white paper aesthetic in Dark Mode) */}
+        <div className="cms-paper-sheet bg-white p-4 sm:p-6 overflow-y-auto flex-1 space-y-6 print:overflow-visible print:p-0 print:space-y-4">
           {loading ? (
             <div className="py-16 text-center space-y-2">
               <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-xs font-semibold text-slate-600">Loading General Diary register entries…</p>
+            </div>
+          ) : loadError ? (
+            <div role="alert" className="py-12 text-center space-y-3 bg-red-50 border border-red-200 rounded-xl p-6">
+              <p className="text-sm font-bold text-red-800">{loadError}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setReloadTick((t) => t + 1)}
+                className="text-xs font-bold gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Retry Loading</span>
+              </Button>
             </div>
           ) : groupedData.sortedDateKeys.length === 0 ? (
             <div className="py-16 text-center space-y-3">
@@ -563,12 +592,12 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                   <div className="overflow-x-auto">
                     <table className="gd-register-table w-full text-left text-xs border-collapse print:text-[10px]">
                       <colgroup>
-                        <col style={{ width: "7%" }} />
+                        <col style={{ width: "12%" }} />
                         <col style={{ width: "9%" }} />
-                        <col style={{ width: "15%" }} />
+                        <col style={{ width: "14%" }} />
+                        <col style={{ width: "16%" }} />
                         <col style={{ width: "17%" }} />
-                        <col style={{ width: "18%" }} />
-                        <col style={{ width: "34%" }} />
+                        <col style={{ width: "32%" }} />
                       </colgroup>
                       <thead>
                         <tr className="bg-slate-100 text-slate-800 uppercase text-[10px] tracking-wider font-semibold border-b border-slate-300 print:bg-slate-100 print:border-black">
@@ -604,9 +633,9 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                               className="hover:bg-slate-50/70 transition-colors align-top print:border-b print:border-slate-400"
                             >
                               {/* 1. GD No */}
-                              <td className="py-2 px-2.5 border-r border-slate-200 text-center font-mono font-black text-sm text-blue-950 print:border-black print:text-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 text-center font-mono font-black text-sm text-blue-950 print:border-black print:text-black whitespace-nowrap">
                                 {rec.sequencePerDay || 1}
-                                <span className="block text-[9px] text-slate-500 font-normal">
+                                <span className="block text-[9px] text-slate-500 font-normal whitespace-nowrap">
                                   {rec.gdNumber}
                                 </span>
                               </td>
@@ -638,12 +667,12 @@ export function GDPrintModal({ isOpen, onClose, initialDate }: GDPrintModalProps
                               </td>
 
                               {/* 5. Subject */}
-                              <td className="py-2 px-2.5 border-r border-slate-200 font-bold text-slate-950 text-xs leading-snug break-all print:border-black">
+                              <td className="py-2 px-2.5 border-r border-slate-200 font-bold text-slate-950 text-xs leading-snug break-words [overflow-wrap:anywhere] print:border-black">
                                 {rec.subject}
                               </td>
 
                               {/* 6. Brief Description */}
-                              <td className="py-2 px-2.5 text-slate-700 text-xs leading-relaxed break-all print:border-black">
+                              <td className="py-2 px-2.5 text-slate-700 text-xs leading-relaxed break-words [overflow-wrap:anywhere] print:border-black">
                                 {cleanGdNarrative(rec.narrative)}
                               </td>
                             </tr>

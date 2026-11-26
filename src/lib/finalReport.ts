@@ -38,7 +38,7 @@ export interface FinalReportData {
 
 export function initialFinalReport(fir: FIRItem): FinalReportData {
   const data: FinalReportData = {
-    schemaVersion: 1, reportNo: '', reportDate: new Date().toLocaleDateString('en-CA'),
+    schemaVersion: 1, reportNo: '', reportDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()),
     formType: '', chargeSheetType: '', finalReportReason: '', finalReportReasonDetails: '', judicialCustody: '', pendingAccused: '', pendingDocuments: '',
     limitationPeriod: '', investigationStatus: '', dispatchDate: '', courtType: '', judgeName: '', caseType: '',
     labAnalysis: '', briefFacts: fir.briefFacts || fir.incidentDetails || '', prosecutorApproved: '', approvalDate: '', noticeServed: '', noticeDate: '', enclosureNotes: '',
@@ -83,13 +83,14 @@ export function validateFinalReport(data: FinalReportData): string[] {
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 export function toStatutoryFinalReport(fir: FIRItem, data: FinalReportData) {
   const actRows = [{ sNo: 1, act: fir.majorAct || '—', sections: fir.actsAndSections || '—' }];
+  const fmtDmy = (val?: string) => { const s = String(val || '').trim(); const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : s; };
   return {
     court: `${data.courtType} — ${data.judgeName}`, district: fir.district, ps: fir.policeStation,
-    year: String(fir.firYear || ''), firNo: fir.firNumber, firDate: fir.firDate,
-    reportNo: data.reportNo, reportDate: data.reportDate, actRows, finalFormType: data.formType === 'CHARGESHEET' ? data.formType : `${data.formType} — ${data.finalReportReason}: ${data.finalReportReasonDetails}`,
+    year: String(fir.firYear || ''), firNo: fir.firNumber, firDate: fmtDmy(fir.firDate),
+    reportNo: data.reportNo, reportDate: fmtDmy(data.reportDate), actRows, finalFormType: data.formType === 'CHARGESHEET' ? data.formType : [data.formType, [data.finalReportReason, data.finalReportReasonDetails].filter(Boolean).join(': ')].filter(Boolean).join(' — '),
     ifFirUnoccurred: '—', ifChargeSheet: data.formType === 'CHARGESHEET' ? data.chargeSheetType : '—', ioName: fir.assignedIoName || '—', ioRank: fir.assignedIoRank || '—', ioNo: '—',
     complainantName: fir.complainantName, complainantFather: fir.complainantRelativeName || fir.complainantFatherSpouse || '—',
-    propertyRows: data.properties.map((p, i) => ({ sNo: i + 1, propertyDescription: `${p.type}: ${p.description}`, estimatedValue: p.value, psPropertyRegisterNo: '', fromWhomWhereRecovered: p.recoveredFrom, disposal: p.disposal })),
+    propertyRows: data.properties.map((p, i) => ({ sNo: i + 1, propertyDescription: [p.type, p.description].filter(Boolean).join(': ') || '—', estimatedValue: p.value, psPropertyRegisterNo: '', fromWhomWhereRecovered: p.recoveredFrom, disposal: p.disposal })),
     accusedPersonList: data.accused.filter(a => a.action === 'ChargeSheeted').map((a, i) => {
       const details = a.chargesheetDetails, person = details?.personal.information, bailer = details?.bailer.information;
       const addressText = (value?: Record<string, string>) => value ? Object.values(value).filter(Boolean).join(', ') : '';
@@ -102,8 +103,8 @@ export function toStatutoryFinalReport(fir: FIRItem, data: FinalReportData) {
       identificationDob: person?.dob || '', identificationUid: person?.uid || '', otherIdProofs: details?.personal.identifications.map((id, index) => ({ sNo: index + 1, idType: id.type, idNumber: id.number })) || [],
       previousConvictions: details?.convictions.map((record, index) => ({ sNo: index + 1, firNo: record.firNo, state: record.state, district: record.district, policeStation: record.policeStation, descriptionOfCase: record.description, convictionAcquittal: record.outcome })) || [], statusOfAccused: details?.general.status || a.status,
     }; }),
-    accusedNotChargeSheeted: data.accused.filter(a => a.action === 'Not ChargeSheeted').map(a => `${a.name} (${a.relation}: ${a.relativeName}) — ${a.status}`).join('\n') || '—',
-    witnessesList: data.witnesses.filter(w => w.selected).map((w,i) => `${i+1}. ${w.name} (${w.relation}: ${w.relativeName}) | DOB: ${w.dob} | ${w.occupation} | Evidence: ${w.evidence} | ${w.address} | ${w.statement}`).join('\n') || '—',
+    accusedNotChargeSheeted: data.accused.filter(a => a.action === 'Not ChargeSheeted').map(a => { const rel = [a.relation, a.relativeName].filter(Boolean).join(': '); return `${a.name}${rel ? ` (${rel})` : ''}${a.status ? ` — ${a.status}` : ''}`; }).join('\n') || '—',
+    witnessesList: data.witnesses.filter(w => w.selected).map((w,i) => { const rel = [w.relation, w.relativeName].filter(Boolean).join(': '); return `${i+1}. ${w.name}${rel ? ` (${rel})` : ''}${w.dob ? ` | DOB: ${fmtDmy(w.dob)}` : ''}${w.occupation ? ` | ${w.occupation}` : ''}${w.evidence ? ` | Evidence: ${w.evidence}` : ''}${w.address ? ` | ${w.address}` : ''}${w.statement ? ` | ${w.statement}` : ''}`; }).join('\n') || '—',
     falseFirAction: data.formType !== 'CHARGESHEET' && data.finalReportReason === 'False complaint' ? data.finalReportReasonDetails : '—', labAnalysis: data.labAnalysis || '—',
     briefFacts: `${data.briefFacts}\n\nInvestigation status: ${data.investigationStatus}\nJudicial custody: ${data.judicialCustody}\nAccused pending arrest / role verification: ${data.pendingAccused}\nPending documents: ${data.pendingDocuments}\nLimitation period: ${data.limitationPeriod || '—'}\nCase type: ${data.caseType}\nApproved by Public Prosecutor: ${data.prosecutorApproved}${data.prosecutorApproved === 'Yes' ? `; Date: ${data.approvalDate}` : ''}`,
     referNoticeServed: data.noticeServed, referNoticeDate: data.noticeServed === 'Yes' ? data.noticeDate : '', referNoticeAck: '', despatchedOn: data.dispatchDate,

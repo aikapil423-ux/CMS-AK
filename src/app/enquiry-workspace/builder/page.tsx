@@ -57,6 +57,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 import { printA4Element } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { Button } from "@/components/ui/button";
 import { ComplaintService } from "@/services/complaintService";
 import { ComplaintItem } from "@/types";
@@ -374,6 +375,11 @@ function TemplateDraftBuilderContent() {
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
 
+  useEscapeKey(selectComplaintModalOpen, () => setSelectComplaintModalOpen(false));
+  useEscapeKey(saveModalOpen, () => setSaveModalOpen(false));
+  useEscapeKey(customFieldModalOpen, () => setCustomFieldModalOpen(false));
+  useEscapeKey(tableModalOpen, () => setTableModalOpen(false));
+
   // Template / Draft Management state
   const [templatesList, setTemplatesList] = useState<BuilderTemplateItem[]>([]);
   const [draftsList, setDraftsList] = useState<BuilderDraftItem[]>([]);
@@ -443,69 +449,71 @@ function TemplateDraftBuilderContent() {
 
   // 3. Load specific template or draft if URL parameters are passed
   useEffect(() => {
+    let cancelled = false;
     async function loadInitial() {
       if (templateIdParam) {
         try {
           const t = await BuilderService.getTemplateById(templateIdParam);
-          if (t && editorRef.current) {
-            setCurrentTemplateId(t.id);
-            setDocName(t.name);
-            setDocDescription(t.description || "");
+          if (cancelled || !t || !editorRef.current) return;
+          setCurrentTemplateId(t.id);
+          setDocName(t.name);
+          setDocDescription(t.description || "");
 
-            setActiveTemplateRawContent(t.content);
-            let templateHtml = t.content;
-            let activeCase = complaint;
-            if (!activeCase && complaintIdParam) {
-              const foundCase = await ComplaintService.getComplaintById(complaintIdParam);
-              if (foundCase) {
-                activeCase = foundCase;
-                setComplaint(foundCase);
-              }
+          setActiveTemplateRawContent(t.content);
+          let templateHtml = t.content;
+          let activeCase = complaint;
+          if (!activeCase && complaintIdParam) {
+            const foundCase = await ComplaintService.getComplaintById(complaintIdParam);
+            if (cancelled) return;
+            if (foundCase) {
+              activeCase = foundCase;
+              setComplaint(foundCase);
             }
-            if (activeCase) {
-              templateHtml = resolveDynamicPlaceholders(templateHtml, activeCase);
-            }
-            editorRef.current.innerHTML = templateHtml;
-
-            if (t.customFields) {
-              try {
-                setCustomFields(JSON.parse(t.customFields));
-              } catch {}
-            }
-            setActiveTab("editor");
           }
+          if (activeCase) {
+            templateHtml = resolveDynamicPlaceholders(templateHtml, activeCase);
+          }
+          if (cancelled || !editorRef.current) return;
+          editorRef.current.innerHTML = templateHtml;
+
+          if (t.customFields) {
+            try {
+              setCustomFields(JSON.parse(t.customFields));
+            } catch {}
+          }
+          setActiveTab("editor");
         } catch (e) {
           console.error("Error loading template:", e);
         }
       } else if (draftIdParam) {
         try {
           const d = await BuilderService.getDraftById(draftIdParam);
-          if (d && editorRef.current) {
-            setCurrentDraftId(d.id);
-            setCurrentTemplateId(d.templateId || null);
-            setDocName(d.name);
-            setDocDescription(d.description || "");
-            editorRef.current.innerHTML = d.content;
-            if (d.caseId) {
-              setSaveModalCaseId(d.caseId);
-              if (!complaint) {
-                const comp = await ComplaintService.getComplaintById(d.caseId);
-                if (comp) setComplaint(comp);
-              }
-            }
-            if (d.customFields) {
-              try {
-                setCustomFields(JSON.parse(d.customFields));
-              } catch {}
-            }
-            setActiveTab("editor");
+          if (cancelled || !d || !editorRef.current) return;
+          setCurrentDraftId(d.id);
+          setCurrentTemplateId(d.templateId || null);
+          setDocName(d.name);
+          setDocDescription(d.description || "");
+          editorRef.current.innerHTML = d.content;
+          if (d.caseId) {
+            setSaveModalCaseId(d.caseId);
+            const comp = await ComplaintService.getComplaintById(d.caseId);
+            if (!cancelled && comp) setComplaint(comp);
           }
+          if (!cancelled && d.customFields) {
+            try {
+              setCustomFields(JSON.parse(d.customFields));
+            } catch {}
+          }
+          if (!cancelled) setActiveTab("editor");
         } catch (e) {
           console.error("Error loading draft:", e);
         }
       }
     }
     loadInitial();
+    return () => {
+      cancelled = true;
+    };
   }, [templateIdParam, draftIdParam, complaintIdParam]);
 
   // 4. Auto-save trigger
@@ -919,6 +927,11 @@ function TemplateDraftBuilderContent() {
     }
     setActiveTab("editor");
     setHasUnsavedChanges(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("templateId");
+    params.set("draftId", d.id);
+    if (d.caseId) params.set("complaintId", d.caseId);
+    router.replace(`/enquiry-workspace/builder?${params.toString()}`, { scroll: false });
   };
 
   const handleCreateNewBlank = () => {
@@ -931,10 +944,15 @@ function TemplateDraftBuilderContent() {
     setDocDescription("");
     setCustomFields([]);
     if (editorRef.current) {
-      editorRef.current.innerHTML = "<p>यहाँ से अपना दस्तावेज़ / रिपोर्ट लिखना शुरू करें...</p>";
+      editorRef.current.innerHTML = "<p>Start writing your document / report here...</p>";
     }
     setActiveTab("editor");
     setHasUnsavedChanges(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("draftId");
+    params.delete("templateId");
+    const qs = params.toString();
+    router.replace(qs ? `/enquiry-workspace/builder?${qs}` : "/enquiry-workspace/builder", { scroll: false });
   };
 
   // ================= PRINT & EXPORT =================
@@ -996,7 +1014,7 @@ function TemplateDraftBuilderContent() {
             className="text-xs font-bold border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 gap-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">+ Create Blank Document</span>
+            <span className="hidden sm:inline">Create Blank Document</span>
             <span className="sm:hidden">Blank</span>
           </Button>
         }
@@ -1679,7 +1697,7 @@ function TemplateDraftBuilderContent() {
               contentEditable
               suppressContentEditableWarning
               onInput={handleContentChange}
-              className="bg-white text-slate-950 shadow-xl rounded-sm p-10 sm:p-14 border border-slate-200 outline-none w-full max-w-[850px] min-h-[1100px] leading-relaxed transition-all focus:ring-2 focus:ring-blue-500/20"
+              className="cms-paper-sheet bg-white text-slate-950 shadow-xl rounded-sm p-10 sm:p-14 border border-slate-200 outline-none w-full max-w-[850px] min-h-[1100px] leading-relaxed transition-all focus:ring-2 focus:ring-blue-500/20"
               style={{
                 fontFamily: currentFont,
                 fontSize: currentSize,

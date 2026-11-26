@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
 import { ActionsDropdown } from "@/components/ui/actions-dropdown";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
@@ -268,6 +269,10 @@ function NcrWorkspaceContent() {
   };
 
   const handlePrint = () => {
+    if (documentRef.current) {
+      printA4Element(documentRef.current, ncrNumber || "NCR_Report");
+      return;
+    }
     window.print();
   };
 
@@ -502,7 +507,7 @@ function NcrWorkspaceContent() {
           </div>
 
           {/* EDITABLE DOCUMENT PREVIEW */}
-          <div className={`${styles.document} border border-slate-300 bg-white p-4 text-slate-900 sm:p-8`} ref={documentRef}>
+          <div className={`${styles.document} cms-paper-sheet border border-slate-300 bg-white p-4 text-slate-900 sm:p-8`} ref={documentRef}>
             {/* Header */}
             {showHeader && (
               <div className="text-center space-y-1 mb-6 border-b pb-4 border-slate-300">

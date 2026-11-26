@@ -14,6 +14,7 @@ import {
 import { FIRActSectionEntry } from "@/types";
 import { INITIAL_GD_TYPES } from "@/lib/generalDiaryConfig";
 import { formatGDActivityDateTime, isGdRecordExpired } from "@/lib/gdDateTime";
+import { getTodayIsoIST } from "@/lib/utils";
 import { suggestionStore } from "@/lib/suggestionStore";
 
 const GD_STORAGE_KEY = "haryana_police_cms_gd_master_v3";
@@ -32,7 +33,7 @@ function generateAuditId(prefix: string = "AUD"): string {
 
 // Default Seed Entries for initial demo and inspection
 function generateSeedEntries(): GeneralDiaryRecord[] {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayIsoIST();
   const now = new Date();
 
   return [
@@ -706,8 +707,8 @@ async function gdApiPost<T = any>(body: Record<string, unknown>): Promise<T> {
   return json as T;
 }
 
-async function gdApiGet<T = any>(queryString: string): Promise<T> {
-  const res = await fetch(`/api/general-diary${queryString}`, { cache: "no-store" });
+async function gdApiGet<T = any>(queryString: string, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`/api/general-diary${queryString}`, { cache: "no-store", signal });
   const json = await res.json();
   if (!res.ok || json?.success === false) {
     throw new Error(json?.error || `GD API error (${res.status})`);
@@ -759,7 +760,8 @@ export const GeneralDiaryService = {
   async getPaginatedEntries(
     filter: GDSearchFilter = {},
     overridePage?: number,
-    overridePageSize?: number
+    overridePageSize?: number,
+    signal?: AbortSignal
   ): Promise<GDPaginatedResponse> {
     // Backend-first: authoritative search over the persisted server register
     try {
@@ -783,15 +785,28 @@ export const GeneralDiaryService = {
       Object.entries(mapped).forEach(([key, value]) => {
         if (value !== undefined && value !== "") params.set(key, value);
       });
-      const json = await gdApiGet<{ data: GDPaginatedResponse }>(`?${params.toString()}`);
+      const json = await gdApiGet<{ data: GDPaginatedResponse }>(`?${params.toString()}`, signal);
       return json.data;
-    } catch {
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") throw err;
       // Backend unreachable — fall back to the local in-memory register
     }
     memoryRecordsStore = loadRecordsFromStorage();
     let list = [...memoryRecordsStore].filter((r) => !isGdRecordExpired(r));
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = (() => {
+      try {
+        return new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+      } catch {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
+    })();
 
     // Compute status counts before filtering
     const todayCount = list.filter((r) => r.isLocked && (r.activityDateTime.startsWith(today) || localDateKey(r) === today)).length;
@@ -1549,13 +1564,14 @@ export const GeneralDiaryService = {
   // -------------------------------------------------------------
   // 10. Backward-Compatibility Methods for existing components
   // -------------------------------------------------------------
-  async getEntries(filter?: { date?: string; search?: string; entryType?: string; policeStation?: string }): Promise<GeneralDiaryRecord[]> {
+  async getEntries(filter?: { date?: string; search?: string; entryType?: string; policeStation?: string; isLocked?: boolean }): Promise<GeneralDiaryRecord[]> {
     const res = await this.getPaginatedEntries({
       startDate: filter?.date,
       endDate: filter?.date,
       keyword: filter?.search,
       typeCode: filter?.entryType,
       policeStation: filter?.policeStation,
+      isLocked: filter?.isLocked,
       pageSize: 500,
     });
     return res.records;

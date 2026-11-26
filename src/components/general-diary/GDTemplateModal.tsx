@@ -14,6 +14,7 @@ import {
 import { GDEntryTypeConfig, GDTemplate } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface GDTemplateModalProps {
   types: GDEntryTypeConfig[];
@@ -40,6 +41,8 @@ export function GDTemplateModal({
   const [newLang, setNewLang] = useState<"hi" | "en" | "mixed">("hi");
   const [newSubject, setNewSubject] = useState("");
   const [newBody, setNewBody] = useState("");
+
+  useEscapeKey(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -71,7 +74,11 @@ export function GDTemplateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50"
+    >
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto max-h-[90vh]">
         {/* Header */}
         <div className="p-4 bg-[#0b192c] text-white flex items-center justify-between border-b border-slate-700">

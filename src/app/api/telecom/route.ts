@@ -554,7 +554,7 @@ export async function POST(req: NextRequest) {
 
     let effectiveFirNumber = firNumber;
     if (firId) {
-      const found = firService.getFirById(firId);
+      const found = visibleFirs.find((f) => f.id === firId) || firService.getFirById(firId);
       if (found) effectiveFirNumber = found.firNumber;
     }
 

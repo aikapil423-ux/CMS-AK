@@ -12,6 +12,7 @@ import { TopBarNotifications } from "./TopBarNotifications";
 import { TopBarLanguageSwitcher } from "./TopBarLanguageSwitcher";
 import { TopBarPersonaSwitcher } from "./TopBarPersonaSwitcher";
 import { useLanguage } from "@/context/LanguageContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader() {
@@ -20,6 +21,9 @@ export function MobileHeader() {
   const { t } = useLanguage();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+  useEscapeKey(drawerOpen && !showSignOutModal, () => setDrawerOpen(false));
+  useEscapeKey(showSignOutModal, () => setShowSignOutModal(false));
 
   const isRoznamcha = pathname.startsWith("/general-diary");
   const isFir = pathname.startsWith("/fir") || pathname.startsWith("/fir-workspace");
@@ -36,70 +40,67 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="lg:hidden sticky top-0 z-45 bg-white/95 backdrop-blur-sm border-b border-slate-200/80 text-slate-900 shadow-2xs">
+      <header className="print:hidden lg:hidden sticky top-0 z-45 bg-white/95 dark:bg-[#0d1930]/95 backdrop-blur-sm border-b border-slate-200/80 dark:border-[#1e2c48] text-slate-900 dark:text-slate-100 shadow-2xs">
         {/* Main Bar */}
-        <div className="px-3.5 py-2 flex items-center justify-between">
+        <div className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 flex items-center justify-between gap-2">
           {/* Police Crest & Station Title */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0">
-              <Shield className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0">
+              <Shield className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-medium text-slate-500 tracking-wider uppercase">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-300 tracking-wider uppercase truncate">
                   {isRoznamcha ? t("Roznamcha GD") : isFir ? t("FIR Module") : isComplaints ? t("Complaints") : isRegistrations ? t("Registrations") : isReports ? t("Reports") : isProsecution ? t("Prosecution") : "HP CMS"}
                 </span>
                 <span
-                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.2 rounded border border-[#6d85bd]/60 font-mono font-bold"
+                  className="text-[10px] bg-[#eef1ff] !text-[#203c88] dark:!bg-[#1e3a8a] dark:!text-[#ffffff] dark:!border-[#3b82f6] px-1.5 py-0.5 rounded border border-[#6d85bd]/60 font-mono font-bold shrink-0"
                 >
                   {currentUser.rank.slice(0, 3)}
                 </span>
               </div>
-              <h2 className="text-xs font-semibold text-slate-900 truncate max-w-[150px] xs:max-w-[190px]">
+              <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
                 {currentUser.stationName}
               </h2>
             </div>
           </div>
 
-          {/* Action Controls */}
-          <div className="flex items-center gap-1.5">
+          {/* Action Controls (>=44px tap targets on small screens; secondary utilities inside drawer <640px) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Direct Home Link */}
             <Link
               href="/"
               title="Home"
+              aria-label="Home"
               className={cn(
-                "p-1.5 rounded-md border transition-colors",
-                pathname === "/" ? "bg-[#203c88] text-white border-[#203c88]" : "text-slate-700 hover:bg-slate-100 border-slate-200"
+                "min-w-[44px] min-h-[44px] sm:min-w-9 sm:min-h-9 rounded-md border transition-colors flex items-center justify-center shrink-0",
+                pathname === "/" ? "bg-[#203c88] text-white border-[#203c88]" : "bg-white text-slate-800 hover:bg-slate-100 border-slate-200 dark:bg-[#172747] dark:border-[#3b5284] dark:text-white"
               )}
             >
-              <Home className="w-3.5 h-3.5" />
+              <Home className="w-4 h-4" />
             </Link>
 
             {/* Officer Notifications Bell */}
             <TopBarNotifications isMobile={true} />
 
-            {/* Switch Module Icon for Mobile */}
-            <TopBarModuleSwitcher isMobile={true} />
-
-            {/* Theme Toggle (Sun/Moon) */}
-            <TopBarThemeToggle />
-
-            {/* Universal Dictation for Mobile */}
-            <TopBarDictation isMobile={true} />
-
-            {/* Bilingual Instant Language Switcher (Hindi / English) */}
-            <TopBarLanguageSwitcher isMobile={true} />
-
-            {/* Role Switcher Dropdown */}
-            <TopBarPersonaSwitcher isMobile={true} />
+            {/* Tablet-only inline utilities; kept inside drawer on <640px phones to prevent overlap */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <TopBarModuleSwitcher isMobile={true} />
+              <TopBarThemeToggle />
+              <TopBarDictation isMobile={true} />
+              <TopBarLanguageSwitcher isMobile={true} />
+              <TopBarPersonaSwitcher isMobile={true} />
+            </div>
 
             {/* Drawer menu trigger */}
             <button
+              type="button"
               onClick={() => setDrawerOpen(!drawerOpen)}
               aria-label="Toggle menu"
-              className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:scale-95"
+              aria-expanded={drawerOpen}
+              className="min-w-[44px] min-h-[44px] sm:min-w-9 sm:min-h-9 rounded-md hover:bg-slate-100 text-slate-600 dark:text-slate-100 active:scale-95 flex items-center justify-center shrink-0 border border-slate-200 dark:border-[#273b63]"
             >
-              {drawerOpen ? <X className="w-5 h-5 text-slate-900" /> : <Menu className="w-5 h-5" />}
+              {drawerOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -107,12 +108,12 @@ export function MobileHeader() {
 
       {/* Mobile Drawer Menu */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
+        <div className="print:hidden fixed inset-0 z-50 lg:hidden flex" role="dialog" aria-modal="true" aria-label="Mobile navigation menu">
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="relative w-4/5 max-w-xs bg-white h-full text-slate-800 flex flex-col shadow-xl z-10 border-r border-slate-200">
+          <div className="relative w-4/5 max-w-xs bg-white dark:bg-[#0d1930] h-full text-slate-800 dark:text-slate-100 flex flex-col shadow-xl z-10 border-r border-slate-200 dark:border-[#223456]">
             <div className="p-3.5 border-b border-slate-200/80 bg-slate-50/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white">
@@ -123,9 +124,23 @@ export function MobileHeader() {
                   <p className="text-[10px] text-slate-400">{currentUser.stationName}</p>
                 </div>
               </div>
-              <button onClick={() => setDrawerOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
+              <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700">
                 <X className="w-4 h-4" />
               </button>
+            </div>
+
+            {/* Phone (<640px) Quick Utilities inside Drawer */}
+            <div className="sm:hidden p-2.5 border-b border-slate-200/80 dark:border-[#223456] bg-slate-50/80 dark:bg-[#091326]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                {t("Quick Tools")}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <TopBarModuleSwitcher isMobile={true} />
+                <TopBarThemeToggle />
+                <TopBarDictation isMobile={true} />
+                <TopBarLanguageSwitcher isMobile={true} />
+                <TopBarPersonaSwitcher isMobile={true} />
+              </div>
             </div>
 
             <div className="p-3 border-b border-slate-200/80 bg-white">
@@ -379,14 +394,42 @@ export function MobileHeader() {
                   <Link
                     href="/acts-sections"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
                   >
                     {t("ACT and SECTIONs")}
                   </Link>
                   <Link
+                    href="/reports"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Reports & Audit")}
+                  </Link>
+                  <Link
+                    href="/telecom"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Telecom Evidence Analysis")}
+                  </Link>
+                  <Link
+                    href="/prosecution"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Prosecution & Courts")}
+                  </Link>
+                  <Link
+                    href="/audits"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    {t("Audits & Inspection")}
+                  </Link>
+                  <Link
                     href="/tada"
                     onClick={() => setDrawerOpen(false)}
-                    className="block px-2.5 py-1.5 rounded-md text-xs font-medium text-amber-800 bg-amber-50/60 hover:bg-amber-100"
+                    className="block px-2.5 py-2 rounded-md text-xs font-medium text-amber-800 bg-amber-50/60 hover:bg-amber-100"
                   >
                     {t("TA DA Form (यात्रा भत्ता प्रपत्र)")}
                   </Link>

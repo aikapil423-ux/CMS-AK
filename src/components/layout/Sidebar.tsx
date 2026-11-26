@@ -187,7 +187,7 @@ export function Sidebar() {
         {isExpanded && item.badge && (
           <span
             className={cn(
-              "text-[9.5px] px-1.5 py-0.2 rounded font-mono shrink-0 border ml-1",
+              "text-[9.5px] px-1.5 py-0.5 rounded font-mono shrink-0 border ml-1",
               isActive
                 ? "bg-white/20 text-white border-white/30"
                 : item.badgeColor || "bg-slate-100 text-slate-600 border-slate-200/60"
@@ -348,7 +348,7 @@ export function Sidebar() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "hidden lg:flex lg:flex-col bg-white border-r border-slate-200/80 text-slate-700 select-none shrink-0 h-screen sticky top-0 transition-all duration-200 ease-in-out z-40",
+        "print:hidden hidden lg:flex lg:flex-col bg-white border-r border-slate-200/80 text-slate-700 select-none shrink-0 h-screen sticky top-0 transition-all duration-200 ease-in-out z-40",
         isExpanded ? "w-64 shadow-lg" : "w-18"
       )}
     >

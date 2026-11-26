@@ -31,7 +31,12 @@ import {
 // - Deletes suggestions and drafts without any action for >= 24 hours.
 // - Locked entries are NEVER touched under PPR 22.48.
 // ------------------------------------------------------------------
-async function pruneExpiredSuggestionsAndDrafts(): Promise<number> {
+let lastPrunedAtMs = 0;
+
+async function pruneExpiredSuggestionsAndDrafts(force = false): Promise<number> {
+  const nowMs = Date.now();
+  if (!force && nowMs - lastPrunedAtMs < 60_000) return 0;
+  lastPrunedAtMs = nowMs;
   try {
     const candidates = await prisma.gDRecord.findMany({
       where: {
@@ -178,33 +183,63 @@ const FALLBACK_AUTHOR: GDOfficerParticulars = {
   pno: "05192834",
 };
 
-async function getNextLockedSequence(gdDate: Date): Promise<{ sequence: number; gdNumber: string }> {
-  const count = await prisma.gDRecord.count({
-    where: { isLocked: true, gdDate },
-  });
-  const sequence = count + 1;
-  const padded = String(sequence).padStart(3, "0");
-  return { sequence, gdNumber: `GD-${formatGDDateKey(gdDate)}-${padded}` };
+function stationSlugTag(policeStation?: string): string {
+  const cleaned = (policeStation || "")
+    .replace(/^PS\s+/i, "")
+    .replace(/[^a-zA-Z0-9]+/g, "")
+    .toUpperCase();
+  return (cleaned.slice(0, 6) || "STN");
 }
 
-// Renumber every LOCKED entry of one GD day in strict chronological order.
+async function allocateUniqueGdNumber(
+  key: string,
+  seq: number,
+  policeStation: string,
+  ignoreRowId?: string
+): Promise<string> {
+  const plain = `GD-${key}-${String(seq).padStart(3, "0")}`;
+  const conflict = await prisma.gDRecord.findFirst({
+    where: {
+      gdNumber: plain,
+      ...(ignoreRowId ? { NOT: { id: ignoreRowId } } : {}),
+    },
+    select: { id: true },
+  });
+  if (!conflict) return plain;
+  return `${plain}-${stationSlugTag(policeStation)}`;
+}
+
+async function getNextLockedSequence(
+  gdDate: Date,
+  policeStation: string = DEFAULT_STATION
+): Promise<{ sequence: number; gdNumber: string }> {
+  const count = await prisma.gDRecord.count({
+    where: { isLocked: true, gdDate, policeStation },
+  });
+  const sequence = count + 1;
+  const key = formatGDDateKey(gdDate);
+  const gdNumber = await allocateUniqueGdNumber(key, sequence, policeStation);
+  return { sequence, gdNumber };
+}
+
+// Renumber every LOCKED entry of ONE station's GD day in strict chronological order.
 // Used when an entry is inserted BETWEEN existing ones (back-dated filing):
-// all later entries automatically shift to the next GD number.
-// Two phases (temp numbers first) so the global unique gdNumber constraint
-// can never collide mid-reshuffle. Returns how many rows moved.
-async function resequenceDay(gdDate: Date): Promise<number> {
+// all later entries of that police station shift automatically without colliding across stations.
+async function resequenceDay(gdDate: Date, policeStation: string = DEFAULT_STATION): Promise<number> {
   const key = formatGDDateKey(gdDate);
   const rows = await prisma.gDRecord.findMany({
-    where: { isLocked: true, gdDate },
+    where: { isLocked: true, gdDate, policeStation },
     orderBy: [{ entryDateTime: "asc" }, { id: "asc" }],
   });
 
+  const targetNumbers: string[] = [];
   let changes = 0;
-  rows.forEach((row, i) => {
+  for (let i = 0; i < rows.length; i++) {
     const seq = i + 1;
-    const gdNumber = `GD-${key}-${String(seq).padStart(3, "0")}`;
-    if (row.sequencePerDay !== seq || row.gdNumber !== gdNumber) changes++;
-  });
+    const gdNumber = await allocateUniqueGdNumber(key, seq, policeStation, rows[i].id);
+    targetNumbers.push(gdNumber);
+    if (rows[i].sequencePerDay !== seq || rows[i].gdNumber !== gdNumber) changes++;
+  }
   if (changes === 0) return 0;
 
   const stamp = Date.now().toString(36).slice(-6);
@@ -222,7 +257,7 @@ async function resequenceDay(gdDate: Date): Promise<number> {
       where: { id: rows[i].id },
       data: {
         sequencePerDay: seq,
-        gdNumber: `GD-${key}-${String(seq).padStart(3, "0")}`,
+        gdNumber: targetNumbers[i],
       },
     });
   }
@@ -313,7 +348,7 @@ async function createLockedEntry(
   // Server-owned timestamp + atomic per-day numbering (with race retry)
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 6; attempt++) {
-    const { sequence, gdNumber } = await getNextLockedSequence(gdDate);
+    const { sequence, gdNumber } = await getNextLockedSequence(gdDate, policeStation);
     const auditId = generateAuditId("V-LOCK");
     const trail: GDAuditLog[] = [
       ...auditTrail,
@@ -356,8 +391,8 @@ async function createLockedEntry(
         },
       });
       // Inserted between existing entries? Renumber the whole day so every
-      // later entry shifts to its correct chronological GD number.
-      const resequenced = await resequenceDay(gdDate);
+      // later entry shifts to its correct chronological GD number for this station.
+      const resequenced = await resequenceDay(gdDate, policeStation);
       // Re-fetch: resequencing may have changed this row's final GD number
       const fresh = await prisma.gDRecord.findUnique({ where: { id: row.id } });
       return { record: mapRowToRecord(fresh ?? row), resequenced };
@@ -395,6 +430,9 @@ async function saveDraftEntry(body: Record<string, unknown>): Promise<GeneralDia
   const draftGdDate = startOfDay(entryDateTime);
 
   if (existingId) {
+    if (existingId.startsWith("sugg_")) {
+      dismissSuggestionId(existingId);
+    }
     const existing = await prisma.gDRecord.findUnique({ where: { id: existingId } });
     if (existing) {
       if (existing.isLocked) {
@@ -526,8 +564,9 @@ async function verifyAndLockEntry(
   const gdDate = startOfDay(activity);
 
   let lastError: unknown = null;
+  const station = existing.policeStation || DEFAULT_STATION;
   for (let attempt = 0; attempt < 6; attempt++) {
-    const { sequence, gdNumber } = await getNextLockedSequence(gdDate);
+    const { sequence, gdNumber } = await getNextLockedSequence(gdDate, station);
     const auditId = generateAuditId("V-LOCK");
     const trail = parseJson<GDAuditLog[]>(existing.auditTrailJson, []);
     trail.push(
@@ -568,7 +607,7 @@ async function verifyAndLockEntry(
         },
       });
       // Keep the locked day in strict chronological GD-number order
-      const resequenced = await resequenceDay(gdDate);
+      const resequenced = await resequenceDay(gdDate, station);
       // Re-fetch: resequencing may have changed this row's final GD number
       const fresh = await prisma.gDRecord.findUnique({ where: { id: existing.id } });
       return { record: mapRowToRecord(fresh ?? updated), resequenced };
@@ -730,7 +769,7 @@ export async function GET(req: NextRequest) {
     if (action === "SERVER_NOW") {
       const now = new Date();
       const gdDate = startOfDay(now);
-      const {sequence,gdNumber}=await getNextLockedSequence(gdDate);
+      const {sequence,gdNumber}=await getNextLockedSequence(gdDate, apiUser.stationName || DEFAULT_STATION);
       return NextResponse.json({
         success: true,
         data: {
@@ -782,9 +821,18 @@ export async function GET(req: NextRequest) {
     // Auto-purge unlocked suggestions and drafts whose 24-hour window has expired (PPR 22.48 compliance)
     await pruneExpiredSuggestionsAndDrafts();
 
-    // Fetch ALL rows once — status counts are GLOBAL, so tab badges
-    // (e.g. the Register count) never change with the active tab.
+    // Push user scope directly into SQLite `where` so search never scans unrelated stations' blobs
+    const dbWhere: Prisma.GDRecordWhereInput = {};
+    if (apiUser.role !== "SUPER_ADMIN") {
+      if (["SP_DISTRICT", "DSP_SUBDIV", "ASP_HQ"].includes(apiUser.role) && apiUser.district) {
+        dbWhere.district = apiUser.district;
+      } else if (apiUser.stationName) {
+        dbWhere.policeStation = apiUser.stationName;
+      }
+    }
+
     const rows = await prisma.gDRecord.findMany({
+      where: dbWhere,
       orderBy: [{ entryDateTime: "desc" }, { sequencePerDay: "desc" }],
     });
 
@@ -935,8 +983,16 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Record<string, unknown>;
     if (!['SHO','MHC_GD_INCHARGE','DUTY_OFFICER','SUPER_ADMIN','SP_DISTRICT','DSP_SUBDIV'].includes(apiUser.role)) return forbidden('GD writes require a diary or supervisory officer.');
     if (body.id) {
-      const existing=await prisma.gDRecord.findUnique({where:{id:String(body.id)}});
-      if (!existing || !scopeAllowed(apiUser,existing)) return forbidden();
+      const idStr = String(body.id);
+      const existing = await prisma.gDRecord.findUnique({ where: { id: idStr } });
+      if (existing) {
+        if (!scopeAllowed(apiUser, existing)) return forbidden();
+      } else if (idStr.startsWith("sugg_")) {
+        const sugg = getSmartVerifiedSuggestions().find((s) => s.id === idStr);
+        if (!sugg || !scopeAllowed(apiUser, sugg)) return forbidden();
+      } else {
+        return forbidden();
+      }
     }
     body.actualAuthor=officerDetails(apiUser);
     body.verifier=officerDetails(apiUser);
@@ -981,6 +1037,12 @@ export async function POST(req: NextRequest) {
       const existing = await prisma.gDRecord.findUnique({ where: { id } });
       if (!existing) {
         return NextResponse.json({ success: false, error: "GD Record not found." }, { status: 404 });
+      }
+      if (existing.isLocked) {
+        return NextResponse.json(
+          { success: false, error: "Violation Error: Attachments of a locked GD entry cannot be deleted under PPR 22.48." },
+          { status: 403 }
+        );
       }
       const rel = parseJson<GDRelatedRecords>(existing.relatedRecordsJson, {});
       const list = Array.isArray(rel.attachments) ? rel.attachments : [];

@@ -43,8 +43,9 @@ import { FIRItem, FIRCaseDiaryItem } from "@/types";
 import { FIRWorkspaceNav } from "@/components/fir-workspace/FIRWorkspaceNav";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml, getA4DocumentHtml, getZimniPagedHtml } from "@/utils/printElement";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { universalEvidenceService } from "@/services/universalEvidenceService";
 import { evidenceBlobStore } from "@/services/evidenceBlobStore";
 import { useLanguage } from "@/context/LanguageContext";
@@ -242,6 +243,7 @@ function ZimniWorkspaceContent() {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState<"compact" | "normal" | "large">("normal");
   const [a4Preview, setA4Preview] = useState<string | null>(null);
+  useEscapeKey(Boolean(a4Preview), () => setA4Preview(null));
   const fillRequest = useRef(0);
   const manualEntrySequence = useRef(0);
   const [isFilling, setIsFilling] = useState(false);
@@ -414,7 +416,7 @@ function ZimniWorkspaceContent() {
         id: caseDiaryId,
         firId: activeFir.id,
         zimniNumber: zimniNum,
-        date: data.signDate.replace(/^[^\d]*/, "") || new Date().toISOString().split("T")[0],
+        date: data.signDate.replace(/^[^\d]*/, "") || getTodayIsoIST(),
         time: new Date().toTimeString().slice(0, 5),
         officer: data.officerNameRank || activeFir.assignedIoName || currentUser?.name || "Investigating Officer",
         officerRole: "INVESTIGATING_OFFICER",
@@ -1103,7 +1105,7 @@ function ZimniWorkspaceContent() {
       <div className="overflow-x-auto bg-slate-100/60 p-2 sm:p-6 rounded-2xl border border-slate-200/70">
         <div
           id="zimni-printable-canvas"
-          className={`mx-auto bg-white shadow-sm font-serif text-slate-900 ${
+          className={`cms-paper-sheet mx-auto bg-white shadow-sm font-serif text-slate-900 ${
             fontSize === "compact" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
           }`}
           style={{ width: "210mm", minHeight: "297mm", padding: "8mm 10mm", boxSizing: "border-box", lineHeight: "1.6", fontFamily: 'Georgia, "Times New Roman", serif' }}
@@ -1135,11 +1137,11 @@ function ZimniWorkspaceContent() {
                 <div className="space-y-1">
                   {data.leftHeaderLines.map((line) => (
                     <div key={line.id} className="group flex items-center gap-1">
-                      <input
-                        type="text"
+                      <textarea
+                        rows={1}
                         value={line.text}
                         onChange={(e) => handleUpdateLeftHeader(line.id, e.target.value)}
-                        className="w-full font-bold text-slate-900 bg-transparent hover:bg-amber-50/50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-amber-500 px-1 py-0.5 outline-none"
+                        className="w-full min-w-0 font-bold text-xs text-slate-900 bg-transparent hover:bg-amber-50/50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-amber-500 px-1 py-0.5 outline-none resize-none overflow-hidden [field-sizing:content]"
                       />
                       <button
                         type="button"
@@ -1167,11 +1169,11 @@ function ZimniWorkspaceContent() {
                 <div className="space-y-1 sm:text-right">
                   {data.rightHeaderLines.map((line) => (
                     <div key={line.id} className="group flex items-center sm:justify-end gap-1">
-                      <input
-                        type="text"
+                      <textarea
+                        rows={1}
                         value={line.text}
                         onChange={(e) => handleUpdateRightHeader(line.id, e.target.value)}
-                        className="w-full sm:text-right font-bold text-slate-900 bg-transparent hover:bg-amber-50/50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-amber-500 px-1 py-0.5 outline-none"
+                        className="w-full min-w-0 sm:text-right font-bold text-xs text-slate-900 bg-transparent hover:bg-amber-50/50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-amber-500 px-1 py-0.5 outline-none resize-none overflow-hidden [field-sizing:content]"
                       />
                       <button
                         type="button"
@@ -1211,28 +1213,28 @@ function ZimniWorkspaceContent() {
             >
               {/* Column 1 Title */}
               <div
-                className="col-span-2 p-2 flex items-center justify-center"
+                className="col-span-2 p-1.5 flex items-center justify-center min-w-0"
                 style={col1DividerStyle}
               >
                 <input
                   type="text"
                   value={data.col1Title}
                   onChange={(e) => setData((p) => ({ ...p, col1Title: e.target.value }))}
-                  className="w-full text-center font-bold bg-transparent outline-none"
+                  className="w-full min-w-0 text-center font-bold bg-transparent outline-none text-xs"
                   placeholder="तिथि व समय"
                 />
               </div>
 
               {/* Column 2 Title */}
               <div
-                className="col-span-1 p-2 flex items-center justify-center"
+                className="col-span-1 p-1 flex items-center justify-center min-w-0"
                 style={col2DividerStyle}
               >
                 <input
                   type="text"
                   value={data.col2Title}
                   onChange={(e) => setData((p) => ({ ...p, col2Title: e.target.value }))}
-                  className="w-full text-center font-bold bg-transparent outline-none"
+                  className="w-full min-w-0 text-center font-bold bg-transparent outline-none text-xs"
                   placeholder="क्रं. स."
                 />
               </div>

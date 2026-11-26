@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { useAuth } from "@/context/AuthContext";
 import { DEMO_USERS } from "@/lib/mockData";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface FIRReceiptModalProps {
   fir: FIRItem | null;
@@ -16,6 +17,8 @@ interface FIRReceiptModalProps {
 
 export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(isOpen && Boolean(fir), onClose);
 
   if (!isOpen || !fir) return null;
 
@@ -43,11 +46,11 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   const occDateToDMY = formatDateDMY(fir.incidentDateTo || fir.incidentDateFrom);
 
   const ioName = fir.assignedIoName || fir.actionTakenData?.directedIoName || "Pending Assignment";
-  const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "HC (Head Constable)";
-  const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "132";
+  const ioRank = fir.assignedIoRank || fir.actionTakenData?.directedIoRank || "—";
+  const ioBelt = fir.assignedIoBeltNumber || fir.actionTakenData?.directedIoBelt || fir.assignedIoPno || "—";
 
   const { currentUser } = useAuth();
-  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "Vedpal";
+  const registeredName = fir.signatureData?.officerInChargeName || fir.registeredBy?.split("(")[0]?.trim() || currentUser?.name || "Officer In-Charge";
   const matchedUser = DEMO_USERS.find((u) =>
     u.name.toLowerCase().trim() === registeredName.toLowerCase().trim() ||
     registeredName.toLowerCase().includes(u.name.toLowerCase().split(",")[0].trim()) ||
@@ -107,7 +110,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 overflow-y-auto animate-in fade-in-50">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 overflow-y-auto animate-in fade-in-50">
       <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-2xl border border-neutral-300 overflow-hidden flex flex-col my-auto max-h-[96vh]">
         {/* Top Floating Control Bar - Pure Dark Neutral (No Blue Tint) */}
         <div className="no-print flex items-center justify-between px-5 py-3 bg-neutral-900 text-white border-b border-neutral-700">
@@ -152,7 +155,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
           <div
             id="cctns-printable-fir"
             ref={receiptRef}
-            className="bg-white border border-neutral-300 p-8 sm:p-12 shadow-md w-full max-w-[850px] mx-auto font-serif text-black leading-normal text-[13px] space-y-6 h-auto min-h-full"
+            className="cms-paper-sheet bg-white border border-neutral-300 p-8 sm:p-12 shadow-md w-full max-w-[850px] mx-auto font-serif text-black leading-normal text-[13px] space-y-6 h-auto min-h-full"
           >
             {/* Top Running Header */}
             <div>
@@ -363,7 +366,7 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
                         <strong>(c) General Diary Reference (रोजनामचा संदर्भ):</strong>
                       </div>
                       <div className="col-span-3">
-                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || "025"}
+                        <strong>Entry No. (प्रविष्टि सं.):</strong> {fir.gdEntryNumber || "—"}
                       </div>
                       <div className="col-span-4">
                         <strong>Date and Time (दिनांक और समय):</strong>
@@ -820,7 +823,15 @@ export function FIRReceiptModal({ fir, isOpen, onClose }: FIRReceiptModalProps) 
             <div className="pt-6 space-y-1 text-[13px]">
               <div>
                 <strong>15. Date and time of dispatch to the court (अदालत में प्रेषण की दिनांक और समय):</strong>{" "}
-                <span>{fir.courtDispatchDateTime ? `${formatDateDMY(fir.courtDispatchDateTime.split("T")[0])} ${fir.courtDispatchDateTime.split("T")[1] || "10:00"} hrs` : ""}</span>
+                <span>
+                  {fir.courtDispatchDateTime
+                    ? `${formatDateDMY(fir.courtDispatchDateTime.split("T")[0])}${
+                        fir.courtDispatchDateTime.split("T")[1]
+                          ? ` ${fir.courtDispatchDateTime.split("T")[1]} hrs`
+                          : ""
+                      }`
+                    : "Pending Dispatch"}
+                </span>
               </div>
             </div>
           </div>

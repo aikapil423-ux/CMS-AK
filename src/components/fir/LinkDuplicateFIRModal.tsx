@@ -15,6 +15,7 @@ import {
 import { FIRItem } from "@/types";
 import { persistentFirService as firService } from "@/services/persistentFirService";
 import { useAuth } from "@/context/AuthContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { formatDate } from "@/lib/utils";
 
 interface LinkDuplicateFIRModalProps {
@@ -194,13 +195,15 @@ export function LinkDuplicateFIRModal({
     }
   };
 
+  useEscapeKey(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const totalCluster = (primaryFir ? 1 : 0) + targetFirIds.length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in-50">
-      <div className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden text-xs">
         {/* Minimalist Header */}
         <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2">

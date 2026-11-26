@@ -14,8 +14,76 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { ComplaintService } from "@/services/complaintService";
 import { OfficerNotification } from "@/types";
+
+type FinalReportNotif = { id: string; firId: string; title: string; message: string; unread: boolean };
+
+// Shared poller across Desktop & Mobile mounted bells so AppShell never fires duplicate GETs
+const finalReportListeners = new Map<string, Set<(rows: FinalReportNotif[], err: boolean) => void>>();
+const finalReportCache = new Map<string, { rows: FinalReportNotif[]; err: boolean; lastAt: number }>();
+const finalReportInFlight = new Map<string, Promise<void>>();
+const finalReportTimers = new Map<string, number>();
+
+function getReadFinalReportIds(userId: string): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(`cms_read_final_reports_${userId}`);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed.map(String)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function markFinalReportIdsRead(userId: string, ids: string[]) {
+  if (typeof window === "undefined" || ids.length === 0) return;
+  try {
+    const existing = getReadFinalReportIds(userId);
+    ids.forEach((id) => existing.add(String(id)));
+    window.localStorage.setItem(`cms_read_final_reports_${userId}`, JSON.stringify(Array.from(existing)));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function applyLocalReadFilter(userId: string, rows: FinalReportNotif[]): FinalReportNotif[] {
+  const readSet = getReadFinalReportIds(userId);
+  return rows.map((r) => (readSet.has(r.id) ? { ...r, unread: false } : r));
+}
+
+async function fetchFinalReportsShared(userId: string, force = false): Promise<void> {
+  const cached = finalReportCache.get(userId);
+  if (!force && cached && Date.now() - cached.lastAt < 5000) {
+    const filtered = applyLocalReadFilter(userId, cached.rows);
+    finalReportListeners.get(userId)?.forEach((cb) => cb(filtered, cached.err));
+    return;
+  }
+  const existingReq = finalReportInFlight.get(userId);
+  if (existingReq) return existingReq;
+
+  const req = (async () => {
+    try {
+      const response = await fetch(`/api/fir/final-reports?notificationsFor=${encodeURIComponent(userId)}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Notifications unavailable");
+      const result = await response.json();
+      const rows: FinalReportNotif[] = Array.isArray(result.notifications) ? result.notifications : [];
+      finalReportCache.set(userId, { rows, err: false, lastAt: Date.now() });
+      const filtered = applyLocalReadFilter(userId, rows);
+      finalReportListeners.get(userId)?.forEach((cb) => cb(filtered, false));
+    } catch {
+      const prevRows = finalReportCache.get(userId)?.rows || [];
+      finalReportCache.set(userId, { rows: prevRows, err: true, lastAt: Date.now() });
+      finalReportListeners.get(userId)?.forEach((cb) => cb(applyLocalReadFilter(userId, prevRows), true));
+    } finally {
+      finalReportInFlight.delete(userId);
+    }
+  })();
+  finalReportInFlight.set(userId, req);
+  return req;
+}
 
 interface TopBarNotificationsProps {
   isMobile?: boolean;
@@ -27,9 +95,11 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<OfficerNotification[]>([]);
-  const [finalReports, setFinalReports] = useState<Array<{ id: string; firId: string; title: string; message: string; unread: boolean }>>([]);
+  const [finalReports, setFinalReports] = useState<FinalReportNotif[]>([]);
   const [finalReportsError, setFinalReportsError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(isOpen, () => setIsOpen(false));
 
   const isSho = currentUser?.role === "SHO" || currentUser?.id === "usr_sho_1";
 
@@ -50,20 +120,45 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
   };
 
   useEffect(() => {
-    let cancelled = false;
-    const loadFinalReports = async () => {
-      try {
-        const response = await fetch(`/api/fir/final-reports?notificationsFor=${encodeURIComponent(currentUser.id)}`, { cache: 'no-store' });
-        if (!response.ok) throw new Error('Notifications unavailable');
-        const result = await response.json();
-        if (!cancelled) { setFinalReports(result.notifications); setFinalReportsError(false); }
-      } catch { if (!cancelled) setFinalReportsError(true); }
+    const userId = currentUser.id;
+    let set = finalReportListeners.get(userId);
+    if (!set) {
+      set = new Set();
+      finalReportListeners.set(userId, set);
+    }
+    const listener = (rows: FinalReportNotif[], err: boolean) => {
+      setFinalReports(rows);
+      setFinalReportsError(err);
     };
-    setFinalReports([]);
-    loadFinalReports();
-    const timer = window.setInterval(loadFinalReports, 15000);
-    window.addEventListener('officer_notifications_updated', loadFinalReports);
-    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener('officer_notifications_updated', loadFinalReports); };
+    set.add(listener);
+
+    const handleForceUpdate = () => {
+      const cached = finalReportCache.get(userId);
+      if (cached) {
+        setFinalReports(applyLocalReadFilter(userId, cached.rows));
+      }
+      void fetchFinalReportsShared(userId, true);
+    };
+
+    if (!finalReportTimers.has(userId)) {
+      const timer = window.setInterval(() => void fetchFinalReportsShared(userId, true), 15000);
+      finalReportTimers.set(userId, timer);
+    }
+    void fetchFinalReportsShared(userId, false);
+    window.addEventListener("officer_notifications_updated", handleForceUpdate);
+
+    return () => {
+      set?.delete(listener);
+      if (set && set.size === 0) {
+        finalReportListeners.delete(userId);
+        const tId = finalReportTimers.get(userId);
+        if (tId !== undefined) {
+          window.clearInterval(tId);
+          finalReportTimers.delete(userId);
+        }
+      }
+      window.removeEventListener("officer_notifications_updated", handleForceUpdate);
+    };
   }, [currentUser.id]);
 
   useEffect(() => {
@@ -117,6 +212,10 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
   const handleMarkAllRead = () => {
     ComplaintService.markAllNotificationsAsRead(isSho ? "HR-04291882" : currentUser.pno);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const reportIds = finalReports.map((r) => r.id);
+    markFinalReportIdsRead(currentUser.id, reportIds);
+    setFinalReports((prev) => prev.map((r) => ({ ...r, unread: false })));
+    window.dispatchEvent(new Event("officer_notifications_updated"));
   };
 
   return (
@@ -125,11 +224,12 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-lg transition-colors cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100 ${
-          isMobile ? "p-1.5" : "p-2"
+        className={`relative rounded-lg transition-colors cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center ${
+          isMobile ? "min-w-[44px] min-h-[44px] p-2 sm:min-w-9 sm:min-h-9 sm:p-1.5" : "p-2"
         }`}
         title={unreadCount > 0 ? `${unreadCount} ${t("Officer Notifications")}` : t("Officer Notifications")}
         aria-label={t("Officer Notifications")}
+        aria-expanded={isOpen}
       >
         <Bell className={isMobile ? "w-4 h-4" : "w-4 h-4"} />
 

@@ -6,6 +6,9 @@ import { FIROccurrenceItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { DIRECTION_FROM_PS_OPTIONS } from "@/components/fir/firDropdownConstants";
+import { useAuth } from "@/context/AuthContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { getTodayIsoIST } from "@/lib/utils";
 
 export interface ExtendedFIROccurrenceItem extends FIROccurrenceItem {
   isDateKnown?: boolean;
@@ -32,16 +35,22 @@ export interface OccurrenceDialogProps {
 }
 
 function getNowLocal() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const hours = String(d.getHours()).padStart(2, "0");
-  const minutes = String(d.getMinutes()).padStart(2, "0");
-  return {
-    date: `${year}-${month}-${day}`,
-    time: `${hours}:${minutes}`,
-  };
+  const date = getTodayIsoIST();
+  try {
+    const time = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date());
+    return { date, time };
+  } catch {
+    const d = new Date();
+    return {
+      date,
+      time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+    };
+  }
 }
 
 export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
@@ -51,6 +60,9 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
   initialItem,
   initialData,
 }) => {
+  const { currentUser } = useAuth();
+  const defaultDistrict = currentUser?.district || "Panipat";
+  useEscapeKey(isOpen, onClose);
   const effectiveItem = initialItem || initialData;
 
   // Dynamic real-time clock state for maximum allowable limits
@@ -172,8 +184,8 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
   const [houseNo, setHouseNo] = useState("");
   const [streetName, setStreetName] = useState("");
   const [area, setArea] = useState("");
-  const [city, setCity] = useState("Gurugram");
-  const [tehsil, setTehsil] = useState("Gurugram");
+  const [city, setCity] = useState(defaultDistrict);
+  const [tehsil, setTehsil] = useState(defaultDistrict);
   const [pincode, setPincode] = useState("");
 
   // Outside-Limit Details
@@ -207,8 +219,8 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
     setHouseNo("");
     setStreetName("");
     setArea("");
-    setCity("Gurugram");
-    setTehsil("Gurugram");
+    setCity(defaultDistrict);
+    setTehsil(defaultDistrict);
     setPincode("");
     setOutsidePs(false);
     setOutsideState("");
@@ -231,16 +243,16 @@ export const OccurrenceDialog: React.FC<OccurrenceDialogProps> = ({
       setDateTo(effectiveItem.dateTo || "");
       setTimeTo(effectiveItem.timeTo || "");
       setDay(effectiveItem.day || "Monday");
-      setInfoReceivedDate(effectiveItem.infoReceivedDate || new Date().toISOString().split("T")[0]);
-      setInfoReceivedTime(effectiveItem.infoReceivedTime || new Date().toTimeString().slice(0, 5));
+      setInfoReceivedDate(effectiveItem.infoReceivedDate || getTodayIsoIST());
+      setInfoReceivedTime(effectiveItem.infoReceivedTime || getNowLocal().time);
       setIsForestPlace(effectiveItem.isForestPlace || false);
       setDelayInRegistrationByPolice(effectiveItem.delayInRegistrationByPolice || "");
       setDelayInReportingByComplainant(effectiveItem.delayInReportingByComplainant || effectiveItem.reasonsForDelay || "");
       setHouseNo(effectiveItem.houseNo || "");
       setStreetName(effectiveItem.streetName || "");
       setArea(effectiveItem.area || "");
-      setCity(effectiveItem.city || "Gurugram");
-      setTehsil(effectiveItem.tehsil || "Gurugram");
+      setCity(effectiveItem.city || defaultDistrict);
+      setTehsil(effectiveItem.tehsil || defaultDistrict);
       setPincode(effectiveItem.pincode || "");
       setOutsidePs(effectiveItem.outsidePs || false);
       setOutsideState(effectiveItem.outsideState || "");

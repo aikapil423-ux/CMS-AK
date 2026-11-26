@@ -1,7 +1,7 @@
 import { TelecomService, telecomService } from "@/services/telecomService";
 import { firService } from "@/services/firService";
 import { isFirVisibleToUser } from "@/lib/firIntegrity";
-import type { UserSession } from "@/types";
+import type { FIRItem, UserSession } from "@/types";
 import type { TelecomIntelligenceStore } from "@/types/telecom";
 
 const serviceFirScopes = new WeakMap<TelecomService, Set<string>>();
@@ -36,9 +36,20 @@ export async function validateTelecomReferences(service: TelecomService, value: 
   }
 }
 
+async function loadAccessibleFirRecords(): Promise<FIRItem[]> {
+  try {
+    const { readFirRecords } = await import("@/services/firRepository");
+    const diskFirs = await readFirRecords();
+    if (diskFirs.length > 0) return diskFirs;
+  } catch {
+    // Isolated unit tests stub only @/services/firService without @/services/firRepository
+  }
+  return firService.getAllFirs();
+}
+
 /** Per-request view: methods cannot accidentally read a different officer's case. */
 export async function telecomAccess(user: UserSession, requestedFir?: string) {
-  const firs = firService.getAllFirs().filter(f => isFirVisibleToUser(user, f));
+  const firs = (await loadAccessibleFirRecords()).filter(f => isFirVisibleToUser(user, f));
   const allAllowed = new Set(firs.map(f => f.id));
   const allowed = new Set(firs.filter(f => !requestedFir || requestedFir === "ALL" || f.id === requestedFir).map(f => f.id));
   if (requestedFir && requestedFir !== "ALL" && !allAllowed.has(requestedFir)) throw new Error("Access denied to this FIR");

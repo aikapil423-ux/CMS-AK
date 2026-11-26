@@ -6,7 +6,7 @@ import { FinalReportShoReview } from "@/components/fir/FinalReportShoReview";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { writeCaseDraft } from "@/lib/caseWritingClient";
 import { escapeDraftText } from "@/utils/documentHtmlGenerators";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import Link from "next/link";
 import {
@@ -77,7 +77,9 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
 import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { printHtmlContent, downloadA4DocumentAsHtml } from "@/utils/printElement";
 import { generateIIFVChargesheetHtmlFromFir } from "@/utils/iifvChargesheetGenerator";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
@@ -100,6 +102,25 @@ type ActiveTab =
   | "reports"
   | "history"
   | "confidential_dossier";
+
+const VALID_FIR_TABS: readonly ActiveTab[] = [
+  "knowledge_graph",
+  "case_contradictions",
+  "overview",
+  "case_diaries",
+  "documents",
+  "legal_assistant",
+  "summary",
+  "reports",
+  "history",
+  "confidential_dossier",
+];
+
+function normalizeFirTab(raw: string | null): ActiveTab {
+  if (!raw) return "overview";
+  const cleaned = raw.trim().toLowerCase() as ActiveTab;
+  return VALID_FIR_TABS.includes(cleaned) ? cleaned : "overview";
+}
 
 const FIR_DOC_TEMPLATES = [
   {
@@ -181,9 +202,26 @@ export default function FIRProfilePage() {
   const firId = params?.id as string;
   const { currentUser } = useAuth();
 
+  const searchParams = useSearchParams();
   const [fir, setFir] = useState<FIRItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "reports" ? "reports" : "overview");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => normalizeFirTab(searchParams.get("tab")));
+
+  useEffect(() => {
+    const paramTab = searchParams.get("tab");
+    if (paramTab) {
+      setActiveTab(normalizeFirTab(paramTab));
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    const idForUrl = fir?.id || firId;
+    if (idForUrl) {
+      router.replace(`/fir/${idForUrl}?tab=${tab}`, { scroll: false });
+    }
+  };
 
   // Statutory Receipt Modal
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -204,7 +242,7 @@ export default function FIRProfilePage() {
   // Upload Case Diary (Zimni) Modal
   const [isUploadZimniModalOpen, setIsUploadZimniModalOpen] = useState(false);
   const [uploadZimniTitle, setUploadZimniTitle] = useState("");
-  const [uploadZimniDate, setUploadZimniDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [uploadZimniDate, setUploadZimniDate] = useState(() => getTodayIsoIST());
   const [uploadZimniTime, setUploadZimniTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [uploadZimniOfficer, setUploadZimniOfficer] = useState("");
   const [uploadZimniRemarks, setUploadZimniRemarks] = useState("");
@@ -282,15 +320,29 @@ export default function FIRProfilePage() {
   const [editingFinalReport, setEditingFinalReport] = useState<ComplaintReportItem | undefined>();
   const [isReopenModalOpen, setIsReopenModalOpen] = useState(false);
   const [reopenReasonText, setReopenReasonText] = useState("");
-  const [reopenCourt, setReopenCourt] = useState("Chief Judicial Magistrate (CJM), Panipat");
+  const [reopenCourt, setReopenCourt] = useState(() => `Chief Judicial Magistrate (CJM), ${currentUser?.district || "Panipat"}`);
   const [reopenOrderNo, setReopenOrderNo] = useState("");
-  const [reopenOrderDt, setReopenOrderDt] = useState(new Date().toISOString().split("T")[0]);
+  const [reopenOrderDt, setReopenOrderDt] = useState(() => getTodayIsoIST());
   const [reopenConfirmedDetail, setReopenConfirmedDetail] = useState(false);
   const [isSubmittingReopenDetail, setIsSubmittingReopenDetail] = useState(false);
   const [finalFormType, setFinalFormType] = useState<"CHARGESHEET" | "CLOSURE" | "UNTRACED">("CHARGESHEET");
-  const [courtName, setCourtName] = useState("Court of CJM, Gurugram");
+  const [courtName, setCourtName] = useState(() => `Court of CJM, ${currentUser?.district || "Panipat"}`);
   const [finalFormSummary, setFinalFormSummary] = useState("");
   const [finalFormSubmitting, setFinalFormSubmitting] = useState(false);
+
+  useEscapeKey(Boolean(caseDiaryPreviewItem), () => { setCaseDiaryPreviewItem(null); setCaseDiaryPreviewUrl(""); });
+  useEscapeKey(reportDraftModalOpen, () => setReportDraftModalOpen(false));
+  useEscapeKey(uploadReportModalOpen, () => setUploadReportModalOpen(false));
+  useEscapeKey(Boolean(reportPreviewItem), () => setReportPreviewItem(null));
+  useEscapeKey(Boolean(docPreviewItem), () => setDocPreviewItem(null));
+  useEscapeKey(isFinalFormModalOpen, () => setIsFinalFormModalOpen(false));
+  useEscapeKey(isDocModalOpen, () => setIsDocModalOpen(false));
+  useEscapeKey(isUploadZimniModalOpen, () => setIsUploadZimniModalOpen(false));
+  useEscapeKey(isAssignModalOpen, () => setIsAssignModalOpen(false));
+  useEscapeKey(isReopenModalOpen, () => setIsReopenModalOpen(false));
+  useEscapeKey(headerActionsDropdownOpen, () => setHeaderActionsDropdownOpen(false));
+  useEscapeKey(generateDocDropdownOpen, () => setGenerateDocDropdownOpen(false));
+  useEscapeKey(generateReportDropdownOpen, () => setGenerateReportDropdownOpen(false));
 
   const isMhc = currentUser.role === "MHC_GD_INCHARGE" || currentUser.role === "DUTY_OFFICER";
   const isSuperior =
@@ -303,11 +355,11 @@ export default function FIRProfilePage() {
     e.preventDefault();
     if (!fir) return;
     if (!reopenReasonText.trim()) {
-      alert("⚠️ वैधानिक आवश्यकता: केस पुनः खोलने का स्पष्ट कारण (Reason for Reopening) दर्ज करना अनिवार्य है।");
+      alert("Statutory Requirement: Reason for reopening the case is mandatory.");
       return;
     }
     if (!reopenConfirmedDetail) {
-      alert("⚠️ कृपया घोषणा की पुष्टि करें (Please confirm the reopening declaration).");
+      alert("Please confirm the reopening declaration before proceeding.");
       return;
     }
     setIsSubmittingReopenDetail(true);
@@ -324,11 +376,11 @@ export default function FIRProfilePage() {
       if (updated) {
         setIsReopenModalOpen(false);
         setFir(updated);
-        alert(`✅ केस ${updated.firNumber} सफलतापूर्वक 'FIR Part B → Re-open' कार्यक्षेत्र में स्थानांतरित कर दिया गया है।`);
+        alert(`Case ${updated.firNumber} moved to 'FIR Part B → Re-open' workspace.`);
         router.push("/fir/part-b?tab=REOPEN");
       }
     } catch (err: any) {
-      alert(`⚠️ त्रुटि: ${err.message || "केस पुनः खोलने में समस्या आई"}`);
+      alert(`Error: ${err.message || "Unable to reopen case."}`);
     } finally {
       setIsSubmittingReopenDetail(false);
     }
@@ -352,6 +404,7 @@ export default function FIRProfilePage() {
   const fetchFir = () => {
     if (!firId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const item = firService.getFirById(firId);
       if (item && isFirVisibleToUser(currentUser, item)) {
@@ -385,11 +438,16 @@ export default function FIRProfilePage() {
         setFir(item);
         setSelectedIoId(item.assignedIoId || "");
         setAssignmentDirections(item.assignedDirections || "");
+        if (item.district) {
+          setReopenCourt((prev) => (prev.includes("Panipat") || !prev ? `Chief Judicial Magistrate (CJM), ${item.district}` : prev));
+          setCourtName((prev) => (prev.includes("Gurugram") || prev.includes("Panipat") || !prev ? `Court of CJM, ${item.district}` : prev));
+        }
       } else {
         setFir(null);
       }
     } catch (e) {
       console.error("Error loading FIR:", e);
+      setLoadError(e instanceof Error ? e.message : "Failed to load FIR details.");
     } finally {
       setLoading(false);
     }
@@ -644,7 +702,7 @@ export default function FIRProfilePage() {
         id: `cd-${Date.now()}`,
         firId: fir.id,
         zimniNumber: nextNum,
-        date: uploadZimniDate || new Date().toISOString().split("T")[0],
+        date: uploadZimniDate || getTodayIsoIST(),
         time: uploadZimniTime || new Date().toTimeString().slice(0, 5),
         officer: uploadZimniOfficer || fir.assignedIoName || currentUser.name || "Investigating Officer",
         officerRole: "INVESTIGATING_OFFICER",
@@ -1470,15 +1528,24 @@ export default function FIRProfilePage() {
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
         <Scale className="w-12 h-12 text-slate-300 mx-auto" />
-        <h2 className="text-xl font-bold text-slate-800">FIR Record Not Found</h2>
-        <p className="text-xs text-slate-500">
-          The requested First Information Report could not be located in the register.
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+          {loadError ? "Unable to Load FIR Record" : "FIR Record Not Found"}
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {loadError || "The requested First Information Report could not be located in the register."}
         </p>
-        <Link href="/fir">
-          <Button variant="outline" size="sm" className="text-xs">
-            Return to FIR Register
-          </Button>
-        </Link>
+        <div className="flex items-center justify-center gap-2">
+          {loadError && (
+            <Button size="sm" onClick={fetchFir} className="text-xs">
+              Retry
+            </Button>
+          )}
+          <Link href="/fir">
+            <Button variant="outline" size="sm" className="text-xs">
+              Return to FIR Register
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -1589,7 +1656,7 @@ export default function FIRProfilePage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-xs text-slate-900 group-hover:text-red-900 flex items-center justify-between">
                       <span>Print Statutory FIR Copy</span>
-                      <span className="text-[9px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-mono">
+                      <span className="text-[9px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono">
                         IIF-I
                       </span>
                     </div>
@@ -1622,7 +1689,7 @@ export default function FIRProfilePage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
                       <span>Crime Details (IIF-II)</span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                         !isCrimeDetailsFilled
                           ? "bg-amber-200 text-amber-900 animate-pulse"
                           : "bg-emerald-100 text-emerald-700"
@@ -1664,7 +1731,7 @@ export default function FIRProfilePage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-xs text-slate-900 flex items-center justify-between">
                       <span>Arrest Docs and IIF-III</span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
                         !isCrimeDetailsFilled
                           ? "bg-slate-200 text-slate-600"
                           : "bg-rose-100 text-rose-700"
@@ -1674,7 +1741,7 @@ export default function FIRProfilePage() {
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       {!isCrimeDetailsFilled
-                        ? "IIF-II लंबित होने के कारण लॉक है"
+                        ? "Locked until Crime Details (IIF-II) is completed"
                         : "Arrest Memo, Jamatalashi, Grounds & Remand"}
                     </p>
                   </div>
@@ -1701,9 +1768,9 @@ export default function FIRProfilePage() {
               size="sm"
               onClick={() => {
                 setReopenReasonText("");
-                setReopenCourt("Chief Judicial Magistrate (CJM), Panipat");
+                setReopenCourt(`Chief Judicial Magistrate (CJM), ${fir.district || currentUser?.district || "Panipat"}`);
                 setReopenOrderNo("");
-                setReopenOrderDt(new Date().toISOString().split("T")[0]);
+                setReopenOrderDt(getTodayIsoIST());
                 setReopenConfirmedDetail(false);
                 setIsReopenModalOpen(true);
               }}
@@ -1807,7 +1874,7 @@ export default function FIRProfilePage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setActiveTab("documents")}
+              onClick={() => handleTabChange("documents")}
               className="border-emerald-300 text-emerald-900 bg-white hover:bg-emerald-100 text-xs font-bold gap-1 cursor-pointer"
             >
               <Paperclip className="w-3.5 h-3.5" />
@@ -1838,7 +1905,7 @@ export default function FIRProfilePage() {
                   <span className="text-xs font-black uppercase text-amber-950">
                     Inter-State Transferred Case Docket (अंतर्राज्यीय स्थानांतरित केस)
                   </span>
-                  <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 uppercase tracking-wider">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 uppercase tracking-wider">
                     {fir.transferredToState || "Other State"}
                   </span>
                 </div>
@@ -1904,7 +1971,7 @@ export default function FIRProfilePage() {
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-xs"
               >
                 <span className="font-mono font-bold text-purple-900">{link.firNumber}</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">
                   {link.linkType}
                 </span>
                 {link.complainantName && (
@@ -1917,7 +1984,7 @@ export default function FIRProfilePage() {
       )}
 
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 dark:border-slate-800 pb-1.5">
         {[
           { key: "overview", label: "Overview & Facts", icon: FileText },
           { key: "case_diaries", label: `Case Diaries / Zimni (${fir.caseDiaries?.length || 0})`, icon: ScrollText },
@@ -1926,12 +1993,12 @@ export default function FIRProfilePage() {
             key: "legal_assistant",
             label: fir.legalAnalysis?.suggestedSections?.length
               ? `Legal Help (${fir.legalAnalysis.suggestedSections.length})`
-              : "Legal Help (कानूनी सहायक)",
+              : "Legal Help",
             icon: Scale,
           },
           { key: "summary", label: "Investigation Summary", icon: Sparkles },
           { key: "knowledge_graph", label: "Knowledge Graph", icon: Globe2 },
-          { key: "case_contradictions", label: "Case contradictions", icon: AlertTriangle },
+          { key: "case_contradictions", label: "Case Contradictions", icon: AlertTriangle },
           { key: "reports", label: "Final Form / Reports", icon: FileCheck2 },
           { key: "history", label: "Timeline & Audit", icon: HistoryIcon },
           { key: "confidential_dossier", label: "Confidential Dossier", icon: Lock },
@@ -1942,7 +2009,7 @@ export default function FIRProfilePage() {
             <button
               key={tab.key}
               data-agent-operation="read"
-              onClick={() => setActiveTab(tab.key as ActiveTab)}
+              onClick={() => handleTabChange(tab.key as ActiveTab)}
               className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg transition-all shrink-0 cursor-pointer ${
                 isActive
                   ? "bg-[#0b192c] text-white shadow-xs"
@@ -2765,7 +2832,7 @@ export default function FIRProfilePage() {
                             )}
 
                             {report.isUploaded && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                                 Uploaded File
                               </span>
                             )}
@@ -2990,7 +3057,7 @@ export default function FIRProfilePage() {
       {/* Re-open Completed Case Modal */}
       {isReopenModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
             <div className="bg-purple-900 text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-purple-300" />
@@ -3006,19 +3073,19 @@ export default function FIRProfilePage() {
             </div>
             <form onSubmit={handleDetailReopenSubmit} className="p-4 space-y-3 text-xs">
               <div className="space-y-1">
-                <label className="font-bold text-slate-800">केस पुनः खोलने का ठोस आधार व कारण *</label>
+                <label className="font-bold text-slate-800">Reason for Reopening *</label>
                 <textarea
                   required
                   rows={3}
                   value={reopenReasonText}
                   onChange={(e) => setReopenReasonText(e.target.value)}
-                  placeholder="अग्रिम विवेचना / नए साक्ष्य मिलने पर अथवा न्यायालय के निर्देशानुसार..."
+                  placeholder="Further investigation / fresh evidence / Court directions..."
                   className="w-full p-2 border border-slate-300 rounded-lg text-xs"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-bold text-slate-700">संबद्ध न्यायालय</label>
+                  <label className="font-bold text-slate-700">Concerned Court</label>
                   <input
                     type="text"
                     value={reopenCourt}
@@ -3027,7 +3094,7 @@ export default function FIRProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="font-bold text-slate-700">आदेश / संदर्भ सं.</label>
+                  <label className="font-bold text-slate-700">Order / Reference No.</label>
                   <input
                     type="text"
                     value={reopenOrderNo}
@@ -3037,13 +3104,14 @@ export default function FIRProfilePage() {
                 </div>
               </div>
               <div>
-                <label className="font-bold text-slate-700">आदेश दिनांक</label>
-                <input
-                  type="date"
-                  max={new Date().toISOString().split("T")[0]}
+                <label className="font-bold text-slate-700 block mb-1">Order Date</label>
+                <DatePickerDDMMYYYY
+                  size="sm"
+                  max={getTodayIsoIST()}
                   value={reopenOrderDt}
-                  onChange={(e) => setReopenOrderDt(e.target.value)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-xs"
+                  onValueChange={setReopenOrderDt}
+                  placeholder="DD/MM/YYYY"
+                  className="w-full"
                 />
               </div>
               <div className="pt-2 border-t border-slate-200">
@@ -3092,7 +3160,7 @@ export default function FIRProfilePage() {
           onSaved={(report) => {
             setBackendReports(rows => [report, ...rows.filter(r => r.id !== report.id)]);
             setReportRefresh(n => n + 1);
-            setActiveTab("reports");
+            handleTabChange("reports");
             const updated = firService.getFirById(fir.id);
             if (updated) setFir(updated);
             fetchFir();
@@ -3232,13 +3300,13 @@ export default function FIRProfilePage() {
                   <label className="text-[11px] font-bold uppercase text-slate-600 block mb-1">
                     Date of Zimni *
                   </label>
-                  <input
-                    type="date"
-                    max={new Date().toISOString().split("T")[0]}
+                  <DatePickerDDMMYYYY
+                    size="sm"
+                    max={getTodayIsoIST()}
                     value={uploadZimniDate}
-                    onChange={(e) => setUploadZimniDate(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-lg border border-slate-300 font-mono"
-                    required
+                    onValueChange={setUploadZimniDate}
+                    placeholder="DD/MM/YYYY"
+                    className="w-full"
                   />
                 </div>
                 <div>
@@ -3527,7 +3595,7 @@ export default function FIRProfilePage() {
             className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             onClick={() => setDocPreviewItem(null)}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[90vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="min-w-0 pr-4">
                 <div className="flex items-center gap-2">
@@ -3659,7 +3727,7 @@ export default function FIRProfilePage() {
               className="fixed inset-0 bg-black/60 backdrop-blur-xs"
               onClick={() => setReportPreviewItem(null)}
             />
-            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+            <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
               <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
                 <div className="min-w-0 pr-4">
                   <div className="flex items-center gap-2">
@@ -3778,7 +3846,7 @@ export default function FIRProfilePage() {
             className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             onClick={() => setUploadReportModalOpen(false)}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                 <UploadCloud className="w-5 h-5 text-emerald-600" />
@@ -3955,7 +4023,7 @@ export default function FIRProfilePage() {
             className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             onClick={() => setReportDraftModalOpen(false)}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4 max-h-[90vh] flex flex-col">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-5 z-10 animate-in fade-in-0 zoom-in-95 space-y-4 max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-500" />
@@ -4048,7 +4116,7 @@ export default function FIRProfilePage() {
               setCaseDiaryPreviewUrl("");
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[92vh] flex flex-col z-10 animate-in fade-in-0 zoom-in-95 overflow-hidden">
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
               <div className="min-w-0 pr-4">
                 <div className="flex items-center gap-2">

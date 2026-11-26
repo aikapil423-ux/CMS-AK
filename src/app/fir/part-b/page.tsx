@@ -99,6 +99,10 @@ function FIRPartBContent() {
       : "PARTIAL";
 
   const [activeTab, setActiveTab] = useState<PartBTab>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,12 +141,12 @@ function FIRPartBContent() {
     return unsub;
   }, []);
 
-  // Update URL param without full reload
+  // Update URL param via Next.js router so browser navigation & F5 stay in sync
   const handleTabChange = (newTab: PartBTab) => {
     setActiveTab(newTab);
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", newTab.toLowerCase());
-    window.history.pushState({}, "", url.toString());
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newTab.toLowerCase());
+    router.replace(`/fir/part-b?${params.toString()}`, { scroll: false });
   };
 
   // Role & Jurisdiction Visibility

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import {
   BookOpen,
   FileText,
@@ -30,7 +29,6 @@ import { isFirVisibleToUser } from "@/lib/firIntegrity";
 import { Button } from "@/components/ui/button";
 
 export default function PostLoginPortalPage() {
-  const router = useRouter();
   const { currentUser } = useAuth();
   const { switchToModule } = useModule();
 
@@ -46,7 +44,7 @@ export default function PostLoginPortalPage() {
         const isIoRole = currentUser.role === "ENQUIRY_OFFICER";
         const [complaints, gdEntries] = await Promise.all([
           ComplaintService.getComplaints({assignedEo:isIoRole ? (currentUser.pno || currentUser.name) : undefined,viewerRole:currentUser.role,viewerStation:currentUser.stationName}),
-          GeneralDiaryService.getEntries({date:new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date()), policeStation: isSuperior ? undefined : currentUser.stationName}),
+          GeneralDiaryService.getEntries({date:new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata"}).format(new Date()), policeStation: isSuperior ? undefined : currentUser.stationName, isLocked: true}),
         ]);
         const activeComplaints = complaints.filter(c => {
           if (!isSuperior && currentUser.stationName && c.policeStation && c.policeStation.trim().toLowerCase() !== currentUser.stationName.trim().toLowerCase()) {
@@ -68,46 +66,6 @@ export default function PostLoginPortalPage() {
     loadStats();
   }, [currentUser]);
 
-  const handleSelectRoznamcha = () => {
-    switchToModule("ROZNAMCHA");
-    router.push("/general-diary");
-  };
-
-  const handleSelectComplaints = () => {
-    switchToModule("COMPLAINTS");
-    router.push("/complaints");
-  };
-
-  const handleSelectFir = () => {
-    switchToModule("FIR");
-    router.push("/fir");
-  };
-
-  const handleSelectRegistrations = () => {
-    switchToModule("REGISTRATIONS");
-    router.push("/registrations");
-  };
-
-  const handleSelectReports = () => {
-    switchToModule("REPORTS");
-    router.push("/reports");
-  };
-
-  const handleSelectProsecution = () => {
-    switchToModule("PROSECUTION");
-    router.push("/prosecution");
-  };
-
-  const handleSelectTelecom = () => {
-    switchToModule("TELECOM");
-    router.push("/telecom");
-  };
-
-  const handleSelectAudits = () => {
-    switchToModule("AUDITS");
-    router.push("/audits");
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-6 py-2 sm:py-3 animate-in fade-in-50 text-slate-800">
       {/* Title & Instructions - Minimalist */}
@@ -121,9 +79,10 @@ export default function PostLoginPortalPage() {
       {/* Primary operational modules: four cards per row on desktop. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-3 pt-1 w-full max-w-7xl">
         {/* TAB 1: ROZNAMCHA GD (GENERAL DIARY) */}
-        <div
-          onClick={handleSelectRoznamcha}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/general-diary"
+          onClick={() => switchToModule("ROZNAMCHA")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -156,12 +115,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 2: COMPLAINT MANAGEMENT */}
-        <div
-          onClick={handleSelectComplaints}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/complaints"
+          onClick={() => switchToModule("COMPLAINTS")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -194,12 +154,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 3: FIR (FIRST INFORMATION REPORT) */}
-        <div
-          onClick={handleSelectFir}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/fir"
+          onClick={() => switchToModule("FIR")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -231,12 +192,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 4: REGISTRATIONS (UIDB/UD, Missing Person, Missing Cattle, Lost Property) */}
-        <div
-          onClick={handleSelectRegistrations}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/registrations"
+          onClick={() => switchToModule("REGISTRATIONS")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -268,12 +230,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 5: REPORTS & AUDIT */}
-        <div
-          onClick={handleSelectReports}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/reports"
+          onClick={() => switchToModule("REPORTS")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -305,12 +268,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 7: TELECOM EVIDENCE ANALYSIS */}
-        <div
-          onClick={handleSelectTelecom}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/telecom"
+          onClick={() => switchToModule("TELECOM")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -334,12 +298,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 6: PROSECUTION & COURTS */}
-        <div
-          onClick={handleSelectProsecution}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/prosecution"
+          onClick={() => switchToModule("PROSECUTION")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -363,12 +328,13 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* TAB 8: AUDITS & INSPECTION */}
-        <div
-          onClick={handleSelectAudits}
-          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between"
+        <Link
+          href="/audits"
+          onClick={() => switchToModule("AUDITS")}
+          className="cursor-pointer bg-white rounded-xl border border-slate-200/80 hover:border-slate-400/80 p-3 sm:p-3.5 min-w-0 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 group flex flex-col justify-between text-inherit no-underline"
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -401,7 +367,7 @@ export default function PostLoginPortalPage() {
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900" />
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Police Station Profile Info Strip */}
@@ -409,7 +375,7 @@ export default function PostLoginPortalPage() {
         <div className="flex items-center gap-2">
           <Building className="w-3.5 h-3.5 text-slate-400" />
           <span>
-            <strong className="font-semibold text-slate-800">{currentUser.stationName}</strong> • Panipat District • Haryana Police
+            <strong className="font-semibold text-slate-800">{currentUser.stationName}</strong> • {currentUser.district || "Haryana"} District • Haryana Police
           </span>
         </div>
         <div className="flex items-center gap-3">

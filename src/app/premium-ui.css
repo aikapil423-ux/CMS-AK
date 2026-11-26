@@ -150,7 +150,7 @@ html.dark .cms-court-theme :where(main, [role="dialog"], form, .cms-card, .round
 }
 
 /* Headings & Page Titles */
-html.dark .cms-court-theme :where(h1, h2, h3, h4, h5, h6) {
+html.dark .cms-court-theme :where(h1, h2, h3, h4, h5, h6):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *) {
   color: #f8fafc !important;
 }
 html.dark .cms-court-theme .cms-complaints > .cms-page-heading h1 {
@@ -176,12 +176,16 @@ html.dark .cms-court-theme :is(
   .text-slate-900,
   .text-slate-800,
   .text-slate-700,
+  .text-blue-950,
+  .text-blue-900,
+  .text-red-950,
+  .text-gray-950,
   .text-gray-900,
   .text-gray-800,
   .text-gray-700,
   .text-zinc-900,
   .text-zinc-800
-):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+):not(.cms-paper-sheet, .cms-paper-sheet *, .printable-content, .printable-content *, .a4-sheet, .a4-sheet *, [id^="printable-"], [id^="printable-"] *, #cctns-printable-fir, #cctns-printable-fir *, #zimni-printable-canvas, #zimni-printable-canvas *) {
   color: #f1f5f9 !important;
 }
 
@@ -196,11 +200,11 @@ html.dark .cms-court-theme :is(
   .text-zinc-500,
   .text-zinc-400,
   .text-muted-foreground
-):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+):not(.cms-paper-sheet *, .printable-content *, .a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
   color: #94a3b8 !important;
 }
 
-html.dark .cms-court-theme label:not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+html.dark .cms-court-theme label:not(.cms-paper-sheet *, .printable-content *, .a4-sheet *, [id^="printable-"] *, #cctns-printable-fir *, #zimni-printable-canvas *) {
   color: #e2e8f0 !important;
 }
 
@@ -234,11 +238,11 @@ html.dark .cms-shell header.lg\:hidden button:not(.absolute *):hover {
 }
 
 /* Cards, Panels & Filters */
-html.dark .cms-court-theme :is(.bg-white, [class*="bg-white/"]):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+html.dark .cms-court-theme :is(.bg-white, [class*="bg-white/"]):not(.cms-paper-sheet):not(.cms-paper-sheet *):not(.printable-content):not(.printable-content *):not(.a4-sheet):not(.a4-sheet *):not([id^="printable-"]):not([id^="printable-"] *):not(#cctns-printable-fir):not(#cctns-printable-fir *):not(#zimni-printable-canvas):not(#zimni-printable-canvas *) {
   background-color: #101e38 !important;
   color: #f1f5f9 !important;
 }
-html.dark .cms-court-theme :is(.bg-slate-50, .bg-slate-100, .bg-slate-50\/80, .bg-slate-50\/90):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+html.dark .cms-court-theme :is(.bg-slate-50, .bg-slate-100, .bg-slate-50\/80, .bg-slate-50\/90, .bg-slate-50\/50, .bg-slate-50\/60):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *) {
   background-color: #0d182e !important;
   color: #e2e8f0 !important;
 }
@@ -344,7 +348,7 @@ html.dark .cms-court-theme .cms-pagination button:not(:disabled):hover {
 }
 
 /* Form Controls (Inputs, Selects, Textareas) */
-html.dark .cms-court-theme :where(main, [role="dialog"], form) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea):not(.printable-content *, .a4-sheet *, [id^="printable-"] *) {
+html.dark .cms-court-theme :where(main, [role="dialog"], form) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="color"]):not([type="hidden"]), select, textarea):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *):not(#cctns-printable-fir *):not(#zimni-printable-canvas *) {
   background-color: #0d182e !important;
   color: #f8fafc !important;
   border-color: #273b63 !important;
@@ -409,20 +413,45 @@ html.dark .cms-court-theme :is([class*="bg-purple-50"], [class*="bg-purple-100"]
   background-color: #a855f7 !important;
 }
 
-html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) {
+html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *) {
   background-color: #0e244d !important;
   border-color: #1e40af !important;
   color: #bfdbfe !important;
 }
-html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) span {
+html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *) span {
   color: #bfdbfe !important;
 }
 html.dark .cms-court-theme :is([class*="bg-blue-50"], [class*="bg-blue-100"]) .bg-blue-600 {
   background-color: #3b82f6 !important;
 }
 
-html.dark .cms-court-theme .bg-slate-100,
-html.dark .cms-court-theme [class*="bg-slate-100"] {
+html.dark .cms-court-theme :is([class*="bg-cyan-50"], [class*="bg-sky-50"], [class*="bg-cyan-100"]):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *) {
+  background-color: #082f49 !important;
+  border-color: #0e7490 !important;
+  color: #a5f3fc !important;
+}
+html.dark .cms-court-theme :is([class*="bg-indigo-50"], [class*="bg-indigo-100"], [class*="bg-violet-50"]):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *) {
+  background-color: #1e1b4b !important;
+  border-color: #4338ca !important;
+  color: #c7d2fe !important;
+}
+
+/* Bail modal labels in Dark Mode */
+html.dark .cms-court-theme .cms-bail-dialog .cms-bail-field {
+  background-color: #101e38 !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .cms-bail-dialog .cms-bail-field > :first-child,
+html.dark .cms-court-theme .cms-bail-dialog .bg-\[\#f0f4ff\] {
+  background-color: #172747 !important;
+  color: #e2e8f0 !important;
+  border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .cms-bail-dialog .cms-bail-field > :nth-child(2) {
+  background-color: #0d182e !important;
+}
+
+html.dark .cms-court-theme :is(.bg-slate-100, [class*="bg-slate-100"]):not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *):not(#cctns-printable-fir *) {
   background-color: #172747 !important;
   color: #cbd5e1 !important;
   border-color: #223456 !important;
@@ -437,12 +466,16 @@ html.dark .cms-court-theme .cms-complaints > div > span:not(.font-bold) {
 }
 
 /* Dropdowns, Popovers & Modals */
-html.dark .cms-court-theme .absolute,
+html.dark .cms-court-theme .absolute:not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *):not([id^="printable-"] *),
 html.dark .cms-court-theme .cms-report-actions,
 html.dark .cms-court-theme [role="dialog"] > div {
   background-color: #101e38 !important;
   color: #f1f5f9 !important;
   border-color: #273b63 !important;
+}
+html.dark .cms-court-theme .absolute button:hover:not(.cms-paper-sheet *):not(.printable-content *):not(.a4-sheet *) {
+  background-color: #172747 !important;
+  color: #ffffff !important;
 }
 html.dark .cms-court-theme .cms-report-actions button {
   background-color: #101e38 !important;
@@ -460,6 +493,9 @@ html.dark .cms-court-theme [role="dialog"] footer {
 }
 html.dark .cms-court-theme [role="dialog"] header :where(h2, h3, button) {
   color: #ffffff !important;
+}
+html.dark .cms-court-theme [role="dialog"] header :where(p, span) {
+  color: #cbd5e1 !important;
 }
 
 /* Sidebar */

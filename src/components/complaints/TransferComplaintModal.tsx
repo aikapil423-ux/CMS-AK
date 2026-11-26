@@ -23,7 +23,10 @@ import {
 import { ComplaintItem, ComplaintTransferRecord } from "@/types";
 import { ComplaintService } from "@/services/complaintService";
 import { useAuth } from "@/context/AuthContext";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getTodayIsoIST } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
+import { MOCK_POLICE_STATIONS } from "@/lib/mockData";
 
 interface TransferComplaintModalProps {
   isOpen: boolean;
@@ -58,33 +61,13 @@ const HARYANA_DISTRICTS = [
   "Nuh",
 ];
 
-const GURUGRAM_STATIONS = [
-  "PS DLF Phase 1",
-  "PS DLF Phase 2",
-  "PS DLF Phase 3",
-  "PS Sector 29",
-  "PS Sector 40",
-  "PS Sector 53",
-  "PS Sector 56",
-  "PS Sadar Gurugram",
-  "PS Sushant Lok",
-  "PS Cyber Crime East",
-  "PS Cyber Crime West",
-  "PS Badshahpur",
-  "PS Kherki Daula",
-  "PS Manesar",
-  "PS Bilaspur",
-  "PS Pataudi",
-  "PS Sector 10A",
-  "PS Sector 14",
-  "PS Sector 18",
-  "PS Sector 5",
-  "PS Civil Lines Gurugram",
-  "PS Metro Gurugram",
-  "Women Police Station East",
-  "Women Police Station West",
-  "Traffic Police Station East",
-];
+function getStationsForDistrict(district: string): string[] {
+  const normalized = district.trim().toLowerCase();
+  if (!normalized) return MOCK_POLICE_STATIONS;
+  const matched = MOCK_POLICE_STATIONS.filter((ps) => ps.toLowerCase().includes(normalized));
+  if (matched.length > 0) return matched;
+  return MOCK_POLICE_STATIONS;
+}
 
 const STATES_LIST = [
   "Delhi",
@@ -128,44 +111,56 @@ export function TransferComplaintModal({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Destination State
+  const defaultDistrict = currentUser?.district || "Panipat";
   const [targetState, setTargetState] = useState("Haryana");
-  const [targetDistrict, setTargetDistrict] = useState("Gurugram");
+  const [targetDistrict, setTargetDistrict] = useState(defaultDistrict);
   const [targetPoliceStation, setTargetPoliceStation] = useState("");
   const [customStationInput, setCustomStationInput] = useState("");
 
   // Metadata
   const [orderNumber, setOrderNumber] = useState("");
-  const [dispatchDate, setDispatchDate] = useState(new Date().toISOString().split("T")[0]);
+  const [dispatchDate, setDispatchDate] = useState(() => getTodayIsoIST());
   const [dispatchTime, setDispatchTime] = useState(
-    new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+    new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false })
   );
-  const [transferredBy, setTransferredBy] = useState(currentUser?.name || "Inspector Rajesh Kumar");
+  const [transferredBy, setTransferredBy] = useState(currentUser?.name || "Station House Officer");
   const [transferredByRank, setTransferredByRank] = useState("SHO / Inspector");
   const [transferReason, setTransferReason] = useState(TRANSFER_REASON_PRESETS[0]);
   const [remarks, setRemarks] = useState("");
 
-  // History State
+  // History State & Record Custody Units
   const [transferHistoryList, setTransferHistoryList] = useState<ComplaintTransferRecord[]>([]);
+  const [recordTransferUnits, setRecordTransferUnits] = useState<Array<{ id: string; name: string; district: string }>>([]);
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
-  // Sync pre-selected complaint if supplied
+  // Sync pre-selected complaint & active user district defaults
   useEffect(() => {
     if (preSelectedComplaintId) {
       setSelectedComplaintId(preSelectedComplaintId);
     }
   }, [preSelectedComplaintId]);
 
-  // Set default order number on mount
+  useEffect(() => {
+    if (!isOpen) return;
+    if (currentUser?.name) setTransferredBy(currentUser.name);
+    const activeDistrict = currentUser?.district || "Panipat";
+    if (transferType === "OTHER_STATION") {
+      setTargetDistrict(activeDistrict);
+    }
+  }, [isOpen, currentUser, transferType]);
+
+  // Set default order number on mount using user's district code
   useEffect(() => {
     if (!orderNumber) {
       const rnd = Math.floor(100 + Math.random() * 900);
-      setOrderNumber(`TRF/CP/GGM/2026/${rnd}`);
+      const distCode = (currentUser?.district || "HRY").slice(0, 3).toUpperCase();
+      setOrderNumber(`TRF/PS/${distCode}/2026/${rnd}`);
     }
-  }, [orderNumber]);
+  }, [orderNumber, currentUser?.district]);
 
-  // Load transfer history
+  // Load transfer history & custody units when modal opens
   const loadHistory = () => {
     try {
       const history = ComplaintService.getTransferHistory();
@@ -178,6 +173,14 @@ export function TransferComplaintModal({
   useEffect(() => {
     if (isOpen) {
       loadHistory();
+      fetch("/api/record-transfers", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && Array.isArray(data.units)) {
+            setRecordTransferUnits(data.units);
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen, activeTab]);
 
@@ -232,13 +235,18 @@ export function TransferComplaintModal({
   // Handle scope change defaults
   const handleScopeChange = (type: "OTHER_STATION" | "OTHER_DISTRICT" | "OTHER_STATE") => {
     setTransferType(type);
+    const activeDistrict = selectedComplaint?.district || currentUser?.district || "Panipat";
     if (type === "OTHER_STATION") {
       setTargetState("Haryana");
-      setTargetDistrict("Gurugram");
-      setTargetPoliceStation(GURUGRAM_STATIONS[0]);
+      setTargetDistrict(activeDistrict);
+      const candidates = getStationsForDistrict(activeDistrict).filter(
+        (ps) => ps.toLowerCase() !== (selectedComplaint?.policeStation || "").toLowerCase()
+      );
+      setTargetPoliceStation(candidates[0] || "");
     } else if (type === "OTHER_DISTRICT") {
       setTargetState("Haryana");
-      setTargetDistrict("Faridabad");
+      const otherDist = HARYANA_DISTRICTS.find((d) => d.toLowerCase() !== activeDistrict.toLowerCase()) || "Karnal";
+      setTargetDistrict(otherDist);
       setTargetPoliceStation("");
     } else {
       setTargetState("Delhi");
@@ -296,7 +304,35 @@ export function TransferComplaintModal({
         remarks: remarks.trim() || undefined,
       });
 
-      setSuccessToast(`Complaint ${selectedComplaint.complaintNumber} has been transferred successfully!`);
+      // Sync custody transfer queue when destination matches a known Haryana Police Unit
+      let custodyRequested = false;
+      if (transferType !== "OTHER_STATE" && recordTransferUnits.length > 0) {
+        const destUnit = recordTransferUnits.find(
+          (u) =>
+            u.name.trim().toLowerCase() === finalStation.toLowerCase() &&
+            (!targetDistrict.trim() || u.district.trim().toLowerCase() === targetDistrict.trim().toLowerCase())
+        );
+        if (destUnit) {
+          const rtRes = await fetch("/api/record-transfers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "request",
+              kind: "COMPLAINT",
+              recordId: selectedComplaint.id,
+              destinationId: destUnit.id,
+              reason: transferReason.trim(),
+            }),
+          }).catch(() => null);
+          custodyRequested = Boolean(rtRes?.ok);
+        }
+      }
+
+      setSuccessToast(
+        custodyRequested
+          ? `Complaint ${selectedComplaint.complaintNumber} transferred & queued in Record Custody Transfers!`
+          : `Complaint ${selectedComplaint.complaintNumber} has been transferred successfully!`
+      );
       loadHistory();
       onTransferSuccess(updated);
 
@@ -312,10 +348,22 @@ export function TransferComplaintModal({
     }
   };
 
+  useEscapeKey(isOpen, () => {
+    if (isDropdownOpen) {
+      setIsDropdownOpen(false);
+      return;
+    }
+    onClose();
+  });
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto"
+    >
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in-50 zoom-in-95">
         
         {/* Header */}
@@ -646,7 +694,7 @@ export function TransferComplaintModal({
                   {transferType === "OTHER_STATION" ? (
                     <input
                       type="text"
-                      value="Gurugram"
+                      value={targetDistrict}
                       disabled
                       className="w-full text-xs px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-semibold cursor-not-allowed"
                     />
@@ -685,11 +733,13 @@ export function TransferComplaintModal({
                       className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                     >
                       <option value="">-- Select Station --</option>
-                      {GURUGRAM_STATIONS.map((ps) => (
-                        <option key={ps} value={ps}>
-                          {ps}
-                        </option>
-                      ))}
+                      {getStationsForDistrict(targetDistrict)
+                        .filter((ps) => ps.toLowerCase() !== (selectedComplaint?.policeStation || "").toLowerCase())
+                        .map((ps) => (
+                          <option key={ps} value={ps}>
+                            {ps}
+                          </option>
+                        ))}
                       <option value="OTHER_CUSTOM">Other Station (Enter custom name)...</option>
                     </select>
                   ) : (
@@ -742,12 +792,12 @@ export function TransferComplaintModal({
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
                   Dispatch Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  max={new Date().toISOString().split("T")[0]}
+                <DatePickerDDMMYYYY
+                  size="sm"
+                  max={getTodayIsoIST()}
                   value={dispatchDate}
-                  onChange={(e) => setDispatchDate(e.target.value)}
-                  className="w-full text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  onValueChange={setDispatchDate}
+                  placeholder="DD/MM/YYYY"
                 />
               </div>
 
@@ -896,7 +946,7 @@ export function TransferComplaintModal({
                             <td className="py-3 px-3.5 whitespace-nowrap">
                               <div className="flex items-center gap-1.5 font-semibold text-slate-900">
                                 <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                                <span>{item.dispatchDate}</span>
+                                <span>{formatDate(item.dispatchDate)}</span>
                               </div>
                               <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                                 {item.dispatchTime || "N/A"}

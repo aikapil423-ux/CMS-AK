@@ -101,9 +101,31 @@ export function LinkDelinkComplaintsModal({
   const [delinkReason, setDelinkReason] = useState(DELINK_REASON_PRESETS[0]);
   const [customDelinkReason, setCustomDelinkReason] = useState("");
 
-  const [officerName, setOfficerName] = useState(currentUser?.name || "Inspector Rajesh Kumar (SHO)");
+  const [officerName, setOfficerName] = useState(currentUser?.name || "Station House Officer");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (isPrimaryDropdownOpen) {
+        setIsPrimaryDropdownOpen(false);
+        return;
+      }
+      if (isTargetDropdownOpen) {
+        setIsTargetDropdownOpen(false);
+        return;
+      }
+      if (isDelinkSourceDropdownOpen) {
+        setIsDelinkSourceDropdownOpen(false);
+        return;
+      }
+      onClose();
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isOpen, isPrimaryDropdownOpen, isTargetDropdownOpen, isDelinkSourceDropdownOpen, onClose]);
 
   const primaryRef = useRef<HTMLDivElement>(null);
   const targetRef = useRef<HTMLDivElement>(null);
@@ -364,7 +386,11 @@ export function LinkDelinkComplaintsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto"
+    >
       <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto max-h-[92vh] flex flex-col animate-in fade-in-50 zoom-in-95">
         
         {/* Header */}

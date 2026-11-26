@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Mic, MicOff } from "lucide-react";
@@ -134,6 +135,8 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
       document.removeEventListener("keyup", handleUserEdit, true);
     };
   }, [isEditableTarget, syncCursorPosition]);
+
+  useEscapeKey(isPanelOpen && !isListeningRef.current, () => setIsPanelOpen(false));
 
   // Close panel when clicking outside if not currently listening
   useEffect(() => {
@@ -480,7 +483,7 @@ export function TopBarDictation({ isMobile = false }: TopBarDictationProps) {
           }
         }}
         className={`cms-dictation-trigger relative rounded-lg border transition-all active:scale-95 flex items-center justify-center cursor-pointer shadow-2xs select-none ${
-          isMobile ? "w-8 h-8 p-1.5" : "w-8.5 h-8.5 p-2"
+          isMobile ? "min-w-[44px] min-h-[44px] p-2 sm:w-8 sm:h-8 sm:min-w-8 sm:min-h-8 sm:p-1.5" : "w-8.5 h-8.5 p-2"
         } ${
           isListening
             ? "bg-rose-50 border-rose-300 text-rose-600 ring-2 ring-rose-400/40 animate-pulse"

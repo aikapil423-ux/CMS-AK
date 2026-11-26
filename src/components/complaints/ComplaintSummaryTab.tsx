@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Sparkles,
   RefreshCw,
@@ -32,6 +32,7 @@ import { ComplaintService } from "@/services/complaintService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/utils";
+import { printA4Element } from "@/utils/printElement";
 
 interface ComplaintSummaryTabProps {
   complaint: ComplaintItem;
@@ -58,6 +59,7 @@ export function ComplaintSummaryTab({
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [processStep, setProcessStep] = useState(0);
+  const summaryPrintRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [activeSection, setActiveSection] = useState<"all" | "completed" | "pending">("all");
 
@@ -203,6 +205,10 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
   };
 
   const handlePrintSummary = () => {
+    if (summaryPrintRef.current) {
+      printA4Element(summaryPrintRef.current, `Investigation_Summary_${complaint.complaintNumber}`);
+      return;
+    }
     window.print();
   };
 
@@ -416,7 +422,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
 
       {/* Generated Summary View */}
       {summary && !isProcessing && (
-        <div className="space-y-6">
+        <div ref={summaryPrintRef} className="space-y-6">
           {/* Urgent Deadlines / BNSS Statutory Alerts */}
           {summary.urgentDeadlines.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
@@ -649,7 +655,7 @@ SUGGESTED OUTCOME: ${summary.suggestedOutcome} (${summary.suggestedOutcomeReason
                             {action.categoryLabel}
                           </span>
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                               isCritical ? "bg-rose-600 text-white" : "bg-slate-200 text-slate-700"
                             }`}
                           >

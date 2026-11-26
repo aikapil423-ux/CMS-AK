@@ -164,9 +164,8 @@ export function AutoSuggestField({
     }
 
     if (e.key === "Tab") {
-      // Only hijack TAB when there is something to accept, so the officer can
-      // still move focus normally on an empty/unmatched field.
-      if (!activeSuggestion) return;
+      // Only hijack TAB when actively completing typed text; on an empty field let Tab advance normally
+      if (!activeSuggestion || !value.trim()) return;
       e.preventDefault();
       accept();
       return;
@@ -332,7 +331,7 @@ export function AutoSuggestField({
           title={isHindi ? "सुझाव स्वीकारने के लिए Tab, → दबाएँ या यहाँ क्लिक करें" : "Press Tab, → or click here to complete"}
         >
           <span className="text-slate-300">{isHindi ? "सुझाव" : "Suggestion"}</span>
-          <kbd className="px-1 py-0.2 bg-slate-800 rounded text-[9px] font-mono border border-slate-600 text-amber-300">Tab ⇥</kbd>
+          <kbd className="px-1 py-0.5 bg-slate-800 rounded text-[9px] font-mono border border-slate-600 text-amber-300">Tab ⇥</kbd>
         </button>
       )}
     </div>

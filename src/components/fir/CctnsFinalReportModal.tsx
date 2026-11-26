@@ -13,6 +13,9 @@ import { autofillFinalReport } from '@/lib/finalReportAutofill';
 import type { AccusedChargesheetDetails } from '@/lib/accusedChargesheet';
 import type { FirReportAccused, FirReportWitness } from '@/lib/firReportAccused';
 import { firService } from '@/services/firService';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { DatePickerDDMMYYYY } from '@/components/ui/date-picker-ddmmyyyy';
+import { getTodayIsoIST } from '@/lib/utils';
 
 const tabs = ['Final Report Information', 'Other Information', 'Property Information', 'List of Enclosure'];
 const inputClass = 'w-full border border-slate-300 rounded-md p-2 text-sm bg-white text-slate-900';
@@ -24,6 +27,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
   const [tab, setTab] = useState(0);
   const [editingAccused, setEditingAccused] = useState<number | null>(null);
   const touched = useRef(new Set<string>());
+  useEscapeKey(editingAccused === null, onClose);
   useEffect(() => {
     let cancelled = false, generation = 0;
     const refresh = () => {
@@ -111,7 +115,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
       setData(current => ({ ...current,
         uploadedFiles: [...(current.uploadedFiles || []).filter(file => !replacedId || file.id !== replacedId), ...uploaded],
         enclosures: enclosureIndex === undefined
-          ? [...current.enclosures, ...uploaded.map(file => ({ selected: true, fileName: file.name, module: 'Uploaded File', registrationNo: '', date: new Date().toLocaleDateString('en-CA'), documentId: file.id }))]
+          ? [...current.enclosures, ...uploaded.map(file => ({ selected: true, fileName: file.name, module: 'Uploaded File', registrationNo: '', date: getTodayIsoIST(), documentId: file.id }))]
           : current.enclosures.map((row, index) => index === enclosureIndex ? { ...row, selected: true, fileName: uploaded[0].name, documentId: uploaded[0].id, module: row.module || 'Uploaded File' } : row),
       }));
     } catch (error) { setErrors([error instanceof Error ? error.message : 'Upload failed.']); }
@@ -134,6 +138,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
       <span>{label}{required ? ' *' : ''}</span>
       {options ? <select className={`${inputClass} ${data.autoFilled?.[key] ? 'cms-autofilled' : ''}`} value={key === 'formType' && data.formType && data.formType !== 'CHARGESHEET' ? 'CLOSURE' : String(data[key])} onChange={e => change(key, e.target.value as never)}><option value="">Select</option>{options.map(o => <option key={o} value={o}>{key === 'formType' ? (o === 'CHARGESHEET' ? 'Chargesheet/Challan' : 'Final Report') : o}</option>)}</select>
         : type === 'textarea' ? <textarea className={`${inputClass} ${data.autoFilled?.[key] ? 'cms-autofilled' : ''}`} rows={4} value={String(data[key])} onChange={e => change(key, e.target.value as never)} />
+        : type === 'date' ? <DatePickerDDMMYYYY value={String(data[key])} onValueChange={val => change(key, val as never)} size="sm" placeholder="DD/MM/YYYY" className={data.autoFilled?.[key] ? 'cms-autofilled' : ''} />
         : <input className={`${inputClass} ${data.autoFilled?.[key] ? 'cms-autofilled' : ''}`} type={type} min={type === 'number' ? 0 : undefined} value={String(data[key])} onChange={e => change(key, e.target.value as never)} />}
     </label>
   );
@@ -146,7 +151,7 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
         change(key, next);
         setData(current => ({ ...current, autoFilled: Object.fromEntries(Object.entries(current.autoFilled || {}).filter(([path]) => path !== `${key}.${index}.${f.key}`)) }));
       };
-      return <label key={f.key} className="text-xs space-y-1 font-semibold"><span>{f.label}</span>{f.type === 'checkbox' ? <input className="ml-3" type="checkbox" checked={Boolean(value)} onChange={e => update(e.target.checked)} /> : f.options ? <select className={`${inputClass} ${data.autoFilled?.[`${key}.${index}.${f.key}`] ? 'cms-autofilled' : ''}`} value={String(value || '')} onChange={e => update(e.target.value)}><option value="">Select</option>{f.options.map(o => <option key={o}>{o}</option>)}</select> : <input className={`${inputClass} ${data.autoFilled?.[`${key}.${index}.${f.key}`] ? 'cms-autofilled' : ''}`} type={f.type || 'text'} value={String(value || '')} onChange={e => update(e.target.value)} />}</label>;
+      return <label key={f.key} className="text-xs space-y-1 font-semibold"><span>{f.label}</span>{f.type === 'checkbox' ? <input className="ml-3" type="checkbox" checked={Boolean(value)} onChange={e => update(e.target.checked)} /> : f.options ? <select className={`${inputClass} ${data.autoFilled?.[`${key}.${index}.${f.key}`] ? 'cms-autofilled' : ''}`} value={String(value || '')} onChange={e => update(e.target.value)}><option value="">Select</option>{f.options.map(o => <option key={o}>{o}</option>)}</select> : f.type === 'date' ? <DatePickerDDMMYYYY value={String(value || '')} onValueChange={val => update(val)} size="sm" placeholder="DD/MM/YYYY" className={data.autoFilled?.[`${key}.${index}.${f.key}`] ? 'cms-autofilled' : ''} /> : <input className={`${inputClass} ${data.autoFilled?.[`${key}.${index}.${f.key}`] ? 'cms-autofilled' : ''}`} type={f.type || 'text'} value={String(value || '')} onChange={e => update(e.target.value)} />}</label>;
     })}</div>
     {key === 'accused' && (row as FinalReportData['accused'][number]).action === 'ChargeSheeted' && <button type="button" className="mt-3 border border-[#203c88] px-3 py-2 text-sm text-[#203c88]" onClick={() => setEditingAccused(index)}>Edit ChargeSheeted Details</button>}
     {key === 'enclosures' && <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -172,11 +177,11 @@ export function CctnsFinalReportModal({ fir, currentUser, existing, onClose, onS
   };
   return <div className="fixed inset-0 z-[100] bg-slate-950/60 p-3 sm:p-6 flex justify-center" role="dialog" aria-modal="true" aria-labelledby="final-report-title">
     <section className="bg-white rounded-xl w-full max-w-6xl flex flex-col shadow-2xl overflow-hidden">
-      <header className="p-4 border-b flex justify-between gap-3"><div><h2 id="final-report-title" className="text-lg font-bold">{existing ? 'Edit Final Report' : 'Final Report'} — IIF-V</h2><p className="text-xs text-white">FIR {fir.firNumber} · {fir.policeStation} · {fir.district}</p></div><button className={buttonClass} disabled={saving} onClick={onClose} aria-label="Close final report">Close</button></header>
+      <header className="p-4 border-b flex justify-between gap-3"><div><h2 id="final-report-title" className="text-lg font-bold">{existing ? 'Edit Final Report' : 'Final Report'} — IIF-V</h2><p className="text-xs text-slate-600 dark:text-slate-200">FIR {fir.firNumber} · {fir.policeStation} · {fir.district}</p></div><button className={buttonClass} disabled={saving} onClick={onClose} aria-label="Close final report">Close</button></header>
       <div className="overflow-auto flex-1 p-4 space-y-4">
         <input ref={uploadInputRef} type="file" hidden multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" aria-label="Upload report files" disabled={uploading || saving} onChange={uploadFiles} />
         {errors.length > 0 && <div role="alert" className="bg-red-50 text-red-800 border border-red-200 rounded-lg p-3"><ul className="list-disc pl-5 text-sm">{errors.map(e => <li key={e}>{e}</li>)}</ul></div>}
-        {preview ? <StatutoryFinalReportPreview data={toStatutoryFinalReport(fir, data)} previewRef={previewRef} /> : <>
+        {preview ? <div className="cms-paper-sheet"><StatutoryFinalReportPreview data={toStatutoryFinalReport(fir, data)} previewRef={previewRef} /></div> : <>
           <div className="bg-slate-50 border rounded-lg p-3 text-sm grid sm:grid-cols-2 gap-2"><p><strong>FIR Date:</strong> {fir.firDate}</p><p><strong>Complainant:</strong> {fir.complainantName}</p><p><strong>Relation:</strong> {fir.complainantRelationType || '—'} / {fir.complainantRelativeName || fir.complainantFatherSpouse || '—'}</p><p><strong>Acts & Sections:</strong> {fir.actsAndSections}</p></div>
           <div role="tablist" aria-label="Final report sections" className="flex flex-wrap gap-2">{tabs.map((name, i) => <button key={name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)} className={`${buttonClass} ${tab === i ? 'bg-blue-900 text-white' : 'bg-slate-50'}`}>{name}</button>)}</div>
           <div role="tabpanel" aria-label={tabs[tab]} className="space-y-4">

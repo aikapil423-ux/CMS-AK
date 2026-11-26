@@ -107,7 +107,7 @@ export function DraggableAgentButton() {
           top: `${position.y}px`,
           touchAction: "none",
         }}
-        className={`fixed z-50 select-none cursor-grab active:cursor-grabbing transition-transform ${
+        className={`print:hidden fixed z-50 select-none cursor-grab active:cursor-grabbing transition-transform ${
           isDragging ? "scale-105 opacity-90" : "hover:scale-105"
         }`}
         title="Haryana Police CMS AI Agent (Click to Open, Drag to Move)"

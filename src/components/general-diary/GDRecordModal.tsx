@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { GeneralDiaryRecord } from "@/types/generalDiary";
 import { Button } from "@/components/ui/button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { formatDateTime } from "@/lib/utils";
 import { cleanGdNarrative } from "@/services/generalDiaryService";
 import { printA4Element, downloadA4ElementAsPdf } from "@/utils/printElement";
@@ -44,6 +45,8 @@ export function GDRecordModal({
 }: GDRecordModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = React.useState(false);
+
+  useEscapeKey(isOpen, onClose);
 
   // Resolve Station Moharrir Head Constable (MHC / मुंशी)
   const stationMhc = React.useMemo(() => {
@@ -118,8 +121,17 @@ export function GDRecordModal({
   const isDraft = record.status === "DRAFT";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50">
-      <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in-50"
+      role="dialog"
+      aria-modal="true"
+      aria-label={record.gdNumber || "Roznamcha Record"}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden flex flex-col my-auto max-h-[94vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Control Bar */}
         <div className="no-print flex items-center justify-between px-5 py-3 bg-[#0b192c] text-white border-b border-slate-700">
           <div className="flex items-center gap-2.5">
@@ -138,12 +150,12 @@ export function GDRecordModal({
                   {record.gdNumber || "Roznamcha Record"}
                 </h3>
                 {isSuggested && (
-                  <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.2 rounded font-mono font-bold">
+                  <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-mono font-bold">
                     SUGGESTION
                   </span>
                 )}
                 {isDraft && (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.2 rounded font-mono font-bold">
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-mono font-bold">
                     DRAFT
                   </span>
                 )}
@@ -197,7 +209,7 @@ export function GDRecordModal({
           <div
             id="printable-gd-record"
             ref={printRef}
-            className="w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-10 text-slate-950 space-y-5 font-serif shadow-sm relative my-3 min-h-[750px] h-auto"
+            className="cms-paper-sheet w-full max-w-[800px] mx-auto bg-white border border-slate-400 p-8 sm:p-10 text-slate-950 space-y-5 font-serif shadow-sm relative my-3 min-h-[750px] h-auto"
             style={{ lineHeight: "1.6" }}
           >
             {/* Haryana Police Official Header */}
@@ -257,7 +269,7 @@ export function GDRecordModal({
                 <span className="font-bold text-slate-800 min-w-[150px] shrink-0 uppercase tracking-wide">
                   विषय (SUBJECT):
                 </span>
-                <span className="font-bold text-slate-950 flex-1 min-w-0 leading-snug break-all break-words">
+                <span className="font-bold text-slate-950 flex-1 min-w-0 leading-snug break-words [overflow-wrap:anywhere]">
                   {record.subject}
                 </span>
               </div>
@@ -349,7 +361,7 @@ export function GDRecordModal({
                   <div className="p-2 bg-white rounded border border-red-200">
                     <span className="text-slate-600 block text-[10px] font-semibold uppercase">2. Acts &amp; Sections (अधिनियम व धाराएं):</span>
                     <strong className="text-slate-900 font-mono text-xs">
-                      {record.actsAndSections || record.relatedRecords?.actsAndSections || "Section 303(2), 115(2), 3(5) BNS, 2023"}
+                      {record.actsAndSections || record.relatedRecords?.actsAndSections || "Not Specified"}
                     </strong>
                     {record.majorAct && (
                       <span className="text-[10px] text-slate-500 block mt-0.5">Major Act: {record.majorAct}</span>
@@ -406,7 +418,7 @@ export function GDRecordModal({
               <h4 className="font-bold text-slate-900 text-xs sm:text-sm uppercase tracking-wide border-b border-slate-400 pb-1">
                 इंद्राज का विस्तृत विवरण :
               </h4>
-              <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap break-all break-words">
+              <div className="border border-slate-400 p-4 bg-white text-xs sm:text-sm text-slate-950 leading-relaxed font-sans whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 {cleanGdNarrative(record.narrative)}
               </div>
             </div>
@@ -443,7 +455,7 @@ export function GDRecordModal({
                           <a
                             href={doc.dataUrl}
                             download={doc.name}
-                            className="text-[11px] font-bold text-blue-700 hover:underline shrink-0"
+                            className="no-print text-[11px] font-bold text-blue-700 hover:underline shrink-0"
                           >
                             Download
                           </a>
@@ -456,27 +468,33 @@ export function GDRecordModal({
             })()}
 
             {/* Signatures & Seal Footer */}
-            <div className="pt-4 border-t-2 border-slate-900 flex flex-row items-end justify-between text-xs font-sans">
-              <div className="text-center w-36">
-                <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
-                  Station Seal
-                </div>
-                <p className="mt-1 font-bold text-slate-800">POLICE STATION SEAL</p>
-              </div>
+            {(() => {
+              const signatory = (record.isLocked ? (record.verifiedBy || record.actualAuthor) : null) || stationMhc;
+              const beltVal = signatory.beltNumber || signatory.pno || "—";
+              return (
+                <div className="pt-4 border-t-2 border-slate-900 flex flex-row items-end justify-between text-xs font-sans">
+                  <div className="text-center w-36">
+                    <div className="h-12 border border-dashed border-slate-400 flex items-center justify-center text-[10px] text-slate-500">
+                      Station Seal
+                    </div>
+                    <p className="mt-1 font-bold text-slate-800">POLICE STATION SEAL</p>
+                  </div>
 
-              <div className="text-right space-y-0.5">
-                <p className="text-slate-400">______________________________________</p>
-                <p className="font-bold text-slate-950">
-                  {stationMhc.name}
-                </p>
-                <p className="text-slate-700 text-[11px] font-medium">
-                  Moharrir Head Constable (MHC / मुंशी थाना)
-                </p>
-                <p className="text-slate-600 font-mono text-[11px]">
-                  Belt: {stationMhc.beltNumber} • {record.policeStation}
-                </p>
-              </div>
-            </div>
+                  <div className="text-right space-y-0.5">
+                    <p className="text-slate-400">______________________________________</p>
+                    <p className="font-bold text-slate-950">
+                      {signatory.name}
+                    </p>
+                    <p className="text-slate-700 text-[11px] font-medium">
+                      {signatory.rank || "Officer / Duty Writer"}
+                    </p>
+                    <p className="text-slate-600 font-mono text-[11px]">
+                      Belt/PNO: {beltVal} • {record.policeStation}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
