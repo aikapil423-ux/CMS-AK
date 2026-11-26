@@ -32,9 +32,13 @@ transaction and checks the resulting row counts.
 
 State, Range, District, and Police Station have separate tables. Location
 Master saves update those tables in the same transaction. The app stores
-Accounts, Complaints, FIRs and the other migrated JSON repositories in
-`ImportedJsonDocument` by relative path. Attachment binaries and browser-local
-data are outside the SQL export.
+accounts and other migrated JSON repositories in `ImportedJsonDocument` by
+relative path. Complaints and FIRs each have one row per record in
+`ComplaintRecord` and `FirRecord`, respectively. For existing PostgreSQL
+databases, pause application writes while applying migrations and deploying
+the new app code. The migration copies existing records to the new tables
+and retains the original JSON documents as a snapshot. Attachment binaries
+and browser-local data are outside the SQL export.
 
 ## Run the local app against PostgreSQL
 

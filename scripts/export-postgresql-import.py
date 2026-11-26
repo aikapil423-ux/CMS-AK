@@ -102,7 +102,26 @@ def write_import(db, data_dir, output):
             ])
             counts[table] = len(records)
 
-    documents = sorted(path for path in data_dir.rglob("*.json") if path.is_file())
+    case_tables = {
+        "complaints-store.json": "ComplaintRecord",
+        "firs-store.json": "FirRecord",
+    }
+    documents = []
+    for path in sorted(data_dir.rglob("*.json")):
+        if not path.is_file():
+            continue
+        table = case_tables.get(path.relative_to(data_dir).as_posix())
+        if table is None:
+            documents.append(path)
+            continue
+        records = read_json(path)
+        insert_rows(output, table, ("id", "position", "payload"), [
+            [literal(record["id"]), str(position),
+             literal(json.dumps(record, ensure_ascii=False, allow_nan=False)) + "::jsonb"]
+            for position, record in enumerate(records, start=1)
+        ])
+        counts[table] = len(records)
+
     for path in documents:
         insert_rows(output, "ImportedJsonDocument", ("path", "payload"), [[
             literal(path.relative_to(data_dir).as_posix()),

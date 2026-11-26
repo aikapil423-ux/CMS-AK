@@ -2,6 +2,51 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./prisma";
+import type { Prisma } from "@prisma/client";
+
+type CaseRegister = "complaints" | "firs";
+const caseTables = { complaints: '"ComplaintRecord"', firs: '"FirRecord"' } as const;
+
+export async function readCaseRecords<T>(
+  register: CaseRegister,
+  file: string,
+  db: Prisma.TransactionClient = prisma,
+): Promise<T[]> {
+  if (!usesPostgresStore()) return readRuntimeJson<T[]>(file);
+  const rows = await db.$queryRawUnsafe<{ payload: T }[]>(
+    `SELECT payload FROM ${caseTables[register]} ORDER BY position`,
+  );
+  return rows.map(row => row.payload);
+}
+
+export async function withCaseRecordTransaction<T>(
+  register: CaseRegister,
+  update: (db: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(async db => {
+    // Serialize number allocation and version checks across app instances.
+    await db.$executeRawUnsafe(`LOCK TABLE ${caseTables[register]} IN SHARE ROW EXCLUSIVE MODE`);
+    return update(db);
+  }, { timeout: 15000 });
+}
+
+export async function writeCaseRecords(
+  register: CaseRegister,
+  file: string,
+  records: { id: string }[],
+  db?: Prisma.TransactionClient,
+) {
+  if (!db) return writeRuntimeJson(file, records);
+  const table = caseTables[register];
+  await db.$executeRawUnsafe(
+    `INSERT INTO ${table} AS existing (id, position, payload)
+     SELECT record->>'id', ordinal, record
+     FROM jsonb_array_elements($1::jsonb) WITH ORDINALITY AS entries(record, ordinal)
+     ON CONFLICT (id) DO UPDATE SET position = EXCLUDED.position, payload = EXCLUDED.payload
+     WHERE (existing.position, existing.payload) IS DISTINCT FROM (EXCLUDED.position, EXCLUDED.payload)`,
+    JSON.stringify(records),
+  );
+}
 
 function databaseKey(file: string) {
   const key = path.relative(path.join(process.cwd(), "prisma"), file);
@@ -15,10 +60,10 @@ export function usesPostgresStore() {
   return Boolean(process.env.POSTGRES_DATABASE_URL);
 }
 
-export async function readRuntimeJson<T>(file: string): Promise<T> {
+export async function readRuntimeJson<T>(file: string, db: Prisma.TransactionClient = prisma): Promise<T> {
   if (!usesPostgresStore()) return JSON.parse(await fs.readFile(file, "utf8")) as T;
   const key = databaseKey(file);
-  const [row] = await prisma.$queryRaw<{ payload: T }[]>`
+  const [row] = await db.$queryRaw<{ payload: T }[]>`
     SELECT payload FROM "ImportedJsonDocument" WHERE path = ${key}
   `;
   if (!row) {

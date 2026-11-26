@@ -1,4 +1,5 @@
 import { readRuntimeJson, usesPostgresStore, writeRuntimeJson } from "../lib/runtimeJsonStore";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -780,14 +781,14 @@ function resolveLocationReferences(store: LocationStoreData, forStorage = false)
 }
 
 // Read stored IDs and populate display names, or initialize the store.
-export async function readLocationStore(): Promise<LocationStoreData> {
+export async function readLocationStore(db: Prisma.TransactionClient = prisma): Promise<LocationStoreData> {
   try {
-    const parsed = await readRuntimeJson<LocationStoreData>(STORE_PATH);
+    const parsed = await readRuntimeJson<LocationStoreData>(STORE_PATH, db);
     if (!parsed || !Array.isArray(parsed.states)) {
       throw new Error('Invalid location store');
     }
     if (usesPostgresStore()) {
-      parsed.districts = await prisma.$queryRaw<MasterDistrict[]>`
+      parsed.districts = await db.$queryRaw<MasterDistrict[]>`
         SELECT COALESCE(d.details->>'createdAt', '') AS "createdAt",
                COALESCE(d.details->>'updatedAt', '') AS "updatedAt",
                d.id, d.code, d.name, d.status, d."rangeId", r."stateId",

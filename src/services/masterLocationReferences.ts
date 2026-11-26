@@ -1,4 +1,5 @@
 import { readLocationStore } from "./locationMasterService";
+import type { Prisma } from "@prisma/client";
 import type { TransferableRecord } from "../lib/recordCustody";
 import type { UserSession } from "../types";
 
@@ -19,8 +20,8 @@ function resolve(value: string, rows: MasterLocation[], direction: Direction): s
   return matches.length === 1 ? matches[0].id : value;
 }
 
-export async function readMasterLocationReferences() {
-  const { states, ranges, districts, policeStations } = await readLocationStore();
+export async function readMasterLocationReferences(db?: Prisma.TransactionClient) {
+  const { states, ranges, districts, policeStations } = await readLocationStore(db);
   const stationReferences = (district: string) =>
     policeStations.filter((station) => station.districtId === resolve(district, districts, "id"));
   function location<T extends LocationFields>(value: T, direction: Direction): T {

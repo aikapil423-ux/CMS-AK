@@ -61,6 +61,18 @@ model ImportedJsonDocument {
   payload Json
 }
 
+model ComplaintRecord {
+  id       String @id
+  position BigInt
+  payload  Json
+}
+
+model FirRecord {
+  id       String @id
+  position BigInt
+  payload  Json
+}
+
 model PoliceUnit {
   id           String              @id @default(cuid())
   code         String              @unique
