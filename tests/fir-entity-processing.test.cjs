@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
 const { NextRequest } = require('next/server');
@@ -10,10 +11,15 @@ function session() {
   const fir = { id: 'f1', firNumber: '001', documents: [] };
   const record = (id, ownerId, caseId) => ({ id, ownerId, caseId, module: 'FIR', fileId: 'file-' + id, rawDocument: { fileName: id + '.pdf', dataUrl: 'data:application/pdf;base64,UEZERg==' }, processingStatus: 'COMPLETED', structuredData: {} });
   const records = [record('allowed', user.id, 'f1'), record('private', 'another', 'f1'), record('other-case', user.id, 'f2')];
-  const exports = {};
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync('src/app/api/fir/entities/process/route.ts', 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true }
-  }).outputText, { exports, process: { cwd: () => 'test', env: { GEMINI_API_KEY: 'test-key' } }, console, Headers, Response, FormData, File, URL,
+  const cache = new Map();
+  function load(file) {
+    file = path.resolve(file);
+    if (cache.has(file)) return cache.get(file);
+    const exports = {};
+    cache.set(file, exports);
+    vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true }
+    }).outputText, { exports, process: { cwd: () => 'test', env: { GEMINI_API_KEY: 'test-key' } }, console, Headers, Response, FormData, File, URL,
     require(name) {
       if (name === 'node:fs/promises') return { readFile: async () => JSON.stringify(records) };
       if (name === '@/lib/openRouter') return { processingAIAvailable: () => true };
@@ -23,9 +29,20 @@ function session() {
       if (name === '@/services/investigationPromptService') return { investigationPrompts: () => ({ audit }) };
       if (name === '@/app/api/evidence/process/route') return { POST: async req => { calls.push(await req.formData()); return Response.json({ success: true, record: { structuredData: { investigation: { entities: [{ id: 'entity' }], promptAudit: audit } } } }); } };
       if (name === '@/app/api/evidence/download/route') return { GET: async () => new Response('unavailable', { status: 404 }) };
+      if (name.startsWith('@/')) return load('src/' + name.slice(2) + '.ts');
+      if (name.startsWith('./') || name.startsWith('../')) {
+        const resolved = path.resolve(path.dirname(file), name);
+        for (const c of [resolved + '.ts', resolved + '.tsx', resolved + '.json']) {
+          if (fs.existsSync(c)) return load(c);
+        }
+        return require(resolved);
+      }
       return require(name);
     }
-  });
+    }, { filename: file });
+    return exports;
+  }
+  const exports = load('src/app/api/fir/entities/process/route.ts');
   const request = body => new NextRequest('http://test/api/fir/entities/process', { method: 'POST', headers: { 'Content-Type': 'application/json', origin: 'http://test' }, body: JSON.stringify(body) });
   return { post: body => exports.POST(request(body)), calls, records, audit };
 }

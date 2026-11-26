@@ -10,8 +10,12 @@
     "prestart": "npm run whisper:setup",
     "whisper:setup": "node scripts/setup-whisper.mjs",
     "lint": "eslint",
+    "test:credentials": "node --test tests/credential-hygiene.test.cjs",
+    "prisma:generate": "node scripts/generate-runtime-prisma.mjs",
     "db:export-seed": "node scripts/export-seed.mjs",
     "db:seed": "node prisma/seed.mjs",
+    "accounts:seed": "node scripts/seed-accounts.mjs",
+    "accounts:seed:export": "node scripts/seed-accounts.mjs --export",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "prisma": {

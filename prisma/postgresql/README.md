@@ -27,7 +27,27 @@ python scripts/export-postgresql-import.py --output $importFile
 
 Create the export while application writes are paused so the SQLite and JSON
 sources represent the same point in time. The SQL export contains case and
-account data. Keep it in authorized local storage. The import runs in one
+account data. Keep it in authorized local storage. 
+
+## Account credentials seed
+
+Account identity and credentials live in the relational `User` table, not in the
+JSON store. JSON (`accounts-master-store.json`) holds only non-secret profile
+fields, and no plaintext PIN is stored anywhere.
+
+After migrations, seed accounts into a fresh deployment with the hash-only seed:
+
+```powershell
+npm run prisma:generate
+$env:CMS_ACCOUNTS_SEED_FILE = 'C:\secure\accounts-seed.json'  # optional; default prisma/accounts-seed.json
+npm run accounts:seed
+```
+
+The seed file is gitignored and must be exported from an authorized database
+with `npm run accounts:seed:export`. `POSTGRES_DATABASE_URL` is required; the
+script validates hashes and rejects plaintext credential fields. See
+`docs/account-credentials.md` for the full flow and guardrails.
+The import runs in one
 transaction and checks the resulting row counts.
 
 State, Range, District, and Police Station have separate tables. Location

@@ -1,6 +1,6 @@
-import { readLocationStore } from "./locationMasterService";
+﻿import { readLocationStore } from "./locationMasterService";
 import type { Prisma } from "@prisma/client";
-import type { TransferableRecord } from "../lib/recordCustody";
+import type { TransferableRecord } from "@/lib/recordCustody";
 import type { UserSession } from "../types";
 
 type MasterLocation = { id: string; name: string; code: string };

@@ -38,6 +38,23 @@ function runTsModule(filePath, extra = {}) {
       if (id === '@/lib/mockData' || id === '../lib/mockData' || id === '../lib/mockData.ts') {
         return runTsModule(path.resolve(__dirname, '../src/lib/mockData.ts'));
       }
+      // Generic alias resolution: '@/x' -> src/x, './x' & '../x' relative to the importing file.
+      let resolved = null;
+      if (id.startsWith('@/')) {
+        resolved = path.resolve(__dirname, '../src', id.slice(2));
+      } else if (id.startsWith('./') || id.startsWith('../')) {
+        resolved = path.resolve(path.dirname(absPath), id);
+      }
+      if (resolved) {
+        for (const candidate of [`${resolved}.ts`, `${resolved}.tsx`, `${resolved}.json`, resolved]) {
+          if (fs.existsSync(candidate)) {
+            if (candidate.endsWith('.ts') || candidate.endsWith('.tsx')) {
+              return runTsModule(candidate);
+            }
+            return require(candidate);
+          }
+        }
+      }
       return require(id);
     },
     ...extra,

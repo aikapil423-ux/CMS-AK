@@ -16,7 +16,7 @@ interface AuthContextType {
   exitViewAs:()=>Promise<boolean>;
   isAuthenticated:boolean;
   logout:()=>void;
-  login:(pno:string,pin:string,station?:string)=>Promise<boolean>;
+  login:(pno:string,pin:string,station?:string,rememberDevice?:boolean)=>Promise<boolean>;
 }
 const AuthContext=createContext<AuthContextType|undefined>(undefined);
 export function AuthProvider({children}:{children:React.ReactNode}){
@@ -68,7 +68,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
      window.removeEventListener('focus', checkPosting);
    };
  }, [isAuthenticated, currentUser]);
- const login=async(pno:string,pin:string,station?:string)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station})});const b=await r.json();if(!r.ok){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=b.error||'';return false;}await accept(b.user,b.sessionUser,Boolean(b.viewAsActive));return true;}catch(e:unknown){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=e instanceof Error?e.message:'Network error';return false;}};
+ const login=async(pno:string,pin:string,station?:string,rememberDevice?:boolean)=>{try{const r=await fetch('/api/auth/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pno,pin,station,rememberDevice})});const b=await r.json();if(!r.ok){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=b.error||'';return false;}await accept(b.user,b.sessionUser,Boolean(b.viewAsActive));return true;}catch(e:unknown){if(typeof window!=='undefined')(window as unknown as {__lastLoginError?:string}).__lastLoginError=e instanceof Error?e.message:'Network error';return false;}};
  // View-as never signs the Developer Admin out and never performs a second login:
  // the server re-issues the developer's own session with a view-as marker, so the
  // developer keeps their identity until they explicitly sign out.

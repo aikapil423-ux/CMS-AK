@@ -89,8 +89,8 @@ export async function POST(req: Request) {
       } catch (error) {
         console.warn('Legal advisory failed:', error instanceof Error ? error.message : 'Unknown error');
         const detail = error instanceof Error ? error.message : '';
-        const status = /^OpenRouter processing failed \(HTTP (\d{3})\)\.$/.exec(detail)?.[1];
-        return localResult(status ? 'OpenRouter could not complete the AI advisory (HTTP ' + status + ').'
+        const status = /^Gemini processing failed \(HTTP (\d{3})\)\.$/.exec(detail)?.[1];
+        return localResult(status ? 'Gemini could not complete the AI advisory (HTTP ' + status + ').'
           : detail === 'AI service timed out.' ? 'The AI advisory timed out.'
           : 'The AI advisory could not be completed.');
       }
@@ -113,7 +113,7 @@ Saved case sources: ${source}` }], { timeout: 120000, retryTransient: true });
     if (detail === 'AI service timed out.') {
       return Response.json({ error: 'AI drafting timed out. Please retry.' }, { status: 504 });
     }
-    if (/^(OpenRouter |OPENROUTER_API_KEY |AI service |External AI processing )/.test(detail)) {
+    if (/^(Gemini |OpenRouter |OPENROUTER_API_KEY |AI service |External AI processing )/.test(detail)) {
       return Response.json({ error: detail }, { status: 502 });
     }
     return Response.json({ error: 'AI drafting could not complete. Please retry.' }, { status: 502 });

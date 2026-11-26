@@ -335,8 +335,9 @@ export interface MasterAccount {
   jurisdictionType: JurisdictionType;
   specialAllocations?: SpecialStationAllocation[];
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  // Credentials are stored in the User table. This is only an in-memory
+  // projection from that table; it is never written back to the JSON store.
   passwordHash?: string;
-  plainPinSample?: string; // Only stored in demo/dev mode for quick 1-click test
   lastLoginAt?: string;
   createdAt: string;
   updatedAt: string;

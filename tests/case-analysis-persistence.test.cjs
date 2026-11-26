@@ -19,8 +19,8 @@ function session({ ai = false, reply } = {}) {
     if (modules.has(file)) return modules.get(file);
     const exports = {}; modules.set(file, exports);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-    vm.runInNewContext(code, { exports, console, Error, AbortSignal, process: { cwd: () => 'test-root', env: ai ? { OPENROUTER_API_KEY: 'test-key' } : {} },
-      fetch: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(reply || { conflicts: [] }) } }]  }) }),
+    vm.runInNewContext(code, { exports, console, Error, AbortSignal, process: { cwd: () => 'test-root', env: ai ? { GEMINI_API_KEY: 'test-key' } : {} },
+      fetch: async () => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(reply || { conflicts: [] }) }] }, finishReason: 'STOP' }] }) }),
       require(name) {if(name==='server-only')return {};
         if (name === 'node:fs/promises') return fakeFs;
         if (name === '@/lib/evidenceOwnership') return { evidenceOwner: r => r.ownerId };
@@ -28,6 +28,13 @@ function session({ ai = false, reply } = {}) {
         if (name === '@/services/firRepository') return { readFirRecords: async () => [fir] };
         if (name.startsWith('@/') && name.endsWith('.cjs')) return require(path.resolve('src', name.slice(2)));
         if (name.startsWith('@/')) return load('src/' + name.slice(2) + '.ts');
+        if (name.startsWith('./') || name.startsWith('../')) {
+          const resolved = path.resolve(path.dirname(file), name);
+          for (const c of [resolved + '.ts', resolved + '.tsx', resolved + '.json']) {
+            if (fs.existsSync(c)) return load(c);
+          }
+          return require(resolved);
+        }
         return require(name);
       }
     });

@@ -6,7 +6,7 @@ function loader(stubs={},extra={}) {
   const cache={};return function load(file){
     if(cache[file])return cache[file];const exports={};cache[file]=exports;
     vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,
-      {exports,process,console,Response,AbortSignal,...extra,require(name){if(name==='server-only')return {};if(name in stubs)return stubs[name];if(name.startsWith('@/'))return load('src/'+name.slice(2)+'.ts');return require(name);}}, {filename:file});return exports;
+      {exports,process,console,Response,AbortSignal,...extra,require(name){if(name==='server-only')return {};if(name in stubs)return stubs[name];if(name.startsWith('@/'))return load('src/'+name.slice(2)+'.ts');if(name.startsWith('./')||name.startsWith('../')){const r=path.resolve(path.dirname(file),name);for(const c of [r+'.ts',r+'.tsx',r+'.json'])if(fs.existsSync(c))return load(c);return require(r);}return require(name);}}, {filename:file});return exports;
   };
 }
 test('all 12 native pages expose every form field once, with no PDF or scan background',()=>{

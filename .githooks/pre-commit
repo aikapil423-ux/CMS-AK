@@ -1,5 +1,20 @@
 #!/bin/sh
-if ! git diff --cached --quiet --diff-filter=ACMRT -- prisma/storage/ prisma/case-analysis/ prisma/court-affidavits/ prisma/scrutiny-records/ prisma/weekly-diary/ prisma/dev.db prisma/seed-data.json ':(glob)prisma/*-store.json' prisma/gd-dismissed-suggestions.json; then
+if ! git diff --cached --quiet --diff-filter=ACMRT -- prisma/storage/ prisma/case-analysis/ prisma/court-affidavits/ prisma/scrutiny-records/ prisma/weekly-diary/ prisma/dev.db prisma/seed-data.json ':(glob)prisma/*-store.json' prisma/gd-dismissed-suggestions.json ':(exclude)prisma/accounts-master-store.json'; then
   echo "Unstage runtime case data before committing." >&2
+  exit 1
+fi
+
+# Credentials must never enter git: no plaintext sample fields in code or stores,
+# and no account seed export (which contains password hashes).
+if git grep --cached -I -n -e 'plainPinSample' -- src/ scripts/ prisma/ docs/ >/dev/null 2>&1; then
+  echo "Plaintext PIN sample fields are forbidden. Remove them before committing." >&2
+  exit 1
+fi
+if git grep --cached -I -n -E '"(plainPinSample|pin|password)"[[:space:]]*:' -- '*.json' >/dev/null 2>&1; then
+  echo "JSON stores must not contain plaintext credential fields." >&2
+  exit 1
+fi
+if git diff --cached --name-only --diff-filter=ACMRT | grep -Eq '(^|/)accounts-seed[^/]*\.json$'; then
+  echo "Unstage the account seed export; it contains credential hashes." >&2
   exit 1
 fi

@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual, scryptSync } from 'node:crypt
 import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from '@/lib/officerRoles';
 import { DEMO_USERS } from '@/lib/mockData';
 import type { UserSession } from '@/types';
+import type { MasterAccount } from '@/types/adminMaster';
 
 const globals = globalThis as typeof globalThis & { cmsSessionSecret?: string };
 // Demo login is ON by default so a freshly deployed test VM works with no runtime setup.
@@ -23,8 +24,11 @@ export function developerAdminUser(): UserSession {
     stationName: 'CMS Administration', stationCode: 'CMS-ADMIN', district: 'All Districts' };
 }
 
-export function issueSession(userId: string, _legacyStation?: string, demo = false, viewAs?: string | null) {
-  const payload: { userId: string; demo: boolean; version: number; expires: number; viewAs?: string } = { userId, demo, version: 3, expires: Date.now() + 8 * 3600000 };
+export const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+export const REMEMBERED_ADMIN_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function issueSession(userId: string, _legacyStation?: string, demo = false, viewAs?: string | null, expires = Date.now() + SESSION_DURATION_MS) {
+  const payload: { userId: string; demo: boolean; version: number; expires: number; viewAs?: string } = { userId, demo, version: 3, expires };
   if (viewAs) payload.viewAs = viewAs;
   const value = Buffer.from(JSON.stringify(payload)).toString('base64url');
   return value + '.' + createHmac('sha256', secret()).update(value).digest('hex');
@@ -50,7 +54,9 @@ async function officerSession(user: { id: string; pno: string; fullName: string;
   };
 }
 
-function readSessionToken(req: Request): { userId: string; demo: boolean; viewAs?: string } | null {
+type SessionPrincipal = { userId: string; demo: boolean; expires: number; viewAs?: string };
+
+function readSessionToken(req: Request): SessionPrincipal | null {
   const cookie = req.headers.get('cookie')?.split(';').map(value => value.trim()).find(value => value.startsWith('cms_session='))?.slice(12);
   if (!cookie) return null;
   const [value, signature, extra] = cookie.split('.');
@@ -59,13 +65,13 @@ function readSessionToken(req: Request): { userId: string; demo: boolean; viewAs
   if (!timingSafeEqual(expected, Buffer.from(signature, 'hex'))) return null;
   const data = JSON.parse(Buffer.from(value, 'base64url').toString());
   if (data.version !== 3 || !Number.isFinite(data.expires) || data.expires <= Date.now() || typeof data.userId !== 'string') return null;
-  return { userId: data.userId, demo: Boolean(data.demo), viewAs: typeof data.viewAs === 'string' && data.viewAs ? data.viewAs : undefined };
+  return { userId: data.userId, demo: Boolean(data.demo), expires: data.expires, viewAs: typeof data.viewAs === 'string' && data.viewAs ? data.viewAs : undefined };
 }
 
 // The raw signed-in principal: still the Developer Admin even while the session
 // is viewing another officer's ID. Used by the session route to authorize
 // entering, changing or leaving view-as without a second login.
-export async function sessionPrincipal(req: Request): Promise<{ userId: string; demo: boolean; viewAs?: string } | null> {
+export async function sessionPrincipal(req: Request): Promise<SessionPrincipal | null> {
   try {
     return readSessionToken(req);
   } catch {
@@ -81,7 +87,7 @@ export function usesDemoSession(user: UserSession): boolean {
   return user.id !== 'cms_developer_admin' && (accountMasterSessions.has(user) || !user.unitId);
 }
 
-function masterAccountToSession(acc: any): UserSession {
+function masterAccountToSession(acc: MasterAccount): UserSession {
   const user: UserSession = {
     id: acc.id,
     pno: acc.pno,
@@ -103,33 +109,43 @@ function masterAccountToSession(acc: any): UserSession {
 
 export async function viewableOfficer(id: string): Promise<UserSession | null> {
   if (!id || id === 'cms_developer_admin') return null;
+  // The User table is the source of truth. Legacy JSON accounts remain a fallback only.
+  // A demo deployment must still work when the database is unseeded or unreachable.
+  const { prisma } = await import('@/lib/prisma');
+  let user = null;
+  try {
+    user = await prisma.user.findUnique({ where: { id }, include: { unit: true } });
+  } catch {}
+  if (user) return await officerSession(user);
   if (demoEnabled()) {
     try {
       const { getAccountById } = await import('@/services/accountMasterService');
       const acc = await getAccountById(id);
       if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
     } catch {}
-    const demo = demoPersonasEnabled() && DEMO_USERS.find(user => user.id === id);
-    if (demo) return demo;
+    const persona = demoPersonasEnabled() && DEMO_USERS.find(candidate => candidate.id === id);
+    if (persona) return persona;
   }
-  const { prisma } = await import('@/lib/prisma');
-  const user = await prisma.user.findUnique({ where: { id }, include: { unit: true } });
-  return user ? await officerSession(user) : null;
+  return null;
 }
 
 async function baseSessionUser(userId: string, demo: boolean): Promise<UserSession | null> {
   if (userId === 'cms_developer_admin') return (demoEnabled() || process.env.CMS_DEVELOPER_ADMIN_PASSWORD) ? developerAdminUser() : null;
+  const { prisma } = await import('@/lib/prisma');
+  let user = null;
+  try {
+    user = await prisma.user.findUnique({ where: { id: userId }, include: { unit: true } });
+  } catch {}
+  if (user) return await officerSession(user);
   if (demo && demoEnabled()) {
     try {
       const { getAccountById } = await import('@/services/accountMasterService');
       const acc = await getAccountById(userId);
       if (acc && acc.status === 'ACTIVE') return masterAccountToSession(acc);
     } catch {}
-    return demoPersonasEnabled() ? DEMO_USERS.find(user => user.id === userId) ?? null : null;
+    return demoPersonasEnabled() ? DEMO_USERS.find(persona => persona.id === userId) ?? null : null;
   }
-  const { prisma } = await import('@/lib/prisma');
-  const user = await prisma.user.findUnique({ where: { id: userId }, include: { unit: true } });
-  return user ? await officerSession(user) : null;
+  return null;
 }
 
 export async function sessionUser(req: Request): Promise<UserSession | null> {
@@ -170,6 +186,17 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
     const demo = DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase());
     if (demo) return demo;
   }
+  // User table is checked first so credentials come from the database, not the legacy JSON store.
+  const { prisma } = await import('@/lib/prisma');
+  let user = null;
+  try {
+    user = await prisma.user.findUnique({ where: { pno: pno.trim().toUpperCase() }, include: { unit: true } });
+  } catch {}
+  if (user) {
+    const [salt, hash, extra] = user.passwordHash.split(':');
+    if (extra || !salt || !/^[a-f0-9]{128}$/.test(hash ?? '')) return null;
+    return timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex')) ? officerSession(user) : null;
+  }
   if (demoEnabled()) {
     try {
       const { getAccountByUsername } = await import('@/services/accountMasterService');
@@ -181,18 +208,9 @@ export async function validLogin(pno: string, pin: string): Promise<UserSession 
             const match = timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex'));
             if (match) return masterAccountToSession(acc);
           }
-        } else if (pin !== '123456' && pin === acc.plainPinSample) {
-          return masterAccountToSession(acc);
         }
       }
     } catch {}
-  }
-  const { prisma } = await import('@/lib/prisma');
-  const user = await prisma.user.findUnique({ where: { pno: pno.trim().toUpperCase() }, include: { unit: true } });
-  if (user) {
-    const [salt, hash, extra] = user.passwordHash.split(':');
-    if (extra || !salt || !/^[a-f0-9]{128}$/.test(hash ?? '')) return null;
-    return timingSafeEqual(scryptSync(pin, salt, 64), Buffer.from(hash, 'hex')) ? officerSession(user) : null;
   }
   if (!demoPersonasEnabled() || pin !== '123456') return null;
   return DEMO_USERS.find(candidate => candidate.pno.toUpperCase() === pno.trim().toUpperCase()) ?? null;

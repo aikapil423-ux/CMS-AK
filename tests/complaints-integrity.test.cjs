@@ -83,7 +83,8 @@ test('registration is durable and storage quota cannot trim any complaints',asyn
 test('MHC can attach the permanent intake docket before EO assignment',async()=>{
  const record=await s.addDocument(saved.id,{fileName:'Registered_Complaint_QA.pdf',fileCategory:'REGISTERED COMPLAINT DOCKET',uploadedBy:'Test MHC',fileSize:'1 KB',dataUrl:'data:application/pdf;base64,JVBERg==',isPermanentRegistrationDoc:true});
  assert.ok(record.id);const row=JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json')))[0];assert.equal(row.documents.length,1);
- saved=row;
+ // The store row is persisted in ID direction; post the normalized record instead.
+ saved=(await (await route.GET(new Request('http://local/api/complaints',{headers:{cookie:'cms_session='+issueSession('usr_mhc_1')}}))).json()).complaints[0];
 });
 test('backend rejects bulk replacement, stale updates, and another officer assignment',async()=>{
  assert.equal((await post({complaints:[]})).status,400);
@@ -105,7 +106,8 @@ test('simultaneous writes use record versions and cannot clobber a newer save',a
  const rows=JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json')));assert.equal(rows.length,1);assert.equal(rows[0].persistenceVersion,saved.persistenceVersion+1);
 });
 test('malformed nested records and another users document deletion are rejected',async()=>{
- const current=JSON.parse(fs.readFileSync(path.join(temp,'prisma','complaints-store.json')))[0];
+ // The store row is persisted in ID direction; post the normalized record instead.
+ const current=(await (await route.GET(new Request('http://local/api/complaints',{headers:{cookie:'cms_session='+issueSession('usr_sho_1')}}))).json()).complaints[0];
  let r=await post({operation:'save',changes:[{complaint:{...current,reports:'not-an-array'},expectedVersion:current.persistenceVersion}]});assert.equal(r.status,400);
  r=await post({operation:'save',changes:[{complaint:{...current,documents:[...(current.documents||[]),{id:'qa-doc',fileName:'evidence.pdf',createdByUserId:'usr_eo_2'}]},expectedVersion:current.persistenceVersion}]});assert.equal(r.status,200);
  const updated=(await r.json()).complaints[0];assert.equal(updated.documents.find(d=>d.id==='qa-doc').createdByUserId,'usr_sho_1');r=await post({operation:'deleteDocument',changes:[{complaint:{...updated,documents:[]},expectedVersion:updated.persistenceVersion}]},'usr_eo_1');assert.equal(r.status,403);

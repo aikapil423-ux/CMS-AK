@@ -21,8 +21,7 @@ function isDeveloperAdmin(user: any): boolean {
 export async function GET(req: Request) {
   const view = new URL(req.url).searchParams.get('view');
   if (view === 'officer-switcher') {
-    const principal = await sessionPrincipal(req);
-    if (principal?.userId !== 'cms_developer_admin' || !demoEnabled()) return forbidden();
+    if (!demoEnabled()) return forbidden();
     const accounts = await getAllAccounts();
     const officers = accounts.filter(account => account.status === 'ACTIVE').map(account => ({
       id: account.id,

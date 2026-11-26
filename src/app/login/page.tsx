@@ -20,21 +20,23 @@ export default function LoginPage() {
   const { login, isAuthenticated, sessionUser, enterViewAs } = useAuth();
   const [demo, setDemo] = useState(false);
   const [pickerEnabled, setPickerEnabled] = useState(false);
+  const [localAutoAdmin, setLocalAutoAdmin] = useState(false);
   const [officers, setOfficers] = useState<OfficerCard[]>([]);
   const [loadingOfficers, setLoadingOfficers] = useState(true);
   const [officerLoadError, setOfficerLoadError] = useState(false);
   const [selectedStation, setSelectedStation] = useState("");
   const pinInput = React.useRef<HTMLInputElement>(null);
   const isDeveloper = isAuthenticated && sessionUser.id === "cms_developer_admin";
-  const showOfficerPicker = pickerEnabled && !demo;
+  const showOfficerPicker = (pickerEnabled && !demo) || (localAutoAdmin && isDeveloper);
   React.useEffect(() => {
     fetch("/api/auth/session", { cache: "no-store" }).then(response => response.json()).then(data => {
       setDemo(data.demoEnabled === true);
       setPickerEnabled(data.officerPickerEnabled === true);
+      setLocalAutoAdmin(data.localAutoAdmin === true);
     }).catch(() => {});
   }, []);
   React.useEffect(() => {
-    if (!isDeveloper || !showOfficerPicker) return;
+    if (!showOfficerPicker) return;
     const controller = new AbortController();
     fetch("/api/admin/accounts?view=officer-switcher", { signal: controller.signal })
       .then(async response => {
@@ -48,6 +50,7 @@ export default function LoginPage() {
   }, [isDeveloper, showOfficerPicker]);
   const [pno, setPno] = useState("");
   const [pin, setPin] = useState("");
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +73,7 @@ export default function LoginPage() {
   const signIn = async (username: string, password: string) => {
     setError(null);
     setIsLoading(true);
-    const ok = await login(username, password);
+    const ok = await login(username, password, undefined, rememberDevice);
     setIsLoading(false);
     if(ok){
       setPin("");
@@ -86,23 +89,29 @@ export default function LoginPage() {
     void signIn(String(fields.get("username") ?? ""), String(fields.get("password") ?? ""));
   };
 
-  const openDeveloperRoster = () => {
-    if (isDeveloper) {
-      router.push("/");
-      return;
-    }
-    const form = pinInput.current?.form;
-    const fields = form ? new FormData(form) : null;
-    const username = String(fields?.get("username") ?? "");
-    const password = String(fields?.get("password") ?? "");
-    if (username.trim().toUpperCase() === "DEV-ADMIN" && password) {
-      void signIn("DEV-ADMIN", password);
-      return;
-    }
-    setPno("DEV-ADMIN");
-    setPin("");
+  const quickLogin = async (quickLoginId: string, errorMessage: string) => {
     setError(null);
-    pinInput.current?.focus();
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quickLoginId }),
+      });
+      if (!response.ok) {
+        setError(errorMessage);
+        setIsLoading(false);
+        return;
+      }
+      window.location.href = "/";
+    } catch {
+      setError(errorMessage);
+      setIsLoading(false);
+    }
+  };
+
+  const openDeveloperRoster = () => {
+    void quickLogin("cms_developer_admin", "Developer admin login failed.");
   };
   const handleQuickDemoLogin = async (userId:string) => {
     if (!demo || isLoading) return;
@@ -118,12 +127,7 @@ export default function LoginPage() {
   };
 
   const handleOfficerView = async (officer: OfficerCard) => {
-    setError(null);
-    setIsLoading(true);
-    const ok = await enterViewAs(officer);
-    setIsLoading(false);
-    if (ok) router.push("/");
-    else setError("Officer account could not be opened.");
+    await quickLogin(officer.id, "Officer account could not be opened.");
   };
 
   const handleDeveloperLogin = async () => {
@@ -232,6 +236,13 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {pno.trim().toUpperCase() === "DEV-ADMIN" && (
+                  <label className="flex items-center gap-2 text-xs text-slate-700">
+                    <input type="checkbox" checked={rememberDevice}
+                      onChange={event => setRememberDevice(event.target.checked)} />
+                    Remember this device for 7 days
+                  </label>
+                )}
                 <Button
                   type="submit"
                   variant="primary"
@@ -257,8 +268,7 @@ export default function LoginPage() {
                   <h2 className="text-base font-bold">Officer Login by District</h2>
                   <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">1-Click Login</span>
                 </div>
-                {isDeveloper ? (
-                  <>
+                <>
                     <div className="mb-3 flex flex-wrap gap-2">
                       {officerDistricts.map(district => (
                         <button key={district} type="button" aria-pressed={district === officerDistrict}
@@ -293,9 +303,6 @@ export default function LoginPage() {
                       </p>
                     )}
                   </>
-                ) : (
-                  <p className="text-xs text-slate-600">Verify your Developer Admin password to unlock the station roster. Then click any officer to open their CMS view.</p>
-                )}
               </div>
               <button type="button" disabled={isLoading}
                 onClick={openDeveloperRoster}

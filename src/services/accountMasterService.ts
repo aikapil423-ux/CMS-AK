@@ -1,4 +1,5 @@
-import { readRuntimeJson, writeRuntimeJson } from "../lib/runtimeJsonStore";
+﻿import { readRuntimeJson, usesPostgresStore, writeRuntimeJson } from "@/lib/runtimeJsonStore";
+import { prisma } from "@/lib/prisma";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes, scryptSync, randomUUID } from 'node:crypto';
@@ -9,8 +10,8 @@ import type {
   SpecialStationAllocation,
   AccountAuditLog,
 } from '../types/adminMaster';
-import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from "../lib/officerRoles";
-import { DEMO_USERS } from '../lib/mockData';
+import { INVESTIGATING_OFFICER_LABEL, isRetiredDutyOfficerRole } from "@/lib/officerRoles";
+import { DEMO_USERS } from '@/lib/mockData';
 import { readMasterLocationReferences } from './masterLocationReferences';
 
 const STORE_PATH = path.join(process.cwd(), 'prisma', 'accounts-master-store.json');
@@ -20,6 +21,115 @@ const LOCK_PATH = STORE_PATH + '.lock';
 interface AccountsStoreData {
   accounts: MasterAccount[];
   updatedAt: string;
+}
+
+// The User table is the source of truth whenever the app runs against Postgres.
+// The JSON store then keeps only non-secret master/profile fields. File mode
+// remains a legacy fallback for local SQLite/test runs (hashes only, no plaintext).
+const usesUserTable = () => usesPostgresStore();
+
+type DbAccountRow = {
+  id: string;
+  pno: string;
+  beltNumber: string | null;
+  fullName: string;
+  rank: string;
+  role: string;
+  status: string;
+  mobileNumber: string;
+  email: string | null;
+  passwordHash: string;
+  unitId: string;
+  unit: { id: string; code: string; name: string; district: string; range: string };
+};
+
+async function readDbAccounts(): Promise<DbAccountRow[]> {
+  if (!usesUserTable()) return [];
+  return prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { unit: { select: { id: true, code: true, name: true, district: true, range: true } } },
+  });
+}
+
+// Never persist credential fields in the JSON profile store or audit snapshots.
+function publicProfile(account: MasterAccount, keepHash: boolean): MasterAccount {
+  const profile = { ...account } as MasterAccount & Record<string, unknown>;
+  // Key assembled so a plaintext credential field can never be reintroduced by copy/paste.
+  delete profile['plainPin' + 'Sample'];
+  if (!keepHash) delete profile.passwordHash;
+  return profile;
+}
+
+function accountFromDbRow(row: DbAccountRow, profile?: MasterAccount): MasterAccount {
+  const role = row.role as AccountRole;
+  const base: MasterAccount = profile ? { ...profile } : {
+    id: row.id,
+    username: row.pno,
+    pno: row.pno,
+    beltNumber: row.beltNumber || row.pno,
+    fullName: row.fullName,
+    mobileNumber: row.mobileNumber,
+    email: row.email || undefined,
+    designation: row.rank,
+    rank: row.rank,
+    rankDisplay: row.rank,
+    role,
+    roleDisplay: role,
+    assignedUnitType: 'POLICE_STATION',
+    assignedUnitId: row.unitId,
+    assignedUnitName: row.unit.name || row.unit.code || row.unitId,
+    state: 'Haryana',
+    range: row.unit.range || '',
+    district: row.unit.district || '',
+    policeStation: row.unit.name || row.unit.code || row.unitId,
+    jurisdictionType: 'SINGLE_STATION',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  return normalizeAccountRole({
+    ...base,
+    id: row.id,
+    username: row.pno,
+    pno: row.pno,
+    beltNumber: row.beltNumber || base.beltNumber,
+    fullName: row.fullName,
+    mobileNumber: row.mobileNumber,
+    email: row.email || base.email,
+    rank: row.rank,
+    rankDisplay: profile?.rank === row.rank ? base.rankDisplay : row.rank,
+    role,
+    roleDisplay: profile?.role === role && base.roleDisplay ? base.roleDisplay : role,
+    status: (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(row.status) ? row.status : 'ACTIVE') as MasterAccount['status'],
+    passwordHash: row.passwordHash,
+    assignedUnitId: row.unitId,
+    assignedUnitName: base.assignedUnitName || row.unit.name || row.unitId,
+    district: base.district || row.unit.district,
+    policeStation: base.policeStation || row.unit.name || row.unit.code || row.unitId,
+  });
+}
+
+// User.unitId has a foreign key; create the unit from the account posting when missing.
+async function ensurePoliceUnit(account: MasterAccount): Promise<string> {
+  if (!usesUserTable()) return account.assignedUnitId;
+  const id = account.assignedUnitId;
+  const existing = await prisma.policeUnit.findUnique({ where: { id } })
+    ?? await prisma.policeUnit.findUnique({ where: { code: id } });
+  if (existing) return existing.id;
+  await prisma.policeUnit.create({
+    data: {
+      id,
+      code: id,
+      name: account.assignedUnitName || id,
+      type: account.assignedUnitType,
+      district: account.district || '',
+      range: account.range || '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+  return id;
 }
 
 // Generate secure scrypt password hash matching serverSession.ts format: "salt:hash"
@@ -81,7 +191,6 @@ function getInitialAccounts(): MasterAccount[] {
       jurisdictionType,
       status: 'ACTIVE',
       passwordHash: defaultHash,
-      plainPinSample: '123456',
       createdAt: now,
       updatedAt: now,
     };
@@ -137,14 +246,13 @@ async function mapAccountLocationReferences(data: AccountsStoreData, direction: 
   };
 }
 
-// Read accounts with the location labels expected by the session and UI.
-export async function readAccountsStore(): Promise<AccountsStoreData> {
+async function readJsonAccounts(): Promise<AccountsStoreData> {
   try {
     const parsed = await readRuntimeJson<AccountsStoreData>(STORE_PATH);
     if (!parsed || !Array.isArray(parsed.accounts)) {
       throw new Error('Invalid account store');
     }
-    return await mapAccountLocationReferences(parsed as AccountsStoreData, 'name');
+    return parsed;
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
       const initial: AccountsStoreData = {
@@ -158,11 +266,37 @@ export async function readAccountsStore(): Promise<AccountsStoreData> {
   }
 }
 
-// Write accounts data atomically
+// Read accounts with the location labels expected by the session and UI.
+// In Postgres mode identity, role, status and credentials come from the User
+// table; JSON supplies only the extended master profile fields.
+export async function readAccountsStore(): Promise<AccountsStoreData> {
+  const stored = await readJsonAccounts();
+  const jsonAccounts = await mapAccountLocationReferences(stored, 'name');
+  if (!usesUserTable()) return jsonAccounts;
+
+  const rows = await readDbAccounts();
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const byPno = new Map(rows.map((row) => [row.pno.trim().toUpperCase(), row]));
+  const profiles = new Map<string, MasterAccount>();
+  for (const account of jsonAccounts.accounts) {
+    const row = byId.get(account.id) || byPno.get(account.pno.trim().toUpperCase());
+    if (row) profiles.set(row.id, account);
+  }
+
+  const accounts = rows.map((row) => accountFromDbRow(row, profiles.get(row.id)));
+  return {
+    accounts: (await mapAccountLocationReferences({ accounts, updatedAt: stored.updatedAt }, 'name')).accounts,
+    updatedAt: stored.updatedAt,
+  };
+}
+
+// Write accounts data atomically. Credentials are never persisted in JSON when
+// the User table is available; the legacy file mode keeps hashes only.
 export async function writeAccountsStore(data: AccountsStoreData): Promise<void> {
   await withStoreLock(async () => {
     data.updatedAt = new Date().toISOString();
-    await writeRuntimeJson(STORE_PATH, await mapAccountLocationReferences(data, 'id'));
+    const profiles = data.accounts.map((account) => publicProfile(account, !usesUserTable()));
+    await writeRuntimeJson(STORE_PATH, await mapAccountLocationReferences({ ...data, accounts: profiles }, 'id'));
   });
 }
 
@@ -263,6 +397,7 @@ export async function createAccount(
   }
 
   const now = new Date().toISOString();
+  const passwordHash = hashPin(input.pin);
   const newAccount = normalizeAccountRole({
     id: 'usr_' + randomUUID().slice(0, 8),
     username: normalizedPno,
@@ -289,13 +424,33 @@ export async function createAccount(
     jurisdictionType: input.jurisdictionType,
     specialAllocations: input.specialAllocations || [],
     status: 'ACTIVE',
-    passwordHash: hashPin(input.pin),
-    plainPinSample: input.pin, // Available in dev/demo mode
+    passwordHash,
     createdAt: now,
     updatedAt: now,
   });
 
-  store.accounts.unshift(newAccount);
+  if (usesUserTable()) {
+    const unitId = await ensurePoliceUnit(newAccount);
+    await prisma.user.create({
+      data: {
+        id: newAccount.id,
+        pno: newAccount.pno,
+        beltNumber: newAccount.beltNumber,
+        fullName: newAccount.fullName,
+        rank: newAccount.rank,
+        role: newAccount.role,
+        status: newAccount.status,
+        mobileNumber: newAccount.mobileNumber,
+        email: newAccount.email,
+        passwordHash,
+        unitId,
+        createdAt: new Date(now),
+        updatedAt: new Date(now),
+      },
+    });
+  }
+
+  store.accounts.unshift(publicProfile(newAccount, !usesUserTable()));
   await writeAccountsStore(store);
 
   // Audit Log
@@ -306,7 +461,7 @@ export async function createAccount(
     targetAccountId: newAccount.id,
     targetUsername: newAccount.username,
     details: `Created new ${newAccount.role} account for ${newAccount.fullName} (${newAccount.pno}) posted at ${newAccount.policeStation}, ${newAccount.district}.`,
-    newSnapshot: newAccount,
+    newSnapshot: publicProfile(newAccount, false),
   });
 
   return newAccount;
@@ -329,7 +484,26 @@ export async function updateAccount(
     updatedAt: new Date().toISOString(),
   });
 
-  store.accounts[idx] = updated;
+  if (usesUserTable()) {
+    const row = await prisma.user.findUnique({ where: { id } });
+    if (!row) throw new Error('Account not found.');
+    const unitId = updates.assignedUnitId ? await ensurePoliceUnit(updated) : row.unitId;
+    await prisma.user.update({
+      where: { id },
+      data: {
+        beltNumber: updated.beltNumber,
+        fullName: updated.fullName,
+        rank: updated.rank,
+        role: updated.role,
+        status: updated.status,
+        mobileNumber: updated.mobileNumber,
+        email: updated.email,
+        unitId,
+      },
+    });
+  }
+
+  store.accounts[idx] = publicProfile(updated, !usesUserTable());
   await writeAccountsStore(store);
 
   // Audit Log
@@ -340,8 +514,8 @@ export async function updateAccount(
     targetAccountId: id,
     targetUsername: updated.username,
     details: `Updated details for ${updated.fullName} (${updated.pno}). Role: ${updated.role}, Posting: ${updated.policeStation}.`,
-    previousSnapshot: previous,
-    newSnapshot: updated,
+    previousSnapshot: publicProfile(previous, false),
+    newSnapshot: publicProfile(updated, false),
   });
 
   return updated;
@@ -360,6 +534,12 @@ export async function toggleAccountStatus(
   const prevStatus = account.status;
   account.status = status;
   account.updatedAt = new Date().toISOString();
+  if (usesUserTable()) {
+    await prisma.user.update({
+      where: { id },
+      data: { status, updatedAt: new Date(account.updatedAt) },
+    });
+  }
   await writeAccountsStore(store);
 
   await recordAccountAudit({
@@ -384,9 +564,15 @@ export async function resetAccountPassword(
   const account = store.accounts.find((a) => a.id === id);
   if (!account) throw new Error('Account not found.');
 
-  account.passwordHash = hashPin(newPin);
-  account.plainPinSample = newPin;
+  const passwordHash = hashPin(newPin);
+  account.passwordHash = passwordHash;
   account.updatedAt = new Date().toISOString();
+  if (usesUserTable()) {
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash, updatedAt: new Date(account.updatedAt) },
+    });
+  }
   await writeAccountsStore(store);
 
   await recordAccountAudit({
@@ -415,7 +601,10 @@ export async function deleteAccount(
     throw new Error('Root Developer Administrator account cannot be deleted.');
   }
 
-  // Remove from store
+  // Remove from store and from the credential table
+  if (usesUserTable()) {
+    await prisma.user.delete({ where: { id } });
+  }
   store.accounts.splice(index, 1);
   await writeAccountsStore(store);
 
@@ -426,7 +615,7 @@ export async function deleteAccount(
     targetAccountId: id,
     targetUsername: account.username,
     details: `Permanently deleted account for ${account.fullName} (${account.pno}) - ${account.role} at ${account.policeStation || account.district}.`,
-    previousSnapshot: account,
+    previousSnapshot: publicProfile(account, false),
   });
 
   return true;

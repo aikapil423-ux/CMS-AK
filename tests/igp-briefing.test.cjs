@@ -18,6 +18,7 @@ function makeLoader(stubs={}) {
       if(id in stubs)return stubs[id];
       if(id.startsWith('@/'))return load('src/'+id.slice(2)+'.ts');
       if(id.endsWith('.json'))return JSON.parse(fs.readFileSync(path.resolve(path.dirname(file),id),'utf8'));
+      if(id.startsWith('./')||id.startsWith('../')){const r=path.resolve(path.dirname(file),id);for(const c of [r+'.ts',r+'.tsx',r+'.json'])if(fs.existsSync(c))return load(c);return require(r);}
       return require(id);
     }},{filename:file});
     return exports;

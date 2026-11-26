@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),fsp=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),vm=require('node:vm'),ts=require('typescript');
 function loader(stubs={},extra={}) {
  const cache={};return function load(file){if(cache[file])return cache[file];const exports={};cache[file]=exports;
- vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,resolveJsonModule:true}}).outputText,{exports,process,console,Response,...extra,require(n){if(n in stubs)return stubs[n];if(n.endsWith('.json'))return JSON.parse(fs.readFileSync(path.resolve(path.dirname(file),n),'utf8'));if(n.startsWith('@/'))return load('src/'+n.slice(2)+'.ts');return require(n);}}, {filename:file});return exports;};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,resolveJsonModule:true}}).outputText,{exports,process,console,Response,...extra,require(n){if(n in stubs)return stubs[n];if(n.endsWith('.json'))return JSON.parse(fs.readFileSync(path.resolve(path.dirname(file),n),'utf8'));if(n.startsWith('@/'))return load('src/'+n.slice(2)+'.ts');if(n.startsWith('./')||n.startsWith('../')){const r=path.resolve(path.dirname(file),n);for(const c of [r+'.ts',r+'.tsx',r+'.json'])if(fs.existsSync(c))return load(c);return require(r);}return require(n);}}, {filename:file});return exports;};
 }
 const load=loader(),lib=load('src/lib/weeklyDiary.ts'),engine=load('src/lib/weeklyDiaryEngine.ts');
 const fir=(id,other={})=>({id,firNumber:id,firDate:'2026-06-01',firYear:2026,policeStation:'P',district:'D',status:'UNDER_INVESTIGATION',accusedList:[],createdAt:'2026-06-01',...other});
@@ -47,7 +47,7 @@ test('manual notes follow their case after a sorted row moves',()=>{
 });
 test('backend diary persistence isolates periods/owners and rejects stale saves',async()=>{
  const dir=await fsp.mkdtemp(path.join(os.tmpdir(),'cms-weekly-test-'));
- try{const repo=loader({}, {process:{cwd:()=>dir}})('src/services/weeklyDiaryRepository.ts');
+ try{const repo=loader({}, {process:{cwd:()=>dir,env:{}}})('src/services/weeklyDiaryRepository.ts');
  const first=await repo.saveDiary('owner',build([fir('a')]),null);
  assert.equal(await repo.readDiary('other',first.from,first.to,first.station),null);
  assert.equal(await repo.readDiary('owner','2026-06-19',first.to,first.station),null);

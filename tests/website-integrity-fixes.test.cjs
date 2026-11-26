@@ -46,8 +46,46 @@ test('missing person creation never supplies identity, old dates, GD, address or
 test('lost property numbering uses maximum; empty year starts at one',()=>{
  const e=environment({'haryana_police_cms_lost_property_records_v1':JSON.stringify([{registrationNumber:'0001/2026',registrationYear:'2026'},{registrationNumber:'0003/2026',registrationYear:'2026'}])});const s=e.load('src/services/lostPropertyService.ts').lostPropertyService;assert.equal(s.getNextRegistrationNumber('2026'),'0004/2026');assert.equal(s.getNextRegistrationNumber('2028'),'0001/2028');
 });
-test('TA ownership never falls back to empty or partial names; deletion and edits check owner',()=>{
- const e=environment({'haryana_police_cms_tada_bills_v1':JSON.stringify([{id:'other',userId:'other',userName:'',form1TourProgramme:{employeeName:''}}])});const s=e.load('src/services/tadaService.ts').tadaService;assert.equal(s.getByUser('me','1234','Officer Name').length,0);assert.equal(s.delete('other','me'),false);assert.throws(()=>s.save({id:'other'},'me'));
+test('TA ownership never falls back to empty or partial names; deletion and edits check owner',async()=>{
+ const rows=new Map(),lines=[],events=[];const when='2026-01-01T00:00:00.000Z';
+ const user={id:'me',name:'Officer Name',district:'D',stationName:'PS A'};
+ rows.set('other',{ownerId:'someone-else',status:'DRAFT',updatedAt:when,deleted:false,payload:JSON.stringify({id:'other',userId:'someone-else',userName:'',status:'DRAFT',createdAt:when,updatedAt:when,form1TourProgramme:{employeeName:'',journeys:[]},form2JourneyDetails:{journeys:[]},form3MainPage:{}})});
+ const prisma={$transaction:arg=>Array.isArray(arg)?Promise.all(arg):arg(prisma),
+  $queryRaw:(strings,...values)=>{const sql=strings.join('?'),s=sql.trim();
+   if(sql.includes('TaDaBillLine'))return Promise.resolve(lines.filter(l=>rows.get(l.billId)?.ownerId===user.id).map(l=>({billId:l.billId,form:l.form,payload:l.payload})));
+   if(s.startsWith('SELECT id FROM "TaDaBill"'))return Promise.resolve([...rows.entries()].filter(([,r])=>r.ownerId===user.id&&r.deleted).map(([id])=>({id})));
+   if(s.startsWith('SELECT "ownerId"'))return Promise.resolve(rows.has(values[0])?[rows.get(values[0])]:[]);
+   return Promise.resolve([...rows.values()].filter(r=>r.ownerId===user.id&&!r.deleted).map(r=>({payload:r.payload})));
+  },
+  $executeRaw:(strings,...values)=>{const s=strings.join('?').trim();
+   if(s.startsWith('UPDATE "TaDaBill" SET "deleted"')){const r=rows.get(values[1]);if(!r||r.ownerId!==values[2]||r.updatedAt!==values[3]||r.deleted)return Promise.resolve(0);r.deleted=true;r.updatedAt=values[0];return Promise.resolve(1);}
+   if(s.startsWith('UPDATE "TaDaBill" SET "status"')){const r=rows.get(values[4]);if(!r||r.ownerId!==values[5]||r.deleted)return Promise.resolve(0);r.status=values[0];r.updatedAt=values[1];r.payload=values[2];return Promise.resolve(1);}
+   if(s.startsWith('INSERT INTO "TaDaBill"')){rows.set(values[0],{ownerId:values[1],status:values[2],updatedAt:values[3],payload:values[4],deleted:false});return Promise.resolve(1);}
+   if(s.startsWith('DELETE FROM "TaDaBillLine"')){for(let i=lines.length-1;i>=0;i--)if(lines[i].billId===values[0])lines.splice(i,1);return Promise.resolve(1);}
+   if(s.startsWith('INSERT INTO "TaDaBillLine"')){lines.push({billId:values[0],form:values[1],position:values[2],payload:values[3]});return Promise.resolve(1);}
+   if(s.startsWith('INSERT INTO "TaDaBillEvent"')){events.push({billId:values[1],officerId:values[2]});return Promise.resolve(1);}
+   return Promise.resolve(0);
+  }};
+ const e=environment({},{'@/lib/apiSecurity':{apiAccess:async()=>user,forbidden:(reason)=>Response.json({error:reason||'Forbidden'},{status:403})},'@/lib/prisma':{prisma}});
+ const route=e.load('src/app/api/tada/route.ts');
+ const post=body=>route.POST(new Request('http://localhost/api/tada',{method:'POST',body:JSON.stringify(body)}));
+ const get=async()=>(await (await route.GET(new Request('http://localhost/api/tada'))).json());
+ const bill=(id,userId)=>({id,userId,userName:'Officer Name',status:'DRAFT',createdAt:when,updatedAt:when,form1TourProgramme:{journeys:[]},form2JourneyDetails:{journeys:[]},form3MainPage:{}});
+ // Listing is owner-scoped: the foreign bill (even with an empty name) never leaks.
+ assert.equal((await get()).bills.length,0);
+ // Editing another officer's bill is refused even when the payload claims this user's id.
+ assert.equal((await post({action:'save',bill:bill('other','me')})).status,403);
+ // A bill whose userId is not the session user is refused outright.
+ assert.equal((await post({action:'save',bill:bill('mine','someone-else')})).status,403);
+ // Deleting another officer's bill is refused.
+ assert.equal((await post({action:'delete',id:'other',updatedAt:when})).status,403);
+ // The own draft saves under the session user and appears in the owner-scoped listing.
+ assert.equal((await post({action:'save',bill:bill('mine','me')})).status,200);
+ assert.equal(rows.get('mine').ownerId,'me');
+ assert.equal((await get()).bills.length,1);
+ // Deleting the own draft succeeds and archives it.
+ assert.equal((await post({action:'delete',id:'mine',updatedAt:rows.get('mine').updatedAt})).status,200);
+ assert.equal((await get()).bills.length,0);
 });
 test('TA extraction from no GD creates no invented journeys or financial approval',async()=>{
  const e=environment({}, {'@/services/generalDiaryService':{},'./generalDiaryService':{GeneralDiaryService:{getEntries:async()=>[]}}});const s=e.load('src/services/tadaAutoFillService.ts').tadaAutoFillService;
@@ -185,10 +223,10 @@ test('complaint autofill ties the relation to the complainant in Hindi and Engli
  assert.equal(relation('काजल ने अमित पुत्र राम का नाम बताया।','काजल').type,undefined);
 });
 
-test('legal assistant keeps CMS suggestions when OpenRouter rejects the advisory', async () => {
+test('legal assistant keeps CMS suggestions when Gemini rejects the advisory', async () => {
  const {load}=environment({}, {
   '@/lib/apiSecurity':{apiAccess:async()=>({id:'officer'})},
-  '@/lib/openRouter':{PROCESSING_MODEL:'test',processingAIAvailable:()=>true,processWithAI:async()=>{throw new Error('OpenRouter processing failed (HTTP 503).');}},
+  '@/lib/geminiProcessing':{PROCESSING_MODEL:'test',processingAIAvailable:()=>true,processWithAI:async()=>{throw new Error('Gemini processing failed (HTTP 503).');}},
   '@/services/caseAnalysisService':{},
   '@/services/complaintRepository':{readComplaints:async()=>[{id:'sample',incidentDetails:'Sample facts'}]},
   '@/utils/complaintPermissions':{canViewComplaint:()=>({allowed:true})},
@@ -211,7 +249,8 @@ test('view-as enters an officer ID with the developer session and never signs a 
  const {load}=environment({}, {
   'next/server':{NextResponse:{json:(body,options)=>{const r=Response.json(body,options);r.cookies={set(){cookies++;}};return r;}}},
   '@/lib/serverSession':{
-    sameOrigin:()=>true,demoEnabled:()=>true,
+    sameOrigin:()=>true,demoEnabled:()=>true,demoPersonasEnabled:()=>false,usesDemoSession:()=>false,
+    SESSION_DURATION_MS:8*60*60*1000,REMEMBERED_ADMIN_DURATION_MS:7*24*60*60*1000,
     sessionUser:async()=>effective,sessionPrincipal:async()=>principal,
     viewableOfficer:async(id)=>id==='usr_sp_1'?{...officer,id:'usr_sp_1',role:'SP_DISTRICT'}:(id==='usr_sho_1'?officer:null),
     developerAdminUser:()=>developer,

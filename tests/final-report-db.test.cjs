@@ -5,14 +5,33 @@ const path = require('node:path');
 const os = require('node:os');
 const vm = require('node:vm');
 const ts = require('typescript');
-const { DatabaseSync } = require('node:sqlite');
 const { PrismaClient } = require('@prisma/client');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cms-final-report-test-'));
-const dbPath = path.join(directory, 'test.db');
-const db = new DatabaseSync(dbPath);
-db.exec(fs.readFileSync('tests/fixtures/final-report-qa-schema.sql','utf8'));
-db.close();
-const prisma = new PrismaClient({datasources:{db:{url:`file:${dbPath.replaceAll('\\','/')}`}}});
+
+// The app runtime uses the PostgreSQL datasource (see .env.local). The test isolates
+// itself in a dedicated schema built from the same DDL fixture, so the persistence
+// logic is exercised against the real database engine without touching app data.
+function envValue(name) {
+  for (const file of ['.env.local', '.env']) {
+    const p = path.resolve(file);
+    if (!fs.existsSync(p)) continue;
+    const m = fs.readFileSync(p, 'utf8').match(new RegExp('^\\s*' + name + '\\s*=\\s*(.*)$', 'm'));
+    if (m) return m[1].trim().replace(/^["']|["']$/g, '');
+  }
+  return process.env[name];
+}
+const baseUrl = envValue('POSTGRES_DATABASE_URL');
+if (!baseUrl) throw new Error('POSTGRES_DATABASE_URL is not configured.');
+const schemaName = 'cms_qa_final_report_test';
+const stripped = baseUrl.replace(/([?&])schema=[^&]*/i, '$1').replace(/([?&])&+/, '$1').replace(/\?&/, '?');
+const prisma = new PrismaClient({ datasources: { db: { url: `${stripped}${stripped.includes('?') ? '&' : '?'}schema=${schemaName}` } } });
+const schemaReady = (async () => {
+  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+  await prisma.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
+  const ddl = fs.readFileSync('tests/fixtures/final-report-qa-schema.sql', 'utf8').replace(/DATETIME/g, 'TIMESTAMP(3)');
+  const statements = ddl.split('\n').filter(line => !line.trim().startsWith('--')).join('\n').split(';').map(s => s.trim()).filter(Boolean);
+  for (const statement of statements) await prisma.$executeRawUnsafe(statement);
+})();
 const modules = new Map();
 function load(file) {
   if(modules.has(file)) return modules.get(file);
@@ -34,6 +53,7 @@ const sho={id:'qa-live-sho',role:'SHO',stationName:fir.policeStation,district:fi
 const io={id:fir.assignedIoId,role:'ENQUIRY_OFFICER',stationName:fir.policeStation,district:fir.district};
 function input(id='qa-report') {const data={...initialFinalReport(fir),reportNo:id,formType:'CHARGESHEET',chargeSheetType:'Complete',judicialCustody:'No',pendingAccused:'0',pendingDocuments:'NIL',investigationStatus:'Completed',courtType:'Test Court',judgeName:'Test Judge',caseType:'ADULT',prosecutorApproved:'No',noticeServed:'No'};data.accused[0].action='ChargeSheeted';return {id,expectedVersion:0,author:{id:'qa-officer',name:'Tester'},fir,data,previewHtml:finalReportHtml(fir,data)};}
 test('backend persists classification, accused and exact preview; retry does not duplicate',async()=>{
+  await schemaReady;
   const body=input();body.data.investigationStatus='Pending / Further Investigation';body.previewHtml=finalReportHtml(fir,body.data);const detailModel=load('src/lib/accusedChargesheet.ts');const detail=detailModel.initialAccusedChargesheet(fir,body.data.accused[0]);detail.general.status='ARRESTED';detail.general.verified='Yes';detail.bailer.information.firstName='Test Bailer';body.data.accused[0].chargesheetDetails=detail;body.data.uploadedFiles=[{id:'test-upload',name:'support.pdf',type:'application/pdf',size:5,dataUrl:'data:application/pdf;base64,JVBERi0='}];const saved=await service.save(body);const retry=await service.save(body);
   assert.equal(saved.id,retry.id);assert.equal(await prisma.firFinalReport.count(),1);
   const stored=await prisma.firFinalReport.findUnique({where:{id:body.id},include:{accused:true,events:true}});
@@ -41,6 +61,7 @@ test('backend persists classification, accused and exact preview; retry does not
   const loaded=(await service.list(fir.id))[0];assert.equal(loaded.contentHtml,body.previewHtml);assert.equal(loaded.finalReportData.reportNo,body.data.reportNo);assert.equal(JSON.stringify(loaded.finalReportData.uploadedFiles),JSON.stringify(body.data.uploadedFiles));assert.equal(loaded.finalReportData.accused[0].chargesheetDetails.bailer.information.firstName,'Test Bailer');assert.equal(JSON.parse(stored.accused[0].detailsJson).chargesheetDetails.bailer.information.firstName,'Test Bailer');
 });
 test('CHI routes by Complete/Partial chargesheet type despite opposite investigation status; SHO gates and history remain intact',async()=>{
+  await schemaReady;
   await assert.rejects(service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1'));
   await service.sendToSho('qa-report',fir.id,1,'qa-officer');
   await assert.rejects(service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1'));
@@ -59,11 +80,13 @@ test('CHI routes by Complete/Partial chargesheet type despite opposite investiga
   const events=await service.history(fir.id);assert.equal(events.length,10);assert.equal(JSON.parse(events[0].snapshotJson).data.chargeSheetType,'Complete');
 });
 test('Final Report reason is stored separately; invalid supplementary option never writes',async()=>{
+  await schemaReady;
   const body=input('qa-final');body.data.formType='UNTRACED';body.data.chargeSheetType='';body.data.finalReportReason='Untraced';body.data.finalReportReasonDetails='QA reason';body.previewHtml=finalReportHtml(fir,body.data);await service.save(body);
   const row=await prisma.firFinalReport.findUnique({where:{id:body.id}});assert.equal(row.reportCategory,'FINAL_REPORT');assert.equal(row.finalReportReason,'Untraced');assert.equal(row.chargeSheetType,'');
   const invalid=input('qa-invalid');invalid.data.chargeSheetType='Supplementary';await assert.rejects(service.save(invalid));assert.equal(await prisma.firFinalReport.count({where:{id:invalid.id}}),0);
 });
 test('SHO rejection returns to assigned IO with reason; fresh revision needs fresh review', async()=>{
+  await schemaReady;
   const body=input('qa-reject');await service.save(body);await service.sendToSho(body.id,fir.id,1,'qa-officer');
   await service.review(body.id,fir.id,1,sho,'VIEW_SHO');
   await assert.rejects(service.review(body.id,fir.id,1,sho,'REJECT_SHO',''));
@@ -79,6 +102,7 @@ test('SHO rejection returns to assigned IO with reason; fresh revision needs fre
   await assert.rejects(service.review(body.id,fir.id,2,sho,'APPROVE_SHO'));
 });
 after(async()=>{
+  await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`).catch(()=>{});
   await prisma.$disconnect();
   const resolved=fs.realpathSync(directory), root=fs.realpathSync(os.tmpdir());
   assert.equal(path.dirname(resolved).toLowerCase(),root.toLowerCase());
