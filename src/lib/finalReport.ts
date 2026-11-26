@@ -3,6 +3,13 @@ import { generateIIFVChargesheetHtml } from '@/utils/iifvChargesheetGenerator';
 import type { AccusedChargesheetDetails } from '@/lib/accusedChargesheet';
 import { firReportAccused, firReportWitnesses } from '@/lib/firReportAccused';
 
+export function finalReportChiState(data?: FinalReportData): 'COMPLETED' | 'PARTIAL' {
+  const complete = data?.formType === 'CHARGESHEET'
+    ? data.chargeSheetType === 'Complete'
+    : data?.investigationStatus === 'Completed';
+  return complete ? 'COMPLETED' : 'PARTIAL';
+}
+
 export interface FinalReportData {
   autoFilled?: Record<string, string>;
   uploadedFiles?: Array<{ id: string; name: string; type: string; size: number; dataUrl: string }>;

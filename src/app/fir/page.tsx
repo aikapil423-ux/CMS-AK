@@ -48,7 +48,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { EmptyState, LoadingSkeleton } from "@/components/ui/state-views";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
 import { formatDate, formatDateTime, getTodayIsoIST } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
@@ -343,6 +343,7 @@ function FIRRegisterPageContent() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedFirForAssign, setSelectedFirForAssign] = useState<FIRItem | null>(null);
   const [selectedIoId, setSelectedIoId] = useState("");
+  const { officers: ioRoster, loading: ioRosterLoading, error: ioRosterError } = useFirIoRoster(selectedFirForAssign?.policeStation, selectedFirForAssign?.district);
   const [assignmentDirections, setAssignmentDirections] = useState("");
   const [assignmentSubmitting, setAssignmentSubmitting] = useState(false);
 
@@ -880,7 +881,7 @@ function FIRRegisterPageContent() {
       return;
     }
     if (!selectedFirForAssign || !selectedIoId) return;
-    const selectedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === selectedIoId);
+    const selectedOfficer = ioRoster.find((eo) => eo.id === selectedIoId);
     if (!selectedOfficer) return;
 
     setAssignmentSubmitting(true);
@@ -891,7 +892,8 @@ function FIRRegisterPageContent() {
         selectedOfficer.name,
         selectedOfficer.rank,
         assignmentDirections,
-        currentUser.name
+        currentUser.name,
+        selectedOfficer
       );
       setIsAssignModalOpen(false);
       setSelectedFirForAssign(null);
@@ -1488,7 +1490,11 @@ function FIRRegisterPageContent() {
                   className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-red-500/20"
                 >
                   <option value="">-- Choose Officer --</option>
-                  {MOCK_ENQUIRY_OFFICERS.map((officer) => (
+                  {ioRosterLoading && <option disabled>Loading officers…</option>}
+                  {ioRosterError && <option disabled>{ioRosterError}</option>}
+                  {!ioRosterLoading && !ioRosterError && ioRoster.length === 0 && <option disabled>No eligible officers</option>}
+                  {selectedFirForAssign.assignedIoId && !ioRoster.some(officer => officer.id === selectedFirForAssign.assignedIoId) && <option value={selectedFirForAssign.assignedIoId} disabled>Current IO: {selectedFirForAssign.assignedIoName || selectedFirForAssign.assignedIoId}</option>}
+                  {ioRoster.map((officer) => (
                     <option key={officer.id} value={officer.id}>
                       {officer.name} ({officer.rank} • PNO: {officer.pno})
                     </option>
@@ -1521,7 +1527,7 @@ function FIRRegisterPageContent() {
                 <Button
                   size="sm"
                   onClick={handleConfirmAssign}
-                  disabled={!selectedIoId || assignmentSubmitting}
+                  disabled={!ioRoster.some(officer => officer.id === selectedIoId) || assignmentSubmitting}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                 >
                   {assignmentSubmitting ? "Saving..." : (selectedFirForAssign?.assignedIoId ? "Confirm Change IO" : "Confirm IO Assignment")}

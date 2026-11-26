@@ -84,7 +84,8 @@ import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { getTodayIsoIST, toIsoDateString, parseTimeTo24Hour, parseGdActivityDateTime } from "@/lib/utils";
 import { VoiceInputButton } from "@/components/ui/voice-input-button";
 import { AutoSuggestField } from "@/components/ui/auto-suggest-field";
-import { MOCK_ENQUIRY_OFFICERS, MOCK_GD_ENTRIES } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
+import { MOCK_GD_ENTRIES } from "@/lib/mockData";
 import { FIRReceiptModal } from "@/components/fir/FIRReceiptModal";
 import {
   getStatesList,
@@ -211,11 +212,14 @@ function RegisterFIRForm() {
   // Distinguishes the read-only Preview (IIF-I) from the post-registration receipt.
   const [receiptMode, setReceiptMode] = useState<"preview" | "registered" | null>(null);
   const draftKey = useMemo(() => {
-    if (complaintIdParam) return `complaint_${complaintIdParam}`;
-    if (gdNumberParam) return `gd_${gdNumberParam}`;
-    return "general";
-  }, [complaintIdParam, gdNumberParam]);
+    const owner = JSON.stringify([currentUser?.id, currentUser?.stationName, currentUser?.district]);
+    if (complaintIdParam) return `${owner}:complaint_${complaintIdParam}`;
+    if (gdNumberParam) return `${owner}:gd_${gdNumberParam}`;
+    return `${owner}:general`;
+  }, [complaintIdParam, gdNumberParam, currentUser?.id, currentUser?.stationName, currentUser?.district]);
+  const draftFinalized = useRef(false);
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+  const [draftSaveError, setDraftSaveError] = useState("");
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [draftRestoredNotice, setDraftRestoredNotice] = useState<string | null>(null);
   const [saveDraftFeedback, setSaveDraftFeedback] = useState<string | null>(null);
@@ -225,6 +229,7 @@ function RegisterFIRForm() {
   const [state, setState] = useState("Haryana");
   const [district, setDistrict] = useState(() => currentUser?.district || "Panipat");
   const [policeStation, setPoliceStation] = useState(() => currentUser?.stationName || "PS City Panipat");
+  const { officers: ioRoster, loading: ioRosterLoading, error: ioRosterError } = useFirIoRoster(policeStation, district, isSho);
 
   // Auto-populate latest local date & time
   const [firDate, setFirDate] = useState(() => getNowLocal().date);
@@ -1042,10 +1047,7 @@ function RegisterFIRForm() {
       }
 
       // Auto-restore draft on mount if available (for current complaint, GD, or general)
-      let savedDraft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
-      if (!savedDraft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
-        savedDraft = firService.getFirDraft("default");
-      }
+      const savedDraft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
 
       if (savedDraft && savedDraft.savedAt) {
         applyDraftData(savedDraft);
@@ -1060,12 +1062,9 @@ function RegisterFIRForm() {
   // Synchronous auto-save right before page unload (preserves data even on hard refresh Ctrl+F5)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (isDraftLoaded && latestDraftRef.current) {
+      if (isDraftLoaded && !draftFinalized.current && latestDraftRef.current) {
         try {
           firService.saveFirDraft(latestDraftRef.current, draftKey);
-          if (draftKey === "general") {
-            firService.saveFirDraft(latestDraftRef.current, "default");
-          }
         } catch {
           // ignore
         }
@@ -1456,30 +1455,28 @@ function RegisterFIRForm() {
 
   // Save draft action (silent for auto-save, with notification for manual button)
   const handleSaveDraft = (isAuto: boolean | React.MouseEvent = false) => {
+    if (draftFinalized.current) return;
     const isAutoSave = typeof isAuto === "boolean" ? isAuto : false;
     try {
       const snap = latestDraftRef.current || buildCurrentDraft();
       firService.saveFirDraft(snap, draftKey);
-      if (draftKey === "general") {
-        firService.saveFirDraft(snap, "default");
-      }
       const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       setLastSavedTime(timeStr);
+      setDraftSaveError("");
       if (!isAutoSave) {
         setSaveDraftFeedback(`Draft saved at ${timeStr}`);
         setTimeout(() => setSaveDraftFeedback(null), 3000);
       }
-    } catch (e) {
-      console.warn("Save draft error:", e);
+    } catch {
+      setSaveDraftFeedback(null);
+      setLastSavedTime(null);
+      setDraftSaveError("Draft could not be saved on this device. Keep this page open and retry Save Draft.");
     }
   };
 
   // Restore draft action (manual button trigger)
   const handleRestoreDraft = () => {
-    let draft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
-    if (!draft && draftKey === "general" && typeof firService?.getFirDraft === "function") {
-      draft = firService.getFirDraft("default");
-    }
+    const draft = typeof firService?.getFirDraft === "function" ? firService.getFirDraft(draftKey) : null;
     if (draft) {
       applyDraftData(draft);
       setSaveDraftFeedback("Draft restored successfully!");
@@ -1490,9 +1487,6 @@ function RegisterFIRForm() {
   // Discard draft action
   const handleDiscardDraft = () => {
     firService.clearFirDraft(draftKey);
-    if (draftKey === "general") {
-      firService.clearFirDraft("default");
-    }
     setDraftRestoredNotice(null);
     setLastSavedTime(null);
     if (complaintIdParam) {
@@ -1640,9 +1634,6 @@ function RegisterFIRForm() {
       confirmLabel: "Yes, Clear All Fields",
       onConfirm: () => {
         firService.clearFirDraft(draftKey);
-        if (draftKey === "general") {
-          firService.clearFirDraft("default");
-        }
         setDraftRestoredNotice(null);
         setLastSavedTime(null);
         setAutoFilledFields({});
@@ -2163,7 +2154,7 @@ function RegisterFIRForm() {
   const buildCurrentFirItem = (forPreview = false): FIRItem => {
     const canAssignIo = (isSho || isSuperior) && !isMhc;
     const actsStr = actsAndSectionsList.map((a) => `${a.act}: ${a.sections}`).join("; ") || (forPreview ? "" : "Bharatiya Nyaya Sanhita, 2023 (BNS): 351(3), 331(4), 191(2), 352, 3(5)");
-    const selectedOfficer = canAssignIo ? MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === assignedIoId) : undefined;
+    const selectedOfficer = canAssignIo ? ioRoster.find((eo) => eo.id === assignedIoId) : undefined;
 
     const primaryOcc = occurrencesList[0] || (forPreview
       ? {
@@ -2295,6 +2286,7 @@ function RegisterFIRForm() {
       reasonsForDelay,
       registeredBy: `${officerName} (${officerRank})`,
       assignedIoId: canAssignIo && actionType === "Investigation/Assign IO" ? selectedOfficer?.id : undefined,
+      assignedIoPno: selectedOfficer?.pno,
       assignedIoName: canAssignIo
         ? (actionType === "Investigation/Assign IO"
             ? selectedOfficer?.name
@@ -2311,7 +2303,7 @@ function RegisterFIRForm() {
         : undefined,
       assignedIoBeltNumber: canAssignIo
         ? (actionType === "Investigation/Assign IO"
-            ? selectedOfficer?.pno || selectedOfficer?.beltNumber
+            ? selectedOfficer?.beltNumber || selectedOfficer?.pno
             : actionType === "Self Investigation"
             ? officerNumber
             : undefined)
@@ -2479,6 +2471,9 @@ function RegisterFIRForm() {
         tabErrors.fir_content = "FIR Contents text is mandatory.";
         tabErrors.firContentText = "FIR Contents text is mandatory.";
       }
+      if (isSho && actionType === "Investigation/Assign IO" && !ioRoster.some(officer => officer.id === assignedIoId)) {
+        tabErrors.assignedIoId = "Select an eligible investigating officer.";
+      }
       if (!actionType || !actionType.trim()) {
         tabErrors.actionType = "Action Taken by Station House Officer (SHO) is mandatory.";
       }
@@ -2573,8 +2568,8 @@ function RegisterFIRForm() {
       let created = await firService.registerFir(liveItem);
       created = await firService.synchronizeSourceComplaint(created.id);
 
+      draftFinalized.current = true;
       firService.clearFirDraft(draftKey);
-      if (draftKey === "general") firService.clearFirDraft("default");
       setDraftRestoredNotice(null);
       setLastSavedTime(null);
       setRegisteredFir(created);
@@ -2650,6 +2645,7 @@ function RegisterFIRForm() {
         </div>
 
         <div className="flex items-center gap-2">
+          {draftSaveError && <span role="alert" className="text-xs text-red-700">{draftSaveError}</span>}
           {lastSavedTime && (
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 animate-in fade-in">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -5231,12 +5227,16 @@ function RegisterFIRForm() {
                             className="w-full p-2.5 rounded-lg border border-blue-300 bg-white font-semibold text-xs"
                           >
                             <option value="">-- Select Investigating Officer --</option>
-                            {MOCK_ENQUIRY_OFFICERS.map((eo) => (
+                            {ioRosterLoading && <option disabled>Loading officers…</option>}
+                            {ioRosterError && <option disabled>{ioRosterError}</option>}
+                            {!ioRosterLoading && !ioRosterError && ioRoster.length === 0 && <option disabled>No eligible officers</option>}
+                            {ioRoster.map((eo) => (
                               <option key={eo.id} value={eo.id}>
-                                {eo.name} ({eo.rank}) - PNO: {eo.pno} [{eo.activeCases} Active Cases]
+                                {eo.name} ({eo.rank}) - PNO: {eo.pno}
                               </option>
                             ))}
                           </select>
+                          {errors.assignedIoId && <p role="alert" className="text-xs text-red-700">{errors.assignedIoId}</p>}
                         </div>
                         <div>
                           <div className="flex items-center justify-between mb-1">
@@ -6033,6 +6033,7 @@ function RegisterFIRForm() {
 }
 
 export default function RegisterFIRPage() {
+  const { currentUser, isAuthenticated } = useAuth();
   return (
     <Suspense
       fallback={
@@ -6041,7 +6042,7 @@ export default function RegisterFIRPage() {
         </div>
       }
     >
-      <RegisterFIRForm />
+      {isAuthenticated && currentUser && <RegisterFIRForm key={JSON.stringify([currentUser.id, currentUser.stationName, currentUser.district])} />}
     </Suspense>
   );
 }

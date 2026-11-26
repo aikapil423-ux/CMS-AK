@@ -76,7 +76,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, PriorityBadge } from "@/components/ui/badge";
 import { LoadingSkeleton } from "@/components/ui/state-views";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
 import { formatDate, getTodayIsoIST } from "@/lib/utils";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -236,6 +236,7 @@ export default function FIRProfilePage() {
   // IO Assignment Modal
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedIoId, setSelectedIoId] = useState("");
+  const { officers: ioRoster, loading: ioRosterLoading, error: ioRosterError } = useFirIoRoster(fir?.policeStation, fir?.district, currentUser.role === "SHO");
   const [assignedDirections, setAssignmentDirections] = useState("");
   const [assignmentSubmitting, setAssignmentSubmitting] = useState(false);
 
@@ -315,6 +316,8 @@ export default function FIRProfilePage() {
   const [isFinalReportModalOpen, setIsFinalReportModalOpen] = useState(false);
   const [backendReports, setBackendReports] = useState<ComplaintReportItem[]>([]);
   const [reportHistory, setReportHistory] = useState<FinalReportHistoryEvent[]>([]);
+  const openedReportLink = useRef("");
+  const [linkedReportNotice, setLinkedReportNotice] = useState<{ message: string; report?: ComplaintReportItem }>();
   const [reportBackendError, setReportBackendError] = useState("");
   const [reportRefresh, setReportRefresh] = useState(0);
   const [editingFinalReport, setEditingFinalReport] = useState<ComplaintReportItem | undefined>();
@@ -468,7 +471,26 @@ export default function FIRProfilePage() {
     setBackendReports([]); setReportHistory([]);
     if (!accessible || !isFirVisibleToUser(currentUser, accessible)) return;
     finalReportClient.list(firId).then(result => {
-      if (!cancelled) { setBackendReports(result.reports); setReportHistory(result.history); }
+      if (cancelled) return;
+      setBackendReports(result.reports);
+      setReportHistory(result.history);
+      const query = new URLSearchParams(window.location.search);
+      const reportId = query.get("reportId");
+      const revision = query.get("reportVersion");
+      const linkKey = JSON.stringify([currentUser.id, firId, reportId, revision]);
+      if (!reportId || openedReportLink.current === linkKey) return;
+      openedReportLink.current = linkKey;
+      setActiveTab("reports");
+      const report = result.reports.find(item => item.id === reportId);
+      if (!report) {
+        setLinkedReportNotice({ message: "This report is no longer available." });
+      } else if (revision && String(report.versionNumber) !== revision) {
+        setLinkedReportNotice({ message: "A newer revision is available for this report.", report });
+      } else {
+        setLinkedReportNotice(undefined);
+        setReviewPreviewLoaded(false);
+        setReportPreviewItem(report);
+      }
     }).catch(error => { if (!cancelled) setReportBackendError(error.message); });
     return () => { cancelled = true; };
   }, [firId, reportRefresh, currentUser]);
@@ -656,7 +678,7 @@ export default function FIRProfilePage() {
       return;
     }
     if (!fir || !selectedIoId) return;
-    const selectedOfficer = MOCK_ENQUIRY_OFFICERS.find((eo) => eo.id === selectedIoId);
+    const selectedOfficer = ioRoster.find((eo) => eo.id === selectedIoId);
     if (!selectedOfficer) return;
 
     setAssignmentSubmitting(true);
@@ -667,7 +689,8 @@ export default function FIRProfilePage() {
         selectedOfficer.name,
         selectedOfficer.rank,
         assignedDirections,
-        currentUser.name
+        currentUser.name,
+        selectedOfficer
       );
       setIsAssignModalOpen(false);
       fetchFir();
@@ -2789,6 +2812,7 @@ export default function FIRProfilePage() {
             </div>
           </div>
 
+          {linkedReportNotice && <div role="status" className="p-3 border bg-blue-50 text-sm">{linkedReportNotice.message} {linkedReportNotice.report && <button className="underline" onClick={() => { const latest = backendReports.find(item => item.id === linkedReportNotice.report?.id); if (latest) { setReviewPreviewLoaded(false); setReportPreviewItem(latest); setLinkedReportNotice(undefined); } }}>Open latest revision</button>}</div>}
           {reportBackendError && <div role="alert" className="p-3 border border-red-200 bg-red-50 text-red-800 text-sm">{reportBackendError} <button className="underline" onClick={() => setReportRefresh(n => n + 1)}>Retry backend reports</button></div>}
           {reportHistory.length > 0 && <details className="border rounded-lg p-3 bg-slate-50 text-xs"><summary className="cursor-pointer font-bold">Final report history — {reportHistory.length} recorded steps</summary><ol className="space-y-2 mt-3">{reportHistory.map(event => <li key={event.id}>{event.createdAt} · {event.action} · v{event.version} · {event.actorId}</li>)}</ol></details>}
           {/* Reports List */}
@@ -2853,7 +2877,7 @@ export default function FIRProfilePage() {
                         </span>
                       </div>
 
-                      {report.finalReportData && <div className="text-xs bg-blue-50 rounded p-2 space-y-1"><p><strong>{report.reportType === "CHARGESHEET" ? `Challan: ${report.finalReportData.chargeSheetType}` : `Final Report: ${report.reportType} — ${report.finalReportData.finalReportReason}`}</strong></p><p>Investigation: {report.finalReportData.investigationStatus}</p><p>Review: {report.finalReportWorkflow?.state?.replaceAll("_", " ")}</p>{report.finalReportWorkflow?.rejectionReason && <p className="text-red-700">Returned to {report.finalReportWorkflow.assignedIoName || "assigned IO"}: {report.finalReportWorkflow.rejectionReason}</p>}<p>Accused: {report.finalReportData.accused.map(a => `${a.name} (${a.action})`).join(", ") || "No accused recorded"}</p><p>✓ Final Submit saved · {report.sentToSho ? "✓ Sent to SHO" : "Pending: Send to SHO"} · {report.finalReportWorkflow?.chiNumber ? `✓ CHI ${report.finalReportWorkflow.chiNumber} — ${report.finalReportWorkflow.state}` : "Pending: CHI submission in FIR Part B"}</p></div>}
+                      {report.finalReportData && <div className="text-xs bg-blue-50 rounded p-2 space-y-1"><p><strong>{report.reportType === "CHARGESHEET" ? `Challan: ${report.finalReportData.chargeSheetType}` : `Final Report: ${report.reportType} — ${report.finalReportData.finalReportReason}`}</strong></p><p>Investigation: {report.finalReportData.investigationStatus}</p><p>Review: {report.finalReportWorkflow?.state === "SENT_TO_SHO" ? "Pending SHO View" : report.finalReportWorkflow?.state === "SHO_VIEWED" ? "Pending SHO Decision" : report.finalReportWorkflow?.state === "REJECTED" ? "Returned to IO" : report.finalReportWorkflow?.state?.replaceAll("_", " ")}</p>{report.finalReportWorkflow?.rejectionReason && <p className="text-red-700">Returned to {report.finalReportWorkflow.assignedIoName || "assigned IO"}: {report.finalReportWorkflow.rejectionReason}</p>}<p>Accused: {report.finalReportData.accused.map(a => `${a.name} (${a.action})`).join(", ") || "No accused recorded"}</p><p>✓ Final Submit saved · {report.sentToSho ? "✓ Sent to SHO" : "Pending: Send to SHO"} · {report.finalReportWorkflow?.chiNumber ? `✓ CHI ${report.finalReportWorkflow.chiNumber} — ${report.finalReportWorkflow.state}` : "Pending: CHI submission in FIR Part B"}</p></div>}
                       {report.conclusionSummary && (
                         <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-sans line-clamp-2">
                           <span className="font-bold text-slate-900">Findings: </span>
@@ -3215,7 +3239,11 @@ export default function FIRProfilePage() {
                   className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-red-500/20"
                 >
                   <option value="">-- Choose Officer --</option>
-                  {MOCK_ENQUIRY_OFFICERS.map((officer) => (
+                  {ioRosterLoading && <option disabled>Loading officers…</option>}
+                  {ioRosterError && <option disabled>{ioRosterError}</option>}
+                  {!ioRosterLoading && !ioRosterError && ioRoster.length === 0 && <option disabled>No eligible officers</option>}
+                  {fir.assignedIoId && !ioRoster.some(officer => officer.id === fir.assignedIoId) && <option value={fir.assignedIoId} disabled>Current IO: {fir.assignedIoName || fir.assignedIoId}</option>}
+                  {ioRoster.map((officer) => (
                     <option key={officer.id} value={officer.id}>
                       {officer.name} ({officer.rank} • PNO: {officer.pno})
                     </option>
@@ -3248,7 +3276,7 @@ export default function FIRProfilePage() {
                 <Button
                   size="sm"
                   onClick={handleConfirmAssign}
-                  disabled={!selectedIoId || assignmentSubmitting}
+                  disabled={!ioRoster.some(officer => officer.id === selectedIoId) || assignmentSubmitting}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
                 >
                   {assignmentSubmitting ? "Saving..." : (fir?.assignedIoId ? "Confirm Change IO" : "Confirm IO Assignment")}

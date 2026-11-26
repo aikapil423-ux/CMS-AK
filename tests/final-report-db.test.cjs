@@ -20,6 +20,7 @@ function load(file) {
   const code = ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   vm.runInNewContext(code,{exports,Date,structuredClone,crypto:require('node:crypto').webcrypto,require(name){
     if(name==='@/lib/prisma') return {prisma};
+    if(name==='./locationMasterService') return {readLocationStore:async()=>({states:[],ranges:[],districts:[],policeStations:[]})};
     if(name.startsWith('@/')) return load(`src/${name.slice(2)}.ts`);
     if(name.startsWith('./')) return load(path.join(path.dirname(file), `${name}.ts`));
     return require(name);
@@ -29,6 +30,8 @@ function load(file) {
 const {finalReportDbService: service}=load('src/services/finalReportDbService.ts');
 const {initialFinalReport,finalReportHtml}=load('src/lib/finalReport.ts');
 const fir={id:'qa-fir',firNumber:'QA/1',firYear:2026,firDate:'2026-10-27',district:'QA',policeStation:'PS City Panipat',assignedIoId:'usr_eo_1',complainantName:'Test Informant',actsAndSections:'Test Act',accusedList:[{id:'qa-acc-1',name:'Test Accused'}],documents:[{id:'qa-arrest',documentType:'IIF_III',arrestAccusedId:'qa-acc-1',title:'Arrest Memo',fileName:'arrest.html',category:'FIELD_REPORT',uploadedBy:'Tester',uploadedAt:'2026-10-27'}],incidentDetails:'Test facts'};
+const sho={id:'qa-live-sho',role:'SHO',stationName:fir.policeStation,district:fir.district};
+const io={id:fir.assignedIoId,role:'ENQUIRY_OFFICER',stationName:fir.policeStation,district:fir.district};
 function input(id='qa-report') {const data={...initialFinalReport(fir),reportNo:id,formType:'CHARGESHEET',chargeSheetType:'Complete',judicialCustody:'No',pendingAccused:'0',pendingDocuments:'NIL',investigationStatus:'Completed',courtType:'Test Court',judgeName:'Test Judge',caseType:'ADULT',prosecutorApproved:'No',noticeServed:'No'};data.accused[0].action='ChargeSheeted';return {id,expectedVersion:0,author:{id:'qa-officer',name:'Tester'},fir,data,previewHtml:finalReportHtml(fir,data)};}
 test('backend persists classification, accused and exact preview; retry does not duplicate',async()=>{
   const body=input();body.data.investigationStatus='Pending / Further Investigation';body.previewHtml=finalReportHtml(fir,body.data);const detailModel=load('src/lib/accusedChargesheet.ts');const detail=detailModel.initialAccusedChargesheet(fir,body.data.accused[0]);detail.general.status='ARRESTED';detail.general.verified='Yes';detail.bailer.information.firstName='Test Bailer';body.data.accused[0].chargesheetDetails=detail;body.data.uploadedFiles=[{id:'test-upload',name:'support.pdf',type:'application/pdf',size:5,dataUrl:'data:application/pdf;base64,JVBERi0='}];const saved=await service.save(body);const retry=await service.save(body);
@@ -41,17 +44,18 @@ test('CHI routes by Complete/Partial chargesheet type despite opposite investiga
   await assert.rejects(service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1'));
   await service.sendToSho('qa-report',fir.id,1,'qa-officer');
   await assert.rejects(service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1'));
-  await assert.rejects(service.review('qa-report',fir.id,1,'usr_sho_1','APPROVE_SHO'));
-  await assert.rejects(service.review('qa-report',fir.id,1,'usr_eo_1','VIEW_SHO'));
-  assert.equal((await service.notifications('usr_sho_1')).length,1);
-  await service.review('qa-report',fir.id,1,'usr_sho_1','VIEW_SHO');
-  await service.review('qa-report',fir.id,1,'usr_sho_1','APPROVE_SHO');
-  assert.equal((await service.notifications('usr_sho_1')).length,0);
+  await assert.rejects(service.review('qa-report',fir.id,1,sho,'APPROVE_SHO'));
+  await assert.rejects(service.review('qa-report',fir.id,1,io,'VIEW_SHO'));
+  assert.equal((await service.notifications(sho))[0].version,1);
+  await assert.rejects(service.review('qa-report',fir.id,1,{...sho,district:'Other district'},'VIEW_SHO'));
+  await service.review('qa-report',fir.id,1,sho,'VIEW_SHO');
+  await service.review('qa-report',fir.id,1,sho,'APPROVE_SHO');
+  assert.equal((await service.notifications(sho)).length,0);
   const done=await service.submitChi('qa-report',fir.id,1,'qa-officer','CHI/1');assert.equal(done.finalReportWorkflow.state,'COMPLETED');const completeFir=load('src/lib/finalReportFirState.ts').applyFinalReportState(fir,done);assert.equal(completeFir.trackingState,'COMPLETED');assert.equal(completeFir.challanRecords[0].challanMode,'COMPLETE');
   const edit=input();edit.expectedVersion=1;edit.data.chargeSheetType='Partial';edit.data.investigationStatus='Completed';edit.previewHtml=finalReportHtml(fir,edit.data);
   const saved=await service.save(edit);assert.equal(saved.versionNumber,2);assert.equal(saved.finalReportWorkflow.state,'SAVED');
   await assert.rejects(service.save(edit));
-  await service.sendToSho('qa-report',fir.id,2,'qa-officer');await service.review('qa-report',fir.id,2,'usr_sho_1','VIEW_SHO');await service.review('qa-report',fir.id,2,'usr_sho_1','APPROVE_SHO');const partial=await service.submitChi('qa-report',fir.id,2,'qa-officer','CHI/2');assert.equal(partial.finalReportWorkflow.state,'PARTIAL');const partialFir=load('src/lib/finalReportFirState.ts').applyFinalReportState(fir,partial);assert.equal(partialFir.trackingState,'PART_B_PARTIAL');assert.equal(partialFir.challanRecords[0].challanMode,'PARTIAL');assert.equal(partialFir.status,'UNDER_INVESTIGATION');
+  await service.sendToSho('qa-report',fir.id,2,'qa-officer');await service.review('qa-report',fir.id,2,sho,'VIEW_SHO');await service.review('qa-report',fir.id,2,sho,'APPROVE_SHO');const partial=await service.submitChi('qa-report',fir.id,2,'qa-officer','CHI/2');assert.equal(partial.finalReportWorkflow.state,'PARTIAL');const partialFir=load('src/lib/finalReportFirState.ts').applyFinalReportState(fir,partial);assert.equal(partialFir.trackingState,'PART_B_PARTIAL');assert.equal(partialFir.challanRecords[0].challanMode,'PARTIAL');assert.equal(partialFir.status,'UNDER_INVESTIGATION');
   const events=await service.history(fir.id);assert.equal(events.length,10);assert.equal(JSON.parse(events[0].snapshotJson).data.chargeSheetType,'Complete');
 });
 test('Final Report reason is stored separately; invalid supplementary option never writes',async()=>{
@@ -61,18 +65,18 @@ test('Final Report reason is stored separately; invalid supplementary option nev
 });
 test('SHO rejection returns to assigned IO with reason; fresh revision needs fresh review', async()=>{
   const body=input('qa-reject');await service.save(body);await service.sendToSho(body.id,fir.id,1,'qa-officer');
-  await service.review(body.id,fir.id,1,'usr_sho_1','VIEW_SHO');
-  await assert.rejects(service.review(body.id,fir.id,1,'usr_sho_1','REJECT_SHO',''));
-  const rejected=await service.review(body.id,fir.id,1,'usr_sho_1','REJECT_SHO','Attach missing evidence');
+  await service.review(body.id,fir.id,1,sho,'VIEW_SHO');
+  await assert.rejects(service.review(body.id,fir.id,1,sho,'REJECT_SHO',''));
+  const rejected=await service.review(body.id,fir.id,1,sho,'REJECT_SHO','Attach missing evidence');
   assert.equal(rejected.finalReportWorkflow.state,'REJECTED');assert.equal(rejected.finalReportWorkflow.assignedIoId,'usr_eo_1');
-  assert.equal((await service.notifications('usr_eo_1'))[0].message,'Attach missing evidence');
-  assert.equal((await service.notifications('usr_sho_1')).some(n=>n.id===body.id),false);
+  assert.equal((await service.notifications(io))[0].message,'Attach missing evidence');
+  assert.equal((await service.notifications(sho)).some(n=>n.id===body.id),false);
   await assert.rejects(service.submitChi(body.id,fir.id,1,'qa-officer','CHI/X'));
   body.expectedVersion=1;const revised=await service.save(body);assert.equal(revised.finalReportWorkflow.state,'SAVED');
-  assert.equal((await service.notifications('usr_eo_1')).length,0);
+  assert.equal((await service.notifications(io)).length,0);
   await service.sendToSho(body.id,fir.id,2,'qa-officer');
-  await assert.rejects(service.review(body.id,fir.id,1,'usr_sho_1','APPROVE_SHO'));
-  await assert.rejects(service.review(body.id,fir.id,2,'usr_sho_1','APPROVE_SHO'));
+  await assert.rejects(service.review(body.id,fir.id,1,sho,'APPROVE_SHO'));
+  await assert.rejects(service.review(body.id,fir.id,2,sho,'APPROVE_SHO'));
 });
 after(async()=>{
   await prisma.$disconnect();

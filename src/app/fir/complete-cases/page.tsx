@@ -26,7 +26,7 @@ import {
   Gavel,
   History,
 } from "lucide-react";
-import { persistentFirService as firService } from "@/services/persistentFirService";
+import { firPersistence, persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, FIRCompletionEvent } from "@/types";
 import { formatDate, getTodayIsoIST } from "@/lib/utils";
 import { DatePickerDDMMYYYY } from "@/components/ui/date-picker-ddmmyyyy";
@@ -34,7 +34,7 @@ import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { isFirVisibleToUser, getAuthoritativeTrackingState } from "@/lib/firIntegrity";
-import { MOCK_ENQUIRY_OFFICERS } from "@/lib/mockData";
+import { useFirIoRoster } from "@/hooks/useFirIoRoster";
 
 function CompleteCasesContent() {
   const router = useRouter();
@@ -42,6 +42,7 @@ function CompleteCasesContent() {
   const { currentUser } = useAuth();
 
   const [firs, setFirs] = useState<FIRItem[]>([]);
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStation, setSelectedStation] = useState<string>("ALL");
@@ -52,6 +53,7 @@ function CompleteCasesContent() {
   useEscapeKey(reopenModalOpen, () => setReopenModalOpen(false));
   const [selectedFirForReopen, setSelectedFirForReopen] = useState<FIRItem | null>(null);
   const [reopenReason, setReopenReason] = useState<string>("");
+  const { officers: ioRoster, loading: ioRosterLoading, error: ioRosterError } = useFirIoRoster(selectedFirForReopen?.policeStation, selectedFirForReopen?.district);
   const [reopenCourtName, setReopenCourtName] = useState<string>("");
   const [reopenOrderNumber, setReopenOrderNumber] = useState<string>("");
   const [reopenOrderDate, setReopenOrderDate] = useState<string>("");
@@ -62,10 +64,12 @@ function CompleteCasesContent() {
   // Load all FIRs
   const loadFirs = () => {
     try {
+      if (firPersistence.getError()) throw new Error(firPersistence.getError());
       const all = firService.getAllFirs();
+      setLoadError("");
       setFirs(all);
     } catch (e) {
-      console.error("Failed to load FIRs", e);
+      setLoadError(e instanceof Error ? e.message : "Could not load cases.");
     } finally {
       setLoading(false);
     }
@@ -73,6 +77,7 @@ function CompleteCasesContent() {
 
   useEffect(() => {
     loadFirs();
+    return firPersistence.subscribe(loadFirs);
   }, []);
 
   // Filter completed cases scoped to user permissions
@@ -159,7 +164,7 @@ function CompleteCasesContent() {
     setReopenCourtName("Chief Judicial Magistrate (CJM), Panipat");
     setReopenOrderNumber("");
     setReopenOrderDate(getTodayIsoIST());
-    setReopenAssignedIoId(fir.assignedIoId || "");
+    setReopenAssignedIoId("");
     setReopenConfirmed(false);
     setReopenModalOpen(true);
   };
@@ -181,7 +186,8 @@ function CompleteCasesContent() {
 
     setIsSubmittingReopen(true);
     try {
-      const selectedIo = MOCK_ENQUIRY_OFFICERS.find((io) => io.id === reopenAssignedIoId);
+      const selectedIo = ioRoster.find((io) => io.id === reopenAssignedIoId);
+      if (reopenAssignedIoId && !selectedIo) throw new Error("Select an eligible IO from this station.");
 
       const updated = await firService.reopenCompletedCase({
         firId: selectedFirForReopen.id,
@@ -191,7 +197,11 @@ function CompleteCasesContent() {
         orderNumber: reopenOrderNumber.trim() || undefined,
         orderDate: reopenOrderDate || undefined,
         courtName: reopenCourtName.trim() || undefined,
-        assignedIoId: reopenAssignedIoId || undefined,
+        assignedIoId: selectedIo?.id,
+        assignedIoRank: selectedIo?.rank,
+        assignedIoPno: selectedIo?.pno,
+        assignedIoBeltNumber: selectedIo?.beltNumber || selectedIo?.pno,
+        assignedIoPhone: selectedIo?.phone,
         assignedIoName: selectedIo?.name || selectedFirForReopen.assignedIoName,
       });
 
@@ -282,12 +292,13 @@ function CompleteCasesContent() {
       </div>
 
       {/* Case List Table / Cards */}
+      {loadError && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not load current cases. {loadError} <button type="button" className="underline" onClick={() => { setLoading(true); void firPersistence.refresh().catch(() => {}).finally(loadFirs); }}>Retry</button></div>}
       {loading ? (
         <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
           <p className="text-xs">Loading completed cases...</p>
         </div>
-      ) : completedFirs.length === 0 ? (
+      ) : completedFirs.length === 0 && loadError ? null : completedFirs.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 space-y-2">
           <CheckCircle2 className="w-10 h-10 text-emerald-500/50 mx-auto" />
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Completed Cases Found</h3>
@@ -511,7 +522,10 @@ function CompleteCasesContent() {
                     className="w-full p-2 text-xs border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">-- Retain Previous IO ({selectedFirForReopen.assignedIoName || "None"}) --</option>
-                    {MOCK_ENQUIRY_OFFICERS.map((io) => (
+                    {ioRosterLoading && <option disabled>Loading officers…</option>}
+                    {ioRosterError && <option disabled>{ioRosterError}</option>}
+                    {!ioRosterLoading && !ioRosterError && ioRoster.length === 0 && <option disabled>No eligible officers</option>}
+                    {ioRoster.map((io) => (
                       <option key={io.id} value={io.id}>
                         {io.name} ({io.rank})
                       </option>

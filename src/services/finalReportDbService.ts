@@ -1,32 +1,32 @@
 import { prisma } from '@/lib/prisma';
-import { buildFinalReport, validateFinalReport } from '@/lib/finalReport';
+import { buildFinalReport, finalReportChiState, validateFinalReport } from '@/lib/finalReport';
 import { finalReportRequestSchema } from '@/lib/finalReportSchema';
-import type { ComplaintReportItem, FIRItem } from '@/types';
-import { DEMO_USERS } from '@/lib/mockData';
+import type { ComplaintReportItem, FIRItem, UserSession } from '@/types';
 import { readMasterLocationReferences } from './masterLocationReferences';
 
 export class FinalReportConflict extends Error {}
 
 export const finalReportDbService = {
-  async notifications(userId: string) {
-    const user = DEMO_USERS.find(u => u.id === userId);
-    if (!user) return [];
+  async notifications(user: UserSession) {
     const locations = await readMasterLocationReferences();
     const station = locations.station(user.stationName, user.district, 'id');
     const rows = await prisma.firFinalReport.findMany({ where: { policeStation: { in: [user.stationName, station] }, state: { in: ['SENT_TO_SHO', 'SHO_VIEWED', 'REJECTED'] } }, orderBy: { updatedAt: 'desc' } });
     return rows.filter(row => {
+      const location = locations.location(row, 'name');
+      if (location.policeStation !== user.stationName || location.district !== user.district) return false;
       if (user.role === 'SHO') return row.state !== 'REJECTED';
       const fir = JSON.parse(row.firSnapshotJson) as FIRItem;
       return row.state === 'REJECTED' && (fir.assignedIoId === user.id || fir.assignedIoPno === user.pno || (!fir.assignedIoId && !fir.assignedIoPno && fir.assignedIoName === user.name));
-    }).map(row => ({ id: row.id, firId: row.firId, title: `${row.firNumber} — ${row.state === 'REJECTED' ? 'Report returned by SHO' : 'Final report for SHO review'}`, message: (JSON.parse(row.reportJson) as ComplaintReportItem).finalReportWorkflow?.rejectionReason || 'View the report before approving or rejecting.', unread: row.state !== 'SHO_VIEWED' }));
+    }).map(row => ({ id: row.id, firId: row.firId, version: row.version, title: `${row.firNumber} — ${row.state === 'REJECTED' ? 'Report returned by SHO' : 'Final report for SHO review'}`, message: (JSON.parse(row.reportJson) as ComplaintReportItem).finalReportWorkflow?.rejectionReason || 'View the report before approving or rejecting.', unread: row.state !== 'SHO_VIEWED' }));
   },
-  async review(id: string, firId: string, expectedVersion: number, authorId: string, action: 'VIEW_SHO' | 'APPROVE_SHO' | 'REJECT_SHO', reason?: string) {
+  async review(id: string, firId: string, expectedVersion: number, actor: UserSession, action: 'VIEW_SHO' | 'APPROVE_SHO' | 'REJECT_SHO', reason?: string) {
     const locations = await readMasterLocationReferences();
     return prisma.$transaction(async tx => {
       const stored = await tx.firFinalReport.findUnique({ where: { id } });
-      const actor = DEMO_USERS.find(u => u.id === authorId);
+      const authorId = actor.id;
       if (!stored || stored.firId !== firId || stored.version !== expectedVersion) throw new FinalReportConflict('Report changed. Reload before review.');
-      if (!actor || actor.role !== 'SHO' || actor.stationName !== locations.location(stored, 'name').policeStation) throw new FinalReportConflict('Only the SHO of this police station can review this report.');
+      const location = locations.location(stored, 'name');
+      if (actor.role !== 'SHO' || actor.stationName !== location.policeStation || actor.district !== location.district) throw new FinalReportConflict('Only the SHO of this police station can review this report.');
       const report = JSON.parse(stored.reportJson) as ComplaintReportItem;
       const workflow = report.finalReportWorkflow!;
       if (action === 'VIEW_SHO' && stored.state === 'SHO_VIEWED' && workflow.viewedBy === authorId) return report;
@@ -139,9 +139,7 @@ export const finalReportDbService = {
       if (stored.state !== 'UNDER_CHECKING') throw new FinalReportConflict('CHI can only be submitted after SHO approval places the report Under Checking.');
       const data = report.finalReportData;
       if (data?.formType === 'CHARGESHEET' && !['Complete', 'Partial'].includes(data.chargeSheetType)) throw new FinalReportConflict('Select Complete or Partial in the IIF-V chargesheet before submitting CHI.');
-      const state = data?.formType === 'CHARGESHEET'
-        ? (data.chargeSheetType === 'Complete' ? 'COMPLETED' : 'PARTIAL')
-        : (data?.investigationStatus === 'Completed' ? 'COMPLETED' : 'PARTIAL');
+      const state = finalReportChiState(data);
       const now = new Date().toISOString();
       const updated: ComplaintReportItem = { ...report, updatedAt: now, finalReportWorkflow: { ...report.finalReportWorkflow, state, chiNumber, chiSubmittedAt: now, chiSubmittedBy: authorId } };
       const result = await tx.firFinalReport.updateMany({ where: { id, version: expectedVersion, state: 'UNDER_CHECKING' }, data: { state, updatedBy: authorId, reportJson: JSON.stringify(updated) } });

@@ -1587,6 +1587,9 @@ export const firService = {
     assignedIoId?: string;
     assignedIoName?: string;
     assignedIoRank?: string;
+    assignedIoPno?: string;
+    assignedIoBeltNumber?: string;
+    assignedIoPhone?: string;
     assignedDirections?: string;
     reopenedBy: string;
     reopenedByRank?: string;
@@ -1655,6 +1658,9 @@ export const firService = {
       assignedIoId: params.assignedIoId || fir.assignedIoId,
       assignedIoName: params.assignedIoName || fir.assignedIoName,
       assignedIoRank: params.assignedIoRank || fir.assignedIoRank,
+      assignedIoPno: params.assignedIoId ? params.assignedIoPno : fir.assignedIoPno,
+      assignedIoBeltNumber: params.assignedIoId ? params.assignedIoBeltNumber : fir.assignedIoBeltNumber,
+      assignedIoPhone: params.assignedIoId ? params.assignedIoPhone : fir.assignedIoPhone,
       assignedDirections: params.assignedDirections || fir.assignedDirections,
       courtName: params.courtName || fir.courtName,
       courtOrderNumber: params.orderNumber || fir.courtOrderNumber,
@@ -1727,7 +1733,8 @@ export const firService = {
     ioName: string,
     rank?: string,
     directions?: string,
-    assignedBy?: string
+    assignedBy?: string,
+    contact?: { pno: string; beltNumber?: string; phone: string }
   ): FIRItem | undefined {
     const fir = this.getFirById(firId);
     if (!fir) return undefined;
@@ -1756,6 +1763,9 @@ export const firService = {
 
     return this.updateFir(firId, {
       assignedIoId: ioId,
+      assignedIoPno: contact?.pno,
+      assignedIoBeltNumber: contact?.beltNumber || contact?.pno,
+      assignedIoPhone: contact?.phone,
       assignedIoName: ioName,
       assignedIoRank: rank || "Sub Inspector",
       assignedAt: `${dateStr} ${timeStr}`,
@@ -1917,16 +1927,11 @@ export const firService = {
   },
 
   saveFirDraft(draft: any, key: string = "default"): void {
-    if (typeof window === "undefined" || !window.localStorage) return;
-    try {
-      const storageKey = `haryana_police_cms_fir_draft_${key}`;
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({ ...draft, savedAt: new Date().toISOString() })
-      );
-    } catch (e) {
-      console.warn("Failed to save FIR draft:", e);
-    }
+    if (typeof window === "undefined") throw new Error("Browser draft storage is unavailable.");
+    window.localStorage.setItem(
+      `haryana_police_cms_fir_draft_${key}`,
+      JSON.stringify({ ...draft, savedAt: new Date().toISOString() })
+    );
   },
 
   getFirDraft(key: string = "default"): any | null {

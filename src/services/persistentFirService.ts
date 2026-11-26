@@ -18,9 +18,9 @@ async function request(method='GET',changes?:unknown){
 export const firPersistence={
  getError:()=>failure,
  flush:()=>queue,
- async refresh(){if(activeUser) await this.hydrate(activeUser);},
+ async refresh(){if(activeUser) await this.hydrate(activeUser, true);},
  subscribe(fn:()=>void){listeners.add(fn);return()=>{listeners.delete(fn);};},
- async hydrate(user:UserSession){
+ async hydrate(user:UserSession, preserveRecordsOnError = false){
   await queue.catch(()=>{});
   activeUser=user;
   const legacy=firService.getLocalMigrationRecords().filter(f=>isFirVisibleToUser(user,f));
@@ -32,7 +32,7 @@ export const firPersistence={
    }
    firService.replaceServerRecords(records);
    publish();
-  }catch(error){firService.replaceServerRecords([]);publish(error instanceof Error?error.message:'FIR backend is unavailable.');throw error;}
+  }catch(error){if(!preserveRecordsOnError)firService.replaceServerRecords([]);publish(error instanceof Error?error.message:'FIR backend is unavailable.');throw error;}
  },
 };
 

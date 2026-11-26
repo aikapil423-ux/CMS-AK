@@ -18,7 +18,18 @@ import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { ComplaintService } from "@/services/complaintService";
 import { OfficerNotification } from "@/types";
 
-type FinalReportNotif = { id: string; firId: string; title: string; message: string; unread: boolean };
+type FinalReportNotif = {
+  id: string;
+  firId: string;
+  version: number;
+  title: string;
+  message: string;
+  unread: boolean;
+};
+
+function finalReportNotificationKey(report: FinalReportNotif) {
+  return JSON.stringify([report.id, report.version]);
+}
 
 // Shared poller across Desktop & Mobile mounted bells so AppShell never fires duplicate GETs
 const finalReportListeners = new Map<string, Set<(rows: FinalReportNotif[], err: boolean) => void>>();
@@ -51,7 +62,7 @@ function markFinalReportIdsRead(userId: string, ids: string[]) {
 
 function applyLocalReadFilter(userId: string, rows: FinalReportNotif[]): FinalReportNotif[] {
   const readSet = getReadFinalReportIds(userId);
-  return rows.map((r) => (readSet.has(r.id) ? { ...r, unread: false } : r));
+  return rows.map((r) => (readSet.has(finalReportNotificationKey(r)) ? { ...r, unread: false } : r));
 }
 
 async function fetchFinalReportsShared(userId: string, force = false): Promise<void> {
@@ -212,7 +223,7 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
   const handleMarkAllRead = () => {
     ComplaintService.markAllNotificationsAsRead(isSho ? "HR-04291882" : currentUser.pno);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    const reportIds = finalReports.map((r) => r.id);
+    const reportIds = finalReports.map(finalReportNotificationKey);
     markFinalReportIdsRead(currentUser.id, reportIds);
     setFinalReports((prev) => prev.map((r) => ({ ...r, unread: false })));
     window.dispatchEvent(new Event("officer_notifications_updated"));
@@ -273,7 +284,7 @@ export function TopBarNotifications({ isMobile = false }: TopBarNotificationsPro
           {/* List */}
           <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
             {finalReportsError && <p role="alert" className="p-3 text-xs text-red-700">Final report notifications unavailable. Retrying automatically.</p>}
-            {finalReports.map(notif => <button key={notif.id} className="block w-full text-left p-3 bg-blue-50 hover:bg-blue-100" onClick={() => { setIsOpen(false); window.location.assign(`/fir/${encodeURIComponent(notif.firId)}?tab=reports`); }}><span className="block text-xs font-bold">{notif.title}</span><span className="block text-xs mt-1">{notif.message}</span><span className="block text-xs underline mt-1">Open FIR report</span></button>)}
+            {finalReports.map(notif => <button key={notif.id} className="block w-full text-left p-3 bg-blue-50 hover:bg-blue-100" onClick={() => { setIsOpen(false); window.location.assign(`/fir/${encodeURIComponent(notif.firId)}?tab=reports&reportId=${encodeURIComponent(notif.id)}&reportVersion=${notif.version}`); }}><span className="block text-xs font-bold">{notif.title}</span><span className="block text-xs mt-1">{notif.message}</span><span className="block text-xs underline mt-1">Open FIR report</span></button>)}
             {notifications.length === 0 && finalReports.length === 0 ? (
               <div className="p-8 text-center text-slate-400 space-y-2">
                 <Bell className="w-8 h-8 text-slate-300 mx-auto" />

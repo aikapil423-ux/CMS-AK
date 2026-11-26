@@ -1,5 +1,6 @@
 "use client";
-import { FinalReportCheckingBoard } from "@/components/fir/FinalReportCheckingBoard";
+import { finalReportClient } from "@/services/finalReportClient";
+import { finalReportChiState } from "@/lib/finalReport";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
@@ -34,7 +35,7 @@ import {
   RotateCcw,
   Plus,
 } from "lucide-react";
-import { persistentFirService as firService } from "@/services/persistentFirService";
+import { firPersistence, persistentFirService as firService } from "@/services/persistentFirService";
 import { FIRItem, ChallanMode, ChallanType } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
@@ -84,6 +85,16 @@ const TAB_CONFIGS: Record<PartBTab, TabConfig> = {
   },
 };
 
+function approvedReport(fir: FIRItem) {
+  return fir.reports?.find(report => report.finalReportWorkflow?.state === "UNDER_CHECKING" &&
+    (!fir.finalReportAppliedKey || fir.finalReportAppliedKey === `${report.id}:${report.versionNumber}:UNDER_CHECKING`));
+}
+
+function pendingChallan(fir: FIRItem) {
+  return fir.challanRecords?.find(record => !record.submittedToCourt &&
+    (!fir.pendingChallanId || record.id === fir.pendingChallanId));
+}
+
 function FIRPartBContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -105,11 +116,19 @@ function FIRPartBContent() {
   }, [initialTab]);
   const [firs, setFirs] = useState<FIRItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
+  const [submissionResult, setSubmissionResult] = useState<{ message: string; complete: boolean }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStation, setSelectedStation] = useState<string>("ALL");
 
   // Court Submission Modal State (For Under checking tab)
   const [submittingFir, setSubmittingFir] = useState<FIRItem | null>(null);
+  const submittingReport = submittingFir ? approvedReport(submittingFir) : undefined;
+  const submittingChallan = submittingFir ? pendingChallan(submittingFir) : undefined;
+  const willComplete = submittingReport
+    ? finalReportChiState(submittingReport.finalReportData) === "COMPLETED"
+    : submittingChallan?.challanMode === "COMPLETE";
   const [courtReceiptNo, setCourtReceiptNo] = useState("");
   const [submissionRemarks, setSubmissionRemarks] = useState("");
   const [isSubmittingCourt, setIsSubmittingCourt] = useState(false);
@@ -124,10 +143,12 @@ function FIRPartBContent() {
   const fetchFirs = () => {
     setLoading(true);
     try {
+      if (firPersistence.getError()) throw new Error(firPersistence.getError());
       const data = firService.getAllFirs();
+      setLoadError("");
       setFirs(data);
     } catch (e) {
-      console.error("Failed to load FIRs for Part B:", e);
+      setLoadError(e instanceof Error ? e.message : "Could not load cases.");
     } finally {
       setLoading(false);
     }
@@ -138,7 +159,8 @@ function FIRPartBContent() {
     const unsub = firService.subscribe(() => {
       fetchFirs();
     });
-    return unsub;
+    const unsubscribePersistence = firPersistence.subscribe(fetchFirs);
+    return () => { unsub(); unsubscribePersistence(); };
   }, []);
 
   // Update URL param via Next.js router so browser navigation & F5 stay in sync
@@ -210,21 +232,42 @@ function FIRPartBContent() {
   // Handle Recording Court Submission (From Under Checking)
   const handleConfirmCourtSubmission = async () => {
     if (!submittingFir) return;
+    if (submittingReport && !courtReceiptNo.trim()) {
+      setSubmissionError("Enter the CHI number.");
+      return;
+    }
     setIsSubmittingCourt(true);
+    setSubmissionError("");
     try {
-      await firService.recordCourtSubmission({
-        firId: submittingFir.id,
-        submittedBy: `${currentUser.name} (${currentUser.role})`,
-        courtReceiptNo: courtReceiptNo.trim() || undefined,
-        remarks: submissionRemarks.trim() || undefined,
-      });
-
+      let complete: boolean;
+      if (submittingReport) {
+        const saved = await finalReportClient.submitChi(submittingReport, submittingFir.id, currentUser.id, courtReceiptNo.trim());
+        if (saved.finalReportWorkflow?.state !== "COMPLETED" && saved.finalReportWorkflow?.state !== "PARTIAL") {
+          throw new Error("CHI submission was not confirmed. Refresh and try again.");
+        }
+        complete = saved.finalReportWorkflow?.state === "COMPLETED";
+      } else {
+        if (!submittingChallan) throw new Error("No pending challan is available. Refresh the list.");
+        const saved = await firService.recordCourtSubmission({
+          firId: submittingFir.id,
+          challanId: submittingChallan.id,
+          submittedBy: `${currentUser.name} (${currentUser.role})`,
+          courtReceiptNo: courtReceiptNo.trim() || undefined,
+          remarks: submissionRemarks.trim() || undefined,
+        });
+        if ((saved?.trackingState !== "COMPLETED" && saved?.trackingState !== "PART_B_PARTIAL") ||
+          !saved.challanRecords?.some(record => record.id === submittingChallan.id && record.submittedToCourt)) {
+          throw new Error("Court submission was not recorded. Refresh and try again.");
+        }
+        complete = saved.trackingState === "COMPLETED";
+      }
+      setSubmissionResult({ message: submittingReport ? "CHI saved." : "Court submission recorded.", complete });
       setSubmittingFir(null);
       setCourtReceiptNo("");
       setSubmissionRemarks("");
       fetchFirs();
-    } catch (e: any) {
-      alert("Error recording court submission: " + (e?.message || e));
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : "Could not record the submission.");
     } finally {
       setIsSubmittingCourt(false);
     }
@@ -391,6 +434,8 @@ function FIRPartBContent() {
       </div>
 
       {/* Case List Content */}
+      {loadError && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">Could not load current cases. {loadError} <button type="button" className="underline" onClick={() => { setLoading(true); void firPersistence.refresh().catch(() => {}).finally(fetchFirs); }}>Retry</button></div>}
+      {submissionResult && <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{submissionResult.message} <Link className="underline" href={submissionResult.complete ? "/fir/complete-cases" : "/fir/part-b?tab=partial"} onClick={submissionResult.complete ? undefined : event => { event.preventDefault(); handleTabChange("PARTIAL"); }}>{submissionResult.complete ? "Open Complete Cases" : "Open Part B → Partial"}</Link></div>}
       {loading ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-slate-200">
           <RefreshCw className="w-6 h-6 animate-spin text-slate-400 mx-auto mb-2" />
@@ -399,11 +444,11 @@ function FIRPartBContent() {
       ) : currentTabFirs.length === 0 ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 space-y-2">
           <FileCheck2 className="w-10 h-10 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">No cases in {currentConfig.title}</h3>
+          <h3 className="text-sm font-bold text-slate-800">{loadError ? "Cases unavailable" : `No cases in ${currentConfig.title}`}</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            {activeTab === "PARTIAL" && "There are currently no cases with a pending partial supplementary investigation."}
-            {activeTab === "UNDER_CHECKING" && "No issued challans are currently waiting for court submission."}
-            {activeTab === "REOPEN" && "No completed cases have been reopened. Re-open action is available on the Complete cases page."}
+            {!loadError && activeTab === "PARTIAL" && "There are currently no cases with a pending partial supplementary investigation."}
+            {!loadError && activeTab === "UNDER_CHECKING" && "No issued challans are currently waiting for court submission."}
+            {!loadError && activeTab === "REOPEN" && "No completed cases have been reopened. Re-open action is available on the Complete cases page."}
           </p>
         </div>
       ) : (
@@ -425,6 +470,7 @@ function FIRPartBContent() {
               <tbody className="divide-y divide-slate-100">
                 {currentTabFirs.map((fir) => {
                   const latestChallan = fir.challanRecords?.[0];
+                  const reviewReport = approvedReport(fir);
                   const latestReopen = fir.reopenHistory?.[0];
 
                   return (
@@ -461,7 +507,8 @@ function FIRPartBContent() {
                       </td>
 
                       <td className="py-3 px-4">
-                        {activeTab === "UNDER_CHECKING" && latestChallan && (
+                        {activeTab === "UNDER_CHECKING" && reviewReport && <p className="text-xs font-semibold">SHO approved · CHI pending · {reviewReport.dispatchNo}</p>}
+                    {activeTab === "UNDER_CHECKING" && !reviewReport && latestChallan && (
                           <div>
                             <span className="font-mono font-bold text-slate-900">
                               {latestChallan.challanNumber}
@@ -515,18 +562,19 @@ function FIRPartBContent() {
                       </td>
 
                       <td className="py-3 px-4 text-right">
-                        {activeTab === "UNDER_CHECKING" && (
+                        {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : pendingChallan(fir)) && (
                           <button
                             type="button"
                             onClick={() => {
                               setSubmittingFir(fir);
+                              setSubmissionError("");
                               setCourtReceiptNo("");
                               setSubmissionRemarks("");
                             }}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs cursor-pointer transition-colors"
                           >
                             <Gavel className="w-3.5 h-3.5" />
-                            <span>Record Court Submission</span>
+                            <span>{reviewReport ? "Submit CHI" : "Record Court Submission"}</span>
                           </button>
                         )}
 
@@ -573,6 +621,7 @@ function FIRPartBContent() {
           <div className="lg:hidden space-y-3">
             {currentTabFirs.map((fir) => {
               const latestChallan = fir.challanRecords?.[0];
+              const reviewReport = approvedReport(fir);
               const latestReopen = fir.reopenHistory?.[0];
 
               return (
@@ -594,7 +643,8 @@ function FIRPartBContent() {
                     <div className="truncate"><strong>Offence:</strong> {fir.actsAndSections}</div>
                     <div><strong>IO:</strong> {fir.assignedIoName || "—"}</div>
 
-                    {activeTab === "UNDER_CHECKING" && latestChallan && (
+                    {activeTab === "UNDER_CHECKING" && reviewReport && <p className="text-xs font-semibold">SHO approved · CHI pending · {reviewReport.dispatchNo}</p>}
+                    {activeTab === "UNDER_CHECKING" && !reviewReport && latestChallan && (
                       <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-950 mt-2">
                         <strong>Issued Challan:</strong> {latestChallan.challanNumber} ({latestChallan.challanMode} Mode)
                         <span className="block text-slate-600 text-[10px]">Issued at: {latestChallan.issuedAt}</span>
@@ -617,18 +667,19 @@ function FIRPartBContent() {
                   </div>
 
                   <div className="pt-2 border-t border-slate-100 flex justify-end">
-                    {activeTab === "UNDER_CHECKING" && (
-                      <button
+                    {activeTab === "UNDER_CHECKING" && (reviewReport ? reviewReport.createdBy === currentUser.id || currentUser.role === "SHO" : pendingChallan(fir)) && (
+                          <button
                         type="button"
                         onClick={() => {
                           setSubmittingFir(fir);
+                          setSubmissionError("");
                           setCourtReceiptNo("");
                           setSubmissionRemarks("");
                         }}
                         className="w-full py-2 rounded-lg text-xs font-bold bg-amber-600 text-white flex items-center justify-center gap-1.5"
                       >
                         <Gavel className="w-3.5 h-3.5" />
-                        <span>Record Court Submission</span>
+                        <span>{reviewReport ? "Submit CHI" : "Record Court Submission"}</span>
                       </button>
                     )}
 
@@ -678,10 +729,11 @@ function FIRPartBContent() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Gavel className="w-5 h-5 text-amber-600" />
-                <h3 className="font-bold text-sm text-slate-900">Record Court Submission</h3>
+                <h3 className="font-bold text-sm text-slate-900">{submittingReport ? "Submit CHI" : "Record Court Submission"}</h3>
               </div>
               <button
                 type="button"
+                disabled={isSubmittingCourt}
                 onClick={() => setSubmittingFir(null)}
                 className="text-slate-400 hover:text-slate-600"
               >
@@ -692,29 +744,31 @@ function FIRPartBContent() {
             <div className="space-y-3 text-xs text-slate-700">
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                 <div><strong>FIR Number:</strong> <span className="font-mono font-bold text-slate-900">{submittingFir.firNumber}</span></div>
-                <div><strong>Court:</strong> {submittingFir.courtName || "Court of CJM, Panipat"}</div>
-                {submittingFir.challanRecords?.[0] && (
+                <div><strong>Court:</strong> {submittingReport ? [submittingReport.finalReportData?.courtType, submittingReport.finalReportData?.judgeName].filter(Boolean).join(" — ") || "—" : submittingChallan?.courtName || submittingFir.courtName || "—"}</div>
+                {!submittingReport && submittingChallan && (
                   <div>
-                    <strong>Challan Number:</strong> {submittingFir.challanRecords[0].challanNumber} (
-                    <span className="font-bold text-blue-700">{submittingFir.challanRecords[0].challanMode} Mode</span>)
+                    <strong>Challan Number:</strong> {submittingChallan.challanNumber} (
+                    <span className="font-bold text-blue-700">{submittingChallan.challanMode} Mode</span>)
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Court Diary / Receipt Number (वकालत / कोर्ट पावती नंबर)
+                <label htmlFor="fir-court-receipt" className="block text-slate-700 font-semibold mb-1">
+                  {submittingReport ? "CHI number (required)" : "Court Diary / Receipt Number (वकालत / कोर्ट पावती नंबर)"}
                 </label>
                 <input
+                  id="fir-court-receipt"
                   type="text"
                   value={courtReceiptNo}
                   onChange={(e) => setCourtReceiptNo(e.target.value)}
-                  placeholder="e.g. CRT/PNP/2026/894"
+                  maxLength={submittingReport ? 100 : undefined}
+                  placeholder={submittingReport ? "Enter CHI number" : "e.g. CRT/PNP/2026/894"}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
                 />
               </div>
 
-              <div>
+              {!submittingReport && <div>
                 <label className="block text-slate-700 font-semibold mb-1">
                   Submission Notes / Remarks
                 </label>
@@ -725,22 +779,16 @@ function FIRPartBContent() {
                   placeholder="e.g. Challan presented before Chief Judicial Magistrate. Formal receipt obtained."
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-slate-800"
                 />
-              </div>
+              </div>}
 
-              {submittingFir.challanRecords?.[0]?.challanMode === "COMPLETE" ? (
-                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900">
-                  ℹ️ <strong>Rule 4:</strong> This challan was issued in <strong>Complete Mode</strong>. Recording court submission will move this case to <strong>Complete cases</strong>.
-                </div>
-              ) : (
-                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-[11px] text-blue-900">
-                  ℹ️ <strong>Rule 4:</strong> This challan was issued in <strong>Partial Mode</strong>. Recording court submission will move this case to <strong>Part B &rarr; Partial</strong> for further investigation.
-                </div>
-              )}
+              <p className="rounded-lg bg-blue-50 p-2.5">On submission this case moves to <strong>{willComplete ? "Complete Cases" : "Part B → Partial"}</strong>.</p>
+              {submissionError && <p role="alert" className="text-red-700">{submissionError}</p>}
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
               <button
                 type="button"
+                disabled={isSubmittingCourt}
                 onClick={() => setSubmittingFir(null)}
                 className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
@@ -753,7 +801,7 @@ function FIRPartBContent() {
                 className="px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs cursor-pointer flex items-center gap-1.5"
               >
                 {isSubmittingCourt ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                <span>Confirm Court Submission</span>
+                <span>{submittingReport ? "Submit CHI" : "Confirm Court Submission"}</span>
               </button>
             </div>
           </div>

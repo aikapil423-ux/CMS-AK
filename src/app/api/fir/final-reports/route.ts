@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const notifyUser = req.nextUrl.searchParams.get('notificationsFor');
   if (notifyUser) {
     if (notifyUser !== apiUser.id) return forbidden();
-    try { return NextResponse.json({ notifications: await finalReportDbService.notifications(notifyUser) }, { headers: { 'Cache-Control': 'no-store' } }); }
+    try { return NextResponse.json({ notifications: await finalReportDbService.notifications(apiUser) }, { headers: { 'Cache-Control': 'no-store' } }); }
     catch (error) { return failed(error); }
   }
   const firId = req.nextUrl.searchParams.get('firId');
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest) {
     if (!stored || stored.firId !== body.firId || !canonical || !isFirVisibleToUser(apiUser,canonical)) return forbidden();
     if (['SEND_TO_SHO','SUBMIT_CHI'].includes(body.action) && stored.createdBy !== apiUser.id && apiUser.role !== 'SHO') return forbidden();
     const synced = async (report: Awaited<ReturnType<typeof finalReportDbService.review>>) => { await synchronizeFinalReportFir(report,apiUser); return NextResponse.json({report}); };
-    if (body.action === 'VIEW_SHO'  || body.action === 'APPROVE_SHO' || body.action === 'REJECT_SHO') return synced(await finalReportDbService.review(body.id, body.firId, body.expectedVersion, body.authorId, body.action, body.reason));
+    if (body.action === 'VIEW_SHO'  || body.action === 'APPROVE_SHO' || body.action === 'REJECT_SHO') return synced(await finalReportDbService.review(body.id, body.firId, body.expectedVersion, apiUser, body.action, body.reason));
     if (body.action === 'SUBMIT_CHI') {
       if (!body.chiNumber) return NextResponse.json({ error: 'CHI number is required.' }, { status: 400 });
       return synced(await finalReportDbService.submitChi(body.id, body.firId, body.expectedVersion, body.authorId, body.chiNumber));
