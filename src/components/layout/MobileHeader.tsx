@@ -6,6 +6,7 @@ import { canRegisterFir } from "@/lib/firIntegrity";
 import { usePathname } from "next/navigation";
 import { Shield, Bell, Menu, X, UserCog, BookOpen, FileText, ChevronDown, ArrowLeft, LayoutGrid, PlusCircle, Scale, ClipboardList, FileBarChart, FileCheck2, BookmarkCheck, ReceiptText, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { TopBarHindiAutocorrect } from "./TopBarHindiAutocorrect";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarThemeToggle } from "./TopBarThemeToggle";
@@ -82,6 +83,7 @@ export function MobileHeader() {
 
             {/* Officer Notifications Bell */}
             <TopBarNotifications isMobile={true} />
+            <TopBarHindiAutocorrect />
 
             {/* Tablet-only inline utilities; kept inside drawer on <640px phones to prevent overlap */}
             <div className="hidden sm:flex items-center gap-1.5">

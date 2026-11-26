@@ -61,6 +61,7 @@ import {
   Eye,
   FileSignature,
 } from "lucide-react";
+import { useHindiReportAutocorrect } from "@/hooks/useHindiAutocorrect";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 import { printA4Element, downloadA4DocumentAsHtml } from "@/utils/printElement";
@@ -641,6 +642,8 @@ function FIRTemplateBuilderContent() {
   };
 
   // Editor Change
+  const correctHindiInput = useHindiReportAutocorrect(editingDefinition || !["General", "Scene Inspection", "Seizure / Recovery"].includes(docCategory));
+
   const handleContentChange = () => {
     setHasUnsavedChanges(true);
     setSaveStatus("Unsaved changes");
@@ -1781,7 +1784,10 @@ function FIRTemplateBuilderContent() {
               ref={editorRef}
               aria-label="Document body"
               contentEditable
-              onInput={handleContentChange}
+              onInput={(event) => {
+                correctHindiInput(event);
+                handleContentChange();
+              }}
               className="bg-white text-slate-900 shadow-md p-8 md:p-14 min-h-[1050px] w-full max-w-[850px] outline-none rounded-sm border border-slate-300 transition-shadow focus:shadow-lg"
               style={{
                 fontFamily: currentFont,

@@ -54,6 +54,7 @@ import {
   HelpCircle,
   FileType,
 } from "lucide-react";
+import { useHindiReportAutocorrect } from "@/hooks/useHindiAutocorrect";
 import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/lib/utils";
 import { printA4Element } from "@/utils/printElement";
@@ -517,6 +518,12 @@ function TemplateDraftBuilderContent() {
   }, [templateIdParam, draftIdParam, complaintIdParam]);
 
   // 4. Auto-save trigger
+  const witnessStatement = STANDARD_REPORT_TEMPLATES.find((template) => template.id === "std_witness_statement");
+  const correctHindiInput = useHindiReportAutocorrect(
+    editingDefinition || activeTemplateRawContent === witnessStatement?.content ||
+    /verbatim|witness statement|बयान साक्षी/i.test(docName),
+  );
+
   const handleContentChange = () => {
     setHasUnsavedChanges(true);
     setSaveStatus("Unsaved changes");
@@ -1696,7 +1703,10 @@ function TemplateDraftBuilderContent() {
               aria-label="Document body"
               contentEditable
               suppressContentEditableWarning
-              onInput={handleContentChange}
+              onInput={(event) => {
+                correctHindiInput(event);
+                handleContentChange();
+              }}
               className="cms-paper-sheet bg-white text-slate-950 shadow-xl rounded-sm p-10 sm:p-14 border border-slate-200 outline-none w-full max-w-[850px] min-h-[1100px] leading-relaxed transition-all focus:ring-2 focus:ring-blue-500/20"
               style={{
                 fontFamily: currentFont,

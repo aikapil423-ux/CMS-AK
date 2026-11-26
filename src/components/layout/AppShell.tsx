@@ -6,6 +6,7 @@ import { useGuardedRouter as useRouter } from "@/hooks/useGuardedRouter";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { TopBarHindiAutocorrect } from "./TopBarHindiAutocorrect";
 import { TopBarDictation } from "./TopBarDictation";
 import { TopBarModuleSwitcher } from "./TopBarModuleSwitcher";
 import { TopBarThemeToggle } from "./TopBarThemeToggle";
@@ -145,6 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Universal Police Dictation (Hindi & English Voice Input) */}
             <TopBarDictation />
+            <TopBarHindiAutocorrect />
 
             {/* Bilingual Instant Language Switcher (Hindi / English) */}
             <TopBarLanguageSwitcher />
